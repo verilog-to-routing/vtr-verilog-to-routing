@@ -1,0 +1,28 @@
+##############################################
+# Configuration for vtr_reg_gui / gui_set_draw_block_text
+#
+# Purpose
+# -------
+# Regression guard for the `set_draw_block_text` graphics command
+# (controls whether block names are drawn on top of placement).
+# Same regression-guard scope as the other set_* tasks: parser
+# acceptance, full flow, clean exit. Visible-effect verification
+# blocked by DEF-009.
+#
+# R7 mitigation: -start vpr (see gui_disp_off_smoke/config).
+# Offscreen Qt: caller exports QT_QPA_PLATFORM=offscreen.
+##############################################
+
+circuits_dir=benchmarks/microbenchmarks
+archs_dir=arch/timing
+
+circuit_list_add=mult_4x4.blif
+
+arch_list_add=k6_N10_40nm.xml
+
+parse_file=vpr_standard.txt
+qor_parse_file=qor_standard.txt
+pass_requirements_file=pass_requirements.txt
+
+# See gui_set_nets/config/config.txt for the --route_chan_width rationale.
+script_params_common=-start vpr -track_memory_usage false --pack --place --route --route_chan_width 100 --disp off --graphics_commands "set_draw_block_text 1; exit 0"

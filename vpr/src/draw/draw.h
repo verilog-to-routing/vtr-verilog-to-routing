@@ -36,7 +36,7 @@
 #include "vtr_ndoffsetmatrix.h"
 
 extern ezgl::application::settings settings;
-extern ezgl::application application;
+extern ezgl::application* application;
 
 #endif /* NO_GRAPHICS */
 
@@ -44,6 +44,21 @@ void update_screen(ScreenUpdatePriority priority,
                    const char* msg,
                    e_pic_type pic_on_screen_val,
                    std::shared_ptr<const SetupTimingInfo> timing_info);
+
+/**
+ * @brief Mark a stage as fully complete.
+ *
+ * Records that the given stage (PLACEMENT, ROUTING, ANALYTICAL_PLACEMENT, …)
+ * has finished. The `wait_for_stage <stage>_done` graphics-command barrier
+ * advances only when both the current pic_on_screen matches the requested
+ * stage AND that stage has been marked complete here. This lets scripted
+ * commands defer past per-iteration update_screen() checkpoints and run
+ * only on the post-stage update_screen() where the underlying contexts
+ * (route_ctx, place_ctx, …) are fully settled.
+ *
+ * Call once per stage immediately before that stage's final update_screen.
+ */
+void notify_stage_complete(e_pic_type stage);
 
 //FIXME: Currently broken if no rr-graph is loaded
 /**
@@ -77,6 +92,7 @@ void init_graphics_state(bool show_graphics_val,
                          enum e_route_type route_type,
                          bool save_graphics,
                          std::string graphics_commands,
+                         std::string renderer_type,
                          bool is_flat);
 
 /* Allocates the structures needed to draw the placement and routing.*/
@@ -93,10 +109,15 @@ const ezgl::color DRIVEN_BY_IT_COLOR = ezgl::LIGHT_MEDIUM_BLUE;
 
 const float WIRE_DRAWING_WIDTH = 0.5;
 
+// Helps determine when routing resources should be decluttered. Channel nodes in the same region are placed parallel to each other by one world unit.
+// However, they are always drawn as one pixel wide regardless of the zoom level. Therefore, we want to keep the world to pixel ratio below 1
+// so that the channel nodes do not blend into a cluster, and 0.8 is a good threshold for this reason.
+constexpr double DRAW_RR_MAX_WORLD_UNITS_PER_PIXEL = 0.8;
+
 /**
  * @brief Calculate the ratio between pixels and world units spanning the screen width.
  * 
- * @return Returns the ratio described above, which will be used to determine when decluttering should occur.
+ * @return Returns the ratio described above, which is usually used to determine when decluttering should occur.
  */
 double get_pixels_per_world_unit(ezgl::renderer* g);
 
@@ -109,9 +130,6 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
 //Returns the drawing coordinates of the specified pin
 ezgl::point2d atom_pin_draw_coord(AtomPinId pin);
 
-//Returns the drawing coordinates of the specified tnode
-ezgl::point2d tnode_draw_coord(tatum::NodeId node);
-
 /* Converts a vtr Color to a ezgl Color. */
 ezgl::color to_ezgl_color(vtr::Color<float> color);
 
@@ -120,7 +138,7 @@ ezgl::color to_ezgl_color(vtr::Color<float> color);
  * fan-in/fan-out of a highlighted node. */
 bool draw_if_net_highlighted(ParentNetId inet);
 std::vector<RRNodeId> trace_routed_connection_rr_nodes(
-    ClusterNetId net_id,
+    ParentNetId net_id,
     int driver_pin,
     int sink_pin);
 
@@ -163,7 +181,7 @@ ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 /* Lightens a color's luminance [0, 1] by an absolute 'amount' */
 ezgl::color lighten_color(ezgl::color color, float amount);
 
-void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
+void toggle_window_mode(QWidget* /*widget*/, ezgl::application* /*app*/);
 
 size_t get_max_fanout();
 

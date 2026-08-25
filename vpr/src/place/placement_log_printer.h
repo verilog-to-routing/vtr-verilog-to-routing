@@ -59,13 +59,16 @@ class PlacementLogPrinter {
 
     /**
      * @brief Print placement metrics and elapsed time after each outer loop iteration of the annealer.
-     * If graphics are on, the function will the screen view.
+     * If graphics are on, the function will update the screen view.
      * @param elapsed_sec Time spent in the latest outer loop iteration.
      */
     void print_place_status(float elapsed_sec) const;
 
     /// Reports the resource utilization for each block type.
     void print_resources_utilization() const;
+    /// @brief Reports the number of placed blocks on each die, broken down by block type.
+    ///        Reported for both clustered blocks and primitive blocks.
+    void print_resources_utilization_per_die() const;
     /// Reports the number of tried temperatures, total swaps, and how many were accepted or rejected.
     void print_placement_swaps_stats() const;
     /// Reports placement metrics after the initial placement.

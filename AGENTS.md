@@ -32,23 +32,21 @@ make          # full build
 make -j8 vpr  # specific target with parallel jobs
 ```
 
-Do not rebuild after every individual edit. Batch related changes and build once you reach a natural checkpoint (e.g., a self-contained change is complete and ready for review).
+Only build the project when prompted to. Suggest a build to the user once you reach a natural checkpoint (e.g., a self-contained change is complete and ready for review) or when you need see the compiler output.
 
 See `doc/agents/build.md` for debug builds, CMake options, and build speed tips.
 
 ## Python Environment
 
-Many scripts in `vtr_flow/scripts/` require the Python virtual environment. Before running any flow scripts or regression tests, activate it with:
+Many scripts in `vtr_flow/scripts/` require the Python virtual environment. activate it with:
 
 ```shell
 source .venv/bin/activate
 ```
 
-The virtual environment is set up by the user once (`make env` + `pip install -r requirements.txt`). Do not run those setup commands — assume the environment already exists.
-
 ## Running Tests
 
-Use judgment — not every change requires running tests. Run `vtr_reg_basic` when the change touches core VPR flow and correctness is uncertain. Run only the `vtr_reg_strong` sub-tasks relevant to your change if broader impact is possible — do not run the full suite routinely. Small, localized changes may not require any test run.
+Only run tests when prompted to.
 
 ```shell
 # Fast smoke test (~1 min)
@@ -61,7 +59,7 @@ Use judgment — not every change requires running tests. Run `vtr_reg_basic` wh
 make && make test
 ```
 
-New features **must** include a regression test in `vtr_reg_strong`. See `doc/agents/testing.md` for unit test details and how to add or update regression tests.
+See `doc/agents/testing.md` for unit test details and how to add or update regression tests.
 
 ## AI Usage Policy
 

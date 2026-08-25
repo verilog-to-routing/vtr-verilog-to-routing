@@ -405,6 +405,13 @@ DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
             }
         }
 
+        if (vpr_setup.device_width > 0 && width != static_cast<size_t>(vpr_setup.device_width)) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Fixed device width %d (from --device_width) does not match "
+                            "the RR graph grid width %zu.",
+                            vpr_setup.device_width, width);
+        }
+
         // Fix the device grid to the size implied by rr graph to prevent
         // resizing during and after packing.
         device_ctx.grid = create_device_grid(device_layout, arch.grid_layouts, width, height);
@@ -423,6 +430,16 @@ DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
     }
 
     VTR_ASSERT(device_layout == "auto");
+
+    if (vpr_setup.device_width > 0) {
+        VTR_LOG("Device layout 'auto' with fixed width %d.\n", vpr_setup.device_width);
+        device_ctx.grid = create_device_grid(device_layout, arch.grid_layouts,
+                                             {}, packer_opts.target_device_utilization,
+                                             vpr_setup.device_width);
+        report_device_grid_stats(device_ctx.grid);
+        return;
+    }
+
     VTR_LOG("Device layout '%s' selected. Need to estimate device size.\n", device_layout.c_str());
 
     std::map<t_logical_block_type_ptr, size_t> num_type_instances = estimate_resource_requirement(prepacker);
@@ -432,7 +449,8 @@ DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
 
     device_ctx.grid = create_device_grid(device_layout, arch.grid_layouts,
                                          num_type_instances,
-                                         packer_opts.target_device_utilization);
+                                         packer_opts.target_device_utilization,
+                                         vpr_setup.device_width);
 
     size_t num_grid_tiles = count_grid_tiles(device_ctx.grid);
     VTR_LOG("FPGA size estimated to %zu x %zu: %zu grid tiles (%s)\n",

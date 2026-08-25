@@ -10,6 +10,7 @@
 #include <cstring>
 #include <algorithm>
 #include <limits>
+#include <optional>
 
 #include "physical_types_util.h"
 #include "vtr_assert.h"
@@ -22,6 +23,7 @@
 
 #include "globals.h"
 #include "setup_grid.h"
+#include "vpr_types.h"
 #include "vtr_expr_eval.h"
 
 #define MAX_SIZE_FACTOR 10000
@@ -67,8 +69,36 @@ static void set_grid_block_type(int priority,
                                 vtr::NdMatrix<int, 3>& grid_priorities,
                                 const t_metadata_dict* meta);
 
+std::optional<float> get_auto_layout_aspect_ratio(const std::vector<t_grid_def>& grid_layouts) {
+    for (const t_grid_def& grid_def : grid_layouts) {
+        if (grid_def.grid_type == e_grid_def_type::AUTO) {
+            VTR_ASSERT(grid_def.aspect_ratio >= 0.);
+            return grid_def.aspect_ratio;
+        }
+    }
+    return std::nullopt;
+}
+
+size_t compute_auto_layout_height(const std::vector<t_grid_def>& grid_layouts, size_t width) {
+    std::optional<float> aspect_ratio = get_auto_layout_aspect_ratio(grid_layouts);
+    if (aspect_ratio) {
+        return vtr::nint(width / aspect_ratio.value());
+    }
+    VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                    "Cannot compute device height from width: architecture has no <auto_layout> to define aspect ratio.\n");
+    return 0; // Unreachable
+}
+
+bool has_fixed_device_size(const t_vpr_setup& vpr_setup) {
+    return vpr_setup.device_layout != "auto" || vpr_setup.device_width > 0;
+}
+
 ///@brief Create the device grid based on resource requirements
-DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<t_grid_def>& grid_layouts, const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts, float target_device_utilization) {
+DeviceGrid create_device_grid(const std::string& layout_name,
+                              const std::vector<t_grid_def>& grid_layouts,
+                              const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts,
+                              float target_device_utilization,
+                              size_t fixed_device_width) {
     // If the grid was fixed by a read RR graph, return it unchanged to prevent resizing.
     if (g_vpr_ctx.device().grid.fixed_by_rr_graph()) {
         VTR_ASSERT(g_vpr_ctx.device().grid.width() > 0 && g_vpr_ctx.device().grid.height() > 0);
@@ -76,21 +106,25 @@ DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<
     }
 
     if (layout_name == "auto") {
-        //Auto-size the device
-        //
-        //Note that we treat the target device utilization as a maximum
+        // User fixed width via --device_width; derive height from <auto_layout> aspect ratio
+        if (fixed_device_width > 0) {
+            size_t height = compute_auto_layout_height(grid_layouts, fixed_device_width);
+            return create_device_grid(layout_name, grid_layouts, fixed_device_width, height);
+        }
+        // Auto-size the device
+        // Note that we treat the target device utilization as a maximum
         return auto_size_device_grid(grid_layouts, minimum_instance_counts, target_device_utilization);
     } else {
-        //Use the specified device
+        // Use the specified device
 
-        //Find the matching grid definition
+        // Find the matching grid definition
         auto cmp = [&](const t_grid_def& grid_def) {
             return grid_def.name == layout_name;
         };
 
         auto iter = std::find_if(grid_layouts.begin(), grid_layouts.end(), cmp);
         if (iter == grid_layouts.end()) {
-            //Not found
+            // Not found
             std::string valid_names;
             for (size_t i = 0; i < grid_layouts.size(); ++i) {
                 if (i != 0) {
@@ -123,7 +157,7 @@ DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<
             //Find the fixed layout close to the target size
             std::vector<const t_grid_def*> grid_layouts_view;
             grid_layouts_view.reserve(grid_layouts.size());
-            for (const auto& layout : grid_layouts) {
+            for (const t_grid_def& layout : grid_layouts) {
                 grid_layouts_view.push_back(&layout);
             }
             auto sort_cmp = [](const t_grid_def* lhs, const t_grid_def* rhs) {
@@ -201,7 +235,7 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
         }
         max_size = total_minimum_instance_counts * MAX_SIZE_FACTOR;
 
-        const auto& grid_def = *auto_layout_itr;
+        const t_grid_def& grid_def = *auto_layout_itr;
         VTR_ASSERT(grid_def.aspect_ratio >= 0.);
 
         //Initial size is num_layers x 3 x 3, the smallest possible while avoiding
@@ -254,7 +288,7 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
         //Sort the grid layouts from smallest to largest
         std::vector<const t_grid_def*> grid_layouts_view;
         grid_layouts_view.reserve(grid_layouts.size());
-        for (const auto& layout : grid_layouts) {
+        for (const t_grid_def& layout : grid_layouts) {
             grid_layouts_view.push_back(&layout);
         }
         auto area_cmp = [](const t_grid_def* lhs, const t_grid_def* rhs) {
@@ -271,7 +305,7 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
         std::vector<t_logical_block_type_ptr> limiting_resources;
 
         //Try all the fixed devices in order from smallest to largest
-        for (const auto* grid_def : grid_layouts_view) {
+        for (const t_grid_def* grid_def : grid_layouts_view) {
             //Build the grid
             grid = build_device_grid(*grid_def, grid_def->width, grid_def->height, true, limiting_resources);
 
@@ -287,26 +321,26 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
 
 static std::vector<t_logical_block_type_ptr> grid_overused_resources(const DeviceGrid& grid,
                                                                      std::map<t_logical_block_type_ptr, size_t> instance_counts) {
-    auto& device_ctx = g_vpr_ctx.device();
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
     std::vector<t_logical_block_type_ptr> overused_resources;
 
     std::unordered_map<t_physical_tile_type_ptr, size_t> min_count_map;
     // Initialize min_count_map
-    for (const auto& tile_type : device_ctx.physical_tile_types) {
+    for (const t_physical_tile_type& tile_type : device_ctx.physical_tile_types) {
         min_count_map.insert(std::make_pair(&tile_type, size_t(0)));
     }
 
     //Initialize available tile counts
     std::unordered_map<t_physical_tile_type_ptr, int> avail_tiles;
-    for (auto& tile_type : device_ctx.physical_tile_types) {
+    for (const t_physical_tile_type& tile_type : device_ctx.physical_tile_types) {
         avail_tiles[&tile_type] = grid.num_instances(&tile_type, -1);
     }
 
     //Sort so we allocate logical blocks with the fewest equivalent sites first (least flexible)
     std::vector<const t_logical_block_type*> logical_block_types;
     logical_block_types.reserve(device_ctx.logical_block_types.size());
-    for (auto& block_type : device_ctx.logical_block_types) {
+    for (const t_logical_block_type& block_type : device_ctx.logical_block_types) {
         logical_block_types.push_back(&block_type);
     }
 
@@ -316,11 +350,11 @@ static std::vector<t_logical_block_type_ptr> grid_overused_resources(const Devic
     std::stable_sort(logical_block_types.begin(), logical_block_types.end(), by_ascending_equiv_tiles);
 
     //Allocate logical blocks to available tiles
-    for (auto block_type : logical_block_types) {
+    for (const t_logical_block_type_ptr block_type : logical_block_types) {
         if (instance_counts.count(block_type)) {
             int required_blocks = instance_counts[block_type];
 
-            for (auto tile_type : block_type->equivalent_tiles) {
+            for (const t_physical_tile_type_ptr tile_type : block_type->equivalent_tiles) {
                 if (avail_tiles[tile_type] >= required_blocks) {
                     avail_tiles[tile_type] -= required_blocks;
                     required_blocks = 0;
@@ -342,8 +376,8 @@ static std::vector<t_logical_block_type_ptr> grid_overused_resources(const Devic
 }
 
 static bool grid_satisfies_instance_counts(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts, float maximum_utilization) {
-    //Are the resources satisfied?
-    auto overused_resources = grid_overused_resources(grid, instance_counts);
+    // Are the resources satisfied?
+    std::vector<t_logical_block_type_ptr> overused_resources = grid_overused_resources(grid, instance_counts);
 
     if (!overused_resources.empty()) {
         return false;
@@ -643,7 +677,7 @@ static void set_grid_block_type(int priority,
     // Mark all the grid tiles 'covered' by this block with the appropriate type
     // and width/height offsets
     std::set<TypeLocation> root_blocks_to_rip_up;
-    auto& device_ctx = g_vpr_ctx.device();
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
     for (size_t x = x_root; x < x_root + type->width; ++x) {
         VTR_ASSERT(x < grid.end_index(1));
 
@@ -652,7 +686,7 @@ static void set_grid_block_type(int priority,
             VTR_ASSERT(y < grid.end_index(2));
             size_t y_offset = y - y_root;
 
-            auto& grid_tile = grid[layer_num][x][y];
+            t_grid_tile& grid_tile = grid[layer_num][x][y];
             VTR_ASSERT(grid_priorities[layer_num][x][y] <= priority);
 
             if (grid_tile.type != nullptr
@@ -680,7 +714,7 @@ static void set_grid_block_type(int priority,
     }
 
     // Rip-up any invalidated blocks
-    for (auto invalidated_root : root_blocks_to_rip_up) {
+    for (const TypeLocation& invalidated_root : root_blocks_to_rip_up) {
         // Mark all the grid locations used by this root block as empty
         for (size_t x = invalidated_root.x; x < invalidated_root.x + invalidated_root.type->width; ++x) {
             int x_offset = x - invalidated_root.x;
@@ -743,7 +777,7 @@ static void check_grid(const DeviceGrid& grid) {
                 for (int y = tile_loc.y; y < tile_loc.y + type->height; ++y) {
                     int y_offset = y - tile_loc.y;
                     const t_physical_tile_loc tile_loc_offset(x, y, tile_loc.layer_num);
-                    const auto& tile_type = grid.get_physical_type(tile_loc_offset);
+                    const t_physical_tile_type_ptr tile_type = grid.get_physical_type(tile_loc_offset);
                     int tile_width_offset = grid.get_width_offset(tile_loc_offset);
                     int tile_height_offset = grid.get_height_offset(tile_loc_offset);
                     if (tile_type != type) {

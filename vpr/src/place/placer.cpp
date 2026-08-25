@@ -4,11 +4,11 @@
 #include <functional>
 #include <optional>
 #include <utility>
-#include <cmath>
 
 #include "echo_files.h"
 #include "flat_placement_types.h"
 #include "blk_loc_registry.h"
+#include "interposer_cost_handler.h"
 #include "place_macro.h"
 #include "vtr_time.h"
 #include "draw.h"
@@ -33,7 +33,6 @@ Placer::Placer(const Netlist<>& net_list,
                const t_placer_opts& placer_opts,
                const t_analysis_opts& analysis_opts,
                const t_noc_opts& noc_opts,
-               const IntraLbPbPinLookup& pb_gpin_lookup,
                const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                const FlatPlacementInfo& flat_placement_info,
                std::shared_ptr<PlaceDelayModel> place_delay_model,
@@ -44,7 +43,6 @@ Placer::Placer(const Netlist<>& net_list,
     : placer_opts_(placer_opts)
     , analysis_opts_(analysis_opts)
     , noc_opts_(noc_opts)
-    , pb_gpin_lookup_(pb_gpin_lookup)
     , netlist_pin_lookup_(netlist_pin_lookup)
     , costs_(placer_opts.place_algorithm, noc_opts.noc)
     , placer_state_(placer_opts.place_algorithm.is_timing_driven())
@@ -70,8 +68,7 @@ Placer::Placer(const Netlist<>& net_list,
     }
 
     if (device_ctx.grid.has_interposer_cuts()) {
-        interposer_cost_handler_.emplace(placer_opts.interposer_cost_factor > 0.,
-                                         placer_opts.interposer_cong_threshold,
+        interposer_cost_handler_.emplace(placer_opts.interposer_cost_params,
                                          [this](ClusterNetId net_id, bool use_ts) -> const t_bb& {
                                              return net_cost_handler_.cube_bb_coords(net_id, use_ts);
                                          });
@@ -363,16 +360,24 @@ void Placer::place() {
         do {
             vtr::Timer temperature_timer;
 
-            annealer_->outer_loop_update_timing_info();
+            annealer_->outer_loop_update_timing_info_and_cost_terms();
 
             if (placer_opts_.place_algorithm.is_timing_driven()) {
                 critical_path_ = timing_info_->least_slack_critical_path();
 
                 // see if we should save the current placement solution as a checkpoint
                 if (placer_opts_.place_checkpointing && annealer_->get_agent_state() == e_agent_state::LATE_IN_THE_ANNEAL) {
+
+                    // Must record the current cost stage in 2.5D devices when two stage interposer cost is active
+                    std::optional<e_interposer_cost_stage> interposer_cost_stage;
+                    if (interposer_cost_handler_) {
+                        interposer_cost_stage = interposer_cost_handler_->get_net_cost_stage();
+                    }
+
                     save_placement_checkpoint_if_needed(placer_state_.mutable_block_locs(),
                                                         placement_checkpoint_,
-                                                        timing_info_, costs_, critical_path_.delay());
+                                                        timing_info_, costs_, critical_path_.delay(),
+                                                        interposer_cost_stage);
                 }
             }
 
@@ -392,7 +397,7 @@ void Placer::place() {
     { // Quench
         vtr::ScopedFinishTimer temperature_timer("Placement Quench");
 
-        annealer_->outer_loop_update_timing_info();
+        annealer_->outer_loop_update_timing_info_and_cost_terms();
 
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
@@ -426,9 +431,9 @@ void Placer::place() {
     // See if our latest checkpoint is better than the current placement solution
     if (placer_opts_.place_checkpointing) {
         restore_best_placement(placer_state_,
-                               placement_checkpoint_, timing_info_, costs_,
+                               placement_checkpoint_, net_cost_handler_, timing_info_, costs_,
                                placer_criticalities_, placer_setup_slacks_, place_delay_model_,
-                               pin_timing_invalidator_, crit_params, noc_cost_handler_);
+                               pin_timing_invalidator_, crit_params, noc_cost_handler_, interposer_cost_handler_);
     }
 
     if (placer_opts_.placement_saves_per_temperature >= 1) {
@@ -449,13 +454,13 @@ void Placer::place() {
 }
 
 void Placer::update_global_state() {
-    auto& mutable_palce_ctx = g_vpr_ctx.mutable_placement();
+    PlacementContext& mutable_place_ctx = g_vpr_ctx.mutable_placement();
 
     // the placement location variables should be unlocked before being accessed
-    mutable_palce_ctx.unlock_loc_vars();
+    mutable_place_ctx.unlock_loc_vars();
 
     // copy the local location variables into the global state
-    auto& global_blk_loc_registry = mutable_palce_ctx.mutable_blk_loc_registry();
+    BlkLocRegistry& global_blk_loc_registry = mutable_place_ctx.mutable_blk_loc_registry();
     global_blk_loc_registry = placer_state_.blk_loc_registry();
 
 #ifndef NO_GRAPHICS

@@ -2,9 +2,9 @@
 
 #ifndef NO_GRAPHICS
 
-#include <gtk/gtk.h>
+#include <QWidget>
 
-void delete_button(const char* button_name);
-GtkWidget* find_button(const char* button_name);
+void delete_button(const std::string& button_name);
+QWidget* find_button(const std::string& button_name);
 
 #endif /* NO_GRAPHICS */

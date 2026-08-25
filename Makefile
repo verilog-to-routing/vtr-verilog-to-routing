@@ -35,9 +35,35 @@ BUILD_TYPE := $(shell echo $(BUILD_TYPE) | tr '[:upper:]' '[:lower:]')
 #CMake's standard build types)
 CMAKE_BUILD_TYPE := $(shell echo $(BUILD_TYPE) | sed 's/_\?pgo//' | sed 's/_\?strict//')
 
+#Detect the operating system
+UNAME_S := $(shell uname -s)
+
+# Cmake generator has to be Ninja on MSVC
+CMAKE_GEN = Unix Makefiles
+ifeq ($(OS),Windows_NT)
+CMAKE_GEN = Ninja
+# Msys2 can still use Linux gcc
+ifeq ($(MSYSTEM),MINGW64)
+CMAKE_GEN = Unix Makefiles
+endif
+endif
+
 #Allows users to pass parameters to cmake
 #  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
-override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G 'Unix Makefiles' ${CMAKE_PARAMS}
+override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G '${CMAKE_GEN}' ${CMAKE_PARAMS}
+
+ifeq ($(OS),Windows_NT)
+# The curl path should be defined by user. Try to get one from system
+CURL_PATH:=$(shell where curl.exe 2>nul | head -n 1)
+# VCPKG root is a system variable env:VCPKG in power shell. User can override by using VCPKG_PATH when calling the makefile
+VCPKG_CMAKE_PATH:=$(subst \,/,$(VCPKG_PATH))
+override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF
+# Msys2 can still use Linux gcc
+ifneq ($(MSYSTEM),MINGW64)
+override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWGET="${CURL_PATH}" -DCMAKE_TOOLCHAIN_FILE="${VCPKG_CMAKE_PATH}/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DVCPKG_MANIFEST_MODE=OFF
+#	override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF
+endif
+endif
 
 #Are we doing a strict (i.e. warnings as errors) build?
 ifneq (,$(findstring strict,$(BUILD_TYPE)))
@@ -50,15 +76,39 @@ ifeq ($(VERBOSE),1)
 override CMAKE_PARAMS := -DVTR_ENABLE_VERBOSE=on ${CMAKE_PARAMS}
 endif
 
+#`make ensure-gui` / `make ensure-headless` set VTR_GRAPHICS to force the
+#graphics option. They delegate to the normal build rule below, so the PGO /
+#build-dir / cmake handling is inherited rather than duplicated.
+ifeq ($(VTR_GRAPHICS),on)
+override CMAKE_PARAMS := ${CMAKE_PARAMS} -DVPR_USE_EZGL=on
+endif
+ifeq ($(VTR_GRAPHICS),off)
+override CMAKE_PARAMS := ${CMAKE_PARAMS} -DVPR_USE_EZGL=off
+endif
+
 # -s : Suppresses makefile output (e.g. entering/leaving directories)
 # --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)
 MAKEFLAGS := -s
 
+ifeq ($(OS),Windows_NT)
+ifeq ($(MSYSTEM),MINGW64)
 SOURCE_DIR := $(PWD)
+else
+SOURCE_DIR := $(shell powershell -NoProfile -Command "(Get-Location).Path")
+SOURCE_DIR := $(subst \,/,$(SOURCE_DIR))
+endif
+else
+SOURCE_DIR := $(PWD)
+endif
 BUILD_DIR ?= build
 
 #Check for the cmake executable
 CMAKE := $(shell command -v cmake 2> /dev/null)
+ifeq ($(OS),Windows_NT)
+ifneq ($(MSYSTEM),MINGW64)
+CMAKE := cmake.exe
+endif
+endif
 
 #Show test log on failures with 'make test'
 export CTEST_OUTPUT_ON_FAILURE=TRUE
@@ -66,21 +116,27 @@ export CTEST_OUTPUT_ON_FAILURE=TRUE
 #All targets in this make file are always out of date.
 # This ensures that any make target requests are forwarded to
 # the generated makefile
-.PHONY: all distclean $(MAKECMDGOALS)
+.PHONY: all distclean ensure-gui ensure-headless $(MAKECMDGOALS)
 
 #For an 'all' build with BUILD_TYPE containing 'pgo' this will perform a 2-stage compilation
 #with profile guided optimization.
 #For a BUILD_TYPE without 'pgo', a single stage (non-pgo) compilation is performed.
 
-#Forward any targets that are not named 'distclean' or 'clean' to the generated Makefile
+#Forward any targets that are not named 'distclean', 'clean', 'ensure-gui' or 'ensure-headless' to the generated Makefile
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),ensure-gui)
+ifneq ($(MAKECMDGOALS),ensure-headless)
 all $(MAKECMDGOALS):
 ifneq ($(BUILD_DIR),build)
 	ln -sf $(BUILD_DIR) build
 endif
 ifeq ($(CMAKE),)
-	$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
+	ifeq ($(UNAME_S),Darwin)
+		$(error Required 'cmake' executable not found. On macOS try 'brew install cmake' to install)
+	else
+		$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
+	endif
 endif
 	@ mkdir -p $(BUILD_DIR)
 ifneq (,$(findstring pgo,$(BUILD_TYPE)))
@@ -118,10 +174,41 @@ endif #BUILD_TYPE
 	#
 	#Final build
 	#
+ifeq ($(OS),Windows_NT)
+# MSYS2 is based on Makefile
+ifeq ($(MSYSTEM),MINGW64)
 	@echo "Building target(s): $(MAKECMDGOALS)"
 	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
+else
+# MSVC is based on Ninja, use cmake native build
+	@echo "Building target(s): $(MAKECMDGOALS)"
+	$(CMAKE) --build $(BUILD_DIR)
+endif # final build in windows
+else
+# Linux build is based on Makefile
+	@echo "Building target(s): $(MAKECMDGOALS)"
+	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
+endif # final build
+endif #ensure-headless
+endif #ensure-gui
 endif #clean
 endif #distclean
+
+#Build VTR WITH graphics. Provision a Qt6 SDK (>= the supported floor) first,
+#honoring ensure_qt6_sdk.sh's exit code (make aborts if it fails), then delegate
+#to the normal build with graphics forced on. Defined after the 'all' rule so
+#'all' stays the default goal.
+#Builds the default 'all' goal (not just 'vpr') so the full flow -- synthesis
+#(yosys + parmys), mapping (abc) and place-and-route (vpr) -- is produced. The
+#yosys/parmys targets are 'ALL' custom targets that 'make vpr' would skip,
+#leaving build/bin/yosys missing and run_vtr_flow unable to find yosys.
+ensure-gui:
+	@ $(SOURCE_DIR)/dev/ensure_qt6_sdk.sh
+	@+$(MAKE) all VTR_GRAPHICS=on
+
+#Build VTR WITHOUT graphics (headless); no Qt SDK is needed.
+ensure-headless:
+	@+$(MAKE) all VTR_GRAPHICS=off
 
 #Call the generated Makefile's clean, and then remove all cmake generated files
 distclean: clean
@@ -131,7 +218,11 @@ distclean: clean
 
 clean:
 ifeq ($(CMAKE),)
-	$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
+	ifeq ($(UNAME_S),Darwin)
+		$(error Required 'cmake' executable not found. On macOS try 'brew install cmake' to install)
+	else
+		$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
+	endif
 endif
 	@ echo "Cleaning files.."
 	#We run cmake so we can use the generated Makefile to clean any executables

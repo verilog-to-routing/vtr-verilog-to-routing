@@ -17,6 +17,7 @@
 #include "detailed_placer.h"
 #include "device_size_estimate.h"
 #include "full_legalizer.h"
+#include "setup_grid.h"
 #include "logical_ram_infer.h"
 #include "gen_ap_netlist_from_atoms.h"
 #include "global_placer.h"
@@ -29,6 +30,7 @@
 #include "place_delay_model.h"
 #include "prepack.h"
 #include "user_place_constraints.h"
+#include "vpr_api.h"
 #include "vpr_context.h"
 #include "vpr_types.h"
 #include "stats.h"
@@ -252,6 +254,17 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     // size to match the actual resource requirements after packing completes.
     DeviceSizeEstimator device_size_estimator(vpr_setup, *device_ctx.arch, prepacker);
 
+    // Set up the dedicated clock networks (if used) now that the device grid
+    // exists. This must happen before any RR graph is built in this flow
+    // (e.g. below, when computing the placement delay model, or later during
+    // full legalization) since the RR graph builder reads the clock network
+    // definitions set up here. Mirrors the ordering used by the non-AP flow
+    // in vpr_create_device(): grid, then clock networks, then the RR graph.
+    // If the device is auto-sized and later resized to its final dimensions
+    // during full legalization, the clock network geometry is recomputed to
+    // match (see full_legalizer.cpp's recreate_device_if_needed()).
+    vpr_setup_clock_networks(vpr_setup, *device_ctx.arch);
+
     // Infer logical RAMs and assign to physical types to prioritize during packing.
     // For the auto-device flow, reuse the groups already computed by the estimator.
     RamMapper ram_mapper;
@@ -261,7 +274,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                pre_cluster_timing_manager,
                                device_size_estimator.ram_groups(),
                                ap_opts.log_verbosity,
-                               vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
+                               /*is_fixed_device=*/has_fixed_device_size(vpr_setup));
     }
 
     // Create the ap netlist from the atom netlist using the result from the
@@ -309,6 +322,13 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                   device_width,
                                   device_height,
                                   device_ctx.grid.get_num_layers()));
+
+    // Generate the pre-cluster timing report now that global placement has
+    // updated the timing arc delays to reflect the flat placement.
+    pre_cluster_timing_manager.generate_setup_timing_report(atom_nlist,
+                                                            g_vpr_ctx.atom().lookup(),
+                                                            *device_ctx.arch,
+                                                            vpr_setup.AnalysisOpts);
 
     // Run the Full Legalizer.
     std::unique_ptr<FullLegalizer> full_legalizer = make_full_legalizer(ap_opts.full_legalizer_type,

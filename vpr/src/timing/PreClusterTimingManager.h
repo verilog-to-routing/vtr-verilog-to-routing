@@ -70,6 +70,30 @@ class PreClusterTimingManager {
                             const t_analysis_opts& analysis_opts);
 
     /**
+     * @brief Generates a setup timing report for the pre-clustered netlist and
+     *        writes it to "pre_pack.report_timing.setup.rpt".
+     *
+     * This is separated from the constructor so callers can choose when to
+     * generate the report. In the standard packing flow the report is generated
+     * immediately after construction, but in the analytical placement flow the
+     * timing graph is modified by global placement before the report should be
+     * written.
+     *
+     *  @param atom_netlist
+     *          The primitive netlist.
+     *  @param atom_lookup
+     *          Primitive-to-timing-node lookup.
+     *  @param arch
+     *          The architecture.
+     *  @param analysis_opts
+     *          Timing analysis options.
+     */
+    void generate_setup_timing_report(const AtomNetlist& atom_netlist,
+                                      const AtomLookup& atom_lookup,
+                                      const t_arch& arch,
+                                      const t_analysis_opts& analysis_opts) const;
+
+    /**
      * @brief Calculates the setup criticality of the given primitive block.
      *
      * Currently defined as the maximum criticality over the block inputs.

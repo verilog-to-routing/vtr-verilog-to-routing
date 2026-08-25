@@ -288,6 +288,10 @@ static int check_external_directs_legality(const t_arch& arch) {
 
             // Fc_out > 0 pins have general-routing access; nothing to check.
             if (!pin_has_fc_out_zero(cluster_type, out_pin_id)) continue;
+            // Bypass global nets under clock modeling ideal mode, it is not going to be routed. No need to ensure routing path feasibility
+            if (atom_nlist.net_is_global(net_id) && atom_nlist.net_is_ignored(net_id)) {
+                continue;
+            }
 
             bool net_has_unsatisfied_sink = false;
             ClusterBlockId offending_sink_cluster_id;

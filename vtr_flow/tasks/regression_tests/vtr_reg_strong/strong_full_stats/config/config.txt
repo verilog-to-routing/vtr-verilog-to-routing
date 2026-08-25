@@ -24,4 +24,7 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 # Script parameters
-script_params = --full_stats on --route_chan_width 40
+script_params_common = --full_stats on --route_chan_width 40
+# Baseline run
+script_params_list_add =
+script_params_list_add = --flat_routing on

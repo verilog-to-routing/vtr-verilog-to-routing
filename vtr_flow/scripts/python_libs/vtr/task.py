@@ -343,6 +343,7 @@ def parse_circuit_constraint_list(circuit_constraint_list, circuits_list, arch_l
         [
             "arch",
             "device",
+            "device_width",
             "constraints",
             "route_chan_width",
             "read_flat_place",
@@ -395,6 +396,10 @@ def parse_circuit_constraint_list(circuit_constraint_list, circuits_list, arch_l
             raise VtrError(f'Circuit "{circuit}" cannot be constrained more than once')
         # Add the constraint for this circuit
         res_circuit_constraints[circuit][constr_key] = constr_val
+
+    for circuit, constraints in res_circuit_constraints.items():
+        if constraints["device"] is not None and constraints["device_width"] is not None:
+            raise VtrError(f'Circuit "{circuit}" cannot constrain both "device" and "device_width"')
 
     return res_circuit_constraints
 
@@ -811,9 +816,12 @@ def apply_cmd_line_circuit_constraints(cmd, circuit, config):
     Apply the circuit constraints to the command line. If the circuit is not
     constrained for any key, this method will not do anything.
     """
-    # Check if this circuit is constrained to a specific device.
+    # Check if this circuit is constrained to a specific device or device width.
     constrained_device = config.circuit_constraints[circuit]["device"]
-    if constrained_device is not None:
+    constrained_device_width = config.circuit_constraints[circuit]["device_width"]
+    if constrained_device_width is not None:
+        cmd += ["--device", "auto", "--device_width", constrained_device_width]
+    elif constrained_device is not None:
         cmd += ["--device", constrained_device]
     # Check if the circuit has constrained atom locations.
     circuit_vpr_constraints = config.circuit_constraints[circuit]["constraints"]

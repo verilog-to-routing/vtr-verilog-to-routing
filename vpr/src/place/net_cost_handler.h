@@ -145,6 +145,9 @@ class NetCostHandler {
     ///@brief Get the total wirelength estimate of all nets.
     double get_total_wirelength_estimate() const;
 
+    /// @brief Returns the number of nets whose bounding box spans more than one layer.
+    int get_num_nets_spanning_multiple_layers() const;
+
     ///@brief Get the nets affected by the most recent proposed move.
     /// Valid only after find_affected_nets_and_update_costs() has been called for the
     /// current proposed move (e.g. within try_swap()).

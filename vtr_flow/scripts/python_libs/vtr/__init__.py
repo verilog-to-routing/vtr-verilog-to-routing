@@ -18,7 +18,6 @@ from .util import (
     get_active_run_dir,
     get_next_run_dir,
     verify_file,
-    pretty_print_table,
     find_task_dir,
     RunDir,
 )
@@ -26,6 +25,7 @@ from .log_parse import (
     determine_lut_size,
     determine_min_w,
     determine_memory_addr_width,
+    graphics_exit_requested,
     load_parse_patterns,
     load_pass_requirements,
     load_parse_results,

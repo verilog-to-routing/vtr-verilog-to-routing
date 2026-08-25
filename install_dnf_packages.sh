@@ -30,8 +30,16 @@ sudo dnf install --refresh -y \
 
 # Required for graphics
 sudo dnf install --refresh -y \
-    gtk3-devel \
-    libX11
+    qt6-qtbase-devel \
+    qt6-qtsvg-devel \
+    qt6-qtbase-private-devel \
+    qt6-qtshadertools \
+    qt6-qtshadertools-devel \
+    libxkbcommon-devel \
+    mesa-libGL-devel \
+    mesa-libEGL-devel \
+    libglvnd-opengl \
+    mesa-dri-drivers
 
 # Required for parmys front-end from https://github.com/YosysHQ/yosys
 sudo dnf install --refresh -y \

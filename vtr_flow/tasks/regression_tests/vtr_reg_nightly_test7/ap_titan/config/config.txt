@@ -36,30 +36,34 @@ circuit_list_add=stap_qrd_stratixiv_arch_timing.blif
 circuit_list_add=stereo_vision_stratixiv_arch_timing.blif
 # circuit_list_add=gaussianblur_stratixiv_arch_timing.blif
 
-# Constrain the circuits to their devices
-circuit_constraint_list_add=(sparcT1_core_stratixiv_arch_timing.blif,  device=titan_extra_small)
-circuit_constraint_list_add=(SLAM_spheric_stratixiv_arch_timing.blif,  device=titan_extra_small)
-circuit_constraint_list_add=(stereo_vision_stratixiv_arch_timing.blif, device=titan_small)
-circuit_constraint_list_add=(cholesky_mc_stratixiv_arch_timing.blif,   device=titan_small)
-circuit_constraint_list_add=(neuron_stratixiv_arch_timing.blif,        device=titan_small)
-circuit_constraint_list_add=(segmentation_stratixiv_arch_timing.blif,  device=titan_small)
-circuit_constraint_list_add=(dart_stratixiv_arch_timing.blif,          device=titan_small)
-circuit_constraint_list_add=(denoise_stratixiv_arch_timing.blif,       device=titan_medium)
-circuit_constraint_list_add=(sparcT2_core_stratixiv_arch_timing.blif,  device=titan_medium)
-circuit_constraint_list_add=(stap_qrd_stratixiv_arch_timing.blif,      device=titan_medium)
-circuit_constraint_list_add=(cholesky_bdti_stratixiv_arch_timing.blif, device=titan_medium)
-circuit_constraint_list_add=(des90_stratixiv_arch_timing.blif,         device=titan_medium)
-circuit_constraint_list_add=(mes_noc_stratixiv_arch_timing.blif,       device=titan_medium)
-circuit_constraint_list_add=(openCV_stratixiv_arch_timing.blif,        device=titan_medium)
-circuit_constraint_list_add=(LU_Network_stratixiv_arch_timing.blif,    device=titan_large)
-circuit_constraint_list_add=(minres_stratixiv_arch_timing.blif,        device=titan_large)
-circuit_constraint_list_add=(bitcoin_miner_stratixiv_arch_timing.blif, device=titan_large)
-circuit_constraint_list_add=(bitonic_mesh_stratixiv_arch_timing.blif,  device=titan_large)
-circuit_constraint_list_add=(gsm_switch_stratixiv_arch_timing.blif,    device=titan_large)
-circuit_constraint_list_add=(sparcT1_chip2_stratixiv_arch_timing.blif, device=titan_large)
-circuit_constraint_list_add=(directrf_stratixiv_arch_timing.blif,      device=titan_extra_large)
-circuit_constraint_list_add=(LU230_stratixiv_arch_timing.blif,         device=titan_extra_large)
-# circuit_constraint_list_add=(gaussianblur_stratixiv_arch_timing.blif,  device=titan_extra_large)
+# Below are a set of fixed layouts which were found to work well for these
+# benchmarks. They were found by finding the minimum device size for each
+# benchmark and categorizing the benchmarks into the different fixed layouts. 
+# Each fixed layout was chosen to be around 1.5x larger than the previous.
+# Constrain the circuits to their device widths
+circuit_constraint_list_add=(sparcT1_core_stratixiv_arch_timing.blif,  device_width=100)
+circuit_constraint_list_add=(SLAM_spheric_stratixiv_arch_timing.blif,  device_width=100)
+circuit_constraint_list_add=(stereo_vision_stratixiv_arch_timing.blif, device_width=150)
+circuit_constraint_list_add=(cholesky_mc_stratixiv_arch_timing.blif,   device_width=150)
+circuit_constraint_list_add=(neuron_stratixiv_arch_timing.blif,        device_width=150)
+circuit_constraint_list_add=(segmentation_stratixiv_arch_timing.blif,  device_width=150)
+circuit_constraint_list_add=(dart_stratixiv_arch_timing.blif,          device_width=150)
+circuit_constraint_list_add=(denoise_stratixiv_arch_timing.blif,       device_width=225)
+circuit_constraint_list_add=(sparcT2_core_stratixiv_arch_timing.blif,  device_width=225)
+circuit_constraint_list_add=(stap_qrd_stratixiv_arch_timing.blif,      device_width=225)
+circuit_constraint_list_add=(cholesky_bdti_stratixiv_arch_timing.blif, device_width=225)
+circuit_constraint_list_add=(des90_stratixiv_arch_timing.blif,         device_width=225)
+circuit_constraint_list_add=(mes_noc_stratixiv_arch_timing.blif,       device_width=225)
+circuit_constraint_list_add=(openCV_stratixiv_arch_timing.blif,        device_width=225)
+circuit_constraint_list_add=(LU_Network_stratixiv_arch_timing.blif,    device_width=300)
+circuit_constraint_list_add=(minres_stratixiv_arch_timing.blif,        device_width=300)
+circuit_constraint_list_add=(bitcoin_miner_stratixiv_arch_timing.blif, device_width=300)
+circuit_constraint_list_add=(bitonic_mesh_stratixiv_arch_timing.blif,  device_width=300)
+circuit_constraint_list_add=(gsm_switch_stratixiv_arch_timing.blif,    device_width=300)
+circuit_constraint_list_add=(sparcT1_chip2_stratixiv_arch_timing.blif, device_width=300)
+circuit_constraint_list_add=(directrf_stratixiv_arch_timing.blif,      device_width=450)
+circuit_constraint_list_add=(LU230_stratixiv_arch_timing.blif,         device_width=450)
+# circuit_constraint_list_add=(gaussianblur_stratixiv_arch_timing.blif,  device_width=450)
 
 # Add architectures to list to sweep
 arch_list_add=stratixiv_arch.timing.xml

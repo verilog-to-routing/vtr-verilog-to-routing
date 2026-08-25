@@ -18,3 +18,13 @@ updates:
     # Check for updates once a week
     schedule:
       interval: "weekly"
+
+  # Pip dependency updates. vtr_flow/parse/ is excluded because its
+  # pass_requirements*.txt files are a VTR-internal config format that
+  # Dependabot would otherwise misidentify as pip manifests.
+  - package-ecosystem: pip
+    directory: "/"
+    exclude-paths:
+      - "vtr_flow/parse/**"
+    schedule:
+      interval: "weekly"

@@ -29,30 +29,39 @@ vtr::optional<RouteTree> TracebackCompat::traceback_to_route_tree(t_trace* head)
 void TracebackCompat::traceback_to_route_tree_x(t_trace* trace, RouteTree& tree, RouteTreeNode* parent, RRSwitchId parent_switch) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    RRNodeId inode = RRNodeId(trace->index);
 
-    RouteTreeNode* new_node = new RouteTreeNode(inode, parent_switch, parent);
-    tree.add_node(parent, new_node);
-    new_node->net_pin_index = trace->net_pin_index;
-    new_node->R_upstream = std::numeric_limits<float>::quiet_NaN();
-    new_node->C_downstream = std::numeric_limits<float>::quiet_NaN();
-    new_node->Tdel = std::numeric_limits<float>::quiet_NaN();
-    e_rr_type node_type = rr_graph.node_type(inode);
-    if (node_type == e_rr_type::IPIN || node_type == e_rr_type::SINK)
-        new_node->re_expand = false;
-    else
-        new_node->re_expand = true;
+    while (trace != nullptr) {
+        RRNodeId inode = RRNodeId(trace->index);
 
-    if (rr_graph.node_type(inode) == e_rr_type::SINK) {
-        /* The traceback returns to the previous branch point if there is more than one SINK, otherwise we are at the last SINK */
-        if (trace->next) {
-            RRNodeId next_rr_node = RRNodeId(trace->next->index);
-            RouteTreeNode* branch = tree._rr_node_to_rt_node.at(next_rr_node);
-            VTR_ASSERT(trace->next->next);
-            traceback_to_route_tree_x(trace->next->next, tree, branch, RRSwitchId(trace->next->iswitch));
+        RouteTreeNode* new_node = new RouteTreeNode(inode, parent_switch, parent);
+        tree.add_node(parent, new_node);
+        new_node->net_pin_index = trace->net_pin_index;
+        new_node->R_upstream = std::numeric_limits<float>::quiet_NaN();
+        new_node->C_downstream = std::numeric_limits<float>::quiet_NaN();
+        new_node->Tdel = std::numeric_limits<float>::quiet_NaN();
+        e_rr_type node_type = rr_graph.node_type(inode);
+        if (node_type == e_rr_type::IPIN || node_type == e_rr_type::SINK)
+            new_node->re_expand = false;
+        else
+            new_node->re_expand = true;
+
+        if (node_type == e_rr_type::SINK) {
+            /* The traceback returns to the previous branch point if there is more than one SINK, otherwise we are at the last SINK */
+            if (trace->next) {
+                RRNodeId next_rr_node = RRNodeId(trace->next->index);
+                RouteTreeNode* branch = tree._rr_node_to_rt_node.at(next_rr_node);
+                VTR_ASSERT(trace->next->next);
+                parent = branch;
+                parent_switch = RRSwitchId(trace->next->iswitch);
+                trace = trace->next->next;
+            } else {
+                break;
+            }
+        } else {
+            parent = new_node;
+            parent_switch = RRSwitchId(trace->iswitch);
+            trace = trace->next;
         }
-    } else {
-        traceback_to_route_tree_x(trace->next, tree, new_node, RRSwitchId(trace->iswitch));
     }
 }
 

@@ -530,3 +530,20 @@ def determine_min_w(log_filename):
                 return int(match.group("min_w"))
 
     raise InspectError("Failed to find minimum channel width.", filename=log_filename)
+
+
+def graphics_exit_requested(log_filename):
+    """
+    Return True if VPR exited at the request of a `--graphics_commands` `exit`
+    instruction (vs. natural end-of-flow). Used to skip downstream convergence
+    checks for runs that were intentionally terminated early.
+    """
+    sentinel_prefix = "Graphics-command 'exit"
+    try:
+        with open(log_filename, "r", encoding="utf-8") as file:
+            for line in file:
+                if sentinel_prefix in line:
+                    return True
+    except FileNotFoundError:
+        return False
+    return False

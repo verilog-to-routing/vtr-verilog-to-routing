@@ -10,10 +10,7 @@
 
 #ifndef NO_GRAPHICS
 
-// forward declaration
-namespace ezgl {
-class renderer;
-}
+#include "ezgl/irenderer.hpp"
 
 /// @brief Draws interposer cut lines.
 /// During placement stage, the cut lines are drawn in the middle of routing channels.

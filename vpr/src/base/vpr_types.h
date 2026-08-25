@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <set>
+#include <string>
 #include <string_view>
 #include "ap_flow_enums.h"
 #include "atom_netlist_fwd.h"
@@ -31,6 +32,7 @@
 #include "constant_nets.h"
 #include "clock_modeling.h"
 #include "heap_type.h"
+#include "lb_type_rr_node_types.h"
 
 #include "vtr_assert.h"
 #include "vtr_vector.h"
@@ -255,7 +257,7 @@ typedef vtr::flat_map2<int, t_pb_route> t_pb_routes;
  */
 class t_pb {
   public:
-    char* name = nullptr;                     ///<Name of this physical block
+    std::string name;                         ///<Name of this physical block. Empty if the block is unused.
     t_pb_graph_node* pb_graph_node = nullptr; ///<pointer to pb_graph_node this pb corresponds to
 
     int mode = 0; ///<mode that this pb is set to
@@ -975,6 +977,48 @@ enum class e_place_delta_delay_algorithm {
     DIJKSTRA_EXPANSION,
 };
 
+enum class e_interposer_net_cost_type {
+    /// Net cost is delta_x * #vertical_interposer_crossings + delta_y * #horizontal_interposer_crossings.
+    /// The intuition behind this cost is to bring interposer-crossing nets closer and minimize interposer
+    /// crossings.
+    MINIMIZE_INTERPOSER_CROSSING_BB,
+    /// Net cost is |delta_x - vertical_interposer_seg_length| * #vertical_interposer_crossings +
+    ///             |delta_y - horizontal_interposer_seg_length| * #horizontal_interposer_crossings.
+    /// The intuition behind this cost is to keep nets that cross an interposer cut
+    /// one interposer segment away to avoid extra intra-die routing.
+    INTERPOSER_WIRE_AWARE_CROSSING_BB,
+    /// Two-stage cost mode. By default starts at MINIMIZE_INTERPOSER_CROSSING_BB and switches to
+    /// INTERPOSER_WIRE_AWARE_CROSSING_BB mid anneal.
+    TWO_STAGE
+};
+
+struct t_interposer_cost_params {
+    /// Unitless scaling for interposer crossing cost after normalization. Additive in the total cost.
+    /// Valid range is from 0 to infinity, with 0 completely ignoring the term and infinity completely
+    /// dominating all other terms. Setting this to 1 would make this term roughly as important as the
+    /// timing and wiring cost.
+    float net_cost_factor;
+    /// Formula used for interposer crossing cost; two-stage mode can switch formulas during placement.
+    e_interposer_net_cost_type net_cost_type;
+
+    /// Formula used before the two-stage interposer cost model switches.
+    e_interposer_net_cost_type two_stage_net_cost_first_stage_type;
+    /// Formula used after the two-stage interposer cost model switches.
+    e_interposer_net_cost_type two_stage_net_cost_second_stage_type;
+    /// Maximum recent cost deviation threshold used to switch the two-stage interposer cost model.
+    /// A value of 0.01 means that when the last 10 interposer costs have less than 1% deviation from
+    /// mean, we change the cost term from the first stage to the second stage.
+    float net_cost_change_threshold;
+
+    /// Interposer-cut congestion threshold; penalize only demand above this value (0 disables).
+    /// For example, if set to 0.9, we only add the interposer congestion cost term when we approximate
+    /// that more than 90% of interposer wires in a channel will be used.
+    float cong_cost_threshold;
+    /// Unitless scaling factor for interposer congestion after normalization. Valid range and reasonable
+    /// values are the same as 'net_cost_factor'.
+    float cong_cost_factor;
+};
+
 /**
  * @brief Enumeration of the different initial temperature estimators available
  *        for the placer.
@@ -1010,14 +1054,8 @@ struct t_placer_opts {
     /// are predicted to face some congestion in the routing stage.
     float congestion_chan_util_threshold;
 
-    /// Unitless scaling for interposer crossing cost after normalization. Tune like \c timing_tradeoff, which sets timing
-    /// versus wirelength emphasis: after normalization, similar numeric ranges apply so this term can be weighed against
-    /// those objectives. Zero disables. Additive in the total cost.
-    float interposer_cost_factor;
-    /// Interposer-cut congestion threshold; penalize only demand above this value (0 disables).
-    float interposer_cong_threshold;
-    /// Unitless scaling for interposer congestion after normalization. Comparable in tuning to \c congestion_factor.
-    float interposer_cong_factor;
+    /// Interposer-related placement cost parameters
+    t_interposer_cost_params interposer_cost_params;
 
     /// The channel width assumed if only one placement is performed.
     int place_chan_width;
@@ -1604,8 +1642,6 @@ struct t_power_opts {
     bool do_power; ///<Perform power estimation?
 };
 
-struct t_lb_type_rr_node; /* Defined in pack_types.h */
-
 /// @brief Stores settings for VPR server mode
 struct t_server_opts {
     bool is_server_mode_enabled = false;
@@ -1626,7 +1662,7 @@ struct t_vpr_setup {
     t_noc_opts NocOpts;             ///<Options for the NoC
     t_server_opts ServerOpts;       ///<Server options
     t_det_routing_arch RoutingArch; ///<routing architecture
-    std::vector<t_lb_type_rr_node>* PackerRRGraph;
+    std::vector<std::vector<t_lb_type_rr_node>> PackerRRGraph;
     std::vector<t_segment_inf> Segments; ///<wires in routing architecture
     t_timing_inf Timing;                 ///<timing information
     float constant_net_delay;            ///<timing information when place and route not run
@@ -1634,8 +1670,15 @@ struct t_vpr_setup {
     int GraphPause;                      ///<user interactiveness graphics option
     bool SaveGraphics;                   ///<option to save graphical contents to pdf, png, or svg
     std::string GraphicsCommands;        ///<commands to control graphics settings
+    std::string RendererType;            ///<rendering backend: "immediate" (SW QPainter, no batching; most
+                                         ///<compatible, lowest performance/RAM), "deferred" (SW QPainter with
+                                         ///<draw-call batching; faster than immediate, more RAM), or "rhi"
+                                         ///<(GPU hardware rendering; highest performance, requires a GPU/VRAM,
+                                         ///<uses the most RAM)
     t_power_opts PowerOpts;
     std::string device_layout;
+    /// When > 0 and device_layout is "auto", use this fixed grid width and a height calculated from the auto layout's aspect ratio.
+    int device_width = 0;
     e_constant_net_method constant_net_method; ///<How constant nets should be handled
     e_clock_modeling clock_modeling;           ///<How clocks should be handled
     bool two_stage_clock_routing;              ///<How clocks should be routed in the presence of a dedicated clock network

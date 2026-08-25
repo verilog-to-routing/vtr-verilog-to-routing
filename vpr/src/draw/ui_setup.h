@@ -81,6 +81,14 @@ void hide_crit_path_routing(ezgl::application* app);
 void hide_draw_routing(ezgl::application* app);
 
 /**
+ * @brief Configures and connects signals/functions for Proceed by Step buttons.
+ * 
+ * Determines if the graphics should freeze for user interaction after counting
+ * a custom number of steps (e.g. temperature change, routing iteration) set by the user.
+ */
+void proceed_by_step_button_setup(ezgl::application* app);
+
+/**
  * @brief Loads block names into Gtk Structures to enable autocomplete
  */
 void load_block_names(ezgl::application* app);
@@ -89,15 +97,5 @@ void load_block_names(ezgl::application* app);
  * @brief Loads net names into Gtk ListStore to enable autocomplete
  */
 void load_net_names(ezgl::application* app);
-
-/**
- * @brief Hides widget with given name; name is id string created in Glade
- */
-void hide_widget(std::string widgetName, ezgl::application* app);
-
-/**
- * @brief Shows widget with given name; name is id string created in Glade
- */
-void show_widget(std::string widgetName, ezgl::application* app);
 
 #endif /* NO_GRAPHICS */

@@ -116,8 +116,10 @@ std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraphView& rr_graph,
     for (int pin = 0; pin < device_grid.get_physical_type(tile_loc)->num_pins; ++pin) {
         /* Skip those pins have been ignored during rr_graph build-up */
         if (true == device_grid.get_physical_type(tile_loc)->is_ignored_pin[pin]) {
+            // Cache the vector to avoid memory corruption in the std::find()
+            std::vector<int> clk_pins = device_grid.get_physical_type(tile_loc)->get_clock_pins_indices();
             /* If specified, force to include all the clock pins */
-            if (!include_clock || std::find(device_grid.get_physical_type(tile_loc)->get_clock_pins_indices().begin(), device_grid.get_physical_type(tile_loc)->get_clock_pins_indices().end(), pin) == device_grid.get_physical_type(tile_loc)->get_clock_pins_indices().end()) {
+            if (!include_clock || std::find(clk_pins.begin(), clk_pins.end(), pin) == clk_pins.end()) {
                 continue;
             }
         }

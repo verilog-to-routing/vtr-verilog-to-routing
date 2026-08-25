@@ -37,11 +37,6 @@
 static constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 static constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 
-// This value is used to help determine when decluttering should be on. Every channel node is drawn 1 pixel wide always and
-// placed parallel to each other. If we allocate exactly 1 pixel for each channel node, they will be blended into a solid color.
-// Therefore, 1.5 is a more relaxed bar, where the extra serves as spacing between the channel nodes.
-static constexpr double min_pixel_per_chan_node = 1.5;
-
 /* Draws the routing resources that exist in the FPGA, if the user wants
  * them drawn.
  */
@@ -54,14 +49,14 @@ void draw_rr(ezgl::renderer* g) {
         return;
     }
 
-    // The ratio between pixels and world units spanning the screen width. Used to determine when decluttering should occur.
-    double pixel_per_world_unit = get_pixels_per_world_unit(g);
-    if (draw_state->enable_decluttering) {
-        // If pixel_per_world_unit is lower than the threshold, need to stop drawing RR nodes.
-        draw_state->declutter_rr = pixel_per_world_unit < min_pixel_per_chan_node;
+    // The ratio between world units and pixels spanning the screen width. Used to determine when decluttering should occur.
+    double world_units_per_pixel = g->world_units_per_pixel();
+    if (draw_state->enable_rr_decluttering) {
+        // If world_units_per_pixel is higher than the threshold, we need to stop drawing RR nodes.
+        draw_state->rr_decluttered = world_units_per_pixel > DRAW_RR_MAX_WORLD_UNITS_PER_PIXEL;
     } else {
-        // Currently this branch will never be called, since enable_decluttering hasn't been wired to a UI button.
-        draw_state->declutter_rr = false;
+        // Currently this branch will never be called, since enable_rr_decluttering hasn't been wired to any UI button.
+        draw_state->rr_decluttered = false;
     }
 
     g->set_line_dash(ezgl::line_dash::none);
@@ -87,27 +82,27 @@ void draw_rr(ezgl::renderer* g) {
         bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
         bool node_highlighted = draw_state->draw_rr_node[inode].node_highlighted;
 
-        // Highlighted nodes should always be drawn, even when decluttering is on.
+        // Highlighted nodes should always be drawn, even when the normal ones are decluttered.
         if (!node_highlighted) {
             // Apply color to the node
             draw_state->draw_rr_node[inode].color = node_colors.at(node_type);
 
-            // Don't draw if decluttering is on
-            if (draw_state->declutter_rr) {
+            // Don't draw if already decluttered.
+            if (draw_state->rr_decluttered) {
                 continue;
             }
 
-            // Don't Draw channel nodes if disabled
+            // Don't draw channel nodes if disabled.
             else if ((node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) && (!draw_state->draw_channel_nodes)) {
                 continue;
             }
 
-            // Don't Draw inter-cluster pins if disabled
+            // Don't draw inter-cluster pins if disabled.
             else if (inter_cluster_node && !draw_state->draw_inter_cluster_pins && (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN)) {
                 continue;
             }
 
-            // Don't Draw intra-cluster nodes if disabled
+            // Don't draw intra-cluster nodes if disabled.
             else if (!inter_cluster_node && !draw_state->draw_intra_cluster_nodes) {
                 continue;
             }
@@ -294,8 +289,8 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
 
         // Determine whether to draw the edge based on user options
 
-        // If decluttering is on, don't draw any edges.
-        if (draw_state->declutter_rr) {
+        // Don't draw any edges if already decluttered.
+        if (draw_state->rr_decluttered) {
             draw_edge = false;
         }
         // PIN_TO_OPIN and OPIN_TO_OPIN edges are intra-cluster edges, so don't draw if the intra-cluster edges option is disabled.
@@ -665,8 +660,8 @@ bool highlight_rr_nodes(float x, float y) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     // The user cannot select any RR nodes if RR drawing is turned off or decluttered. Doing so avoid processing all the RR nodes and saves time.
-    if (!draw_state->show_rr || draw_state->declutter_rr) {
-        application.refresh_drawing();
+    if (!draw_state->show_rr || draw_state->rr_decluttered) {
+        application->refresh_drawing();
         // After we return false, the caller will check if the mouse clicked on a block.
         // There can be cases where the mouse actually clicked on an RR node, and processing blocks may seem unnecessary.
         // But since the number of RR nodes is much greater than the number of blocks, this way is still more efficient.

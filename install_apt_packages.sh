@@ -35,9 +35,24 @@ packages_to_install+=(
 )
 
 # Required for graphics
+# GL/EGL/xkb runtime that the Qt6 GUI links against; the Qt6 SDK itself is
+# provisioned separately by dev/ensure_qt6_sdk.sh.
+# The libxcb-* packages are runtime dependencies of Qt's xcb (X11) platform
+# plugin (libqxcb.so). Without them the GUI aborts at startup with "Could not
+# load the Qt platform plugin xcb" (the loader reports only the first missing
+# one, typically libxcb-cursor0, which Qt has required since 6.5).
 packages_to_install+=(
-    libgtk-3-dev
-    libx11-dev
+    libxkbcommon-dev
+    libgl-dev
+    libegl-dev
+    libopengl0
+    libegl-mesa0
+    libgl1-mesa-dri
+    libxcb-cursor0
+    libxcb-icccm4
+    libxcb-image0
+    libxcb-keysyms1
+    libxcb-render-util0
 )
 
 # Required for parmys front-end from https://github.com/YosysHQ/yosys

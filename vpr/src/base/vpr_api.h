@@ -185,29 +185,19 @@ void vpr_setup_vpr(t_options* Options,
                    t_noc_opts* NocOpts,
                    t_server_opts* ServerOpts,
                    t_det_routing_arch& RoutingArch,
-                   std::vector<t_lb_type_rr_node>** PackerRRGraph,
+                   std::vector<std::vector<t_lb_type_rr_node>>* PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
                    t_timing_inf* Timing,
                    bool* ShowGraphics,
                    int* GraphPause,
                    bool* SaveGraphics,
                    std::string* GraphicsCommands,
+                   std::string* RendererType,
                    t_power_opts* PowerOpts,
                    t_vpr_setup* vpr_setup);
 
 ///@brief Check inputs are reasonable
 void vpr_check_arch(const t_arch& Arch);
-
-///@brief Verify settings don't conflict or otherwise not make sense
-void vpr_check_setup(const t_packer_opts& PackerOpts,
-                     const t_placer_opts& PlacerOpts,
-                     const t_ap_opts& APOpts,
-                     const t_router_opts& RouterOpts,
-                     const t_server_opts& ServerOpts,
-                     const t_det_routing_arch& RoutingArch,
-                     const std::vector<t_segment_inf>& Segments,
-                     const t_timing_inf& Timing,
-                     const t_chan_width_dist& Chans);
 
 ///@brief Show current setup
 void vpr_show_setup(const t_vpr_setup& vpr_setup);

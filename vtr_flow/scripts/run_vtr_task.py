@@ -286,8 +286,6 @@ def vtr_command_main(arg_list, prog=None) -> int:
             print("\tfile: ", exception.filename)
     except VtrError as exception:
         print("Error:", exception.msg)
-    if __name__ == "main":
-        sys.exit(num_failed)
     return num_failed
 
 
@@ -507,4 +505,4 @@ def run_vtr_flow_process(queue, run_dirs, job, script) -> None:
 
 
 if __name__ == "__main__":
-    vtr_command_main(sys.argv[1:])
+    sys.exit(vtr_command_main(sys.argv[1:], prog=sys.argv[0]))

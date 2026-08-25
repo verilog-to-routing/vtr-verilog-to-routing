@@ -107,15 +107,12 @@ def configure_interdie_wires(
 
     Updates the upward and downward ``interdie_wire`` tags under the selected
     layout's ``interposer_cut``. The layout is selected by XPath so the same
-    logic can be reused for both ``auto_layout`` and sibling ``fixed_layout``
-    tags.
+    logic can be reused for any layout tag selected by XPath.
 
     Args:
         xml_root: Root element of the parsed architecture XML tree.
         layout_xpath: XPath selecting the layout element to update, such as
-            ``.//layout/auto_layout/`` or
-            ``.//layout/fixed_layout[@name='hecate_small']/``. A trailing slash
-            is optional.
+            ``.//layout/auto_layout/``. A trailing slash is optional.
         segment_length: Interposer wire segment length. This determines the
             offset values of the interdie_wire tag.
         csv_num: Number of inter-die wires instantiated at each switchblock location.
@@ -215,9 +212,6 @@ def generate_archs_for_row(
         configure_interposer_segment(xml_root, segment_length, mux_name)
         configure_scatter_gather_patterns(xml_root, segment_length, gather_n_val, scatter_n_val)
         configure_interdie_wires(xml_root, ".//layout/auto_layout/", segment_length, csv_num)
-        configure_interdie_wires(
-            xml_root, ".//layout/fixed_layout[@name='hecate_small']/", segment_length, csv_num
-        )
         write_arch(xml_tree, output_dir, arch_id, gather_n_val)
 
 

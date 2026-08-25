@@ -6,9 +6,9 @@
 #include "globals.h"
 #include "pathhelper.h"
 #include "telegramoptions.h"
-#include <gtk/gtk.h>
-
 #include <ezgl/application.hpp>
+
+#include <QCheckBox>
 
 namespace server {
 
@@ -134,21 +134,21 @@ void TaskResolver::process_draw_critical_path_task(ezgl::application* app, const
         server_ctx.crit_path_element_indexes = std::move(path_elements);
         server_ctx.draw_crit_path_contour = draw_path_contour;
 
-        // get GTK widgets
-        GtkSwitch* crit_path_switch = GTK_SWITCH(app->get_object("ToggleCritPath"));
-        GtkToggleButton* crit_path_flylines_button = GTK_TOGGLE_BUTTON(app->get_object("ToggleCritPathFlylines"));
-        GtkToggleButton* crit_path_routing_button = GTK_TOGGLE_BUTTON(app->get_object("ToggleCritPathRouting"));
-        GtkToggleButton* crit_path_delays_button = GTK_TOGGLE_BUTTON(app->get_object("ToggleCritPathDelays"));
+        // get widgets
+        SwitchButton* crit_path_switch = app->find_switch_button("ToggleCritPath");
+        QCheckBox* crit_path_flylines_button = app->find_check_box("ToggleCritPathFlylines");
+        QCheckBox* crit_path_routing_button = app->find_check_box("ToggleCritPathRouting");
+        QCheckBox* crit_path_delays_button = app->find_check_box("ToggleCritPathDelays");
 
         if (crit_path_switch && crit_path_flylines_button && crit_path_routing_button && crit_path_delays_button) {
             bool draw_flylines = (high_light_mode.find("flylines") != std::string::npos);
             bool draw_routing = (high_light_mode.find("routing") != std::string::npos);
             bool draw_delays = (high_light_mode.find("delays") != std::string::npos);
 
-            gtk_switch_set_active(crit_path_switch, TRUE);
-            gtk_toggle_button_set_active(crit_path_flylines_button, draw_flylines);
-            gtk_toggle_button_set_active(crit_path_routing_button, draw_routing);
-            gtk_toggle_button_set_active(crit_path_delays_button, draw_delays);
+            crit_path_switch->setChecked(true);
+            crit_path_flylines_button->setChecked(draw_flylines);
+            crit_path_routing_button->setChecked(draw_routing);
+            crit_path_delays_button->setChecked(draw_delays);
             task->set_success();
         } else {
             std::string msg{"Cannot find critical path widgets. Was the UI layout changed?"};

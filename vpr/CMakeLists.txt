@@ -19,16 +19,16 @@ set(GRAPHICS_DEFINES "")
 
 if (VPR_USE_EZGL STREQUAL "on")
     message(STATUS "EZGL: graphics enabled")
-    set(
-        RESOURCE_LIST
-        # Strip all the whitespace characters from ui file
-        STRIPBLANKS main.ui
-    )
 
-    list(APPEND CMAKE_MODULE_PATH
-         ${CMAKE_CURRENT_SOURCE_DIR}/../libs/EXTERNAL/libezgl/gcr-cmake/macros)
-
-    include(GlibCompileResourcesSupport)
+    # Qt flow: enable CMAKE_AUTORCC so any .qrc added as a target source
+    # is compiled automatically by rcc (same mechanism as libezgl).
+    # Version floor matches the root discovery (older Qt6 has QRhi bugs).
+    # QRhi is available since Qt 6.7, but even Qt 6.8 has bugs, so the floor
+    # is set higher. VTR_QT_MIN_VERSION is set in the top-level CMakeLists.
+    find_package(Qt6 ${VTR_QT_MIN_VERSION} REQUIRED COMPONENTS Core)
+    set(CMAKE_AUTORCC ON)
+    # Prevent Qt's 'emit' macro from conflicting with TBB headers
+    add_definitions(-DQT_NO_EMIT)
 else()
     list(APPEND GRAPHICS_DEFINES "-DNO_GRAPHICS")
     message(STATUS "EZGL: graphics disabled")
@@ -75,14 +75,18 @@ add_library(libvpr STATIC
              ${LIB_SOURCES}
 )
 
-
 target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
 
 
 # Find if Eigen is installed. Eigen is used within the Analytical Solver of the
 # Analytical Placement flow. If Eigen is not installed, certain solvers cannot
 # be used.
-find_package(Eigen3 NO_MODULE)
+# First try with version constraint; fall back to unversioned search to support
+# Eigen 5.x (which does not declare compatibility with the 3.x series).
+find_package(Eigen3 3.3 NO_MODULE QUIET)
+if(NOT TARGET Eigen3::Eigen)
+    find_package(Eigen3 NO_MODULE QUIET)
+endif()
 if (TARGET Eigen3::Eigen)
     target_link_libraries (libvpr Eigen3::Eigen)
     target_compile_definitions(libvpr PUBLIC -DEIGEN_INSTALLED)
@@ -133,34 +137,9 @@ if (VPR_USE_EZGL STREQUAL "on")
     target_link_libraries(libvpr
 			     ezgl)
 
-    compile_gresources(
-      # input: the name of our resources
-      RESOURCE_FILE
-      # output: the filename of the generated XML file
-      XML_OUT
-      # generate C code to be compiled with our program
-      TYPE
-        EMBED_C
-      # specify the name of the C file that is generated
-      TARGET
-        resources.C
-      # specify the resource prefix (used in the code)
-      PREFIX
-        /ezgl
-      # input: specify the list of files to compile into resources
-      RESOURCES
-        ${RESOURCE_LIST}
-    )
-
-
-    add_custom_target(
-      resource ALL
-      DEPENDS
-        ${RESOURCE_FILE}
-    )
-
-    #Create the executable with resources
-    list(APPEND EXEC_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/resources.C)
+    # Qt: add vpr.qrc to the initial source list so CMAKE_AUTORCC processes it.
+    # Must be in add_executable's source list, not added via target_sources later.
+    list(APPEND EXEC_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/vpr.qrc)
 
 endif()
 
@@ -248,8 +227,8 @@ endif()
 #Configure the build to use the selected engine
 if (VPR_USE_EXECUTION_ENGINE STREQUAL "tbb")
     target_compile_definitions(libvpr PRIVATE VPR_USE_TBB)
-    target_link_libraries(libvpr tbb)
-    target_link_libraries(libvpr ${TBB_tbbmalloc_proxy_LIBRARY}) #Use the scalable memory allocator
+    target_link_libraries(libvpr TBB::tbb)
+    target_link_libraries(libvpr TBB::tbbmalloc_proxy) #Use the scalable memory allocator
     message(STATUS "VPR: will support parallel execution using '${VPR_USE_EXECUTION_ENGINE}'")
 elseif(VPR_USE_EXECUTION_ENGINE STREQUAL "serial")
     message(STATUS "VPR: will only support serial execution")
@@ -291,6 +270,9 @@ install(FILES ${LIB_HEADERS} DESTINATION include/libvpr)
 # Unit Tests
 #
 file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
+# Exclude GUI tests — they require Qt and are built separately via
+# add_subdirectory(test/gui) only when VPR_USE_EZGL is "on".
+list(FILTER TEST_SOURCES EXCLUDE REGEX ".*/test/gui/.*")
 add_executable(test_vpr ${TEST_SOURCES})
 target_link_libraries(test_vpr
                         Catch2::Catch2WithMain
@@ -300,4 +282,11 @@ add_test(NAME test_vpr
     COMMAND test_vpr --colour-mode ansi
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
     )
+
+#
+# GUI Tests — Qt-based GUI flow verification (separate from legacy tests)
+#
+if (VPR_USE_EZGL STREQUAL "on")
+    add_subdirectory(test/gui)
+endif()
 

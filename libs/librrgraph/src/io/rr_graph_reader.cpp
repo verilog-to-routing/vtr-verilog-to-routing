@@ -127,6 +127,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
         &arch->strings,
         schema_file_id,
         is_flat,
+        route_verbosity,
         device_model_warnings);
 
     if (vtr::check_file_name_extension(read_rr_graph_name, ".xml")) {

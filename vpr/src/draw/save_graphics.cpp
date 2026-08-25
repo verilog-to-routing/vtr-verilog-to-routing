@@ -6,50 +6,22 @@
 #include "save_graphics.h"
 #include "search_bar.h"
 
-extern ezgl::rectangle initial_world;
+#include <ezgl/qt/qtutils.hpp>
 
-void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer data) {
-    auto dialog = static_cast<GtkWidget*>(data);
+#include <QLineEdit>
+#include <QLabel>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QVBoxLayout>
 
-    if (response_id == GTK_RESPONSE_ACCEPT) {
-        //user clicked on the save button
-
-        GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-        GList* list_of_widgets = gtk_container_get_children(GTK_CONTAINER(content_area));
-        GtkWidget* combo_box = NULL;
-        GtkWidget* text_entry = NULL;
-        gchar* combo_box_content = NULL;
-        std::string file_name;
-        std::string extension;
-
-        // loop through the list to find the combo box and the text entry
-        GList* current = list_of_widgets;
-        while (current != NULL) {
-            GList* next = current->next;
-            if (strcmp(gtk_widget_get_name(static_cast<GtkWidget*>(current->data)), "file_name_text_entry") == 0) {
-                // found text entry
-                text_entry = static_cast<GtkWidget*>(current->data);
-            } else if (strcmp(gtk_widget_get_name(static_cast<GtkWidget*>(current->data)), "file_name_combo_box") == 0) {
-                // found combo box
-                combo_box = static_cast<GtkWidget*>(current->data);
-            }
-            current = next;
-        }
-
-        // get the data from the text entry and combo box
-        file_name = gtk_entry_get_text(GTK_ENTRY(text_entry));
-        combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_box));
-        extension = combo_box_content;
-
-        //save the graphics
+void save_graphics_from_button(QDialog* dialog) {
+    QLineEdit* text_entry = dialog->findChild<QLineEdit*>("file_name_text_entry");
+    QComboBox* combo_box = dialog->findChild<QComboBox*>("file_name_combo_box");
+    if (text_entry && combo_box) {
+        std::string file_name = text_entry->text().toStdString();
+        std::string extension = combo_box->currentText().toStdString();
         save_graphics(extension, file_name);
-
-        // free dynamically allocated variables
-        g_list_free(list_of_widgets);
-        g_free(combo_box_content);
     }
-    // free widget
-    gtk_widget_destroy(dialog);
 }
 
 void save_graphics(std::string extension, std::string file_name) {
@@ -58,19 +30,30 @@ void save_graphics(std::string extension, std::string file_name) {
         extension = std::string(extension.begin() + 1, extension.end());
     }
 
-    auto canvas = application.get_canvas(application.get_main_canvas_id());
+    auto canvas = application->get_canvas(application->get_main_canvas_id());
+
+    // Use the CURRENT camera's world rectangle for the output aspect ratio,
+    // not the initial-load world. This way the saved file shows what the
+    // user is currently looking at, with their tiles preserved at the
+    // correct world aspect (e.g., square tiles stay square). Using the
+    // initial-load world produces a distorted image whenever the user has
+    // zoomed or panned to a non-square sub-region.
+    const ezgl::rectangle current_world = canvas->get_camera().get_world();
+    const double aspect_w = current_world.width();
+    const double aspect_h = current_world.height();
 
     bool result = true;
 
     file_name = file_name + "." + extension;
     if (extension == "pdf") {
-        result = canvas->print_pdf(file_name.c_str(), initial_world.width(), initial_world.height());
+        result = canvas->print_pdf(file_name.c_str(), int(aspect_w), int(aspect_h));
     } else if (extension == "png") {
         constexpr int IMAGE_WIDTH_PIXELS = 2048;
-        int image_height_pixels = IMAGE_WIDTH_PIXELS * float(initial_world.height()) / initial_world.width();
+        const int image_height_pixels =
+            int(IMAGE_WIDTH_PIXELS * (aspect_h / aspect_w));
         result = canvas->print_png(file_name.c_str(), IMAGE_WIDTH_PIXELS, image_height_pixels);
     } else if (extension == "svg") {
-        result = canvas->print_svg(file_name.c_str(), initial_world.width(), initial_world.height());
+        result = canvas->print_svg(file_name.c_str(), int(aspect_w), int(aspect_h));
     } else {
         warning_dialog_box("Invalid file type");
     }
@@ -78,61 +61,47 @@ void save_graphics(std::string extension, std::string file_name) {
     VTR_ASSERT_MSG(result == true, "Failed to save graphics");
 }
 
-void save_graphics_dialog_box(GtkWidget* /*widget*/, ezgl::application* /*app*/) {
-    GObject* main_window;
-    GtkWidget* content_area;
-    GtkWidget* text_entry;
-    GtkWidget* name_label;
-    GtkWidget* type_label;
-    GtkWidget* dialog;
-    GtkWidget* combo_box;
+void save_graphics_dialog_box(QWidget* /*widget*/, ezgl::application* /*app*/) {
+    QWidget* main_window = application->find_widget(application->get_main_window_id().c_str());
+    QDialog* dialog = new QDialog(main_window);
+    dialog->setWindowTitle("Save Graphics Contents");
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
 
-    // get a pointer to the main window
-    main_window = application.get_object(application.get_main_window_id().c_str());
-
-    // create a dialog window modal
-    dialog = gtk_dialog_new_with_buttons("Save Graphics Contents",
-                                         GTK_WINDOW(main_window),
-                                         GTK_DIALOG_DESTROY_WITH_PARENT,
-                                         ("_Save"),
-                                         GTK_RESPONSE_ACCEPT,
-                                         ("_Cancel"),
-                                         GTK_RESPONSE_REJECT,
-                                         NULL);
+    auto* layout = new QVBoxLayout(dialog);
 
     // create elements
-    name_label = gtk_label_new("File name:");
-    text_entry = gtk_entry_new();
-    type_label = gtk_label_new("File format:");
-    combo_box = gtk_combo_box_text_new();
+    auto* name_label = new QLabel("File name:");
+    auto* text_entry = new QLineEdit;
+    auto* type_label = new QLabel("File format:");
+    auto* combo_box = new QComboBox;
 
     // set name for text entry and combo box for later data extraction
-    gtk_widget_set_name(text_entry, "file_name_text_entry");
-    gtk_widget_set_name(combo_box, "file_name_combo_box");
+    text_entry->setObjectName("file_name_text_entry");
+    combo_box->setObjectName("file_name_combo_box");
 
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_box), "pdf"); // index 0
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_box), "png"); // index 1
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_box), "svg"); // index 2
+    combo_box->addItem("pdf"); // index 0
+    combo_box->addItem("png"); // index 1
+    combo_box->addItem("svg"); // index 2
 
     // set default values
-    gtk_combo_box_set_active((GtkComboBox*)combo_box, 0);      // default set to pdf which has an index 0
-    gtk_entry_set_text((GtkEntry*)text_entry, "vpr_graphics"); // default text set to vpr_graphics
+    combo_box->setCurrentIndex(0);
+    text_entry->setText("vpr_graphics");
 
-    // attach elements to the content area of the dialog
-    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-    gtk_container_add(GTK_CONTAINER(content_area), name_label);
-    gtk_container_add(GTK_CONTAINER(content_area), text_entry);
-    gtk_container_add(GTK_CONTAINER(content_area), type_label);
-    gtk_container_add(GTK_CONTAINER(content_area), combo_box);
+    layout->addWidget(name_label);
+    layout->addWidget(text_entry);
+    layout->addWidget(type_label);
+    layout->addWidget(combo_box);
 
-    // show the label & child widget of the dialog
-    gtk_widget_show_all(dialog);
+    auto* buttonBox = new QDialogButtonBox(
+        QDialogButtonBox::Save | QDialogButtonBox::Cancel, dialog);
+    layout->addWidget(buttonBox);
+    QObject::connect(buttonBox, &QDialogButtonBox::accepted, dialog, [dialog]() {
+        save_graphics_from_button(dialog);
+        dialog->accept();
+    });
+    QObject::connect(buttonBox, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
 
-    g_signal_connect_swapped(GTK_DIALOG(dialog),
-                             "response",
-                             G_CALLBACK(save_graphics_from_button),
-                             GTK_DIALOG(dialog));
-    return;
+    dialog->show();
 }
 
 #endif /* NO_GRAPHICS */

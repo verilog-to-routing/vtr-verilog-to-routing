@@ -39,7 +39,7 @@ jobs:
         rm -rf ./.??* || true
 
     # Checkout the VTR repo.
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -48,7 +48,6 @@ jobs:
       run: |
         make get_titan_benchmarks
         make get_ispd_benchmarks
-        ./dev/upgrade_vtr_archs.sh
         make get_symbiflow_benchmarks
         make get_zeroasic_rr_graphs
         make get_flat_placements
@@ -142,11 +141,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
 
-    - uses: actions/setup-python@v6
+    - uses: actions/setup-python@v7
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -157,7 +156,7 @@ jobs:
     - name: Install dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}
 

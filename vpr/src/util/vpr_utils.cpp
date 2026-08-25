@@ -803,7 +803,7 @@ const t_pb* find_memory_sibling(const t_pb* pb) {
     for (int isibling = 0; isibling < pb_type->parent_mode->num_pb_type_children; ++isibling) {
         const t_pb* sibling_pb = &memory_class_pb->child_pbs[pb->mode][isibling];
 
-        if (sibling_pb->name != nullptr) {
+        if (!sibling_pb->name.empty()) {
             return sibling_pb;
         }
     }
@@ -1280,16 +1280,13 @@ void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap) {
 
     const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
-    if (pb->name) {
-        free(pb->name);
-        pb->name = nullptr;
-    }
+    pb->name.clear();
 
     if (pb_type->blif_model == nullptr) {
         int mode = pb->mode;
         for (int i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
             for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
-                if (pb->child_pbs[i][j].name != nullptr || pb->child_pbs[i][j].child_pbs != nullptr) {
+                if (!pb->child_pbs[i][j].name.empty() || pb->child_pbs[i][j].child_pbs != nullptr) {
                     free_pb(&pb->child_pbs[i][j], atom_pb_bimap);
                 }
             }
@@ -1342,15 +1339,15 @@ void free_pb_stats(t_pb* pb) {
  *                                                                                     *
  ***************************************************************************************/
 std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line) {
-
     if (vtr::StringToken(src_string).split(" \t\n").size() > 1) {
         VPR_THROW(VPR_ERROR_ARCH,
-                  "Only a single port pin range specification allowed for direct connect (was: '%s')", src_string);
+                  "Only a single port pin range specification allowed for direct connect (was: '%.*s')",
+                  static_cast<int>(src_string.length()), src_string.data());
     }
 
     // parse out the pb_type and port name, possibly pin_indices
     if (src_string.find('[') == std::string_view::npos) {
-        /* Format "pb_type_name.port_name" */
+        // Format "pb_type_name.port_name"
         const int start_pin_index = -1;
         const int end_pin_index = -1;
 
@@ -1365,48 +1362,63 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
             return {start_pin_index, end_pin_index, pb_type_name, port_name};
         } else {
             VTR_LOG_ERROR(
-                "[LINE %d] Invalid pin - %s, name should be in the format "
+                "[LINE %d] Invalid pin - %.*s, name should be in the format "
                 "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
                 "The end_pin_index and start_pin_index can be the same.\n",
-                line, src_string);
+                line, static_cast<int>(src_string.length()), src_string.data());
             exit(1);
         }
     } else {
-        /* Format "pb_type_name.port_name[end_pin_index:start_pin_index]" */
+        // Format "pb_type_name.port_name[end_pin_index:start_pin_index]" or "pb_type_name.port_name[pin_index]"
         std::string source_string{src_string};
 
         // Replace '.' and '[' characters with ' '
         std::ranges::replace_if(source_string, [](char c) noexcept { return c == '.' || c == '[' || c == ':' || c == ']'; }, ' ');
 
+        // Whether a colon-separated range was given, e.g. "port[end:start]" vs. a
+        // single pin index "port[pin]" (checked before ':' is replaced with a space above).
+        const bool has_colon = src_string.find(':') != std::string_view::npos;
+
         std::istringstream source_iss(source_string);
         int start_pin_index, end_pin_index;
         std::string pb_type_name, port_name;
 
-        if (source_iss >> pb_type_name >> port_name >> end_pin_index >> start_pin_index) {
+        bool parsed_ok = false;
+        if (source_iss >> pb_type_name >> port_name >> end_pin_index) {
+            bool parsed_start = static_cast<bool>(source_iss >> start_pin_index);
+            if (has_colon && parsed_start) {
+                parsed_ok = true;
+            } else if (!has_colon && !parsed_start) {
+                // A single pin index (no ':') means start and end are the same pin.
+                start_pin_index = end_pin_index;
+                parsed_ok = true;
+            }
+        }
 
+        if (parsed_ok) {
             if (end_pin_index < 0 || start_pin_index < 0) {
                 VTR_LOG_ERROR(
-                    "[LINE %d] Invalid pin - %s, the pin_index in "
+                    "[LINE %d] Invalid pin - %.*s, the pin_index in "
                     "[end_pin_index:start_pin_index] should not be a negative value.\n",
-                    line, src_string);
+                    line, static_cast<int>(src_string.length()), src_string.data());
                 exit(1);
             }
 
             if (end_pin_index < start_pin_index) {
                 VTR_LOG_ERROR(
-                    "[LINE %d] Invalid from_pin - %s, the end_pin_index in "
+                    "[LINE %d] Invalid from_pin - %.*s, the end_pin_index in "
                     "[end_pin_index:start_pin_index] should not be less than start_pin_index.\n",
-                    line, src_string);
+                    line, static_cast<int>(src_string.length()), src_string.data());
                 exit(1);
             }
 
             return {start_pin_index, end_pin_index, pb_type_name, port_name};
         } else {
             VTR_LOG_ERROR(
-                "[LINE %d] Invalid pin - %s, name should be in the format "
+                "[LINE %d] Invalid pin - %.*s, name should be in the format "
                 "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
                 "The end_pin_index and start_pin_index can be the same.\n",
-                line, src_string);
+                line, static_cast<int>(src_string.length()), src_string.data());
             exit(1);
         }
     }
@@ -1423,7 +1435,9 @@ static std::pair<int, int> convert_switch_index(RRSwitchId rr_switch_id) {
     VTR_ASSERT(rr_switch_id.is_valid());
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
-    for (int iswitch = 0; iswitch < (int)device_ctx.arch_switch_inf.size(); iswitch++) {
+    // Loop over switch_fanin_remap, not arch_switch_inf: the flat router and tileable (crr)
+    // generator append internal switches to switch_fanin_remap past the arch switch count.
+    for (int iswitch = 0; iswitch < (int)device_ctx.switch_fanin_remap.size(); iswitch++) {
         for (auto itr = device_ctx.switch_fanin_remap[iswitch].begin(); itr != device_ctx.switch_fanin_remap[iswitch].end(); itr++) {
             if (itr->second == rr_switch_id) {
                 return {iswitch, itr->first};
@@ -1431,7 +1445,6 @@ static std::pair<int, int> convert_switch_index(RRSwitchId rr_switch_id) {
         }
     }
 
-    VTR_LOG_ERROR("\n\nerror converting switch index ! \n\n");
     return {-1, -1};
 }
 
@@ -1464,6 +1477,11 @@ void print_switch_usage() {
         return;
     }
 
+    // convert_switch_index returns an index into switch_fanin_remap, which is used below
+    // to index switch_fanin_count (sized to all_sw_inf). The two are kept in sync during
+    // rr-graph generation; assert that here so the indexing stays in bounds.
+    VTR_ASSERT(device_ctx.switch_fanin_remap.size() <= device_ctx.all_sw_inf.size());
+
     std::vector<std::map<int, int>> switch_fanin_count(device_ctx.all_sw_inf.size());
     std::vector<std::map<int, float>> switch_fanin_delay(device_ctx.all_sw_inf.size());
     // a node can have multiple inward switches, so
@@ -1489,6 +1507,10 @@ void print_switch_usage() {
         for (const RRSwitchId rr_switch_id : inward_switch_inf[rr_id] | std::views::keys) {
             float Tdel = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
             const auto [arch_switch_id, fanin] = convert_switch_index(rr_switch_id);
+            // convert_switch_index scans the full switch_fanin_remap, which is kept the
+            // same size as all_sw_inf, so every in-use rr_switch maps to a valid index.
+            VTR_ASSERT_MSG(arch_switch_id >= 0 && arch_switch_id < (int)switch_fanin_count.size(),
+                           "converted arch switch index out of range");
             if (!switch_fanin_count[arch_switch_id].contains(fanin)) {
                 switch_fanin_count[arch_switch_id][fanin] = 0;
             }

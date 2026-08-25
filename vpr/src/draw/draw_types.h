@@ -20,6 +20,7 @@
 
 #include <vector>
 #include <memory>
+#include <optional>
 #include "timing_info_fwd.h"
 #include "vtr_util.h"
 #include "vpr_types.h"
@@ -166,7 +167,40 @@ struct t_draw_layer_display {
     int alpha = 255;
 };
 
+/**
+ * @brief The drawing coordinates of the beginning and end of a flyline segment.
+ * 
+ * Includes a special boolean to tell if the two points are mapped to the same drawing coordinates.
+ */
+struct t_flyline_draw_coords {
+    /// True when start and end are mapped to the same drawing coordinates.
+    bool collapse_to_point = false;
+    ezgl::point2d start;
+    ezgl::point2d end;
+};
+
+/**
+ * @brief Structure used to allow the graphics to proceed by a custom number of steps and then pause for user interaction.
+ * 
+ * This structure corresponds to the "Proceed by Step" section under the "Misc." menu in the UI widget.
+ * 
+ * The definition of step varies with the flow stage during which this mode is used.
+ * During global analytical placement, step refers to every solver/legalizer iteration.
+ * During detailed simulated-annealing placement, step refers to every temperature update.
+ * During routing, step refers to every router iteration.
+ */
+struct t_proceed_by_step {
+    ///@brief If this mode is enabled. Tied to the "Proceed by Step" toggle switch in the Misc. menu.
+    bool enabled = false;
+    ///@brief The number of steps the graphics should proceed before it pauses for user interaction. Set by the user.
+    unsigned int steps_to_proceed = 1;
+    ///@brief The current count of steps.
+    /// Used for comparison with steps_to_proceed at every update_screen() to determine if the graphics should pause.
+    unsigned int step_counter = 0;
+};
+
 struct PartialPlacement;
+class AtomBlockAPBlockLookup;
 
 /**
  * @brief Structure used to store variables related to highlighting/drawing
@@ -182,19 +216,6 @@ struct PartialPlacement;
 struct t_draw_state {
     /// @brief What to draw on the screen (ROUTING, PLACEMENT, NO_PICTURE)
     e_pic_type pic_on_screen = e_pic_type::NO_PICTURE;
-
-    /**
-     * @brief This enables level of detail drawing
-     * 
-     * (e.g. stop drawing RR nodes, dynamically reduce number of block internals
-     *  and critical path delays when zoomed out).
-     * 
-     * TODO: Currently this is always on, and wiring it to a UI button is required in the future.
-     */
-    bool enable_decluttering = true;
-
-    ///@brief This dynamically sets whether to stop drawing RR nodes based on the current zoom level.
-    bool declutter_rr = false;
 
     ///@brief Whether to draw nets or not
     bool show_nets = false;
@@ -213,7 +234,8 @@ struct t_draw_state {
 
     ///@brief Whether to show crit path
     bool show_crit_path = false;
-
+    ///@brief Number of critical paths to be drawn simultaneously on screen.
+    std::size_t num_crit_paths = 1;
     bool show_crit_path_flylines = false;
     bool show_crit_path_delays = false;
     bool show_crit_path_routing = false;
@@ -240,6 +262,17 @@ struct t_draw_state {
 
     ///@brief Controls drawing of routing resources on screen.
     bool show_rr = false;
+    /**
+     * @brief Enables level of detail drawing for routing resources
+     * 
+     * When enabled, level of detail algorithms check if the current zoom level is too high to draw routing resources meaningfully.
+     * If so, the "rr_decluttered" flag is set and the drawing of all routing resources will be skipped,
+     * 
+     * TODO: Currently this is always on, and wiring it to a UI button is required in the future.
+     */
+    bool enable_rr_decluttering = true;
+    ///@brief Tells the program that the drawing of routing resources is toggled but still skipped because the zoom level is too high.
+    bool rr_decluttered = false;
 
     bool draw_channel_nodes = false;
     bool draw_inter_cluster_pins = false;
@@ -269,6 +302,21 @@ struct t_draw_state {
 
     ///@brief If 0, no internal drawing is shown. Otherwise, indicates how many levels of sub-pbs to be drawn
     int show_blk_internal = 0;
+
+    ///@brief True if all block internals were drawn in the previous full redraw.
+    bool no_blk_internal_decluttered_yet = false;
+    ///@brief True if only the CLBs (top-level blocks) were drawn in the previous full redraw.
+    bool no_blk_internal_drawn_yet = false;
+
+    ///@brief Zoom threshold (world units / pixel) below which all block internals could be drawn, for the previous full redraw only.
+    double all_blk_internals_drawn_threshold = 0;
+    ///@brief Zoom threshold (world units / pixel) above which only the CLBs (top-level blocks) could be drawn, for the previous full redraw only.
+    double only_clbs_drawn_threshold = 0;
+
+    ///@brief Area of the smallest block internal recorded in the previous full redraw, defined in world coordinates.
+    double min_blk_internal_area = 0;
+    ///@brief Area of the largest block internal (non-CLB) recorded in the previous full redraw, defined in world coordinates.
+    double max_blk_internal_area = 0;
 
     ///@brief Whether graphics are enabled
     bool show_graphics = false;
@@ -312,8 +360,26 @@ struct t_draw_state {
 
     std::string graphics_commands;
 
-    ///@brief If we should pause for user interaction (requested by user)
-    bool forced_pause = false;
+    ///@brief Tokenized form of `graphics_commands` (used for graphics
+    /// scripting); one inner vector per `;`-separated command. Built lazily by
+    /// run_graphics_commands on the first call (when this vector is still
+    /// empty); `graphics_commands` is set once at init and never mutated, so a
+    /// single parse is sufficient.
+    std::vector<std::vector<std::string>> parsed_graphics_cmds;
+
+    ///@brief Index of the next command to run in `parsed_graphics_cmds` (an
+    /// index into the outer `parsed_graphics_cmds` vector, i.e. which
+    /// `;`-separated command is next). Persists across run_graphics_commands()
+    /// invocations so that `wait_for_stage` barriers can split a script across
+    /// multiple update_screen() calls.
+    size_t graphics_cmd_index = 0;
+
+    ///@brief Rendering backend: "immediate", "deferred", or "rhi"
+    std::string renderer_type = "rhi";
+
+    ///@brief A mode that controls if the graphics can proceed by a custom number of steps
+    /// (e.g. temperature change, routing iteration) and then pause for user interaction.
+    t_proceed_by_step proceed_by_step;
 
     int sequence_number = 0;
 
@@ -424,15 +490,23 @@ struct t_draw_state {
     /**
      * @brief Stores a temporary reference to the Analytical Placement partial placement (best placement).
      * @details This is set by the AP global placer just before drawing and cleared immediately after.
-     *          Only a reference is stored to avoid copying and lifetime issues.
      */
-    std::optional<std::reference_wrapper<const PartialPlacement>> ap_partial_placement_ref_;
+    const PartialPlacement* ap_partial_placement_ptr_;
+
+    /**
+     * @brief Stores a temporary reference to the atom block to AP block lookup.
+     * @details This is set by the AP global placer and has the same lifetime as the partial placement reference.
+     */
+    const AtomBlockAPBlockLookup* atom_block_ap_block_lookup_ptr_;
 
   public:
-    // Set/clear/get the AP partial placement reference used during AP drawing
-    void set_ap_partial_placement_ref(const PartialPlacement& p) { ap_partial_placement_ref_ = std::cref(p); }
-    void clear_ap_partial_placement_ref() { ap_partial_placement_ref_.reset(); }
-    const PartialPlacement* get_ap_partial_placement_ref() const { return ap_partial_placement_ref_ ? &ap_partial_placement_ref_->get() : nullptr; }
+    // Set/clear/get the analytical placement variable references used during AP drawing.
+    void set_ap_partial_placement_ptr(const PartialPlacement* p) { ap_partial_placement_ptr_ = p; }
+    void clear_ap_partial_placement_ptr() { ap_partial_placement_ptr_ = nullptr; }
+    const PartialPlacement* get_ap_partial_placement_ptr() const { return ap_partial_placement_ptr_; }
+    void set_atom_block_ap_block_lookup_ptr(const AtomBlockAPBlockLookup* lookup) { atom_block_ap_block_lookup_ptr_ = lookup; }
+    void clear_atom_block_ap_block_lookup_ptr() { atom_block_ap_block_lookup_ptr_ = nullptr; }
+    const AtomBlockAPBlockLookup* get_atom_block_ap_block_lookup_ptr() const { return atom_block_ap_block_lookup_ptr_; }
 };
 
 /* For each cluster type, this structure stores drawing

@@ -120,8 +120,10 @@ elseif(VTR_IPO_BUILD STREQUAL "auto")
         set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
     else()
         message(STATUS "Building with IPO: off (auto)")
-        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fPIC")
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fPIC")
+        if(NOT MSVC)
+            set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fPIC")
+            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fPIC")
+        endif()
     endif()
 else()
     message(STATUS "Building with IPO: off")
@@ -137,9 +139,10 @@ if(NOT MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3")
 endif()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-
+if(NOT MSVC)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+endif()
 #
 # Warning flags
 #
@@ -239,9 +242,12 @@ endforeach()
 # after this line will have these warnings suppressed at link time.
 if (CMAKE_INTERPROCEDURAL_OPTIMIZATION)
     message(STATUS "IPO: Suppressing known VTR warnings.")
-    add_link_options(-Wno-alloc-size-larger-than  # libarchfpga allocates C-style arrays using integers.
-                     -Wno-stringop-overflow       # EXTERNAL/capnproto has some string overflow warnings.
-                     )
+    # These warning flags are GCC-specific; skip on Clang (e.g. Apple Clang on macOS)
+    if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_link_options(-Wno-alloc-size-larger-than  # libarchfpga allocates C-style arrays using integers.
+                         -Wno-stringop-overflow       # EXTERNAL/capnproto has some string overflow warnings.
+                         )
+    endif()
 endif()
 
 #
@@ -251,8 +257,13 @@ endif()
 set(SANITIZE_FLAGS "")
 if(VTR_ENABLE_SANITIZE)
     #Enable sanitizers
-    # -fuse-ld=gold force the gold linker to be used (required for sanitizers, but not enabled by default on some systems)
-    set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fuse-ld=gold -static-libasan")
+    if(APPLE)
+        # macOS/Apple Clang: no -fuse-ld=gold, no -static-libasan, no leak sanitizer
+        set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=undefined")
+    else()
+        # Linux/GCC: use gold linker and static libasan
+        set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fuse-ld=gold -static-libasan")
+    endif()
     message(STATUS "SANITIZE_FLAGS: ${SANITIZE_FLAGS}")
 endif()
 
@@ -277,6 +288,10 @@ set(COVERAGE_FLAGS "")
 if(VTR_ENABLE_COVERAGE)
     #Enable gcov
     set(COVERAGE_FLAGS "-g -ftest-coverage -fprofile-arcs")
+    # List form for target_compile_options / target_link_options consumers
+    # (e.g. libs/EXTERNAL/CMakeLists.txt scopes these to the ezgl submodule
+    # — see DEF-013 in vpr_gui_defects_discovered.rst).
+    set(COVERAGE_FLAGS_LIST -g -ftest-coverage -fprofile-arcs)
     message(STATUS "Coverage Flags: ${COVERAGE_FLAGS}")
 endif()
 
@@ -401,23 +416,97 @@ enable_testing()
 set(READLINE_FOUND FALSE)
 
 
-# set VPR_USE_EZGL in the root of VTR to decide whether to add
-# subdirectory of graphics library, which prevents users
-# without gtk/x11 libraries installed to build. VPR_USE_EZGL is
-# being used in both the vpr CMakeLists and libs/EXTERNAL CMakeLists.
+# ===========================================================================
+# Qt6 discovery for the VPR GUI (EZGL).
 #
-# check if GTK and X11 are installed and turn on/off graphics
-if (VPR_USE_EZGL STREQUAL "auto")
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(GTK3 QUIET gtk+-3.0)
-    pkg_check_modules(X11 QUIET x11)
+# Goal: a plain `make` finds Qt6 and the resulting binaries/tests run with NO
+# Qt environment variables (no LD_LIBRARY_PATH / QT_PLUGIN_PATH / QT6_HOME).
+#
+# Strategy:
+#   * Require Qt >= 6.9.3. QRhi is available since Qt 6.7, but even Qt 6.8 has
+#     rendering bugs, so the floor is set higher.
+#   * Prefer a SYSTEM Qt on the loader's default search path -> no RPATH needed
+#     and the binaries stay relocatable.
+#   * Otherwise fall back to a repo-local SDK provisioned by
+#     ./dev/ensure_qt6_sdk.sh (default <repo>/qt6, override with VTR_QT_PREFIX)
+#     and bake its lib dir into RPATH so the binaries still run with no env.
+#   * An explicit user CMAKE_PREFIX_PATH / Qt6_DIR always wins; RPATH is baked
+#     only when the chosen Qt lib dir is outside the default search path.
+# ===========================================================================
+set(VTR_QT_MIN_VERSION 6.9.3)
 
-    if(GTK3_FOUND AND X11_FOUND)
+# We knowingly depend on Qt private modules (QRhi / QShader via Qt6::GuiPrivate
+# in libezgl), which have no binary/source-compatibility guarantees. Silence
+# Qt's private-module warning here -- it must be set BEFORE the first
+# find_package(Qt6) so it is in scope for every Qt package load downstream,
+# including the libezgl subdirectory's find_package(Qt6 ... GuiPrivate).
+set(QT_NO_PRIVATE_MODULE_WARNING ON)
+
+if (NOT VPR_USE_EZGL STREQUAL "off")
+    # 1) System-first probe. This honors any explicit user override
+    #    (env CMAKE_PREFIX_PATH / Qt6_DIR, or a cached Qt6_DIR): an explicit
+    #    path always gets first crack here.
+    find_package(Qt6 ${VTR_QT_MIN_VERSION} QUIET COMPONENTS Core Gui Widgets)
+
+    # 2) Fall back to the repo-local SDK whenever the probe above did not find a
+    #    suitable Qt -- regardless of any env/cache override. The override had
+    #    its chance in step 1; if it didn't resolve a usable Qt6, a validated
+    #    repo-local SDK (./dev/ensure_qt6_sdk.sh) should still be used rather
+    #    than failing the build. (Previously a stale `Qt6_DIR-NOTFOUND` cache
+    #    entry or an unrelated CMAKE_PREFIX_PATH in the environment would
+    #    suppress this fallback and abort even though a valid SDK was present.)
+    if (NOT Qt6_FOUND)
+        set(_vtr_qt_prefix "$ENV{VTR_QT_PREFIX}")
+        if (NOT _vtr_qt_prefix)
+            set(_vtr_qt_prefix "${CMAKE_SOURCE_DIR}/qt6")
+        endif()
+        # aqt layout: <prefix>/<version>/gcc_64.
+        file(GLOB _vtr_qt_candidates "${_vtr_qt_prefix}/*/gcc_64")
+        list(SORT _vtr_qt_candidates)
+        list(REVERSE _vtr_qt_candidates)   # newest version first
+        foreach(_home ${_vtr_qt_candidates})
+            if (EXISTS "${_home}/lib/cmake/Qt6")
+                list(PREPEND CMAKE_PREFIX_PATH "${_home}")
+                message(STATUS "VTR: using repo-local Qt6 SDK at ${_home}")
+                break()
+            endif()
+        endforeach()
+        find_package(Qt6 ${VTR_QT_MIN_VERSION} QUIET COMPONENTS Core Gui Widgets)
+    endif()
+endif()
+
+# Resolve VPR_USE_EZGL (auto -> on/off) from whether a suitable Qt was found.
+# VPR_USE_EZGL decides whether the graphics subdirectory is added; it is read by
+# both the vpr CMakeLists and libs/EXTERNAL CMakeLists.
+if (VPR_USE_EZGL STREQUAL "auto")
+    if (Qt6_FOUND)
         set(VPR_USE_EZGL "on")
-        message(STATUS "VPR Graphics: Enabled")
+        message(STATUS "VPR Graphics: Enabled (Qt6 ${Qt6_VERSION} found)")
     else()
         set(VPR_USE_EZGL "off")
-        message(STATUS "VPR Graphics: Disabled (required libraries missing, on debian/ubuntu try: sudo apt install libgtk-3-dev libx11-dev")
+        message(STATUS "VPR Graphics: Disabled (no Qt6 >= ${VTR_QT_MIN_VERSION}; run ./dev/ensure_qt6_sdk.sh or install a system Qt6 if its version >= ${VTR_QT_MIN_VERSION})")
+    endif()
+endif()
+
+# Graphics explicitly requested but no suitable Qt -> fail loudly.
+if (VPR_USE_EZGL STREQUAL "on" AND NOT Qt6_FOUND)
+    message(FATAL_ERROR
+        "VPR_USE_EZGL=on but Qt6 >= ${VTR_QT_MIN_VERSION} was not found. "
+        "Run ./dev/ensure_qt6_sdk.sh to provision a repo-local Qt SDK, install a "
+        "system Qt6 >= ${VTR_QT_MIN_VERSION}, or pass -DCMAKE_PREFIX_PATH=<qt-prefix>.")
+endif()
+
+# Custom Mode: bake the Qt lib dir into RPATH so binaries run with no env.
+# Skipped for a system Qt (already on the default loader search path).
+if (Qt6_FOUND AND VPR_USE_EZGL STREQUAL "on")
+    # Qt6_DIR is <prefix>/lib/cmake/Qt6 -> its grandparent is the Qt lib dir.
+    get_filename_component(_qt_libdir "${Qt6_DIR}/../.." ABSOLUTE)
+    if (_qt_libdir MATCHES "^/usr/" OR _qt_libdir MATCHES "^/lib/")
+        message(STATUS "VTR: system Qt6 at ${_qt_libdir} (no RPATH baking)")
+    else()
+        list(APPEND CMAKE_BUILD_RPATH "${_qt_libdir}")
+        list(APPEND CMAKE_INSTALL_RPATH "${_qt_libdir}")
+        message(STATUS "VTR: baking custom Qt6 lib dir into RPATH: ${_qt_libdir}")
     endif()
 endif()
 

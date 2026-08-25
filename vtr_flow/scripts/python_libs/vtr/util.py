@@ -9,18 +9,64 @@ import subprocess
 import argparse
 import csv
 import os
+import shutil
 import signal
 
 from collections import OrderedDict
+from functools import lru_cache
 from pathlib import PurePath
 from pathlib import Path
 from typing import List, Tuple
 
-from prettytable import PrettyTable
-
 import vtr.error
 from vtr.error import CommandError
 from vtr import paths
+
+
+@lru_cache(maxsize=1)
+def _resolve_memory_tracking_cmd():
+    """
+    Return the argv prefix that tracks peak memory of a child process,
+    or ``None`` if no working implementation is available on this host.
+
+    Tracks DEF-006: ``time -v`` is a GNU coreutils extension. macOS BSD
+    ``/usr/bin/time`` does not accept ``-v`` and aborts immediately.
+    On macOS, GNU time is typically installed via Homebrew
+    ``coreutils`` and exposed as ``gtime``. We probe in order:
+
+      1. ``gtime -v`` (Homebrew coreutils on macOS, or distros that
+         install GNU time under that name)
+      2. ``/usr/bin/env time -v`` (Linux / any host where the default
+         ``time`` is GNU time)
+
+    The probe runs ``<candidate> -v true`` once and inspects the exit
+    code. Result is cached for the lifetime of the process.
+    """
+    candidates = []
+    if shutil.which("gtime"):
+        candidates.append(["gtime", "-v"])
+    candidates.append(["/usr/bin/env", "time", "-v"])
+
+    for cand in candidates:
+        try:
+            probe = subprocess.run(
+                cand + ["true"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+        except (OSError, FileNotFoundError):
+            continue
+        if probe.returncode == 0:
+            return cand
+
+    print(
+        "warning: GNU 'time -v' is unavailable on this host; per-stage memory "
+        "tracking is disabled. On macOS, install GNU coreutils "
+        "('brew install coreutils') to enable it.",
+        file=sys.stderr,
+    )
+    return None
 
 
 class RunDir:
@@ -102,6 +148,7 @@ class CommandRunner:
         self._valgrind = valgrind
         self._expect_fail = expect_fail
 
+    # pylint: disable=too-many-branches
     def run_system_command(
         self, cmd, temp_dir, log_filename=None, expected_return_code=0, indent_depth=0
     ):
@@ -133,27 +180,28 @@ class CommandRunner:
         cmd = memory_limit + cmd if self._max_memory_mb and check_cmd(memory_limit[0]) else cmd
 
         # Enable memory tracking?
-        memory_tracking = ["/usr/bin/env", "time", "-v"]
-        cmd = (
-            (
-                memory_tracking
-                + [
-                    "valgrind",
-                    "--leak-check=full",
-                    "--suppressions=" + str(paths.valgrind_supp),
-                    "--error-exitcode=1",
-                    "--errors-for-leak-kinds=none",
-                    "--track-origins=yes",
-                    "--log-file=valgrind.log",
-                    "--error-limit=no",
-                ]
-                + cmd
-                if self._valgrind
-                else memory_tracking + cmd
-            )
-            if self._track_memory and check_cmd(memory_tracking[0])
-            else cmd
-        )
+        # DEF-006: probe for a working GNU 'time -v' instead of hard-coding
+        # the GNU-only path; falls back to no tracking on hosts where it is
+        # unavailable (e.g. macOS without Homebrew coreutils).
+        memory_tracking = _resolve_memory_tracking_cmd() if self._track_memory else None
+        if memory_tracking is not None:
+            if self._valgrind:
+                cmd = (
+                    memory_tracking
+                    + [
+                        "valgrind",
+                        "--leak-check=full",
+                        "--suppressions=" + str(paths.valgrind_supp),
+                        "--error-exitcode=1",
+                        "--errors-for-leak-kinds=none",
+                        "--track-origins=yes",
+                        "--log-file=valgrind.log",
+                        "--error-limit=no",
+                    ]
+                    + cmd
+                )
+            else:
+                cmd = memory_tracking + cmd
 
         # Flush before calling subprocess to ensure output is ordered
         # correctly if stdout is buffered
@@ -269,29 +317,6 @@ def check_cmd(command):
     """
 
     return Path(command).exists()
-
-
-def pretty_print_table(file, border=False):
-    """Convert file to a pretty, easily read table"""
-    table = PrettyTable()
-    table.border = border
-    reader = None
-    with open(file, "r", encoding="utf-8") as csv_file:
-        reader = csv.reader(csv_file, delimiter="\t")
-        first = True
-        for row in reader:
-            row = [row_item.strip() + "\t" for row_item in row]
-            while row[-1] == "\t":
-                row = row[:-1]
-            if first:
-                table.field_names = list(row)
-                for head in list(row):
-                    table.align[head] = "l"
-                first = False
-            else:
-                table.add_row(row)
-    with open(file, "w+", encoding="utf-8") as out_file:
-        print(table, file=out_file)
 
 
 def write_tab_delimitted_csv(filepath, rows):

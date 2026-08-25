@@ -150,6 +150,8 @@ struct t_wireconn_scratchpad {
     std::vector<t_wire_switchpoint> potential_src_wires;
     std::vector<t_wire_switchpoint> potential_dest_wires;
     std::vector<t_wire_switchpoint> scratch_wires;
+    /// Memoized permutation formula results, reused across connections and switchblock locations
+    SbFormulaCache formula_cache;
 };
 
 /************ Function Declarations ************/
@@ -169,7 +171,8 @@ static void compute_wire_connections(const t_physical_tile_loc& sb_loc,
                                      vtr::RngContainer& rng,
                                      t_wireconn_scratchpad* scratchpad);
 
-/* ... sb_conn represents the 'coordinates' of the desired switch block connections */
+/* ... sb_conn represents the 'coordinates' of the desired switch block connections.
+ * permutations lists the permutation formulas for the from_side -> to_side pair of sb_conn */
 static void compute_wireconn_connections(e_directionality directionality,
                                          const t_chan_details& from_chan_details,
                                          const t_chan_details& to_chan_details,
@@ -180,7 +183,7 @@ static void compute_wireconn_connections(e_directionality directionality,
                                          e_rr_type to_chan_type,
                                          const t_wire_type_sizes& wire_type_sizes_from,
                                          const t_wire_type_sizes& wire_type_sizes_to,
-                                         const t_switchblock_inf& sb,
+                                         const std::vector<std::string>& permutations,
                                          const t_wireconn_inf& wireconn,
                                          t_sb_connection_map* sb_conns,
                                          vtr::RngContainer& rng,
@@ -199,6 +202,7 @@ static void compute_wireconn_connections(e_directionality directionality,
  *  @param switchpoint_order switchpoint order (fixed, shuffled) specified in the architecture file
  *  @param rng used to randomly shuffle switchpoint if required (shuffled order)
  *  @param output_wires collected wire indices that matches the specified types and switchpoints
+ *  @param scratch_wires Scratch buffer reused across calls to hold per-wire switchpoints while collecting.
  */
 static void get_switchpoint_wires(const t_chan_seg_details* chan_details,
                                   e_rr_type chan_type,
@@ -292,13 +296,13 @@ static void get_switchpoint_wires(const t_chan_seg_details* chan_details,
     std::vector<t_wire_switchpoint>& all_collected_wire_switchpoints = *output_wires;
     all_collected_wire_switchpoints.clear();
 
-    std::vector<t_wire_switchpoint>& collected_wire_switchpoints = *scratch_wires;
+    // Scratch buffer holding the wires of the current type that pass the direction filter,
+    // each paired with its switchpoint.
+    std::vector<t_wire_switchpoint>& wire_candidates = *scratch_wires;
 
     int seg_coord = (chan_type == e_rr_type::CHANY) ? y : x;
 
     for (const t_wire_switchpoints& wire_switchpoints : wire_switchpoints_vec) {
-        collected_wire_switchpoints.clear();
-
         std::string_view wire_type = wire_switchpoints.segment_name;
 
         if (wire_type_sizes.find(wire_type) == wire_type_sizes.end()) {
@@ -312,46 +316,47 @@ static void get_switchpoint_wires(const t_chan_seg_details* chan_details,
         int first_type_wire = wire_type_sizes.at(wire_type).start;
         int last_type_wire = first_type_wire + num_type_wires - 1;
 
-        // Walk through each wire segment of specified type and check whether it matches one
-        // of the specified switchpoints.
+        // Walk through each wire segment of specified type and compute its switchpoint once
+        wire_candidates.clear();
+        for (int iwire = first_type_wire; iwire <= last_type_wire; iwire++) {
+            Direction seg_direction = chan_details[iwire].direction();
+
+            // unidirectional wires going in the decreasing direction can have an outgoing edge
+            // only from the top or right switch block sides, and an incoming edge only if they are
+            // at the left or bottom sides (analogous for wires going in INC direction)
+            if (side == TOP || side == RIGHT) {
+                if (seg_direction == Direction::DEC && is_dest) {
+                    continue;
+                }
+                if (seg_direction == Direction::INC && !is_dest) {
+                    continue;
+                }
+            } else {
+                VTR_ASSERT(side == LEFT || side == BOTTOM);
+                if (seg_direction == Direction::DEC && !is_dest) {
+                    continue;
+                }
+                if (seg_direction == Direction::INC && is_dest) {
+                    continue;
+                }
+            }
+
+            int wire_switchpoint = get_switchpoint_of_wire(chan_type, chan_details[iwire], seg_coord, side);
+
+            wire_candidates.push_back({iwire, wire_switchpoint});
+        }
+
+        // Check which candidate wires belong to one of the specified switchpoints and collect them.
         // Note that we walk through the points in order, this ensures that returned switchpoints
         // match the order specified in the architecture, which we assume is a priority order specified
         // by the architect.
         for (int valid_switchpoint : wire_switchpoints.switchpoints) {
-            for (int iwire = first_type_wire; iwire <= last_type_wire; iwire++) {
-                Direction seg_direction = chan_details[iwire].direction();
+            for (const t_wire_switchpoint& wire_candidate : wire_candidates) {
+                if (wire_candidate.switchpoint != valid_switchpoint) continue;
 
-                // unidirectional wires going in the decreasing direction can have an outgoing edge
-                // only from the top or right switch block sides, and an incoming edge only if they are
-                // at the left or bottom sides (analogous for wires going in INC direction)
-                if (side == TOP || side == RIGHT) {
-                    if (seg_direction == Direction::DEC && is_dest) {
-                        continue;
-                    }
-                    if (seg_direction == Direction::INC && !is_dest) {
-                        continue;
-                    }
-                } else {
-                    VTR_ASSERT(side == LEFT || side == BOTTOM);
-                    if (seg_direction == Direction::DEC && !is_dest) {
-                        continue;
-                    }
-                    if (seg_direction == Direction::INC && is_dest) {
-                        continue;
-                    }
-                }
-
-                int wire_switchpoint = get_switchpoint_of_wire(chan_type, chan_details[iwire], seg_coord, side);
-
-                // Check if this wire belongs to one of the specified switchpoints; add it to our 'wires' vector if so
-                if (wire_switchpoint != valid_switchpoint) continue;
-
-                collected_wire_switchpoints.push_back({iwire, wire_switchpoint});
+                all_collected_wire_switchpoints.push_back(wire_candidate);
             }
         }
-
-        all_collected_wire_switchpoints.insert(all_collected_wire_switchpoints.end(),
-                                               collected_wire_switchpoints.begin(), collected_wire_switchpoints.end());
     }
 
     if (switchpoint_order == e_switch_point_order::SHUFFLED) {
@@ -388,11 +393,14 @@ static void compute_wire_connections(const t_physical_tile_loc& sb_loc,
         return;
     }
 
-    // Check that the permutation map has an entry for this side combination
-    if (!sb.permutation_map.contains(side_conn)) {
+    // Look up the permutation functions for this side combination once.
+    // They are the same for every wireconn and every connection at this location.
+    auto perm_iter = sb.permutation_map.find(side_conn);
+    if (perm_iter == sb.permutation_map.end()) {
         // The specified switchblock does not have any permutation funcs for `from_side` to `to_side` connection
         return;
     }
+    const std::vector<std::string>& permutations = perm_iter->second;
 
     /* find the correct channel, and the coordinates to index into it for both the source and
      * destination channels. also return the channel type (ie chanx/chany/both) into which we are
@@ -421,7 +429,7 @@ static void compute_wire_connections(const t_physical_tile_loc& sb_loc,
         // compute the destination wire segments to which the source wire segment should connect based on the current wireconn
         compute_wireconn_connections(directionality, from_chan_details, to_chan_details,
                                      sb_conn, from_loc, to_loc, from_chan_type, to_chan_type, wire_type_sizes_from,
-                                     wire_type_sizes_to, sb, wireconn, sb_conns, rng, scratchpad);
+                                     wire_type_sizes_to, permutations, wireconn, sb_conns, rng, scratchpad);
     }
 }
 
@@ -439,7 +447,7 @@ static void compute_wireconn_connections(e_directionality directionality,
                                          e_rr_type to_chan_type,
                                          const t_wire_type_sizes& wire_type_sizes_from,
                                          const t_wire_type_sizes& wire_type_sizes_to,
-                                         const t_switchblock_inf& sb,
+                                         const std::vector<std::string>& permutations,
                                          const t_wireconn_inf& wireconn,
                                          t_sb_connection_map* sb_conns,
                                          vtr::RngContainer& rng,
@@ -520,6 +528,12 @@ static void compute_wireconn_connections(e_directionality directionality,
 
     VTR_LOGV(verbose, "  num_conns: %zu\n", num_conns);
 
+    // Cached references to the forward and reverse connection vectors.
+    // The map keys are the same for every pushed edge, so hash them only once on first use.
+    // References into std::unordered_map stay valid when other elements are inserted.
+    std::vector<t_switchblock_edge>* fwd_conns = nullptr;
+    std::vector<t_switchblock_edge>* rev_conns = nullptr;
+
     for (size_t iconn = 0; iconn < size_t(num_conns); ++iconn) {
         // Select the from wire
         // We modulo by the src set size to wrap around if there are more connections that src wires
@@ -545,19 +559,9 @@ static void compute_wireconn_connections(e_directionality directionality,
         }
 
         // Evaluate permutation functions for the from_wire
-        SBSideConnection side_conn(sb_conn.from_side, sb_conn.to_side);
-        auto iter = sb.permutation_map.find(side_conn);
-        if (iter == sb.permutation_map.end()) {
-            continue;
-        }
-        const std::vector<std::string>& permutations_ref = iter->second;
-        for (const std::string& perm : permutations_ref) {
-            /* Convert the symbolic permutation formula to a number */
-            vtr::t_formula_data& formula_data = scratchpad->formula_data;
-            formula_data.clear();
-            formula_data.set_var_value("W", dest_W);
-            formula_data.set_var_value("t", src_wire_ind);
-            int raw_dest_wire_ind = get_sb_formula_raw_result(scratchpad->formula_parser, perm.c_str(), formula_data);
+        for (const std::string& perm : permutations) {
+            // Convert the symbolic permutation formula to a number
+            int raw_dest_wire_ind = scratchpad->formula_cache.evaluate(perm, dest_W, src_wire_ind);
             int dest_wire_ind = adjust_formula_result(raw_dest_wire_ind, src_W, dest_W, iconn);
 
             if (dest_wire_ind < 0) {
@@ -582,18 +586,24 @@ static void compute_wireconn_connections(e_directionality directionality,
             VTR_LOGV(verbose, "  make_conn: %d -> %d switch=%d\n", sb_edge.from_wire, sb_edge.to_wire, sb_edge.switch_ind);
 
             // and now, finally, add this switchblock connection to the switchblock connections map
-            (*sb_conns)[sb_conn].push_back(sb_edge);
+            if (fwd_conns == nullptr) {
+                fwd_conns = &(*sb_conns)[sb_conn];
+            }
+            fwd_conns->push_back(sb_edge);
 
             // If bidir architecture, implement the reverse connection as well
             if (BI_DIRECTIONAL == directionality) {
                 t_switchblock_edge sb_reverse_edge = sb_edge;
                 std::swap(sb_reverse_edge.from_wire, sb_reverse_edge.to_wire);
-                //Since we are implementing the reverse connection we have swapped from and to.
-                //
-                //Coverity flags this (false positive), so annotate coverity ignores it:
-                // coverity[swapped_arguments : Intentional]
-                SwitchblockLookupKey sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord, sb_conn.layer_coord, sb_conn.to_side, sb_conn.from_side);
-                (*sb_conns)[sb_conn_reverse].push_back(sb_reverse_edge);
+                if (rev_conns == nullptr) {
+                    //Since we are implementing the reverse connection we have swapped from and to.
+                    //
+                    //Coverity flags this (false positive), so annotate coverity ignores it:
+                    // coverity[swapped_arguments : Intentional]
+                    SwitchblockLookupKey sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord, sb_conn.layer_coord, sb_conn.to_side, sb_conn.from_side);
+                    rev_conns = &(*sb_conns)[sb_conn_reverse];
+                }
+                rev_conns->push_back(sb_reverse_edge);
             }
         }
     }
