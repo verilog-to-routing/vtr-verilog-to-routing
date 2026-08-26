@@ -5,8 +5,12 @@
 #include "grid_block.h"
 #include "vtr_assert.h"
 
+#include <algorithm>
+
 t_pl_blocks_to_be_moved::t_pl_blocks_to_be_moved(size_t max_blocks) {
     moved_blocks.reserve(max_blocks);
+    moved_from.reserve(max_blocks);
+    moved_to.reserve(max_blocks);
 }
 
 size_t t_pl_blocks_to_be_moved::get_size_and_increment() {
@@ -19,20 +23,20 @@ size_t t_pl_blocks_to_be_moved::get_size_and_increment() {
 e_block_move_result t_pl_blocks_to_be_moved::record_block_move(ClusterBlockId blk,
                                                                t_pl_loc to,
                                                                const BlkLocRegistry& blk_loc_registry) {
-    auto [to_it, to_success] = moved_to.emplace(to);
-    if (!to_success) {
+    if (std::ranges::find(moved_to, to) != moved_to.end()) {
         move_abortion_logger.log_move_abort("duplicate block move to location");
         return e_block_move_result::ABORT;
     }
 
     t_pl_loc from = blk_loc_registry.block_locs()[blk].loc;
 
-    auto [_, from_success] = moved_from.emplace(from);
-    if (!from_success) {
-        moved_to.erase(to_it);
+    if (std::ranges::find(moved_from, from) != moved_from.end()) {
         move_abortion_logger.log_move_abort("duplicate block move from location");
         return e_block_move_result::ABORT;
     }
+
+    moved_to.push_back(to);
+    moved_from.push_back(from);
 
     VTR_ASSERT_SAFE(to.sub_tile < int(blk_loc_registry.grid_blocks().num_blocks_at_location({to.x, to.y, to.layer})));
 

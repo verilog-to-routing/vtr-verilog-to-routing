@@ -86,8 +86,10 @@ struct t_pl_blocks_to_be_moved {
     std::set<t_pl_loc> determine_locations_emptied_by_move() const;
 
     std::vector<t_pl_moved_block> moved_blocks;
-    std::unordered_set<t_pl_loc> moved_from;
-    std::unordered_set<t_pl_loc> moved_to;
+
+    /// Locations the moved blocks are moved from and to.
+    std::vector<t_pl_loc> moved_from;
+    std::vector<t_pl_loc> moved_to;
 
     std::vector<ClusterPinId> affected_pins;
 
