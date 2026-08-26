@@ -19,6 +19,7 @@
 #include "place_constraints.h"
 #include "compressed_grid.h"
 #include "place_macro.h"
+#include <algorithm>
 
 /**
  * @brief Creates a placement location from grid coordinates.
@@ -298,6 +299,132 @@ bool WindowedBiMatchingDetailedPlacer::try_swap_locations(BlkLocRegistry& blk_lo
     blk_loc_registry.revert_move_blocks(blocks_affected);
     blocks_affected.clear_move_blocks();
     return false;
+}
+
+bool WindowedBiMatchingDetailedPlacer::exhaustive_window(
+    BlkLocRegistry& blk_loc_registry,
+    const std::vector<ClusterBlockId>& blocks,
+    const std::vector<t_pl_loc>& locs) {
+    //nothing to arrange
+    if(blocks.size() <= 1){
+        return false;
+    }
+
+    if (blocks.size() != locs.size()) {
+        return false;
+    }
+
+    //list of all locations within window
+    std::vector<int> perm;
+    for(int i = 0; i < blocks.size(); i++){
+        perm.push_back(i);
+    }
+
+    //track best result
+    double best_delta = 0;
+    std::vector<int> best_perm = perm;
+
+    bool more_perms = true;
+    while(more_perms) {
+        //possible moves
+
+        //TODO: with empty locations? 
+        t_pl_blocks_to_be_moved blocks_affected(blocks.size());
+        bool valid_perm = true;
+
+        for(int i = 0; i < blocks.size(); i++) {
+            ClusterBlockId block_id = blocks[i];
+            t_pl_loc target_loc = locs[perm[i]];
+            //record proposed moves
+            e_block_move_result result =
+                blocks_affected.record_block_move(block_id,
+                                                target_loc,
+                                                blk_loc_registry);
+
+            if (result != e_block_move_result::VALID) {
+                valid_perm = false;
+                break;
+            }
+        }
+
+        //if invalid, going to next permutation
+        if (!valid_perm) {
+            blocks_affected.clear_move_blocks();
+            more_perms = std::next_permutation(perm.begin(), perm.end());
+            continue;
+        }
+        if (!floorplan_legal(blocks_affected)) {
+            blocks_affected.clear_move_blocks();
+            more_perms = std::next_permutation(perm.begin(), perm.end());
+            continue;
+        }
+
+        //temporariliy apply move
+        blk_loc_registry.apply_move_blocks(blocks_affected);
+
+        t_net_cost_terms cost_terms_delta;
+        double timing_delta_cost = 0.;
+
+        net_cost_handler_.find_affected_nets_and_update_costs(
+            nullptr,
+            nullptr,
+            blocks_affected,
+            cost_terms_delta,
+            timing_delta_cost);
+        
+        //updating if we found a new best permutation
+        if (cost_terms_delta.bb_cost < best_delta) {
+            best_delta = cost_terms_delta.bb_cost;
+            best_perm = perm;
+        }
+
+        net_cost_handler_.reset_move_nets();
+        blk_loc_registry.revert_move_blocks(blocks_affected);
+        blocks_affected.clear_move_blocks();
+
+        more_perms = std::next_permutation(perm.begin(), perm.end());
+    }
+
+    //if no wirelength decrease, can just return 
+    if (best_delta >= 0.) {
+        return false;
+    }
+
+    //applying best permutation found in window
+    t_pl_blocks_to_be_moved blocks_affected(blocks.size());
+    for (int i = 0; i < blocks.size(); i++) {
+        e_block_move_result result =
+            blocks_affected.record_block_move(blocks[i],
+                                            locs[best_perm[i]],
+                                            blk_loc_registry);
+
+        if (result != e_block_move_result::VALID) {
+            blocks_affected.clear_move_blocks();
+            return false;
+        }
+    }
+
+    if (!floorplan_legal(blocks_affected)) {
+        blocks_affected.clear_move_blocks();
+        return false;
+    }
+    blk_loc_registry.apply_move_blocks(blocks_affected);
+
+    t_net_cost_terms cost_terms_delta;
+    double timing_delta_cost = 0.;
+    net_cost_handler_.find_affected_nets_and_update_costs(
+        nullptr,
+        nullptr,
+        blocks_affected,
+        cost_terms_delta,
+        timing_delta_cost);
+
+    //update cost
+    net_cost_handler_.update_move_nets();
+    blk_loc_registry.commit_move_blocks(blocks_affected);
+    blocks_affected.clear_move_blocks();
+
+    return true;
 }
 
 void WindowedBiMatchingDetailedPlacer::optimize_placement() {

@@ -38,4 +38,8 @@ class WindowedBiMatchingDetailedPlacer : public DetailedPlacer {
                             const DeviceGrid& grid,
                             t_pl_loc loc_a,
                             t_pl_loc loc_b);
+
+    bool exhaustive_window(BlkLocRegistry& blk_loc_registry,
+                                const std::vector<ClusterBlockId>& blocks,
+                                const std::vector<t_pl_loc>& locs);
 };
