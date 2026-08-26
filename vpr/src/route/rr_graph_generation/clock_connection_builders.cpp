@@ -53,6 +53,21 @@ size_t RoutingToClockConnection::estimate_additional_nodes() {
     return 1;
 }
 
+/**
+ * @brief Creates a single, synthetic SINK rr_node that represents the root of a
+ *        dedicated clock network, for use as the stage-1 routing target of the
+ *        two-stage clock router (see pre_route_to_clock_root() in route_net.tpp,
+ *        gated by --two_stage_clock_routing).
+ *
+ * It is a single artificial node per clock network, created once and then
+ * shared/reused (see the caller, get_or_create_virtual_clock_network_root())
+ * across every drive point that can feed that network, so stage-1 routing can
+ * reach the network through whichever drive point turns out to be cheapest.
+ * Its (x, y) location is the centroid of the network's drive points, not any
+ * single pin's location, and its class num (ptc) is chosen to be one past the
+ * highest SINK class num already registered at that location, so it cannot
+ * collide with a real (tile) sink node there.
+ */
 static RRNodeId create_virtual_clock_network_sink_node(int layer, int x, int y) {
     DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
