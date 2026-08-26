@@ -3029,16 +3029,15 @@ static void process_tileable_device_parameters(t_arch* arch, const pugiutil::loc
     // If 'sub_type' is specified, the custom switch block for 'type' is not allowed!
     std::string sub_type_str = get_attribute(cur, "sub_type", loc_data, BoolToReqOpt(false)).as_string("");
     if (!sub_type_str.empty()) {
-        if (sub_type_str == "wilton") {
-            arch->sb_sub_type = e_switch_block_type::WILTON;
-        } else if (sub_type_str == "universal") {
-            arch->sb_sub_type = e_switch_block_type::UNIVERSAL;
-        } else if (sub_type_str == "subset") {
-            arch->sb_sub_type = e_switch_block_type::SUBSET;
-        } else {
+        e_switch_block_type sub_type = switch_block_type_from_str(sub_type_str);
+        // "full" and "custom" are valid switch_block_type values, but not valid sub_types.
+        if (sub_type == e_switch_block_type::UNKNOWN
+            || sub_type == e_switch_block_type::FULL
+            || sub_type == e_switch_block_type::CUSTOM) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
                            "Unknown property %s for switch block subtype x\n", sub_type_str.c_str());
         }
+        arch->sb_sub_type = sub_type;
     } else {
         arch->sb_sub_type = arch->sb_type;
     }
@@ -4852,23 +4851,17 @@ static void process_clock_networks(pugi::xml_node parent,
             clock_network.switch_grid.directionality = directionality;
 
             std::string switch_block_type_str = get_attribute(curr_type, "switch_block_type", loc_data, ReqOpt::OPTIONAL).as_string("full");
-            if (switch_block_type_str == "full") {
-                clock_network.switch_grid.switch_block_type = e_switch_block_type::FULL;
-            } else if (switch_block_type_str == "subset") {
-                clock_network.switch_grid.switch_block_type = e_switch_block_type::SUBSET;
-            } else if (switch_block_type_str == "wilton") {
-                clock_network.switch_grid.switch_block_type = e_switch_block_type::WILTON;
-            } else if (switch_block_type_str == "universal") {
-                clock_network.switch_grid.switch_block_type = e_switch_block_type::UNIVERSAL;
-            } else if (switch_block_type_str == "custom") {
-                clock_network.switch_grid.switch_block_type = e_switch_block_type::CUSTOM;
-                process_clock_switch_grid_patterns(curr_type, clock_network, directionality, arch, loc_data);
-            } else {
+            e_switch_block_type switch_block_type = switch_block_type_from_str(switch_block_type_str);
+            if (switch_block_type == e_switch_block_type::UNKNOWN) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_type),
                                vtr::string_fmt("Unknown switch_block_type '%s' for clock_switch_grid. "
                                                "Expected one of: full, subset, wilton, universal, custom.\n",
                                                switch_block_type_str.c_str())
                                    .c_str());
+            }
+            clock_network.switch_grid.switch_block_type = switch_block_type;
+            if (switch_block_type == e_switch_block_type::CUSTOM) {
+                process_clock_switch_grid_patterns(curr_type, clock_network, directionality, arch, loc_data);
             }
 
             clock_network.switch_grid.length = get_attribute(curr_type, "length", loc_data, ReqOpt::OPTIONAL).as_string("1");
@@ -5064,21 +5057,19 @@ static void process_clock_switch_grid_patterns(pugi::xml_node parent,
         pattern.name = get_attribute(curr_pattern, "name", loc_data, ReqOpt::OPTIONAL).as_string("");
 
         std::string type_str(get_attribute(curr_pattern, "type", loc_data).value());
-        if (type_str == "full") {
+        pattern.switch_block_type = switch_block_type_from_str(type_str);
+        if (pattern.switch_block_type == e_switch_block_type::UNKNOWN) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_pattern),
+                           vtr::string_fmt("Unknown switch_pattern type '%s' for clock_switch_grid '%s'. "
+                                           "Expected one of: full, subset, wilton, universal, custom.\n",
+                                           type_str.c_str(), clock_network.name.c_str())
+                               .c_str());
+        }
+
+        if (pattern.switch_block_type != e_switch_block_type::CUSTOM) {
             expect_only_children(curr_pattern, {}, loc_data);
-            pattern.switch_block_type = e_switch_block_type::FULL;
-        } else if (type_str == "subset") {
-            expect_only_children(curr_pattern, {}, loc_data);
-            pattern.switch_block_type = e_switch_block_type::SUBSET;
-        } else if (type_str == "wilton") {
-            expect_only_children(curr_pattern, {}, loc_data);
-            pattern.switch_block_type = e_switch_block_type::WILTON;
-        } else if (type_str == "universal") {
-            expect_only_children(curr_pattern, {}, loc_data);
-            pattern.switch_block_type = e_switch_block_type::UNIVERSAL;
-        } else if (type_str == "custom") {
+        } else {
             expect_only_children(curr_pattern, {"switchfuncs"}, loc_data);
-            pattern.switch_block_type = e_switch_block_type::CUSTOM;
 
             pugi::xml_node switchfuncs_node = get_single_child(curr_pattern, "switchfuncs", loc_data, ReqOpt::OPTIONAL);
             if (!switchfuncs_node) {
@@ -5102,12 +5093,6 @@ static void process_clock_switch_grid_patterns(pugi::xml_node parent,
             read_sb_switchfuncs(switchfuncs_node, scratch_sb, loc_data);
             check_switchblock(scratch_sb, arch);
             pattern.permutation_map = std::move(scratch_sb.permutation_map);
-        } else {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_pattern),
-                           vtr::string_fmt("Unknown switch_pattern type '%s' for clock_switch_grid '%s'. "
-                                           "Expected one of: full, subset, wilton, universal, custom.\n",
-                                           type_str.c_str(), clock_network.name.c_str())
-                               .c_str());
         }
 
         std::string location_str = get_attribute(curr_pattern, "location", loc_data, ReqOpt::OPTIONAL).as_string("everywhere");

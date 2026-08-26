@@ -1302,6 +1302,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
             // configured switch-block pattern (per-location for CUSTOM grids).
             const ClockSwitchPattern* pattern = pattern_at(bx, by);
             e_switch_block_type sb_type = pattern ? pattern->switch_block_type : switch_block_type_;
+            VTR_ASSERT(sb_type != e_switch_block_type::UNKNOWN);
             for (e_side from_side : TOTAL_2D_SIDES) {
                 for (int from_track = 0; from_track < chan_w_; from_track++) {
                     int from_idx = stub_at(bx, by, from_side, from_track);

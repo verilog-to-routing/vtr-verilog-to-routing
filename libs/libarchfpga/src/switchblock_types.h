@@ -34,8 +34,35 @@ enum class e_switch_block_type {
 
     /// A CUSTOM switch block has also been added which allows a user to describe custom permutation functions and connection patterns.
     /// See comment at top of SRC/route/build_switchblocks.c
-    CUSTOM
+    CUSTOM,
+
+    /// Sentinel value for a switch block type string that could not be recognized.
+    UNKNOWN
 };
+
+/**
+ * @brief Converts a switch_block_type XML attribute string ("full", "subset", "wilton",
+ * "universal", or "custom") to the corresponding e_switch_block_type.
+ *
+ * @param str    The attribute string to convert.
+ * @return       The converted value, or e_switch_block_type::UNKNOWN if str was not
+ *               recognized.
+ */
+inline e_switch_block_type switch_block_type_from_str(const std::string& str) {
+    if (str == "full") {
+        return e_switch_block_type::FULL;
+    } else if (str == "subset") {
+        return e_switch_block_type::SUBSET;
+    } else if (str == "wilton") {
+        return e_switch_block_type::WILTON;
+    } else if (str == "universal") {
+        return e_switch_block_type::UNIVERSAL;
+    } else if (str == "custom") {
+        return e_switch_block_type::CUSTOM;
+    }
+
+    return e_switch_block_type::UNKNOWN;
+}
 
 /**
  * @brief At the intersection of routing channels, left, right, top and bottom specify the x- and y-directed channels

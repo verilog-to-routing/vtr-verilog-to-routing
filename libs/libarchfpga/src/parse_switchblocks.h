@@ -77,3 +77,4 @@ void check_switchblock(const t_switchblock_inf& sb, const t_arch* arch);
 int get_sb_formula_raw_result(vtr::FormulaParser& formula_parser,
                               const std::string& formula,
                               const vtr::t_formula_data& mydata);
+
