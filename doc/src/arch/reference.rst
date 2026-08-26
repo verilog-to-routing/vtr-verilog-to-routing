@@ -2644,6 +2644,10 @@ The tap element and its attribute sare as follows:
 
         ``locationx`` and ``locationy`` describe an (x,y) grid location where all the wires passing this location source the source the clock network connection depending on the ``fc_val``
 
+    .. note::
+
+        For a ``TILE.*`` ``from``, if the referenced pin is placed on more than one side of the tile (per the block's ``pinlocations``), a connection is made from the pin on *every* side it occupies, with no preference given to any particular side. This differs from general-purpose routing's convention, where a pin's side determines which adjacent switch block it connects to (e.g. a pin on a tile's left side connects through the switch block of the tile to its left, rather than the tile's own switch block); no such side preference applies when driving a clock network from a ``TILE.*`` tap.
+
 For more information you may wish to consult :cite:`mustafa_masc` which introduces the clock modeling language.
 
 Power
