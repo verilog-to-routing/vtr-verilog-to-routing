@@ -233,7 +233,7 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
         VTR_LOGV(verbose,
                  "Fixed up net '%s' mapping mismatch at clustered block '%s' pin 'grid[%ld][%ld].%s.%s[%d] - layer %d' (was net '%s')\n",
                  routing_net_name.c_str(),
-                 clustering_ctx.clb_nlist.block_pb(blk_id)->name,
+                 clustering_ctx.clb_nlist.block_pb(blk_id)->name.c_str(),
                  coord_x, coord_y,
                  clustering_ctx.clb_nlist.block_pb(blk_id)->pb_graph_node->pb_type->name,
                  get_pb_graph_node_pin_from_block_pin(blk_id, physical_pin)->port->name,
@@ -318,7 +318,7 @@ static int find_target_pb_route_from_equivalent_pins(const AtomContext& atom_ctx
              "Found %lu candidates to remap net '%s' at clustered block '%s' pin '%s'\n",
              pb_route_indices.size(),
              atom_ctx.netlist().net_name(target_net).c_str(),
-             clustering_ctx.clb_nlist.block_pb(blk_id)->name,
+             clustering_ctx.clb_nlist.block_pb(blk_id)->name.c_str(),
              source_pb_graph_pin->to_string().c_str());
 
     /* Should find at least 1 candidate */
@@ -862,7 +862,7 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
 
         VTR_LOGV(verbose,
                  "Remap clustered block '%s' routing trace[%d] to net '%s'\n",
-                 clustering_ctx.clb_nlist.block_pb(blk_id)->name,
+                 clustering_ctx.clb_nlist.block_pb(blk_id)->name.c_str(),
                  pb_graph_pin->pin_count_in_cluster,
                  atom_ctx.netlist().net_name(remapped_net).c_str());
 
@@ -930,7 +930,7 @@ static void update_cluster_global_routing_traces_with_post_routing_results(const
 
         VTR_LOGV(verbose,
                  "Remapping clustered block '%s' global net '%s' to unused pin as %s\r",
-                 clustering_ctx.clb_nlist.block_pb(blk_id)->name,
+                 clustering_ctx.clb_nlist.block_pb(blk_id)->name.c_str(),
                  atom_ctx.netlist().net_name(global_atom_net_id).c_str(),
                  pb_graph_pin->to_string().c_str());
 
@@ -961,7 +961,7 @@ static void update_cluster_global_routing_traces_with_post_routing_results(const
 
         VTR_LOGV(verbose,
                  "Remap clustered block '%s' global net '%s' to pin '%s'\n",
-                 clustering_ctx.clb_nlist.block_pb(blk_id)->name,
+                 clustering_ctx.clb_nlist.block_pb(blk_id)->name.c_str(),
                  atom_ctx.netlist().net_name(global_atom_net_id).c_str(),
                  unused_pb_graph_pin->to_string().c_str());
 

@@ -89,7 +89,7 @@ ModelGrouper::ModelGrouper(const Prepacker& prepacker,
 
         // Debug print the models within the pattern.
         if (log_verbosity >= 20) {
-            VTR_LOG("Pattern: %s\n\t", pack_pattern.name);
+            VTR_LOG("Pattern: %s\n\t", pack_pattern.name.c_str());
             for (LogicalModelId model_id : models_in_pattern) {
                 VTR_LOG("%s ", models.model_name(model_id).c_str());
             }

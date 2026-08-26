@@ -1459,7 +1459,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_noc_opts* NocOpts,
                    t_server_opts* ServerOpts,
                    t_det_routing_arch& RoutingArch,
-                   std::vector<t_lb_type_rr_node>** PackerRRGraph,
+                   std::vector<std::vector<t_lb_type_rr_node>>* PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
                    t_timing_inf* Timing,
                    bool* ShowGraphics,
@@ -1590,12 +1590,6 @@ void vpr_analysis(const Netlist<>& net_list,
                   Arch.grid_logic_tile_area,
                   vpr_setup.RoutingArch.directionality,
                   is_flat);
-
-    if (!vpr_setup.CRROpts.sb_count_dir.empty()) {
-        write_sb_count_stats(net_list,
-                             vpr_setup.CRROpts.sb_templates,
-                             vpr_setup.CRROpts.sb_count_dir);
-    }
 
     if (vpr_setup.TimingEnabled) {
         //Load the net delays
