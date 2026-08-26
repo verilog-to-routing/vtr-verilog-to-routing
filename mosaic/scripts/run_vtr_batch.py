@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+# pylint: disable=too-many-lines
+"""batch runner built around run_vtr_flow.py for comparing mosaic and parmys."""
 # batch runner built around the vtr_flow/scripts/run_vtr_flow.py call.
 #
 # each job is python3 vtr_flow/scripts/run_vtr_flow.py <circuit.v> <arch.xml> -start <stage>.
@@ -68,31 +69,31 @@ try:
 except ImportError:  # windows
     fcntl = None
 
-scriptDir = Path(__file__).resolve().parent
-vtrRoot = scriptDir.parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
+VTR_ROOT = SCRIPT_DIR.parents[1]
 # default batch output root keeps compare_output_* under mosaic/scripts.
-compareOutputRoot = scriptDir
-vtrFlow = vtrRoot / "vtr_flow"
-runVtrFlow = vtrFlow / "scripts" / "run_vtr_flow.py"
-yosysBin = vtrRoot / "build" / "bin" / "yosys"
-pluginPath = vtrRoot / "build" / "share" / "yosys" / "plugins" / "mosaic.so"
+COMPARE_OUTPUT_ROOT = SCRIPT_DIR
+VTR_FLOW = VTR_ROOT / "vtr_flow"
+RUN_VTR_FLOW = VTR_FLOW / "scripts" / "run_vtr_flow.py"
+YOSYS_BIN = VTR_ROOT / "build" / "bin" / "yosys"
+PLUGIN_PATH = VTR_ROOT / "build" / "share" / "yosys" / "plugins" / "mosaic.so"
 
-flows = {
+FLOWS = {
     "vanilla_vtr": {"start": "parmys"},
     "mosaic": {"start": "mosaic"},
 }
-flowAliases = {
+FLOW_ALIASES = {
     "vtr": "vanilla_vtr",
     "vanilla": "vanilla_vtr",
     "parmys": "vanilla_vtr",
     "frank": "mosaic",
 }
 
-vprBramBlockTypes = ("memory", "bram_multimode")
+VPR_BRAM_BLOCK_TYPES = ("memory", "bram_multimode")
 # koios uses dsp_top, classic k6 uses mult_36, and some arches use mae or dsp.
-vprDspBlockTypes = ("mult_36", "mae", "dsp", "dsp_top")
+VPR_DSP_BLOCK_TYPES = ("mult_36", "mae", "dsp", "dsp_top")
 
-csvFields = (
+CSV_FIELDS = (
     "design",
     "flow",
     "status",
@@ -130,7 +131,7 @@ csvFields = (
 )
 
 # live status is monotonic so log-tail flicker cannot move a run backwards.
-statusRank = {
+STATUS_RANK = {
     "pending": 0,
     "started": 1,
     "synth": 2,
@@ -146,7 +147,7 @@ statusRank = {
     "fail": 100,
 }
 
-phasePatterns = [
+PHASE_PATTERNS = [
     (re.compile(r"(?:^|#\s*)Routing took\b", re.I), "route done"),
     (re.compile(r"(?:^|#\s*)SA Placement took\b|(?:^|#\s*)Placement took\b", re.I), "place done"),
     (re.compile(r"(?:^|#\s*)Packing took\b", re.I), "pack done"),
@@ -163,7 +164,7 @@ phasePatterns = [
     ),
 ]
 
-statusKeys = (
+STATUS_KEYS = (
     ("wall", "wall_time_sec"),
     ("synth", "synth_wall_sec"),
     ("vpr", "vpr_wall_sec"),
@@ -190,76 +191,84 @@ statusKeys = (
 )
 
 
-def resolvePath(value: str, base: Path) -> Path:
+def resolve_path(value: str, base: Path) -> Path:
+    """resolve *value* against *base* if it is not already absolute."""
     path = Path(value).expanduser()
     return path if path.is_absolute() else (base / path)
 
 
-def discoverDesigns(benchDir: Path) -> List[str]:
+def discover_designs(bench_dir: Path) -> List[str]:
+    """return sorted stems of all *.v files except *_include.v."""
     designs = []
-    for path in sorted(benchDir.glob("*.v")):
+    for path in sorted(bench_dir.glob("*.v")):
         if path.name.endswith("_include.v"):
             continue
         designs.append(path.stem)
     return designs
 
 
-def resolveDesigns(names: Optional[Sequence[str]], benchDir: Path) -> List[str]:
-    designs = list(names) if names else discoverDesigns(benchDir)
+def resolve_designs(names: Optional[Sequence[str]], bench_dir: Path) -> List[str]:
+    """validate explicit design names or auto-discover from *bench_dir*."""
+    designs = list(names) if names else discover_designs(bench_dir)
     if not designs:
-        raise SystemExit(f"no designs found under {benchDir}")
-    missing = [name for name in designs if not (benchDir / f"{name}.v").is_file()]
+        raise SystemExit(f"no designs found under {bench_dir}")
+    missing = [name for name in designs if not (bench_dir / f"{name}.v").is_file()]
     if missing:
-        available = discoverDesigns(benchDir)
+        available = discover_designs(bench_dir)
         hint = ", ".join(available[:12]) if available else "(none)"
         if len(available) > 12:
             hint += ", ..."
         raise SystemExit(
             "missing verilog for design(s): "
             + ", ".join(missing)
-            + f"\n  looked in: {benchDir}"
+            + f"\n  looked in: {bench_dir}"
             + f"\n  available: {hint}"
         )
     return designs
 
 
-def normalizeFlows(names: Optional[Sequence[str]]) -> List[str]:
+def normalize_flows(names: Optional[Sequence[str]]) -> List[str]:
+    """resolve flow aliases and return a deduplicated ordered list."""
     if not names:
-        return list(flows)
+        return list(FLOWS)
     selected = []
     for name in names:
-        resolved = flowAliases.get(name, name)
-        if resolved not in flows:
-            raise SystemExit(f"unknown flow: {name} (want: {', '.join(flows)})")
+        resolved = FLOW_ALIASES.get(name, name)
+        if resolved not in FLOWS:
+            raise SystemExit(f"unknown flow: {name} (want: {', '.join(FLOWS)})")
         if resolved not in selected:
             selected.append(resolved)
     return selected
 
 
-def resolveIncludePaths(includeArgs: Optional[Sequence[str]], benchDir: Path) -> List[Path]:
+def resolve_include_paths(
+    include_args: Optional[Sequence[str]], bench_dir: Path,
+) -> List[Path]:
+    """make include paths absolute, raising if any do not exist."""
     resolved: List[Path] = []
-    if not includeArgs:
+    if not include_args:
         return resolved
-    for includeArg in includeArgs:
-        includePath = Path(includeArg)
-        if not includePath.is_absolute():
-            includePath = benchDir / includePath
-        includePath = includePath.resolve()
-        if not includePath.is_file():
-            raise FileNotFoundError(f"include file not found: {includePath}")
-        resolved.append(includePath)
+    for include_arg in include_args:
+        include_path = Path(include_arg)
+        if not include_path.is_absolute():
+            include_path = bench_dir / include_path
+        include_path = include_path.resolve()
+        if not include_path.is_file():
+            raise FileNotFoundError(f"include file not found: {include_path}")
+        resolved.append(include_path)
     return resolved
 
 
-def checkPrerequisites(needMosaic: bool, archFile: Path, benchDir: Path) -> None:
+def check_prerequisites(need_mosaic: bool, arch_file: Path, bench_dir: Path) -> None:
+    """abort if required binaries or directories are missing."""
     missing = []
-    for path in (runVtrFlow, archFile, yosysBin):
+    for path in (RUN_VTR_FLOW, arch_file, YOSYS_BIN):
         if not path.is_file():
             missing.append(str(path))
-    if not benchDir.is_dir():
-        missing.append(str(benchDir))
-    if needMosaic and not pluginPath.is_file():
-        missing.append(str(pluginPath))
+    if not bench_dir.is_dir():
+        missing.append(str(bench_dir))
+    if need_mosaic and not PLUGIN_PATH.is_file():
+        missing.append(str(PLUGIN_PATH))
     if missing:
         print("missing prerequisites:", file=sys.stderr)
         for path in missing:
@@ -267,25 +276,26 @@ def checkPrerequisites(needMosaic: bool, archFile: Path, benchDir: Path) -> None
         raise SystemExit(1)
 
 
-def statusSortKey(status: str) -> int:
-    if status in statusRank:
-        return statusRank[status]
-    return statusRank.get("started", 1)
+def status_sort_key(status: str) -> int:
+    """return numeric rank for a status string (higher = further along)."""
+    if status in STATUS_RANK:
+        return STATUS_RANK[status]
+    return STATUS_RANK.get("started", 1)
 
 
-# USE: keep the furthest progress status (never regress from place done to synth).
-def preferStatus(current: str, proposed: str) -> str:
+def prefer_status(current: str, proposed: str) -> str:
+    """keep the furthest progress status (never regress from place done to synth)."""
     if not proposed:
         return current or "pending"
     if not current:
         return proposed
-    if statusSortKey(proposed) >= statusSortKey(current):
+    if status_sort_key(proposed) >= status_sort_key(current):
         return proposed
     return current
 
 
-# USE: infer current phase from the newest log tails in a run dir.
-def detectPhase(runDir: Path) -> str:
+def detect_phase(run_dir: Path) -> str:
+    """infer current phase from the newest log tails in a run dir."""
     for name in (
         "vpr.out",
         "vpr_stdout.log",
@@ -293,7 +303,7 @@ def detectPhase(runDir: Path) -> str:
         "parmys.out",
         "output.txt",
     ):
-        path = runDir / name
+        path = run_dir / name
         if not path.is_file() or path.stat().st_size == 0:
             continue
         try:
@@ -304,61 +314,64 @@ def detectPhase(runDir: Path) -> str:
                 text = handle.read().decode("utf-8", errors="replace")
         except OSError:
             continue
-        for pattern, label in phasePatterns:
+        for pattern, label in PHASE_PATTERNS:
             if pattern.search(text):
                 return label
     return "started"
 
 
-def withCsvLock(csvPath: Path, callback):
-    csvPath.parent.mkdir(parents=True, exist_ok=True)
-    lockPath = csvPath.with_suffix(csvPath.suffix + ".lock")
-    with open(lockPath, "a+", encoding="utf-8") as lockFile:
+def with_csv_lock(csv_path: Path, callback):
+    """execute *callback* under an exclusive file lock on *csv_path*."""
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = csv_path.with_suffix(csv_path.suffix + ".lock")
+    with open(lock_path, "a+", encoding="utf-8") as lock_file:
         if fcntl is not None:
-            fcntl.flock(lockFile.fileno(), fcntl.LOCK_EX)
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
         try:
             return callback()
         finally:
             if fcntl is not None:
-                fcntl.flock(lockFile.fileno(), fcntl.LOCK_UN)
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
-def loadCsvRows(csvPath: Path) -> List[Dict]:
-    if not csvPath.is_file():
+def load_csv_rows(csv_path: Path) -> List[Dict]:
+    """return every row from *csv_path* as a list of dicts."""
+    if not csv_path.is_file():
         return []
     try:
-        with open(csvPath, newline="", encoding="utf-8") as handle:
+        with open(csv_path, newline="", encoding="utf-8") as handle:
             return [dict(row) for row in csv.DictReader(handle)]
     except OSError:
         return []
 
 
-def writeCsv(
-    csvPath: Path,
+def write_csv(
+    csv_path: Path,
     rows: List[Dict],
     order: Optional[Dict[Tuple[str, str], int]] = None,
 ) -> None:
-    csvPath.parent.mkdir(parents=True, exist_ok=True)
+    """write *rows* to *csv_path* in the canonical CSV_FIELDS order."""
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
 
-    def sortKey(row: Dict):
+    def sort_key(row: Dict):
         key = (row.get("design", ""), row.get("flow", ""))
         if order is not None:
             return (order.get(key, 10**9), key)
         return key
 
-    with open(csvPath, "w", newline="", encoding="utf-8") as outFile:
-        writer = csv.DictWriter(outFile, fieldnames=csvFields, extrasaction="ignore")
+    with open(csv_path, "w", newline="", encoding="utf-8") as out_file:
+        writer = csv.DictWriter(out_file, fieldnames=CSV_FIELDS, extrasaction="ignore")
         writer.writeheader()
-        for row in sorted(rows, key=sortKey):
-            writer.writerow({field: row.get(field, "") for field in csvFields})
+        for row in sorted(rows, key=sort_key):
+            writer.writerow({field: row.get(field, "") for field in CSV_FIELDS})
 
 
-# USE: merge one row into the live results csv under an exclusive lock.
-def upsertCsvRow(
-    csvPath: Path,
+def upsert_csv_row(
+    csv_path: Path,
     row: Dict,
     order: Optional[Dict[Tuple[str, str], int]] = None,
 ) -> None:
+    """merge one row into the live results csv under an exclusive lock."""
     design = row.get("design", "")
     flow = row.get("flow", "")
     if not design or not flow:
@@ -366,7 +379,7 @@ def upsertCsvRow(
 
     def merge() -> None:
         index: Dict[Tuple[str, str], Dict] = {}
-        for existing in loadCsvRows(csvPath):
+        for existing in load_csv_rows(csv_path):
             key = (existing.get("design", ""), existing.get("flow", ""))
             if key[0] and key[1]:
                 index[key] = existing
@@ -378,7 +391,7 @@ def upsertCsvRow(
                 continue
             merged[field] = value
         if "status" in row and row["status"]:
-            merged["status"] = preferStatus(
+            merged["status"] = prefer_status(
                 str(previous.get("status", "")), str(row["status"])
             )
         elif "status" not in merged:
@@ -386,32 +399,34 @@ def upsertCsvRow(
         merged["design"] = design
         merged["flow"] = flow
         index[key] = merged
-        writeCsv(csvPath, list(index.values()), order=order)
+        write_csv(csv_path, list(index.values()), order=order)
 
-    withCsvLock(csvPath, merge)
+    with_csv_lock(csv_path, merge)
 
 
-def formatSummary(runLabel: str, row: Dict, status: Optional[str] = None) -> str:
+def format_summary(run_label: str, row: Dict, status: Optional[str] = None) -> str:
+    """return a one-line human-readable summary of a run result."""
     if status is None:
         status = row.get("status") or (
             "route done" if row.get("success") else "fail"
         )
-    parts = [f"{runLabel}: {status}"]
-    for shortKey, field in statusKeys:
+    parts = [f"{run_label}: {status}"]
+    for short_key, field in STATUS_KEYS:
         value = row.get(field, "")
         if value == "" or value is None:
             continue
-        parts.append(f"{shortKey}={value}")
+        parts.append(f"{short_key}={value}")
     return " ".join(parts)
 
 
-def countBlifNames(blifPath: Path) -> str:
-    if not blifPath.is_file():
+def count_blif_names(blif_path: Path) -> str:
+    """count .names lines in a BLIF file."""
+    if not blif_path.is_file():
         return ""
     try:
         count = 0
-        with open(blifPath, encoding="utf-8", errors="replace") as blifFile:
-            for line in blifFile:
+        with open(blif_path, encoding="utf-8", errors="replace") as blif_file:
+            for line in blif_file:
                 if line.startswith(".names"):
                     count += 1
         return str(count)
@@ -419,13 +434,14 @@ def countBlifNames(blifPath: Path) -> str:
         return ""
 
 
-def countBlifLatches(blifPath: Path) -> str:
-    if not blifPath.is_file():
+def count_blif_latches(blif_path: Path) -> str:
+    """count .latch lines in a BLIF file."""
+    if not blif_path.is_file():
         return ""
     try:
         count = 0
-        with open(blifPath, encoding="utf-8", errors="replace") as blifFile:
-            for line in blifFile:
+        with open(blif_path, encoding="utf-8", errors="replace") as blif_file:
+            for line in blif_file:
                 if line.startswith(".latch"):
                     count += 1
         return str(count)
@@ -433,123 +449,120 @@ def countBlifLatches(blifPath: Path) -> str:
         return ""
 
 
-# USE: sum $_DFF_*/$_DFFE_* counts from a yosys stat dump.
-def parseYosysFfCount(text: str) -> str:
-    match = re.search(r"^\s+Number of cells:\s+\d+\s*$", text, re.MULTILINE)
+def parse_yosys_ff_count(text: str) -> str:
+    """sum $_DFF_*/$_DFFE_* counts from a yosys stat dump."""
     total = 0
     found = False
     for line in text.splitlines():
-        cellMatch = re.match(r"^\s+(\$_DFF\S*|\$_DFFE\S*)\s+(\d+)\s*$", line)
-        if cellMatch:
-            total += int(cellMatch.group(2))
+        cell_match = re.match(r"^\s+(\$_DFF\S*|\$_DFFE\S*)\s+(\d+)\s*$", line)
+        if cell_match:
+            total += int(cell_match.group(2))
             found = True
     return str(total) if found else ""
 
 
-def stageLutCounts(tempDir: Path, design: str) -> Dict[str, str]:
+def stage_lut_counts(temp_dir: Path, design: str) -> Dict[str, str]:
+    """collect synth/abc LUT and FF counts from the run directory."""
     counts = {"synth_luts": "", "abc_luts": "", "synth_ff": ""}
     for key, names in (
         ("synth_luts", (f"{design}.mosaic.blif", f"{design}.parmys.blif")),
         ("abc_luts", (f"{design}.pre-vpr.blif",)),
     ):
         for name in names:
-            path = tempDir / name
-            value = countBlifNames(path)
+            path = temp_dir / name
+            value = count_blif_names(path)
             if value:
                 counts[key] = value
                 break
     # mosaic abc is in-yosys, so pre-vpr is the post-abc netlist. when only
     # mosaic.blif exists, treat that as synth and leave abc blank.
     if counts["synth_luts"] and not counts["abc_luts"]:
-        preVpr = tempDir / f"{design}.pre-vpr.blif"
-        frank = tempDir / f"{design}.mosaic.blif"
-        if preVpr.is_file() and frank.is_file():
-            counts["abc_luts"] = countBlifNames(preVpr)
-    for logName in ("mosaic.out", "parmys.out"):
-        logPath = tempDir / logName
-        if not logPath.is_file():
+        pre_vpr = temp_dir / f"{design}.pre-vpr.blif"
+        frank = temp_dir / f"{design}.mosaic.blif"
+        if pre_vpr.is_file() and frank.is_file():
+            counts["abc_luts"] = count_blif_names(pre_vpr)
+    for log_name in ("mosaic.out", "parmys.out"):
+        log_path = temp_dir / log_name
+        if not log_path.is_file():
             continue
         try:
-            ffCount = parseYosysFfCount(
-                logPath.read_text(encoding="utf-8", errors="replace")
+            ff_count = parse_yosys_ff_count(
+                log_path.read_text(encoding="utf-8", errors="replace")
             )
         except OSError:
-            ffCount = ""
-        if ffCount:
-            counts["synth_ff"] = ffCount
+            ff_count = ""
+        if ff_count:
+            counts["synth_ff"] = ff_count
             break
     if not counts["synth_ff"]:
-        synthBlif = tempDir / f"{design}.mosaic.blif"
-        if not synthBlif.is_file():
-            synthBlif = tempDir / f"{design}.parmys.blif"
-        counts["synth_ff"] = countBlifLatches(synthBlif)
+        synth_blif = temp_dir / f"{design}.mosaic.blif"
+        if not synth_blif.is_file():
+            synth_blif = temp_dir / f"{design}.parmys.blif"
+        counts["synth_ff"] = count_blif_latches(synth_blif)
     return counts
 
 
-# USE: true when the frontend has written a blif that vpr can consume.
-def frontendReady(tempDir: Path, design: str, flowName: str) -> bool:
-    if flowName == "mosaic":
-        return (tempDir / f"{design}.mosaic.blif").is_file() or (
-            tempDir / f"{design}.pre-vpr.blif"
+def frontend_ready(temp_dir: Path, design: str, flow_name: str) -> bool:
+    """return True when the frontend has written a BLIF that VPR can consume."""
+    if flow_name == "mosaic":
+        return (temp_dir / f"{design}.mosaic.blif").is_file() or (
+            temp_dir / f"{design}.pre-vpr.blif"
         ).is_file()
-    return (tempDir / f"{design}.pre-vpr.blif").is_file()
+    return (temp_dir / f"{design}.pre-vpr.blif").is_file()
 
 
-# USE: optional abc gap from parmys.blif mtime to pre-vpr.blif mtime.
-def abcWallFromMtimes(tempDir: Path, design: str) -> str:
-    parmysBlif = tempDir / f"{design}.parmys.blif"
-    preVpr = tempDir / f"{design}.pre-vpr.blif"
-    if not parmysBlif.is_file() or not preVpr.is_file():
+def abc_wall_from_mtimes(temp_dir: Path, design: str) -> str:
+    """estimate abc wall-clock from mtime gap between parmys and pre-vpr BLIFs."""
+    parmys_blif = temp_dir / f"{design}.parmys.blif"
+    pre_vpr = temp_dir / f"{design}.pre-vpr.blif"
+    if not parmys_blif.is_file() or not pre_vpr.is_file():
         return ""
     try:
-        abcSec = max(0.0, preVpr.stat().st_mtime - parmysBlif.stat().st_mtime)
+        abc_sec = max(0.0, pre_vpr.stat().st_mtime - parmys_blif.stat().st_mtime)
     except OSError:
         return ""
-    return f"{abcSec:.2f}"
+    return f"{abc_sec:.2f}"
 
 
-# derive wall/synth from timestamps. vpr uses VPR's own runtime when present
-# wall  vpr_finish - start
-# synth synth_finish - start
-# vpr   "The entire flow of VPR took" or vpr_finish - synth_finish
-def timesFromTimestamps(
-    startUnix: float,
-    synthFinishUnix: Optional[float],
-    vprFinishUnix: float,
-    tempDir: Path,
+def times_from_timestamps(  # pylint: disable=too-many-arguments
+    start_unix: float,
+    synth_finish_unix: Optional[float],
+    vpr_finish_unix: float,
+    temp_dir: Path,
     design: str,
-    vprRuntimeSec: str = "",
+    vpr_runtime_sec: str = "",
 ) -> Dict[str, str]:
-    if synthFinishUnix is None:
-        synthFinishUnix = vprFinishUnix
-    synthFinishUnix = min(max(synthFinishUnix, startUnix), vprFinishUnix)
-    wallSec = max(0.0, vprFinishUnix - startUnix)
-    synthSec = max(0.0, synthFinishUnix - startUnix)
-    if vprRuntimeSec:
+    """derive wall / synth / vpr timings from unix timestamps."""
+    if synth_finish_unix is None:
+        synth_finish_unix = vpr_finish_unix
+    synth_finish_unix = min(max(synth_finish_unix, start_unix), vpr_finish_unix)
+    wall_sec = max(0.0, vpr_finish_unix - start_unix)
+    synth_sec = max(0.0, synth_finish_unix - start_unix)
+    if vpr_runtime_sec:
         try:
-            vprSec = max(0.0, float(vprRuntimeSec))
+            vpr_sec = max(0.0, float(vpr_runtime_sec))
         except ValueError:
-            vprSec = max(0.0, vprFinishUnix - synthFinishUnix)
+            vpr_sec = max(0.0, vpr_finish_unix - synth_finish_unix)
     else:
-        vprSec = max(0.0, vprFinishUnix - synthFinishUnix)
+        vpr_sec = max(0.0, vpr_finish_unix - synth_finish_unix)
     return {
-        "start_unix": f"{startUnix:.3f}",
-        "synth_finish_unix": f"{synthFinishUnix:.3f}",
-        "vpr_finish_unix": f"{vprFinishUnix:.3f}",
-        "wall_time_sec": f"{wallSec:.2f}",
-        "synth_wall_sec": f"{synthSec:.2f}",
-        "vpr_wall_sec": f"{vprSec:.2f}",
-        "synthesis_sec": f"{synthSec:.2f}",
-        "abc_wall_sec": abcWallFromMtimes(tempDir, design),
+        "start_unix": f"{start_unix:.3f}",
+        "synth_finish_unix": f"{synth_finish_unix:.3f}",
+        "vpr_finish_unix": f"{vpr_finish_unix:.3f}",
+        "wall_time_sec": f"{wall_sec:.2f}",
+        "synth_wall_sec": f"{synth_sec:.2f}",
+        "vpr_wall_sec": f"{vpr_sec:.2f}",
+        "synthesis_sec": f"{synth_sec:.2f}",
+        "abc_wall_sec": abc_wall_from_mtimes(temp_dir, design),
     }
 
 
-# USE: newest prior compare_results_*.csv in outdir (for --no-rerun reuse).
-def latestResultsCsv(outDir: Path, exclude: Optional[Path] = None) -> Optional[Path]:
-    excludeResolved = exclude.resolve() if exclude is not None else None
-    candidates = sorted(outDir.glob("compare_results*.csv"))
+def latest_results_csv(out_dir: Path, exclude: Optional[Path] = None) -> Optional[Path]:
+    """return the newest prior compare_results_*.csv in *out_dir* for --no-rerun."""
+    exclude_resolved = exclude.resolve() if exclude is not None else None
+    candidates = sorted(out_dir.glob("compare_results*.csv"))
     for path in reversed(candidates):
-        if excludeResolved is not None and path.resolve() == excludeResolved:
+        if exclude_resolved is not None and path.resolve() == exclude_resolved:
             continue
         try:
             if path.stat().st_size <= 0:
@@ -563,13 +576,13 @@ def latestResultsCsv(outDir: Path, exclude: Optional[Path] = None) -> Optional[P
     return None
 
 
-# USE: index prior csv rows by (design, flow) for --no-rerun cache hits.
-def loadCsvIndex(csvPath: Path) -> Dict[Tuple[str, str], Dict]:
+def load_csv_index(csv_path: Path) -> Dict[Tuple[str, str], Dict]:
+    """index prior csv rows by (design, flow) for --no-rerun cache hits."""
     index: Dict[Tuple[str, str], Dict] = {}
-    if not csvPath.is_file():
+    if not csv_path.is_file():
         return index
     try:
-        with open(csvPath, newline="", encoding="utf-8") as handle:
+        with open(csv_path, newline="", encoding="utf-8") as handle:
             for row in csv.DictReader(handle):
                 design = (row.get("design") or "").strip()
                 flow = (row.get("flow") or "").strip()
@@ -580,9 +593,9 @@ def loadCsvIndex(csvPath: Path) -> Dict[Tuple[str, str], Dict]:
     return index
 
 
-# USE: normalize a csv row reloaded for a cached --no-rerun hit.
-def rowFromPriorCsv(priorRow: Dict) -> Dict:
-    row = {field: priorRow.get(field, "") for field in csvFields}
+def row_from_prior_csv(prior_row: Dict) -> Dict:
+    """normalize a csv row reloaded for a cached --no-rerun hit."""
+    row = {field: prior_row.get(field, "") for field in CSV_FIELDS}
     success = row.get("success", "")
     if isinstance(success, str):
         row["success"] = success.strip().lower() in ("1", "true", "yes")
@@ -597,24 +610,29 @@ def rowFromPriorCsv(priorRow: Dict) -> Dict:
     return row
 
 
-def parsePackedLuts(vprText: str) -> str:
-    match = re.search(r"^\s+\.names\s*:\s*(\d+)\s*$", vprText, re.MULTILINE)
+def parse_packed_luts(vpr_text: str) -> str:
+    """extract packed LUT count from VPR output."""
+    match = re.search(r"^\s+\.names\s*:\s*(\d+)\s*$", vpr_text, re.MULTILINE)
     return match.group(1) if match else ""
 
 
-def parseVprFfCount(vprText: str) -> str:
-    ffPbMatch = re.search(r"^\s+ff\s+:\s*(\d+)\s*$", vprText, re.MULTILINE)
-    if ffPbMatch:
-        return ffPbMatch.group(1)
-    latchMatch = re.search(r"^\s+\.latch\s*:\s*(\d+)\s*$", vprText, re.MULTILINE)
-    return latchMatch.group(1) if latchMatch else ""
+def parse_vpr_ff_count(vpr_text: str) -> str:
+    """extract flip-flop count from VPR output."""
+    ff_pb_match = re.search(r"^\s+ff\s+:\s*(\d+)\s*$", vpr_text, re.MULTILINE)
+    if ff_pb_match:
+        return ff_pb_match.group(1)
+    latch_match = re.search(r"^\s+\.latch\s*:\s*(\d+)\s*$", vpr_text, re.MULTILINE)
+    return latch_match.group(1) if latch_match else ""
 
 
-def parseVprQor(tempDir: Path) -> Dict[str, str]:
-    vprOut = tempDir / "vpr.out"
+def parse_vpr_qor(  # pylint: disable=too-many-locals,too-many-branches
+    temp_dir: Path,
+) -> Dict[str, str]:
+    """parse VPR quality-of-results metrics from vpr.out and crit_path.out."""
+    vpr_out = temp_dir / "vpr.out"
     metrics = {
         field: ""
-        for field in csvFields
+        for field in CSV_FIELDS
         if field
         not in (
             "design",
@@ -641,10 +659,10 @@ def parseVprQor(tempDir: Path) -> Dict[str, str]:
         )
     }
     metrics["vpr_status"] = "missing"
-    if not vprOut.is_file() or vprOut.stat().st_size == 0:
+    if not vpr_out.is_file() or vpr_out.stat().st_size == 0:
         return metrics
 
-    text = vprOut.read_text(encoding="utf-8", errors="replace")
+    text = vpr_out.read_text(encoding="utf-8", errors="replace")
     if re.search(r"Final critical path", text) or (
         "The entire flow of VPR took" in text and "Netlist clb blocks:" in text
     ):
@@ -652,71 +670,72 @@ def parseVprQor(tempDir: Path) -> Dict[str, str]:
     elif re.search(r"\bfailed\b", text, re.IGNORECASE):
         metrics["vpr_status"] = "fail"
 
-    blockCounts: Dict[str, int] = {}
-    for blockMatch in re.finditer(r"Netlist (\S+) blocks:\s*(\d+)", text):
-        blockCounts[blockMatch.group(1)] = int(blockMatch.group(2))
-    if "clb" in blockCounts:
-        metrics["num_clb"] = str(blockCounts["clb"])
-    metrics["num_memory"] = str(sum(blockCounts.get(b, 0) for b in vprBramBlockTypes))
-    metrics["num_dsp"] = str(sum(blockCounts.get(b, 0) for b in vprDspBlockTypes))
+    block_counts: Dict[str, int] = {}
+    for block_match in re.finditer(r"Netlist (\S+) blocks:\s*(\d+)", text):
+        block_counts[block_match.group(1)] = int(block_match.group(2))
+    if "clb" in block_counts:
+        metrics["num_clb"] = str(block_counts["clb"])
+    metrics["num_memory"] = str(sum(block_counts.get(b, 0) for b in VPR_BRAM_BLOCK_TYPES))
+    metrics["num_dsp"] = str(sum(block_counts.get(b, 0) for b in VPR_DSP_BLOCK_TYPES))
 
-    ioIn = re.search(r"Netlist inputs pins:\s*(\d+)", text)
-    if ioIn:
-        metrics["num_io_in"] = ioIn.group(1)
-    ioOut = re.search(r"Netlist output pins:\s*(\d+)", text)
-    if ioOut:
-        metrics["num_io_out"] = ioOut.group(1)
+    io_in = re.search(r"Netlist inputs pins:\s*(\d+)", text)
+    if io_in:
+        metrics["num_io_in"] = io_in.group(1)
+    io_out = re.search(r"Netlist output pins:\s*(\d+)", text)
+    if io_out:
+        metrics["num_io_out"] = io_out.group(1)
 
-    metrics["packed_luts"] = parsePackedLuts(text)
-    metrics["num_ff"] = parseVprFfCount(text)
+    metrics["packed_luts"] = parse_packed_luts(text)
+    metrics["num_ff"] = parse_vpr_ff_count(text)
 
-    adderPbMatch = re.search(r"^\s+adder\s+:\s*(\d+)", text, re.MULTILINE)
-    if adderPbMatch:
-        metrics["num_adder"] = adderPbMatch.group(1)
+    adder_pb_match = re.search(r"^\s+adder\s+:\s*(\d+)", text, re.MULTILINE)
+    if adder_pb_match:
+        metrics["num_adder"] = adder_pb_match.group(1)
 
-    wnsMatch = re.search(
+    wns_match = re.search(
         r"worst.negative.slack[^:\n]*:\s*([0-9.-]+)\s*ns", text, re.IGNORECASE
     )
-    if wnsMatch:
-        metrics["worst_slack_ns"] = wnsMatch.group(1)
+    if wns_match:
+        metrics["worst_slack_ns"] = wns_match.group(1)
 
-    wireMatch = re.search(r"Total wirelength:\s*(\d+)", text)
-    if wireMatch:
-        metrics["total_wire_length"] = wireMatch.group(1)
+    wire_match = re.search(r"Total wirelength:\s*(\d+)", text)
+    if wire_match:
+        metrics["total_wire_length"] = wire_match.group(1)
 
-    runtimeMatch = re.search(r"The entire flow of VPR took ([0-9.]+) seconds", text)
-    vprRuntime = runtimeMatch.group(1) if runtimeMatch else ""
+    runtime_match = re.search(r"The entire flow of VPR took ([0-9.]+) seconds", text)
+    vpr_runtime = runtime_match.group(1) if runtime_match else ""
 
-    critFile = tempDir / "vpr.crit_path.out"
-    critText = (
-        critFile.read_text(encoding="utf-8", errors="replace")
-        if critFile.is_file()
+    crit_file = temp_dir / "vpr.crit_path.out"
+    crit_text = (
+        crit_file.read_text(encoding="utf-8", errors="replace")
+        if crit_file.is_file()
         else text
     )
-    critMatch = re.search(
+    crit_match = re.search(
         r"Final critical path[^:]*:\s*([0-9.]+)\s*ns(?:,\s*Fmax:\s*([0-9.]+)\s*MHz)?",
-        critText,
+        crit_text,
     )
-    if critMatch:
-        cpd = float(critMatch.group(1))
-        metrics["crit_path_delay_ns"] = critMatch.group(1)
-        if critMatch.group(2):
-            metrics["fmax_mhz"] = critMatch.group(2)
+    if crit_match:
+        cpd = float(crit_match.group(1))
+        metrics["crit_path_delay_ns"] = crit_match.group(1)
+        if crit_match.group(2):
+            metrics["fmax_mhz"] = crit_match.group(2)
         elif cpd > 0:
             metrics["fmax_mhz"] = f"{1000.0 / cpd:.2f}"
 
-    metrics["_vpr_runtime_sec"] = vprRuntime
+    metrics["_vpr_runtime_sec"] = vpr_runtime
     return metrics
 
 
-def extractFailReason(tempDir: Path, flowName: str, returnCode: int) -> str:
-    stageName = "mosaic" if flowName == "mosaic" else "parmys"
+def extract_fail_reason(temp_dir: Path, flow_name: str, return_code: int) -> str:
+    """scan log files for the last error message to summarize a failure."""
+    stage_name = "mosaic" if flow_name == "mosaic" else "parmys"
     candidates = (
-        tempDir / "output.txt",
-        tempDir / f"{stageName}.out",
-        tempDir / "vpr.out",
+        temp_dir / "output.txt",
+        temp_dir / f"{stage_name}.out",
+        temp_dir / "vpr.out",
     )
-    errorRe = re.compile(
+    error_re = re.compile(
         r"(ERROR[:\s].+|error:\s.+|can't open command file.+|No such file.+|"
         r"unknown command:.+|TCL interpreter returned an error|"
         r"failed to execute.+|Assert.+|EXCEPTION.+|"
@@ -730,22 +749,22 @@ def extractFailReason(tempDir: Path, flowName: str, returnCode: int) -> str:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        matches = errorRe.findall(text)
+        matches = error_re.findall(text)
         if not matches:
             continue
         snippet = re.sub(r"\s+", " ", matches[-1]).strip()
         if len(snippet) > 120:
             snippet = snippet[:117] + "..."
         return f"{path.name}: {snippet}"
-    if returnCode == 139:
+    if return_code == 139:
         return "rc=139 (segfault)"
-    if returnCode != 0:
-        return f"rc={returnCode}"
+    if return_code != 0:
+        return f"rc={return_code}"
     return "missing"
 
 
-# USE: force each child process onto one worker/thread.
-def singleCoreEnv() -> Dict[str, str]:
+def single_core_env() -> Dict[str, str]:
+    """return an env dict that pins each child process to one worker/thread."""
     env = os.environ.copy()
     env["VPR_NUM_WORKERS"] = "1"
     env["OMP_NUM_THREADS"] = "1"
@@ -754,40 +773,43 @@ def singleCoreEnv() -> Dict[str, str]:
     return env
 
 
-def runOne(task: Tuple) -> Dict:
+def run_one(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    task: Tuple,
+) -> Dict:
+    """execute a single run_vtr_flow invocation and collect results."""
     (
         design,
-        flowName,
-        outDir,
-        archFile,
-        benchDir,
-        noClean,
-        noRerun,
-        includeFiles,
-        routeChanWidth,
-        priorRow,
-        csvPath,
+        flow_name,
+        out_dir,
+        arch_file,
+        bench_dir,
+        no_clean,
+        no_rerun,
+        include_files,
+        route_chan_width,
+        prior_row,
+        csv_path,
         order,
-        verilatorCheck,
-        verilatorVectors,
-        verilatorSeed,
+        verilator_check,
+        verilator_vectors,
+        verilator_seed,
     ) = task
-    runLabel = f"{design}_{flowName}"
-    tempDir = (outDir / "runs" / runLabel).resolve()
-    logPath = (outDir / "logs" / f"{runLabel}.log").resolve()
-    successMarker = tempDir / ".success"
-    circuitPath = benchDir / f"{design}.v"
+    run_label = f"{design}_{flow_name}"
+    temp_dir = (out_dir / "runs" / run_label).resolve()
+    log_path = (out_dir / "logs" / f"{run_label}.log").resolve()
+    success_marker = temp_dir / ".success"
+    circuit_path = bench_dir / f"{design}.v"
 
     def publish(row: Dict) -> None:
-        upsertCsvRow(csvPath, row, order=order)
+        upsert_csv_row(csv_path, row, order=order)
 
-    if noRerun and successMarker.is_file():
-        if priorRow:
-            row = rowFromPriorCsv(priorRow)
+    if no_rerun and success_marker.is_file():
+        if prior_row:
+            row = row_from_prior_csv(prior_row)
         else:
             row = {
                 "design": design,
-                "flow": flowName,
+                "flow": flow_name,
                 "status": "cached",
                 "success": True,
                 "vpr_status": "cached",
@@ -796,10 +818,10 @@ def runOne(task: Tuple) -> Dict:
         publish(row)
         return row
 
-    if not circuitPath.is_file():
+    if not circuit_path.is_file():
         row = {
             "design": design,
-            "flow": flowName,
+            "flow": flow_name,
             "status": "fail",
             "success": False,
             "vpr_status": "missing_verilog",
@@ -809,110 +831,110 @@ def runOne(task: Tuple) -> Dict:
         publish(row)
         return row
 
-    if tempDir.exists() and not noClean:
-        shutil.rmtree(tempDir)
-    tempDir.mkdir(parents=True, exist_ok=True)
-    logPath.parent.mkdir(parents=True, exist_ok=True)
+    if temp_dir.exists() and not no_clean:
+        shutil.rmtree(temp_dir)
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
 
     # default vtr call uses -j/--num_workers 1 so vpr stays on one core per run.
     cmd = [
         sys.executable,
-        str(runVtrFlow.resolve()),
-        str(circuitPath.resolve()),
-        str(archFile.resolve()),
+        str(RUN_VTR_FLOW.resolve()),
+        str(circuit_path.resolve()),
+        str(arch_file.resolve()),
         "-start",
-        flows[flowName]["start"],
+        FLOWS[flow_name]["start"],
         "-temp_dir",
-        str(tempDir),
+        str(temp_dir),
         "-name",
-        runLabel,
+        run_label,
         "-track_memory_usage",
         "--pack",
         "--place",
         "--route",
         "--analysis",
         "--route_chan_width",
-        str(routeChanWidth),
+        str(route_chan_width),
         "-crit_path_router_iterations",
         "100",
         "--num_workers",
         "1",
     ]
-    if includeFiles:
-        cmd += ["-include", *[str(path) for path in includeFiles]]
-    if verilatorCheck:
+    if include_files:
+        cmd += ["-include", *[str(path) for path in include_files]]
+    if verilator_check:
         cmd += [
             "-verilator_check",
             "-verilator_check_vectors",
-            str(verilatorVectors),
+            str(verilator_vectors),
             "-verilator_check_seed",
-            str(verilatorSeed),
+            str(verilator_seed),
         ]
 
     # wall is process lifetime. synth is until frontend blif. vpr is VPR's own runtime
-    startUnix = time.time()
-    synthFinishUnix = None
-    liveStatus = "started"
-    publish({"design": design, "flow": flowName, "status": liveStatus})
-    with open(logPath, "w", encoding="utf-8", errors="replace") as logFile:
-        logFile.write("CMD: " + " ".join(cmd) + "\n\n")
-        logFile.flush()
-        proc = subprocess.Popen(
+    start_unix = time.time()
+    synth_finish_unix = None
+    live_status = "started"
+    publish({"design": design, "flow": flow_name, "status": live_status})
+    with open(log_path, "w", encoding="utf-8", errors="replace") as log_file:
+        log_file.write("CMD: " + " ".join(cmd) + "\n\n")
+        log_file.flush()
+        proc = subprocess.Popen(  # pylint: disable=consider-using-with
             cmd,
-            cwd=str(vtrRoot),
-            stdout=logFile,
+            cwd=str(VTR_ROOT),
+            stdout=log_file,
             stderr=subprocess.STDOUT,
             text=True,
-            env=singleCoreEnv(),
+            env=single_core_env(),
         )
         while True:
-            returnCode = proc.poll()
-            if synthFinishUnix is None and frontendReady(tempDir, design, flowName):
-                synthFinishUnix = time.time()
-            phase = detectPhase(tempDir)
-            nextStatus = preferStatus(liveStatus, phase)
-            if nextStatus != liveStatus:
-                liveStatus = nextStatus
-                publish({"design": design, "flow": flowName, "status": liveStatus})
-            if returnCode is not None:
+            return_code = proc.poll()
+            if synth_finish_unix is None and frontend_ready(temp_dir, design, flow_name):
+                synth_finish_unix = time.time()
+            phase = detect_phase(temp_dir)
+            next_status = prefer_status(live_status, phase)
+            if next_status != live_status:
+                live_status = next_status
+                publish({"design": design, "flow": flow_name, "status": live_status})
+            if return_code is not None:
                 break
             time.sleep(0.25)
-    vprFinishUnix = time.time()
-    if synthFinishUnix is None and frontendReady(tempDir, design, flowName):
-        synthFinishUnix = vprFinishUnix
+    vpr_finish_unix = time.time()
+    if synth_finish_unix is None and frontend_ready(temp_dir, design, flow_name):
+        synth_finish_unix = vpr_finish_unix
 
-    qor = parseVprQor(tempDir)
-    vprRuntime = qor.pop("_vpr_runtime_sec", "")
-    vprOut = tempDir / "vpr.out"
-    if not vprRuntime and (not vprOut.is_file() or vprOut.stat().st_size == 0):
-        vprRuntime = "0"
-    stageTimes = timesFromTimestamps(
-        startUnix,
-        synthFinishUnix,
-        vprFinishUnix,
-        tempDir,
+    qor = parse_vpr_qor(temp_dir)
+    vpr_runtime = qor.pop("_vpr_runtime_sec", "")
+    vpr_out = temp_dir / "vpr.out"
+    if not vpr_runtime and (not vpr_out.is_file() or vpr_out.stat().st_size == 0):
+        vpr_runtime = "0"
+    stage_times = times_from_timestamps(
+        start_unix,
+        synth_finish_unix,
+        vpr_finish_unix,
+        temp_dir,
         design,
-        vprRuntimeSec=vprRuntime,
+        vpr_runtime_sec=vpr_runtime,
     )
-    qor.update(stageLutCounts(tempDir, design))
-    qor.update(stageTimes)
+    qor.update(stage_lut_counts(temp_dir, design))
+    qor.update(stage_times)
     if qor.get("vpr_status") == "missing":
-        qor["vpr_status"] = extractFailReason(tempDir, flowName, returnCode)
-    success = returnCode == 0 and qor["vpr_status"] == "ok"
-    vcheck = readVerilatorMetrics(tempDir, verilatorCheck)
+        qor["vpr_status"] = extract_fail_reason(temp_dir, flow_name, return_code)
+    success = return_code == 0 and qor["vpr_status"] == "ok"
+    vcheck = read_verilator_metrics(temp_dir, verilator_check)
     # final identity/status fields override any same-named keys from qor
     row = {
         **qor,
         "design": design,
-        "flow": flowName,
+        "flow": flow_name,
         "status": "route done" if success else "fail",
         "success": success,
-        "return_code": returnCode,
+        "return_code": return_code,
         **vcheck,
     }
     if success:
         try:
-            successMarker.touch()
+            success_marker.touch()
         except OSError:
             pass
 
@@ -920,11 +942,8 @@ def runOne(task: Tuple) -> Dict:
     return row
 
 
-# snapshot of verilator random-check from verilator_random_check.out
-# pass  rtl and post-synth matched
-# fail  sim ran and found mismatches
-# error could not compile or run the check
-def readVerilatorMetrics(tempDir: Path, enabled: bool) -> Dict[str, str]:
+def read_verilator_metrics(temp_dir: Path, enabled: bool) -> Dict[str, str]:
+    """parse verilator random-check results: pass / fail / error."""
     empty = {
         "verilator_status": "",
         "verilator_matched": "",
@@ -934,11 +953,11 @@ def readVerilatorMetrics(tempDir: Path, enabled: bool) -> Dict[str, str]:
     }
     if not enabled:
         return empty
-    logPath = tempDir / "verilator_random_check.out"
-    if not logPath.is_file():
+    log_path = temp_dir / "verilator_random_check.out"
+    if not log_path.is_file():
         return {**empty, "verilator_status": "error"}
     try:
-        text = logPath.read_text(encoding="utf-8", errors="replace")
+        text = log_path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return {**empty, "verilator_status": "error"}
 
@@ -954,7 +973,7 @@ def readVerilatorMetrics(tempDir: Path, enabled: bool) -> Dict[str, str]:
         metrics["verilator_vectors"] = summary.group(3)
         metrics["verilator_port_errors"] = summary.group(4)
 
-    toolError = bool(
+    tool_error = bool(
         re.search(
             r"verilator not on PATH|ERROR:|yosys blif|missing post-synth|"
             r"script missing",
@@ -967,59 +986,62 @@ def readVerilatorMetrics(tempDir: Path, enabled: bool) -> Dict[str, str]:
         metrics["verilator_status"] = "fail"
     elif re.search(r"FAIL:\s+\d+\s+mismatches", text, re.IGNORECASE):
         metrics["verilator_status"] = "fail"
-    elif toolError:
+    elif tool_error:
         metrics["verilator_status"] = "error"
     else:
         metrics["verilator_status"] = "error"
     return metrics
 
 
-def runPool(
+def run_pool(
     tasks: List[Tuple],
     jobs: int,
-    csvPath: Path,
+    _csv_path: Path,
     order: Dict[Tuple[str, str], int],
     quiet: bool,
 ) -> List[Dict]:
-    liveResults: List[Dict] = []
+    """dispatch tasks to a process pool and collect results."""
+    live_results: List[Dict] = []
 
     if not tasks:
         return []
 
     if jobs <= 1 or len(tasks) <= 1:
         for task in tasks:
-            liveResults.append(runOne(task))
+            live_results.append(run_one(task))
             if not quiet:
-                print(formatSummary(f"{task[0]}_{task[1]}", liveResults[-1]))
-        return liveResults
+                print(format_summary(f"{task[0]}_{task[1]}", live_results[-1]))
+        return live_results
 
     with ProcessPoolExecutor(max_workers=jobs) as pool:
-        futures = {pool.submit(runOne, task): task for task in tasks}
+        futures = {pool.submit(run_one, task): task for task in tasks}
         for future in as_completed(futures):
             row = future.result()
-            liveResults.append(row)
+            live_results.append(row)
             if not quiet:
-                print(formatSummary(f"{row['design']}_{row['flow']}", row))
-    liveResults.sort(key=lambda row: order.get((row["design"], row["flow"]), 0))
-    return liveResults
+                print(format_summary(f"{row['design']}_{row['flow']}", row))
+    live_results.sort(key=lambda row: order.get((row["design"], row["flow"]), 0))
+    return live_results
 
 
-def startWatch(outDir: Path, interval: float) -> subprocess.Popen:
-    watchScript = scriptDir / "watch_compare.py"
-    return subprocess.Popen(
+def start_watch(out_dir: Path, interval: float) -> subprocess.Popen:
+    """spawn the watch_compare.py watcher subprocess."""
+    watch_script = SCRIPT_DIR / "watch_compare.py"
+    return subprocess.Popen(  # pylint: disable=consider-using-with
         [
             sys.executable,
-            str(watchScript),
+            str(watch_script),
             "--dir",
-            str(outDir),
+            str(out_dir),
             "--interval",
             str(interval),
         ],
-        cwd=str(vtrRoot),
+        cwd=str(VTR_ROOT),
     )
 
 
-def stopWatch(proc: Optional[subprocess.Popen]) -> None:
+def stop_watch(proc: Optional[subprocess.Popen]) -> None:
+    """terminate the watcher subprocess gracefully."""
     if proc is None:
         return
     if proc.poll() is not None:
@@ -1032,7 +1054,10 @@ def stopWatch(proc: Optional[subprocess.Popen]) -> None:
         proc.wait(timeout=2.0)
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    argv: Optional[Sequence[str]] = None,
+) -> int:
+    """parse arguments, launch batch runs, write final csv."""
     parser = argparse.ArgumentParser(
         description="batch run_vtr_flow.py (1 core per run) with live csv"
     )
@@ -1099,147 +1124,147 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    archFile = resolvePath(args.arch, vtrRoot)
-    benchDir = resolvePath(args.benchmark_dir, vtrRoot)
-    designs = resolveDesigns(args.designs, benchDir)
-    selectedFlows = normalizeFlows(args.flows)
-    vcheckFlows = normalizeFlows(args.verilator_check) if args.verilator_check else []
-    missingVcheck = [flow for flow in vcheckFlows if flow not in selectedFlows]
-    if missingVcheck:
+    arch_file = resolve_path(args.arch, VTR_ROOT)
+    bench_dir = resolve_path(args.benchmark_dir, VTR_ROOT)
+    designs = resolve_designs(args.designs, bench_dir)
+    selected_flows = normalize_flows(args.flows)
+    vcheck_flows = normalize_flows(args.verilator_check) if args.verilator_check else []
+    missing_vcheck = [flow for flow in vcheck_flows if flow not in selected_flows]
+    if missing_vcheck:
         parser.error(
             "--verilator-check flow not in --flows: "
-            + ", ".join(missingVcheck)
+            + ", ".join(missing_vcheck)
             + " (selected: "
-            + ", ".join(selectedFlows)
+            + ", ".join(selected_flows)
             + ")"
         )
     jobs = max(1, args.jobs)
-    includeFiles = resolveIncludePaths(args.include, benchDir)
-    outDir = resolvePath(
-        args.outdir or f"compare_output_{archFile.stem}", compareOutputRoot
+    include_files = resolve_include_paths(args.include, bench_dir)
+    out_dir = resolve_path(
+        args.outdir or f"compare_output_{arch_file.stem}", COMPARE_OUTPUT_ROOT
     )
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    csvPath = (
-        resolvePath(args.csv, vtrRoot)
+    csv_path = (
+        resolve_path(args.csv, VTR_ROOT)
         if args.csv
-        else (outDir / f"compare_results_{stamp}.csv")
+        else (out_dir / f"compare_results_{stamp}.csv")
     )
 
-    checkPrerequisites("mosaic" in selectedFlows, archFile, benchDir)
+    check_prerequisites("mosaic" in selected_flows, arch_file, bench_dir)
 
-    outDir.mkdir(parents=True, exist_ok=True)
-    (outDir / "runs").mkdir(exist_ok=True)
-    (outDir / "logs").mkdir(exist_ok=True)
-    statusDir = outDir / "status"
-    if statusDir.exists() and not args.no_rerun:
-        shutil.rmtree(statusDir, ignore_errors=True)
-    statusDir.mkdir(exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "runs").mkdir(exist_ok=True)
+    (out_dir / "logs").mkdir(exist_ok=True)
+    status_dir = out_dir / "status"
+    if status_dir.exists() and not args.no_rerun:
+        shutil.rmtree(status_dir, ignore_errors=True)
+    status_dir.mkdir(exist_ok=True)
 
-    labels = [f"{design}_{flow}" for design in designs for flow in selectedFlows]
-    (statusDir / "manifest.txt").write_text("\n".join(labels) + "\n", encoding="utf-8")
-    (statusDir / "csv_path.txt").write_text(str(csvPath.resolve()) + "\n", encoding="utf-8")
-    if vcheckFlows:
-        (statusDir / "verilator_check").write_text(
-            " ".join(vcheckFlows) + "\n", encoding="utf-8"
+    labels = [f"{design}_{flow}" for design in designs for flow in selected_flows]
+    (status_dir / "manifest.txt").write_text("\n".join(labels) + "\n", encoding="utf-8")
+    (status_dir / "csv_path.txt").write_text(str(csv_path.resolve()) + "\n", encoding="utf-8")
+    if vcheck_flows:
+        (status_dir / "verilator_check").write_text(
+            " ".join(vcheck_flows) + "\n", encoding="utf-8"
         )
     else:
-        marker = statusDir / "verilator_check"
+        marker = status_dir / "verilator_check"
         if marker.is_file():
             marker.unlink()
 
     # --no-rerun reloads timing/qor for cached runs from the newest prior csv.
-    priorIndex: Dict[Tuple[str, str], Dict] = {}
+    prior_index: Dict[Tuple[str, str], Dict] = {}
     if args.no_rerun:
-        priorCsv = latestResultsCsv(outDir, exclude=csvPath)
-        if priorCsv is not None:
-            priorIndex = loadCsvIndex(priorCsv)
-            print(f"prior:   {priorCsv} ({len(priorIndex)} rows)")
+        prior_csv = latest_results_csv(out_dir, exclude=csv_path)
+        if prior_csv is not None:
+            prior_index = load_csv_index(prior_csv)
+            print(f"prior:   {prior_csv} ({len(prior_index)} rows)")
 
     order = {
-        (design, flowName): i
-        for i, (design, flowName) in enumerate(
-            (design, flowName)
+        (design, flow_name): i
+        for i, (design, flow_name) in enumerate(
+            (design, flow_name)
             for design in designs
-            for flowName in selectedFlows
+            for flow_name in selected_flows
         )
     }
     # seed the csv with every run so watch_compare can read status-only rows.
-    seedRows = [
+    seed_rows = [
         {
             "design": design,
-            "flow": flowName,
+            "flow": flow_name,
             "status": "pending",
             "success": "",
         }
         for design in designs
-        for flowName in selectedFlows
+        for flow_name in selected_flows
     ]
-    writeCsv(csvPath, seedRows, order=order)
+    write_csv(csv_path, seed_rows, order=order)
 
     tasks = [
         (
             design,
-            flowName,
-            outDir,
-            archFile,
-            benchDir,
+            flow_name,
+            out_dir,
+            arch_file,
+            bench_dir,
             args.no_clean,
             args.no_rerun,
-            includeFiles,
+            include_files,
             args.route_chan_width,
-            priorIndex.get((design, flowName)),
-            csvPath,
+            prior_index.get((design, flow_name)),
+            csv_path,
             order,
-            flowName in vcheckFlows,
+            flow_name in vcheck_flows,
             args.verilator_vectors,
             args.verilator_seed,
         )
         for design in designs
-        for flowName in selectedFlows
+        for flow_name in selected_flows
     ]
 
-    print(f"arch:    {archFile}")
-    print(f"bench:   {benchDir}")
+    print(f"arch:    {arch_file}")
+    print(f"bench:   {bench_dir}")
     print(f"designs: {', '.join(designs)}")
-    print(f"flows:   {', '.join(selectedFlows)}")
-    if vcheckFlows:
-        print(f"vcheck:  {', '.join(vcheckFlows)}")
-    if includeFiles:
-        print(f"include: {', '.join(path.name for path in includeFiles)}")
+    print(f"flows:   {', '.join(selected_flows)}")
+    if vcheck_flows:
+        print(f"vcheck:  {', '.join(vcheck_flows)}")
+    if include_files:
+        print(f"include: {', '.join(path.name for path in include_files)}")
     print(f"jobs:    {jobs} concurrent runs x 1 core each")
-    print(f"outdir:  {outDir}")
-    print(f"csv:     {csvPath}")
+    print(f"outdir:  {out_dir}")
+    print(f"csv:     {csv_path}")
     if not args.watch:
         print(
-            f"watch:   python3 mosaic/scripts/watch_compare.py --dir {outDir}"
+            f"watch:   python3 mosaic/scripts/watch_compare.py --dir {out_dir}"
         )
     print(
-        f"launching {len(designs)} designs x {len(selectedFlows)} flows "
+        f"launching {len(designs)} designs x {len(selected_flows)} flows "
         f"= {len(tasks)} runs"
     )
     print()
 
-    watchProc = None
+    watch_proc = None
     if args.watch:
-        watchProc = startWatch(outDir, max(0.2, args.watch_interval))
+        watch_proc = start_watch(out_dir, max(0.2, args.watch_interval))
 
     try:
-        rows = runPool(tasks, jobs, csvPath, order, quiet=args.watch)
+        rows = run_pool(tasks, jobs, csv_path, order, quiet=args.watch)
     except KeyboardInterrupt:
-        stopWatch(watchProc)
+        stop_watch(watch_proc)
         print("\ninterrupted.")
         return 130
     finally:
-        stopWatch(watchProc)
+        stop_watch(watch_proc)
 
     # live upserts already wrote each row; rewrite once in stable launch order.
     for row in rows:
-        upsertCsvRow(csvPath, row, order=order)
-    writeCsv(csvPath, loadCsvRows(csvPath), order=order)
+        upsert_csv_row(csv_path, row, order=order)
+    write_csv(csv_path, load_csv_rows(csv_path), order=order)
     ok = sum(1 for row in rows if row.get("success"))
     fail = len(rows) - ok
     print()
-    print(f"done: {ok} ok, {fail} failed  ->  {csvPath}")
+    print(f"done: {ok} ok, {fail} failed  ->  {csv_path}")
     return 0 if fail == 0 else 1
 
 

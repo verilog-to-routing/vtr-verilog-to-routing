@@ -38,10 +38,9 @@ RUN_VTR_FLOW = REPO_ROOT / "vtr_flow/scripts/run_vtr_flow.py"
 SUBCKT_RE = re.compile(r"^\.subckt\s+(\S+)", re.MULTILINE)
 
 
-# USE: collect hardblock model names declared in an arch xml.
-def archModelNames(archXmlPath):
-    text = Path(archXmlPath).read_text(encoding="utf-8", errors="replace")
-    # prefer <models> declarations and fall back to pb_type blif_model scan.
+def arch_model_names(arch_xml_path):
+    """collect hardblock model names declared in an arch xml."""
+    text = Path(arch_xml_path).read_text(encoding="utf-8", errors="replace")
     names = set(re.findall(r'<model\s+name="([^"]+)"', text))
     if names:
         return names
@@ -50,64 +49,62 @@ def archModelNames(archXmlPath):
     return names
 
 
-# USE: intersect .subckt names in a blif with arch-declared hardblock models.
-def usedHardblockModels(blifPath, archModels):
-    text = Path(blifPath).read_text(encoding="utf-8", errors="replace")
+def used_hardblock_models(blif_path, arch_models):
+    """intersect .subckt names in a blif with arch-declared hardblock models."""
+    text = Path(blif_path).read_text(encoding="utf-8", errors="replace")
     used = set(SUBCKT_RE.findall(text))
-    return sorted(used & set(archModels))
+    return sorted(used & set(arch_models))
 
 
-# HELPER: return models only on each side of a set comparison.
-def compareSets(parmysModels, mosaicModels):
-    left = set(parmysModels)
-    right = set(mosaicModels)
-    onlyParmys = sorted(left - right)
-    onlyMosaic = sorted(right - left)
-    return onlyParmys, onlyMosaic
+def compare_sets(parmys_models, mosaic_models):
+    """return models only on each side of a set comparison."""
+    left = set(parmys_models)
+    right = set(mosaic_models)
+    only_parmys = sorted(left - right)
+    only_mosaic = sorted(right - left)
+    return only_parmys, only_mosaic
 
 
-# USE: run one frontend stage (-start/-end) into workDir and return its blif.
-def runFrontend(circuit, arch, startStage, workDir):
-    # resolve temp_dir to an absolute path. run_vtr_flow.py lives under
-    # vtr_flow/scripts/, and a relative -temp_dir is resolved against that
-    # directory, which breaks when the caller passes a repo-root-relative path.
-    workDir = Path(workDir).expanduser()
-    if not workDir.is_absolute():
-        workDir = (REPO_ROOT / workDir).resolve()
+def run_frontend(circuit, arch, start_stage, work_dir):
+    """run one frontend stage (-start/-end) into work_dir and return its blif."""
+    work_dir = Path(work_dir).expanduser()
+    if not work_dir.is_absolute():
+        work_dir = (REPO_ROOT / work_dir).resolve()
     else:
-        workDir = workDir.resolve()
-    workDir.mkdir(parents=True, exist_ok=True)
+        work_dir = work_dir.resolve()
+    work_dir.mkdir(parents=True, exist_ok=True)
 
-    circuitPath = Path(circuit)
-    if not circuitPath.is_absolute():
-        circuitPath = (REPO_ROOT / circuitPath).resolve()
-    archPath = Path(arch)
-    if not archPath.is_absolute():
-        archPath = (REPO_ROOT / archPath).resolve()
+    circuit_path = Path(circuit)
+    if not circuit_path.is_absolute():
+        circuit_path = (REPO_ROOT / circuit_path).resolve()
+    arch_path = Path(arch)
+    if not arch_path.is_absolute():
+        arch_path = (REPO_ROOT / arch_path).resolve()
 
     cmd = [
         sys.executable,
         str(RUN_VTR_FLOW),
-        str(circuitPath),
-        str(archPath),
+        str(circuit_path),
+        str(arch_path),
         "-start",
-        startStage,
+        start_stage,
         "-end",
-        startStage,
+        start_stage,
         "-temp_dir",
-        str(workDir),
+        str(work_dir),
     ]
     print("running:", " ".join(cmd))
     subprocess.check_call(cmd, cwd=str(REPO_ROOT))
-    stem = circuitPath.stem
-    blifName = "{}.{}.blif".format(stem, startStage)
-    blifPath = workDir / blifName
-    if not blifPath.is_file():
-        raise SystemExit("expected blif missing: {}".format(blifPath))
-    return blifPath
+    stem = circuit_path.stem
+    blif_name = "{}.{}.blif".format(stem, start_stage)
+    blif_path = work_dir / blif_name
+    if not blif_path.is_file():
+        raise SystemExit("expected blif missing: {}".format(blif_path))
+    return blif_path
 
 
-def main(argv=None):
+def main(argv=None):  # pylint: disable=too-many-return-statements,too-many-branches,too-many-statements
+    """parse arguments, run or load blifs, and compare hardblock model sets."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--arch",
@@ -136,9 +133,9 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
 
-    archPath = Path(args.arch)
-    if not archPath.is_file():
-        print("error: arch not found: {}".format(archPath), file=sys.stderr)
+    arch_path = Path(args.arch)
+    if not arch_path.is_file():
+        print("error: arch not found: {}".format(arch_path), file=sys.stderr)
         return 1
 
     if args.run:
@@ -154,11 +151,11 @@ def main(argv=None):
         else:
             parent = Path(tempfile.mkdtemp(prefix="mosaic_blif_cmp_"))
         parent.mkdir(parents=True, exist_ok=True)
-        parmysDir = parent / "parmys"
-        mosaicDir = parent / "mosaic"
+        parmys_dir = parent / "parmys"
+        mosaic_dir = parent / "mosaic"
         try:
-            parmysBlif = runFrontend(args.circuit, archPath, "parmys", parmysDir)
-            mosaicBlif = runFrontend(args.circuit, archPath, "mosaic", mosaicDir)
+            parmys_blif = run_frontend(args.circuit, arch_path, "parmys", parmys_dir)
+            mosaic_blif = run_frontend(args.circuit, arch_path, "mosaic", mosaic_dir)
         except subprocess.CalledProcessError as exc:
             print("error: flow failed: {}".format(exc), file=sys.stderr)
             return 1
@@ -169,34 +166,34 @@ def main(argv=None):
                 file=sys.stderr,
             )
             return 1
-        parmysBlif = Path(args.parmys_blif)
-        mosaicBlif = Path(args.mosaic_blif)
-        if not parmysBlif.is_file() or not mosaicBlif.is_file():
+        parmys_blif = Path(args.parmys_blif)
+        mosaic_blif = Path(args.mosaic_blif)
+        if not parmys_blif.is_file() or not mosaic_blif.is_file():
             print("error: blif missing", file=sys.stderr)
             return 1
 
-    archModels = archModelNames(archPath)
-    if not archModels:
-        print("error: no models found in {}".format(archPath), file=sys.stderr)
+    arch_models = arch_model_names(arch_path)
+    if not arch_models:
+        print("error: no models found in {}".format(arch_path), file=sys.stderr)
         return 1
 
-    parmysModels = usedHardblockModels(parmysBlif, archModels)
-    mosaicModels = usedHardblockModels(mosaicBlif, archModels)
-    onlyParmys, onlyMosaic = compareSets(parmysModels, mosaicModels)
+    parmys_models = used_hardblock_models(parmys_blif, arch_models)
+    mosaic_models = used_hardblock_models(mosaic_blif, arch_models)
+    only_parmys, only_mosaic = compare_sets(parmys_models, mosaic_models)
 
-    print("arch: {}".format(archPath))
-    print("parmys hardblock .subckt models: {}".format(" ".join(parmysModels) or "-"))
-    print("mosaic hardblock .subckt models: {}".format(" ".join(mosaicModels) or "-"))
+    print("arch: {}".format(arch_path))
+    print("parmys hardblock .subckt models: {}".format(" ".join(parmys_models) or "-"))
+    print("mosaic hardblock .subckt models: {}".format(" ".join(mosaic_models) or "-"))
 
-    if onlyParmys or onlyMosaic:
-        if onlyParmys:
+    if only_parmys or only_mosaic:
+        if only_parmys:
             print(
-                "only in parmys: {}".format(" ".join(onlyParmys)),
+                "only in parmys: {}".format(" ".join(only_parmys)),
                 file=sys.stderr,
             )
-        if onlyMosaic:
+        if only_mosaic:
             print(
-                "only in mosaic: {}".format(" ".join(onlyMosaic)),
+                "only in mosaic: {}".format(" ".join(only_mosaic)),
                 file=sys.stderr,
             )
         print("FAIL: hardblock model sets differ", file=sys.stderr)

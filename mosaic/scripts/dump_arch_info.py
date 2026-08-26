@@ -33,18 +33,21 @@ DEFAULT_ARCHES = [
 ]
 
 
-def isTruthy(value):
+def is_truthy(value):
+    """return whether value is truthy and not a false-like string."""
     return bool(value) and value not in ("0", "false")
 
 
-def collectAll(node, tag, out):
+def collect_all(node, tag, out):
+    """recursively collect all descendant elements matching tag."""
     if node.tag == tag:
         out.append(node)
     for child in node:
-        collectAll(child, tag, out)
+        collect_all(child, tag, out)
 
 
-def attrInt(node, key, fallback=0):
+def attr_int(node, key, fallback=0):
+    """return an integer attribute from node, or fallback on missing/bad value."""
     value = node.get(key)
     if value is None:
         return fallback
@@ -54,90 +57,98 @@ def attrInt(node, key, fallback=0):
         return fallback
 
 
-def directPins(node, tag):
-    return [(pin.get("name", ""), attrInt(pin, "num_pins", 1)) for pin in node.findall(tag)]
+def direct_pins(node, tag):
+    """return list of (name, num_pins) pairs for direct child pins."""
+    return [(pin.get("name", ""), attr_int(pin, "num_pins", 1)) for pin in node.findall(tag)]
 
 
-def pinWidth(pins, name):
-    for pinName, width in pins:
-        if pinName == name:
+def pin_width(pins, name):
+    """look up a pin width by name from a list of (name, width) pairs."""
+    for pin_name, width in pins:
+        if pin_name == name:
             return width
     return 0
 
 
-def scanModels(root, info):
-    for modelsNode in root.findall("models"):
-        for model in modelsNode.findall("model"):
-            for inputPorts in model.findall("input_ports"):
-                for port in inputPorts.findall("port"):
-                    if isTruthy(port.get("is_clock", "")):
+def scan_models(root, info):
+    """scan <models> for clocked model names."""
+    for models_node in root.findall("models"):  # pylint: disable=too-many-nested-blocks
+        for model in models_node.findall("model"):
+            for input_ports in model.findall("input_ports"):
+                for port in input_ports.findall("port"):
+                    if is_truthy(port.get("is_clock", "")):
                         name = model.get("name", "")
                         if name and name not in info["clockedModels"]:
                             info["clockedModels"].append(name)
 
 
-def parseOpmodeBlif(blif):
+def parse_opmode_blif(blif):
+    """parse a .subckt blif string with an opmode qualifier."""
     prefix = ".subckt "
     if not blif.startswith(prefix):
         return None
     rest = blif[len(prefix) :]
-    opmodeTag = ".opmode{"
-    opPos = rest.find(opmodeTag)
-    if opPos <= 0:
+    opmode_tag = ".opmode{"
+    op_pos = rest.find(opmode_tag)
+    if op_pos <= 0:
         return None
-    qualStart = opPos + len(opmodeTag)
-    qualEnd = rest.find("}", qualStart)
-    if qualEnd < 0:
+    qual_start = op_pos + len(opmode_tag)
+    qual_end = rest.find("}", qual_start)
+    if qual_end < 0:
         return None
-    modelName = rest[:opPos]
-    modeQualifier = rest[qualStart:qualEnd]
-    if not modelName or not modeQualifier:
+    model_name = rest[:op_pos]
+    mode_qualifier = rest[qual_start:qual_end]
+    if not model_name or not mode_qualifier:
         return None
-    return modelName, modeQualifier
+    return model_name, mode_qualifier
 
 
-def fillPortWidths(pb):
-    inputWidths = {}
-    outputWidths = {}
-    for pinName, width in directPins(pb, "input"):
-        inputWidths[pinName] = width
-    for pinName, width in directPins(pb, "clock"):
-        inputWidths[pinName] = width
-    for pinName, width in directPins(pb, "output"):
-        outputWidths[pinName] = width
-    return inputWidths, outputWidths
+def fill_port_widths(pb):
+    """collect input and output port widths from a pb_type element."""
+    input_widths = {}
+    output_widths = {}
+    for pin_name, width in direct_pins(pb, "input"):
+        input_widths[pin_name] = width
+    for pin_name, width in direct_pins(pb, "clock"):
+        input_widths[pin_name] = width
+    for pin_name, width in direct_pins(pb, "output"):
+        output_widths[pin_name] = width
+    return input_widths, output_widths
 
 
-def scanGenericModes(pbTypes, info):
-    for pb in pbTypes:
-        parsed = parseOpmodeBlif(pb.get("blif_model", ""))
+def scan_generic_modes(pb_types, info):
+    """scan pb_types for opmode-qualified hardblock bindings."""
+    for pb in pb_types:
+        parsed = parse_opmode_blif(pb.get("blif_model", ""))
         if parsed is None:
             continue
-        modelName, modeQualifier = parsed
-        inputWidths, outputWidths = fillPortWidths(pb)
-        info["hardblockModes"].setdefault(modelName, []).append(
+        model_name, mode_qualifier = parsed
+        input_widths, output_widths = fill_port_widths(pb)
+        info["hardblockModes"].setdefault(model_name, []).append(
             {
-                "modelName": modelName,
-                "modeQualifier": modeQualifier,
+                "modelName": model_name,
+                "modeQualifier": mode_qualifier,
                 "pbTypeName": pb.get("name", ""),
-                "inputWidths": inputWidths,
-                "outputWidths": outputWidths,
+                "inputWidths": input_widths,
+                "outputWidths": output_widths,
             }
         )
 
 
-def mapPinWidth(pins, name):
+def map_pin_width(pins, name):
+    """look up a pin width by name from a dict."""
     return pins.get(name, 0)
 
 
-def classicBramFromGeneric(generic, isSp):
+def classic_bram_from_generic(generic, is_sp):
+    """build a classic BRAM mode dict from a generic hardblock binding."""
     mode = {
         "name": generic["pbTypeName"],
-        "isSp": isSp,
-        "addrBitsA": mapPinWidth(generic["inputWidths"], "addr" if isSp else "addr1"),
-        "dataBitsA": mapPinWidth(generic["inputWidths"], "data" if isSp else "data1"),
-        "addrBitsB": mapPinWidth(generic["inputWidths"], "addr2"),
-        "dataBitsB": mapPinWidth(generic["inputWidths"], "data2"),
+        "isSp": is_sp,
+        "addrBitsA": map_pin_width(generic["inputWidths"], "addr" if is_sp else "addr1"),
+        "dataBitsA": map_pin_width(generic["inputWidths"], "data" if is_sp else "data1"),
+        "addrBitsB": map_pin_width(generic["inputWidths"], "addr2"),
+        "dataBitsB": map_pin_width(generic["inputWidths"], "data2"),
     }
     if mode["addrBitsB"] == 0:
         mode["addrBitsB"] = mode["addrBitsA"]
@@ -148,21 +159,22 @@ def classicBramFromGeneric(generic, isSp):
     return None
 
 
-def scanBramModes(pbTypes, info):
-    for pb in pbTypes:
+def scan_bram_modes(pb_types, info):
+    """scan pb_types for classic single/dual port RAM modes."""
+    for pb in pb_types:
         blif = pb.get("blif_model", "")
-        isSp = blif == ".subckt single_port_ram"
-        isDp = blif == ".subckt dual_port_ram"
-        if not isSp and not isDp:
+        is_sp = blif == ".subckt single_port_ram"
+        is_dp = blif == ".subckt dual_port_ram"
+        if not is_sp and not is_dp:
             continue
-        pins = directPins(pb, "input")
+        pins = direct_pins(pb, "input")
         mode = {
             "name": pb.get("name", ""),
-            "isSp": isSp,
-            "addrBitsA": pinWidth(pins, "addr" if isSp else "addr1"),
-            "dataBitsA": pinWidth(pins, "data" if isSp else "data1"),
-            "addrBitsB": pinWidth(pins, "addr2"),
-            "dataBitsB": pinWidth(pins, "data2"),
+            "isSp": is_sp,
+            "addrBitsA": pin_width(pins, "addr" if is_sp else "addr1"),
+            "dataBitsA": pin_width(pins, "data" if is_sp else "data1"),
+            "addrBitsB": pin_width(pins, "addr2"),
+            "dataBitsB": pin_width(pins, "data2"),
         }
         if mode["addrBitsB"] == 0:
             mode["addrBitsB"] = mode["addrBitsA"]
@@ -171,23 +183,25 @@ def scanBramModes(pbTypes, info):
         if mode["addrBitsA"] > 0 and mode["dataBitsA"] > 0:
             info["bramModes"].append(mode)
 
-    for model, isSp in (("single_port_ram", True), ("dual_port_ram", False)):
+    for model, is_sp in (("single_port_ram", True), ("dual_port_ram", False)):
         for generic in info["hardblockModes"].get(model, []):
-            mode = classicBramFromGeneric(generic, isSp)
+            mode = classic_bram_from_generic(generic, is_sp)
             if mode is not None:
                 info["bramModes"].append(mode)
 
 
-def lutSize(pb):
-    for inputPin in pb.findall("input"):
-        return attrInt(inputPin, "num_pins", 0)
+def lut_size(pb):
+    """return the input width of a LUT pb_type."""
+    for input_pin in pb.findall("input"):
+        return attr_int(input_pin, "num_pins", 0)
     return 0
 
 
-def scanLutCost(pbTypes, info):
-    singleK = 0
-    subK = 0
-    for pb in pbTypes:
+def scan_lut_cost(pb_types, info):
+    """scan pb_types for LUT sizes in fracturable modes."""
+    single_k = 0
+    sub_k = 0
+    for pb in pb_types:  # pylint: disable=too-many-nested-blocks
         modes = pb.findall("mode")
         if len(modes) < 2:
             continue
@@ -195,56 +209,58 @@ def scanLutCost(pbTypes, info):
             luts = []
             for child in mode.findall("pb_type"):
                 if child.get("blif_model") == ".names":
-                    luts.append((lutSize(child), attrInt(child, "num_pb", 1)))
+                    luts.append((lut_size(child), attr_int(child, "num_pb", 1)))
                 else:
                     for grand in child.findall("pb_type"):
                         if grand.get("blif_model") == ".names":
                             luts.append(
                                 (
-                                    lutSize(grand),
-                                    attrInt(grand, "num_pb", 1)
-                                    * attrInt(child, "num_pb", 1),
+                                    lut_size(grand),
+                                    attr_int(grand, "num_pb", 1)
+                                    * attr_int(child, "num_pb", 1),
                                 )
                             )
             if not luts:
                 continue
             total = sum(count for _, count in luts)
-            maxSize = max(size for size, _ in luts)
+            max_size = max(size for size, _ in luts)
             if total == 1:
-                singleK = max(singleK, maxSize)
+                single_k = max(single_k, max_size)
             elif total >= 2:
-                subK = max(subK, maxSize)
-    info["lutK"] = singleK
-    info["lutK1"] = subK
+                sub_k = max(sub_k, max_size)
+    info["lutK"] = single_k
+    info["lutK1"] = sub_k
 
 
-def scanHardblockModels(pbTypes, info):
+def scan_hardblock_models(pb_types, info):
+    """scan pb_types for hardblock model geometry (port widths and modes)."""
     prefix = ".subckt "
-    for pb in pbTypes:
+    for pb in pb_types:
         blif = pb.get("blif_model", "")
         if not blif.startswith(prefix):
             continue
-        modelName = blif[len(prefix) :]
+        model_name = blif[len(prefix) :]
         geo = info["hardblockModels"].setdefault(
-            modelName, {"inputWidths": {}, "outputWidths": {}, "modes": []}
+            model_name, {"inputWidths": {}, "outputWidths": {}, "modes": []}
         )
-        inputs = directPins(pb, "input")
-        for pinName, width in inputs:
-            geo["inputWidths"][pinName] = max(geo["inputWidths"].get(pinName, 0), width)
-        for pinName, width in directPins(pb, "clock"):
-            geo["inputWidths"][pinName] = max(geo["inputWidths"].get(pinName, 0), width)
-        for pinName, width in directPins(pb, "output"):
-            geo["outputWidths"][pinName] = max(
-                geo["outputWidths"].get(pinName, 0), width
+        inputs = direct_pins(pb, "input")
+        for pin_name, width in inputs:
+            geo["inputWidths"][pin_name] = max(geo["inputWidths"].get(pin_name, 0), width)
+        for pin_name, width in direct_pins(pb, "clock"):
+            geo["inputWidths"][pin_name] = max(geo["inputWidths"].get(pin_name, 0), width)
+        for pin_name, width in direct_pins(pb, "output"):
+            geo["outputWidths"][pin_name] = max(
+                geo["outputWidths"].get(pin_name, 0), width
             )
-        aWidth = pinWidth(inputs, "a")
-        if aWidth > 0 and aWidth not in geo["modes"]:
-            geo["modes"].append(aWidth)
+        a_width = pin_width(inputs, "a")
+        if a_width > 0 and a_width not in geo["modes"]:
+            geo["modes"].append(a_width)
     for geo in info["hardblockModels"].values():
         geo["modes"].sort()
 
 
-def deriveHardblockAliases(info):
+def derive_hardblock_aliases(info):
+    """populate top-level multiply/adder fields from hardblock model data."""
     mult = info["hardblockModels"].get("multiply")
     if mult and mult["modes"]:
         info["multiply"] = {
@@ -255,25 +271,25 @@ def deriveHardblockAliases(info):
         info["multiplyModes"] = list(mult["modes"])
     add = info["hardblockModels"].get("adder")
     if add:
-        aWidth = add["inputWidths"].get("a", 0)
-        if aWidth > 0:
-            hasCin = "cin" in add["inputWidths"]
-            hasCout = "cout" in add["outputWidths"]
-            hasSumout = "sumout" in add["outputWidths"]
+        a_width = add["inputWidths"].get("a", 0)
+        if a_width > 0:
+            has_cin = "cin" in add["inputWidths"]
+            has_cout = "cout" in add["outputWidths"]
+            has_sumout = "sumout" in add["outputWidths"]
             info["adder"] = {
                 "present": True,
-                "aWidth": aWidth,
-                "carryChain": hasCin and hasCout and hasSumout,
+                "aWidth": a_width,
+                "carryChain": has_cin and has_cout and has_sumout,
             }
 
 
-# USE: parse an arch xml into the same summary fields VtrArchInfo exposes.
-def readArchInfo(xmlPath):
-    tree = ET.parse(str(xmlPath))
+def read_arch_info(xml_path):
+    """parse an arch XML into the same summary fields VtrArchInfo exposes."""
+    tree = ET.parse(str(xml_path))
     root = tree.getroot()
     info = {
-        "archPath": str(xmlPath),
-        "archName": xmlPath.stem,
+        "archPath": str(xml_path),
+        "archName": xml_path.stem,
         "clockedModels": [],
         "bramModes": [],
         "hardblockModes": {},
@@ -284,42 +300,43 @@ def readArchInfo(xmlPath):
         "multiply": {"present": False, "aWidth": 0, "carryChain": False},
         "multiplyModes": [],
     }
-    pbTypes = []
-    collectAll(root, "pb_type", pbTypes)
-    scanModels(root, info)
-    scanGenericModes(pbTypes, info)
-    scanBramModes(pbTypes, info)
-    scanLutCost(pbTypes, info)
-    scanHardblockModels(pbTypes, info)
-    deriveHardblockAliases(info)
+    pb_types = []
+    collect_all(root, "pb_type", pb_types)
+    scan_models(root, info)
+    scan_generic_modes(pb_types, info)
+    scan_bram_modes(pb_types, info)
+    scan_lut_cost(pb_types, info)
+    scan_hardblock_models(pb_types, info)
+    derive_hardblock_aliases(info)
     return info
 
 
-def summaryText(info):
-  maxRamAbits = 0
-  for mode in info["bramModes"]:
-      maxRamAbits = max(maxRamAbits, mode["addrBitsA"])
-  multiplyPresent = info["multiply"]["present"] and bool(info["multiplyModes"])
-  lines = [
-      "archName: {}".format(info["archName"]),
-      "vtrRamAbits: {}".format(maxRamAbits),
-      "dspMaxWidth: {}".format(info["multiplyModes"][-1] if multiplyPresent else 0),
-      "dspMinWidth: {}".format(info["multiplyModes"][0] if multiplyPresent else 0),
-      "multiplyPresent: {}".format(1 if multiplyPresent else 0),
-      "adderPresent: {}".format(1 if info["adder"]["present"] else 0),
-      "adderCarryChain: {}".format(1 if info["adder"].get("carryChain") else 0),
-      "multiplyModes: {}".format(" ".join(str(m) for m in info["multiplyModes"])),
-      "lutK: {}".format(info["lutK"]),
-      "lutK1: {}".format(info["lutK1"]),
-      "bramModeCount: {}".format(len(info["bramModes"])),
-      "clockedModelCount: {}".format(len(info["clockedModels"])),
-      "hardblockModelCount: {}".format(len(info["hardblockModels"])),
-  ]
-  return "\n".join(lines) + "\n"
+def summary_text(info):
+    """format arch info as a multi-line summary string."""
+    max_ram_abits = 0
+    for mode in info["bramModes"]:
+        max_ram_abits = max(max_ram_abits, mode["addrBitsA"])
+    multiply_present = info["multiply"]["present"] and bool(info["multiplyModes"])
+    lines = [
+        "archName: {}".format(info["archName"]),
+        "vtrRamAbits: {}".format(max_ram_abits),
+        "dspMaxWidth: {}".format(info["multiplyModes"][-1] if multiply_present else 0),
+        "dspMinWidth: {}".format(info["multiplyModes"][0] if multiply_present else 0),
+        "multiplyPresent: {}".format(1 if multiply_present else 0),
+        "adderPresent: {}".format(1 if info["adder"]["present"] else 0),
+        "adderCarryChain: {}".format(1 if info["adder"].get("carryChain") else 0),
+        "multiplyModes: {}".format(" ".join(str(m) for m in info["multiplyModes"])),
+        "lutK: {}".format(info["lutK"]),
+        "lutK1: {}".format(info["lutK1"]),
+        "bramModeCount: {}".format(len(info["bramModes"])),
+        "clockedModelCount: {}".format(len(info["clockedModels"])),
+        "hardblockModelCount: {}".format(len(info["hardblockModels"])),
+    ]
+    return "\n".join(lines) + "\n"
 
 
-# USE: mirror vtr_arch_rules -list-modes for offline titan checks.
-def listModesText(info):
+def list_modes_text(info):
+    """mirror vtr_arch_rules -list-modes for offline titan checks."""
     lines = ["classic bramModes ({})".format(len(info["bramModes"]))]
     for mode in info["bramModes"]:
         lines.append(
@@ -333,15 +350,14 @@ def listModesText(info):
             )
         )
     lines.append("hardblockModes ({} models)".format(len(info["hardblockModes"])))
-    for modelName in sorted(info["hardblockModes"]):
-        modes = info["hardblockModes"][modelName]
-        lines.append("  model '{}' ({} bindings):".format(modelName, len(modes)))
-        # summarize distinct opmode qualifiers and sample port widths
-        byQual = {}
+    for model_name in sorted(info["hardblockModes"]):
+        modes = info["hardblockModes"][model_name]
+        lines.append("  model '{}' ({} bindings):".format(model_name, len(modes)))
+        by_qual = {}
         for mode in modes:
-            byQual.setdefault(mode["modeQualifier"], []).append(mode)
-        for qual in sorted(byQual):
-            sample = byQual[qual][0]
+            by_qual.setdefault(mode["modeQualifier"], []).append(mode)
+        for qual in sorted(by_qual):
+            sample = by_qual[qual][0]
             in_ports = ",".join(
                 "{}:{}".format(k, sample["inputWidths"][k])
                 for k in sorted(sample["inputWidths"])
@@ -353,7 +369,7 @@ def listModesText(info):
             lines.append(
                 "    opmode{{{}}} count={} sample_pb={} in={{{}}} out={{{}}}".format(
                     qual,
-                    len(byQual[qual]),
+                    len(by_qual[qual]),
                     sample["pbTypeName"],
                     in_ports,
                     out_ports,
@@ -362,37 +378,39 @@ def listModesText(info):
     return "\n".join(lines) + "\n"
 
 
-def goldenPathFor(archPath):
-    return GOLDEN_DIR / (Path(archPath).stem + ".summary.txt")
+def golden_path_for(arch_path):
+    """return the golden summary file path for an architecture."""
+    return GOLDEN_DIR / (Path(arch_path).stem + ".summary.txt")
 
 
-# USE: emit or compare a golden summary for one arch xml.
-def dumpArch(archPath, update=False):
-    archPath = Path(archPath)
-    if not archPath.is_file():
-        raise SystemExit("arch file not found: {}".format(archPath))
-    info = readArchInfo(archPath)
-    text = summaryText(info)
-    goldenPath = goldenPathFor(archPath)
+def dump_arch(arch_path, update=False):
+    """emit or compare a golden summary for one arch XML."""
+    arch_path = Path(arch_path)
+    if not arch_path.is_file():
+        raise SystemExit("arch file not found: {}".format(arch_path))
+    info = read_arch_info(arch_path)
+    text = summary_text(info)
+    golden_path = golden_path_for(arch_path)
     if update:
         GOLDEN_DIR.mkdir(parents=True, exist_ok=True)
-        goldenPath.write_text(text, encoding="utf-8")
-        print("updated {}".format(goldenPath))
+        golden_path.write_text(text, encoding="utf-8")
+        print("updated {}".format(golden_path))
         return 0
-    if goldenPath.is_file():
-        expected = goldenPath.read_text(encoding="utf-8")
+    if golden_path.is_file():
+        expected = golden_path.read_text(encoding="utf-8")
         if expected != text:
-            print("mismatch for {}".format(archPath), file=sys.stderr)
+            print("mismatch for {}".format(arch_path), file=sys.stderr)
             print("expected:\n{}".format(expected), file=sys.stderr)
             print("actual:\n{}".format(text), file=sys.stderr)
             return 1
-        print("ok {}".format(archPath.stem))
+        print("ok {}".format(arch_path.stem))
         return 0
     print(text, end="")
     return 0
 
 
 def main():
+    """entry point: parse args and dump arch summaries."""
     parser = argparse.ArgumentParser(
         description="dump mosaic VtrArchInfo summary for an arch xml"
     )
@@ -417,19 +435,19 @@ def main():
         help="print hardblockModes / bramModes (offline -list-modes)",
     )
     args = parser.parse_args()
-    archList = [Path(p) for p in args.arch_xml] if args.arch_xml else DEFAULT_ARCHES
-    exitCode = 0
-    for archPath in archList:
+    arch_list = [Path(p) for p in args.arch_xml] if args.arch_xml else DEFAULT_ARCHES
+    exit_code = 0
+    for arch_path in arch_list:
         if args.json or args.list_modes:
-            info = readArchInfo(archPath)
+            info = read_arch_info(arch_path)
             if args.json:
                 print(json.dumps(info, indent=2, sort_keys=True))
             if args.list_modes:
-                print(listModesText(info), end="")
+                print(list_modes_text(info), end="")
             continue
-        code = dumpArch(archPath, update=args.update)
-        exitCode = max(exitCode, code)
-    return exitCode
+        code = dump_arch(arch_path, update=args.update)
+        exit_code = max(exit_code, code)
+    return exit_code
 
 
 if __name__ == "__main__":

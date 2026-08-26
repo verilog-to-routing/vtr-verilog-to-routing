@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
-# live status table for mosaic/scripts/run_vtr_batch.py.
-#
-# reads the results .csv file written by run_vtr_batch.py.
-#
-# usage:
-#     python3 mosaic/scripts/watch_compare.py
-#     python3 mosaic/scripts/watch_compare.py \
-#         --dir mosaic/scripts/compare_output_<arch_stem>
-#     python3 mosaic/scripts/watch_compare.py --interval 2
-#     python3 mosaic/scripts/watch_compare.py --once
-#
-# flags:
-#     --dir <outdir>     compare output directory (default: newest compare_output*
-#                             under mosaic/scripts then repo root, by mtime)
-#     --interval <sec>   refresh period (default 1.0)
-#     --once             print once and exit
-#
-# when --verilator-check <flows...> is set the table adds vcheck match mismatch vectors perrors
-# vcheck is pass, fail (mismatches), or error (could not run)
+"""live status table for mosaic/scripts/run_vtr_batch.py.
+
+reads the results .csv file written by run_vtr_batch.py.
+
+usage:
+    python3 mosaic/scripts/watch_compare.py
+    python3 mosaic/scripts/watch_compare.py \
+        --dir mosaic/scripts/compare_output_<arch_stem>
+    python3 mosaic/scripts/watch_compare.py --interval 2
+    python3 mosaic/scripts/watch_compare.py --once
+
+flags:
+    --dir <outdir>     compare output directory (default: newest compare_output*
+                            under mosaic/scripts then repo root, by mtime)
+    --interval <sec>   refresh period (default 1.0)
+    --once             print once and exit
+
+when --verilator-check <flows...> is set the table adds vcheck match mismatch vectors perrors
+vcheck is pass, fail (mismatches), or error (could not run)
+"""
 
 from __future__ import annotations
 
@@ -31,16 +32,16 @@ from typing import Dict, List, Optional, Sequence
 
 try:
     from prettytable import PrettyTable
-except ImportError:
+except ImportError as exc:
     print("prettytable required: pip install prettytable", file=sys.stderr)
-    raise SystemExit(1)
+    raise SystemExit(1) from exc
 
-scriptDir = Path(__file__).resolve().parent
-vtrRoot = scriptDir.parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
+VTR_ROOT = SCRIPT_DIR.parents[1]
 # new batches default under mosaic/scripts, and the repo root remains a fallback for older runs.
-compareOutputRoot = scriptDir
+COMPARE_OUTPUT_ROOT = SCRIPT_DIR
 
-phaseColors = {
+PHASE_COLORS = {
     "pending": "\033[90m",
     "started": "\033[93m",
     "synth": "\033[94m",
@@ -53,10 +54,10 @@ phaseColors = {
     "route done": "\033[92m",
 }
 
-spinnerFrames = ("-", "\\", "|", "/")
+SPINNER_FRAMES = ("-", "\\", "|", "/")
 
 # csv field -> table/geomean short key
-csvDisplayKeys = (
+CSV_DISPLAY_KEYS = (
     ("wall", "wall_time_sec"),
     ("synth", "synth_wall_sec"),
     ("vpr", "vpr_wall_sec"),
@@ -79,11 +80,10 @@ csvDisplayKeys = (
     ("wl", "total_wire_length"),
     ("cpd", "crit_path_delay_ns"),
     ("fmax", "fmax_mhz"),
-    ("wns", "worst_slack_ns"),
 )
 
 # (header, status key, higher_is_better)
-geomeanColumns = (
+GEOMEAN_COLUMNS = (
     ("wall", "wall", False),
     ("synth", "synth", False),
     ("vpr", "vpr", False),
@@ -101,12 +101,11 @@ geomeanColumns = (
 )
 
 
-# HELPER: accept bare numbers or legacy status values like 12.3ns / 100MHz / 4.5s.
-def stripUnit(value: str) -> str:
+def strip_unit(value: str) -> str:
+    """accept bare numbers or legacy status values like 12.3ns / 100MHz / 4.5s."""
     text = str(value).strip()
     if not text:
         return ""
-    # keep plain numbers; strip common unit suffixes if present
     for suffix in ("ns", "MHz", "mhz", "s", "sec", "seconds", "Seconds"):
         if text.lower().endswith(suffix.lower()) and len(text) > len(suffix):
             trimmed = text[: -len(suffix)].strip()
@@ -118,92 +117,96 @@ def stripUnit(value: str) -> str:
     return text
 
 
-def resolveCsvPath(targetDir: Path) -> Path | None:
-    marker = targetDir / "status" / "csv_path.txt"
+def resolve_csv_path(target_dir: Path) -> Path | None:
+    """resolve the results CSV path from a compare output directory."""
+    marker = target_dir / "status" / "csv_path.txt"
     if marker.is_file():
         text = marker.read_text(encoding="utf-8", errors="replace").strip()
         if text:
             path = Path(text)
             if path.is_file() or path.parent.is_dir():
                 return path
-    candidates = sorted(targetDir.glob("compare_results*.csv"))
+    candidates = sorted(target_dir.glob("compare_results*.csv"))
     return candidates[-1] if candidates else None
 
 
-# USE: map one results-csv row into the short keys used by the tables.
-def rowFromCsv(raw: Dict[str, str]) -> Dict[str, str]:
+def row_from_csv(raw: Dict[str, str]) -> Dict[str, str]:
+    """map one results-csv row into the short keys used by the tables."""
     design = (raw.get("design") or "").strip()
     flow = (raw.get("flow") or "").strip()
     row: Dict[str, str] = {
         "label": f"{design}_{flow}" if design and flow else design or flow,
         "status": (raw.get("status") or "pending").strip() or "pending",
     }
-    for shortKey, field in csvDisplayKeys:
+    for short_key, field in CSV_DISPLAY_KEYS:
         value = raw.get(field, "")
         if value == "" or value is None:
             continue
-        row[shortKey] = stripUnit(value)
+        row[short_key] = strip_unit(value)
     return row
 
 
-def loadRows(csvPath: Path) -> List[Dict[str, str]]:
-    if not csvPath.is_file():
+def load_rows(csv_path: Path) -> List[Dict[str, str]]:
+    """load and parse all rows from the results CSV."""
+    if not csv_path.is_file():
         return []
     try:
-        with open(csvPath, newline="", encoding="utf-8") as handle:
-            return [rowFromCsv(dict(raw)) for raw in csv.DictReader(handle)]
+        with open(csv_path, newline="", encoding="utf-8") as handle:
+            return [row_from_csv(dict(raw)) for raw in csv.DictReader(handle)]
     except OSError:
         return []
 
 
 def numeric(value) -> Optional[float]:
+    """return the numeric value as a float, or None if not parseable."""
     if value is None:
         return None
     try:
-        number = float(stripUnit(value))
+        number = float(strip_unit(value))
     except (TypeError, ValueError):
         return None
     return number if number > 0 else None
 
 
-def flowOf(label: str) -> Optional[str]:
+def flow_of(label: str) -> Optional[str]:
+    """extract the flow suffix from a design_flow label."""
     for flow in ("mosaic", "vanilla_vtr"):
         if label.endswith("_" + flow):
             return flow
     return None
 
 
-# USE: compute per-flow geomeans over designs that completed on every flow.
-def computeGeomeans(rows: Sequence[Dict[str, str]]):
-    byDesign: Dict[str, Dict[str, Dict[str, str]]] = {}
-    flowsSeen: List[str] = []
+def compute_geomeans(rows: Sequence[Dict[str, str]]):
+    """compute per-flow geomeans over designs that completed on every flow."""
+    by_design: Dict[str, Dict[str, Dict[str, str]]] = {}
+    flows_seen: List[str] = []
     for row in rows:
-        flow = flowOf(row.get("label", ""))
+        flow = flow_of(row.get("label", ""))
         if flow is None:
             continue
-        if flow not in flowsSeen:
-            flowsSeen.append(flow)
+        if flow not in flows_seen:
+            flows_seen.append(flow)
         design = row["label"][: -(len(flow) + 1)]
-        byDesign.setdefault(design, {})[flow] = row
+        by_design.setdefault(design, {})[flow] = row
 
-    if len(flowsSeen) < 2:
+    if len(flows_seen) < 2:
         return None
 
     paired = {
-        design: flowRows
-        for design, flowRows in byDesign.items()
-        if len(flowRows) == len(flowsSeen)
-        and all(isGeomeanReady(flowRows[f]) for f in flowsSeen)
+        design: flow_rows
+        for design, flow_rows in by_design.items()
+        if len(flow_rows) == len(flows_seen)
+        and all(is_geomean_ready(flow_rows[f]) for f in flows_seen)
     }
     if not paired:
         return None
 
     result = {}
-    for flow in flowsSeen:
+    for flow in flows_seen:
         result[flow] = {}
-        for _, key, _ in geomeanColumns:
+        for _, key, _ in GEOMEAN_COLUMNS:
             values = [
-                numeric(flowRows[flow].get(key)) for flowRows in paired.values()
+                numeric(flow_rows[flow].get(key)) for flow_rows in paired.values()
             ]
             values = [v for v in values if v is not None]
             if values:
@@ -212,12 +215,12 @@ def computeGeomeans(rows: Sequence[Dict[str, str]]):
                 )
             else:
                 result[flow][key] = None
-    return {"flows": flowsSeen, "geo": result}
+    return {"flows": flows_seen, "geo": result}
 
 
-# USE: render the geomean table with percent and ratio diffs vs vanilla_vtr.
-def renderGeomeanTable(rows: Sequence[Dict[str, str]]) -> str:
-    data = computeGeomeans(rows)
+def render_geomean_table(rows: Sequence[Dict[str, str]]) -> str:
+    """render the geomean table with percent and ratio diffs vs vanilla_vtr."""
+    data = compute_geomeans(rows)
     if data is None:
         return "geomean: waiting for paired ok/cached runs on both flows"
 
@@ -230,42 +233,44 @@ def renderGeomeanTable(rows: Sequence[Dict[str, str]]) -> str:
         return f"{value:,.2f}" if value is not None else "-"
 
     table = PrettyTable()
-    table.field_names = ["flow"] + [header for header, _, _ in geomeanColumns]
+    table.field_names = ["flow"] + [header for header, _, _ in GEOMEAN_COLUMNS]
     table.align = "l"
     table.add_row(
-        [base] + [fmt(geo[base].get(key)) for _, key, _ in geomeanColumns]
+        [base] + [fmt(geo[base].get(key)) for _, key, _ in GEOMEAN_COLUMNS]
     )
     for flow in others:
         table.add_row(
-            [flow] + [fmt(geo[flow].get(key)) for _, key, _ in geomeanColumns]
+            [flow] + [fmt(geo[flow].get(key)) for _, key, _ in GEOMEAN_COLUMNS]
         )
-        diffRow = [f"% diff {flow}/{base}"]
-        ratioRow = [f"x diff {flow}/{base}"]
-        for _, key, _ in geomeanColumns:
-            fVal, bVal = geo[flow].get(key), geo[base].get(key)
-            if fVal is None or bVal is None:
-                diffRow.append("-")
-                ratioRow.append("-")
+        diff_row = [f"% diff {flow}/{base}"]
+        ratio_row = [f"x diff {flow}/{base}"]
+        for _, key, _ in GEOMEAN_COLUMNS:
+            f_val, b_val = geo[flow].get(key), geo[base].get(key)
+            if f_val is None or b_val is None:
+                diff_row.append("-")
+                ratio_row.append("-")
             else:
-                diffRow.append(f"{(fVal / bVal - 1.0) * 100.0:+.2f}%")
-                ratioRow.append(f"{fVal / bVal:.2f}x")
-        table.add_row(diffRow)
-        table.add_row(ratioRow)
+                diff_row.append(f"{(f_val / b_val - 1.0) * 100.0:+.2f}%")
+                ratio_row.append(f"{f_val / b_val:.2f}x")
+        table.add_row(diff_row)
+        table.add_row(ratio_row)
     return f"geomean:\n{table}"
 
 
-def coloredStatus(status: str) -> str:
+def colored_status(status: str) -> str:
+    """return the status string wrapped in ANSI color codes."""
     if status == "fail":
         return "\033[91mfail\033[0m"
     if status == "pending":
         return "\033[90mpending\033[0m"
     if status == "cached":
         return "\033[96mcached\033[0m"
-    color = phaseColors.get(status, "\033[93m")
+    color = PHASE_COLORS.get(status, "\033[93m")
     return f"{color}{status or 'started'}\033[0m"
 
 
-def coloredVcheck(value: str) -> str:
+def colored_vcheck(value: str) -> str:
+    """return the verilator check value wrapped in ANSI color codes."""
     text = (value or "-").strip() or "-"
     if text == "pass":
         return f"\033[92m{text}\033[0m"
@@ -277,12 +282,13 @@ def coloredVcheck(value: str) -> str:
 
 
 def sap(row: Dict[str, str], *keys: str) -> str:
+    """join multiple row values with slash separators."""
     return "/".join(str(row.get(key) or "-") for key in keys)
 
 
-# USE: show vcheck when batch wrote the flag marker or any row has a value.
-def showVerilatorColumn(targetDir: Path, rows: Sequence[Dict[str, str]]) -> bool:
-    marker = targetDir / "status" / "verilator_check"
+def show_verilator_column(target_dir: Path, rows: Sequence[Dict[str, str]]) -> bool:
+    """show vcheck when batch wrote the flag marker or any row has a value."""
+    marker = target_dir / "status" / "verilator_check"
     if marker.is_file():
         return True
     return any(
@@ -292,19 +298,20 @@ def showVerilatorColumn(targetDir: Path, rows: Sequence[Dict[str, str]]) -> bool
     )
 
 
-def renderTable(
+def render_table(
     rows: List[Dict[str, str]],
     title: str,
-    showVcheck: bool = False,
+    show_vcheck: bool = False,
 ) -> str:
+    """render the main status table as a formatted string."""
     table = PrettyTable()
-    fieldNames = [
+    field_names = [
         "run",
         "status",
     ]
-    if showVcheck:
-        fieldNames.extend(["vcheck", "match", "mismatch", "vectors", "perrors"])
-    fieldNames.extend(
+    if show_vcheck:
+        field_names.extend(["vcheck", "match", "mismatch", "vectors", "perrors"])
+    field_names.extend(
         [
             "wall",
             "synth",
@@ -323,17 +330,17 @@ def renderTable(
             "WNS (ns)",
         ]
     )
-    table.field_names = fieldNames
+    table.field_names = field_names
     table.align = "l"
     for row in rows:
         values = [
             row.get("label", ""),
-            coloredStatus(row.get("status", "")),
+            colored_status(row.get("status", "")),
         ]
-        if showVcheck:
+        if show_vcheck:
             values.extend(
                 [
-                    coloredVcheck(row.get("vcheck", "")),
+                    colored_vcheck(row.get("vcheck", "")),
                     row.get("match", "-") or "-",
                     row.get("mismatch", "-") or "-",
                     row.get("vectors", "-") or "-",
@@ -363,10 +370,11 @@ def renderTable(
     return f"{title}\n{table}"
 
 
-def findOutputDirs() -> List[Path]:
-    roots = [compareOutputRoot]
-    if compareOutputRoot != vtrRoot:
-        roots.append(vtrRoot)
+def find_output_dirs() -> List[Path]:
+    """find all compare_output* directories sorted by mtime."""
+    roots = [COMPARE_OUTPUT_ROOT]
+    if COMPARE_OUTPUT_ROOT != VTR_ROOT:
+        roots.append(VTR_ROOT)
     dirs = []
     for root in roots:
         if not root.is_dir():
@@ -380,12 +388,13 @@ def findOutputDirs() -> List[Path]:
     return dirs
 
 
-def isDoneStatus(status: str) -> bool:
+def is_done_status(status: str) -> bool:
+    """return whether the status represents a terminal state."""
     return status in ("route done", "ok", "cached", "fail")
 
 
-# USE: true when a row can enter the live geomean.
-def isGeomeanReady(row: Dict[str, str]) -> bool:
+def is_geomean_ready(row: Dict[str, str]) -> bool:
+    """true when a row can enter the live geomean."""
     status = row.get("status", "")
     if status == "fail":
         return False
@@ -394,54 +403,55 @@ def isGeomeanReady(row: Dict[str, str]) -> bool:
     return status == "cached" or numeric(row.get("wall")) is not None
 
 
-# USE: refresh the live status table until interrupted or --once.
-def watchDir(targetDir: Path, interval: float, once: bool) -> None:
-    logsDir = targetDir / "logs"
-    spinnerPeriod = 0.25
-    print(f"watching {targetDir} (interval={interval}s), Ctrl-C to stop")
+def watch_dir(target_dir: Path, interval: float, once: bool) -> None:  # pylint: disable=too-many-locals
+    """refresh the live status table until interrupted or --once."""
+    logs_dir = target_dir / "logs"
+    spinner_period = 0.25
+    print(f"watching {target_dir} (interval={interval}s), Ctrl-C to stop")
     frame = 0
-    lastCsvLoad = 0.0
-    csvPath: Path | None = None
+    last_csv_load = 0.0
+    csv_path: Path | None = None
     rows: List[Dict[str, str]] = []
     try:
         while True:
             now = time.monotonic()
-            if once or csvPath is None or (now - lastCsvLoad) >= interval:
-                csvPath = resolveCsvPath(targetDir)
-                rows = loadRows(csvPath) if csvPath is not None else []
-                lastCsvLoad = now
+            if once or csv_path is None or (now - last_csv_load) >= interval:
+                csv_path = resolve_csv_path(target_dir)
+                rows = load_rows(csv_path) if csv_path is not None else []
+                last_csv_load = now
             total = len(rows)
-            done = sum(1 for row in rows if isDoneStatus(row.get("status", "")))
+            done = sum(1 for row in rows if is_done_status(row.get("status", "")))
             pending = sum(1 for row in rows if row.get("status") == "pending")
             running = total - done - pending
-            spinner = spinnerFrames[frame % len(spinnerFrames)] if running else ""
+            spinner = SPINNER_FRAMES[frame % len(SPINNER_FRAMES)] if running else ""
             title = (
-                f"{targetDir.name}: {done}/{total} done, "
+                f"{target_dir.name}: {done}/{total} done, "
                 f"{running} running, {pending} pending"
             )
             if spinner:
                 title = f"{title} {spinner}"
             if not once:
                 print("\033[H\033[J", end="")
-            if csvPath is None:
+            if csv_path is None:
                 print(f"{title}\n(no results csv yet)")
             else:
-                showVcheck = showVerilatorColumn(targetDir, rows)
-                print(renderTable(rows, title, showVcheck=showVcheck))
+                show_vcheck = show_verilator_column(target_dir, rows)
+                print(render_table(rows, title, show_vcheck=show_vcheck))
                 print()
-                print(renderGeomeanTable(rows))
-            print(f"\nlogs: {logsDir}")
-            if csvPath is not None:
-                print(f"csv:  {csvPath}")
+                print(render_geomean_table(rows))
+            print(f"\nlogs: {logs_dir}")
+            if csv_path is not None:
+                print(f"csv:  {csv_path}")
             if once:
                 break
             frame += 1
-            time.sleep(spinnerPeriod)
+            time.sleep(spinner_period)
     except KeyboardInterrupt:
         print("\nstopped.")
 
 
 def main(argv=None) -> int:
+    """entry point: parse arguments and start the watcher."""
     parser = argparse.ArgumentParser(description="live status table for run_vtr_batch")
     parser.add_argument(
         "--dir",
@@ -454,23 +464,23 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
 
     if args.dir:
-        targetDir = Path(args.dir)
-        if not targetDir.is_absolute():
-            candidate = compareOutputRoot / targetDir
-            targetDir = candidate if candidate.is_dir() else (vtrRoot / targetDir)
+        target_dir = Path(args.dir)
+        if not target_dir.is_absolute():
+            candidate = COMPARE_OUTPUT_ROOT / target_dir
+            target_dir = candidate if candidate.is_dir() else (VTR_ROOT / target_dir)
     else:
-        candidates = findOutputDirs()
+        candidates = find_output_dirs()
         if not candidates:
             print("no compare_output* directories found", file=sys.stderr)
             return 1
-        targetDir = candidates[-1]
-        print(f"auto-selected: {targetDir.name}")
+        target_dir = candidates[-1]
+        print(f"auto-selected: {target_dir.name}")
 
-    if not targetDir.is_dir():
-        print(f"missing outdir: {targetDir}", file=sys.stderr)
+    if not target_dir.is_dir():
+        print(f"missing outdir: {target_dir}", file=sys.stderr)
         return 1
 
-    watchDir(targetDir, max(0.2, args.interval), args.once)
+    watch_dir(target_dir, max(0.2, args.interval), args.once)
     return 0
 
 

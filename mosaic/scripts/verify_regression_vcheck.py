@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-# require a passing mosaic verilator_random_check.out for every case in the
-# latest vtr_reg_basic_mosaic (or other suite) run dirs.
-#
+"""Require passing mosaic verilator random-check logs for regression suites."""
 # used by R: Mosaic_regression after run_reg_test.py. does not resynthesize.
 #
 #   python3 mosaic/scripts/verify_regression_vcheck.py
@@ -14,21 +12,21 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 
-scriptDir = Path(__file__).resolve().parent
-repoRoot = scriptDir.parents[1]
-vtrFlow = repoRoot / "vtr_flow"
-tasksRoot = vtrFlow / "tasks"
-defaultSuite = "vtr_reg_basic_mosaic"
-passNeedle = "vectors matched across rtl"
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parents[1]
+VTR_FLOW = REPO_ROOT / "vtr_flow"
+TASKS_ROOT = VTR_FLOW / "tasks"
+DEFAULT_SUITE = "vtr_reg_basic_mosaic"
+PASS_NEEDLE = "vectors matched across rtl"
 
 
-def parseTaskConfig(configPath: Path) -> List[Dict[str, Path]]:
-    # parse one vtr task config.txt into circuit/arch cases
-    circuitsDir = "benchmarks/verilog"
-    archsDir = "arch"
+def parse_task_config(config_path: Path) -> List[Dict[str, Path]]:
+    """Parse one VTR task config.txt into circuit/arch cases."""
+    circuits_dir = "benchmarks/verilog"
+    archs_dir = "arch"
     circuits: List[str] = []
     archs: List[str] = []
-    for raw in configPath.read_text(encoding="utf-8", errors="replace").splitlines():
+    for raw in config_path.read_text(encoding="utf-8", errors="replace").splitlines():
         line = raw.split("#", 1)[0].strip()
         if not line or "=" not in line:
             continue
@@ -36,134 +34,135 @@ def parseTaskConfig(configPath: Path) -> List[Dict[str, Path]]:
         key = key.strip()
         value = value.strip()
         if key == "circuits_dir":
-            circuitsDir = value
+            circuits_dir = value
         elif key == "archs_dir":
-            archsDir = value
+            archs_dir = value
         elif key == "circuit_list_add":
             circuits.append(value)
         elif key == "arch_list_add":
             archs.append(value)
     if not circuits or not archs:
-        raise ValueError("task config missing circuits or archs: {}".format(configPath))
+        raise ValueError("task config missing circuits or archs: {}".format(config_path))
     cases = []
-    for archName in archs:
-        archPath = vtrFlow / archsDir / archName
-        for circuitName in circuits:
-            circuitPath = vtrFlow / circuitsDir / circuitName
+    for arch_name in archs:
+        arch_path = VTR_FLOW / archs_dir / arch_name
+        for circuit_name in circuits:
+            circuit_path = VTR_FLOW / circuits_dir / circuit_name
             cases.append(
                 {
-                    "circuit": circuitPath,
-                    "arch": archPath,
-                    "label": "{}/{}".format(circuitPath.stem, archPath.stem),
+                    "circuit": circuit_path,
+                    "arch": arch_path,
+                    "label": "{}/{}".format(circuit_path.stem, arch_path.stem),
                 }
             )
     return cases
 
 
-def loadSuite(suiteName: str) -> tuple[List[Path], List[Dict[str, Path]]]:
-    # task dirs and circuit/arch cases from a regression suite task_list.txt
-    suiteDir = tasksRoot / "regression_tests" / suiteName
-    taskList = suiteDir / "task_list.txt"
-    if not taskList.is_file():
-        raise FileNotFoundError("missing suite task_list: {}".format(taskList))
-    taskDirs: List[Path] = []
+def load_suite(suite_name: str) -> tuple[List[Path], List[Dict[str, Path]]]:
+    """Return task dirs and circuit/arch cases from a regression suite task_list.txt."""
+    suite_dir = TASKS_ROOT / "regression_tests" / suite_name
+    task_list = suite_dir / "task_list.txt"
+    if not task_list.is_file():
+        raise FileNotFoundError("missing suite task_list: {}".format(task_list))
+    task_dirs: List[Path] = []
     cases: List[Dict[str, Path]] = []
-    for raw in taskList.read_text(encoding="utf-8", errors="replace").splitlines():
+    for raw in task_list.read_text(encoding="utf-8", errors="replace").splitlines():
         line = raw.split("#", 1)[0].strip()
         if not line:
             continue
-        taskDir = tasksRoot / line
-        taskDirs.append(taskDir)
-        configPath = taskDir / "config" / "config.txt"
-        if not configPath.is_file():
-            raise FileNotFoundError("missing task config: {}".format(configPath))
-        cases.extend(parseTaskConfig(configPath))
-    return taskDirs, cases
+        task_dir = TASKS_ROOT / line
+        task_dirs.append(task_dir)
+        config_path = task_dir / "config" / "config.txt"
+        if not config_path.is_file():
+            raise FileNotFoundError("missing task config: {}".format(config_path))
+        cases.extend(parse_task_config(config_path))
+    return task_dirs, cases
 
 
-def findLatestRunDir(taskDir: Path) -> Optional[Path]:
-    # highest runNNN directory under a vtr task
-    runs = sorted(path for path in taskDir.glob("run[0-9][0-9][0-9]") if path.is_dir())
+def find_latest_run_dir(task_dir: Path) -> Optional[Path]:
+    """Return the highest runNNN directory under a VTR task."""
+    runs = sorted(path for path in task_dir.glob("run[0-9][0-9][0-9]") if path.is_dir())
     if not runs:
         return None
     return runs[-1]
 
 
-def vcheckLogPassed(logPath: Path) -> bool:
-    # true when the random-check log contains the rtl/post-synth pass line
-    if not logPath.is_file():
+def vcheck_log_passed(log_path: Path) -> bool:
+    """Return true when the random-check log contains the rtl/post-synth pass line."""
+    if not log_path.is_file():
         return False
-    text = logPath.read_text(encoding="utf-8", errors="replace")
-    return passNeedle in text
+    text = log_path.read_text(encoding="utf-8", errors="replace")
+    return PASS_NEEDLE in text
 
 
-def caseMatchesLog(case: Dict[str, Path], logPath: Path, runDir: Path) -> bool:
-    # true when this log sits under the case's arch and circuit directories
+def case_matches_log(case: Dict[str, Path], log_path: Path, run_dir: Path) -> bool:
+    """Return true when this log sits under the case's arch and circuit directories."""
     try:
-        rel = logPath.relative_to(runDir).as_posix()
+        rel = log_path.relative_to(run_dir).as_posix()
     except ValueError:
         return False
     return case["circuit"].name in rel and case["arch"].name in rel
 
 
-def verifyLatestSuite(suiteName: str) -> int:
-    # require a passing mosaic vcheck log for every suite case in the latest run
-    taskDirs, cases = loadSuite(suiteName)
+def verify_latest_suite(suite_name: str) -> int:
+    """Require a passing mosaic vcheck log for every suite case in the latest run."""
+    task_dirs, cases = load_suite(suite_name)
     failures: List[str] = []
-    logsByLabel = {case["label"]: [] for case in cases}
-    allLogs: List[Path] = []
-    for taskDir in taskDirs:
-        if not taskDir.is_dir():
-            failures.append("missing task dir {}".format(taskDir))
+    logs_by_label = {case["label"]: [] for case in cases}
+    all_logs: List[Path] = []
+    for task_dir in task_dirs:
+        if not task_dir.is_dir():
+            failures.append("missing task dir {}".format(task_dir))
             continue
-        latest = findLatestRunDir(taskDir)
+        latest = find_latest_run_dir(task_dir)
         if latest is None:
-            failures.append("no runNNN dir under {}".format(taskDir))
+            failures.append("no runNNN dir under {}".format(task_dir))
             continue
         print("latest: {}".format(latest), flush=True)
-        for logPath in latest.rglob("verilator_random_check.out"):
-            allLogs.append(logPath)
+        for log_path in latest.rglob("verilator_random_check.out"):
+            all_logs.append(log_path)
             for case in cases:
-                if caseMatchesLog(case, logPath, latest):
-                    logsByLabel[case["label"]].append(logPath)
-    if not allLogs:
+                if case_matches_log(case, log_path, latest):
+                    logs_by_label[case["label"]].append(log_path)
+    if not all_logs:
         print(
             "FAIL: no verilator_random_check.out under latest mosaic regression runs",
             file=sys.stderr,
         )
         return 1
-    for logPath in allLogs:
-        passed = vcheckLogPassed(logPath)
+    for log_path in all_logs:
+        passed = vcheck_log_passed(log_path)
         status = "pass" if passed else "fail"
-        print("{} {}".format(status, logPath), flush=True)
+        print("{} {}".format(status, log_path), flush=True)
         if not passed:
-            failures.append("vcheck not green: {}".format(logPath))
+            failures.append("vcheck not green: {}".format(log_path))
     for case in cases:
-        if not logsByLabel[case["label"]]:
+        if not logs_by_label[case["label"]]:
             failures.append("missing vcheck log for {}".format(case["label"]))
     if failures:
         print("FAIL: {}".format("; ".join(failures)), file=sys.stderr)
         return 1
     print(
         "PASS: mosaic rtl vs post-synth random-checks matched "
-        "({} cases, {} logs)".format(len(cases), len(allLogs))
+        "({} cases, {} logs)".format(len(cases), len(all_logs))
     )
     return 0
 
 
 def main(argv=None) -> int:
+    """Parse arguments and run the regression verification."""
     parser = argparse.ArgumentParser(
         description="require passing mosaic vcheck logs in the latest regression run dirs"
     )
     parser.add_argument(
         "--suite",
-        default=defaultSuite,
+        default=DEFAULT_SUITE,
         help="regression suite under vtr_flow/tasks/regression_tests "
-        "(default {})".format(defaultSuite),
+        "(default {})".format(DEFAULT_SUITE),
     )
     args = parser.parse_args(argv)
     try:
-        return verifyLatestSuite(args.suite)
+        return verify_latest_suite(args.suite)
     except (FileNotFoundError, ValueError) as exc:
         print("error: {}".format(exc), file=sys.stderr)
         return 2

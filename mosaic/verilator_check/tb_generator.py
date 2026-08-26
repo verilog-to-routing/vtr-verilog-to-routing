@@ -1,30 +1,34 @@
 #!/usr/bin/env python3
-# generate a 2-dut systemverilog testbench. rtl vs post-synth (after abc).
+"""generate a 2-dut systemverilog testbench comparing rtl vs post-synth (after abc)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import List, Optional
 
-from port_parse import PortDecl, isClockPort, isResetPort
+from port_parse import PortDecl, is_clock_port, is_reset_port
 
 
 @dataclass(frozen=True)
 class DirectedRamPlan:
-    # port names used for directed same-addr ram collision stimulus
+    """port names used for directed same-addr ram collision stimulus."""
+
     kind: str  # "sp_bits" | "regfile_bits" | "dp_vector"
     note: str
 
 
-def _portByLower(ports: List[PortDecl], lowerName: str) -> Optional[PortDecl]:
+def _port_by_lower(ports: List[PortDecl], lower_name: str) -> Optional[PortDecl]:
+    """return the first port whose lowercased name matches lower_name."""
     for port in ports:
-        if port.name.lower() == lowerName:
+        if port.name.lower() == lower_name:
             return port
     return None
 
 
-# USE: return a directed-ram plan when top ports look like known ram harnesses.
-def detectDirectedRamPlan(ports: List[PortDecl]) -> Optional[DirectedRamPlan]:
+def detect_directed_ram_plan(  # pylint: disable=too-many-boolean-expressions
+    ports: List[PortDecl],
+) -> Optional[DirectedRamPlan]:
+    """return a directed-ram plan when top ports look like known ram harnesses."""
     inputs = {p.name.lower(): p for p in ports if p.direction == "input"}
     if (
         "we1" in inputs
@@ -56,24 +60,25 @@ def detectDirectedRamPlan(ports: List[PortDecl]) -> Optional[DirectedRamPlan]:
     return None
 
 
-def _assignBits(prefix: str, width: int, value: int) -> List[str]:
+def _assign_bits(prefix: str, width: int, value: int) -> List[str]:
+    """return a list of SV assignment lines for individual bits of a bus."""
     lines = []
-    for bitIdx in range(width):
-        bitVal = (value >> bitIdx) & 1
-        lines.append(f"        {prefix}{bitIdx} = 1'b{bitVal};")
+    for bit_idx in range(width):
+        bit_val = (value >> bit_idx) & 1
+        lines.append(f"        {prefix}{bit_idx} = 1'b{bit_val};")
     return lines
 
 
-# USE: emit directed vectors that hit same-cycle same-address ram collisions.
-def _directedRamStimulusBody(
+def _directed_ram_stimulus_body(  # pylint: disable=too-many-locals
     ports: List[PortDecl],
     plan: DirectedRamPlan,
-    primaryClk: str,
+    primary_clk: str,
 ) -> str:
-    compareChecks = []
+    """emit directed vectors that hit same-cycle same-address ram collisions."""
+    compare_checks = []
     outputs = [p for p in ports if p.direction == "output"]
     for p in outputs:
-        compareChecks.append(
+        compare_checks.append(
             f"""            if ({p.name}_rtl !== {p.name}_synth) begin
                 if (errors < MAX_ERRORS) begin
                     $display("MISMATCH directed port={p.name} rtl=%b synth=%b",
@@ -82,11 +87,11 @@ def _directedRamStimulusBody(
                 errors++;
             end"""
         )
-    compareBody = "\n".join(compareChecks) if compareChecks else "            ;"
+    compare_body = "\n".join(compare_checks) if compare_checks else "            ;"
     tick = f"""
-        @(posedge {primaryClk});
+        @(posedge {primary_clk});
         #1;
-{compareBody}
+{compare_body}
         if (errors >= MAX_ERRORS) begin
             $display("aborting after %0d errors (directed ram)", errors);
             $display("VCHECK_SUMMARY matched=0 mismatched=0 vectors=0 port_errors=%0d", errors);
@@ -98,15 +103,15 @@ def _directedRamStimulusBody(
             [
                 "        // directed sp_ram: write then same-addr read+write",
                 "        we = 1'b1;",
-                *_assignBits("a", 3, 0),
-                *_assignBits("d", 1, 1),
+                *_assign_bits("a", 3, 0),
+                *_assign_bits("d", 1, 1),
                 tick,
                 "        we = 1'b1;",
-                *_assignBits("a", 3, 0),
-                *_assignBits("d", 1, 0),
+                *_assign_bits("a", 3, 0),
+                *_assign_bits("d", 1, 0),
                 tick,
                 "        we = 1'b0;",
-                *_assignBits("a", 3, 0),
+                *_assign_bits("a", 3, 0),
                 tick,
             ]
         )
@@ -116,28 +121,28 @@ def _directedRamStimulusBody(
             [
                 "        // directed regfile: write then same-addr read+write",
                 "        we = 1'b1;",
-                *_assignBits("waddr", 5, 0),
-                *_assignBits("raddr", 5, 0),
-                *_assignBits("wd", 1, 1),
+                *_assign_bits("waddr", 5, 0),
+                *_assign_bits("raddr", 5, 0),
+                *_assign_bits("wd", 1, 1),
                 tick,
                 "        we = 1'b1;",
-                *_assignBits("waddr", 5, 0),
-                *_assignBits("raddr", 5, 0),
-                *_assignBits("wd", 1, 0),
+                *_assign_bits("waddr", 5, 0),
+                *_assign_bits("raddr", 5, 0),
+                *_assign_bits("wd", 1, 0),
                 tick,
                 "        we = 1'b0;",
-                *_assignBits("waddr", 5, 0),
-                *_assignBits("raddr", 5, 0),
+                *_assign_bits("waddr", 5, 0),
+                *_assign_bits("raddr", 5, 0),
                 tick,
             ]
         )
         return f"\n        $display(\"directed ram: {plan.note}\");\n{body}\n"
-    we1 = _portByLower(ports, "we1")
-    we2 = _portByLower(ports, "we2")
-    addr1 = _portByLower(ports, "addr1")
-    addr2 = _portByLower(ports, "addr2")
-    data1 = _portByLower(ports, "data1")
-    data2 = _portByLower(ports, "data2")
+    we1 = _port_by_lower(ports, "we1")
+    we2 = _port_by_lower(ports, "we2")
+    addr1 = _port_by_lower(ports, "addr1")
+    addr2 = _port_by_lower(ports, "addr2")
+    data1 = _port_by_lower(ports, "data1")
+    data2 = _port_by_lower(ports, "data2")
     if not all((we1, we2, addr1, addr2, data1, data2)):
         return ""
     aw = min(addr1.width, addr2.width, 8)
@@ -161,14 +166,14 @@ def _directedRamStimulusBody(
     return f"\n        $display(\"directed ram: {plan.note}\");\n{body}\n"
 
 
-def _isActiveLowReset(name: str) -> bool:
-    # active-low when the name looks like *_n / n* / rstn / resetn
+def _is_active_low_reset(name: str) -> bool:
+    """return True when the name looks like an active-low reset (*_n / n* / rstn / resetn)."""
     lower = name.lower()
     return lower.endswith("_n") or lower.startswith("n") or "rstn" in lower or "resetn" in lower
 
 
-def _isHoldHighBringupPort(name: str) -> bool:
-    # bring-up / enable-style pins held high through reset so the dut leaves reset
+def _is_hold_high_bringup_port(name: str) -> bool:
+    """return True for bring-up / enable-style pins held high through reset."""
     lower = name.lower()
     return any(
         token in lower
@@ -176,14 +181,15 @@ def _isHoldHighBringupPort(name: str) -> bool:
     )
 
 
-def _logicDecl(name: str, width: int) -> str:
+def _logic_decl(name: str, width: int) -> str:
+    """return a SV logic declaration for the given name and width."""
     if width <= 1:
         return f"    logic {name};"
     return f"    logic [{width - 1}:0] {name};"
 
 
-def _portConnect(port: PortDecl, suffix: str) -> str:
-    # inputs are shared; outputs are per-dut with _rtl / _synth suffixes
+def _port_connect(port: PortDecl, suffix: str) -> str:
+    """return a SV port connection; inputs shared, outputs per-dut with suffix."""
     if port.direction == "input":
         return f"        .{port.name}({port.name})"
     if port.direction == "output":
@@ -191,88 +197,91 @@ def _portConnect(port: PortDecl, suffix: str) -> str:
     return f"        .{port.name}({port.name})"
 
 
-# USE: emit tb that drives identical random inputs into rtl and post-synth duts.
-def generateDualTestbench(
+def generate_dual_testbench(  # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
     ports: List[PortDecl],
     *,
-    rtlModule: str,
-    synthModule: str,
-    numVectors: int,
+    rtl_module: str,
+    synth_module: str,
+    num_vectors: int,
     seed: int,
-    maxErrors: int = 20,
-    directedRam: bool = False,
+    max_errors: int = 20,
+    directed_ram: bool = False,
 ) -> str:
-    clocks = [p for p in ports if p.direction == "input" and isClockPort(p.name)]
-    resets = [p for p in ports if p.direction == "input" and isResetPort(p.name)]
-    dataInputs = [
+    """emit a tb that drives identical random inputs into rtl and post-synth duts."""
+    clocks = [p for p in ports if p.direction == "input" and is_clock_port(p.name)]
+    resets = [p for p in ports if p.direction == "input" and is_reset_port(p.name)]
+    data_inputs = [
         p for p in ports
-        if p.direction == "input" and not isClockPort(p.name) and not isResetPort(p.name)
+        if p.direction == "input" and not is_clock_port(p.name) and not is_reset_port(p.name)
     ]
     outputs = [p for p in ports if p.direction == "output"]
     combinatorial = len(clocks) == 0
 
-    inputDecls = "\n".join(_logicDecl(p.name, p.width) for p in ports if p.direction == "input")
-    outputDecls = "\n".join(
-        _logicDecl(f"{p.name}_rtl", p.width) + "\n" + _logicDecl(f"{p.name}_synth", p.width)
+    input_decls = "\n".join(_logic_decl(p.name, p.width) for p in ports if p.direction == "input")
+    output_decls = "\n".join(
+        _logic_decl(f"{p.name}_rtl", p.width) + "\n" + _logic_decl(f"{p.name}_synth", p.width)
         for p in outputs
     )
 
-    rtlPorts = ",\n".join(_portConnect(p, "rtl") for p in ports)
-    synthPorts = ",\n".join(_portConnect(p, "synth") for p in ports)
+    rtl_ports = ",\n".join(_port_connect(p, "rtl") for p in ports)
+    synth_ports = ",\n".join(_port_connect(p, "synth") for p in ports)
 
     # free-running clocks for sequential tops
-    clockBlocks = []
+    clock_blocks = []
     for clk in clocks:
         period = 10
-        clockBlocks.append(
+        clock_blocks.append(
             f"""
     initial {clk.name} = 1'b0;
     always #{period // 2} {clk.name} = ~{clk.name};
 """
         )
-    clockSv = "\n".join(clockBlocks)
+    clock_sv = "\n".join(clock_blocks)
 
     # reset polarity follows common *_n / rstn naming
-    resetInit = []
+    reset_init = []
     for rst in resets:
-        activeLow = _isActiveLowReset(rst.name)
-        resetInit.append(f"        {rst.name} = 1'b{'0' if activeLow else '1'};")
-    resetDeassert = []
+        active_low = _is_active_low_reset(rst.name)
+        reset_init.append(f"        {rst.name} = 1'b{'0' if active_low else '1'};")
+    reset_deassert = []
     for rst in resets:
-        activeLow = _isActiveLowReset(rst.name)
-        resetDeassert.append(f"        {rst.name} = 1'b{'1' if activeLow else '0'};")
+        active_low = _is_active_low_reset(rst.name)
+        reset_deassert.append(f"        {rst.name} = 1'b{'1' if active_low else '0'};")
 
-    holdHighDuringReset = [p for p in dataInputs if _isHoldHighBringupPort(p.name)]
-    holdHighInit = [f"        {p.name} = 1'b1;" for p in holdHighDuringReset]
-    zeroDataInputs = [p for p in dataInputs if p not in holdHighDuringReset]
+    hold_high_during_reset = [p for p in data_inputs if _is_hold_high_bringup_port(p.name)]
+    hold_high_init = [f"        {p.name} = 1'b1;" for p in hold_high_during_reset]
+    zero_data_inputs = [p for p in data_inputs if p not in hold_high_during_reset]
 
     # known values before reset/warm-up so x-propagation does not fake mismatches
-    zeroLines = []
-    for p in zeroDataInputs:
+    zero_lines = []
+    for p in zero_data_inputs:
         if p.width <= 1:
-            zeroLines.append(f"        {p.name} = 1'b0;")
+            zero_lines.append(f"        {p.name} = 1'b0;")
         else:
-            zeroLines.append(f"        {p.name} = '0;")
-    zeroBody = "\n".join(zeroLines + holdHighInit) if (zeroLines or holdHighInit) else "        ;"
+            zero_lines.append(f"        {p.name} = '0;")
+    zero_body = (
+        "\n".join(zero_lines + hold_high_init)
+        if (zero_lines or hold_high_init) else "        ;"
+    )
 
     # randomize non-clock / non-reset inputs each vector
-    randLines = []
-    for p in dataInputs:
+    rand_lines = []
+    for p in data_inputs:
         if p.width <= 1:
-            randLines.append(f"            {p.name} = $urandom_range(0, 1);")
+            rand_lines.append(f"            {p.name} = $urandom_range(0, 1);")
         elif p.width <= 32:
-            randLines.append(f"            {p.name} = $urandom();")
+            rand_lines.append(f"            {p.name} = $urandom();")
         else:
             words = (p.width + 31) // 32
             parts = ["$urandom()" for _ in range(words)]
             joined = " , ".join(parts)
-            randLines.append(f"            {p.name} = {{{joined}}};")
-    randBody = "\n".join(randLines) if randLines else "            ;"
+            rand_lines.append(f"            {p.name} = {{{joined}}};")
+    rand_body = "\n".join(rand_lines) if rand_lines else "            ;"
 
     # compare every output bit between rtl and post-synth
-    compareChecks = []
+    compare_checks = []
     for p in outputs:
-        compareChecks.append(
+        compare_checks.append(
             f"""            if ({p.name}_rtl !== {p.name}_synth) begin
                 if (errors < MAX_ERRORS) begin
                     $display("MISMATCH vec=%0d port={p.name} rtl=%b synth=%b",
@@ -282,34 +291,34 @@ def generateDualTestbench(
                 vecFail = 1;
             end"""
         )
-    compareBody = "\n".join(compareChecks) if compareChecks else "            ;"
-    vectorTally = """
+    compare_body = "\n".join(compare_checks) if compare_checks else "            ;"
+    vector_tally = """
             if (vecFail) begin
                 vecMismatched++;
             end else begin
                 vecMatched++;
             end
 """
-    abortSummary = """
+    abort_summary = """
                 $display("VCHECK_SUMMARY matched=%0d mismatched=%0d vectors=%0d port_errors=%0d",
                          vecMatched, vecMismatched, vecMatched + vecMismatched, errors);
 """
 
-    clockNames = ", ".join(p.name for p in clocks) if clocks else "(none)"
-    resetNames = ", ".join(p.name for p in resets) if resets else "(none)"
-    pinBanner = f"""
-        $display("tb clocks: {clockNames}");
-        $display("tb resets: {resetNames}");
+    clock_names = ", ".join(p.name for p in clocks) if clocks else "(none)"
+    reset_names = ", ".join(p.name for p in resets) if resets else "(none)"
+    pin_banner = f"""
+        $display("tb clocks: {clock_names}");
+        $display("tb resets: {reset_names}");
 """
 
-    directedBlock = ""
-    if directedRam and not combinatorial:
-        ramPlan = detectDirectedRamPlan(ports)
-        if ramPlan is not None:
-            primaryClk = clocks[0].name
-            directedBlock = _directedRamStimulusBody(ports, ramPlan, primaryClk)
+    directed_block = ""
+    if directed_ram and not combinatorial:
+        ram_plan = detect_directed_ram_plan(ports)
+        if ram_plan is not None:
+            primary_clk = clocks[0].name
+            directed_block = _directed_ram_stimulus_body(ports, ram_plan, primary_clk)
         else:
-            directedBlock = """
+            directed_block = """
         $display("directed ram: skipped (top ports do not match known ram harness shapes)");
 """
 
@@ -318,55 +327,55 @@ def generateDualTestbench(
         errors = 0;
         vecMatched = 0;
         vecMismatched = 0;
-{pinBanner}
+{pin_banner}
         for (vecIdx = 0; vecIdx < NUM_VECTORS; vecIdx++) begin
             vecFail = 0;
-{randBody}
+{rand_body}
             #1;
-{compareBody}{vectorTally}
+{compare_body}{vector_tally}
             if (errors >= MAX_ERRORS) begin
                 $display("aborting after %0d errors", errors);
-{abortSummary}
+{abort_summary}
                 $fatal(1);
             end
         end
 """
     else:
-        primaryClk = clocks[0].name if clocks else "clk"
+        primary_clk = clocks[0].name if clocks else "clk"
         if resets:
-            resetBlock = (
-                zeroBody
+            reset_block = (
+                zero_body
                 + "\n"
-                + "\n".join(resetInit)
+                + "\n".join(reset_init)
                 + f"""
         // hold reset asserted while inputs are quiet
-        repeat (8) @(posedge {primaryClk});
+        repeat (8) @(posedge {primary_clk});
 """
-                + "\n".join(resetDeassert)
+                + "\n".join(reset_deassert)
                 + f"""
         // settle after deassert before random stimulus
-        repeat (4) @(posedge {primaryClk});
+        repeat (4) @(posedge {primary_clk});
 """
             )
         else:
-            resetBlock = zeroBody + f"""
+            reset_block = zero_body + f"""
         // no reset port on this top; zero inputs and warm up before random
-        repeat (16) @(posedge {primaryClk});
+        repeat (16) @(posedge {primary_clk});
 """
         stimulus = f"""
         errors = 0;
         vecMatched = 0;
         vecMismatched = 0;
-{pinBanner}{resetBlock}{directedBlock}
+{pin_banner}{reset_block}{directed_block}
         for (vecIdx = 0; vecIdx < NUM_VECTORS; vecIdx++) begin
             vecFail = 0;
-{randBody}
-            @(posedge {primaryClk});
+{rand_body}
+            @(posedge {primary_clk});
             #1;
-{compareBody}{vectorTally}
+{compare_body}{vector_tally}
             if (errors >= MAX_ERRORS) begin
                 $display("aborting after %0d errors", errors);
-{abortSummary}
+{abort_summary}
                 $fatal(1);
             end
         end
@@ -377,14 +386,14 @@ def generateDualTestbench(
 // compares rtl vs post-synth (after abc) under identical random stimulus.
 // no $srandom (verilator pli); seed via +verilator+seed+N / $urandom.
 module tb;
-    localparam int NUM_VECTORS = {numVectors};
-    localparam int MAX_ERRORS = {maxErrors};
+    localparam int NUM_VECTORS = {num_vectors};
+    localparam int MAX_ERRORS = {max_errors};
     // seed hint for humans; verilator uses +verilator+seed+{seed}
     localparam int SEED_HINT = {seed};
 
-{inputDecls}
+{input_decls}
 
-{outputDecls}
+{output_decls}
 
     integer vecIdx;
     integer errors;
@@ -392,14 +401,14 @@ module tb;
     integer vecMismatched;
     integer vecFail;
 
-    {rtlModule} dut_rtl (
-{rtlPorts}
+    {rtl_module} dut_rtl (
+{rtl_ports}
     );
 
-    {synthModule} dut_synth (
-{synthPorts}
+    {synth_module} dut_synth (
+{synth_ports}
     );
-{clockSv}
+{clock_sv}
     initial begin
 {stimulus}
         $display("VCHECK_SUMMARY matched=%0d mismatched=%0d vectors=%0d port_errors=%0d",

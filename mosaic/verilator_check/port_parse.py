@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# parse top-module ports from rtl verilog or blif for the random-check tb.
+"""parse top-module ports from rtl verilog or blif for the random-check tb."""
 
 from __future__ import annotations
 
@@ -11,6 +11,8 @@ from typing import List, Optional
 
 @dataclass(frozen=True)
 class PortDecl:
+    """immutable record for a single port declaration (name, direction, width)."""
+
     name: str
     direction: str  # input | output | inout
     width: int = 1  # bit width; 1 for scalar
@@ -25,22 +27,25 @@ _RESET_NAMES = frozenset({
 })
 
 
-def isClockPort(name: str) -> bool:
+def is_clock_port(name: str) -> bool:
+    """return true if name looks like a clock signal."""
     lower = name.lower()
     if lower in _CLOCK_NAMES:
         return True
     return lower.endswith("_clk") or lower.startswith("clk_")
 
 
-def isResetPort(name: str) -> bool:
+def is_reset_port(name: str) -> bool:
+    """return true if name looks like a reset signal."""
     lower = name.lower()
     if lower in _RESET_NAMES:
         return True
     return "reset" in lower or lower.endswith("_rst") or lower.startswith("rst_")
 
 
-def _parseWidth(tokenBlock: str) -> int:
-    m = re.search(r"\[\s*(\d+)\s*:\s*(\d+)\s*\]", tokenBlock)
+def _parse_width(token_block: str) -> int:
+    """extract bit width from a verilog range token like [7:0]."""
+    m = re.search(r"\[\s*(\d+)\s*:\s*(\d+)\s*\]", token_block)
     if not m:
         return 1
     msb, lsb = int(m.group(1)), int(m.group(2))
@@ -48,13 +53,14 @@ def _parseWidth(tokenBlock: str) -> int:
 
 
 # pack abc/yosys bit-blasted names (a~3 or a[3]) into one bus port
-def collapseBitBlastedPorts(ports: List[PortDecl]) -> List[PortDecl]:
-    bitRe = re.compile(r"^(.+)(?:~|\[)(\d+)\]?$")
+def collapse_bit_blasted_ports(ports: List[PortDecl]) -> List[PortDecl]:
+    """merge bit-blasted scalar ports (a~3, a[3]) into a single bus port."""
+    bit_re = re.compile(r"^(.+)(?:~|\[)(\d+)\]?$")
     buses: dict[str, tuple[str, list[int]]] = {}
     packed: List[PortDecl] = []
     seen = set()
     for port in ports:
-        m = bitRe.match(port.name)
+        m = bit_re.match(port.name)
         if not m:
             packed.append(port)
             continue
@@ -70,7 +76,7 @@ def collapseBitBlastedPorts(ports: List[PortDecl]) -> List[PortDecl]:
         packed.append(port)
     out: List[PortDecl] = []
     for port in packed:
-        m = bitRe.match(port.name)
+        m = bit_re.match(port.name)
         if not m:
             out.append(port)
             continue
@@ -81,7 +87,8 @@ def collapseBitBlastedPorts(ports: List[PortDecl]) -> List[PortDecl]:
 
 
 # HELPER: remove // and /* */ comments without treating //*** headers as /*.
-def _stripVerilogComments(text: str) -> str:
+def _strip_verilog_comments(text: str) -> str:
+    """remove line and block comments from verilog source text."""
     # line comments first. vtr headers like //***** contain the substring /*
     text = re.sub(r"//.*?$", "", text, flags=re.M)
     text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
@@ -89,99 +96,138 @@ def _stripVerilogComments(text: str) -> str:
 
 
 # USE: parse ansi or non-ansi ports from the first or named module.
-def parseVerilogTopPorts(verilogPath: Path, topName: Optional[str] = None) -> List[PortDecl]:
-    text = _stripVerilogComments(
-        verilogPath.read_text(encoding="utf-8", errors="replace")
+def parse_verilog_top_ports(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    verilog_path: Path,
+    top_name: Optional[str] = None,
+) -> List[PortDecl]:
+    """parse port declarations from the top module in a verilog file."""
+    text = _strip_verilog_comments(
+        verilog_path.read_text(encoding="utf-8", errors="replace")
     )
 
-    if topName:
-        modRe = re.compile(
-            rf"module\s+{re.escape(topName)}\s*(?:#\s*\([^;]*?\))?\s*\((.*?)\)\s*;",
+    if top_name:
+        mod_re = re.compile(
+            rf"module\s+{re.escape(top_name)}"
+            r"\s*(?:#\s*\([^;]*?\))?\s*\((.*?)\)\s*;",
             re.S,
         )
     else:
-        modRe = re.compile(
-            r"module\s+(\w+)\s*(?:#\s*\([^;]*?\))?\s*\((.*?)\)\s*;",
+        mod_re = re.compile(
+            r"module\s+(\w+)"
+            r"\s*(?:#\s*\([^;]*?\))?\s*\((.*?)\)\s*;",
             re.S,
         )
-    match = modRe.search(text)
+    match = mod_re.search(text)
     if not match:
-        raise ValueError(f"module not found in {verilogPath}" + (f" (top={topName})" if topName else ""))
+        msg = f"module not found in {verilog_path}"
+        if top_name:
+            msg += f" (top={top_name})"
+        raise ValueError(msg)
 
-    if topName:
-        portBlock = match.group(1)
-        moduleBodyStart = match.end()
-        resolvedTop = topName
+    if top_name:
+        port_block = match.group(1)
+        module_body_start = match.end()
+        resolved_top = top_name
     else:
-        resolvedTop = match.group(1)
-        portBlock = match.group(2)
-        moduleBodyStart = match.end()
+        resolved_top = match.group(1)
+        port_block = match.group(2)
+        module_body_start = match.end()
 
     # find endmodule for body decls (non-ansi)
-    endMatch = re.search(r"\bendmodule\b", text[moduleBodyStart:])
-    body = text[moduleBodyStart: moduleBodyStart + endMatch.start()] if endMatch else text[moduleBodyStart:]
+    end_match = re.search(r"\bendmodule\b", text[module_body_start:])
+    body = (
+        text[module_body_start: module_body_start + end_match.start()]
+        if end_match
+        else text[module_body_start:]
+    )
 
     ports: List[PortDecl] = []
     # ansi-style. input [3:0] a, output wire b
-    ansiItems = [p.strip() for p in portBlock.split(",") if p.strip()]
-    looksAnsi = any(re.match(r"^(input|output|inout)\b", item, re.I) for item in ansiItems)
+    ansi_items = [
+        p.strip() for p in port_block.split(",") if p.strip()
+    ]
+    looks_ansi = any(
+        re.match(r"^(input|output|inout)\b", item, re.I)
+        for item in ansi_items
+    )
 
-    if looksAnsi:
-        currentDir = "input"
-        currentWidth = 1
-        for item in ansiItems:
-            dirMatch = re.match(
-                r"^(input|output|inout)\b(?:\s+(?:wire|reg|logic))?\s*(?:(\[[^\]]+\])\s*)?(\w+)\s*$",
+    if looks_ansi:
+        current_dir = "input"
+        current_width = 1
+        for item in ansi_items:
+            dir_match = re.match(
+                r"^(input|output|inout)\b"
+                r"(?:\s+(?:wire|reg|logic))?"
+                r"\s*(?:(\[[^\]]+\])\s*)?(\w+)\s*$",
                 item,
                 re.I,
             )
-            if dirMatch:
-                currentDir = dirMatch.group(1).lower()
-                currentWidth = _parseWidth(dirMatch.group(2) or "")
-                ports.append(PortDecl(dirMatch.group(3), currentDir, currentWidth))
+            if dir_match:
+                current_dir = dir_match.group(1).lower()
+                current_width = _parse_width(
+                    dir_match.group(2) or ""
+                )
+                ports.append(PortDecl(
+                    dir_match.group(3), current_dir, current_width
+                ))
                 continue
             # continuation is just a name, maybe with width
-            nameMatch = re.match(r"(?:(\[[^\]]+\])\s*)?(\w+)\s*$", item)
-            if nameMatch:
-                w = _parseWidth(nameMatch.group(1) or "") if nameMatch.group(1) else currentWidth
-                ports.append(PortDecl(nameMatch.group(2), currentDir, w))
-        return collapseBitBlastedPorts(ports)
+            name_match = re.match(
+                r"(?:(\[[^\]]+\])\s*)?(\w+)\s*$", item
+            )
+            if name_match:
+                w = (
+                    _parse_width(name_match.group(1) or "")
+                    if name_match.group(1)
+                    else current_width
+                )
+                ports.append(PortDecl(
+                    name_match.group(2), current_dir, w
+                ))
+        return collapse_bit_blasted_ports(ports)
 
     # non-ansi. port list is names only. directions live in the body
     names = []
-    for item in ansiItems:
+    for item in ansi_items:
         # drop attributes / escapes
         item = re.sub(r"/\*.*?\*/", "", item)
         tok = item.strip().lstrip("\\")
         if tok:
             names.append(tok.split()[-1])
 
-    dirMap: dict[str, tuple[str, int]] = {}
+    dir_map: dict[str, tuple[str, int]] = {}
     for m in re.finditer(
-        r"\b(input|output|inout)\b(?:\s+(?:wire|reg|logic))?\s*(\[[^\]]+\])?\s*([^;]+);",
+        r"\b(input|output|inout)\b"
+        r"(?:\s+(?:wire|reg|logic))?"
+        r"\s*(\[[^\]]+\])?\s*([^;]+);",
         body,
         re.I,
     ):
         direction = m.group(1).lower()
-        width = _parseWidth(m.group(2) or "")
+        width = _parse_width(m.group(2) or "")
         for name in re.findall(r"\b([A-Za-z_]\w*)\b", m.group(3)):
-            dirMap[name] = (direction, width)
+            dir_map[name] = (direction, width)
 
     for name in names:
-        if name in dirMap:
-            direction, width = dirMap[name]
+        if name in dir_map:
+            direction, width = dir_map[name]
             ports.append(PortDecl(name, direction, width))
         else:
             # default input if undeclared (rare)
             ports.append(PortDecl(name, "input", 1))
     if not ports:
-        raise ValueError(f"no ports parsed from {verilogPath} module {resolvedTop}")
-    return collapseBitBlastedPorts(ports)
+        raise ValueError(
+            f"no ports parsed from {verilog_path} module {resolved_top}"
+        )
+    return collapse_bit_blasted_ports(ports)
 
 
-# USE: return (modelName, ports) from the first non-blackbox .model.
-def parseBlifTopPorts(blifPath: Path) -> tuple[str, List[PortDecl]]:
-    text = blifPath.read_text(encoding="utf-8", errors="replace")
+# USE: return (model_name, ports) from the first non-blackbox .model.
+def parse_blif_top_ports(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    blif_path: Path,
+) -> tuple[str, List[PortDecl]]:
+    """parse the first non-blackbox .model from a blif file."""
+    text = blif_path.read_text(encoding="utf-8", errors="replace")
     # join continuations into logical lines
     lines: list[str] = []
     buf = ""
@@ -195,51 +241,56 @@ def parseBlifTopPorts(blifPath: Path) -> tuple[str, List[PortDecl]]:
     if buf:
         lines.append(buf)
 
-    modelName = ""
+    model_name = ""
     inputs: list[str] = []
     outputs: list[str] = []
-    inModel = False
-    isBlackbox = False
+    in_model = False
+    is_blackbox = False
     for line in lines:
         s = line.strip()
         if s.startswith(".model "):
-            if inModel and not isBlackbox and (inputs or outputs):
+            if in_model and not is_blackbox and (inputs or outputs):
                 break
-            modelName = s.split(None, 1)[1].strip()
+            model_name = s.split(None, 1)[1].strip()
             inputs, outputs = [], []
-            inModel = True
-            isBlackbox = False
+            in_model = True
+            is_blackbox = False
             continue
-        if not inModel:
+        if not in_model:
             continue
         if s.startswith(".blackbox"):
-            isBlackbox = True
+            is_blackbox = True
         elif s.startswith(".inputs"):
             inputs.extend(s.split()[1:])
         elif s.startswith(".outputs"):
             outputs.extend(s.split()[1:])
         elif s.startswith(".end"):
-            if not isBlackbox and (inputs or outputs):
+            if not is_blackbox and (inputs or outputs):
                 break
-            inModel = False
+            in_model = False
 
-    if not modelName:
-        raise ValueError(f"no .model found in {blifPath}")
+    if not model_name:
+        raise ValueError(f"no .model found in {blif_path}")
 
     # blif bus bits like a[0] can collapse to bus a with width
-    def collapse(names: list[str], direction: str) -> List[PortDecl]:
+    def _collapse(names: list[str], direction: str) -> List[PortDecl]:
+        """collapse bit-blasted blif names into bus ports."""
         buses: dict[str, list[int]] = {}
         scalars: list[str] = []
-        bitRe = re.compile(r"^(.+)(?:\[(\d+)\]|~(\d+))$")
+        bit_re = re.compile(r"^(.+)(?:\[(\d+)\]|~(\d+))$")
         for n in names:
-            m = bitRe.match(n)
+            m = bit_re.match(n)
             if m:
-                buses.setdefault(m.group(1), []).append(int(m.group(2) or m.group(3)))
+                buses.setdefault(m.group(1), []).append(
+                    int(m.group(2) or m.group(3))
+                )
             else:
                 scalars.append(n)
         ports: List[PortDecl] = []
         for base, bits in buses.items():
-            ports.append(PortDecl(base, direction, max(bits) - min(bits) + 1))
+            ports.append(PortDecl(
+                base, direction, max(bits) - min(bits) + 1
+            ))
         for n in scalars:
             ports.append(PortDecl(n, direction, 1))
         return ports
@@ -251,47 +302,50 @@ def parseBlifTopPorts(blifPath: Path) -> tuple[str, List[PortDecl]]:
     ports = [PortDecl(n, "input", 1) for n in inputs] + [
         PortDecl(n, "output", 1) for n in outputs
     ]
-    return modelName, collapseBitBlastedPorts(ports)
+    return model_name, collapse_bit_blasted_ports(ports)
 
 
 
 # USE: pick the design top module from a (possibly multi-module) rtl file.
 # preference order:
-#   1. preferredName if that module exists (synth top / known name)
+#   1. preferred_name if that module exists (synth top / known name)
 #   2. module matching the file stem
-#   3. module whose port names best overlap preferredPorts
+#   3. module whose port names best overlap preferred_ports
 #   4. last module in the file
-def findTopModuleName(
-    verilogPath: Path,
-    preferredName: Optional[str] = None,
-    preferredPorts: Optional[List[str]] = None,
+def find_top_module_name(
+    verilog_path: Path,
+    preferred_name: Optional[str] = None,
+    preferred_ports: Optional[List[str]] = None,
 ) -> str:
-    text = _stripVerilogComments(
-        verilogPath.read_text(encoding="utf-8", errors="replace")
+    """pick the design top module from a multi-module rtl file."""
+    text = _strip_verilog_comments(
+        verilog_path.read_text(encoding="utf-8", errors="replace")
     )
     names = re.findall(r"^\s*module\s+(\w+)\b", text, flags=re.M)
     if not names:
-        raise ValueError(f"no module in {verilogPath}")
-    if preferredName and preferredName in names:
-        return preferredName
-    stem = verilogPath.stem
+        raise ValueError(f"no module in {verilog_path}")
+    if preferred_name and preferred_name in names:
+        return preferred_name
+    stem = verilog_path.stem
     if stem in names:
         return stem
 
-    if preferredPorts:
-        want = set(preferredPorts)
-        bestName = None
-        bestScore = -1
+    if preferred_ports:
+        want = set(preferred_ports)
+        best_name = None
+        best_score = -1
         for name in names:
             try:
-                ports = parseVerilogTopPorts(verilogPath, topName=name)
+                ports = parse_verilog_top_ports(
+                    verilog_path, top_name=name
+                )
             except ValueError:
                 continue
             score = len(want.intersection({p.name for p in ports}))
-            if score > bestScore:
-                bestScore = score
-                bestName = name
-        if bestName is not None and bestScore > 0:
-            return bestName
+            if score > best_score:
+                best_score = score
+                best_name = name
+        if best_name is not None and best_score > 0:
+            return best_name
 
     return names[-1]
