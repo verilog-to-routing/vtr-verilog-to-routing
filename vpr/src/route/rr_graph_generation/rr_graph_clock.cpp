@@ -192,33 +192,31 @@ int ClockRRGraphBuilder::get_and_increment_chany_ptc_num() {
 }
 
 int ClockRRGraphBuilder::reserve_chanx_ptc(int x_lo, int x_hi, int y_lo, int y_hi) {
-    int ptc = 0;
-    for (int x = x_lo; x <= x_hi; ++x) {
-        for (int y = y_lo; y <= y_hi; ++y) {
-            ptc = std::max(ptc, chanx_next_free_ptc_[x][y]);
-        }
-    }
-    for (int x = x_lo; x <= x_hi; ++x) {
-        for (int y = y_lo; y <= y_hi; ++y) {
-            chanx_next_free_ptc_[x][y] = ptc + 1;
-        }
-    }
-    return chan_width_.x_max + ptc;
+    return reserve_chan_ptc(e_rr_type::CHANX, x_lo, x_hi, y_lo, y_hi);
 }
 
 int ClockRRGraphBuilder::reserve_chany_ptc(int x_lo, int x_hi, int y_lo, int y_hi) {
+    return reserve_chan_ptc(e_rr_type::CHANY, x_lo, x_hi, y_lo, y_hi);
+}
+
+int ClockRRGraphBuilder::reserve_chan_ptc(e_rr_type type, int x_lo, int x_hi, int y_lo, int y_hi) {
+    VTR_ASSERT(type == e_rr_type::CHANX || type == e_rr_type::CHANY);
+
+    vtr::NdMatrix<int, 2>& next_free_ptc = (type == e_rr_type::CHANX) ? chanx_next_free_ptc_ : chany_next_free_ptc_;
+    int chan_max = (type == e_rr_type::CHANX) ? chan_width_.x_max : chan_width_.y_max;
+
     int ptc = 0;
     for (int x = x_lo; x <= x_hi; ++x) {
         for (int y = y_lo; y <= y_hi; ++y) {
-            ptc = std::max(ptc, chany_next_free_ptc_[x][y]);
+            ptc = std::max(ptc, next_free_ptc[x][y]);
         }
     }
     for (int x = x_lo; x <= x_hi; ++x) {
         for (int y = y_lo; y <= y_hi; ++y) {
-            chany_next_free_ptc_[x][y] = ptc + 1;
+            next_free_ptc[x][y] = ptc + 1;
         }
     }
-    return chan_width_.y_max + ptc;
+    return chan_max + ptc;
 }
 
 void ClockRRGraphBuilder::update_chan_width(t_chan_width* chan_width) const {

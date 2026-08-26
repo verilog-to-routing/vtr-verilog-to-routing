@@ -167,6 +167,10 @@ class ClockRRGraphBuilder {
     void create_clock_networks_switches(const std::vector<std::unique_ptr<ClockConnection>>& clock_connections,
                                         t_rr_edge_info_set* rr_edges_to_create);
 
+    /// @brief Shared implementation of reserve_chanx_ptc/reserve_chany_ptc; type selects
+    /// which of chanx_next_free_ptc_/chany_next_free_ptc_ and chan_width_.x_max/y_max to use.
+    int reserve_chan_ptc(e_rr_type type, int x_lo, int x_hi, int y_lo, int y_hi);
+
     const t_chan_width& chan_width_;
     const DeviceGrid& grid_;
     t_rr_graph_storage* rr_nodes_;
