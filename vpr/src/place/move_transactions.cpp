@@ -19,7 +19,6 @@ size_t t_pl_blocks_to_be_moved::get_size_and_increment() {
     return moved_blocks.size() - 1;
 }
 
-//Records that block 'blk' should be moved to the specified 'to' location
 e_block_move_result t_pl_blocks_to_be_moved::record_block_move(ClusterBlockId blk,
                                                                t_pl_loc to,
                                                                const BlkLocRegistry& blk_loc_registry) {
@@ -49,16 +48,15 @@ e_block_move_result t_pl_blocks_to_be_moved::record_block_move(ClusterBlockId bl
     return e_block_move_result::VALID;
 }
 
-//Examines the currently proposed move and determine any empty locations
 std::set<t_pl_loc> t_pl_blocks_to_be_moved::determine_locations_emptied_by_move() const {
     std::set<t_pl_loc> moved_from_set;
     std::set<t_pl_loc> moved_to_set;
 
     for (const t_pl_moved_block& moved_block : moved_blocks) {
-        //When a block is moved its old location becomes free
+        // When a block is moved its old location becomes free
         moved_from_set.emplace(moved_block.old_loc);
 
-        //But any block later moved to a position fills it
+        // But any block later moved to a position fills it
         moved_to_set.emplace(moved_block.new_loc);
     }
 
@@ -70,14 +68,13 @@ std::set<t_pl_loc> t_pl_blocks_to_be_moved::determine_locations_emptied_by_move(
     return empty_locs;
 }
 
-//Clears the current move so a new move can be proposed
 void t_pl_blocks_to_be_moved::clear_move_blocks() {
-    //Reset moved flags
+    // Reset moved locations
     moved_to.clear();
     moved_from.clear();
 
-    //For run-time, we just reset size of blocks_affected.moved_blocks to zero, but do not free the blocks_affected
-    //array to avoid memory allocation
+    // For run-time, we just reset the size of moved_blocks to zero, but do not free
+    // the array to avoid memory allocation
 
     moved_blocks.resize(0);
 
