@@ -61,9 +61,9 @@ std::set<t_pl_loc> t_pl_blocks_to_be_moved::determine_locations_emptied_by_move(
     }
 
     std::set<t_pl_loc> empty_locs;
-    std::set_difference(moved_from_set.begin(), moved_from_set.end(),
-                        moved_to_set.begin(), moved_to_set.end(),
-                        std::inserter(empty_locs, empty_locs.begin()));
+    std::ranges::set_difference(moved_from_set, moved_to_set,
+                                std::inserter(empty_locs, empty_locs.begin()),
+                                std::less{});
 
     return empty_locs;
 }
@@ -83,18 +83,10 @@ void t_pl_blocks_to_be_moved::clear_move_blocks() {
 
 bool t_pl_blocks_to_be_moved::driven_by_moved_block(const ClusterNetId net) const {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-
-    bool is_driven_by_move_blk = false;
     ClusterBlockId net_driver_block = clb_nlist.net_driver_block(net);
 
-    for (const t_pl_moved_block& block : moved_blocks) {
-        if (net_driver_block == block.block_num) {
-            is_driven_by_move_blk = true;
-            break;
-        }
-    }
-
-    return is_driven_by_move_blk;
+    auto it = std::ranges::find(moved_blocks, net_driver_block, &t_pl_moved_block::block_num);
+    return it != moved_blocks.end();
 }
 
 void MoveAbortionLogger::log_move_abort(std::string_view reason) {
