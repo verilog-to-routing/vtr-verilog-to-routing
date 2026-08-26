@@ -1229,6 +1229,9 @@ static std::vector<t_signature_member> get_surrounding_blocks_signature(const t_
                                                                         t_physical_tile_type_ptr tile_type) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
+    // Walks the whole perimeter of the instance and records every grid location adjacent to it.
+    // Only locations outside the instance are inspected. Switch blocks inside a large block
+    // are not part of the signature.
     std::vector<t_signature_member> signature;
 
     // Records the location neighbouring the instance on the given side, at the given offset from the
@@ -1247,10 +1250,13 @@ static std::vector<t_signature_member> get_surrounding_blocks_signature(const t_
                                grid.get_height_offset(neighbour_loc));
     };
 
+    // Left and right sides
     for (int height_offset = 0; height_offset < tile_type->height; height_offset++) {
         record_neighbour(LEFT, height_offset, root_loc.x - 1, root_loc.y + height_offset);
         record_neighbour(RIGHT, height_offset, root_loc.x + tile_type->width, root_loc.y + height_offset);
     }
+    
+    // Bottom and top sides
     for (int width_offset = 0; width_offset < tile_type->width; width_offset++) {
         record_neighbour(BOTTOM, width_offset, root_loc.x + width_offset, root_loc.y - 1);
         record_neighbour(TOP, width_offset, root_loc.x + width_offset, root_loc.y + tile_type->height);
