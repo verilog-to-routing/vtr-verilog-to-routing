@@ -307,6 +307,10 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     move_type_stats_.accepted_moves.resize({device_ctx.logical_block_types.size(), (int)e_move_type::NUMBER_OF_AUTO_MOVES}, 0);
     move_type_stats_.rejected_moves.resize({device_ctx.logical_block_types.size(), (int)e_move_type::NUMBER_OF_AUTO_MOVES}, 0);
 
+    swap_evaluator_ = std::make_unique<SwapEvaluator>(placer_opts_, costs_, placer_state_,
+                                                      net_cost_handler_, interposer_cost_handler_,
+                                                      delay_model_, criticalities_);
+
     // Update the starting temperature for placement annealing to a more appropriate value
     VTR_ASSERT_SAFE_MSG(auto_init_t_scale >= 0, "Initial temperature scale cannot be negative.");
     annealing_state_.t = estimate_starting_temperature_() * auto_init_t_scale;
@@ -585,57 +589,14 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
     } else {
         VTR_ASSERT(create_move_outcome == e_create_move::VALID);
 
-        /* To make evaluating the move simpler (e.g. calculating changed bounding box),
-         * we first move the blocks to their new locations (apply the move to
-         * blk_loc_registry.block_locs) and then compute the change in cost. If the move
-         * is accepted, the inverse look-up in blk_loc_registry.grid_blocks is updated
-         * (committing the move). If the move is rejected, the blocks are returned to
-         * their original positions (reverting blk_loc_registry.block_locs to its original state).
-         *
-         * Note that the inverse look-up blk_loc_registry.grid_blocks is only updated after
-         * move acceptance is determined, so it should not be used when evaluating a move.
-         */
+        // Apply the move to block_locs and compute the resulting cost deltas.
+        t_swap_cost_deltas deltas = swap_evaluator_->apply_and_evaluate(blocks_affected_, place_algorithm);
+        cost_terms_delta = deltas.cost_terms_delta;
+        timing_delta_c = deltas.timing_delta_c;
+        delta_c = deltas.delta_c;
+        const bool update_interposer_costs = deltas.update_interposer_costs;
 
-        // Update the block positions
-        blk_loc_registry.apply_move_blocks(blocks_affected_);
-
-        // Find all the nets affected by this swap and update their wiring costs.
-        // This cost value doesn't depend on the timing info.
-        //
-        // Also find all the pins affected by the swap, and calculates new connection
-        // delays and timing costs.
-        net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected_,
-                                                              cost_terms_delta, timing_delta_c);
-
-        const bool update_interposer_costs = interposer_cost_handler_.has_value() && interposer_cost_handler_->has_active_cost_terms();
-        if (update_interposer_costs) {
-            const auto [interposer_cost_delta, interposer_cong_cost_delta] = interposer_cost_handler_->total_proposed_cost(net_cost_handler_.affected_nets());
-            cost_terms_delta.interposer_cost = interposer_cost_delta;
-            cost_terms_delta.interposer_cong_cost = interposer_cong_cost_delta;
-        }
-
-        if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
-            /* Take delta_c as a combination of timing and wiring cost. In
-             * addition to `timing_tradeoff`, we normalize the cost values.
-             * CRITICALITY_TIMING_PLACE algorithm works with somewhat stale
-             * timing information to save CPU time.
-             */
-            VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
-                           "\t\tMove bb_delta_c %e, bb_cost_norm %e, timing_tradeoff %f, "
-                           "timing_delta_c %e, timing_cost_norm %e\n",
-                           cost_terms_delta.bb_cost,
-                           costs_.bb_cost_norm,
-                           placer_opts_.timing_tradeoff,
-                           timing_delta_c,
-                           costs_.timing_cost_norm);
-            delta_c = (1 - placer_opts_.timing_tradeoff) * cost_terms_delta.bb_cost * costs_.bb_cost_norm
-                      + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm
-                      + placer_opts_.congestion_factor * cost_terms_delta.cong_cost * costs_.congestion_cost_norm;
-            if (update_interposer_costs) {
-                delta_c += placer_opts_.interposer_cost_params.net_cost_factor * cost_terms_delta.interposer_cost * costs_.interposer_cost_norm
-                           + placer_opts_.interposer_cost_params.cong_cost_factor * cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
-            }
-        } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
+        if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest
              * slack values resulted from the proposed block moves. If the move turns out
              * to be accepted, we keep the updated slack values and commit the block moves.
@@ -669,17 +630,6 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             /* Get the setup slack analysis cost */
             //TODO: calculate a weighted average of the slack cost and wiring cost
             delta_c = analyze_setup_slack_cost(setup_slacks_, placer_state_) * costs_.timing_cost_norm;
-        } else {
-            VTR_ASSERT_SAFE(place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
-            VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
-                           "\t\tMove bb_delta_c %e, bb_cost_norm %e\n",
-                           cost_terms_delta.bb_cost,
-                           costs_.bb_cost_norm);
-            delta_c = cost_terms_delta.bb_cost * costs_.bb_cost_norm;
-            if (update_interposer_costs) {
-                delta_c += placer_opts_.interposer_cost_params.net_cost_factor * cost_terms_delta.interposer_cost * costs_.interposer_cost_norm
-                           + placer_opts_.interposer_cost_params.cong_cost_factor * cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
-            }
         }
 
         NocCostTerms noc_delta_c; // change in NoC cost
@@ -717,11 +667,6 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                  * timing updates. These invalidations are accumulated for a
                  * big timing update in the outer loop. */
                 pin_timing_invalidator_->invalidate_affected_connections(blocks_affected_);
-
-                /* Update the connection_timing_cost and connection_delay
-                 * values from the temporary values. */
-                placer_state_.mutable_timing().commit_td_cost(blocks_affected_);
-
             } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
                 // Update the timing driven cost as usual
                 costs_.timing_cost += timing_delta_c;
@@ -731,14 +676,11 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                 commit_setup_slacks(setup_slacks_, placer_state_);
             }
 
-            // Update net cost functions and reset flags.
-            net_cost_handler_.update_move_nets();
-            if (update_interposer_costs) {
-                interposer_cost_handler_->commit_costs(net_cost_handler_.affected_nets());
-            }
-
-            // Update clb data structures since we kept the move.
-            blk_loc_registry.commit_move_blocks(blocks_affected_);
+            // Make the move permanent. Connection delays and timing costs are committed
+            // only in CRITICALITY_TIMING_PLACE mode; SLACK_TIMING_PLACE already committed
+            // them before its timing analysis.
+            swap_evaluator_->commit(blocks_affected_, update_interposer_costs,
+                                    /*commit_td=*/place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE);
 
             if (noc_opts_.noc) {
                 noc_cost_handler_->commit_noc_costs();
@@ -755,16 +697,11 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         } else {
             VTR_ASSERT_SAFE(move_outcome == e_move_result::REJECTED);
 
-            // Reset the net cost function flags first.
-            net_cost_handler_.reset_move_nets();
+            // Restore block_locs and reset the scratch/proposed state.
+            swap_evaluator_->revert(blocks_affected_,
+                                    /*revert_td=*/place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE);
 
-            // Restore the blk_loc_registry.block_locs data structures to their state before the move.
-            blk_loc_registry.revert_move_blocks(blocks_affected_);
-
-            if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
-                // Un-stage the values stored in proposed_* data structures
-                placer_state_.mutable_timing().revert_td_cost(blocks_affected_);
-            } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
+            if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
                 /* Revert the timing delays and costs to pre-update values.
                  * These routines must be called after reverting the block moves.
                  */
