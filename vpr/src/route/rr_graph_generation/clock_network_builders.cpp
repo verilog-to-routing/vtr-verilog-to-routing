@@ -1463,8 +1463,8 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
         // only kind that can land mid-span, per the UNI_DIRECTIONAL check above)
         // has none, so it falls back to internal_switch_idx_.
         int drive_switch_idx = (switch_points_[i].type == SwitchGridPointType::DRIVE)
-                                    ? switch_points_[i].switch_idx
-                                    : internal_switch_idx_;
+                                   ? switch_points_[i].switch_idx
+                                   : internal_switch_idx_;
 
         for (int track = 0; track < chan_w_; track++) {
             int cov_idx = covering_wire_at(x, y, axis, track);
@@ -1506,7 +1506,7 @@ int ClockSwitchGrid::create_chanx_node(int layer,
                                        t_rr_graph_storage* rr_nodes,
                                        RRGraphBuilder& rr_graph_builder) {
     return create_chan_node(layer, e_rr_type::CHANX, x_start, x_end, y, ptc_num, direction,
-                             RRIndexedDataId(CHANX_COST_INDEX_START + x_seg_idx_), rr_nodes, rr_graph_builder);
+                            RRIndexedDataId(CHANX_COST_INDEX_START + x_seg_idx_), rr_nodes, rr_graph_builder);
 }
 
 int ClockSwitchGrid::create_chany_node(int layer,
@@ -1519,7 +1519,7 @@ int ClockSwitchGrid::create_chany_node(int layer,
                                        RRGraphBuilder& rr_graph_builder,
                                        int num_segments_x) {
     return create_chan_node(layer, e_rr_type::CHANY, y_start, y_end, x, ptc_num, direction,
-                             RRIndexedDataId(CHANX_COST_INDEX_START + num_segments_x + y_seg_idx_), rr_nodes, rr_graph_builder);
+                            RRIndexedDataId(CHANX_COST_INDEX_START + num_segments_x + y_seg_idx_), rr_nodes, rr_graph_builder);
 }
 
 int ClockSwitchGrid::create_chan_node(int layer,
