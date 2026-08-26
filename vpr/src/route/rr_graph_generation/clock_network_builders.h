@@ -370,6 +370,7 @@ class ClockSwitchGrid : public ClockNetwork {
   private:
     int num_grid_locations(const DeviceGrid& grid) const;
 
+    /// @brief Creates a CHANX rr_node and registers it in the node lookup.
     int create_chanx_node(int layer,
                           int x_start,
                           int x_end,
@@ -378,6 +379,7 @@ class ClockSwitchGrid : public ClockNetwork {
                           Direction direction,
                           t_rr_graph_storage* rr_nodes,
                           RRGraphBuilder& rr_graph_builder);
+    /// @brief Creates a CHANY rr_node and registers it in the node lookup.
     int create_chany_node(int layer,
                           int y_start,
                           int y_end,
@@ -387,6 +389,23 @@ class ClockSwitchGrid : public ClockNetwork {
                           t_rr_graph_storage* rr_nodes,
                           RRGraphBuilder& rr_graph_builder,
                           int num_segments_x);
+
+    /// @brief Shared implementation of create_chanx_node/create_chany_node.
+    /// @param type CHANX or CHANY.
+    /// @param start,end The node's extent along its own axis (x for CHANX, y for CHANY).
+    /// @param cross The node's fixed coordinate on the other axis (y for CHANX, x for CHANY).
+    /// @param cost_index The fully-resolved cost index (callers add x_seg_idx_/y_seg_idx_
+    ///                   themselves, since that offset differs between CHANX and CHANY).
+    int create_chan_node(int layer,
+                         e_rr_type type,
+                         int start,
+                         int end,
+                         int cross,
+                         int ptc_num,
+                         Direction direction,
+                         RRIndexedDataId cost_index,
+                         t_rr_graph_storage* rr_nodes,
+                         RRGraphBuilder& rr_graph_builder);
 };
 
 /// @brief An H-tree clock network (see ClockType::H_TREE).

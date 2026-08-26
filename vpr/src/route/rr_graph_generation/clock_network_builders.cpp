@@ -1504,36 +1504,8 @@ int ClockSwitchGrid::create_chanx_node(int layer,
                                        Direction direction,
                                        t_rr_graph_storage* rr_nodes,
                                        RRGraphBuilder& rr_graph_builder) {
-    rr_nodes->emplace_back();
-    size_t node_index = rr_nodes->size() - 1;
-    RRNodeId chanx_node = RRNodeId(node_index);
-
-    rr_graph_builder.set_node_type(chanx_node, e_rr_type::CHANX);
-    rr_graph_builder.set_node_coordinates(chanx_node, x_start, y, x_end, y);
-    rr_graph_builder.set_node_layer(chanx_node, layer, layer);
-    rr_graph_builder.set_node_capacity(chanx_node, 1);
-    rr_graph_builder.set_node_track_num(chanx_node, ptc_num);
-    // Rmetal/Cmetal are resistance/capacitance PER UNIT LENGTH (per tile spanned,
-    // see doc/src/arch/reference.rst), not a flat per-node total. Scale by the
-    // node's actual tile span so that increasing repeatx (or length_hops_) genuinely
-    // increases wire delay, instead of every hop wire silently getting the same R/C
-    // regardless of how many tiles it physically spans. This also naturally gives
-    // hub nodes (x_start == x_end) 0 R/C, which is correct since they represent
-    // switch hardware rather than metal wire.
-    int node_length = x_end - x_start;
-    const NodeRCIndex rc_index = find_create_rr_rc_data(layer_.r_metal * node_length, layer_.c_metal * node_length, g_vpr_ctx.mutable_device().rr_rc_data);
-    rr_graph_builder.set_node_rc_index(chanx_node, rc_index);
-    rr_graph_builder.set_node_direction(chanx_node, direction);
-    rr_graph_builder.set_node_cost_index(chanx_node, RRIndexedDataId(CHANX_COST_INDEX_START + x_seg_idx_));
-
-    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
-    for (int ix = rr_graph.node_xlow(chanx_node); ix <= rr_graph.node_xhigh(chanx_node); ++ix) {
-        for (int iy = rr_graph.node_ylow(chanx_node); iy <= rr_graph.node_yhigh(chanx_node); ++iy) {
-            rr_graph_builder.node_lookup().add_node(chanx_node, layer, ix, iy, rr_graph.node_type(chanx_node), rr_graph.node_track_num(chanx_node));
-        }
-    }
-
-    return node_index;
+    return create_chan_node(layer, e_rr_type::CHANX, x_start, x_end, y, ptc_num, direction,
+                             RRIndexedDataId(CHANX_COST_INDEX_START + x_seg_idx_), rr_nodes, rr_graph_builder);
 }
 
 int ClockSwitchGrid::create_chany_node(int layer,
@@ -1545,28 +1517,52 @@ int ClockSwitchGrid::create_chany_node(int layer,
                                        t_rr_graph_storage* rr_nodes,
                                        RRGraphBuilder& rr_graph_builder,
                                        int num_segments_x) {
+    return create_chan_node(layer, e_rr_type::CHANY, y_start, y_end, x, ptc_num, direction,
+                             RRIndexedDataId(CHANX_COST_INDEX_START + num_segments_x + y_seg_idx_), rr_nodes, rr_graph_builder);
+}
+
+int ClockSwitchGrid::create_chan_node(int layer,
+                                      e_rr_type type,
+                                      int start,
+                                      int end,
+                                      int cross,
+                                      int ptc_num,
+                                      Direction direction,
+                                      RRIndexedDataId cost_index,
+                                      t_rr_graph_storage* rr_nodes,
+                                      RRGraphBuilder& rr_graph_builder) {
+    VTR_ASSERT(type == e_rr_type::CHANX || type == e_rr_type::CHANY);
+
     rr_nodes->emplace_back();
     size_t node_index = rr_nodes->size() - 1;
-    RRNodeId chany_node = RRNodeId(node_index);
+    RRNodeId chan_node = RRNodeId(node_index);
 
-    rr_graph_builder.set_node_type(chany_node, e_rr_type::CHANY);
-    rr_graph_builder.set_node_coordinates(chany_node, x, y_start, x, y_end);
-    rr_graph_builder.set_node_layer(chany_node, layer, layer);
-    rr_graph_builder.set_node_capacity(chany_node, 1);
-    rr_graph_builder.set_node_track_num(chany_node, ptc_num);
-    // See the matching comment in create_chanx_node: Rmetal/Cmetal are per-unit-length,
-    // so scale by the node's actual tile span rather than treating them as a flat
-    // per-node total.
-    int node_length = y_end - y_start;
+    rr_graph_builder.set_node_type(chan_node, type);
+    if (type == e_rr_type::CHANX) {
+        rr_graph_builder.set_node_coordinates(chan_node, start, cross, end, cross);
+    } else {
+        rr_graph_builder.set_node_coordinates(chan_node, cross, start, cross, end);
+    }
+    rr_graph_builder.set_node_layer(chan_node, layer, layer);
+    rr_graph_builder.set_node_capacity(chan_node, 1);
+    rr_graph_builder.set_node_track_num(chan_node, ptc_num);
+    // Rmetal/Cmetal are resistance/capacitance PER UNIT LENGTH (per tile spanned,
+    // see doc/src/arch/reference.rst), not a flat per-node total. Scale by the
+    // node's actual tile span so that increasing repeatx/repeaty (or length_hops_)
+    // genuinely increases wire delay, instead of every hop wire silently getting the
+    // same R/C regardless of how many tiles it physically spans. This also naturally
+    // gives hub nodes (start == end) 0 R/C, which is correct since they represent
+    // switch hardware rather than metal wire.
+    int node_length = end - start;
     const NodeRCIndex rc_index = find_create_rr_rc_data(layer_.r_metal * node_length, layer_.c_metal * node_length, g_vpr_ctx.mutable_device().rr_rc_data);
-    rr_graph_builder.set_node_rc_index(chany_node, rc_index);
-    rr_graph_builder.set_node_direction(chany_node, direction);
-    rr_graph_builder.set_node_cost_index(chany_node, RRIndexedDataId(CHANX_COST_INDEX_START + num_segments_x + y_seg_idx_));
+    rr_graph_builder.set_node_rc_index(chan_node, rc_index);
+    rr_graph_builder.set_node_direction(chan_node, direction);
+    rr_graph_builder.set_node_cost_index(chan_node, cost_index);
 
-    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
-    for (int ix = rr_graph.node_xlow(chany_node); ix <= rr_graph.node_xhigh(chany_node); ++ix) {
-        for (int iy = rr_graph.node_ylow(chany_node); iy <= rr_graph.node_yhigh(chany_node); ++iy) {
-            rr_graph_builder.node_lookup().add_node(chany_node, layer, ix, iy, rr_graph.node_type(chany_node), rr_graph.node_ptc_num(chany_node));
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+    for (int ix = rr_graph.node_xlow(chan_node); ix <= rr_graph.node_xhigh(chan_node); ++ix) {
+        for (int iy = rr_graph.node_ylow(chan_node); iy <= rr_graph.node_yhigh(chan_node); ++iy) {
+            rr_graph_builder.node_lookup().add_node(chan_node, layer, ix, iy, type, ptc_num);
         }
     }
 

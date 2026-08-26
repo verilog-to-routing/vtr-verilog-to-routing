@@ -4866,7 +4866,7 @@ static void process_clock_networks(pugi::xml_node parent,
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_type),
                                vtr::string_fmt("Unknown switch_block_type '%s' for clock_switch_grid. "
-                                               "Expected one of: full, subset, wilton, universal.\n",
+                                               "Expected one of: full, subset, wilton, universal, custom.\n",
                                                switch_block_type_str.c_str())
                                    .c_str());
             }
