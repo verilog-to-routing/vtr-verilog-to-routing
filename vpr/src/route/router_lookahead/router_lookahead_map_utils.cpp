@@ -1255,7 +1255,7 @@ static std::vector<t_signature_member> get_surrounding_blocks_signature(const t_
         record_neighbour(LEFT, height_offset, root_loc.x - 1, root_loc.y + height_offset);
         record_neighbour(RIGHT, height_offset, root_loc.x + tile_type->width, root_loc.y + height_offset);
     }
-    
+
     // Bottom and top sides
     for (int width_offset = 0; width_offset < tile_type->width; width_offset++) {
         record_neighbour(BOTTOM, width_offset, root_loc.x + width_offset, root_loc.y - 1);
