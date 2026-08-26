@@ -14,7 +14,7 @@ make -j$(nproc)
 
 The plugin is at `build/share/yosys/plugins/mosaic.so`. Yosys loads it with `plugin -i mosaic`.
 
-`WITH_MOSAIC` (default ON) and `WITH_PARMYS` (default ON) select the Yosys plugins. Yosys is built when either is on. At least one must be on.
+`WITH_MOSAIC` (default ON) and `WITH_PARMYS` (default ON) select the Yosys plugins. Yosys is built when either is on. At least one synthesis frontend (`WITH_PARMYS`, `WITH_MOSAIC`, or `WITH_ODIN`) must be enabled. To build VTR without Mosaic:
 
 ```shell
 make CMAKE_PARAMS="-DWITH_MOSAIC=OFF" -j$(nproc)

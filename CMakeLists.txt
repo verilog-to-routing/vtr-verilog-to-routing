@@ -55,17 +55,13 @@ option(ODIN_TIDY "Enable building odin with clang tidy" OFF)
 option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
 # Yosys plugins. Yosys is built when WITH_PARMYS or WITH_MOSAIC is on.
-# At least one of those options must be on (not enforced on Windows).
 option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" ON)
 option(WITH_MOSAIC "Enable mosaic yosys plugin as an alternative synthesis frontend" ON)
 option(SLANG_SYSTEMVERILOG "Enable building and installing Yosys-Slang plugin for parsing SystemVerilog" ON)
 
-if(NOT ${WITH_PARMYS} AND NOT ${WITH_MOSAIC})
-    if(WIN32)
-        message(STATUS "Neither parmys nor mosaic enabled (windows yosys plugins are disabled)")
-    else()
-        message(FATAL_ERROR "At least one of WITH_PARMYS or WITH_MOSAIC must be ON")
-    endif()
+if(NOT ${WITH_PARMYS} AND NOT ${WITH_MOSAIC} AND NOT ${WITH_ODIN})
+    message(FATAL_ERROR "At least one synthesis frontend must be enabled "
+                        "(WITH_PARMYS, WITH_MOSAIC, or WITH_ODIN)")
 endif()
 
 if(${WITH_PARMYS} OR ${WITH_MOSAIC})

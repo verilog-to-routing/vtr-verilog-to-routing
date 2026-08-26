@@ -28,4 +28,3 @@ pass_requirements_file=pass_requirements.txt
 # Script parameters
 script_params_common = -track_memory_usage -start mosaic -verilator_check -verilator_check_vectors 20000
 script_params_list_add =
-script_params_list_add = --reorder_rr_graph_nodes_algorithm random_shuffle

@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.16)
+
 # wildebeest sources compiled into the mosaic plugin
 add_library(wildebeest OBJECT
     src/clk_domains.cc

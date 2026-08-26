@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.16)
+
 # mosaic yosys plugin, built as part of the vtr tree.
 
 project("mosaic")
