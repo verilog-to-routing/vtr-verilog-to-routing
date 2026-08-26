@@ -85,7 +85,7 @@ void t_pl_blocks_to_be_moved::clear_move_blocks() {
 }
 
 bool t_pl_blocks_to_be_moved::driven_by_moved_block(const ClusterNetId net) const {
-    auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     bool is_driven_by_move_blk = false;
     ClusterBlockId net_driver_block = clb_nlist.net_driver_block(net);
@@ -115,7 +115,7 @@ void MoveAbortionLogger::report_aborted_moves() const {
     if (move_abort_reasons_.empty()) {
         VTR_LOG("  No moves aborted\n");
     }
-    for (const auto& kv : move_abort_reasons_) {
-        VTR_LOG("  %s: %zu\n", kv.first.c_str(), kv.second);
+    for (const auto& [reason, count] : move_abort_reasons_) {
+        VTR_LOG("  %s: %zu\n", reason.c_str(), count);
     }
 }
