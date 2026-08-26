@@ -1079,14 +1079,23 @@ static void dijkstra_flood_to_wires(int itile,
             float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; // Current nodes congestion cost
 
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
-                int iswitch = rr_graph.rr_nodes().edge_switch(edge);
-                float incr_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
-
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
                 if (!is_inter_cluster_node(rr_graph, next_node)) {
                     // Don't go inside the clusters
                     continue;
+                }
+
+                float incr_delay;
+                e_rr_type next_rr_type = rr_graph.node_type(next_node);
+                if (next_rr_type == e_rr_type::CHANX || next_rr_type == e_rr_type::CHANY || next_rr_type == e_rr_type::CHANZ) {
+                    // Use the averaged per segment type delay, as the wire lookahead does.
+                    // The delay of a specific switch depends on its mux fan-in, which might vary by location.
+                    RRIndexedDataId next_cost_index = rr_graph.node_cost_index(next_node);
+                    incr_delay = device_ctx.rr_indexed_data[next_cost_index].T_linear;
+                } else {
+                    int iswitch = rr_graph.rr_nodes().edge_switch(edge);
+                    incr_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
                 }
 
                 t_pq_entry next;
