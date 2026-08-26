@@ -338,7 +338,8 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                                         ram_mapper,
                                                                         vpr_setup,
                                                                         *device_ctx.arch,
-                                                                        device_ctx.grid);
+                                                                        device_ctx.grid,
+                                                                        device_size_estimator.estimated_type_instance_counts());
     full_legalizer->legalize(p_placement);
 
     // Print the number of resources in netlist and number of resources available in architecture

@@ -24,7 +24,8 @@ void APPackMaxDistThManager::init(const std::vector<std::string>& max_dist_ths,
                                   const DeviceGrid& device_grid) {
     // Compute the max device distance based on the width and height of the
     // device. This is the L1 (manhattan) distance.
-    max_distance_on_device_ = device_grid.width() + device_grid.height();
+    float layer_span_contr = device_grid.get_num_layers() > 1 ? device_grid.get_num_layers() : 0;
+    max_distance_on_device_ = device_grid.width() + device_grid.height() + layer_span_contr;
 
     // Automatically set the max distance thresholds.
     auto_set_max_distance_thresholds(logical_block_types, device_grid);
