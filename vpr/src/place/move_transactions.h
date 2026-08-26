@@ -83,6 +83,14 @@ struct t_pl_blocks_to_be_moved {
                                           t_pl_loc to,
                                           const BlkLocRegistry& blk_loc_registry);
 
+    /**
+     * @brief Loads a previously recorded move (its full moved blocks list) into
+     * this object, so the move can be re-applied to another placement
+     * state. Used by the speculative parallel swap evaluation engine to transfer
+     * a move proposed on the master state to worker replicas and back.
+     */
+    void set_moved_blocks(const std::vector<t_pl_moved_block>& moves);
+
     std::set<t_pl_loc> determine_locations_emptied_by_move() const;
 
     std::vector<t_pl_moved_block> moved_blocks;

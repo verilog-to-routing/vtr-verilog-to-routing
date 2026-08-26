@@ -10,6 +10,7 @@
 #include "place_util.h"
 #include "vtr_prefix_sum.h"
 
+#include <atomic>
 #include <functional>
 #include <utility>
 
@@ -42,6 +43,63 @@ struct t_net_cost_terms {
     double interposer_cost = 0.;
     double interposer_cong_cost = 0.;
     double cong_cost = 0.;
+};
+
+/**
+ * @brief Cancellation token polled during swap evaluation: attempt `slot_index`
+ * is abandoned once a lower-id attempt is accepted. A default-constructed token
+ * never cancels. Cancellation only skips work whose result is discarded, so
+ * polling granularity cannot affect the annealing trajectory.
+ */
+struct t_swap_cancel_token {
+    /// Lowest accepted attempt id of the current batch (nullptr: never cancel).
+    const std::atomic<int>* first_accepted_id = nullptr;
+    /// Id of the attempt this evaluation belongs to.
+    int slot_index = 0;
+
+    /// @brief Returns true once this evaluation should be abandoned.
+    inline bool cancelled() const {
+        // Relaxed ordering suffices: a stale read only delays a cancellation.
+        return first_accepted_id != nullptr
+               && slot_index > first_accepted_id->load(std::memory_order_relaxed);
+    }
+};
+
+/**
+ * @brief The committed values an evaluated move writes for one affected net,
+ * i.e. what update_move_nets() would copy out of the ts_ scratch.
+ *
+ * Part of t_net_commit_record. The per-layer sink pin counts live in the
+ * record's flat sink_pin_layer_counts array, so an entry itself never allocates.
+ */
+struct t_net_commit_entry {
+    ClusterNetId net_id;
+    /// New bounding box.
+    t_bb bb_coords;
+    /// New number of blocks on each BB edge (valid only when update_edges).
+    t_bb bb_num_on_edges;
+    /// New wirelength (BB) cost of the net.
+    double net_cost = 0.;
+    /// True for large nets (>= SMALL_NET sinks) whose edge counts are incrementally maintained.
+    bool update_edges = false;
+};
+
+/**
+ * @brief The committed values an evaluated move writes into a NetCostHandler,
+ * for all nets the move affects.
+ *
+ * Captured with extract_commit_record() and replayed on other states with
+ * apply_commit_record(), letting the parallel swap evaluation engine commit a
+ * winning move without re-evaluating it. Extraction overwrites the record in
+ * place, reusing its buffers.
+ */
+struct t_net_commit_record {
+    /// One entry per affected net.
+    std::vector<t_net_commit_entry> entries;
+    /// New number of sink pins on each layer, for every affected net,
+    /// flattened: entry i's counts are the num_layers values starting at
+    /// index i * num_layers.
+    std::vector<int> sink_pin_layer_counts;
 };
 
 class NetCostHandler {
@@ -108,13 +166,18 @@ class NetCostHandler {
      * The change in the timing cost is stored in `timing_delta_c`.
      * ts_nets_to_update is also extended with the latest net.
      *
-     * @return The number of affected nets.
+     * @param cancel_token Polled during the update. Once it reports
+     * cancellation, the update is abandoned and this method returns false. The
+     * caller must still revert the move as if it had been evaluated.
+     *
+     * @return True when the update completed; false when it was cancelled.
      */
-    void find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
+    bool find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
                                              const PlacerCriticalities* criticalities,
                                              t_pl_blocks_to_be_moved& blocks_affected,
                                              t_net_cost_terms& cost_terms_delta,
-                                             double& timing_delta_c);
+                                             double& timing_delta_c,
+                                             t_swap_cancel_token cancel_token = {});
 
     /**
      * @brief Reset the net cost function flags (proposed_net_cost and bb_updated_before)
@@ -173,6 +236,38 @@ class NetCostHandler {
      *        The channel usage estimates are computed in estimate_routing_chan_util().
      */
     const ChannelMetric<vtr::NdMatrix<double, 3>>& get_chan_util() const;
+
+    /// @brief Returns true when the cube bounding box is in use.
+    bool cube_bb() const { return cube_bb_; }
+
+    /// @brief Returns the routing congestion channel utilization threshold this handler was built with.
+    double congestion_chan_util_threshold() const { return congestion_chan_util_threshold_; }
+
+    /**
+     * @brief Copies all committed (non-scratch) placement cost state from `other`,
+     * which must have been constructed with identical parameters and must have no
+     * move in flight.
+     *
+     * Only supported with cube bounding boxes and congestion modeling off.
+     */
+    void copy_committed_state_from(const NetCostHandler& other);
+
+    /**
+     * @brief Captures, for every net affected by the currently applied move, the
+     * committed values update_move_nets() would write. Must be called after
+     * find_affected_nets_and_update_costs() and before the move is committed or
+     * reverted, and kept consistent with update_move_nets().
+     *
+     * Only supported with cube bounding boxes and congestion modeling off.
+     */
+    void extract_commit_record(t_net_commit_record& record) const;
+
+    /**
+     * @brief Writes an extracted commit record into this handler's committed data,
+     * without re-evaluating the move. Unlike update_move_nets() it touches no
+     * scratch flags, so this handler must have no move in flight.
+     */
+    void apply_commit_record(const t_net_commit_record& record);
 
   private:
     /// Indicates whether congestion cost modeling is enabled.
@@ -345,14 +440,18 @@ class NetCostHandler {
      * @param affected_pins Netlist pins which are affected, in terms placement cost, by the proposed move.
      * @param timing_delta_c Timing cost change based on the proposed move
      * @param is_src_moving Is the moving pin the source of a net.
+     * @param cancel_token Polled during the timing-cost update; on cancellation
+     * the update is abandoned and false is returned.
+     * @return True when the update completed; false when it was cancelled.
      */
-    void update_net_info_on_pin_move_(const PlaceDelayModel* delay_model,
+    bool update_net_info_on_pin_move_(const PlaceDelayModel* delay_model,
                                       const PlacerCriticalities* criticalities,
                                       const ClusterPinId pin_id,
                                       const t_pl_moved_block& moving_blk_inf,
                                       std::vector<ClusterPinId>& affected_pins,
                                       double& timing_delta_c,
-                                      bool is_src_moving);
+                                      bool is_src_moving,
+                                      t_swap_cancel_token cancel_token);
 
     /**
      * @brief Accumulates the placement cost deltas for all nets affected by the proposed move.
@@ -383,14 +482,18 @@ class NetCostHandler {
      * @param affected_pins Updated by this routine to store the sink pins whose delays are changed due to moving the block
      * @param delta_timing_cost Computed by this routine and returned by reference.
      * @param is_src_moving True if "pin" is a sink pin and its driver is among the moving blocks
+     * @param cancel_token Polled between sinks of a moved driver (the one
+     * O(fanout) loop in an evaluation); on cancellation false is returned.
+     * @return True when the update completed; false when it was cancelled.
      */
-    void update_td_delta_costs_(const PlaceDelayModel* delay_model,
+    bool update_td_delta_costs_(const PlaceDelayModel* delay_model,
                                 const PlacerCriticalities& criticalities,
                                 const ClusterNetId net,
                                 const ClusterPinId pin,
                                 std::vector<ClusterPinId>& affected_pins,
                                 double& delta_timing_cost,
-                                bool is_src_moving);
+                                bool is_src_moving,
+                                t_swap_cancel_token cancel_token);
 
     /**
      * @brief Updates the bounding box coordinates of a net in the placer state

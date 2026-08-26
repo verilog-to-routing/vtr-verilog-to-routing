@@ -153,6 +153,7 @@ struct t_options {
     argparse::ArgValue<float> place_rlim_escape_fraction;
     argparse::ArgValue<std::string> place_move_stats_file;
     argparse::ArgValue<int> placement_saves_per_temperature;
+    argparse::ArgValue<int> place_swap_eval_num_workers;
     argparse::ArgValue<e_place_effort_scaling> place_effort_scaling;
     argparse::ArgValue<e_place_delta_delay_algorithm> place_delta_delay_matrix_calculation_method;
     argparse::ArgValue<std::vector<float>> place_static_move_prob;

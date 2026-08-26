@@ -330,13 +330,14 @@ void NetCostHandler::update_net_bb_(const ClusterNetId net,
     }
 }
 
-void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
+bool NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
                                             const PlacerCriticalities& criticalities,
                                             const ClusterNetId net,
                                             const ClusterPinId pin,
                                             std::vector<ClusterPinId>& affected_pins,
                                             double& delta_timing_cost,
-                                            bool is_src_moving) {
+                                            bool is_src_moving,
+                                            t_swap_cancel_token cancel_token) {
     /**
      * Assumes that the blocks have been moved to the proposed new locations.
      * Otherwise, the routine comp_td_single_connection_delay() will not be
@@ -374,6 +375,14 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
         /* This pin is a net driver on a moved block. */
         /* Recompute all point to point connection delays for the net sinks. */
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size(); ipin++) {
+            // A moved driver re-evaluates every sink of its net, which can be
+            // arbitrarily expensive for high-fanout nets; poll between sinks.
+            // The sinks staged so far are recorded in affected_pins, so a
+            // revert restores them.
+            if (cancel_token.cancelled()) {
+                return false;
+            }
+
             float temp_delay = comp_td_single_connection_delay(delay_model, block_locs, net, ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
             if (temp_delay == connection_delay[net][ipin]) {
@@ -402,7 +411,7 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
             float temp_delay = comp_td_single_connection_delay(delay_model, block_locs, net, ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
             if (temp_delay == connection_delay[net][ipin]) {
-                return;
+                return true;
             }
 
             /* Calculate proposed delay and cost values */
@@ -415,6 +424,8 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
             affected_pins.push_back(pin);
         }
     }
+
+    return true;
 }
 
 void NetCostHandler::record_affected_net_(const ClusterNetId net) {
@@ -429,13 +440,14 @@ void NetCostHandler::record_affected_net_(const ClusterNetId net) {
     }
 }
 
-void NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_model,
+bool NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_model,
                                                   const PlacerCriticalities* criticalities,
                                                   const ClusterPinId pin_id,
                                                   const t_pl_moved_block& moving_blk_inf,
                                                   std::vector<ClusterPinId>& affected_pins,
                                                   double& timing_delta_c,
-                                                  bool is_src_moving) {
+                                                  bool is_src_moving,
+                                                  t_swap_cancel_token cancel_token) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     const ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
@@ -445,7 +457,7 @@ void NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_m
     if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
         //TODO: Do we require anything special here for global nets?
         //"Global nets are assumed to span the whole chip, and do not effect costs."
-        return;
+        return true;
     }
 
     // Record effected nets
@@ -457,14 +469,17 @@ void NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_m
 
     if (place_algorithm_.is_timing_driven()) {
         // Determine the change in connection delay and timing cost.
-        update_td_delta_costs_(delay_model,
-                               *criticalities,
-                               net_id,
-                               pin_id,
-                               affected_pins,
-                               timing_delta_c,
-                               is_src_moving);
+        return update_td_delta_costs_(delay_model,
+                                      *criticalities,
+                                      net_id,
+                                      pin_id,
+                                      affected_pins,
+                                      timing_delta_c,
+                                      is_src_moving,
+                                      cancel_token);
     }
+
+    return true;
 }
 
 void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts) {
@@ -1542,16 +1557,17 @@ void NetCostHandler::set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta) {
     }
 }
 
-void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
+bool NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
                                                          const PlacerCriticalities* criticalities,
                                                          t_pl_blocks_to_be_moved& blocks_affected,
                                                          t_net_cost_terms& cost_terms_delta,
-                                                         double& timing_delta_c) {
+                                                         double& timing_delta_c,
+                                                         t_swap_cancel_token cancel_token) {
     VTR_ASSERT_DEBUG(cost_terms_delta.bb_cost == 0.);
     VTR_ASSERT_DEBUG(cost_terms_delta.cong_cost == 0.);
     VTR_ASSERT_DEBUG(cost_terms_delta.interposer_cost == 0.);
     VTR_ASSERT_DEBUG(timing_delta_c == 0.);
-    const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     ts_nets_to_update_.resize(0);
 
@@ -1562,29 +1578,99 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
 
         // Go through all the pins in the moved block.
         for (ClusterPinId blk_pin : clb_nlist.block_pins(blk_id)) {
+            // Abandon the update if the caller no longer needs this evaluation.
+            // A subsequent revert restores everything.
+            if (cancel_token.cancelled()) {
+                return false;
+            }
+
             bool is_src_moving = false;
             if (clb_nlist.pin_type(blk_pin) == PinType::SINK) {
                 ClusterNetId net_id = clb_nlist.pin_net(blk_pin);
                 is_src_moving = blocks_affected.driven_by_moved_block(net_id);
             }
-            update_net_info_on_pin_move_(delay_model,
-                                         criticalities,
-                                         blk_pin,
-                                         moving_block,
-                                         affected_pins,
-                                         timing_delta_c,
-                                         is_src_moving);
+            if (!update_net_info_on_pin_move_(delay_model,
+                                              criticalities,
+                                              blk_pin,
+                                              moving_block,
+                                              affected_pins,
+                                              timing_delta_c,
+                                              is_src_moving,
+                                              cancel_token)) {
+                return false;
+            }
         }
     }
 
     // Now update the bounding box costs (since the net bounding
     // boxes are up-to-date). The cost is only updated once per net.
     set_bb_delta_cost_(cost_terms_delta);
+
+    return true;
+}
+
+void NetCostHandler::extract_commit_record(t_net_commit_record& record) const {
+    // Mirrors the reading side of update_move_nets(): capture exactly the values
+    // it would copy from the ts_ scratch into the committed data.
+    VTR_ASSERT_SAFE_MSG(cube_bb_ && !congestion_modeling_started_,
+                        "Commit records only support cube bounding boxes without congestion modeling.");
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const size_t num_layers = g_vpr_ctx.device().grid.get_num_layers();
+
+    const size_t num_affected_nets = ts_nets_to_update_.size();
+    record.entries.resize(num_affected_nets);
+    record.sink_pin_layer_counts.resize(num_affected_nets * num_layers);
+
+    for (size_t i = 0; i < num_affected_nets; i++) {
+        const ClusterNetId net_id = ts_nets_to_update_[i];
+        t_net_commit_entry& entry = record.entries[i];
+        entry.net_id = net_id;
+        entry.update_edges = cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET;
+
+        entry.bb_coords = ts_bb_coord_new_[net_id];
+        if (entry.update_edges) {
+            entry.bb_num_on_edges = ts_bb_edge_new_[net_id];
+        }
+
+        for (size_t layer_num = 0; layer_num < num_layers; layer_num++) {
+            record.sink_pin_layer_counts[i * num_layers + layer_num] = ts_layer_sink_pin_count_[size_t(net_id)][layer_num];
+        }
+
+        entry.net_cost = proposed_net_cost_[net_id];
+    }
+}
+
+void NetCostHandler::apply_commit_record(const t_net_commit_record& record) {
+    // Mirrors the writing side of update_move_nets(), minus the scratch flag
+    // resets: the applying handler has no move in flight, so its flags are already
+    // in their reset state.
+    VTR_ASSERT_SAFE_MSG(cube_bb_ && !congestion_modeling_started_,
+                        "Commit records only support cube bounding boxes without congestion modeling.");
+    const size_t num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    VTR_ASSERT_SAFE(record.sink_pin_layer_counts.size() == record.entries.size() * num_layers);
+
+    for (size_t i = 0; i < record.entries.size(); i++) {
+        const t_net_commit_entry& entry = record.entries[i];
+        const ClusterNetId net_id = entry.net_id;
+
+        bb_coords_[net_id] = entry.bb_coords;
+        if (entry.update_edges) {
+            bb_num_on_edges_[net_id] = entry.bb_num_on_edges;
+        }
+
+        for (size_t layer_num = 0; layer_num < num_layers; layer_num++) {
+            num_sink_pin_layer_[size_t(net_id)][layer_num] = record.sink_pin_layer_counts[i * num_layers + layer_num];
+        }
+
+        net_cost_[net_id] = entry.net_cost;
+    }
 }
 
 void NetCostHandler::update_move_nets() {
     // update net cost functions and reset flags.
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    // NOTE: extract_commit_record()/apply_commit_record() must be kept consistent
+    // with the values committed here.
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
@@ -1716,6 +1802,21 @@ int NetCostHandler::get_num_nets_spanning_multiple_layers() const {
 
 const std::vector<ClusterNetId>& NetCostHandler::affected_nets() const {
     return ts_nets_to_update_;
+}
+
+void NetCostHandler::copy_committed_state_from(const NetCostHandler& other) {
+    VTR_ASSERT(cube_bb_ && other.cube_bb_);
+    VTR_ASSERT_MSG(!other.congestion_modeling_started_,
+                   "Replica synchronization does not support congestion modeling.");
+    VTR_ASSERT(net_cost_.size() == other.net_cost_.size());
+
+    // Committed bounding box data
+    bb_coords_ = other.bb_coords_;
+    bb_num_on_edges_ = other.bb_num_on_edges_;
+    num_sink_pin_layer_ = other.num_sink_pin_layer_;
+
+    // Committed per-net costs
+    net_cost_ = other.net_cost_;
 }
 
 double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /*=true*/) {

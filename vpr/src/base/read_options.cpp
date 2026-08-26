@@ -2647,6 +2647,18 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.place_swap_eval_num_workers, "--place_swap_eval_num_workers")
+        .help(
+            "Number of workers used to speculatively evaluate placement swaps in "
+            "parallel during simulated annealing. The annealing thread itself acts as one "
+            "of the workers:\n"
+            " *  1 (the default) uses the sequential annealer,\n"
+            " * >1 sets the number of workers, and\n"
+            " *  0 uses the maximum concurrency supported by the host machine.\n"
+            "Results are deterministic for a fixed value of this option.")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.place_static_move_prob, "--place_static_move_prob")
         .help(
             "The percentage probabilities of different moves in Simulated Annealing placement. "
