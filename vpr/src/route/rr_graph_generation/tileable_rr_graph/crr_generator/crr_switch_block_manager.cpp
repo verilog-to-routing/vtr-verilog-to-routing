@@ -8,13 +8,10 @@
 #include "vpr_error.h"
 #include "crr_switch_block_manager.h"
 
+#include "vtr_assert.h"
 #include "vtr_log.h"
 
 namespace crrgenerator {
-
-static std::string get_switch_block_name(size_t x, size_t y) {
-    return "SB_" + std::to_string(x) + "__" + std::to_string(y) + "_";
-}
 
 SwitchBlockManager::SwitchBlockManager(const std::string& sb_maps_file,
                                        const std::string& sb_templates_dir,
@@ -50,8 +47,11 @@ SwitchBlockManager::SwitchBlockManager(const std::string& sb_maps_file,
         }
 
         // Handle escaped asterisks (replace \* with *)
-        std::regex escaped_asterisk(R"(\\\*)");
-        pattern = std::regex_replace(pattern, escaped_asterisk, "*");
+        size_t escape_pos = 0;
+        while ((escape_pos = pattern.find("\\*", escape_pos)) != std::string::npos) {
+            pattern.erase(escape_pos, 1);
+            ++escape_pos;
+        }
 
         ordered_switch_block_patterns_.push_back(pattern);
         pattern_matcher_.register_pattern(pattern);
@@ -97,52 +97,37 @@ SwitchBlockManager::SwitchBlockManager(const std::string& sb_maps_file,
     print_statistics();
 }
 
-std::string SwitchBlockManager::get_pattern_file_name(const std::string& pattern) const {
-    auto it = switch_block_to_file_.find(pattern);
+const DataFrame* SwitchBlockManager::get_dataframe_by_index(size_t pattern_idx) const {
+    VTR_ASSERT(pattern_idx < ordered_switch_block_patterns_.size());
+    const std::string& pattern = ordered_switch_block_patterns_[pattern_idx];
 
-    if (it == switch_block_to_file_.end()) {
-        return "";
-    } else {
-        std::filesystem::path path(it->second);
-        return path.filename().string();
-    }
-}
-
-const DataFrame* SwitchBlockManager::get_switch_block_dataframe(const std::string& pattern) const {
-    auto it = dataframes_.find(pattern);
-    return (it != dataframes_.end()) ? it->second : nullptr;
-}
-
-bool SwitchBlockManager::has_pattern(const std::string& pattern) const {
-    return dataframes_.find(pattern) != dataframes_.end();
-}
-
-std::vector<std::string> SwitchBlockManager::get_all_patterns() const {
-    std::vector<std::string> patterns;
-    patterns.reserve(dataframes_.size());
-
-    for (const auto& [pattern, _] : dataframes_) {
-        patterns.push_back(pattern);
+    auto file_it = switch_block_to_file_.find(pattern);
+    if (file_it == switch_block_to_file_.end() || file_it->second.empty()) {
+        // The pattern is mapped to an empty/null entry in the SB_MAPS YAML:
+        // switch blocks matching it have no connections.
+        return nullptr;
     }
 
-    return patterns;
+    auto df_it = dataframes_.find(pattern);
+    if (df_it == dataframes_.end()) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "No dataframe found for pattern '%s'\n", pattern.c_str());
+    }
+    return df_it->second;
 }
 
-std::string SwitchBlockManager::find_matching_pattern(size_t x, size_t y) const {
-    std::string sw_name = get_switch_block_name(x, y);
-    for (const std::string& pattern : ordered_switch_block_patterns_) {
-        if (pattern_matcher_.matches_pattern(sw_name, pattern)) {
-            return pattern;
+int SwitchBlockManager::find_matching_pattern_index(size_t x, size_t y) const {
+    for (size_t pattern_idx = 0; pattern_idx < ordered_switch_block_patterns_.size(); ++pattern_idx) {
+        if (pattern_matcher_.matches(pattern_idx, x, y)) {
+            return static_cast<int>(pattern_idx);
         }
     }
-    return "";
+    return -1;
 }
 
 void SwitchBlockManager::print_statistics() const {
     VTR_LOG("=== CRR Generator Switch Block Manager Statistics ===\n");
     VTR_LOG("Patterns loaded: %zu\n", dataframes_.size());
     VTR_LOG("Unique switch template files: %zu\n", file_cache_.size());
-    VTR_LOG("Total connections: %zu\n", get_total_connections());
 
     // Print file details
     for (const auto& [file, df] : file_cache_) {
@@ -150,14 +135,6 @@ void SwitchBlockManager::print_statistics() const {
                 std::filesystem::path(file).filename().string().c_str(),
                 df.connections, df.rows(), df.cols());
     }
-}
-
-size_t SwitchBlockManager::get_total_connections() const {
-    size_t total = 0;
-    for (const auto& [file, df] : file_cache_) {
-        total += df.connections;
-    }
-    return total;
 }
 
 void SwitchBlockManager::validate_yaml_structure(const YAML::Node& root) {

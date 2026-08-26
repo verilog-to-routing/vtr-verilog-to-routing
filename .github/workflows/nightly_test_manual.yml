@@ -48,7 +48,6 @@ jobs:
       run: |
         make get_titan_benchmarks
         make get_ispd_benchmarks
-        ./dev/upgrade_vtr_archs.sh
         make get_symbiflow_benchmarks
         make get_zeroasic_rr_graphs
         make get_flat_placements

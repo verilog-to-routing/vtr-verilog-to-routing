@@ -1177,6 +1177,8 @@ static void process_pin_to_pin_annotations(pugi::xml_node Parent,
         prop = get_attribute(Parent, "out_port", loc_data).value();
         annotation->output_pins = prop;
 
+        annotation->pack_pattern_allow_multi_fanout = get_attribute(Parent, "allow_multi_fanout", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+
     } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
                        vtr::string_fmt("Unknown port type %s in %s in %s",

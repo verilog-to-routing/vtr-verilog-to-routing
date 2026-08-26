@@ -2452,7 +2452,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
               "Note: Use of this feature with `--analytical_place` is experimental.\n"
               "For now, `--memoize_cluster_packings` is unsupported if\n"
               "`--ap_full_legalizer` is set to `flat-recon`, and will be ignored.\n")
-        .default_value("off")
+        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<bool, ParseOnOff>(args.cluster_router_hot_start, "--cluster_router_hot_start")
@@ -3614,11 +3614,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     crr_grp.add_argument<bool, ParseOnOff>(args.remove_dangling_nodes, "--remove_dangling_nodes")
         .help("Whether the generated CRR should remove CHANX and CHANY nodes that have no fan-in")
         .default_value("off")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    crr_grp.add_argument(args.sb_count_dir, "--sb_count_dir")
-        .help("Directory to store csv files showing how many times each switch specified in the switch block templates is used")
-        .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     crr_grp.add_argument<e_gsb_version, ParseGsbVersion>(args.gsb_version, "--gsb_version")

@@ -580,6 +580,33 @@ void QPHybridSolver::print_statistics() {
     VTR_LOG("\tTotal number of CG iterations: %u\n", total_num_cg_iters_);
 }
 
+B2BSolver::B2BSolver(const APNetlist& ap_netlist,
+                     const DeviceGrid& device_grid,
+                     const AtomNetlist& atom_netlist,
+                     const PreClusterTimingManager& pre_cluster_timing_manager,
+                     std::shared_ptr<PlaceDelayModel> place_delay_model,
+                     float ap_timing_tradeoff,
+                     int log_verbosity)
+    : AnalyticalSolver(ap_netlist,
+                       atom_netlist,
+                       device_grid,
+                       ap_timing_tradeoff,
+                       log_verbosity)
+    , pre_cluster_timing_manager_(pre_cluster_timing_manager)
+    , place_delay_model_(place_delay_model) {
+
+    // Reserve space for the triplet lists once here, since their buffers are
+    // reused for every linear system built by this solver.
+    // Roughly 4 triplets are emitted per pin; reserving less than that was
+    // measured to cause several reallocations per build.
+    size_t triplet_reserve = (9 * ap_netlist.pins().size()) / 2;
+    triplet_list_x_.reserve(triplet_reserve);
+    triplet_list_y_.reserve(triplet_reserve);
+    if (is_multi_die()) {
+        triplet_list_z_.reserve(triplet_reserve);
+    }
+}
+
 void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     // Store an initial placement into the p_placement object as a starting point
     // for the B2B solver.
@@ -1285,19 +1312,14 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         b_z = Eigen::VectorXd::Zero(num_moveable_blocks_);
     }
 
-    // Create triplet lists to store the sparse positions to update and reserve
-    // space for them. Only off-diagonal entries are stored as triplets; the
-    // diagonal entries are accumulated in dense vectors and appended as one
-    // triplet per row before the matrices are assembled.
-    size_t total_num_pins_in_netlist = netlist_.pins().size();
-    std::vector<Eigen::Triplet<double>> triplet_list_x;
-    triplet_list_x.reserve(total_num_pins_in_netlist);
-    std::vector<Eigen::Triplet<double>> triplet_list_y;
-    triplet_list_y.reserve(total_num_pins_in_netlist);
-    std::vector<Eigen::Triplet<double>> triplet_list_z;
-    if (is_multi_die()) {
-        triplet_list_z.reserve(total_num_pins_in_netlist);
-    }
+    // The triplet lists hold the off-diagonal entries of the matrices. The
+    // diagonal entries are accumulated in dense vectors and appended later.
+    // NOTE: These are daata members, so their memory is reused between calls
+    //       (they are reserved in the constructor).
+    //       They must be cleared before any triplets are added below.
+    triplet_list_x_.clear();
+    triplet_list_y_.clear();
+    triplet_list_z_.clear();
 
     std::vector<double> matrix_diagonal_x(num_moveable_blocks_, 0.0);
     std::vector<double> matrix_diagonal_y(num_moveable_blocks_, 0.0);
@@ -1333,25 +1355,25 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         for (APPinId pin_id : netlist_.net_pins(net_id)) {
             APBlockId blk_id = netlist_.pin_block(pin_id);
             if (blk_id != net_bounds.max_x_blk && blk_id != net_bounds.min_x_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, matrix_diagonal_x, b_x);
-                add_connection_to_system(blk_id, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, matrix_diagonal_x, b_x);
+                add_connection_to_system(blk_id, net_bounds.max_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x_, matrix_diagonal_x, b_x);
+                add_connection_to_system(blk_id, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x_, matrix_diagonal_x, b_x);
             }
             if (blk_id != net_bounds.max_y_blk && blk_id != net_bounds.min_y_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, matrix_diagonal_y, b_y);
-                add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, matrix_diagonal_y, b_y);
+                add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y_, matrix_diagonal_y, b_y);
+                add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y_, matrix_diagonal_y, b_y);
             }
             if (is_multi_die() && blk_id != net_bounds.max_z_blk && blk_id != net_bounds.min_z_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z, matrix_diagonal_z, b_z);
-                add_connection_to_system(blk_id, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z, matrix_diagonal_z, b_z);
+                add_connection_to_system(blk_id, net_bounds.max_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z_, matrix_diagonal_z, b_z);
+                add_connection_to_system(blk_id, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z_, matrix_diagonal_z, b_z);
             }
         }
 
         // Connect the bounds to each other. Its just easier to put these here
         // instead of in the for loop above.
-        add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, matrix_diagonal_x, b_x);
-        add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, matrix_diagonal_y, b_y);
+        add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x_, matrix_diagonal_x, b_x);
+        add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y_, matrix_diagonal_y, b_y);
         if (is_multi_die()) {
-            add_connection_to_system(net_bounds.max_z_blk, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z, matrix_diagonal_z, b_z);
+            add_connection_to_system(net_bounds.max_z_blk, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z_, matrix_diagonal_z, b_z);
         }
 
         // ====================================================================
@@ -1374,16 +1396,16 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
 
                 add_connection_to_system(driver_blk, sink_blk,
                                          2 /*num_pins*/, timing_conn_w_x,
-                                         p_placement.block_x_locs, triplet_list_x, matrix_diagonal_x, b_x);
+                                         p_placement.block_x_locs, triplet_list_x_, matrix_diagonal_x, b_x);
 
                 add_connection_to_system(driver_blk, sink_blk,
                                          2 /*num_pins*/, timing_conn_w_y,
-                                         p_placement.block_y_locs, triplet_list_y, matrix_diagonal_y, b_y);
+                                         p_placement.block_y_locs, triplet_list_y_, matrix_diagonal_y, b_y);
 
                 if (is_multi_die()) {
                     add_connection_to_system(driver_blk, sink_blk,
                                              2 /*num_pins*/, timing_conn_w_z,
-                                             p_placement.block_layer_nums, triplet_list_z, matrix_diagonal_z, b_z);
+                                             p_placement.block_layer_nums, triplet_list_z_, matrix_diagonal_z, b_z);
                 }
             }
         }
@@ -1396,21 +1418,21 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
     // Append the accumulated diagonal entries as one triplet per row.
     for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
         if (matrix_diagonal_x[row_id_idx] != 0.0) {
-            triplet_list_x.emplace_back(row_id_idx, row_id_idx, matrix_diagonal_x[row_id_idx]);
+            triplet_list_x_.emplace_back(row_id_idx, row_id_idx, matrix_diagonal_x[row_id_idx]);
         }
         if (matrix_diagonal_y[row_id_idx] != 0.0) {
-            triplet_list_y.emplace_back(row_id_idx, row_id_idx, matrix_diagonal_y[row_id_idx]);
+            triplet_list_y_.emplace_back(row_id_idx, row_id_idx, matrix_diagonal_y[row_id_idx]);
         }
         if (is_multi_die() && matrix_diagonal_z[row_id_idx] != 0.0) {
-            triplet_list_z.emplace_back(row_id_idx, row_id_idx, matrix_diagonal_z[row_id_idx]);
+            triplet_list_z_.emplace_back(row_id_idx, row_id_idx, matrix_diagonal_z[row_id_idx]);
         }
     }
 
     // Build the sparse connectivity matrices from the triplets.
-    A_sparse_x.setFromTriplets(triplet_list_x.begin(), triplet_list_x.end());
-    A_sparse_y.setFromTriplets(triplet_list_y.begin(), triplet_list_y.end());
+    A_sparse_x.setFromTriplets(triplet_list_x_.begin(), triplet_list_x_.end());
+    A_sparse_y.setFromTriplets(triplet_list_y_.begin(), triplet_list_y_.end());
     if (is_multi_die()) {
-        A_sparse_z.setFromTriplets(triplet_list_z.begin(), triplet_list_z.end());
+        A_sparse_z.setFromTriplets(triplet_list_z_.begin(), triplet_list_z_.end());
     }
 }
 
