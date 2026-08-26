@@ -20,6 +20,7 @@ circuit_constraint_list_add=(multiclock/multiclock.blif, device_width=12)
 # Add architectures to list to sweep
 arch_list_add=micro/micro_base.xml
 arch_list_add=micro/clock_sb_only.xml
+arch_list_add=micro/clock_sb_drive_switch.xml
 arch_list_add=micro/clock_sb_unidir.xml
 arch_list_add=micro/clock_sb_custom.xml
 arch_list_add=micro/clock_sb_only_multi_switch_point.xml

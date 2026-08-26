@@ -650,7 +650,7 @@ size_t ClockSpine::estimate_additional_nodes(const DeviceGrid& grid) {
             unsigned y_start_adj = y_start + y_offset;
 
             // Dont create spine if drive point is not reachable
-            if (drive_y > grid.width() - 2 || drive_y < y_start_adj || drive_y > y_end) {
+            if (drive_y > grid.height() - 2 || drive_y < y_start_adj || drive_y > y_end) {
                 continue;
             }
 
@@ -709,7 +709,7 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
             // The drive point itself is allowed to sit on either endpoint (y_start_adj
             // or y_end): in that case the segment on that side is simply omitted rather
             // than being an inverted/empty range.
-            if (drive_y > grid.width() - 2 || drive_y < y_start_adj || drive_y > y_end) {
+            if (drive_y > grid.height() - 2 || drive_y < y_start_adj || drive_y > y_end) {
                 VTR_LOG_WARN(
                     "A spine part of clock network '%s' was not"
                     " created because the drive point is not reachable. "
@@ -1221,9 +1221,21 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                     int hub_ptc = clock_graph.reserve_chanx_ptc(bx, bx, by, by);
                     int hub_idx = create_chanx_node(layer_num, bx, bx, by, hub_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder);
 
+                    // The switch that drives the hub's fan-out edges: a DRIVE point
+                    // at this location supplies its own switch (via <switch_point
+                    // switch_name="...">, e.g. modeling a dedicated clock buffer),
+                    // matching how ClockRib/ClockSpine use drive_.switch_idx for
+                    // their drive edges instead of the generic internal switch. TAP
+                    // points don't carry a switch of their own (see SwitchGridPoint::
+                    // switch_idx), so a hub with no DRIVE point here falls back to
+                    // internal_switch_idx_ for its fan-out too.
+                    int drive_switch_idx = internal_switch_idx_;
                     for (size_t i : points_here) {
                         clock_graph.add_switch_location(get_name(), switch_points_[i].name, bx, by, hub_idx);
                         switch_point_registered[i] = true;
+                        if (switch_points_[i].type == SwitchGridPointType::DRIVE) {
+                            drive_switch_idx = switch_points_[i].switch_idx;
+                        }
                     }
 
                     // A shared hub can serve both DRIVE (fan-out onto outgoing wires)
@@ -1245,10 +1257,10 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                         }
 
                         if (directionality_ == BI_DIRECTIONAL) {
-                            clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(stub_idx), internal_switch_idx_, false);
+                            clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(stub_idx), drive_switch_idx, false);
                             clock_graph.add_edge(rr_edges_to_create, RRNodeId(stub_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
                         } else if (is_outgoing(side, track_dir)) {
-                            clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(stub_idx), internal_switch_idx_, false);
+                            clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(stub_idx), drive_switch_idx, false);
                         } else {
                             clock_graph.add_edge(rr_edges_to_create, RRNodeId(stub_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
                         }
@@ -1269,7 +1281,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                         int cov_idx = covering_wire_at(bx, by, e_parallel_axis::X_AXIS, track);
                         if (cov_idx >= 0) {
                             if (directionality_ == BI_DIRECTIONAL) {
-                                clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(cov_idx), internal_switch_idx_, false);
+                                clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(cov_idx), drive_switch_idx, false);
                             }
                             clock_graph.add_edge(rr_edges_to_create, RRNodeId(cov_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
                         }
@@ -1278,7 +1290,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                         int cov_idx = covering_wire_at(bx, by, e_parallel_axis::Y_AXIS, track);
                         if (cov_idx >= 0) {
                             if (directionality_ == BI_DIRECTIONAL) {
-                                clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(cov_idx), internal_switch_idx_, false);
+                                clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(cov_idx), drive_switch_idx, false);
                             }
                             clock_graph.add_edge(rr_edges_to_create, RRNodeId(cov_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
                         }
@@ -1445,6 +1457,14 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                             switch_points_[i].name.c_str(), clock_name_.c_str(), x, y);
         }
 
+        // See the matching drive_switch_idx note in Pass 2 above: a DRIVE point
+        // supplies its own switch for the hub's fan-out edge; a TAP point (the
+        // only kind that can land mid-span, per the UNI_DIRECTIONAL check above)
+        // has none, so it falls back to internal_switch_idx_.
+        int drive_switch_idx = (switch_points_[i].type == SwitchGridPointType::DRIVE)
+                                    ? switch_points_[i].switch_idx
+                                    : internal_switch_idx_;
+
         for (int track = 0; track < chan_w_; track++) {
             int cov_idx = covering_wire_at(x, y, axis, track);
             if (cov_idx < 0) continue; // this track's wire (if staggered) doesn't reach here
@@ -1456,7 +1476,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
             switch_point_registered[i] = true;
 
             if (directionality_ == BI_DIRECTIONAL) {
-                clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(cov_idx), internal_switch_idx_, false);
+                clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(cov_idx), drive_switch_idx, false);
             }
             clock_graph.add_edge(rr_edges_to_create, RRNodeId(cov_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
         }
