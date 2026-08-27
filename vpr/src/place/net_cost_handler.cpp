@@ -117,7 +117,7 @@ NetCostHandler::NetCostHandler(PlacerState& placer_state,
 
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
-    const auto& grid = device_ctx.grid;
+    const DeviceGrid& grid = device_ctx.grid;
 
     const size_t grid_height = grid.height();
     const size_t grid_width = grid.width();
@@ -167,7 +167,7 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
 }
 
 std::pair<t_net_cost_terms, double> NetCostHandler::comp_bb_cong_cost(e_cost_methods method) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     t_net_cost_terms cost_terms;
     double expected_wirelength = 0.;
@@ -207,8 +207,8 @@ void NetCostHandler::update_net_bb_(const ClusterNetId net,
                                     const ClusterBlockId blk,
                                     const ClusterPinId blk_pin,
                                     const t_pl_moved_block& pl_moved_block) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& block_locs = placer_state_.block_locs();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = placer_state_.block_locs();
 
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
         //For small nets brute-force bounding box update is faster
@@ -270,13 +270,13 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
      * This is also done to minimize the number of timing node/edge invalidations
      * for incremental static timing analysis (incremental STA).
      */
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& block_locs = placer_state_.block_locs();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = placer_state_.block_locs();
 
-    const auto& connection_delay = placer_state_.timing().connection_delay;
-    auto& connection_timing_cost = placer_state_.mutable_timing().connection_timing_cost;
-    auto& proposed_connection_delay = placer_state_.mutable_timing().proposed_connection_delay;
-    auto& proposed_connection_timing_cost = placer_state_.mutable_timing().proposed_connection_timing_cost;
+    const NetPinsMatrix<float>& connection_delay = placer_state_.timing().connection_delay;
+    PlacerTimingCosts& connection_timing_cost = placer_state_.mutable_timing().connection_timing_cost;
+    ClbNetPinsMatrix<float>& proposed_connection_delay = placer_state_.mutable_timing().proposed_connection_delay;
+    ClbNetPinsMatrix<double>& proposed_connection_timing_cost = placer_state_.mutable_timing().proposed_connection_timing_cost;
 
     if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
         /* This pin is a net driver on a moved block. */
@@ -344,7 +344,7 @@ void NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_m
                                                   std::vector<ClusterPinId>& affected_pins,
                                                   double& timing_delta_c,
                                                   bool is_src_moving) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     const ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
     VTR_ASSERT_SAFE_MSG(net_id,
@@ -377,9 +377,9 @@ void NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_m
 
 void NetCostHandler::get_non_updatable_bb_(ClusterNetId net_id, bool use_ts) {
     //TODO: account for multiple physical pin instances per logical pin
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& blk_loc_registry = placer_state_.blk_loc_registry();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const BlkLocRegistry& blk_loc_registry = placer_state_.blk_loc_registry();
 
     // the bounding box coordinates that is going to be updated by this function
     t_bb& bb_coord_new = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
@@ -440,7 +440,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
                                 t_physical_tile_loc pin_new_loc,
                                 bool src_pin) {
     //TODO: account for multiple physical pin instances per logical pin
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     const int num_layers = device_ctx.grid.get_num_layers();
 
@@ -711,10 +711,10 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
 }
 
 void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& grid = device_ctx.grid;
-    const auto& blk_loc_registry = placer_state_.blk_loc_registry();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
+    const BlkLocRegistry& blk_loc_registry = placer_state_.blk_loc_registry();
 
     t_bb& coords = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
     t_bb& num_on_edges = use_ts ? ts_bb_edge_new_[net_id] : bb_num_on_edges_[net_id];
@@ -815,7 +815,7 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
 
 double NetCostHandler::get_net_bb_cost_(ClusterNetId net_id, bool use_ts) {
     // Finds the cost due to one net by looking at its coordinate bounding box.
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
 
@@ -861,7 +861,7 @@ double NetCostHandler::get_net_cong_cost_(ClusterNetId net_id, bool use_ts) {
 
 double NetCostHandler::get_net_wirelength_estimate_(ClusterNetId net_id) const {
     const t_bb& bb = bb_coords_[net_id];
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     double crossing = wirelength_crossing_count(cluster_ctx.clb_nlist.net_pins(net_id).size());
 
@@ -958,13 +958,13 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
     VTR_ASSERT_DEBUG(cost_terms_delta.cong_cost == 0.);
     VTR_ASSERT_DEBUG(cost_terms_delta.interposer_cost == 0.);
     VTR_ASSERT_DEBUG(timing_delta_c == 0.);
-    const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     ts_nets_to_update_.resize(0);
 
     // Go through all the blocks moved.
     for (const t_pl_moved_block& moving_block : blocks_affected.moved_blocks) {
-        auto& affected_pins = blocks_affected.affected_pins;
+        std::vector<ClusterPinId>& affected_pins = blocks_affected.affected_pins;
         ClusterBlockId blk_id = moving_block.block_num;
 
         // Go through all the pins in the moved block.
@@ -991,7 +991,7 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
 
 void NetCostHandler::update_move_nets() {
     // update net cost functions and reset flags.
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
