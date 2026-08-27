@@ -47,7 +47,7 @@ One example is the IDELAYCTRL of the Series7 devices, which takes as input a ref
 Each model tag must contain 2 tags: ``<input_ports>`` and ``<output_ports>``.
 Each of these contains ``<port>`` tags:
 
-.. arch:tag:: <port name="string" is_clock="{0 | 1} clock="string" combinational_sink_ports="string1 string2 ..."/>
+.. arch:tag:: <port name="string" is_clock="{0 | 1}" clock="string" combinational_sink_ports="string1 string2 ..."/>
 
     :req_param name: The port name.
 
@@ -421,7 +421,7 @@ Grid Location Tags
     .. code-block:: xml
 
         <!-- Create IO's around the device perimeter -->
-        <perimeter type="io" priority=10"/>
+        <perimeter type="io" priority="10"/>
 
         <!-- Create a column of RAMs starting at column 2, and
              repeating every 3 columns. Note that a vertical offset
@@ -475,7 +475,7 @@ Grid Location Tags
 
         <row> DSP example
 
-.. arch:tag:: <region type="string" priority="int" startx="expr" endx="expr repeatx="expr" incrx="expr" starty="expr" endy="expr" repeaty="expr" incry="expr"/>
+.. arch:tag:: <region type="string" priority="int" startx="expr" endx="expr" repeatx="expr" incrx="expr" starty="expr" endy="expr" repeaty="expr" incry="expr"/>
 
     :req_param type:
         The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
@@ -586,7 +586,7 @@ Grid Layout Example
         <!-- Specifies an auto-scaling square FPGA floorplan -->
         <auto_layout aspect_ratio="1.0">
             <!-- Create I/Os around the device perimeter -->
-            <perimeter type="io" priority=10"/>
+            <perimeter type="io" priority="10"/>
 
             <!-- Nothing in the corners -->
             <corners type="EMPTY" priority="100"/>
@@ -1394,7 +1394,7 @@ The following tags are common to all ``<tile>`` tags:
                 <sb_loc type="full" xoffset="1" yoffset="0"> <!-- Right edge -->
                 <sb_loc type="full" xoffset="1" yoffset="1"> <!-- Right edge -->
                 <sb_loc type="full" xoffset="1" yoffset="2"> <!-- Top Right -->
-            <switchblock_locations/>
+            </switchblock_locations>
 
 .. _arch_complex_blocks:
 
@@ -1724,13 +1724,24 @@ A pack pattern is a power user feature directing that the CAD tool should group 
 This allows the architect to help the CAD tool recognize structures that have limited flexibility so that netlist atoms that fit those structures be kept together as though they are one unit.
 This tag impacts the CAD tool only, there is no architectural impact from defining molecules.
 
-.. arch:tag:: <pack_pattern name="string" in_port="string" out_port="string"/>
+.. arch:tag:: <pack_pattern name="string" in_port="string" out_port="string" allow_multi_fanout="bool"/>
 
     .. warning:: This is a power user option. Unless you know why you need it, you probably shouldn't specify it.
 
     :req_param name: The name of the pattern.
     :req_param in_port: The input pins of the edges for this pattern.
     :req_param out_port: Which output pins of the edges for this pattern.
+    :opt_param allow_multi_fanout:
+
+        Controls whether a molecule can still be formed over this pattern connection when the netlist signal carrying it also drives other logic.
+
+        By default (``false``), the packer only matches this connection if the net driving it has exactly one sink, i.e. the signal goes straight from the source primitive to the destination primitive and nowhere else.
+        If the net fans out to additional sinks, the molecule is cut at this connection.
+
+        When set to ``true``, the packer will match this connection even if the net drives multiple sinks: the sink that fits the pattern becomes part of the molecule, and the remaining sinks are routed normally outside of it.
+        Only set this on connections where the architecture actually provides a path for that extra fanout to leave the pattern (see *Multi-fanout connections* below).
+
+        **Default:** ``false``
 
     This tag gives a hint to the CAD tool that certain architectural structures should stay together during packing.
     The tag labels interconnect edges with a pack pattern name.
@@ -1743,6 +1754,31 @@ This tag impacts the CAD tool only, there is no architectural impact from defini
     There is a priority order when VPR groups molecules.
     Pack patterns with more primitives take priority over pack patterns with less primitives.
     In the event that the number of primitives is the same, the pack pattern with less inputs takes priority over pack patterns with more inputs.
+
+    **Multi-fanout connections:**
+
+    By default, the prepacker assumes each pack pattern connection is point-to-point: if the netlist net implementing a connection fans out to more than one sink, no molecule is formed over that connection.
+    This is a conservative assumption — a net with extra fanout may not be routable through the dedicated intra-block interconnect the pattern describes, since the other sinks also need to be reached.
+
+    If the architecture can absorb the extra fanout (e.g., the block provides paths from the pattern connection to general routing), the architect can mark the ``<pack_pattern>`` annotation with ``allow_multi_fanout="true"``.
+    The prepacker will then form molecules over this connection even when its net drives multiple sinks; among the sinks, the one matching the pattern's destination primitive continues the molecule, and the remaining sinks are left to be routed outside the pattern.
+
+    Note that the attribute is written on individual interconnect edges, but its effect is defined at the level of a *primitive-to-primitive connection*.
+    Such a connection may pass through several interconnect edges when the two primitives are not directly wired together (e.g., the signal traverses intermediate modes or levels of the pb_type hierarchy).
+    The architect does not need to annotate every edge along that path: if any annotated edge on the connection's path is marked ``allow_multi_fanout="true"``, the entire primitive-to-primitive connection allows multi-fanout.
+
+    .. note::
+
+        If several sinks match the pattern's destination primitive, only one joins the molecule.
+        For example, with a ``LUT -> FF`` pack pattern and a LUT driving two FFs, the prepacker picks the last matching FF added to the netlist to form the molecule; the other FF is packed as a separate atom.
+
+    For example, in a carry chain where each adder's ``cout`` may also feed look-ahead logic in addition to the next adder's ``cin``, marking the chain's ``cout`` link keeps chain molecules together despite the extra fanout:
+
+    .. code-block:: xml
+
+        <direct name="carry_out" input="adder.cout" output="arithmetic.cout">
+          <pack_pattern name="chain" in_port="adder.cout" out_port="arithmetic.cout" allow_multi_fanout="true"/>
+        </direct>
 
     **Special Case:**
 
@@ -1880,7 +1916,7 @@ Timing is specified through tags contained with in ``pb_type``, ``complete``, ``
             4.6e-10 1.9e-10 2.2e-10
             4.5e-10 6.7e-10 3.5e-10
             7.1e-10 2.9e-10 8.7e-10
-        </delay>
+        </delay_matrix>
 
     .. note:: To specify both ``max`` and ``min`` delays two ``<delay_matrix>`` should be used.
 
@@ -2977,7 +3013,7 @@ The full format is documented below.
         <wireconn num_conns_type="to"/>
             <from type="L4" switchpoint="0,1,2,3"/>
             <from type="L16" switchpoint="0,4,8,12"/>
-            <to type="L4" switchpoint="0/>
+            <to type="L4" switchpoint="0"/>
         </wireconn>
 
     This specifies that the 'from' set is the union of L4 switchpoints 0, 1, 2 and 3; and L16 switchpoints 0, 4, 8 and 12.
@@ -3014,30 +3050,30 @@ An example is shown below:
                 <gather>
                     <!-- Gather 30 connections from the 0, 4, 8 or 12 position of L16 wires of all four sides of a switchblock location -->
                     <wireconn num_conns="30" from_type="L16" from_switchpoint="0,12,8,4" side="rltb"/> 
-                <gather/>
+                </gather>
 
                 <scatter>
                     <!-- Scatter 30 connections to the starting position of L16 wires of all four sides of a switchblock location -->
                     <wireconn num_conns="30" to_type="L16" to_switchpoint="0" side="rtlb"/>
-                <scatter/>
+                </scatter>
                 
                 <sg_link_list>
                     <!-- Link going up one layer, using the '3D_SB_MUX' multiplexer to gather connections from the bottom layer and using the 'TSV' node/wire to move up one layer -->
                     <sg_link name="L_UP" z_offset="1" x_offset="0" y_offset="0" mux="3D_SB_MUX" seg_type="TSV"/> 
                     <!-- Same as above but moving one layer down -->
                     <sg_link name="L_DOWN" z_offset="-1" mux="3D_SB_MUX" seg_type="TSV"/>
-                <sg_link_list/>
+                </sg_link_list>
                 
                 <!-- Instantiate 10 'L_UP' sg_links per switchblock location everywhere on the device -->
                 <sg_location type="EVERYWHERE" num="10" sg_link="L_UP"/>
                 <!-- Instantiate 10 'L_DOWN' sg_links per switchblock location everywhere on the device -->
                 <sg_location type="EVERYWHERE" num="10" sg_link="L_DOWN"/>
-            <sg_pattern/>
+            </sg_pattern>
 
             <sg_pattern name="interposer_conn_sg" type="bidir">
                 ... <!-- Another scatter-gather pattern specification -->
-            <sg_pattern/>
-        <scatter_gather_list/>
+            </sg_pattern>
+        </scatter_gather_list>
 
 .. arch:tag:: <sg_pattern name="string" type={unidir|bidir}>
 
@@ -3341,7 +3377,7 @@ In the tileable architecture file, you may define additional attributes for each
 
   <direct_connection>
     <direct name="string" circuit_model_name="string" interconnection_type="string" x_dir="string" y_dir="string"/>
-  </directlist>
+  </direct_connection>
 
 .. note:: these options are optional. However, if ``interconnection_type`` is set to ``inter_column`` or ``inter_row``, then ``x_dir`` and ``y_dir`` are required.
 

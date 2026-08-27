@@ -24,4 +24,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 # Script parameters
-script_params=-track_memory_usage --route_chan_width 300 --memoize_cluster_packings on
+script_params=-track_memory_usage --route_chan_width 300 --memoize_cluster_packings off
