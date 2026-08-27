@@ -92,8 +92,10 @@ static void sync_clustered_and_atom_netlists(ClusteredNetlist& clb_nlist,
 /**
  * @brief This function updates the nets list and the connections between
  *        that list and the complex block
+ *
+ * A net that reaches both global and non-global pins is flagged with a warning.
  */
-static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist, const AtomNetlist& atom_netlist);
+static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist, const AtomNetlist& atom_netlist, int verbosity);
 
 static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type, t_pb_routes& pb_route);
 
@@ -270,7 +272,7 @@ ClusteredNetlist read_netlist(const char* net_file,
 
         mark_constant_generators(clb_nlist, verbosity);
 
-        load_external_nets_and_cb(clb_nlist, mutable_atom_netlist);
+        load_external_nets_and_cb(clb_nlist, mutable_atom_netlist, verbosity);
 
         sync_clustered_and_atom_netlists(clb_nlist, mutable_atom_netlist, mutable_atom_lookup);
 
@@ -889,7 +891,8 @@ static void process_ports(pugi::xml_node Parent,
 }
 
 static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist,
-                                      const AtomNetlist& atom_netlist) {
+                                      const AtomNetlist& atom_netlist,
+                                      int verbosity) {
     // Create a set of all unique net names that we can see. We want to ignore
     // any nets with the name "open", so we insert that into the map and later
     // we just ignore it if it was seen,
@@ -1035,21 +1038,29 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist,
     // set, minus the "open" nets.
     int num_unique_net_names = seen_net_names.size() - 1;
     VTR_ASSERT(static_cast<int>(clb_nlist.nets().size()) == num_unique_net_names);
+    int num_mixed_global_nets = 0;
     for (ClusterNetId net_id : clb_nlist.nets()) {
+        bool is_ignored_net = clb_nlist.net_is_ignored(net_id);
         for (ClusterPinId pin_id : clb_nlist.net_sinks(net_id)) {
-            bool is_ignored_net = clb_nlist.net_is_ignored(net_id);
             t_logical_block_type_ptr block_type = clb_nlist.block_type(clb_nlist.pin_block(pin_id));
             t_physical_tile_type_ptr tile_type = pick_physical_type(block_type);
             int logical_pin = clb_nlist.pin_logical_index(pin_id);
             int physical_pin = get_physical_pin(tile_type, block_type, logical_pin);
 
             if (tile_type->is_ignored_pin[physical_pin] != is_ignored_net) {
-                VTR_LOG_WARN(
-                    "Netlist connects net %s to both global and non-global pins.\n",
-                    clb_nlist.net_name(net_id).c_str());
+                ++num_mixed_global_nets;
+                VTR_LOGV_WARN(verbosity > 2,
+                              "Netlist connects net %s to both global and non-global pins.\n",
+                              clb_nlist.net_name(net_id).c_str());
+                break;
             }
         }
     }
+
+    VTR_LOGV_WARN(num_mixed_global_nets > 0,
+                  "Found %d net(s) connected to both global and non-global pins%s\n",
+                  num_mixed_global_nets,
+                  verbosity > 2 ? "" : " (run with --pack_verbosity 3 to list them)");
 }
 
 static void mark_constant_generators(const ClusteredNetlist& clb_nlist, int verbosity) {
