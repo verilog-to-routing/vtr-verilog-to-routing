@@ -50,7 +50,7 @@ void try_place(const Netlist<>& net_list,
     FloorplanningContext& mutable_floorplanning = g_vpr_ctx.mutable_floorplanning();
 
     // Initialize the variables in the placement context.
-    mutable_placement.init_placement_context(placer_opts, directs);
+    mutable_placement.init_placement_context(directs);
 
     // Re-initialize cluster constraints if erased by a previous placement run.
     // This ensures constraints are available when iterating to find the minimum channel width.
