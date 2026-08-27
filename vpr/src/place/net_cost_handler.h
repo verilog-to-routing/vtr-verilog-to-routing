@@ -452,23 +452,13 @@ class NetCostHandler {
     /**
      * @brief Computes the inverse of average channel width for horizontal and
      * vertical channels within a bounding box.
-     * @tparam BBT Bounding box type (t_bb).
      * @param bb The bounding box for which the inverse of average channel width
      * within the bounding box is computed.
      * @return std::pair<double, double>
      *         first  -> The inverse of average channel width for horizontal channels.
      *         second -> The inverse of average channel width for vertical channels.
      */
-    template<typename BBT>
-    std::pair<double, double> get_chanxy_cost_fac_(const BBT& bb) {
-        const int total_chanx_width = acc_chan_width_.x.get_sum(bb.ymin, bb.ymax);
-        const double inverse_average_chanx_width = (bb.ymax - bb.ymin + 1.0) / total_chanx_width;
-
-        const int total_chany_width = acc_chan_width_.y.get_sum(bb.xmin, bb.xmax);
-        const double inverse_average_chany_width = (bb.xmax - bb.xmin + 1.0) / total_chany_width;
-
-        return {inverse_average_chanx_width, inverse_average_chany_width};
-    }
+    std::pair<double, double> get_chanxy_cost_fac_(const t_bb& bb);
 
     /**
      * @brief Calculate the chanz cost factor based on the inverse of the average number of inter-die connections 

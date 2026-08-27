@@ -879,6 +879,16 @@ double NetCostHandler::get_net_wirelength_estimate_(ClusterNetId net_id) const {
     return ncost;
 }
 
+std::pair<double, double> NetCostHandler::get_chanxy_cost_fac_(const t_bb& bb) {
+    const int total_chanx_width = acc_chan_width_.x.get_sum(bb.ymin, bb.ymax);
+    const double inverse_average_chanx_width = (bb.ymax - bb.ymin + 1.0) / total_chanx_width;
+
+    const int total_chany_width = acc_chan_width_.y.get_sum(bb.xmin, bb.xmax);
+    const double inverse_average_chany_width = (bb.xmax - bb.xmin + 1.0) / total_chany_width;
+
+    return {inverse_average_chanx_width, inverse_average_chany_width};
+}
+
 float NetCostHandler::get_chanz_cost_factor_(const t_bb& bb) {
     int num_inter_dir_conn = acc_tile_num_inter_die_conn_.get_sum(bb.xmin,
                                                                   bb.ymin,
