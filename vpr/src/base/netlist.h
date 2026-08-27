@@ -411,6 +411,7 @@
  *    The derived functions based off of the virtual functions have suffix *_impl()
  *
  */
+#include <ranges>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -701,6 +702,11 @@ class Netlist {
 
     ///@brief Returns a range consisting of all nets in the netlist
     net_range nets() const;
+
+    ///@brief Returns a view over the nets that are not ignored.
+    auto non_ignored_nets() const {
+        return nets() | std::views::filter([this](NetId net_id) { return !net_is_ignored(net_id); });
+    }
 
     ///@brief Returns a range consisting of all pins in the netlist
     pin_range pins() const;
