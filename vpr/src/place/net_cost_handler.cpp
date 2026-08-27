@@ -44,6 +44,7 @@
 #include "vtr_prefix_sum.h"
 #include "stats.h"
 
+#include <algorithm>
 #include <array>
 #include <vector>
 
@@ -172,31 +173,27 @@ std::pair<t_net_cost_terms, double> NetCostHandler::comp_bb_cong_cost(e_cost_met
     t_net_cost_terms cost_terms;
     double expected_wirelength = 0.;
 
-    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-            // Small nets don't use incremental updating on their bounding boxes,
-            // so they can use a fast bounding box calculator.
-            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
-                get_bb_from_scratch_(net_id, /*use_ts=*/false);
-            } else {
-                get_non_updatable_bb_(net_id, /*use_ts=*/false);
-            }
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.non_ignored_nets()) {
+        // Small nets don't use incremental updating on their bounding boxes,
+        // so they can use a fast bounding box calculator.
+        if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
+            get_bb_from_scratch_(net_id, /*use_ts=*/false);
+        } else {
+            get_non_updatable_bb_(net_id, /*use_ts=*/false);
+        }
 
-            net_cost_[net_id] = get_net_bb_cost_(net_id, /*use_ts=*/false);
-            cost_terms.bb_cost += net_cost_[net_id];
-            if (method == e_cost_methods::CHECK) {
-                expected_wirelength += get_net_wirelength_estimate_(net_id);
-            }
+        net_cost_[net_id] = get_net_bb_cost_(net_id, /*use_ts=*/false);
+        cost_terms.bb_cost += net_cost_[net_id];
+        if (method == e_cost_methods::CHECK) {
+            expected_wirelength += get_net_wirelength_estimate_(net_id);
         }
     }
 
     // Compute congestion cost using recomputed bounding boxes and channel utilization map
     if (congestion_modeling_started_) {
-        for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-            if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-                net_cong_cost_[net_id] = get_net_cong_cost_(net_id, /*use_ts=*/false);
-                cost_terms.cong_cost += net_cong_cost_[net_id];
-            }
+        for (ClusterNetId net_id : cluster_ctx.clb_nlist.non_ignored_nets()) {
+            net_cong_cost_[net_id] = get_net_cong_cost_(net_id, /*use_ts=*/false);
+            cost_terms.cong_cost += net_cong_cost_[net_id];
         }
     }
 
@@ -911,14 +908,12 @@ t_net_cost_terms NetCostHandler::recompute_bb_cong_cost_() {
 
     t_net_cost_terms cost_terms;
 
-    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-            // Bounding boxes don't have to be recomputed; they're correct.
-            cost_terms.bb_cost += net_cost_[net_id];
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.non_ignored_nets()) {
+        // Bounding boxes don't have to be recomputed; they're correct.
+        cost_terms.bb_cost += net_cost_[net_id];
 
-            if (congestion_modeling_started_) {
-                cost_terms.cong_cost += net_cong_cost_[net_id];
-            }
+        if (congestion_modeling_started_) {
+            cost_terms.cong_cost += net_cong_cost_[net_id];
         }
     }
 
@@ -1074,10 +1069,8 @@ double NetCostHandler::get_total_wirelength_estimate() const {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     double estimated_wirelength = 0.0;
-    for (ClusterNetId net_id : clb_nlist.nets()) {
-        if (!clb_nlist.net_is_ignored(net_id)) {
-            estimated_wirelength += get_net_wirelength_estimate_(net_id);
-        }
+    for (ClusterNetId net_id : clb_nlist.non_ignored_nets()) {
+        estimated_wirelength += get_net_wirelength_estimate_(net_id);
     }
 
     return estimated_wirelength;
@@ -1089,20 +1082,11 @@ int NetCostHandler::get_num_nets_spanning_multiple_layers() const {
     }
 
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    int num_nets_spanning_multiple_layers = 0;
 
-    for (ClusterNetId net_id : clb_nlist.nets()) {
-        if (clb_nlist.net_is_ignored(net_id)) {
-            continue;
-        }
-
+    return static_cast<int>(std::ranges::count_if(clb_nlist.non_ignored_nets(), [this](ClusterNetId net_id) {
         const t_bb& bb = bb_coords_[net_id];
-        if (bb.layer_min != bb.layer_max) {
-            num_nets_spanning_multiple_layers++;
-        }
-    }
-
-    return num_nets_spanning_multiple_layers;
+        return bb.layer_min != bb.layer_max;
+    }));
 }
 
 const std::vector<ClusterNetId>& NetCostHandler::affected_nets() const {
@@ -1155,29 +1139,26 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
     // all grid locations within the bounding box, and the demand is accumulated in
     // the channel utilization matrices.
 
-    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.non_ignored_nets()) {
+        const t_bb& bb = bb_coords_[net_id];
+        double expected_wirelength = get_net_wirelength_estimate_(net_id);
 
-            const t_bb& bb = bb_coords_[net_id];
-            double expected_wirelength = get_net_wirelength_estimate_(net_id);
+        int distance_x = bb.xmax - bb.xmin + 1;
+        int distance_y = bb.ymax - bb.ymin + 1;
+        int distance_z = bb.layer_max - bb.layer_min + 1;
 
-            int distance_x = bb.xmax - bb.xmin + 1;
-            int distance_y = bb.ymax - bb.ymin + 1;
-            int distance_z = bb.layer_max - bb.layer_min + 1;
+        double expected_x_wl = (double)distance_x / (distance_x + distance_y) * expected_wirelength;
+        double expected_y_wl = expected_wirelength - expected_x_wl;
 
-            double expected_x_wl = (double)distance_x / (distance_x + distance_y) * expected_wirelength;
-            double expected_y_wl = expected_wirelength - expected_x_wl;
+        int total_channel_segments = distance_x * distance_y * distance_z;
+        double expected_per_x_segment_wl = expected_x_wl / total_channel_segments;
+        double expected_per_y_segment_wl = expected_y_wl / total_channel_segments;
 
-            int total_channel_segments = distance_x * distance_y * distance_z;
-            double expected_per_x_segment_wl = expected_x_wl / total_channel_segments;
-            double expected_per_y_segment_wl = expected_y_wl / total_channel_segments;
-
-            for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
-                for (int x = bb.xmin; x <= bb.xmax; x++) {
-                    for (int y = bb.ymin; y <= bb.ymax; y++) {
-                        chan_util_.x[layer][x][y] += expected_per_x_segment_wl;
-                        chan_util_.y[layer][x][y] += expected_per_y_segment_wl;
-                    }
+        for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
+            for (int x = bb.xmin; x <= bb.xmax; x++) {
+                for (int y = bb.ymin; y <= bb.ymax; y++) {
+                    chan_util_.x[layer][x][y] += expected_per_x_segment_wl;
+                    chan_util_.y[layer][x][y] += expected_per_y_segment_wl;
                 }
             }
         }
@@ -1229,11 +1210,9 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
     double cong_cost = 0.;
     // Compute congestion cost using computed bounding boxes and channel utilization map
     if (compute_congestion_cost) {
-        for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-            if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-                net_cong_cost_[net_id] = get_net_cong_cost_(net_id, /*use_ts=*/false);
-                cong_cost += net_cong_cost_[net_id];
-            }
+        for (ClusterNetId net_id : cluster_ctx.clb_nlist.non_ignored_nets()) {
+            net_cong_cost_[net_id] = get_net_cong_cost_(net_id, /*use_ts=*/false);
+            cong_cost += net_cong_cost_[net_id];
         }
     }
 
