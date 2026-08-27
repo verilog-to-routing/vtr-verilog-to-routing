@@ -239,28 +239,6 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
     }
 }
 
-bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph) {
-    bool limited_to_opin = true;
-
-    for (const RRNodeId from_node : rr_graph.nodes()) {
-        e_rr_type from_type = rr_graph.node_type(from_node);
-        for (t_edge_size edge : rr_graph.edges(from_node)) {
-            RRNodeId to_node = rr_graph.edge_sink_node(from_node, edge);
-            e_rr_type to_type = rr_graph.node_type(to_node);
-
-            if (to_type == e_rr_type::CHANZ && from_type != e_rr_type::OPIN) {
-                limited_to_opin = false;
-                break;
-            }
-        }
-        if (!limited_to_opin) {
-            break;
-        }
-    }
-
-    return limited_to_opin;
-}
-
 bool chanx_chany_nodes_are_adjacent(const RRGraphView& rr_graph, RRNodeId node1, RRNodeId node2) {
     e_rr_type type1 = rr_graph.node_type(node1);
     e_rr_type type2 = rr_graph.node_type(node2);
