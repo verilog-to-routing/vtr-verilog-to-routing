@@ -228,13 +228,13 @@ void NetCostHandler::update_net_bb_(const ClusterNetId net,
 
         //Incremental bounding box update
         update_bb_(net,
-                           {pl_moved_block.old_loc.x + pin_width_offset,
-                            pl_moved_block.old_loc.y + pin_height_offset,
-                            pl_moved_block.old_loc.layer},
-                           {pl_moved_block.new_loc.x + pin_width_offset,
-                            pl_moved_block.new_loc.y + pin_height_offset,
-                            pl_moved_block.new_loc.layer},
-                           is_driver);
+                   {pl_moved_block.old_loc.x + pin_width_offset,
+                    pl_moved_block.old_loc.y + pin_height_offset,
+                    pl_moved_block.old_loc.layer},
+                   {pl_moved_block.new_loc.x + pin_width_offset,
+                    pl_moved_block.new_loc.y + pin_height_offset,
+                    pl_moved_block.new_loc.layer},
+                   is_driver);
     }
 }
 
