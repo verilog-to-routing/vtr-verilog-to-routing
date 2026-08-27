@@ -415,10 +415,10 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist, const LogicalMod
 
 int mark_constant_generators(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, const LogicalModels& models, int verbosity) {
     int num_undriven_pins_marked_const = mark_undriven_primitive_outputs_as_constant(netlist, verbosity);
-    VTR_LOGV(verbosity > 0, "Inferred %4d additional primitive pins as constant generators since they have no combinationally connected inputs\n", num_undriven_pins_marked_const);
+    VTR_LOGV(verbosity > 0 && num_undriven_pins_marked_const > 0, "Inferred %4d additional primitive pins as constant generators since they have no combinationally connected inputs\n", num_undriven_pins_marked_const);
 
     int num_inferred_pins_marked_const = infer_and_mark_constant_pins(netlist, const_gen_inference_method, models, verbosity);
-    VTR_LOGV(verbosity > 0, "Inferred %4d additional primitive pins as constant generators due to constant inputs\n", num_inferred_pins_marked_const);
+    VTR_LOGV(verbosity > 0 && num_inferred_pins_marked_const > 0, "Inferred %4d additional primitive pins as constant generators due to constant inputs\n", num_inferred_pins_marked_const);
 
     return num_undriven_pins_marked_const + num_inferred_pins_marked_const;
 }
