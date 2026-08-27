@@ -756,6 +756,97 @@ jobs:
           vtr_flow/**/parse_results*.txt
 
 
+  RegressionWithMosaic:
+    runs-on: ubuntu-24.04
+    needs: [BuildVTR]
+    strategy:
+      fail-fast: false
+      matrix:
+        include: [
+          {
+            name: 'Mosaic_regression',
+            suite: 'vtr_reg_basic_mosaic',
+            extra_pkgs: 'verilator'
+          }
+        ]
+    name: 'R: ${{ matrix.name }}'
+    steps:
+
+    - uses: actions/setup-python@v7
+      with:
+        python-version: 3.12.3
+
+    - uses: actions/checkout@v7
+      with:
+        submodules: 'true'
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v3
+      id: cpu-cores
+
+    - name: Install dependencies
+      run: ./install_apt_packages.sh
+
+    - name: Install Extra Dependencies
+      if: ${{ matrix.extra_pkgs != '' }}
+      run: |
+        sudo apt update
+        sudo apt install -y ${{ matrix.extra_pkgs }}
+
+    - name: Install Python Requirements
+      run: |
+        pip install -r requirements.txt
+
+    - name: Download Build Artifact
+      uses: actions/download-artifact@v8
+      with:
+        name: build-release.tar.gz
+
+    - name: Unpack Build
+      shell: bash
+      run: |
+        tar -xvzf build.tar.gz
+
+    - name: Test
+      timeout-minutes: 60
+      run: |
+        ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count}}
+
+    - name: Require mosaic verilator-check pass
+      timeout-minutes: 5
+      run: |
+        python3 mosaic/scripts/verify_regression_vcheck.py --suite ${{ matrix.suite }}
+
+    - name: Compare Parmys and Mosaic hardblock BLIF models
+      timeout-minutes: 20
+      run: |
+        python3 mosaic/scripts/compare_frontend_blif_models.py --run \
+          --circuit vtr_flow/benchmarks/verilog/diffeq1.v \
+          --arch vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml \
+          --work-dir mosaic_blif_model_compare
+
+    - name: Upload regression run files
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{matrix.name}}_run_files
+        path: |
+          vtr_flow/**/*.out
+          # vtr_flow/**/*.blif  # Removed since it was taking too much space and was hardly used.
+          vtr_flow/**/*.p
+          vtr_flow/**/*.net
+          vtr_flow/**/*.r
+
+    - name: Upload regression results
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{matrix.name}}_results
+        path: |
+          vtr_flow/**/*.log
+          vtr_flow/**/parse_results*.txt
+
+
   Sanitized:
     runs-on: ubuntu-24.04
     strategy:
