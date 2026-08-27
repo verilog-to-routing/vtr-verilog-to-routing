@@ -45,15 +45,15 @@ class Range {
         : begin_(b)
         , end_(e) {}
     ///@brief Return an iterator to the start of the range
-    constexpr T begin() { return begin_; }
+    constexpr T begin() noexcept { return begin_; }
     ///@brief Return an iterator to the end of the range
-    constexpr T end() { return end_; }
+    constexpr T end() noexcept { return end_; }
     ///@brief Return an iterator to the start of the range (immutable)
-    constexpr const T begin() const { return begin_; }
+    constexpr const T begin() const noexcept { return begin_; }
     ///@brief Return an iterator to the end of the range (immutable)
-    constexpr const T end() const { return end_; }
+    constexpr const T end() const noexcept { return end_; }
     ///@brief Return true if empty
-    constexpr bool empty() { return begin_ == end_; }
+    constexpr bool empty() const noexcept { return begin_ == end_; }
     ///@brief Return the range size
     constexpr size_t size() const { return std::distance(begin_, end_); }
 
