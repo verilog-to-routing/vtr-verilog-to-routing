@@ -8,13 +8,9 @@
  * half of the perimeter of the bounding box which contains all terminals of the net is multiplied by a correction factor,
  * and the resulting number is considered as an estimation of the wirelength needed to route this net.
  *
- * Currently, we have two types of bounding boxes: 3D bounding box (or Cube BB) and per-layer bounding box.
- * If the FPGA grid is a 2D structure, a Cube bounding box is used, which will always have the z direction equal to 1. For 3D architectures,
- * the user can specify the type of bounding box. If no type is specified, the RR graph is analyzed. If all inter-die connections happen from OPINs,
- * the Cube bounding box is chosen; otherwise, the per-layer bounding box is chosen. In the Cube bounding box, when a net is stretched across multiple layers,
- * the edges of the bounding box are determined by all of the blocks on all layers.
- * When the per-layer bounding box is used, a separate bounding box for each layer is created, and the wirelength estimation for each layer is calculated.
- * To get the total wirelength of a net, the wirelength estimation on all layers is summed up. For more details, please refer to Amin Mohaghegh's MASc thesis.
+ * A 3D (cube) bounding box is used for every net. For 2D architectures the bounding box always has a z extent of 1.
+ * For 3D architectures, when a net is stretched across multiple layers, the edges of the bounding box are determined
+ * by all of the blocks on all layers.
  *
  * For timing estimation, the placement delay model is used. For 2D architectures, you can think of the placement delay model as a 2D array indexed by dx and dy.
  * To get a delay estimation of a connection (from a source to a sink), first, dx and dy between these two points should be calculated,
@@ -68,43 +64,10 @@ constexpr std::array<float, MAX_FANOUT_CROSSING_COUNT> cross_count = {1.0000, 1.
                                                                       2.5610, 2.5864, 2.6117, 2.6371, 2.6625, 2.6887, 2.7148, 2.7410,
                                                                       2.7671, 2.7933};
 
-/**
- * @brief If the moving pin is of type type SINK, update bb_pin_sink_count_new which stores the number of sink pins on each layer of "net_id"
- * @param pin_old_loc Old location of the moving pin
- * @param pin_new_loc New location of the moving pin
- * @param curr_layer_pin_sink_count Updated number of sinks of the net on each layer
- * @param bb_pin_sink_count_new The updated number of net's sinks on each layer
- * @param is_output_pin Is the moving pin of the type output
- */
-static void update_bb_pin_sink_count(const t_physical_tile_loc& pin_old_loc,
-                                     const t_physical_tile_loc& pin_new_loc,
-                                     const vtr::NdMatrixProxy<int, 1> curr_layer_pin_sink_count,
-                                     vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
-                                     bool is_output_pin);
-
-/**
- * @brief When BB is being updated incrementally, the pin is moving to a new layer, and the BB is of the type "per-layer,
- * use this function to update the BB on the new layer.
- * @param new_pin_loc New location of the pin
- * @param bb_edge_old bb_edge prior to moving the pin
- * @param bb_coord_old bb_coord prior to moving the pin
- * @param bb_edge_new New bb edge calculated by this function
- * @param bb_coord_new new bb coord calculated by this function
- */
-static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
-                            const t_2D_bb& bb_edge_old,
-                            const t_2D_bb& bb_coord_old,
-                            t_2D_bb& bb_edge_new,
-                            t_2D_bb& bb_coord_new);
-
-/****************************** End of Function declarations ************************************/
-
 NetCostHandler::NetCostHandler(PlacerState& placer_state,
-                               bool cube_bb,
                                t_place_algorithm place_algorithm,
                                double congestion_chan_util_threshold)
     : congestion_modeling_started_(false)
-    , cube_bb_(cube_bb)
     , placer_state_(placer_state)
     , place_algorithm_(place_algorithm)
     , congestion_chan_util_threshold_(congestion_chan_util_threshold) {
@@ -116,30 +79,12 @@ NetCostHandler::NetCostHandler(PlacerState& placer_state,
 
     is_multi_layer_ = num_layers > 1;
 
-    // Either 3D BB or per layer BB data structure are used, not both.
-    if (cube_bb_) {
-        ts_bb_edge_new_.resize(num_nets, t_bb());
-        ts_bb_coord_new_.resize(num_nets, t_bb());
+    ts_bb_edge_new_.resize(num_nets, t_bb());
+    ts_bb_coord_new_.resize(num_nets, t_bb());
 
-        bb_coords_.resize(num_nets, t_bb());
+    bb_coords_.resize(num_nets, t_bb());
 
-        bb_num_on_edges_.resize(num_nets, t_bb());
-        comp_bb_cong_cost_functor_ = std::bind(&NetCostHandler::comp_cube_bb_cong_cost_, this, std::placeholders::_1);
-        update_bb_functor_ = std::bind(&NetCostHandler::update_bb_, this, std::placeholders::_1, std::placeholders::_2,
-                                       std::placeholders::_3, std::placeholders::_4);
-        get_net_bb_cost_functor_ = std::bind(&NetCostHandler::get_net_cube_bb_cost_, this, std::placeholders::_1, /*use_ts=*/true);
-        get_non_updatable_bb_functor_ = std::bind(&NetCostHandler::get_non_updatable_cube_bb_, this, std::placeholders::_1, /*use_ts=*/true);
-    } else {
-        layer_ts_bb_edge_new_.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
-        layer_ts_bb_coord_new_.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
-        layer_bb_num_on_edges_.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
-        layer_bb_coords_.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
-        comp_bb_cong_cost_functor_ = std::bind(&NetCostHandler::comp_per_layer_bb_cost_, this, std::placeholders::_1);
-        update_bb_functor_ = std::bind(&NetCostHandler::update_layer_bb_, this, std::placeholders::_1, std::placeholders::_2,
-                                       std::placeholders::_3, std::placeholders::_4);
-        get_net_bb_cost_functor_ = std::bind(&NetCostHandler::get_net_per_layer_bb_cost_, this, std::placeholders::_1, /*use_ts=*/true);
-        get_non_updatable_bb_functor_ = std::bind(&NetCostHandler::get_non_updatable_per_layer_bb_, this, std::placeholders::_1, /*use_ts=*/true);
-    }
+    bb_num_on_edges_.resize(num_nets, t_bb());
 
     // This initializes the whole matrix to UNDEFINED which is an invalid value
     ts_layer_sink_pin_count_.resize({num_nets, size_t(num_layers)}, UNDEFINED);
@@ -222,10 +167,6 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
 }
 
 std::pair<t_net_cost_terms, double> NetCostHandler::comp_bb_cong_cost(e_cost_methods method) {
-    return comp_bb_cong_cost_functor_(method);
-}
-
-std::pair<t_net_cost_terms, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cost_methods method) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     t_net_cost_terms cost_terms;
@@ -238,10 +179,10 @@ std::pair<t_net_cost_terms, double> NetCostHandler::comp_cube_bb_cong_cost_(e_co
             if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
                 get_bb_from_scratch_(net_id, /*use_ts=*/false);
             } else {
-                get_non_updatable_cube_bb_(net_id, /*use_ts=*/false);
+                get_non_updatable_bb_(net_id, /*use_ts=*/false);
             }
 
-            net_cost_[net_id] = get_net_cube_bb_cost_(net_id, /*use_ts=*/false);
+            net_cost_[net_id] = get_net_bb_cost_(net_id, /*use_ts=*/false);
             cost_terms.bb_cost += net_cost_[net_id];
             if (method == e_cost_methods::CHECK) {
                 expected_wirelength += get_net_wirelength_estimate_(net_id);
@@ -253,41 +194,8 @@ std::pair<t_net_cost_terms, double> NetCostHandler::comp_cube_bb_cong_cost_(e_co
     if (congestion_modeling_started_) {
         for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
             if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-                net_cong_cost_[net_id] = get_net_cube_cong_cost_(net_id, /*use_ts=*/false);
+                net_cong_cost_[net_id] = get_net_cong_cost_(net_id, /*use_ts=*/false);
                 cost_terms.cong_cost += net_cong_cost_[net_id];
-            }
-        }
-    }
-
-    return {cost_terms, expected_wirelength};
-}
-
-std::pair<t_net_cost_terms, double> NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    // Per-layer mode currently computes only BB-based wirelength cost (and optional expected
-    // wirelength in CHECK mode). Congestion modeling and interposer crossing cost
-    // is not implemented for per-layer BBs, so these terms are always 0.
-    t_net_cost_terms cost_terms{}; // value-initialize all terms
-    double expected_wirelength = 0.;
-
-    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-            // Small nets don't use incremental updating on their bounding boxes,
-            //so they can use a fast bounding box calculator.
-            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
-                get_layer_bb_from_scratch_(net_id,
-                                           layer_bb_num_on_edges_[net_id],
-                                           layer_bb_coords_[net_id],
-                                           num_sink_pin_layer_[size_t(net_id)]);
-            } else {
-                get_non_updatable_per_layer_bb_(net_id, /*use_ts=*/false);
-            }
-
-            net_cost_[net_id] = get_net_per_layer_bb_cost_(net_id, /*use_ts=*/false);
-            cost_terms.bb_cost += net_cost_[net_id];
-            if (method == e_cost_methods::CHECK) {
-                expected_wirelength += get_net_wirelength_from_layer_bb_(net_id);
             }
         }
     }
@@ -306,7 +214,7 @@ void NetCostHandler::update_net_bb_(const ClusterNetId net,
         //For small nets brute-force bounding box update is faster
 
         if (bb_update_status_[net] == NetUpdateState::NOT_UPDATED_YET) { //Only once per-net
-            get_non_updatable_bb_functor_(net);
+            get_non_updatable_bb_(net, /*use_ts=*/true);
         }
     } else {
         //For large nets, update bounding box incrementally
@@ -319,7 +227,7 @@ void NetCostHandler::update_net_bb_(const ClusterNetId net,
         bool is_driver = cluster_ctx.clb_nlist.pin_type(blk_pin) == PinType::DRIVER;
 
         //Incremental bounding box update
-        update_bb_functor_(net,
+        update_bb_(net,
                            {pl_moved_block.old_loc.x + pin_width_offset,
                             pl_moved_block.old_loc.y + pin_height_offset,
                             pl_moved_block.old_loc.layer},
@@ -467,7 +375,7 @@ void NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_m
     }
 }
 
-void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts) {
+void NetCostHandler::get_non_updatable_bb_(ClusterNetId net_id, bool use_ts) {
     //TODO: account for multiple physical pin instances per logical pin
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
@@ -524,45 +432,6 @@ void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts
         const int total_channels = (bb_coord_new.xmax - bb_coord_new.xmin + 1) * (bb_coord_new.ymax - bb_coord_new.ymin + 1);
         x_chan_util = acc_chan_util_.x.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
         y_chan_util = acc_chan_util_.y.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
-    }
-}
-
-void NetCostHandler::get_non_updatable_per_layer_bb_(ClusterNetId net_id, bool use_ts) {
-    //TODO: account for multiple physical pin instances per logical pin
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& blk_loc_registry = placer_state_.blk_loc_registry();
-
-    std::vector<t_2D_bb>& bb_coord_new = use_ts ? layer_ts_bb_coord_new_[net_id] : layer_bb_coords_[net_id];
-    vtr::NdMatrixProxy<int, 1> num_sink_layer = use_ts ? ts_layer_sink_pin_count_[size_t(net_id)] : num_sink_pin_layer_[size_t(net_id)];
-
-    const int num_layers = device_ctx.grid.get_num_layers();
-    VTR_ASSERT_DEBUG(bb_coord_new.size() == (size_t)num_layers);
-
-    // get the source pin's location
-    ClusterPinId source_pin_id = cluster_ctx.clb_nlist.net_pin(net_id, 0);
-    t_physical_tile_loc source_pin_loc = blk_loc_registry.get_coordinate_of_pin(source_pin_id);
-
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        bb_coord_new[layer_num] = t_2D_bb{source_pin_loc.x, source_pin_loc.x, source_pin_loc.y, source_pin_loc.y, source_pin_loc.layer_num};
-        num_sink_layer[layer_num] = 0;
-    }
-
-    for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-        t_physical_tile_loc pin_loc = blk_loc_registry.get_coordinate_of_pin(pin_id);
-        num_sink_layer[pin_loc.layer_num]++;
-
-        if (pin_loc.x < bb_coord_new[pin_loc.layer_num].xmin) {
-            bb_coord_new[pin_loc.layer_num].xmin = pin_loc.x;
-        } else if (pin_loc.x > bb_coord_new[pin_loc.layer_num].xmax) {
-            bb_coord_new[pin_loc.layer_num].xmax = pin_loc.x;
-        }
-
-        if (pin_loc.y < bb_coord_new[pin_loc.layer_num].ymin) {
-            bb_coord_new[pin_loc.layer_num].ymin = pin_loc.y;
-        } else if (pin_loc.y > bb_coord_new[pin_loc.layer_num].ymax) {
-            bb_coord_new[pin_loc.layer_num].ymax = pin_loc.y;
-        }
     }
 }
 
@@ -841,347 +710,6 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
     }
 }
 
-void NetCostHandler::update_layer_bb_(ClusterNetId net_id,
-                                      t_physical_tile_loc pin_old_loc,
-                                      t_physical_tile_loc pin_new_loc,
-                                      bool is_output_pin) {
-    std::vector<t_2D_bb>& bb_edge_new = layer_ts_bb_edge_new_[net_id];
-    std::vector<t_2D_bb>& bb_coord_new = layer_ts_bb_coord_new_[net_id];
-    vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new = ts_layer_sink_pin_count_[size_t(net_id)];
-
-    /* Check if the net had been updated before. */
-    if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
-        /* The net had been updated from scratch, DO NOT update again! */
-        return;
-    }
-
-    const vtr::NdMatrixProxy<int, 1> curr_layer_pin_sink_count = (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET) ? num_sink_pin_layer_[size_t(net_id)] : bb_pin_sink_count_new;
-
-    const std::vector<t_2D_bb>*curr_bb_edge, *curr_bb_coord;
-    if (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET) {
-        /* The net had NOT been updated before, could use the old values */
-        curr_bb_edge = &layer_bb_num_on_edges_[net_id];
-        curr_bb_coord = &layer_bb_coords_[net_id];
-        bb_update_status_[net_id] = NetUpdateState::UPDATED_ONCE;
-    } else {
-        /* The net had been updated before, must use the new values */
-        curr_bb_edge = &bb_edge_new;
-        curr_bb_coord = &bb_coord_new;
-    }
-
-    /* Check if I can update the bounding box incrementally. */
-
-    update_bb_pin_sink_count(pin_old_loc,
-                             pin_new_loc,
-                             curr_layer_pin_sink_count,
-                             bb_pin_sink_count_new,
-                             is_output_pin);
-
-    int layer_old = pin_old_loc.layer_num;
-    int layer_new = pin_new_loc.layer_num;
-    bool layer_changed = (layer_old != layer_new);
-
-    bb_edge_new = *curr_bb_edge;
-    bb_coord_new = *curr_bb_coord;
-
-    if (layer_changed) {
-        update_bb_layer_changed_(net_id,
-                                 pin_old_loc,
-                                 pin_new_loc,
-                                 *curr_bb_edge,
-                                 *curr_bb_coord,
-                                 bb_pin_sink_count_new,
-                                 bb_edge_new,
-                                 bb_coord_new);
-    } else {
-        update_bb_same_layer_(net_id,
-                              pin_old_loc,
-                              pin_new_loc,
-                              *curr_bb_edge,
-                              *curr_bb_coord,
-                              bb_pin_sink_count_new,
-                              bb_edge_new,
-                              bb_coord_new);
-    }
-
-    if (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET) {
-        bb_update_status_[net_id] = NetUpdateState::UPDATED_ONCE;
-    }
-}
-
-inline void NetCostHandler::update_bb_same_layer_(ClusterNetId net_id,
-                                                  const t_physical_tile_loc& pin_old_loc,
-                                                  const t_physical_tile_loc& pin_new_loc,
-                                                  const std::vector<t_2D_bb>& curr_bb_edge,
-                                                  const std::vector<t_2D_bb>& curr_bb_coord,
-                                                  vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
-                                                  std::vector<t_2D_bb>& bb_edge_new,
-                                                  std::vector<t_2D_bb>& bb_coord_new) {
-    int x_old = pin_old_loc.x;
-    int x_new = pin_new_loc.x;
-
-    int y_old = pin_old_loc.y;
-    int y_new = pin_new_loc.y;
-
-    int layer_num = pin_old_loc.layer_num;
-    VTR_ASSERT_SAFE(layer_num == pin_new_loc.layer_num);
-
-    if (x_new < x_old) {
-        if (x_old == curr_bb_coord[layer_num].xmax) {
-            update_bb_edge_(net_id,
-                            bb_edge_new,
-                            bb_coord_new,
-                            bb_pin_sink_count_new,
-                            curr_bb_edge[layer_num].xmax,
-                            curr_bb_coord[layer_num].xmax,
-                            bb_edge_new[layer_num].xmax,
-                            bb_coord_new[layer_num].xmax);
-            if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
-                return;
-            }
-        }
-
-        if (x_new < curr_bb_coord[layer_num].xmin) {
-            bb_edge_new[layer_num].xmin = 1;
-            bb_coord_new[layer_num].xmin = x_new;
-        } else if (x_new == curr_bb_coord[layer_num].xmin) {
-            bb_edge_new[layer_num].xmin = curr_bb_edge[layer_num].xmin + 1;
-            bb_coord_new[layer_num].xmin = curr_bb_coord[layer_num].xmin;
-        }
-
-    } else if (x_new > x_old) {
-        if (x_old == curr_bb_coord[layer_num].xmin) {
-            update_bb_edge_(net_id,
-                            bb_edge_new,
-                            bb_coord_new,
-                            bb_pin_sink_count_new,
-                            curr_bb_edge[layer_num].xmin,
-                            curr_bb_coord[layer_num].xmin,
-                            bb_edge_new[layer_num].xmin,
-                            bb_coord_new[layer_num].xmin);
-            if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
-                return;
-            }
-        }
-
-        if (x_new > curr_bb_coord[layer_num].xmax) {
-            bb_edge_new[layer_num].xmax = 1;
-            bb_coord_new[layer_num].xmax = x_new;
-        } else if (x_new == curr_bb_coord[layer_num].xmax) {
-            bb_edge_new[layer_num].xmax = curr_bb_edge[layer_num].xmax + 1;
-            bb_coord_new[layer_num].xmax = curr_bb_coord[layer_num].xmax;
-        }
-    }
-
-    if (y_new < y_old) {
-        if (y_old == curr_bb_coord[layer_num].ymax) {
-            update_bb_edge_(net_id,
-                            bb_edge_new,
-                            bb_coord_new,
-                            bb_pin_sink_count_new,
-                            curr_bb_edge[layer_num].ymax,
-                            curr_bb_coord[layer_num].ymax,
-                            bb_edge_new[layer_num].ymax,
-                            bb_coord_new[layer_num].ymax);
-            if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
-                return;
-            }
-        }
-
-        if (y_new < curr_bb_coord[layer_num].ymin) {
-            bb_edge_new[layer_num].ymin = 1;
-            bb_coord_new[layer_num].ymin = y_new;
-        } else if (y_new == curr_bb_coord[layer_num].ymin) {
-            bb_edge_new[layer_num].ymin = curr_bb_edge[layer_num].ymin + 1;
-            bb_coord_new[layer_num].ymin = curr_bb_coord[layer_num].ymin;
-        }
-
-    } else if (y_new > y_old) {
-        if (y_old == curr_bb_coord[layer_num].ymin) {
-            update_bb_edge_(net_id,
-                            bb_edge_new,
-                            bb_coord_new,
-                            bb_pin_sink_count_new,
-                            curr_bb_edge[layer_num].ymin,
-                            curr_bb_coord[layer_num].ymin,
-                            bb_edge_new[layer_num].ymin,
-                            bb_coord_new[layer_num].ymin);
-            if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
-                return;
-            }
-        }
-
-        if (y_new > curr_bb_coord[layer_num].ymax) {
-            bb_edge_new[layer_num].ymax = 1;
-            bb_coord_new[layer_num].ymax = y_new;
-        } else if (y_new == curr_bb_coord[layer_num].ymax) {
-            bb_edge_new[layer_num].ymax = curr_bb_edge[layer_num].ymax + 1;
-            bb_coord_new[layer_num].ymax = curr_bb_coord[layer_num].ymax;
-        }
-    }
-}
-
-inline void NetCostHandler::update_bb_layer_changed_(ClusterNetId net_id,
-                                                     const t_physical_tile_loc& pin_old_loc,
-                                                     const t_physical_tile_loc& pin_new_loc,
-                                                     const std::vector<t_2D_bb>& curr_bb_edge,
-                                                     const std::vector<t_2D_bb>& curr_bb_coord,
-                                                     vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
-                                                     std::vector<t_2D_bb>& bb_edge_new,
-                                                     std::vector<t_2D_bb>& bb_coord_new) {
-    int x_old = pin_old_loc.x;
-
-    int y_old = pin_old_loc.y;
-
-    int old_layer_num = pin_old_loc.layer_num;
-    int new_layer_num = pin_new_loc.layer_num;
-    VTR_ASSERT_SAFE(old_layer_num != new_layer_num);
-
-    /*
-     * This function is called when BB per layer is used and when the moving block is moving from one layer to another.
-     * Thus, we need to update bounding box on both "from" and "to" layer. Here, we update the bounding box on "from" or
-     * "old_layer". Then, "add_block_to_bb" is called to update the bounding box on the new layer.
-     */
-    if (x_old == curr_bb_coord[old_layer_num].xmax) {
-        update_bb_edge_(net_id,
-                        bb_edge_new,
-                        bb_coord_new,
-                        bb_pin_sink_count_new,
-                        curr_bb_edge[old_layer_num].xmax,
-                        curr_bb_coord[old_layer_num].xmax,
-                        bb_edge_new[old_layer_num].xmax,
-                        bb_coord_new[old_layer_num].xmax);
-        if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
-            return;
-        }
-    } else if (x_old == curr_bb_coord[old_layer_num].xmin) {
-        update_bb_edge_(net_id,
-                        bb_edge_new,
-                        bb_coord_new,
-                        bb_pin_sink_count_new,
-                        curr_bb_edge[old_layer_num].xmin,
-                        curr_bb_coord[old_layer_num].xmin,
-                        bb_edge_new[old_layer_num].xmin,
-                        bb_coord_new[old_layer_num].xmin);
-        if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
-            return;
-        }
-    }
-
-    if (y_old == curr_bb_coord[old_layer_num].ymax) {
-        update_bb_edge_(net_id,
-                        bb_edge_new,
-                        bb_coord_new,
-                        bb_pin_sink_count_new,
-                        curr_bb_edge[old_layer_num].ymax,
-                        curr_bb_coord[old_layer_num].ymax,
-                        bb_edge_new[old_layer_num].ymax,
-                        bb_coord_new[old_layer_num].ymax);
-        if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
-            return;
-        }
-    } else if (y_old == curr_bb_coord[old_layer_num].ymin) {
-        update_bb_edge_(net_id,
-                        bb_edge_new,
-                        bb_coord_new,
-                        bb_pin_sink_count_new,
-                        curr_bb_edge[old_layer_num].ymin,
-                        curr_bb_coord[old_layer_num].ymin,
-                        bb_edge_new[old_layer_num].ymin,
-                        bb_coord_new[old_layer_num].ymin);
-        if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
-            return;
-        }
-    }
-
-    add_block_to_bb(pin_new_loc,
-                    curr_bb_edge[new_layer_num],
-                    curr_bb_coord[new_layer_num],
-                    bb_edge_new[new_layer_num],
-                    bb_coord_new[new_layer_num]);
-}
-
-static void update_bb_pin_sink_count(const t_physical_tile_loc& pin_old_loc,
-                                     const t_physical_tile_loc& pin_new_loc,
-                                     const vtr::NdMatrixProxy<int, 1> curr_layer_pin_sink_count,
-                                     vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
-                                     bool is_output_pin) {
-    VTR_ASSERT_SAFE(curr_layer_pin_sink_count[pin_old_loc.layer_num] > 0 || is_output_pin);
-
-    for (size_t layer_num = 0; layer_num < g_vpr_ctx.device().grid.get_num_layers(); layer_num++) {
-        bb_pin_sink_count_new[layer_num] = curr_layer_pin_sink_count[layer_num];
-    }
-
-    if (!is_output_pin) {
-        bb_pin_sink_count_new[pin_old_loc.layer_num] -= 1;
-        bb_pin_sink_count_new[pin_new_loc.layer_num] += 1;
-    }
-}
-
-inline void NetCostHandler::update_bb_edge_(ClusterNetId net_id,
-                                            std::vector<t_2D_bb>& bb_edge_new,
-                                            std::vector<t_2D_bb>& bb_coord_new,
-                                            vtr::NdMatrixProxy<int, 1> bb_layer_pin_sink_count,
-                                            const int& old_num_block_on_edge,
-                                            const int& old_edge_coord,
-                                            int& new_num_block_on_edge,
-                                            int& new_edge_coord) {
-    if (old_num_block_on_edge == 1) {
-        get_layer_bb_from_scratch_(net_id,
-                                   bb_edge_new,
-                                   bb_coord_new,
-                                   bb_layer_pin_sink_count);
-        bb_update_status_[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
-        return;
-    } else {
-        new_num_block_on_edge = old_num_block_on_edge - 1;
-        new_edge_coord = old_edge_coord;
-    }
-}
-
-static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
-                            const t_2D_bb& bb_edge_old,
-                            const t_2D_bb& bb_coord_old,
-                            t_2D_bb& bb_edge_new,
-                            t_2D_bb& bb_coord_new) {
-    int x_new = new_pin_loc.x;
-    int y_new = new_pin_loc.y;
-
-    /*
-     * This function is called to only update the bounding box on the new layer from a block
-     * moving to this layer from another layer. Thus, we only need to assess the effect of this
-     * new block on the edges.
-     */
-
-    if (x_new > bb_coord_old.xmax) {
-        bb_edge_new.xmax = 1;
-        bb_coord_new.xmax = x_new;
-    } else if (x_new == bb_coord_old.xmax) {
-        bb_edge_new.xmax = bb_edge_old.xmax + 1;
-    }
-
-    if (x_new < bb_coord_old.xmin) {
-        bb_edge_new.xmin = 1;
-        bb_coord_new.xmin = x_new;
-    } else if (x_new == bb_coord_old.xmin) {
-        bb_edge_new.xmin = bb_edge_old.xmin + 1;
-    }
-
-    if (y_new > bb_coord_old.ymax) {
-        bb_edge_new.ymax = 1;
-        bb_coord_new.ymax = y_new;
-    } else if (y_new == bb_coord_old.ymax) {
-        bb_edge_new.ymax = bb_edge_old.ymax + 1;
-    }
-
-    if (y_new < bb_coord_old.ymin) {
-        bb_edge_new.ymin = 1;
-        bb_coord_new.ymin = y_new;
-    } else if (y_new == bb_coord_old.ymin) {
-        bb_edge_new.ymin = bb_edge_old.ymin + 1;
-    }
-}
-
 void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
@@ -1285,65 +813,7 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
     }
 }
 
-void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
-                                                std::vector<t_2D_bb>& num_on_edges,
-                                                std::vector<t_2D_bb>& coords,
-                                                vtr::NdMatrixProxy<int, 1> layer_pin_sink_count) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& blk_loc_registry = placer_state_.blk_loc_registry();
-
-    const int num_layers = device_ctx.grid.get_num_layers();
-    VTR_ASSERT_DEBUG(coords.size() == (size_t)num_layers);
-    VTR_ASSERT_DEBUG(num_on_edges.size() == (size_t)num_layers);
-
-    // get the source pin's location
-    ClusterPinId source_pin_id = cluster_ctx.clb_nlist.net_pin(net_id, 0);
-    t_physical_tile_loc source_pin_loc = blk_loc_registry.get_coordinate_of_pin(source_pin_id);
-
-    // TODO: Currently we are assuming that crossing can only happen from OPIN. Because of that,
-    // when per-layer bounding box is used, we want the bounding box on each layer to also include
-    // the location of source since the connection on each layer starts from that location.
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        coords[layer_num] = t_2D_bb{source_pin_loc.x, source_pin_loc.x, source_pin_loc.y, source_pin_loc.y, source_pin_loc.layer_num};
-        num_on_edges[layer_num] = t_2D_bb{1, 1, 1, 1, layer_num};
-        layer_pin_sink_count[layer_num] = 0;
-    }
-
-    for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-        t_physical_tile_loc pin_loc = blk_loc_registry.get_coordinate_of_pin(pin_id);
-        VTR_ASSERT_SAFE(pin_loc.layer_num >= 0 && pin_loc.layer_num < num_layers);
-        layer_pin_sink_count[pin_loc.layer_num]++;
-
-        if (pin_loc.x == coords[pin_loc.layer_num].xmin) {
-            num_on_edges[pin_loc.layer_num].xmin++;
-        }
-        if (pin_loc.x == coords[pin_loc.layer_num].xmax) { /* Recall that xmin could equal xmax -- don't use else */
-            num_on_edges[pin_loc.layer_num].xmax++;
-        } else if (pin_loc.x < coords[pin_loc.layer_num].xmin) {
-            coords[pin_loc.layer_num].xmin = pin_loc.x;
-            num_on_edges[pin_loc.layer_num].xmin = 1;
-        } else if (pin_loc.x > coords[pin_loc.layer_num].xmax) {
-            coords[pin_loc.layer_num].xmax = pin_loc.x;
-            num_on_edges[pin_loc.layer_num].xmax = 1;
-        }
-
-        if (pin_loc.y == coords[pin_loc.layer_num].ymin) {
-            num_on_edges[pin_loc.layer_num].ymin++;
-        }
-        if (pin_loc.y == coords[pin_loc.layer_num].ymax) {
-            num_on_edges[pin_loc.layer_num].ymax++;
-        } else if (pin_loc.y < coords[pin_loc.layer_num].ymin) {
-            coords[pin_loc.layer_num].ymin = pin_loc.y;
-            num_on_edges[pin_loc.layer_num].ymin = 1;
-        } else if (pin_loc.y > coords[pin_loc.layer_num].ymax) {
-            coords[pin_loc.layer_num].ymax = pin_loc.y;
-            num_on_edges[pin_loc.layer_num].ymax = 1;
-        }
-    }
-}
-
-double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
+double NetCostHandler::get_net_bb_cost_(ClusterNetId net_id, bool use_ts) {
     // Finds the cost due to one net by looking at its coordinate bounding box.
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -1377,7 +847,7 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
     return ncost;
 }
 
-double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts) {
+double NetCostHandler::get_net_cong_cost_(ClusterNetId net_id, bool use_ts) {
     VTR_ASSERT_SAFE(congestion_modeling_started_);
     const auto [x_chan_util, y_chan_util] = use_ts ? ts_avg_chan_util_new_[net_id] : avg_chan_util_[net_id];
 
@@ -1387,47 +857,6 @@ double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts)
     float y_chan_cong = (y_chan_util < threshold) ? 0.0f : y_chan_util - threshold;
 
     return x_chan_cong + y_chan_cong;
-}
-
-double NetCostHandler::get_net_per_layer_bb_cost_(ClusterNetId net_id, bool use_ts) {
-    // Per-layer bounding box of the net
-    const std::vector<t_2D_bb>& bb = use_ts ? layer_ts_bb_coord_new_[net_id] : layer_bb_coords_[net_id];
-    const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count = use_ts ? ts_layer_sink_pin_count_[size_t(net_id)] : num_sink_pin_layer_[size_t(net_id)];
-
-    // Finds the cost due to one net by looking at its coordinate bounding box
-    double ncost = 0.;
-    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        VTR_ASSERT(layer_pin_sink_count[layer_num] != UNDEFINED);
-        if (layer_pin_sink_count[layer_num] == 0) {
-            continue;
-        }
-        /* Adjust the bounding box half perimeter by the wirelength correction
-         * factor based on terminal count, which is 1 for the source + the number
-         * of sinks on this layer. */
-        const double crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num] + 1);
-
-        /* Could insert a check for xmin == xmax.  In that case, assume  *
-         * connection will be made with no bends and hence no x-cost.    *
-         * Same thing for y-cost.                                        */
-
-        /* Cost = wire length along channel * cross_count / average      *
-         * channel capacity.   Do this for x, then y direction and add.  */
-
-        /* For average channel width factor, I'll always include the channel immediately
-         * below and the channel immediately to the left of the bounding box, so both bb.ymin
-         * and bb.xmin are subtracted by 1 before being used as indices of chan?_place_cost_fac_.
-         * chan?_place_cost_fac_ objects can handle -1 indices internally.
-         */
-
-        const auto [chanx_cost_fac, chany_cost_fac] = get_chanxy_cost_fac_(bb[layer_num]);
-        ncost += (bb[layer_num].xmax - bb[layer_num].xmin + 1) * chanx_cost_fac;
-        ncost += (bb[layer_num].ymax - bb[layer_num].ymin + 1) * chany_cost_fac;
-        ncost *= crossing;
-    }
-
-    return ncost;
 }
 
 double NetCostHandler::get_net_wirelength_estimate_(ClusterNetId net_id) const {
@@ -1446,38 +875,6 @@ double NetCostHandler::get_net_wirelength_estimate_(ClusterNetId net_id) const {
     double ncost;
     ncost = (bb.xmax - bb.xmin + 1) * crossing;
     ncost += (bb.ymax - bb.ymin + 1) * crossing;
-
-    return ncost;
-}
-
-double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) const {
-    const std::vector<t_2D_bb>& bb = layer_bb_coords_[net_id];
-    const vtr::NdMatrixProxy<int, 1> net_layer_pin_sink_count = num_sink_pin_layer_[size_t(net_id)];
-
-    double ncost = 0.;
-    VTR_ASSERT_SAFE(bb.size() == g_vpr_ctx.device().grid.get_num_layers());
-
-    for (size_t layer_num = 0; layer_num < bb.size(); layer_num++) {
-        VTR_ASSERT_SAFE(net_layer_pin_sink_count[layer_num] != UNDEFINED);
-        if (net_layer_pin_sink_count[layer_num] == 0) {
-            continue;
-        }
-
-        // The reason we add 1 to the number of sink pins is because when per-layer bounding box is used,
-        // we want to get the estimated wirelength of the given layer assuming that the source pin is
-        // also on that layer
-        double crossing = wirelength_crossing_count(net_layer_pin_sink_count[layer_num] + 1);
-
-        /* Could insert a check for xmin == xmax.  In that case, assume  *
-         * connection will be made with no bends and hence no x-cost.    *
-         * Same thing for y-cost.                                        */
-
-        /* Cost = wire length along channel * cross_count / average      *
-         * channel capacity.   Do this for x, then y direction and add.  */
-
-        ncost += (bb[layer_num].xmax - bb[layer_num].xmin + 1) * crossing;
-        ncost += (bb[layer_num].ymax - bb[layer_num].ymin + 1) * crossing;
-    }
 
     return ncost;
 }
@@ -1532,11 +929,11 @@ void NetCostHandler::set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta) {
     for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
 
-        proposed_net_cost_[net_id] = get_net_bb_cost_functor_(net_id);
+        proposed_net_cost_[net_id] = get_net_bb_cost_(net_id, /*use_ts=*/true);
         cost_terms_delta.bb_cost += proposed_net_cost_[net_id] - net_cost_[net_id];
 
         if (congestion_modeling_started_) {
-            proposed_net_cong_cost_[net_id] = get_net_cube_cong_cost_(net_id, /*use_ts=*/true);
+            proposed_net_cong_cost_[net_id] = get_net_cong_cost_(net_id, /*use_ts=*/true);
             cost_terms_delta.cong_cost += proposed_net_cong_cost_[net_id] - net_cong_cost_[net_id];
         }
     }
@@ -1669,11 +1066,7 @@ double NetCostHandler::get_total_wirelength_estimate() const {
     double estimated_wirelength = 0.0;
     for (ClusterNetId net_id : clb_nlist.nets()) {
         if (!clb_nlist.net_is_ignored(net_id)) {
-            if (cube_bb_) {
-                estimated_wirelength += get_net_wirelength_estimate_(net_id);
-            } else {
-                estimated_wirelength += get_net_wirelength_from_layer_bb_(net_id);
-            }
+            estimated_wirelength += get_net_wirelength_estimate_(net_id);
         }
     }
 
@@ -1693,21 +1086,9 @@ int NetCostHandler::get_num_nets_spanning_multiple_layers() const {
             continue;
         }
 
-        if (cube_bb_) {
-            const t_bb& bb = bb_coords_[net_id];
-            if (bb.layer_min != bb.layer_max) {
-                num_nets_spanning_multiple_layers++;
-            }
-        } else {
-            int num_layers_with_bb = 0;
-            for (const t_2D_bb& layer_bb : layer_bb_coords_[net_id]) {
-                if (layer_bb.xmin != UNDEFINED) {
-                    num_layers_with_bb++;
-                }
-            }
-            if (num_layers_with_bb > 1) {
-                num_nets_spanning_multiple_layers++;
-            }
+        const t_bb& bb = bb_coords_[net_id];
+        if (bb.layer_min != bb.layer_max) {
+            num_nets_spanning_multiple_layers++;
         }
     }
 
@@ -1767,56 +1148,25 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
 
-            if (cube_bb_) {
-                const t_bb& bb = bb_coords_[net_id];
-                double expected_wirelength = get_net_wirelength_estimate_(net_id);
+            const t_bb& bb = bb_coords_[net_id];
+            double expected_wirelength = get_net_wirelength_estimate_(net_id);
 
-                int distance_x = bb.xmax - bb.xmin + 1;
-                int distance_y = bb.ymax - bb.ymin + 1;
-                int distance_z = bb.layer_max - bb.layer_min + 1;
+            int distance_x = bb.xmax - bb.xmin + 1;
+            int distance_y = bb.ymax - bb.ymin + 1;
+            int distance_z = bb.layer_max - bb.layer_min + 1;
 
-                double expected_x_wl = (double)distance_x / (distance_x + distance_y) * expected_wirelength;
-                double expected_y_wl = expected_wirelength - expected_x_wl;
+            double expected_x_wl = (double)distance_x / (distance_x + distance_y) * expected_wirelength;
+            double expected_y_wl = expected_wirelength - expected_x_wl;
 
-                int total_channel_segments = distance_x * distance_y * distance_z;
-                double expected_per_x_segment_wl = expected_x_wl / total_channel_segments;
-                double expected_per_y_segment_wl = expected_y_wl / total_channel_segments;
+            int total_channel_segments = distance_x * distance_y * distance_z;
+            double expected_per_x_segment_wl = expected_x_wl / total_channel_segments;
+            double expected_per_y_segment_wl = expected_y_wl / total_channel_segments;
 
-                for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
-                    for (int x = bb.xmin; x <= bb.xmax; x++) {
-                        for (int y = bb.ymin; y <= bb.ymax; y++) {
-                            chan_util_.x[layer][x][y] += expected_per_x_segment_wl;
-                            chan_util_.y[layer][x][y] += expected_per_y_segment_wl;
-                        }
-                    }
-                }
-            } else {
-                const std::vector<t_2D_bb>& bb = layer_bb_coords_[net_id];
-                const vtr::NdMatrixProxy<int, 1> net_layer_pin_sink_count = num_sink_pin_layer_[size_t(net_id)];
-
-                for (size_t layer = 0; layer < bb.size(); layer++) {
-                    if (net_layer_pin_sink_count[layer] == 0) {
-                        continue;
-                    }
-
-                    double crossing = wirelength_crossing_count(net_layer_pin_sink_count[layer] + 1);
-                    double expected_wirelength = ((bb[layer].xmax - bb[layer].xmin + 1) + (bb[layer].ymax - bb[layer].ymin + 1)) * crossing;
-
-                    int distance_x = bb[layer].xmax - bb[layer].xmin + 1;
-                    int distance_y = bb[layer].ymax - bb[layer].ymin + 1;
-
-                    double expected_x_wl = (double)distance_x / (distance_x + distance_y) * expected_wirelength;
-                    double expected_y_wl = expected_wirelength - expected_x_wl;
-
-                    int total_channel_segments = distance_x * distance_y;
-                    double expected_per_x_segment_wl = expected_x_wl / total_channel_segments;
-                    double expected_per_y_segment_wl = expected_y_wl / total_channel_segments;
-
-                    for (int x = bb[layer].xmin; x <= bb[layer].xmax; x++) {
-                        for (int y = bb[layer].ymin; y <= bb[layer].ymax; y++) {
-                            chan_util_.x[layer][x][y] += expected_per_x_segment_wl;
-                            chan_util_.y[layer][x][y] += expected_per_y_segment_wl;
-                        }
+            for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
+                for (int x = bb.xmin; x <= bb.xmax; x++) {
+                    for (int y = bb.ymin; y <= bb.ymax; y++) {
+                        chan_util_.x[layer][x][y] += expected_per_x_segment_wl;
+                        chan_util_.y[layer][x][y] += expected_per_y_segment_wl;
                     }
                 }
             }
@@ -1871,7 +1221,7 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
     if (compute_congestion_cost) {
         for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
             if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-                net_cong_cost_[net_id] = get_net_cube_cong_cost_(net_id, /*use_ts=*/false);
+                net_cong_cost_[net_id] = get_net_cong_cost_(net_id, /*use_ts=*/false);
                 cong_cost += net_cong_cost_[net_id];
             }
         }
@@ -1885,131 +1235,12 @@ const ChannelMetric<vtr::NdMatrix<double, 3>>& NetCostHandler::get_chan_util() c
 }
 
 void NetCostHandler::set_ts_bb_coord_(const ClusterNetId net_id) {
-    if (cube_bb_) {
-        bb_coords_[net_id] = ts_bb_coord_new_[net_id];
-        if (congestion_modeling_started_) {
-            avg_chan_util_[net_id] = ts_avg_chan_util_new_[net_id];
-        }
-    } else {
-        layer_bb_coords_[net_id] = layer_ts_bb_coord_new_[net_id];
+    bb_coords_[net_id] = ts_bb_coord_new_[net_id];
+    if (congestion_modeling_started_) {
+        avg_chan_util_[net_id] = ts_avg_chan_util_new_[net_id];
     }
 }
 
 void NetCostHandler::set_ts_edge_(const ClusterNetId net_id) {
-    if (cube_bb_) {
-        bb_num_on_edges_[net_id] = ts_bb_edge_new_[net_id];
-    } else {
-        layer_bb_num_on_edges_[net_id] = layer_ts_bb_edge_new_[net_id];
-    }
-}
-
-t_bb NetCostHandler::union_2d_bb(ClusterNetId net_id) const {
-    t_bb merged_bb;
-    const std::vector<t_2D_bb>& bb_vec = layer_bb_coords_[net_id];
-
-    // Not all 2d_bbs are valid. Thus, if one of the coordinates in the 2D_bb is not valid (equal to UNDEFINED),
-    // we need to skip it.
-    for (const t_2D_bb& layer_bb : bb_vec) {
-        if (layer_bb.xmin == UNDEFINED) {
-            VTR_ASSERT_DEBUG(layer_bb.xmax == UNDEFINED);
-            VTR_ASSERT_DEBUG(layer_bb.ymin == UNDEFINED);
-            VTR_ASSERT_DEBUG(layer_bb.ymax == UNDEFINED);
-            VTR_ASSERT_DEBUG(layer_bb.layer_num == UNDEFINED);
-            continue;
-        }
-        if (merged_bb.xmin == UNDEFINED || layer_bb.xmin < merged_bb.xmin) {
-            merged_bb.xmin = layer_bb.xmin;
-        }
-        if (merged_bb.xmax == UNDEFINED || layer_bb.xmax > merged_bb.xmax) {
-            merged_bb.xmax = layer_bb.xmax;
-        }
-        if (merged_bb.ymin == UNDEFINED || layer_bb.ymin < merged_bb.ymin) {
-            merged_bb.ymin = layer_bb.ymin;
-        }
-        if (merged_bb.ymax == UNDEFINED || layer_bb.ymax > merged_bb.ymax) {
-            merged_bb.ymax = layer_bb.ymax;
-        }
-        if (merged_bb.layer_min == UNDEFINED || layer_bb.layer_num < merged_bb.layer_min) {
-            merged_bb.layer_min = layer_bb.layer_num;
-        }
-        if (merged_bb.layer_max == UNDEFINED || layer_bb.layer_num > merged_bb.layer_max) {
-            merged_bb.layer_max = layer_bb.layer_num;
-        }
-    }
-
-    return merged_bb;
-}
-
-std::pair<t_bb, t_bb> NetCostHandler::union_2d_bb_incr(ClusterNetId net_id) const {
-    t_bb merged_num_edge;
-    t_bb merged_bb;
-
-    const std::vector<t_2D_bb>& num_edge_vec = layer_bb_num_on_edges_[net_id];
-    const std::vector<t_2D_bb>& bb_vec = layer_bb_coords_[net_id];
-
-    for (const t_2D_bb& layer_bb : bb_vec) {
-        if (layer_bb.xmin == UNDEFINED) {
-            VTR_ASSERT_SAFE(layer_bb.xmax == UNDEFINED);
-            VTR_ASSERT_SAFE(layer_bb.ymin == UNDEFINED);
-            VTR_ASSERT_SAFE(layer_bb.ymax == UNDEFINED);
-            VTR_ASSERT_SAFE(layer_bb.layer_num == UNDEFINED);
-            continue;
-        }
-        if (merged_bb.xmin == UNDEFINED || layer_bb.xmin <= merged_bb.xmin) {
-            if (layer_bb.xmin == merged_bb.xmin) {
-                VTR_ASSERT_SAFE(merged_num_edge.xmin != UNDEFINED);
-                merged_num_edge.xmin += num_edge_vec[layer_bb.layer_num].xmin;
-            } else {
-                merged_num_edge.xmin = num_edge_vec[layer_bb.layer_num].xmin;
-            }
-            merged_bb.xmin = layer_bb.xmin;
-        }
-        if (merged_bb.xmax == UNDEFINED || layer_bb.xmax >= merged_bb.xmax) {
-            if (layer_bb.xmax == merged_bb.xmax) {
-                VTR_ASSERT_SAFE(merged_num_edge.xmax != UNDEFINED);
-                merged_num_edge.xmax += num_edge_vec[layer_bb.layer_num].xmax;
-            } else {
-                merged_num_edge.xmax = num_edge_vec[layer_bb.layer_num].xmax;
-            }
-            merged_bb.xmax = layer_bb.xmax;
-        }
-        if (merged_bb.ymin == UNDEFINED || layer_bb.ymin <= merged_bb.ymin) {
-            if (layer_bb.ymin == merged_bb.ymin) {
-                VTR_ASSERT_SAFE(merged_num_edge.ymin != UNDEFINED);
-                merged_num_edge.ymin += num_edge_vec[layer_bb.layer_num].ymin;
-            } else {
-                merged_num_edge.ymin = num_edge_vec[layer_bb.layer_num].ymin;
-            }
-            merged_bb.ymin = layer_bb.ymin;
-        }
-        if (merged_bb.ymax == UNDEFINED || layer_bb.ymax >= merged_bb.ymax) {
-            if (layer_bb.ymax == merged_bb.ymax) {
-                VTR_ASSERT_SAFE(merged_num_edge.ymax != UNDEFINED);
-                merged_num_edge.ymax += num_edge_vec[layer_bb.layer_num].ymax;
-            } else {
-                merged_num_edge.ymax = num_edge_vec[layer_bb.layer_num].ymax;
-            }
-            merged_bb.ymax = layer_bb.ymax;
-        }
-        if (merged_bb.layer_min == UNDEFINED || layer_bb.layer_num <= merged_bb.layer_min) {
-            if (layer_bb.layer_num == merged_bb.layer_min) {
-                VTR_ASSERT_SAFE(merged_num_edge.layer_min != UNDEFINED);
-                merged_num_edge.layer_min += num_edge_vec[layer_bb.layer_num].layer_num;
-            } else {
-                merged_num_edge.layer_min = num_edge_vec[layer_bb.layer_num].layer_num;
-            }
-            merged_bb.layer_min = layer_bb.layer_num;
-        }
-        if (merged_bb.layer_max == UNDEFINED || layer_bb.layer_num >= merged_bb.layer_max) {
-            if (layer_bb.layer_num == merged_bb.layer_max) {
-                VTR_ASSERT_SAFE(merged_num_edge.layer_max != UNDEFINED);
-                merged_num_edge.layer_max += num_edge_vec[layer_bb.layer_num].layer_num;
-            } else {
-                merged_num_edge.layer_max = num_edge_vec[layer_bb.layer_num].layer_num;
-            }
-            merged_bb.layer_max = layer_bb.layer_num;
-        }
-    }
-
-    return std::make_pair(merged_num_edge, merged_bb);
+    bb_num_on_edges_[net_id] = ts_bb_edge_new_[net_id];
 }

@@ -83,13 +83,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                 continue;
             }
         } else {
-            t_bb union_bb;
-            const bool cube_bb = g_vpr_ctx.placement().cube_bb;
-            if (!cube_bb) {
-                union_bb = net_cost_handler_.union_2d_bb(net_id);
-            }
-
-            const auto& net_bb_coords = cube_bb ? net_cost_handler_.bb_coords(net_id) : union_bb;
+            const t_bb& net_bb_coords = net_cost_handler_.bb_coords(net_id);
             t_physical_tile_loc old_pin_loc = blk_loc_registry.get_coordinate_of_pin(pin_id);
 
             t_physical_tile_loc new_pin_loc;
@@ -269,24 +263,8 @@ bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
                                                t_physical_tile_loc old_pin_loc,
                                                t_physical_tile_loc new_pin_loc) {
     //TODO: account for multiple physical pin instances per logical pin
-    t_bb union_bb_edge;
-    t_bb union_bb;
-    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
-    /* Calculating per-layer bounding box is more time-consuming compared to cube bounding box. To speed up
-     * this move, the bounding box used for this move is of the type cube bounding box even if the per-layer
-     * bounding box is used by placement SA engine. 
-     * If per-layer bounding box is used, we take a union of bounding boxes on each layer to make a cube bounding box.
-     * For example, the xmax of this cube bounding box is determined by the maximum x coordinate across all blocks on all layers.
-     */
-    if (!cube_bb) {
-        std::tie(union_bb_edge, union_bb) = net_cost_handler_.union_2d_bb_incr(net_id);
-    }
-
-    /* In this move, we use a 3D bounding box. Thus, if per-layer BB is used by placer, we need to take a union of BBs and use that for the rest of
-     * operations in this move
-     */
-    const t_bb& curr_bb_edge = cube_bb ? net_cost_handler_.bb_num_on_edges(net_id) : union_bb_edge;
-    const t_bb& curr_bb_coord = cube_bb ? net_cost_handler_.bb_coords(net_id) : union_bb;
+    const t_bb& curr_bb_edge = net_cost_handler_.bb_num_on_edges(net_id);
+    const t_bb& curr_bb_coord = net_cost_handler_.bb_coords(net_id);
 
     /* Check if I can update the bounding box incrementally. */
 
