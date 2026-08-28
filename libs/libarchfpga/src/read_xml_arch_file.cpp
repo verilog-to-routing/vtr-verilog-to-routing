@@ -47,6 +47,7 @@
 #include "parse_switchblocks.h"
 #include "physical_types_util.h"
 
+#include "switchblock_types.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
@@ -363,11 +364,21 @@ static void process_clock_metal_layers(pugi::xml_node parent,
 static void process_clock_networks(pugi::xml_node parent,
                                    std::vector<t_clock_network_arch>& clock_networks,
                                    const std::vector<t_arch_switch_inf>& switches,
+                                   t_arch* arch,
                                    pugiutil::loc_data& loc_data);
 static void process_clock_switch_points(pugi::xml_node parent,
                                         t_clock_network_arch& clock_network,
                                         const std::vector<t_arch_switch_inf>& switches,
                                         pugiutil::loc_data& loc_data);
+static void process_clock_switch_grid_points(pugi::xml_node parent,
+                                             t_clock_network_arch& clock_network,
+                                             const std::vector<t_arch_switch_inf>& switches,
+                                             pugiutil::loc_data& loc_data);
+static void process_clock_switch_grid_patterns(pugi::xml_node parent,
+                                               t_clock_network_arch& clock_network,
+                                               e_directionality directionality,
+                                               t_arch* arch,
+                                               pugiutil::loc_data& loc_data);
 static void process_clock_routing(pugi::xml_node parent,
                                   std::vector<t_clock_connection_arch>& clock_connections,
                                   const std::vector<t_arch_switch_inf>& switches,
@@ -523,6 +534,7 @@ void xml_read_arch(std::string_view arch_file,
             process_clock_networks(next,
                                    arch->clock_arch.clock_networks_arch,
                                    arch->switches,
+                                   arch,
                                    loc_data);
 
             process_clock_routing(next,
@@ -3017,16 +3029,15 @@ static void process_tileable_device_parameters(t_arch* arch, const pugiutil::loc
     // If 'sub_type' is specified, the custom switch block for 'type' is not allowed!
     std::string sub_type_str = get_attribute(cur, "sub_type", loc_data, BoolToReqOpt(false)).as_string("");
     if (!sub_type_str.empty()) {
-        if (sub_type_str == "wilton") {
-            arch->sb_sub_type = e_switch_block_type::WILTON;
-        } else if (sub_type_str == "universal") {
-            arch->sb_sub_type = e_switch_block_type::UNIVERSAL;
-        } else if (sub_type_str == "subset") {
-            arch->sb_sub_type = e_switch_block_type::SUBSET;
-        } else {
+        e_switch_block_type sub_type = switch_block_type_from_str(sub_type_str);
+        // "full" and "custom" are valid switch_block_type values, but not valid sub_types.
+        if (sub_type == e_switch_block_type::UNKNOWN
+            || sub_type == e_switch_block_type::FULL
+            || sub_type == e_switch_block_type::CUSTOM) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
                            "Unknown property %s for switch block subtype x\n", sub_type_str.c_str());
         }
+        arch->sb_sub_type = sub_type;
     } else {
         arch->sb_sub_type = arch->sb_type;
     }
@@ -4664,6 +4675,7 @@ static std::vector<t_direct_inf> process_directs(pugi::xml_node Parent,
     return directs;
 }
 
+/// @brief Parses the <clocknetworks>'s <metal_layers> section into a name -> t_metal_layer map.
 static void process_clock_metal_layers(pugi::xml_node parent,
                                        std::unordered_map<std::string, t_metal_layer>& metal_layers,
                                        const pugiutil::loc_data& loc_data) {
@@ -4698,13 +4710,17 @@ static void process_clock_metal_layers(pugi::xml_node parent,
     }
 }
 
+/// @brief Parses every <clock_network> child (rib, spine, or clock_switch_grid) into
+/// clock_networks.
 static void process_clock_networks(pugi::xml_node parent,
                                    std::vector<t_clock_network_arch>& clock_networks,
                                    const std::vector<t_arch_switch_inf>& switches,
+                                   t_arch* arch,
                                    pugiutil::loc_data& loc_data) {
-    std::vector<std::string> expected_spine_attributes = {"name", "num_inst", "metal_layer", "starty", "endy", "x", "repeatx", "repeaty"};
-    std::vector<std::string> expected_rib_attributes = {"name", "num_inst", "metal_layer", "startx", "endx", "y", "repeatx", "repeaty"};
-    std::vector<std::string> expected_children = {"rib", "spine"};
+    std::vector<std::string> expected_spine_attributes = {"name", "num_inst", "metal_layer", "starty", "endy", "x", "repeatx", "repeaty", "endx"};
+    std::vector<std::string> expected_rib_attributes = {"name", "num_inst", "metal_layer", "startx", "endx", "y", "repeatx", "repeaty", "endy"};
+    std::vector<std::string> expected_switch_grid_attributes = {"metal_layer", "startx", "starty", "repeatx", "repeaty", "chan_w", "switch_name", "switch_block_type", "length", "directionality"};
+    std::vector<std::string> expected_children = {"rib", "spine", "clock_switch_grid"};
 
     int num_clock_networks = count_children(parent, "clock_network", loc_data);
     pugi::xml_node curr_network = get_first_child(parent, "clock_network", loc_data);
@@ -4732,20 +4748,15 @@ static void process_clock_networks(pugi::xml_node parent,
             std::string endy(get_attribute(curr_type, "endy", loc_data).value());
             std::string x(get_attribute(curr_type, "x", loc_data).value());
 
-            std::string repeatx;
-            auto repeatx_attr = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL);
-            if (repeatx_attr) {
-                repeatx = repeatx_attr.value();
-            } else {
-                repeatx = "W";
-            }
-            std::string repeaty;
-            auto repeaty_attr = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL);
-            if (repeaty_attr) {
-                repeaty = repeaty_attr.value();
-            } else {
-                repeaty = "H";
-            }
+            std::string repeatx = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL).as_string("W");
+            std::string repeaty = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL).as_string("H");
+
+            // Upper bound on how far this spine repeats/tiles across x (its own
+            // tiling direction, via repeatx). Defaults to the full device width,
+            // i.e. tile all the way to the device edge as before; a smaller bound
+            // lets a spine repeat within only part of the device (e.g. one clock
+            // quadrant).
+            std::string end_x = get_attribute(curr_type, "endx", loc_data, ReqOpt::OPTIONAL).as_string("W");
 
             clock_network.metal_layer = metal_layer;
             clock_network.wire.start = starty;
@@ -4753,6 +4764,7 @@ static void process_clock_networks(pugi::xml_node parent,
             clock_network.wire.position = x;
             clock_network.repeat.x = repeatx;
             clock_network.repeat.y = repeaty;
+            clock_network.repeat.end_x = end_x;
 
             process_clock_switch_points(curr_type, clock_network, switches, loc_data);
         }
@@ -4770,20 +4782,15 @@ static void process_clock_networks(pugi::xml_node parent,
             std::string endx(get_attribute(curr_type, "endx", loc_data).value());
             std::string y(get_attribute(curr_type, "y", loc_data).value());
 
-            std::string repeatx;
-            auto repeatx_attr = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL);
-            if (repeatx_attr) {
-                repeatx = repeatx_attr.value();
-            } else {
-                repeatx = "W";
-            }
-            std::string repeaty;
-            auto repeaty_attr = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL);
-            if (repeaty_attr) {
-                repeaty = repeaty_attr.value();
-            } else {
-                repeaty = "H";
-            }
+            std::string repeatx = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL).as_string("W");
+            std::string repeaty = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL).as_string("H");
+
+            // Upper bound on how far this rib repeats/tiles across y (its own
+            // tiling direction, via repeaty). Defaults to the full device height,
+            // i.e. tile all the way to the device edge as before; a smaller bound
+            // lets a rib repeat within only part of the device (e.g. one clock
+            // quadrant).
+            std::string end_y = get_attribute(curr_type, "endy", loc_data, ReqOpt::OPTIONAL).as_string("H");
 
             clock_network.metal_layer = metal_layer;
             clock_network.wire.start = startx;
@@ -4791,15 +4798,82 @@ static void process_clock_networks(pugi::xml_node parent,
             clock_network.wire.position = y;
             clock_network.repeat.x = repeatx;
             clock_network.repeat.y = repeaty;
+            clock_network.repeat.end_y = end_y;
 
             process_clock_switch_points(curr_type, clock_network, switches, loc_data);
         }
 
-        // Currently their is only support for ribs and spines
+        // Parse clock_switch_grid
+        curr_type = get_single_child(curr_network, "clock_switch_grid", loc_data, ReqOpt::OPTIONAL);
+        if (curr_type) {
+            expect_only_attributes(curr_type, expected_switch_grid_attributes, loc_data);
+
+            is_supported_clock_type = true;
+            clock_network.type = e_clock_type::SWITCH_GRID;
+
+            std::string metal_layer(get_attribute(curr_type, "metal_layer", loc_data).value());
+            std::string startx(get_attribute(curr_type, "startx", loc_data).value());
+            std::string starty(get_attribute(curr_type, "starty", loc_data).value());
+            std::string chan_w(get_attribute(curr_type, "chan_w", loc_data).value());
+
+            const char* switch_name = get_attribute(curr_type, "switch_name", loc_data).value();
+            int grid_switch_idx = find_switch_by_name(switches, switch_name);
+            if (grid_switch_idx < 0) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_type),
+                               vtr::string_fmt("'%s' is not a valid switch name.\n", switch_name).c_str());
+            }
+
+            std::string repeatx = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL).as_string("W");
+            std::string repeaty = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL).as_string("H");
+
+            clock_network.switch_grid.metal_layer = metal_layer;
+            clock_network.switch_grid.startx = startx;
+            clock_network.switch_grid.starty = starty;
+            clock_network.switch_grid.repeatx = repeatx;
+            clock_network.switch_grid.repeaty = repeaty;
+            clock_network.switch_grid.chan_w = chan_w;
+            clock_network.switch_grid.switch_name = switch_name;
+            clock_network.switch_grid.arch_switch_idx = grid_switch_idx;
+
+            std::string directionality_str = get_attribute(curr_type, "directionality", loc_data).as_string();
+            e_directionality directionality;
+            if (directionality_str == "bidir") {
+                directionality = BI_DIRECTIONAL;
+            } else if (directionality_str == "unidir") {
+                directionality = UNI_DIRECTIONAL;
+            } else {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_type),
+                               vtr::string_fmt("Unknown directionality '%s' for clock_switch_grid. "
+                                               "Expected one of: bidir, unidir.\n",
+                                               directionality_str.c_str())
+                                   .c_str());
+            }
+            clock_network.switch_grid.directionality = directionality;
+
+            std::string switch_block_type_str = get_attribute(curr_type, "switch_block_type", loc_data, ReqOpt::OPTIONAL).as_string("full");
+            e_switch_block_type switch_block_type = switch_block_type_from_str(switch_block_type_str);
+            if (switch_block_type == e_switch_block_type::UNKNOWN) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_type),
+                               vtr::string_fmt("Unknown switch_block_type '%s' for clock_switch_grid. "
+                                               "Expected one of: full, subset, wilton, universal, custom.\n",
+                                               switch_block_type_str.c_str())
+                                   .c_str());
+            }
+            clock_network.switch_grid.switch_block_type = switch_block_type;
+            if (switch_block_type == e_switch_block_type::CUSTOM) {
+                process_clock_switch_grid_patterns(curr_type, clock_network, directionality, arch, loc_data);
+            }
+
+            clock_network.switch_grid.length = get_attribute(curr_type, "length", loc_data, ReqOpt::OPTIONAL).as_string("1");
+
+            process_clock_switch_grid_points(curr_type, clock_network, switches, loc_data);
+        }
+
+        // Currently their is only support for ribs, spines, and switch grids
         if (!is_supported_clock_type) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_type),
                            vtr::string_fmt("Found no supported clock network type for '%s' clock network.\n"
-                                           "Currently there is only support for rib and spine networks.\n",
+                                           "Currently there is only support for rib, spine, and clock_switch_grid networks.\n",
                                            name.c_str())
                                .c_str());
         }
@@ -4809,6 +4883,8 @@ static void process_clock_networks(pugi::xml_node parent,
     }
 }
 
+/// @brief Parses the <switch_point> children of a rib/spine <clock_network> (its drive
+/// and tap points) into clock_network.drive/clock_network.tap.
 static void process_clock_switch_points(pugi::xml_node parent,
                                         t_clock_network_arch& clock_network,
                                         const std::vector<t_arch_switch_inf>& switches,
@@ -4822,11 +4898,10 @@ static void process_clock_switch_points(pugi::xml_node parent,
     int num_clock_switches = count_children(parent, "switch_point", loc_data);
     pugi::xml_node curr_switch = get_first_child(parent, "switch_point", loc_data);
 
-    //TODO: currently only supporting one drive and one tap. Should change to support
-    //      multiple taps
-    VTR_ASSERT(switches.size() != 2);
+    // TODO: currently only supporting one drive and one tap per rib/spine. Should change
+    // to support multiple taps.
 
-    //TODO: ensure switch name is unique for every switch of this clock network
+    // TODO: ensure switch name is unique for every switch of this clock network
     for (int i = 0; i < num_clock_switches; i++) {
         expect_only_children(curr_switch, expected_children, loc_data);
 
@@ -4867,12 +4942,12 @@ static void process_clock_switch_points(pugi::xml_node parent,
             if (clock_network.type == e_clock_type::SPINE) {
                 expect_only_attributes(curr_switch, expected_spine_tap_attributes, loc_data);
                 offset = get_attribute(curr_switch, "yoffset", loc_data).value();
-                increment = get_attribute(curr_switch, "yincr", loc_data).value();
+                increment = get_attribute(curr_switch, "yincr", loc_data, ReqOpt::OPTIONAL).as_string("0");
             } else {
                 VTR_ASSERT(clock_network.type == e_clock_type::RIB);
                 expect_only_attributes(curr_switch, expected_rib_tap_attributes, loc_data);
                 offset = get_attribute(curr_switch, "xoffset", loc_data).value();
-                increment = get_attribute(curr_switch, "xincr", loc_data).value();
+                increment = get_attribute(curr_switch, "xincr", loc_data, ReqOpt::OPTIONAL).as_string("0");
             }
 
             tap.name = name;
@@ -4892,6 +4967,167 @@ static void process_clock_switch_points(pugi::xml_node parent,
     }
 }
 
+/// @brief Parses the <switch_point> children of a <clock_switch_grid> (its drive and tap
+/// points) into clock_network.switch_grid.switch_points.
+static void process_clock_switch_grid_points(pugi::xml_node parent,
+                                             t_clock_network_arch& clock_network,
+                                             const std::vector<t_arch_switch_inf>& switches,
+                                             pugiutil::loc_data& loc_data) {
+    std::vector<std::string> expected_drive_attributes = {"name", "type", "xoffset", "yoffset", "switch_name"};
+    std::vector<std::string> expected_tap_attributes = {"name", "type", "xoffset", "yoffset", "xincr", "yincr"};
+    std::vector<std::string> expected_children = {"switch_point"};
+
+    int num_switch_points = count_children(parent, "switch_point", loc_data);
+    pugi::xml_node curr_switch = get_first_child(parent, "switch_point", loc_data);
+
+    for (int i = 0; i < num_switch_points; i++) {
+        expect_only_children(curr_switch, expected_children, loc_data);
+
+        std::string switch_type(get_attribute(curr_switch, "type", loc_data).value());
+
+        t_clock_switch_grid_point point;
+        point.name = get_attribute(curr_switch, "name", loc_data).value();
+
+        if (switch_type == "drive") {
+            expect_only_attributes(curr_switch, expected_drive_attributes, loc_data);
+
+            point.type = e_clock_switch_grid_point_type::DRIVE;
+            point.xoffset = get_attribute(curr_switch, "xoffset", loc_data).value();
+            point.yoffset = get_attribute(curr_switch, "yoffset", loc_data).value();
+
+            const char* switch_name = get_attribute(curr_switch, "switch_name", loc_data).value();
+            int switch_idx = find_switch_by_name(switches, switch_name);
+            if (switch_idx < 0) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_switch),
+                               vtr::string_fmt("'%s' is not a valid switch name.\n", switch_name).c_str());
+            }
+            point.arch_switch_idx = switch_idx;
+
+        } else if (switch_type == "tap") {
+            expect_only_attributes(curr_switch, expected_tap_attributes, loc_data);
+
+            point.type = e_clock_switch_grid_point_type::TAP;
+            point.xoffset = get_attribute(curr_switch, "xoffset", loc_data).value();
+            point.yoffset = get_attribute(curr_switch, "yoffset", loc_data).value();
+            point.xincr = get_attribute(curr_switch, "xincr", loc_data, ReqOpt::OPTIONAL).as_string("0");
+            point.yincr = get_attribute(curr_switch, "yincr", loc_data, ReqOpt::OPTIONAL).as_string("0");
+
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_switch),
+                           vtr::string_fmt("Found unsupported switch type for '%s' clock network.\n"
+                                           "Currently there is only support for drive and tap switch types.\n",
+                                           clock_network.name.c_str())
+                               .c_str());
+        }
+
+        clock_network.switch_grid.switch_points.push_back(point);
+
+        curr_switch = curr_switch.next_sibling(curr_switch.name());
+    }
+}
+
+// Parses the <switch_pattern> children of a clock_switch_grid whose
+// switch_block_type is "custom". Independent of general routing's
+// <switchblocklist>/<switch_block type="custom">; a separate XML location,
+// struct (t_clock_switch_pattern), and name namespace.
+static void process_clock_switch_grid_patterns(pugi::xml_node parent,
+                                               t_clock_network_arch& clock_network,
+                                               e_directionality directionality,
+                                               t_arch* arch,
+                                               pugiutil::loc_data& loc_data) {
+    std::vector<std::string> expected_attributes = {"name", "type", "location",
+                                                    "x", "y",
+                                                    "startx", "endx", "repeatx", "incrx",
+                                                    "starty", "endy", "repeaty", "incry"};
+
+    int num_patterns = count_children(parent, "switch_pattern", loc_data);
+    if (num_patterns == 0) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(parent),
+                       vtr::string_fmt("clock_switch_grid '%s' has switch_block_type=\"custom\" but no "
+                                       "<switch_pattern> children were found.\n",
+                                       clock_network.name.c_str())
+                           .c_str());
+    }
+
+    pugi::xml_node curr_pattern = get_first_child(parent, "switch_pattern", loc_data);
+    for (int i = 0; i < num_patterns; i++) {
+        expect_only_attributes(curr_pattern, expected_attributes, loc_data);
+
+        t_clock_switch_pattern pattern;
+        pattern.name = get_attribute(curr_pattern, "name", loc_data, ReqOpt::OPTIONAL).as_string("");
+
+        std::string type_str(get_attribute(curr_pattern, "type", loc_data).value());
+        pattern.switch_block_type = switch_block_type_from_str(type_str);
+        if (pattern.switch_block_type == e_switch_block_type::UNKNOWN) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_pattern),
+                           vtr::string_fmt("Unknown switch_pattern type '%s' for clock_switch_grid '%s'. "
+                                           "Expected one of: full, subset, wilton, universal, custom.\n",
+                                           type_str.c_str(), clock_network.name.c_str())
+                               .c_str());
+        }
+
+        if (pattern.switch_block_type != e_switch_block_type::CUSTOM) {
+            expect_only_children(curr_pattern, {}, loc_data);
+        } else {
+            expect_only_children(curr_pattern, {"switchfuncs"}, loc_data);
+
+            pugi::xml_node switchfuncs_node = get_single_child(curr_pattern, "switchfuncs", loc_data, ReqOpt::OPTIONAL);
+            if (!switchfuncs_node) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_pattern),
+                               vtr::string_fmt("switch_pattern '%s' for clock_switch_grid '%s' has "
+                                               "type=\"custom\" but no <switchfuncs> child was found.\n",
+                                               pattern.name.c_str(), clock_network.name.c_str())
+                                   .c_str());
+            }
+
+            // Reuse general routing's own <switchblock> permutation-formula
+            // machinery verbatim (parse_switchblocks.h): read_sb_switchfuncs
+            // parses every <func type="lr" formula="..."/> into a
+            // t_permutation_map, and check_switchblock validates it for
+            // BI_DIRECTIONAL, rejecting a pattern that specifies both
+            // side1->side2 and side2->side1 (the reverse is implicit, derived
+            // by mirroring the computed edge at RR-graph build time, not by
+            // evaluating a second formula).
+            t_switchblock_inf scratch_sb;
+            scratch_sb.directionality = directionality;
+            read_sb_switchfuncs(switchfuncs_node, scratch_sb, loc_data);
+            check_switchblock(scratch_sb, arch);
+            pattern.permutation_map = std::move(scratch_sb.permutation_map);
+        }
+
+        std::string location_str = get_attribute(curr_pattern, "location", loc_data, ReqOpt::OPTIONAL).as_string("everywhere");
+        if (location_str == "everywhere") {
+            pattern.location = e_sb_location::E_EVERYWHERE;
+        } else if (location_str == "xy_specified") {
+            pattern.location = e_sb_location::E_XY_SPECIFIED;
+
+            pattern.x = get_attribute(curr_pattern, "x", loc_data, ReqOpt::OPTIONAL).as_string("");
+            pattern.y = get_attribute(curr_pattern, "y", loc_data, ReqOpt::OPTIONAL).as_string("");
+
+            pattern.startx = get_attribute(curr_pattern, "startx", loc_data, ReqOpt::OPTIONAL).as_string("0");
+            pattern.endx = get_attribute(curr_pattern, "endx", loc_data, ReqOpt::OPTIONAL).as_string("W-1");
+            pattern.repeatx = get_attribute(curr_pattern, "repeatx", loc_data, ReqOpt::OPTIONAL).as_string("0");
+            pattern.incrx = get_attribute(curr_pattern, "incrx", loc_data, ReqOpt::OPTIONAL).as_string("1");
+
+            pattern.starty = get_attribute(curr_pattern, "starty", loc_data, ReqOpt::OPTIONAL).as_string("0");
+            pattern.endy = get_attribute(curr_pattern, "endy", loc_data, ReqOpt::OPTIONAL).as_string("H-1");
+            pattern.repeaty = get_attribute(curr_pattern, "repeaty", loc_data, ReqOpt::OPTIONAL).as_string("0");
+            pattern.incry = get_attribute(curr_pattern, "incry", loc_data, ReqOpt::OPTIONAL).as_string("1");
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_pattern),
+                           vtr::string_fmt("Unknown switch_pattern location '%s' for clock_switch_grid '%s'. "
+                                           "Expected one of: everywhere, xy_specified.\n",
+                                           location_str.c_str(), clock_network.name.c_str())
+                               .c_str());
+        }
+
+        clock_network.switch_grid.switch_patterns.push_back(pattern);
+
+        curr_pattern = curr_pattern.next_sibling(curr_pattern.name());
+    }
+}
+
+/// @brief Parses the <clock_routing>'s <tap> children into clock_connections.
 static void process_clock_routing(pugi::xml_node parent,
                                   std::vector<t_clock_connection_arch>& clock_connections,
                                   const std::vector<t_arch_switch_inf>& switches,

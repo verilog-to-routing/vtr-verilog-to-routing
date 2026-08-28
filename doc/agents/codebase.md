@@ -6,6 +6,7 @@
 |-----------|---------|
 | `vpr/` | Core FPGA CAD tool: pack, place, route, timing |
 | `parmys/` | Yosys-based synthesis frontend (replaces Odin) |
+| `mosaic/` | Yosys mosaic frontend (`-start mosaic`; see `mosaic/README.md`) |
 | `odin_ii/` | Legacy synthesis frontend (disabled by default) |
 | `abc/` | Logic optimization (external, do not modify directly) |
 | `ace2/` | Activity estimation for power analysis |
