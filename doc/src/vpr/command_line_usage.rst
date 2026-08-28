@@ -567,6 +567,14 @@ Use the options below to override this default naming behaviour.
 
     * The x, y, and sub_tile location of the cluster that contains this atom.
 
+.. option:: --flat_place_verbose {on | off}
+
+    Appends a ``site_path`` column to written flat placement files
+    (see :ref:`flat placement file format <vpr_flat_place_file>`): the hierarchical
+    path of the primitive each atom was placed on within its cluster.
+
+    **Default:** ``off``
+
 .. _netlist_options:
 
 Netlist Options

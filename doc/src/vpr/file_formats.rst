@@ -727,12 +727,16 @@ multiple clusters can be stacked there). A sub-tile of -1 may be used when
 the sub-tile of an atom is unknown (allowing the packing algorithm to choose
 any sub-tile at the given (x, y, layer) location).
 
-Lines written by VPR (:option:`vpr --write_flat_place`) carry an additional ``site_path``
-column:
+Lines written by VPR (:option:`vpr --write_flat_place`) carry two additional columns:
+the cluster block number the atom was packed into and the primitive type it was placed
+on. With :option:`vpr --flat_place_verbose` a third column is appended, the path of that
+primitive:
 
 .. code-block:: none
 
-        n523  6 8 0 0 #12 lut6 site_path=clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
+        <atom_name> <x> <y> <layer> <atom_sub_tile> #<clb_blk_id> <atom_pb_type> <site_path>
+
+        n523  6 8 0 0 #12 lut6 clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
 
 ``site_path`` is the hierarchical path of the primitive the atom was placed on within its
 cluster (``t_pb_graph_node::hierarchical_type_name()``), including the mode selected at each
