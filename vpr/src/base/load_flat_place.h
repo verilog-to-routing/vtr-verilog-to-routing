@@ -38,11 +38,16 @@ struct t_vpr_setup;
  *                  The locations of all of the blocks in the cluster_netlist.
  *  @param atoms_lookup
  *                  A lookup between each cluster and the atoms within it.
+ *  @param flat_place_verbose
+ *                  Whether to append a site_path column to each atom's line:
+ *                  the hierarchical path of the primitive the atom was placed
+ *                  on within its cluster (see --flat_place_verbose).
  */
 void write_flat_placement(const char* flat_place_file_path,
                           const ClusteredNetlist& cluster_netlist,
                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
-                          const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup);
+                          const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup,
+                          bool flat_place_verbose);
 
 /**
  * @brief Reads a flat placement file generated from a previous run of VTR or
