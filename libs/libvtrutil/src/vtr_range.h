@@ -53,7 +53,7 @@ class Range {
     ///@brief Return an iterator to the end of the range (immutable)
     constexpr const T end() const noexcept { return end_; }
     ///@brief Return true if empty
-    constexpr bool empty() noexcept { return begin_ == end_; }
+    constexpr bool empty() const noexcept { return begin_ == end_; }
     ///@brief Return the range size
     constexpr size_t size() const { return std::distance(begin_, end_); }
 
