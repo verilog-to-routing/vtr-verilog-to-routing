@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py C:/Users/OscarPC/source/repos/OpenFPGA/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: C:\Users\OscarPC\source\repos\OpenFPGA\vtr-verilog-to-routing\libs\librrgraph\src\io\rr_graph.xsd
- * md5sum of input file: f991ca82094c66d88dc58873b07cadda
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: 4b2ef78f43cba03933974d33ee053c65
  */
 
 #include <functional>
@@ -245,8 +245,8 @@ constexpr const char *atok_lookup_t_sizing[] = {"buf_size", "mux_trans_size"};
 
 enum class gtok_t_switch {TIMING, SIZING};
 constexpr const char *gtok_lookup_t_switch[] = {"timing", "sizing"};
-enum class atok_t_switch {ID, NAME, TEMPLATE_ID, TYPE};
-constexpr const char *atok_lookup_t_switch[] = {"id", "name", "template_id", "type"};
+enum class atok_t_switch {ID, NAME, TYPE};
+constexpr const char *atok_lookup_t_switch[] = {"id", "name", "type"};
 
 enum class gtok_t_switches {SWITCH};
 constexpr const char *gtok_lookup_t_switches[] = {"switch"};
@@ -668,29 +668,6 @@ inline atok_t_switch lex_attr_t_switch(const char *in, const std::function<void(
 		break;
 		case onechar('t', 0, 32) | onechar('y', 8, 32) | onechar('p', 16, 32) | onechar('e', 24, 32):
 			return atok_t_switch::TYPE;
-		break;
-		default: break;
-		}
-		break;
-	case 11:
-		switch(*((triehash_uu64*)&in[0])){
-		case onechar('t', 0, 64) | onechar('e', 8, 64) | onechar('m', 16, 64) | onechar('p', 24, 64) | onechar('l', 32, 64) | onechar('a', 40, 64) | onechar('t', 48, 64) | onechar('e', 56, 64):
-			switch(in[8]){
-			case onechar('_', 0, 8):
-				switch(in[9]){
-				case onechar('i', 0, 8):
-					switch(in[10]){
-					case onechar('d', 0, 8):
-						return atok_t_switch::TEMPLATE_ID;
-					break;
-					default: break;
-					}
-				break;
-				default: break;
-				}
-			break;
-			default: break;
-			}
 		break;
 		default: break;
 		}
@@ -2427,7 +2404,7 @@ inline void load_sizing_required_attributes(const pugi::xml_node &root, float * 
 }
 
 inline void load_switch_required_attributes(const pugi::xml_node &root, int * id, const std::function<void(const char *)> * report_error){
-	std::bitset<4> astate = 0;
+	std::bitset<3> astate = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_switch in = lex_attr_t_switch(attr.name(), report_error);
 		if(astate[(int)in] == 0) astate[(int)in] = 1;
@@ -2439,16 +2416,13 @@ inline void load_switch_required_attributes(const pugi::xml_node &root, int * id
 		case atok_t_switch::NAME:
 			/* Attribute name set after element init */
 			break;
-		case atok_t_switch::TEMPLATE_ID:
-			/* Attribute template_id set after element init */
-			break;
 		case atok_t_switch::TYPE:
 			/* Attribute type set after element init */
 			break;
 		default: break; /* Not possible. */
 		}
 	}
-	std::bitset<4> test_astate = astate | std::bitset<4>(0b1100);
+	std::bitset<3> test_astate = astate | std::bitset<3>(0b100);
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_switch, report_error);
 }
 
@@ -2918,9 +2892,6 @@ inline void load_switch(const pugi::xml_node &root, T &out, Context &context, co
 			break;
 		case atok_t_switch::NAME:
 			out.set_switch_name(attr.value(), context);
-			break;
-		case atok_t_switch::TEMPLATE_ID:
-			out.set_switch_template_id(attr.value(), context);
 			break;
 		case atok_t_switch::TYPE:
 			out.set_switch_type(lex_enum_switch_type(attr.value(), true, report_error), context);
@@ -4107,8 +4078,6 @@ inline void write_switches(T &in, std::ostream &os, Context &context){
 			os << "<switch";
 			os << " id=\"" << in.get_switch_id(child_context) << "\"";
 			os << " name=\"" << in.get_switch_name(child_context) << "\"";
-			if((bool)in.get_switch_template_id(child_context))
-				os << " template_id=\"" << in.get_switch_template_id(child_context) << "\"";
 			if((bool)in.get_switch_type(child_context))
 				os << " type=\"" << lookup_switch_type[(int)in.get_switch_type(child_context)] << "\"";
 			os << ">";

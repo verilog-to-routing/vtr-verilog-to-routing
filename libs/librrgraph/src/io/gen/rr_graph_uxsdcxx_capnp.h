@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcap.py C:/Users/OscarPC/source/repos/OpenFPGA/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: C:\Users\OscarPC\source\repos\OpenFPGA\vtr-verilog-to-routing\libs\librrgraph\src\io\rr_graph.xsd
- * md5sum of input file: f991ca82094c66d88dc58873b07cadda
+ * Cmdline: uxsdcxx/uxsdcap.py /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: 4b2ef78f43cba03933974d33ee053c65
  */
 
 #include <functional>
@@ -554,7 +554,6 @@ inline void load_switch_capnp_type(const ucap::Switch::Reader &root, T &out, Con
 	(void)stack;
 
 	out.set_switch_name(root.getName().cStr(), context);
-	out.set_switch_template_id(root.getTemplateId().cStr(), context);
 	out.set_switch_type(conv_enum_switch_type(root.getType(), report_error), context);
 	stack->push_back(std::make_pair("getTiming", 0));
 	if (root.hasTiming()) {
@@ -1087,8 +1086,6 @@ inline void write_switches_capnp_type(T &in, ucap::Switches::Builder &root, Cont
 		auto child_context = in.get_switches_switch(i, context);
 		switches_switch.setId(in.get_switch_id(child_context));
 		switches_switch.setName(in.get_switch_name(child_context));
-		if((bool)in.get_switch_template_id(child_context))
-			switches_switch.setTemplateId(in.get_switch_template_id(child_context));
 		if((bool)in.get_switch_type(child_context))
 			switches_switch.setType(conv_to_enum_switch_type(in.get_switch_type(child_context)));
 		write_switch_capnp_type(in, switches_switch, child_context);

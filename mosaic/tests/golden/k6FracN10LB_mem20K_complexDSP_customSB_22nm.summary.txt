@@ -1,0 +1,13 @@
+archName: k6FracN10LB_mem20K_complexDSP_customSB_22nm
+vtrRamAbits: 11
+dspMaxWidth: 27
+dspMinWidth: 9
+multiplyPresent: 1
+adderPresent: 1
+adderCarryChain: 1
+multiplyModes: 9 18 27
+lutK: 6
+lutK1: 4
+bramModeCount: 5
+clockedModelCount: 23
+hardblockModelCount: 29
