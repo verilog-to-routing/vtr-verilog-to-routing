@@ -109,46 +109,19 @@ void stable_radix_sort_passes(Container& items, Container& scratch, const KeyTup
 } // namespace detail
 
 /**
- * @brief Stable LSD radix sort of a container in place by several keys.
- *
- * keys are listed from the most significant to the least significant. The
- * result is the same as a std::stable_sort by the tuple of keys, but it is
- * computed as one stable counting sort pass per key, least significant
- * key first.
- *
- * scratch must have the same size as items and is left holding unspecified contents.
- *
- * Example, sorting edges by (source node, destination node):
- *
- *     vtr::stable_radix_sort(edges, scratch,
- *                            vtr::sort_key(num_nodes, [&](RREdgeId e) { return src_node[e]; }),
- *                            vtr::sort_key(num_nodes, [&](RREdgeId e) { return dest_node[e]; }));
- */
-template<typename Container, typename... KeyFns>
-void stable_radix_sort(Container& items, Container& scratch, const sort_key<KeyFns>&... keys) {
-    detail::stable_radix_sort_passes(items, scratch, std::tie(keys...), std::index_sequence_for<KeyFns...>{});
-}
-
-/**
- * @brief Stable LSD radix sort of a container in place, allocating the scratch buffer internally.
- *
- * Container must be constructible from an element count, and the element type
- * must be default constructible. Call the overload taking a scratch buffer
- * instead to reuse one buffer across several sorts.
- */
-template<typename Container, typename... KeyFns>
-void stable_radix_sort(Container& items, const sort_key<KeyFns>&... keys) {
-    // Only the size of scratch matters. Its contents are overwritten by the first pass.
-    Container scratch(std::size(items));
-    stable_radix_sort(items, scratch, keys...);
-}
-
-/**
  * @brief Stable LSD radix sort of [first, last) into out by several keys.
  *
  * out must already have (last - first) elements. keys are listed from the
- * most significant to the least significant. The input is read directly, so
- * a generated sequence such as a vtr::StrongIdRange needs no copy first.
+ * most significant to the least significant. The result is the same as a
+ * std::stable_sort by the tuple of keys, but it is computed as one stable
+ * counting sort pass per key, least significant key first. The input is read
+ * directly, so a generated sequence such as a vtr::StrongIdRange needs no copy first.
+ *
+ * Example, sorting edges by (source node, destination node):
+ *
+ *     vtr::stable_radix_sort(edges.begin(), edges.end(), sorted_edges,
+ *                            vtr::sort_key(num_nodes, [&](RREdgeId e) { return src_node[e]; }),
+ *                            vtr::sort_key(num_nodes, [&](RREdgeId e) { return dest_node[e]; }));
  */
 template<typename InIt, typename Container, typename... KeyFns>
     requires std::forward_iterator<InIt>
