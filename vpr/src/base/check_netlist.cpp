@@ -37,8 +37,9 @@ static int check_for_duplicated_names();
  * @brief Checks that the connections into and out of the clb make sense.
  *
  * A block with a single connection is flagged: an input-only block is hanging
- * logic that should have been swept, and an output-only block is likely a
- * constant generator.
+ * logic that should have been swept (removed before packing by iteratively
+ * deleting primitives, nets, and I/Os that have no path to a primary output),
+ * and an output-only block is likely a constant generator.
  */
 static int check_clb_conn(ClusterBlockId iblk,
                           int num_conn,
@@ -127,10 +128,10 @@ void check_netlist(int verbosity, const t_arch& arch) {
         }
     }
 
-    VTR_LOGV_WARN(num_output_only_blocks > 0,
-                  "Found %d logic block(s) with only 1 output pin and no inputs; they may be constant generators%s\n",
-                  num_output_only_blocks,
-                  verbosity > 2 ? "" : " (run with --pack_verbosity 3 to list them)");
+    VTR_LOGV(num_output_only_blocks > 0,
+             "Found %d logic block(s) with only 1 output pin and no inputs; they may be constant generators%s\n",
+             num_output_only_blocks,
+             verbosity > 2 ? "" : " (run with --pack_verbosity 3 to list them)");
     VTR_LOGV_WARN(num_input_only_blocks > 0,
                   "Found %d logic block(s) with only 1 input pin; the whole block is hanging logic that should be swept%s\n",
                   num_input_only_blocks,
@@ -211,11 +212,11 @@ static int check_clb_conn(ClusterBlockId iblk,
             if (pin_type == PinType::DRIVER && !clb_nlist.block_contains_primary_input(iblk)) {
                 // Output only and not a Primary-Input block
                 ++num_output_only_blocks;
-                VTR_LOGV_WARN(verbosity > 2,
-                              "Logic block #%d (%s) has only 1 output pin '%s'."
-                              " It may be a constant generator.\n",
-                              iblk, clb_nlist.block_name(iblk).c_str(),
-                              clb_nlist.pin_name(pin_id).c_str());
+                VTR_LOGV(verbosity > 2,
+                         "Logic block #%d (%s) has only 1 output pin '%s'."
+                         " It may be a constant generator.\n",
+                         iblk, clb_nlist.block_name(iblk).c_str(),
+                         clb_nlist.pin_name(pin_id).c_str());
             }
 
             break;
