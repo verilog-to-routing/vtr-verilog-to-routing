@@ -2066,6 +2066,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "VPR's (or reconstructed external) placement solution after legalization and before anneal in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument<bool, ParseOnOff>(args.flat_place_verbose, "--flat_place_verbose")
+        .help(
+            "Appends a site_path column to written flat placement files: the hierarchical path of the primitive each atom was placed on within its cluster.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")
         .help(
             "Reads the lookahead data from the specified file instead of computing it.")
