@@ -57,8 +57,8 @@ if (VPR_USE_EZGL STREQUAL "on")
     endif()
 endif ()
 
-# The VTR root CMakeFile initializes the WITH_PARMYS
-if (${WITH_PARMYS})
+# The VTR root CMakeFile sets WITH_YOSYS when parmys and/or mosaic is enabled
+if (${WITH_YOSYS})
 
 	cmake_minimum_required(VERSION 3.16)
 
@@ -91,15 +91,18 @@ if (${WITH_PARMYS})
 	)
 
 	# how to build the result of the library
+	# ENABLE_ABC=1 builds yosys's in-yosys abc pass so the mosaic
+	# synthesis template can run `abc` inside yosys. this is yosys's own
+	# bundled abc submodule; vtr's standalone abc binary is unaffected.
 	add_custom_command(OUTPUT ${YOSYS_BUILD_DIR}
 		COMMAND ${MAKE_PROGRAM} -C ${YOSYS_SRC_DIR}
-		    ENABLE_ABC=0
+		    ENABLE_ABC=1
 		    PREFIX=${CMAKE_BINARY_DIR}
             > /dev/null 2>&1
-		 COMMAND ${MAKE_PROGRAM} 
+		 COMMAND ${MAKE_PROGRAM}
 		    -C ${YOSYS_SRC_DIR}
 		    install
-		    ENABLE_ABC=0
+		    ENABLE_ABC=1
 		    PREFIX=${CMAKE_BINARY_DIR}
             > /dev/null 2>&1
 		WORKING_DIRECTORY ${YOSYS_SRC_DIR})
