@@ -10,8 +10,10 @@ sphinx:
   builder: dirhtml
   configuration: doc/src/conf.py
 
-# Optionally build your docs in additional formats such as PDF and ePub
-formats: all
+# Only the HTML site is published. Building htmlzip/PDF/epub as well roughly
+# quadrupled the work (each is a separate full Sphinx run) and pushed the build
+# past Read the Docs' time limit. Re-add specific formats here if they are needed.
+formats: []
 
 # Optionally set the version of Python and requirements required to build your docs
 build:
