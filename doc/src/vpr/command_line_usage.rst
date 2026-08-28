@@ -635,6 +635,9 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
     Controls the verbosity of netlist processing (constant generator detection, swept netlist components).
     High values produce more detailed output.
 
+    At ``1`` (the default) only summary counts are printed.
+    At ``2`` or higher the individual netlist components are also listed by name (e.g. every constant generator found while loading the circuit).
+
     **Default**: ``1``
 
 .. _packing_options:

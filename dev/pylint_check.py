@@ -23,6 +23,7 @@ repo_path = pathlib.Path(__file__).parent.parent.absolute()
 paths_to_lint = [
     (repo_path, False),
     (repo_path / "dev", True),
+    (repo_path / "mosaic", True),
     (repo_path / "odin_ii", True),
     (repo_path / "ace2", True),
     (repo_path / "doc", True),
