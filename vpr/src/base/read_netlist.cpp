@@ -1049,8 +1049,11 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist,
 
             if (tile_type->is_ignored_pin[physical_pin] != is_ignored_net) {
                 ++num_mixed_global_nets;
+                // The net reaches an ignored (global) pin, so the whole net is
+                // treated as global and left unrouted; its non-global sinks get
+                // ideal (zero) delay instead of a routed connection.
                 VTR_LOGV_WARN(verbosity > 2,
-                              "Netlist connects net %s to both global and non-global pins.\n",
+                              "Net '%s' connects both routed pins and ignored (global) pins; it will be treated as global and left unrouted, with ideal delay on its non-global sinks.\n",
                               clb_nlist.net_name(net_id).c_str());
                 break;
             }
@@ -1058,9 +1061,10 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist,
     }
 
     VTR_LOGV_WARN(num_mixed_global_nets > 0,
-                  "Found %d net(s) connected to both global and non-global pins%s\n",
+                  "Found %d net(s) mixing routed and ignored pins; these are left unrouted with ideal delay. "
+                  "This is expected for clock nets under --clock_modeling ideal; use --clock_modeling route or dedicated_network to route them.%s\n",
                   num_mixed_global_nets,
-                  verbosity > 2 ? "" : " (run with --pack_verbosity 3 to list them)");
+                  verbosity > 2 ? "" : " (run with --pack_verbosity 3 to list the nets)");
 }
 
 static void mark_constant_generators(const ClusteredNetlist& clb_nlist, int verbosity) {
