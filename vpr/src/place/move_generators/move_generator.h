@@ -147,6 +147,24 @@ class MoveGenerator {
     virtual void process_outcome(double /*reward*/, e_reward_function /*reward_fun*/) {}
 
     /**
+     * @brief Returns an identifier for the internal decision ("arm") behind the
+     * most recent propose_move(). Only meaningful for RL-agent based generators.
+     * Capturing it after each proposal and restoring it before the matching
+     * outcome lets a caller interleave proposals and still replay outcomes in order.
+     */
+    virtual size_t get_last_action() const { return 0; }
+
+    /// @brief Restores the action identifier captured by get_last_action().
+    virtual void set_last_action(size_t /*action*/) {}
+
+    /**
+     * @brief Copies the RL agent's Q-values from `other`, which must be
+     * a generator of the same concrete type, so a replica proposes exactly
+     * what the master would.
+     */
+    virtual void sync_state_from(const MoveGenerator& /*other*/) {}
+
+    /**
      * @brief Calculates the agent's reward and the total process outcome
      *
      * @param move_outcome_stats Contains information about how much each cost term
