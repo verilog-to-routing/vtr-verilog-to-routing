@@ -9,19 +9,22 @@ circuits_dir=benchmarks/verilog
 archs_dir=arch/timing
 
 # Add circuits to list to sweep
-circuit_list_add=sha.v
+circuit_list_add=ch_intrinsics_nolatches.v
+circuit_list_add=diffeq1.v
+circuit_list_add=multiclock_reader_writer.v
 
 # Add architectures to list to sweep
 arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
 
 # Parse info and how to parse
-parse_file=vpr_fixed_chan_width.txt
+parse_file=vpr_standard.txt
 
 # How to parse QoR info
 qor_parse_file=qor_standard.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements_fixed_chan_width.txt
+pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params=-track_memory_usage --route_chan_width 300 --memoize_cluster_packings on
+script_params_common = -track_memory_usage -start mosaic -verilator_check -verilator_check_vectors 20000
+script_params_list_add =

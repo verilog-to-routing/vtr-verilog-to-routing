@@ -2,8 +2,11 @@
 
 /** @file Header implementations for templated net routing fns. */
 
+#include "device_grid.h"
+#include "physical_types.h"
 #include "route_net.h"
 
+#include <algorithm>
 #include <tuple>
 
 #include "connection_based_routing.h"
@@ -130,9 +133,83 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
                                                         is_flat);
     }
 
-    // compare the criticality of different sink nodes
-    std::stable_sort(begin(remaining_targets), end(remaining_targets), [&](int a, int b) {
-        return pin_criticality[a] > pin_criticality[b];
+    // Determines the order remaining_targets is routed in. Starts as a copy of
+    // pin_criticality, but may be further adjusted (e.g. for interposer die crossings
+    // below) to influence routing order without disturbing pin_criticality itself,
+    // which is also used downstream (e.g. cost_params.criticality) to drive the
+    // router's cost function.
+    std::vector<float> pin_sort_priority = pin_criticality;
+
+    const DeviceGrid& device_grid = device_ctx.grid;
+    bool has_interposer_cuts = device_grid.has_interposer_cuts();
+    bool has_multiple_layers = device_grid.get_num_layers() > 1;
+
+    if (has_interposer_cuts || has_multiple_layers) {
+        // Sort-priority terms for sinks that cross a die boundary (an interposer cut in
+        // the x/y plane, or a layer boundary in the z direction for 3D stacked devices).
+        // die_crossing_multiplier rewards any die crossing; die_alignment_multiplier additionally
+        // rewards being inline with the driver across the crossed boundary (scaled down to
+        // 0 as the offset perpendicular to that boundary grows, see dx/dy below).
+        static constexpr float die_crossing_multiplier = 0.0f;
+        static constexpr float die_alignment_multiplier = 0.5f;
+
+        RRNodeId driver_rr = route_ctx.net_rr_terminals[net_id][0];
+        t_physical_tile_loc driver_loc(rr_graph.node_xlow(driver_rr),
+                                       rr_graph.node_ylow(driver_rr),
+                                       rr_graph.node_layer_low(driver_rr));
+
+        // net_bb is used to normalize the die-alignment term below. Note it is slightly
+        // larger than the net's true pin bounding box, since it is expanded by bb_factor
+        // for routing search purposes.
+        int bb_width = net_bb.xmax - net_bb.xmin;
+        int bb_height = net_bb.ymax - net_bb.ymin;
+        int bb_planar = bb_width + bb_height;
+
+        for (int ipin : remaining_targets) {
+            RRNodeId sink_rr = route_ctx.net_rr_terminals[net_id][ipin];
+            t_physical_tile_loc sink_loc(rr_graph.node_xlow(sink_rr),
+                                         rr_graph.node_ylow(sink_rr),
+                                         rr_graph.node_layer_low(sink_rr));
+
+            bool crosses_vertical = has_interposer_cuts && device_grid.do_locs_cross_vertical_cut(driver_loc, sink_loc);
+            bool crosses_horizontal = has_interposer_cuts && device_grid.do_locs_cross_horizontal_cut(driver_loc, sink_loc);
+            bool crosses_planar = has_multiple_layers && (driver_loc.layer_num != sink_loc.layer_num);
+
+            if (crosses_vertical || crosses_horizontal || crosses_planar) {
+                pin_sort_priority[ipin] += die_crossing_multiplier;
+
+                int dx = std::abs(driver_loc.x - sink_loc.x);
+                int dy = std::abs(driver_loc.y - sink_loc.y);
+
+                // NOTE: this assumes interposer cuts and layer boundaries never both apply to the
+                // same driver/sink pair (i.e. interposer architectures are not also 3D), so the
+                // vertical/horizontal terms below only normalize against their own boundary's
+                // offset (dy or dx), unlike the planar term which already folds in both.
+                // There are specialized routers where the bounding box may not include
+                // the source. We clamp the alignment term to 0 to prevent the terms from
+                // going negative.
+                // TODO: once a 3D interposer architecture exists to validate against, the vertical
+                // and horizontal terms should also fold in a dz/bb_depth component, matching how
+                // the planar term already folds in dx and dy.
+                if (crosses_vertical) {
+                    float align_v = std::max(1.0f - float(dy) / bb_height, 0.0f);
+                    pin_sort_priority[ipin] += (bb_height > 0) ? die_alignment_multiplier * align_v : die_alignment_multiplier;
+                }
+                if (crosses_horizontal) {
+                    float align_h = std::max(1.0f - float(dx) / bb_width, 0.0f);
+                    pin_sort_priority[ipin] += (bb_width > 0) ? die_alignment_multiplier * align_h : die_alignment_multiplier;
+                }
+                if (crosses_planar) {
+                    float align_p = std::max(1.0f - float(dx + dy) / bb_planar, 0.0f);
+                    pin_sort_priority[ipin] += (bb_planar > 0) ? die_alignment_multiplier * align_p : die_alignment_multiplier;
+                }
+            }
+        }
+    }
+
+    // compare the sort priority of different sink nodes
+    std::ranges::stable_sort(remaining_targets, [&](int a, int b) noexcept {
+        return pin_sort_priority[a] > pin_sort_priority[b];
     });
 
     /* Update base costs according to fanout and criticality rules */

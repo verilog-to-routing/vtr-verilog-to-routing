@@ -217,19 +217,6 @@ struct t_draw_state {
     /// @brief What to draw on the screen (ROUTING, PLACEMENT, NO_PICTURE)
     e_pic_type pic_on_screen = e_pic_type::NO_PICTURE;
 
-    /**
-     * @brief This enables level of detail drawing
-     * 
-     * (e.g. stop drawing RR nodes, dynamically reduce number of block internals
-     *  and critical path delays when zoomed out).
-     * 
-     * TODO: Currently this is always on, and wiring it to a UI button is required in the future.
-     */
-    bool enable_decluttering = true;
-
-    ///@brief This dynamically sets whether to stop drawing RR nodes based on the current zoom level.
-    bool declutter_rr = false;
-
     ///@brief Whether to draw nets or not
     bool show_nets = false;
 
@@ -275,6 +262,17 @@ struct t_draw_state {
 
     ///@brief Controls drawing of routing resources on screen.
     bool show_rr = false;
+    /**
+     * @brief Enables level of detail drawing for routing resources
+     * 
+     * When enabled, level of detail algorithms check if the current zoom level is too high to draw routing resources meaningfully.
+     * If so, the "rr_decluttered" flag is set and the drawing of all routing resources will be skipped,
+     * 
+     * TODO: Currently this is always on, and wiring it to a UI button is required in the future.
+     */
+    bool enable_rr_decluttering = true;
+    ///@brief Tells the program that the drawing of routing resources is toggled but still skipped because the zoom level is too high.
+    bool rr_decluttered = false;
 
     bool draw_channel_nodes = false;
     bool draw_inter_cluster_pins = false;
@@ -304,6 +302,21 @@ struct t_draw_state {
 
     ///@brief If 0, no internal drawing is shown. Otherwise, indicates how many levels of sub-pbs to be drawn
     int show_blk_internal = 0;
+
+    ///@brief True if all block internals were drawn in the previous full redraw.
+    bool no_blk_internal_decluttered_yet = false;
+    ///@brief True if only the CLBs (top-level blocks) were drawn in the previous full redraw.
+    bool no_blk_internal_drawn_yet = false;
+
+    ///@brief Zoom threshold (world units / pixel) below which all block internals could be drawn, for the previous full redraw only.
+    double all_blk_internals_drawn_threshold = 0;
+    ///@brief Zoom threshold (world units / pixel) above which only the CLBs (top-level blocks) could be drawn, for the previous full redraw only.
+    double only_clbs_drawn_threshold = 0;
+
+    ///@brief Area of the smallest block internal recorded in the previous full redraw, defined in world coordinates.
+    double min_blk_internal_area = 0;
+    ///@brief Area of the largest block internal (non-CLB) recorded in the previous full redraw, defined in world coordinates.
+    double max_blk_internal_area = 0;
 
     ///@brief Whether graphics are enabled
     bool show_graphics = false;
@@ -477,16 +490,12 @@ struct t_draw_state {
     /**
      * @brief Stores a temporary reference to the Analytical Placement partial placement (best placement).
      * @details This is set by the AP global placer just before drawing and cleared immediately after.
-     *          Use optional, reference_wrapper and const to prevent from invalid references outside the AP global placer stage
-     *          and avoid copying and modification of the partial placement.
      */
     const PartialPlacement* ap_partial_placement_ptr_;
 
     /**
      * @brief Stores a temporary reference to the atom block to AP block lookup.
-     * @details This is also set by the AP global placer and has the same lifetime as the partial placement reference.
-     *          Use optional, reference_wrapper and const to prevent from invalid references outside the AP global placer stage
-     *          and avoid copying and modification of the lookup.
+     * @details This is set by the AP global placer and has the same lifetime as the partial placement reference.
      */
     const AtomBlockAPBlockLookup* atom_block_ap_block_lookup_ptr_;
 
