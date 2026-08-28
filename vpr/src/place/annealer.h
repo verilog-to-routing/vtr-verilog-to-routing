@@ -333,7 +333,7 @@ class PlacementAnnealer {
     t_pl_blocks_to_be_moved blocks_affected_;
 
     /// Evaluates/commits/reverts swaps
-    std::unique_ptr<SwapEvaluator> swap_evaluator_;
+    SwapEvaluator swap_evaluator_;
 
   private:
     /**

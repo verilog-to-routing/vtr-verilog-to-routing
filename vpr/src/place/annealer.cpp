@@ -248,6 +248,8 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , move_stats_file_(nullptr, vtr::fclose)
     , outer_crit_iter_count_(1)
     , blocks_affected_(placer_state.block_locs().size())
+    , swap_evaluator_(placer_opts, costs, placer_state, net_cost_handler,
+                      interposer_cost_handler, delay_model, criticalities)
     , quench_started_(false)
     , congestion_modeling_started_(false)
     , interposer_cong_modeling_started_(false) {
@@ -306,10 +308,6 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     move_type_stats_.blk_type_moves.resize({device_ctx.logical_block_types.size(), (int)e_move_type::NUMBER_OF_AUTO_MOVES}, 0);
     move_type_stats_.accepted_moves.resize({device_ctx.logical_block_types.size(), (int)e_move_type::NUMBER_OF_AUTO_MOVES}, 0);
     move_type_stats_.rejected_moves.resize({device_ctx.logical_block_types.size(), (int)e_move_type::NUMBER_OF_AUTO_MOVES}, 0);
-
-    swap_evaluator_ = std::make_unique<SwapEvaluator>(placer_opts_, costs_, placer_state_,
-                                                      net_cost_handler_, interposer_cost_handler_,
-                                                      delay_model_, criticalities_);
 
     // Update the starting temperature for placement annealing to a more appropriate value
     VTR_ASSERT_SAFE_MSG(auto_init_t_scale >= 0, "Initial temperature scale cannot be negative.");
@@ -590,7 +588,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         VTR_ASSERT(create_move_outcome == e_create_move::VALID);
 
         // Apply the move to block_locs and compute the resulting cost deltas.
-        t_swap_cost_deltas deltas = swap_evaluator_->apply_and_evaluate(blocks_affected_, place_algorithm);
+        t_swap_cost_deltas deltas = swap_evaluator_.apply_and_evaluate(blocks_affected_, place_algorithm);
         cost_terms_delta = deltas.cost_terms_delta;
         timing_delta_c = deltas.timing_delta_c;
         delta_c = deltas.delta_c;
@@ -679,7 +677,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             // Make the move permanent. Connection delays and timing costs are committed
             // only in CRITICALITY_TIMING_PLACE mode; SLACK_TIMING_PLACE already committed
             // them before its timing analysis.
-            swap_evaluator_->commit(blocks_affected_, update_interposer_costs,
+            swap_evaluator_.commit(blocks_affected_, update_interposer_costs,
                                     /*commit_td=*/place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE);
 
             if (noc_opts_.noc) {
@@ -698,7 +696,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             VTR_ASSERT_SAFE(move_outcome == e_move_result::REJECTED);
 
             // Restore block_locs and reset the scratch/proposed state.
-            swap_evaluator_->revert(blocks_affected_,
+            swap_evaluator_.revert(blocks_affected_,
                                     /*revert_td=*/place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE);
 
             if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
