@@ -862,6 +862,8 @@ For people not working on CAD, you can probably leave all the options to their d
 
     Controls the verbosity of clustering output.
     Larger values produce more detailed output, which may be useful for debugging architecture packing problems.
+    At ``2`` (the default) the clustered-netlist check prints only aggregate counts of unusual blocks (e.g. single-output blocks that may be constant generators).
+    At ``3`` or higher these blocks are also listed individually.
 
     **Default:** ``2``
 

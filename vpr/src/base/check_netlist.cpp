@@ -33,7 +33,19 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosi
 
 static int check_for_duplicated_names();
 
-static int check_clb_conn(ClusterBlockId iblk, int num_conn);
+/**
+ * @brief Checks that the connections into and out of the clb make sense.
+ *
+ * A block with a single connection is flagged: an input-only block is hanging
+ * logic that should have been swept (removed before packing by iteratively
+ * deleting primitives, nets, and I/Os that have no path to a primary output),
+ * and an output-only block is likely a constant generator.
+ */
+static int check_clb_conn(ClusterBlockId iblk,
+                          int num_conn,
+                          int verbosity,
+                          int& num_input_only_blocks,
+                          int& num_output_only_blocks);
 
 static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup& intra_lb_pb_pini_lookup);
 
@@ -104,15 +116,26 @@ void check_netlist(int verbosity, const t_arch& arch) {
     IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
 
     /* Check that each block makes sense. */
+    int num_input_only_blocks = 0;
+    int num_output_only_blocks = 0;
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         num_conn = (int)cluster_ctx.clb_nlist.block_pins(blk_id).size();
-        error += check_clb_conn(blk_id, num_conn);
+        error += check_clb_conn(blk_id, num_conn, verbosity, num_input_only_blocks, num_output_only_blocks);
         error += check_clb_internal_nets(blk_id, intra_lb_pb_pin_lookup);
         if (error >= ERROR_THRESHOLD) {
             VPR_ERROR(VPR_ERROR_OTHER,
                       "Too many errors in netlist, exiting.\n");
         }
     }
+
+    VTR_LOGV(num_output_only_blocks > 0,
+             "Found %d logic block(s) with only 1 output pin and no inputs; they may be constant generators%s\n",
+             num_output_only_blocks,
+             verbosity > 2 ? "" : " (run with --pack_verbosity 3 to list them)");
+    VTR_LOGV_WARN(num_input_only_blocks > 0,
+                  "Found %d logic block(s) with only 1 input pin; the whole block is hanging logic that should be swept%s\n",
+                  num_input_only_blocks,
+                  verbosity > 2 ? "" : " (run with --pack_verbosity 3 to list them)");
 
     error += check_for_duplicated_names();
 
@@ -162,8 +185,11 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosi
     return global_to_non_global_connection_count;
 }
 
-///@brief Checks that the connections into and out of the clb make sense.
-static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
+static int check_clb_conn(ClusterBlockId iblk,
+                          int num_conn,
+                          int verbosity,
+                          int& num_input_only_blocks,
+                          int& num_output_only_blocks) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
 
@@ -175,20 +201,22 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
             auto pin_type = clb_nlist.pin_type(pin_id);
 
             if (pin_type == PinType::SINK && !clb_nlist.block_contains_primary_output(iblk)) {
-                //Input only and not a Primary-Output block
-                VTR_LOG_WARN(
-                    "Logic block #%d (%s) has only 1 input pin '%s'"
-                    " -- the whole block is hanging logic that should be swept.\n",
-                    iblk, clb_nlist.block_name(iblk).c_str(),
-                    clb_nlist.pin_name(pin_id).c_str());
+                // Input only and not a Primary-Output block
+                ++num_input_only_blocks;
+                VTR_LOGV_WARN(verbosity > 2,
+                              "Logic block #%d (%s) has only 1 input pin '%s'"
+                              " -- the whole block is hanging logic that should be swept.\n",
+                              iblk, clb_nlist.block_name(iblk).c_str(),
+                              clb_nlist.pin_name(pin_id).c_str());
             }
             if (pin_type == PinType::DRIVER && !clb_nlist.block_contains_primary_input(iblk)) {
-                //Output only and not a Primary-Input block
-                VTR_LOG_WARN(
-                    "Logic block #%d (%s) has only 1 output pin '%s'."
-                    " It may be a constant generator.\n",
-                    iblk, clb_nlist.block_name(iblk).c_str(),
-                    clb_nlist.pin_name(pin_id).c_str());
+                // Output only and not a Primary-Input block
+                ++num_output_only_blocks;
+                VTR_LOGV(verbosity > 2,
+                         "Logic block #%d (%s) has only 1 output pin '%s'."
+                         " It may be a constant generator.\n",
+                         iblk, clb_nlist.block_name(iblk).c_str(),
+                         clb_nlist.pin_name(pin_id).c_str());
             }
 
             break;
