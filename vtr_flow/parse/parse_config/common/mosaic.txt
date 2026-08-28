@@ -1,0 +1,3 @@
+#Mosaic Run-time Metrics
+mosaic_synth_time;mosaic.out;\s*User time \(seconds\): (.*)
+max_mosaic_mem;mosaic.out;\s*Maximum resident set size \(kbytes\): (\d+)
