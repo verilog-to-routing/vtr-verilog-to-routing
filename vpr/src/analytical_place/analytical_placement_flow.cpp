@@ -353,7 +353,8 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
         write_flat_placement(vpr_setup.FileNameOpts.write_legalized_flat_place_file.c_str(),
                              g_vpr_ctx.clustering().clb_nlist,
                              g_vpr_ctx.placement().block_locs(),
-                             g_vpr_ctx.clustering().atoms_lookup);
+                             g_vpr_ctx.clustering().atoms_lookup,
+                             vpr_setup.FileNameOpts.flat_place_verbose);
     }
 
     // Run the Detailed Placer.

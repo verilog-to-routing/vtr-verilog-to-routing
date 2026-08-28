@@ -687,6 +687,7 @@ struct t_file_name_opts {
     std::string write_legalized_flat_place_file;
     std::string write_block_usage;
     bool verify_file_digests;
+    bool flat_place_verbose;
 };
 
 ///@brief Options for netlist loading
