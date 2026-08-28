@@ -195,8 +195,12 @@ void NetCostHandler::update_net_bb_(const ClusterNetId net,
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
         //For small nets brute-force bounding box update is faster
 
-        if (ts_info_(net).update_status == NetUpdateState::NOT_UPDATED_YET) {
+        // The from-scratch bounding box already reflects every moved block, so it only
+        // needs to be computed once per net even when several of its pins moved.
+        t_ts_net_info& ts_net = ts_info_(net);
+        if (ts_net.update_status == NetUpdateState::NOT_UPDATED_YET) {
             get_non_updatable_bb_(net, /*use_ts=*/true);
+            ts_net.update_status = NetUpdateState::GOT_FROM_SCRATCH;
         }
     } else {
         //For large nets, update bounding box incrementally
