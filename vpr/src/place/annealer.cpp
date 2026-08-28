@@ -248,8 +248,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , move_stats_file_(nullptr, vtr::fclose)
     , outer_crit_iter_count_(1)
     , blocks_affected_(placer_state.block_locs().size())
-    , swap_evaluator_(placer_opts, costs, placer_state, net_cost_handler,
-                      interposer_cost_handler, delay_model, criticalities)
+    , swap_evaluator_(placer_opts, costs, placer_state, net_cost_handler, interposer_cost_handler, delay_model, criticalities)
     , quench_started_(false)
     , congestion_modeling_started_(false)
     , interposer_cong_modeling_started_(false) {
@@ -678,7 +677,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             // only in CRITICALITY_TIMING_PLACE mode; SLACK_TIMING_PLACE already committed
             // them before its timing analysis.
             swap_evaluator_.commit(blocks_affected_, update_interposer_costs,
-                                    /*commit_td=*/place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE);
+                                   /*commit_td=*/place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE);
 
             if (noc_opts_.noc) {
                 noc_cost_handler_->commit_noc_costs();
@@ -697,7 +696,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
             // Restore block_locs and reset the scratch/proposed state.
             swap_evaluator_.revert(blocks_affected_,
-                                    /*revert_td=*/place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE);
+                                   /*revert_td=*/place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE);
 
             if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
                 /* Revert the timing delays and costs to pre-update values.
