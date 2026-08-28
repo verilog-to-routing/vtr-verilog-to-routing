@@ -43,7 +43,7 @@ void stable_counting_sort(InIt first, InIt last, OutIt out, size_t num_keys, Key
     size_t num_elements = 0;
     for (InIt it = first; it != last; ++it) {
         size_t key = static_cast<size_t>(key_of(*it));
-        VTR_ASSERT_DEBUG_MSG(key < num_keys, "Sort key must be smaller than num_keys");
+        VTR_ASSERT_MSG(key < num_keys, "Sort key must be smaller than num_keys");
         offsets[key + 1]++;
         num_elements++;
     }
