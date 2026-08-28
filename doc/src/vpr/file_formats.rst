@@ -727,10 +727,11 @@ multiple clusters can be stacked there). A sub-tile of -1 may be used when
 the sub-tile of an atom is unknown (allowing the packing algorithm to choose
 any sub-tile at the given (x, y, layer) location).
 
-Lines written by VPR (:option:`vpr --write_flat_place`) carry two additional columns:
+Lines written by VPR (:option:`vpr --write_flat_place`) carry additional annotation
+columns after ``<atom_sub_tile>``, controlled by :option:`vpr --flat_place_verbosity`.
+These are informational only and are ignored when the file is read back. By default
 the cluster block number the atom was packed into and the primitive type it was placed
-on. With :option:`vpr --flat_place_verbose` a third column is appended, the path of that
-primitive:
+on are appended; at verbosity ``2`` the path of that primitive is appended as well:
 
 .. code-block:: none
 

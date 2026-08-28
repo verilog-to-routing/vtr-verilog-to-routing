@@ -38,7 +38,7 @@ struct t_options {
     argparse::ArgValue<std::string> read_flat_place_file;
     argparse::ArgValue<std::string> write_flat_place_file;
     argparse::ArgValue<std::string> write_legalized_flat_place_file;
-    argparse::ArgValue<bool> flat_place_verbose;
+    argparse::ArgValue<int> flat_place_verbosity;
 
     argparse::ArgValue<std::string> write_placement_delay_lookup;
     argparse::ArgValue<std::string> read_placement_delay_lookup;
