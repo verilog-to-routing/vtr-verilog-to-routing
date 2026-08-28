@@ -10,6 +10,8 @@
 #include "place_util.h"
 #include "vtr_prefix_sum.h"
 
+#include <cstdint>
+#include <limits>
 #include <utility>
 
 class PlacerState;
@@ -210,6 +212,33 @@ class NetCostHandler {
     };
 
     /**
+     * @brief Proposed bounding box state of one net affected by the move under evaluation.
+     *
+     * These entries live in a dense scratch array indexed by the position of the net in
+     * ts_nets_to_update_ (its slot). If the move is accepted, the proposed state is copied
+     * into net_bb_ and net_cong_.
+     */
+    struct t_ts_net_info {
+        /// Proposed bounding box coordinates
+        t_bb coords;
+        /// Proposed number of blocks on each edge of the bounding box
+        t_bb num_on_edges;
+        /// Proposed wirelength cost
+        double proposed_cost = 0.;
+        /// Proposed congestion cost. Only valid when congestion modeling is enabled.
+        double proposed_cong_cost = 0.;
+        /// Proposed average CHANX and CHANY utilization within the bounding box.
+        /// Only valid when congestion modeling is enabled.
+        std::pair<float, float> avg_chan_util = {0.f, 0.f};
+        /// How far the bounding box of this net has been updated for the current move.
+        /// NOT_UPDATED_YET: the committed bounding box is still the reference.
+        /// UPDATED_ONCE: the proposed bounding box has been updated incrementally at least once
+        /// and must be used as the reference for later pins of the same net.
+        /// GOT_FROM_SCRATCH: the proposed bounding box was recomputed from scratch and is final.
+        NetUpdateState update_status = NetUpdateState::NOT_UPDATED_YET;
+    };
+
+    /**
      * @brief Committed congestion state of one net.
      *
      * The congestion cost of a net is based on the extent to which its average routing
@@ -223,6 +252,9 @@ class NetCostHandler {
         double cost = -1.;
     };
 
+    /// Slot value meaning that a net is not affected by the current move.
+    static constexpr uint32_t NO_TS_SLOT = std::numeric_limits<uint32_t>::max();
+
     /// Committed bounding box state of every net.
     /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::vector<ClusterNetId, t_net_bb_info> net_bb_;
@@ -231,42 +263,17 @@ class NetCostHandler {
     /// Empty until congestion modeling is enabled by estimate_routing_chan_util().
     vtr::vector<ClusterNetId, t_net_cong_info> net_cong_;
 
-    /**
-     * @brief Temporary `ts_*` data members store the bounding box updates for nets affected by a move.
-     * If the move is accepted, these updates are copied into net_bb_ and net_cong_.
-     */
-
-    /* [0...cluster_ctx.clb_nlist.nets().size()-1] -> 3D bounding box*/
-    vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new_, ts_bb_edge_new_;
-    /* [0...num_affected_nets] -> net_id of the affected nets */
+    /// Nets affected by the move under evaluation, in the order they were recorded.
+    /// The position of a net in this vector is its slot in ts_net_info_.
     std::vector<ClusterNetId> ts_nets_to_update_;
 
-    vtr::vector<ClusterNetId, std::pair<float, float>> ts_avg_chan_util_new_;
+    /// Proposed state of the affected nets, indexed by slot.
+    /// Only the first ts_nets_to_update_.size() entries are valid.
+    std::vector<t_ts_net_info> ts_net_info_;
 
-    /**
-     * @brief In each of these vectors, there is one entry per cluster level net:
-     * [0...cluster_ctx.clb_nlist.nets().size()-1].
-     * proposed_net_cost: temporary cost of a net used during move assessment.
-     * We also use negative cost values in proposed_net_cost as a flag to indicate that
-     * the cost of a net has not yet been updated.
-     * bb_update_status: Flag array to indicate whether the specific bounding box has been updated
-     * in this particular swap or not. If it has been updated before, the code
-     * must use the updated data, instead of the out-of-date data passed into the
-     * subroutine, particularly used in try_swap(). The value NOT_UPDATED_YET
-     * indicates that the net has not been updated before, UPDATED_ONCE indicated
-     * that the net has been updated once, if it is going to be updated again, the
-     * values from the previous update must be used. GOT_FROM_SCRATCH is only
-     * applicable for nets larger than SMALL_NETS and it indicates that the
-     * particular bounding box is not incrementally updated, and hence the
-     * bounding box is got from scratch, so the bounding box would definitely be
-     * right, DO NOT update again.
-     */
-    vtr::vector<ClusterNetId, double> proposed_net_cost_;
-
-    /// Proposed congestion cost of each net. Empty until congestion modeling is enabled.
-    vtr::vector<ClusterNetId, double> proposed_net_cong_cost_;
-
-    vtr::vector<ClusterNetId, NetUpdateState> bb_update_status_;
+    /// Slot of each net in ts_net_info_, or NO_TS_SLOT if the net is not affected by the current move.
+    /// [0..cluster_ctx.clb_nlist.nets().size()-1]
+    vtr::vector<ClusterNetId, uint32_t> net_ts_slot_;
 
     /**
      * @brief Matrices below are used to precompute the inverse of the average
@@ -372,25 +379,26 @@ class NetCostHandler {
                                 bool is_src_moving);
 
     /**
-     * @brief Updates the bounding box coordinates of a net in the placer state
-     * with coordinates stored in the `ts` bounding box coordinates container.
-     * @param net_id ID of the net whose bounding box coordinates it to be updated.
+     * @brief Returns the proposed state of a net that has already been recorded
+     * as affected by the current move (see record_affected_net_()).
+     * @param net_id ID of an affected net
      */
-    void set_ts_bb_coord_(const ClusterNetId net_id);
+    t_ts_net_info& ts_info_(ClusterNetId net_id) {
+        VTR_ASSERT_SAFE(net_ts_slot_[net_id] != NO_TS_SLOT);
+        return ts_net_info_[net_ts_slot_[net_id]];
+    }
 
-    /**
-     * @brief Updates the number of pins on each boundary of the bounding box for a net
-     * in the placer state with the number of pins stores in the 'ts' num_on_edges containers.
-     * @param net_id ID of the net whose number of pins on each BB edge is to be updated.
-     */
-    void set_ts_edge_(const ClusterNetId net_id);
+    const t_ts_net_info& ts_info_(ClusterNetId net_id) const {
+        VTR_ASSERT_SAFE(net_ts_slot_[net_id] != NO_TS_SLOT);
+        return ts_net_info_[net_ts_slot_[net_id]];
+    }
 
     /**
      * @brief Calculate the 3D bounding box of "net_id" from scratch (based on the block locations
-     * stored in placer_state_.blk_loc_registry) and store them in bb_coord_new
+     * stored in placer_state_.blk_loc_registry). Does not compute the number of blocks on each edge.
      * @param net_id ID of the net for which the bounding box is requested
-     * @param use_ts Specifies whether the `ts` bounding box is updated or
-     * the one stored in placer_state_
+     * @param use_ts Specifies whether the proposed (`ts`) bounding box is updated or the committed one.
+     * When use_ts is true, the net must already have been recorded by record_affected_net_().
      */
     void get_non_updatable_bb_(ClusterNetId net_id, bool use_ts);
 
@@ -400,7 +408,8 @@ class NetCostHandler {
      * It updates both the coordinate and number of pins on each edge information. It should only be called when the bounding box
      * information is not valid.
      * @param net_id ID of the net which the moving pin belongs to
-     * @param use_ts Specifies whether the `ts` bounding box is updated or the actual one.
+     * @param use_ts Specifies whether the proposed (`ts`) bounding box is updated or the committed one.
+     * When use_ts is true, the net must already have been recorded by record_affected_net_().
      */
     void get_bb_from_scratch_(ClusterNetId net_id, bool use_ts);
 
@@ -422,7 +431,8 @@ class NetCostHandler {
                     t_physical_tile_loc pin_new_loc);
 
     /**
-     * @brief if "net" is not already stored as an affected net, add it in ts_nets_to_update.
+     * @brief If "net" is not already recorded as affected by the current move, append it to
+     * ts_nets_to_update_ and assign it a slot in ts_net_info_.
      * @param net ID of a net affected by a move
      */
     void record_affected_net_(const ClusterNetId net);
@@ -489,5 +499,6 @@ class NetCostHandler {
     inline const t_bb& bb_coords(ClusterNetId net_id) const { return net_bb_[net_id].coords; }
 
     /// @brief Returns the net's bounding box, either the proposed (`ts`) one or the committed one.
-    inline const t_bb& bb_coords(ClusterNetId net_id, bool use_ts) const { return use_ts ? ts_bb_coord_new_[net_id] : net_bb_[net_id].coords; }
+    /// The proposed one is only available for nets affected by the current move.
+    inline const t_bb& bb_coords(ClusterNetId net_id, bool use_ts) const { return use_ts ? ts_info_(net_id).coords : net_bb_[net_id].coords; }
 };
