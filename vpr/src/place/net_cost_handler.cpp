@@ -87,10 +87,6 @@ NetCostHandler::NetCostHandler(PlacerState& placer_state,
 
     bb_num_on_edges_.resize(num_nets, t_bb());
 
-    // This initializes the whole matrix to UNDEFINED which is an invalid value
-    ts_layer_sink_pin_count_.resize({num_nets, size_t(num_layers)}, UNDEFINED);
-    num_sink_pin_layer_.resize({num_nets, size_t(num_layers)}, UNDEFINED);
-
     ts_nets_to_update_.resize(num_nets, ClusterNetId::INVALID());
 
     // negative net costs mean the cost is not valid.
@@ -221,7 +217,6 @@ void NetCostHandler::update_net_bb_(const ClusterNetId net,
         t_physical_tile_type_ptr blk_type = physical_tile_type(block_loc);
         int pin_width_offset = blk_type->pin_width_offset[iblk_pin];
         int pin_height_offset = blk_type->pin_height_offset[iblk_pin];
-        bool is_driver = cluster_ctx.clb_nlist.pin_type(blk_pin) == PinType::DRIVER;
 
         //Incremental bounding box update
         update_bb_(net,
@@ -230,8 +225,7 @@ void NetCostHandler::update_net_bb_(const ClusterNetId net,
                     pl_moved_block.old_loc.layer},
                    {pl_moved_block.new_loc.x + pin_width_offset,
                     pl_moved_block.new_loc.y + pin_height_offset,
-                    pl_moved_block.new_loc.layer},
-                   is_driver);
+                    pl_moved_block.new_loc.layer});
     }
 }
 
@@ -375,13 +369,10 @@ void NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_m
 void NetCostHandler::get_non_updatable_bb_(ClusterNetId net_id, bool use_ts) {
     //TODO: account for multiple physical pin instances per logical pin
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
     const BlkLocRegistry& blk_loc_registry = placer_state_.blk_loc_registry();
 
     // the bounding box coordinates that is going to be updated by this function
     t_bb& bb_coord_new = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
-    // the number of sink pins of "net_id" on each layer
-    vtr::NdMatrixProxy<int, 1> num_sink_pin_layer = use_ts ? ts_layer_sink_pin_count_[size_t(net_id)] : num_sink_pin_layer_[size_t(net_id)];
 
     // get the source pin's location
     ClusterPinId source_pin_id = cluster_ctx.clb_nlist.net_pin(net_id, 0);
@@ -394,10 +385,6 @@ void NetCostHandler::get_non_updatable_bb_(ClusterNetId net_id, bool use_ts) {
     bb_coord_new.xmax = source_pin_loc.x;
     bb_coord_new.ymax = source_pin_loc.y;
     bb_coord_new.layer_max = source_pin_loc.layer_num;
-
-    for (size_t layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
-        num_sink_pin_layer[layer_num] = 0;
-    }
 
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         t_physical_tile_loc pin_loc = blk_loc_registry.get_coordinate_of_pin(pin_id);
@@ -419,8 +406,6 @@ void NetCostHandler::get_non_updatable_bb_(ClusterNetId net_id, bool use_ts) {
         } else if (pin_loc.layer_num > bb_coord_new.layer_max) {
             bb_coord_new.layer_max = pin_loc.layer_num;
         }
-
-        num_sink_pin_layer[pin_loc.layer_num]++;
     }
 
     // Update average CHANX and CHANY usage for this net within its bounding box if congestion modeling is enabled
@@ -434,27 +419,19 @@ void NetCostHandler::get_non_updatable_bb_(ClusterNetId net_id, bool use_ts) {
 
 void NetCostHandler::update_bb_(ClusterNetId net_id,
                                 t_physical_tile_loc pin_old_loc,
-                                t_physical_tile_loc pin_new_loc,
-                                bool src_pin) {
+                                t_physical_tile_loc pin_new_loc) {
     //TODO: account for multiple physical pin instances per logical pin
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
-
-    const int num_layers = device_ctx.grid.get_num_layers();
 
     // Number of blocks on the edges of the bounding box
     t_bb& bb_edge_new = ts_bb_edge_new_[net_id];
     // Coordinates of the bounding box
     t_bb& bb_coord_new = ts_bb_coord_new_[net_id];
-    // Number of sinks of the given net on each layer
-    vtr::NdMatrixProxy<int, 1> num_sink_pin_layer_new = ts_layer_sink_pin_count_[size_t(net_id)];
 
     /* Check if the net had been updated before. */
     if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
         /* The net had been updated from scratch, DO NOT update again! */
         return;
     }
-
-    vtr::NdMatrixProxy<int, 1> curr_num_sink_pin_layer = (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET) ? num_sink_pin_layer_[size_t(net_id)] : num_sink_pin_layer_new;
 
     const t_bb *curr_bb_edge, *curr_bb_coord;
     if (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET) {
@@ -616,18 +593,6 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
 
     /* Now account for the layer motion. */
     if (is_multi_layer_) {
-        /* We need to update it only if multiple layers are available */
-        for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-            num_sink_pin_layer_new[layer_num] = curr_num_sink_pin_layer[layer_num];
-        }
-        if (!src_pin) {
-            /* if src pin is being moved, we don't need to update this data structure */
-            if (pin_old_loc.layer_num != pin_new_loc.layer_num) {
-                num_sink_pin_layer_new[pin_old_loc.layer_num] = (curr_num_sink_pin_layer)[pin_old_loc.layer_num] - 1;
-                num_sink_pin_layer_new[pin_new_loc.layer_num] = (curr_num_sink_pin_layer)[pin_new_loc.layer_num] + 1;
-            }
-        }
-
         if (pin_new_loc.layer_num < pin_old_loc.layer_num) {
             if (pin_old_loc.layer_num == curr_bb_coord->layer_max) {
                 if (curr_bb_edge->layer_max == 1) {
@@ -709,13 +674,10 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
 
 void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
-    const DeviceGrid& grid = device_ctx.grid;
     const BlkLocRegistry& blk_loc_registry = placer_state_.blk_loc_registry();
 
     t_bb& coords = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
     t_bb& num_on_edges = use_ts ? ts_bb_edge_new_[net_id] : bb_num_on_edges_[net_id];
-    vtr::NdMatrixProxy<int, 1> num_sink_pin_layer = use_ts ? ts_layer_sink_pin_count_[(size_t)net_id] : num_sink_pin_layer_[(size_t)net_id];
 
     // get the source pin's location
     ClusterPinId source_pin_id = cluster_ctx.clb_nlist.net_pin(net_id, 0);
@@ -734,10 +696,6 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
     int xmax_edge = 1;
     int ymax_edge = 1;
     int layer_max_edge = 1;
-
-    for (size_t layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
-        num_sink_pin_layer[layer_num] = 0;
-    }
 
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         t_physical_tile_loc pin_loc = blk_loc_registry.get_coordinate_of_pin(pin_id);
@@ -780,8 +738,6 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
             layer_max = pin_loc.layer_num;
             layer_max_edge = 1;
         }
-
-        num_sink_pin_layer[pin_loc.layer_num]++;
     }
 
     // Copy the coordinates and number on edges information into the proper structures.
@@ -791,8 +747,8 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
     coords.ymax = ymax;
     coords.layer_min = layer_min;
     coords.layer_max = layer_max;
-    VTR_ASSERT_DEBUG(layer_min >= 0 && layer_min < (int)device_ctx.grid.get_num_layers());
-    VTR_ASSERT_DEBUG(layer_max >= 0 && layer_max < (int)device_ctx.grid.get_num_layers());
+    VTR_ASSERT_DEBUG(layer_min >= 0 && layer_min < (int)g_vpr_ctx.device().grid.get_num_layers());
+    VTR_ASSERT_DEBUG(layer_max >= 0 && layer_max < (int)g_vpr_ctx.device().grid.get_num_layers());
 
     num_on_edges.xmin = xmin_edge;
     num_on_edges.xmax = xmax_edge;
@@ -992,10 +948,6 @@ void NetCostHandler::update_move_nets() {
         ClusterNetId net_id = ts_net;
 
         set_ts_bb_coord_(net_id);
-
-        for (size_t layer_num = 0; layer_num < g_vpr_ctx.device().grid.get_num_layers(); layer_num++) {
-            num_sink_pin_layer_[size_t(net_id)][layer_num] = ts_layer_sink_pin_count_[size_t(net_id)][layer_num];
-        }
 
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET) {
             set_ts_edge_(net_id);

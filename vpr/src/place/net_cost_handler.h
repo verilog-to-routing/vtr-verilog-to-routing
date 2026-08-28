@@ -205,8 +205,6 @@ class NetCostHandler {
 
     /* [0...cluster_ctx.clb_nlist.nets().size()-1] -> 3D bounding box*/
     vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new_, ts_bb_edge_new_;
-    /* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers-1] -> number of sink pins on a layer*/
-    vtr::Matrix<int> ts_layer_sink_pin_count_;
     /* [0...num_affected_nets] -> net_id of the affected nets */
     std::vector<ClusterNetId> ts_nets_to_update_;
 
@@ -221,10 +219,6 @@ class NetCostHandler {
     vtr::vector<ClusterNetId, t_bb> bb_coords_;
 
     vtr::vector<ClusterNetId, std::pair<float, float>> avg_chan_util_;
-
-    /// Store the number of blocks on each layer ()
-    /// [0..cluster_ctx.clb_nlist.nets().size()-1]
-    vtr::Matrix<int> num_sink_pin_layer_;
 
     /**
      * @brief In each of these vectors, there is one entry per cluster level net:
@@ -388,7 +382,7 @@ class NetCostHandler {
     void get_non_updatable_bb_(ClusterNetId net_id, bool use_ts);
 
     /**
-     * @brief Calculate the 3D BB of a large net from scratch and update coord, edge, and num_sink_pin_layer data structures.
+     * @brief Calculate the 3D BB of a large net from scratch and update its coordinates and number of blocks on each edge.
      * @details This routine finds the bounding box of each net from scratch (i.e. from only the block location information).
      * It updates both the coordinate and number of pins on each edge information. It should only be called when the bounding box
      * information is not valid.
@@ -409,12 +403,10 @@ class NetCostHandler {
      * @param net_id ID of the net which the moving pin belongs to
      * @param pin_old_loc The old location of the moving pin
      * @param pin_new_loc The new location of the moving pin
-     * @param src_pin Is the moving pin driving the net
      */
     void update_bb_(ClusterNetId net_id,
                     t_physical_tile_loc pin_old_loc,
-                    t_physical_tile_loc pin_new_loc,
-                    bool src_pin);
+                    t_physical_tile_loc pin_new_loc);
 
     /**
      * @brief if "net" is not already stored as an affected net, add it in ts_nets_to_update.
