@@ -30,6 +30,8 @@ constexpr int MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY = 8;
 struct t_block_score {
     int macro_size = 0; //How many members does the macro have, if the block is part of one - this value is zero if the block is not in a macro
 
+    int num_compatible_locations = 0; ///< Number of compatible placement locations on the device.
+
     //The number of tiles NOT covered by the block's floorplan constraints.
     double tiles_outside_of_floorplan_constraints = 0;
 
@@ -39,6 +41,16 @@ struct t_block_score {
     //The number of placed block during initial placement that are connected to the this block.
     int number_of_placed_connections = 0;
 };
+
+/**
+ * @brief Heap ordering for initial-placement block difficulty.
+ *
+ * A score which compares less is placed later. Existing macro, connectivity,
+ * floorplanning, and retry scores take precedence. Equal-scoring blocks with
+ * fewer compatible locations are placed first.
+ */
+bool initial_placement_block_score_less(const t_block_score& lhs,
+                                        const t_block_score& rhs);
 
 /**
  * @brief keeps track of available empty locations of a specific block type during initial placement.

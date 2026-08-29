@@ -1396,9 +1396,11 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores(const Plac
     //initialize number of placed connections to zero for all blocks
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         block_scores[blk_id].number_of_placed_connections = 0;
+        const t_logical_block_type_ptr block_type = cluster_ctx.clb_nlist.block_type(blk_id);
+        block_scores[blk_id].num_compatible_locations =
+            grid_tiles.total_type_tiles(block_type);
         if (is_cluster_constrained(blk_id)) {
             const PartitionRegion& pr = floorplan_ctx.cluster_constraints[blk_id];
-            auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
             double floorplan_score = get_floorplan_score(blk_id, pr, block_type, grid_tiles);
             block_scores[blk_id].tiles_outside_of_floorplan_constraints = floorplan_score;
         }
@@ -1413,6 +1415,21 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores(const Plac
     }
 
     return block_scores;
+}
+
+bool initial_placement_block_score_less(const t_block_score& lhs,
+                                        const t_block_score& rhs) {
+    int lhs_score = lhs.macro_size + lhs.number_of_placed_connections + SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR * lhs.tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * lhs.failed_to_place_in_prev_attempts;
+    int rhs_score = rhs.macro_size + rhs.number_of_placed_connections + SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR * rhs.tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * rhs.failed_to_place_in_prev_attempts;
+
+    if (lhs_score != rhs_score) {
+        return lhs_score < rhs_score;
+    }
+
+    // Place types with fewer compatible locations first. Otherwise a more
+    // flexible type can consume shared sites and strand a constrained type
+    // even when a legal global assignment exists.
+    return lhs.num_compatible_locations > rhs.num_compatible_locations;
 }
 
 static void place_all_blocks(const t_placer_opts& placer_opts,
@@ -1433,10 +1450,7 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
     std::unordered_set<int> unplaced_blk_type_in_curr_itr;
 
     auto criteria = [&block_scores](ClusterBlockId lhs, ClusterBlockId rhs) {
-        int lhs_score = block_scores[lhs].macro_size + block_scores[lhs].number_of_placed_connections + SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR * block_scores[lhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[lhs].failed_to_place_in_prev_attempts;
-        int rhs_score = block_scores[rhs].macro_size + block_scores[rhs].number_of_placed_connections + SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR * block_scores[rhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[rhs].failed_to_place_in_prev_attempts;
-
-        return lhs_score < rhs_score;
+        return initial_placement_block_score_less(block_scores[lhs], block_scores[rhs]);
     };
 
     // Keeps the first locations and number of remained blocks in each column for a specific block type.
