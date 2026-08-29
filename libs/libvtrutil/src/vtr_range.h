@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iterator>
+#include <ranges>
 
 namespace vtr {
 /**
@@ -81,3 +82,13 @@ template<typename Container>
 inline auto make_range(const Container& c) { return make_range(std::begin(c), std::end(c)); }
 
 } // namespace vtr
+
+/**
+ * @brief Mark vtr::Range as a borrowed range.
+ *
+ * A vtr::Range only holds a pair of iterators, so those iterators stay valid
+ * after the Range object itself is destroyed. This lets temporary ranges be
+ * passed directly to std::ranges algorithms and views (e.g. std::views::filter).
+ */
+template<typename T>
+inline constexpr bool std::ranges::enable_borrowed_range<vtr::Range<T>> = true;
