@@ -39,8 +39,6 @@ void APPackMaxDistThManager::init(const std::vector<std::string>& max_dist_ths,
 
     // Set the initialized flag to true.
     is_initialized_ = true;
-
-    print_max_dist_thresholds(logical_block_types);
 }
 
 void APPackMaxDistThManager::auto_set_max_distance_thresholds(const std::vector<t_logical_block_type>& logical_block_types,

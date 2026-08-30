@@ -64,7 +64,6 @@ void APPackContext::adjust_for_device_size_estimate(
 
     if (any_type_needs_denser_packing) {
         VTR_LOG("Device size estimate predicts a tight packing; increased the max candidate distance threshold for the affected block type(s).\n");
-        max_distance_threshold_manager.print_max_dist_thresholds(logical_block_types);
     }
 
     // TODO: This should be capable of turning on unrelated clustering as well if the

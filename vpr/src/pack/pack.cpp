@@ -358,6 +358,8 @@ bool try_pack(const t_packer_opts& packer_opts,
     e_packer_state current_packer_state = e_packer_state::DEFAULT;
 
     while (current_packer_state != e_packer_state::SUCCESS && current_packer_state != e_packer_state::FAILURE) {
+        if (appack_ctx.appack_options.use_appack)
+            appack_ctx.max_distance_threshold_manager.print_max_dist_thresholds(device_ctx.logical_block_types);
         VTR_LOG("Packing with pin utilization targets: %s\n", cluster_legalizer.get_target_external_pin_util().to_string().c_str());
         VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds.to_string().c_str());
         //Cluster the netlist
