@@ -120,6 +120,8 @@ class APPackMaxDistThManager {
         logical_block_dist_thresholds_[logical_block_ty.index] = new_threshold;
     }
 
+    void print_max_dist_thresholds(const std::vector<t_logical_block_type>& logical_block_types) const;
+
   private:
     /**
      * @brief Helper method that initializes the thresholds of all logical

@@ -336,13 +336,9 @@ bool try_pack(const t_packer_opts& packer_opts,
                              device_ctx.grid);
 
     // Adjust the APPack parameters according to the estimated device density.
-    if (appack_ctx.appack_options.use_appack) {
-        t_appack_device_size_adjustment appack_ds_adjustment = appack_ctx.adjust_for_device_size_estimate(estimated_type_instance_counts,
-                                                                                                         device_ctx.logical_block_types,
-                                                                                                         device_ctx.grid);
-        if (appack_ds_adjustment.allow_unrelated_clustering && packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO)
-            allow_unrelated_clustering = true;
-    }
+    appack_ctx.adjust_for_device_size_estimate(estimated_type_instance_counts,
+                                               device_ctx.logical_block_types,
+                                               device_ctx.grid);
 
     // Initialize the greedy clusterer.
     GreedyClusterer clusterer(packer_opts,
