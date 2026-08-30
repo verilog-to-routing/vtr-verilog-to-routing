@@ -5,8 +5,12 @@
 #include "grid_block.h"
 #include "vtr_assert.h"
 
+#include <algorithm>
+
 t_pl_blocks_to_be_moved::t_pl_blocks_to_be_moved(size_t max_blocks) {
     moved_blocks.reserve(max_blocks);
+    moved_from.reserve(max_blocks);
+    moved_to.reserve(max_blocks);
 }
 
 size_t t_pl_blocks_to_be_moved::get_size_and_increment() {
@@ -15,24 +19,23 @@ size_t t_pl_blocks_to_be_moved::get_size_and_increment() {
     return moved_blocks.size() - 1;
 }
 
-//Records that block 'blk' should be moved to the specified 'to' location
 e_block_move_result t_pl_blocks_to_be_moved::record_block_move(ClusterBlockId blk,
                                                                t_pl_loc to,
                                                                const BlkLocRegistry& blk_loc_registry) {
-    auto [to_it, to_success] = moved_to.emplace(to);
-    if (!to_success) {
+    if (std::ranges::find(moved_to, to) != moved_to.end()) {
         move_abortion_logger.log_move_abort("duplicate block move to location");
         return e_block_move_result::ABORT;
     }
 
     t_pl_loc from = blk_loc_registry.block_locs()[blk].loc;
 
-    auto [_, from_success] = moved_from.emplace(from);
-    if (!from_success) {
-        moved_to.erase(to_it);
+    if (std::ranges::find(moved_from, from) != moved_from.end()) {
         move_abortion_logger.log_move_abort("duplicate block move from location");
         return e_block_move_result::ABORT;
     }
+
+    moved_to.push_back(to);
+    moved_from.push_back(from);
 
     VTR_ASSERT_SAFE(to.sub_tile < int(blk_loc_registry.grid_blocks().num_blocks_at_location({to.x, to.y, to.layer})));
 
@@ -45,35 +48,33 @@ e_block_move_result t_pl_blocks_to_be_moved::record_block_move(ClusterBlockId bl
     return e_block_move_result::VALID;
 }
 
-//Examines the currently proposed move and determine any empty locations
 std::set<t_pl_loc> t_pl_blocks_to_be_moved::determine_locations_emptied_by_move() const {
     std::set<t_pl_loc> moved_from_set;
     std::set<t_pl_loc> moved_to_set;
 
     for (const t_pl_moved_block& moved_block : moved_blocks) {
-        //When a block is moved its old location becomes free
+        // When a block is moved its old location becomes free
         moved_from_set.emplace(moved_block.old_loc);
 
-        //But any block later moved to a position fills it
+        // But any block later moved to a position fills it
         moved_to_set.emplace(moved_block.new_loc);
     }
 
     std::set<t_pl_loc> empty_locs;
-    std::set_difference(moved_from_set.begin(), moved_from_set.end(),
-                        moved_to_set.begin(), moved_to_set.end(),
-                        std::inserter(empty_locs, empty_locs.begin()));
+    std::ranges::set_difference(moved_from_set, moved_to_set,
+                                std::inserter(empty_locs, empty_locs.begin()),
+                                std::less{});
 
     return empty_locs;
 }
 
-//Clears the current move so a new move can be proposed
 void t_pl_blocks_to_be_moved::clear_move_blocks() {
-    //Reset moved flags
+    // Reset moved locations
     moved_to.clear();
     moved_from.clear();
 
-    //For run-time, we just reset size of blocks_affected.moved_blocks to zero, but do not free the blocks_affected
-    //array to avoid memory allocation
+    // For run-time, we just reset the size of moved_blocks to zero, but do not free
+    // the array to avoid memory allocation
 
     moved_blocks.resize(0);
 
@@ -81,19 +82,11 @@ void t_pl_blocks_to_be_moved::clear_move_blocks() {
 }
 
 bool t_pl_blocks_to_be_moved::driven_by_moved_block(const ClusterNetId net) const {
-    auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-
-    bool is_driven_by_move_blk = false;
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     ClusterBlockId net_driver_block = clb_nlist.net_driver_block(net);
 
-    for (const t_pl_moved_block& block : moved_blocks) {
-        if (net_driver_block == block.block_num) {
-            is_driven_by_move_blk = true;
-            break;
-        }
-    }
-
-    return is_driven_by_move_blk;
+    auto it = std::ranges::find(moved_blocks, net_driver_block, &t_pl_moved_block::block_num);
+    return it != moved_blocks.end();
 }
 
 void MoveAbortionLogger::log_move_abort(std::string_view reason) {
@@ -111,7 +104,7 @@ void MoveAbortionLogger::report_aborted_moves() const {
     if (move_abort_reasons_.empty()) {
         VTR_LOG("  No moves aborted\n");
     }
-    for (const auto& kv : move_abort_reasons_) {
-        VTR_LOG("  %s: %zu\n", kv.first.c_str(), kv.second);
+    for (const auto& [reason, count] : move_abort_reasons_) {
+        VTR_LOG("  %s: %zu\n", reason.c_str(), count);
     }
 }

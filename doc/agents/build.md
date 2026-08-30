@@ -37,6 +37,9 @@ Pass via `CMAKE_PARAMS="-DOPTION=value"`:
 - `VTR_ENABLE_SANITIZE` — address/leak/UB sanitizers
 - `VTR_ENABLE_PROFILING` — gprof profiling
 - `VPR_USE_EZGL` — graphics library (auto/on/off)
-- `WITH_PARMYS` — build Yosys frontend (default ON)
+- `WITH_PARMYS` — build Parmys Yosys plugin (default ON)
+- `WITH_MOSAIC` — build mosaic Yosys plugin (default ON)
 - `WITH_ODIN` — build legacy Odin frontend (default OFF)
 - `VTR_IPO_BUILD` — interprocedural optimization (default auto/on); set to `off` during development to reduce build times and improve debuggability
+
+Yosys is built when `WITH_PARMYS` or `WITH_MOSAIC` is on. At least one of those two options must be on.
