@@ -18,6 +18,7 @@
 // Abridged for VTR by: Daniel Rauch
 //////////////////////////////////////////////////////////////////////////////
 
+`timescale 1 ns / 1 ps
 
 module dpram (
 
@@ -133,8 +134,6 @@ dual_port_ram u_dual_port_ram(
 `endif
 
 endmodule
-
-`timescale 1 ns / 1 ps
 
 module td_fused_top_Block_entry_proc_proc505 (
         ap_clk,
