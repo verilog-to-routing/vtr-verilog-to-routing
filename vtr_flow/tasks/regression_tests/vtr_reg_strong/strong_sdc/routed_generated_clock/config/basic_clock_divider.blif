@@ -1,0 +1,51 @@
+# Basic Clock Divider Circuit
+#
+#  Clock divider sub-circuit (clk / 2 = div_clk):
+#
+#          clk
+#           |
+#           v
+#       +---+----+
+#       | D    Q +---+--- div_clk
+#       |  DFF   |   |
+#       +--------+   |
+#           ^        |
+#           +--[INV]-+
+#
+#  Main data path:
+#
+#               clk                    div_clk
+#                |                        |
+#                v                        v
+#  in --[BUF]--> D[FFA]Q --[INV]--> D[FFB]Q --[BUF]--> out
+#
+.model basic_clock_divider
+.inputs in clk
+.outputs out
+
+# Basic clock divider circuit using a flip-flop whose input is tied to its
+# inverted output.
+.latch div_clk_inv div_clk re clk 0
+
+.names div_clk div_clk_inv
+0 1
+
+# Buffer for the input.
+.names in to_FFA
+1 1
+
+# Latch for FFA, relative to clk.
+.latch to_FFA FFA re clk 0
+
+# Invert the output of FFA and feed into FFB.
+.names FFA to_FFB
+0 1
+
+# Latch for FFB, relative to div_clk.
+.latch to_FFB FFB re div_clk 0
+
+# Output buffer.
+.names FFB out
+1 1
+
+.end

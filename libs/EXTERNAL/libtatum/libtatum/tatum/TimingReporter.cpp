@@ -483,7 +483,9 @@ Time TimingReporter::report_timing_clock_launch_subpath(std::ostream& os,
         path_helper.update_print_path(os, point, path);
     }
 
-    return report_timing_clock_subpath(os, path_helper, subpath, domain, timing_type, path, Time(0.));
+    //Launch: pessimistic setup = late arrival; pessimistic hold = early arrival.
+    ArrivalType launch_arrival = (timing_type == TimingType::SETUP) ? ArrivalType::LATE : ArrivalType::EARLY;
+    return report_timing_clock_subpath(os, path_helper, subpath, domain, timing_type, path, Time(0.), launch_arrival);
 }
 
 Time TimingReporter::report_timing_clock_capture_subpath(std::ostream& os,
@@ -516,7 +518,9 @@ Time TimingReporter::report_timing_clock_capture_subpath(std::ostream& os,
         path_helper.update_print_path(os, point, path);
     }
 
-    path = report_timing_clock_subpath(os, path_helper, subpath, capture_domain, timing_type, path, offset);
+    //Capture: pessimistic setup = early arrival; pessimistic hold = late arrival.
+    ArrivalType capture_arrival = (timing_type == TimingType::SETUP) ? ArrivalType::EARLY : ArrivalType::LATE;
+    path = report_timing_clock_subpath(os, path_helper, subpath, capture_domain, timing_type, path, offset, capture_arrival);
 
     {
         //Uncertainty
@@ -540,24 +544,8 @@ Time TimingReporter::report_timing_clock_subpath(std::ostream& os,
                                                  DomainId domain,
                                                  TimingType timing_type,
                                                  Time path,
-                                                 Time offset) const {
-    {
-        //Launch clock latency
-        Time latency;
-        if (timing_type == TimingType::SETUP) {
-            //Setup clock launches late
-            latency = Time(timing_constraints_.source_latency(domain, ArrivalType::LATE));
-        } else {
-            TATUM_ASSERT(timing_type == TimingType::HOLD);
-            //Hold clock launches early
-            latency = Time(timing_constraints_.source_latency(domain, ArrivalType::EARLY));
-        }
-        path += latency;
-        std::string point = "clock source latency";
-        path_helper.update_print_path(os, point, path);
-    }
-
-
+                                                 Time offset,
+                                                 ArrivalType arrival_type) const {
     DelayType delay_type;
     if (timing_type == TimingType::SETUP) {
         delay_type = DelayType::MAX;
@@ -565,8 +553,63 @@ Time TimingReporter::report_timing_clock_subpath(std::ostream& os,
         delay_type = DelayType::MIN;
     }
 
-    //Launch clock path
-    for(const TimingPathElem& path_elem : subpath.elements()) {
+    // Default: iterate from the beginning of the subpath.
+    // The generated-clock branch below may advance this past gen_src to avoid showing it twice.
+    auto subpath_begin = subpath.elements().begin();
+
+    if (timing_constraints_.has_generated_clock_source_path(domain)) {
+        // Generated clock: show the user-specified extra latency as "clock source latency",
+        // then expand the actual network path from the master clock source through the
+        // generator flip-flop's output (clk-to-Q). The last stored element is gen_src.
+        Time base_path = path;
+        Time user_lat = Time(timing_constraints_.user_source_latency(domain, arrival_type));
+        path += user_lat;
+        path_helper.update_print_path(os, "clock source latency", path + offset);
+
+        // The stored cumulative delays were computed with LATE (MAX) or EARLY (MIN) edge delays
+        // to match the STA traversal. Use the same delay type here so breakdown components
+        // sum to the stored cumulative and no negative incremental appears.
+        DelayType gen_clk_delay_type = (arrival_type == ArrivalType::LATE) ? DelayType::MAX : DelayType::MIN;
+
+        const auto& src_path = timing_constraints_.generated_clock_source_path(domain, arrival_type);
+        for (const auto& elem : src_path) {
+            if (elem.incoming_edge) {
+                auto delay_breakdown = name_resolver_.edge_delay_breakdown(elem.incoming_edge, gen_clk_delay_type);
+                for (const auto& dc : delay_breakdown.components) {
+                    std::string bp = "|";
+                    if (!dc.inst_name.empty()) bp += " " + dc.inst_name;
+                    if (!dc.type_name.empty()) bp += " (" + dc.type_name + ")";
+                    path += dc.delay;
+                    path_helper.update_print_path(os, bp, path + offset);
+                }
+            }
+            path = base_path + user_lat + elem.cumulative_delay;
+            std::string point = name_resolver_.node_name(elem.node)
+                              + " (" + name_resolver_.node_type_name(elem.node) + ")";
+            // Annotate the generator flip-flop's Q output (reached via clk-to-Q arc)
+            if (elem.incoming_edge
+                    && timing_graph_.edge_type(elem.incoming_edge) == EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
+                point += " [clock-to-output]";
+            }
+            path_helper.update_print_path(os, point, path + offset);
+        }
+
+        // gen_src is the last stored element. For regular FF capture, the subpath also
+        // starts at gen_src — skip it there to avoid printing it twice.
+        if (!src_path.empty() && subpath_begin != subpath.elements().end()
+                && subpath_begin->node() == src_path.back().node) {
+            ++subpath_begin;
+        }
+    } else {
+        // Standard clock: show the full source latency as a single line.
+        Time latency = Time(timing_constraints_.source_latency(domain, arrival_type));
+        path += latency;
+        path_helper.update_print_path(os, "clock source latency", path + offset);
+    }
+
+    //Clock network path (from gen clock SOURCE node to capture/launch CPIN)
+    for (auto it = subpath_begin; it != subpath.elements().end(); ++it) {
+        const TimingPathElem& path_elem = *it;
 
         //Ask the application for a detailed breakdown of the edge delays
         auto delay_breakdown = name_resolver_.edge_delay_breakdown(path_elem.incomming_edge(), delay_type);
@@ -585,7 +628,6 @@ Time TimingReporter::report_timing_clock_subpath(std::ostream& os,
             }
             TATUM_ASSERT_MSG(nearly_equal(path, path_elem.tag().time()), "Delay breakdown must match calculated delay");
         }
-
 
         std::string point = name_resolver_.node_name(path_elem.node()) + " (" + name_resolver_.node_type_name(path_elem.node()) + ")";
 

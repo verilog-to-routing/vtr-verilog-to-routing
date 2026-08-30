@@ -5,6 +5,7 @@
 #include "tatum/TimingConstraintsFwd.hpp"
 #include "tatum/timing_analyzers.hpp"
 
+#include "tatum/base/ArrivalType.hpp"
 #include "tatum/TimingGraphNameResolver.hpp"
 #include "tatum/report/TimingPath.hpp"
 #include "tatum/report/TimingPathCollector.hpp"
@@ -135,13 +136,17 @@ class TimingReporter {
                                                  Time path) const;
 
         //Reports clock latency and path (caller should handle rising edge)
-        Time report_timing_clock_subpath(std::ostream& os, 
+        //arrival_type controls which source latency is used: LATE for launch paths (pessimistic
+        //setup launch / pessimistic hold capture) and EARLY for capture paths (pessimistic setup
+        //capture / pessimistic hold launch).
+        Time report_timing_clock_subpath(std::ostream& os,
                                          detail::ReportTimingPathHelper& path_helper,
                                          const TimingSubPath& subpath,
                                          DomainId domain,
                                          TimingType timing_type,
                                          Time path,
-                                         Time offset) const;
+                                         Time offset,
+                                         ArrivalType arrival_type) const;
 
         bool nearly_equal(const tatum::Time& lhs, const tatum::Time& rhs) const;
 
