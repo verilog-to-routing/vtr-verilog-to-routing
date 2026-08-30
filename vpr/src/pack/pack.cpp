@@ -347,7 +347,7 @@ bool try_pack(const t_packer_opts& packer_opts,
     // it for the block type(s) that actually need it.
     if (appack_ctx.appack_options.use_appack && packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
         constexpr float kMinUtilizationForThresholdBump = 0.5f;
-        constexpr float kMaxDistThUtilizationScaleMultiplier = 30.0f;
+        constexpr float kMaxDistThUtilizationScaleMultiplier = 10.0f;
         constexpr float kSevereUtilizationCutoff = 1.5f;
 
         std::unordered_set<t_logical_block_type_ptr> severe_block_types;
