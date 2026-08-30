@@ -7,6 +7,9 @@
  *          information used to configure APPack in the packer.
  */
 
+#include <cstddef>
+#include <map>
+#include <vector>
 #include "appack_max_dist_th_manager.h"
 #include "appack_unrelated_clustering_manager.h"
 #include "device_grid.h"
@@ -79,6 +82,15 @@ struct t_appack_options {
 };
 
 /**
+ * @brief Result of APPackContext::adjust_for_device_size_estimate.
+ */
+struct t_appack_device_size_adjustment {
+    /// @brief Whether unrelated clustering should be enabled globally (for all
+    ///        block types) from the start of packing.
+    bool allow_unrelated_clustering = false;
+};
+
+/**
  * @brief State relating to APPack.
  *
  * This class is intended to contain information on using flat placement
@@ -127,4 +139,41 @@ struct APPackContext : public Context {
     // how far we should search for unrelated candidates and how many attempts
     // we should perform.
     APPackUnrelatedClusteringManager unrelated_clustering_manager;
+
+    // ============ Device size estimate reaction ========================== //
+    // Tuning constants for adjust_for_device_size_estimate. "Utilization" here
+    // means a block type's estimated instance count (from the pre-packing
+    // device size estimate) divided by the number of instances available on
+    // the device.
+
+    /// @brief Minimum estimated utilization of a block type before its max
+    ///        candidate distance threshold is widened.
+    static constexpr float device_size_min_utilization_for_th_bump = 0.5f;
+
+    /// @brief Largest multiplier applied to a block type's max candidate
+    ///        distance threshold. Reached once the estimated utilization is at
+    ///        (or above) device_size_severe_utilization_cutoff.
+    static constexpr float device_size_max_dist_th_scale_multiplier = 10.0f;
+
+    /// @brief Estimated utilization at (or above) which a block type is
+    ///        considered severely over capacity.
+    static constexpr float device_size_severe_utilization_cutoff = 1.5f;
+
+    /**
+     * @brief Adjusts the APPack parameters according to how dense the device is
+     *        expected to be. This function returns any adjustments that needs
+     *.       to be made to the overall packing algorithm (not related to APPack).
+     *
+     *  @param estimated_type_instance_counts
+     *      Estimated number of instances of each logical block type needed by
+     *      the netlist, computed before packing.
+     *  @param logical_block_types
+     *      All logical block types in the architecture.
+     *  @param device_grid
+     *      The device grid, used to count available instances of each type.
+     */
+    t_appack_device_size_adjustment adjust_for_device_size_estimate(
+        const std::map<t_logical_block_type_ptr, size_t>& estimated_type_instance_counts,
+        const std::vector<t_logical_block_type>& logical_block_types,
+        const DeviceGrid& device_grid);
 };
