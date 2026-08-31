@@ -108,6 +108,11 @@ bool route(const Netlist<>& net_list,
         VTR_ASSERT_MSG(router_opts.routing_failure_predictor == OFF, "Unrecognized routing failure predictor setting");
     }
 
+    //Tracks the predictor's initial run of non-extrapolable estimates.
+    //See ROUTING_PREDICTOR_MAX_DEGENERATE_ITERATIONS.
+    size_t initial_degenerate_predictions = 0;
+    bool predictor_has_extrapolated = false;
+
     float high_effort_congestion_mode_iteration_threshold = router_opts.congested_routing_iteration_threshold_frac * router_opts.max_router_iterations;
 
     /* Set delay of ignored signals to zero. Non-ignored net delays are set by
@@ -434,7 +439,24 @@ bool route(const Netlist<>& net_list,
         if (overuse_info.overused_nodes > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
             //Only consider aborting if we have a significant number of overused resources
 
-            if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold && router_opts.routing_budgets_algorithm != YOYO) {
+            // An infinite estimate means the fit over the recent history has a non-negative
+            // slope, so the model could not extrapolate. Count those only until the model
+            // first produces a usable estimate.
+            if (!predictor_has_extrapolated && !std::isnan(est_success_iteration)) {
+                if (std::isinf(est_success_iteration)) {
+                    ++initial_degenerate_predictions;
+                } else {
+                    predictor_has_extrapolated = true;
+                }
+            }
+
+            bool awaiting_usable_prediction = router_opts.routing_failure_predictor == SAFE
+                                              && std::isinf(est_success_iteration)
+                                              && !predictor_has_extrapolated
+                                              && initial_degenerate_predictions <= ROUTING_PREDICTOR_MAX_DEGENERATE_ITERATIONS;
+
+            if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold
+                && !awaiting_usable_prediction && router_opts.routing_budgets_algorithm != YOYO) {
                 VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
                 break; //Abort
             }

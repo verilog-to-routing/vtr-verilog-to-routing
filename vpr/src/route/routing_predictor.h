@@ -14,6 +14,10 @@ constexpr float ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_AGGRESSIVE = 1.5;
 // This avoids giving up when solutions are nearly legal, but converging slowly
 constexpr size_t ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD = 100;
 
+// If overuse is flat or increasing, the predictor cannot extrapolate and returns infinity.
+// In SAFE mode, allow a few such predictions before giving up.
+constexpr size_t ROUTING_PREDICTOR_MAX_DEGENERATE_ITERATIONS = 10;
+
 /**
  * @brief Summary of the linear fit behind the most recent success-iteration estimate.
  */
