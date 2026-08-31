@@ -38,7 +38,7 @@ template<typename T>
 float variance(std::vector<float> values, float avg);
 
 float covariance(const std::vector<size_t>& x_values, const std::vector<float>& y_values, float x_avg, float y_avg);
-LinearModel simple_linear_regression(std::vector<size_t> x_values, std::vector<float> y_values);
+LinearModel simple_linear_regression(const std::vector<size_t>& x_values, const std::vector<float>& y_values);
 LinearModel fit_model(const std::vector<size_t>& iterations,
                       const std::vector<size_t>& overuse,
                       float history_factor,
@@ -70,7 +70,7 @@ float RoutingPredictor::get_slope() const {
     return slope_;
 }
 
-LinearModel simple_linear_regression(std::vector<size_t> x_values, std::vector<float> y_values) {
+LinearModel simple_linear_regression(const std::vector<size_t>& x_values, const std::vector<float>& y_values) {
     float y_avg = std::accumulate(y_values.begin(), y_values.end(), 0.) / y_values.size();
     float x_avg = std::accumulate(x_values.begin(), x_values.end(), 0.) / x_values.size();
 
