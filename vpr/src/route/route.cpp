@@ -438,6 +438,7 @@ bool route(const Netlist<>& net_list,
         //Estimate at what iteration we will converge to a legal routing
         if (overuse_info.overused_nodes > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
             //Only consider aborting if we have a significant number of overused resources
+            const t_routing_predictor_fit& predictor_fit = routing_predictor.get_last_fit();
 
             // An infinite estimate means the fit over the recent history has a non-negative
             // slope, so the model could not extrapolate. Count those only until the model
@@ -455,9 +456,19 @@ bool route(const Netlist<>& net_list,
                                               && !predictor_has_extrapolated
                                               && initial_degenerate_predictions <= ROUTING_PREDICTOR_MAX_DEGENERATE_ITERATIONS;
 
+            VTR_LOGV(router_opts.route_verbosity > 1 && predictor_fit.num_samples > 0,
+                     "Routing predictor: fit over iterations %zu-%zu (%zu samples), log-overuse slope %+.4g,"
+                     " estimated success iteration %.1f, abort threshold %.1f%s\n",
+                     predictor_fit.first_iteration, predictor_fit.last_iteration, predictor_fit.num_samples,
+                     predictor_fit.slope, est_success_iteration, abort_iteration_threshold,
+                     awaiting_usable_prediction ? " (waiting for an extrapolable fit)" : "");
+
             if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold
                 && !awaiting_usable_prediction && router_opts.routing_budgets_algorithm != YOYO) {
-                VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
+                VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high"
+                        " (abort threshold %.1f, %zu overused nodes, log-overuse slope %+.4g over iterations %zu-%zu).\n",
+                        est_success_iteration, abort_iteration_threshold, overuse_info.overused_nodes,
+                        predictor_fit.slope, predictor_fit.first_iteration, predictor_fit.last_iteration);
                 break; //Abort
             }
         }
