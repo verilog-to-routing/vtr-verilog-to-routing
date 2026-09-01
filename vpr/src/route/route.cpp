@@ -98,7 +98,7 @@ bool route(const Netlist<>& net_list,
     /*
      * Configure the routing predictor
      */
-    RoutingPredictor routing_predictor;
+    RoutingPredictor routing_predictor(router_opts.routing_predictor_min_history);
     float abort_iteration_threshold = std::numeric_limits<float>::infinity(); //Default no early abort
     if (router_opts.routing_failure_predictor == SAFE) {
         abort_iteration_threshold = ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_SAFE * router_opts.max_router_iterations;
