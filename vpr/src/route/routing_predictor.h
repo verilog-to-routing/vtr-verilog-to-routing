@@ -31,7 +31,7 @@ struct t_routing_predictor_fit {
 
 class RoutingPredictor {
   public:
-    RoutingPredictor(size_t min_history = 8, float history_factor = 0.5);
+    RoutingPredictor(size_t min_history = 8, bool safe_mode = false, int verbosity = 0, float history_factor = 0.5);
 
     //Returns the estimated iteration when routing will succeed
     float estimate_success_iteration();
@@ -46,12 +46,23 @@ class RoutingPredictor {
     ///@brief Returns the fit used by the most recent estimate_success_iteration() call
     const t_routing_predictor_fit& get_last_fit() const { return last_fit_; }
 
+    /**
+     * @brief Returns whether the most recent estimate_success_iteration() result should be
+     *        trusted when deciding to abort routing.
+     */
+    bool prediction_is_valid(size_t num_overused_nodes);
+
   private:
     size_t min_history_;
+    bool safe_mode_;
+    int verbosity_;
     float history_factor_;
 
     std::vector<size_t> iterations_;
     std::vector<size_t> iteration_overused_rr_node_counts_;
     float slope_;
-    t_routing_predictor_fit last_fit_; ///< Fit recorded by the most recent estimate_success_iteration() call
+    t_routing_predictor_fit last_fit_;                              ///< Fit recorded by the most recent estimate_success_iteration() call
+    float last_estimate_ = std::numeric_limits<float>::quiet_NaN(); ///< Result of the most recent estimate_success_iteration() call
+    size_t initial_degenerate_predictions_ = 0;                     ///< Length of the predictor's initial run of degenerate (non-extrapolable) estimates
+    bool has_extrapolated_ = false;                                 ///< True once the predictor has produced a finite estimate
 };

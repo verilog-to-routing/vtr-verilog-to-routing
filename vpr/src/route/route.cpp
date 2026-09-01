@@ -98,7 +98,9 @@ bool route(const Netlist<>& net_list,
     /*
      * Configure the routing predictor
      */
-    RoutingPredictor routing_predictor(router_opts.routing_predictor_min_history);
+    RoutingPredictor routing_predictor(router_opts.routing_predictor_min_history,
+                                       /*safe_mode=*/router_opts.routing_failure_predictor == SAFE,
+                                       router_opts.route_verbosity);
     float abort_iteration_threshold = std::numeric_limits<float>::infinity(); //Default no early abort
     if (router_opts.routing_failure_predictor == SAFE) {
         abort_iteration_threshold = ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_SAFE * router_opts.max_router_iterations;
@@ -107,11 +109,6 @@ bool route(const Netlist<>& net_list,
     } else {
         VTR_ASSERT_MSG(router_opts.routing_failure_predictor == OFF, "Unrecognized routing failure predictor setting");
     }
-
-    //Tracks the predictor's initial run of non-extrapolable estimates.
-    //See ROUTING_PREDICTOR_MAX_DEGENERATE_ITERATIONS.
-    size_t initial_degenerate_predictions = 0;
-    bool predictor_has_extrapolated = false;
 
     float high_effort_congestion_mode_iteration_threshold = router_opts.congested_routing_iteration_threshold_frac * router_opts.max_router_iterations;
 
@@ -436,41 +433,15 @@ bool route(const Netlist<>& net_list,
         }
 
         //Estimate at what iteration we will converge to a legal routing
-        if (overuse_info.overused_nodes > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
-            //Only consider aborting if we have a significant number of overused resources
+        if (routing_predictor.prediction_is_valid(overuse_info.overused_nodes)
+            && est_success_iteration > abort_iteration_threshold
+            && router_opts.routing_budgets_algorithm != YOYO) {
             const t_routing_predictor_fit& predictor_fit = routing_predictor.get_last_fit();
-
-            // An infinite estimate means the fit over the recent history has a non-negative
-            // slope, so the model could not extrapolate. Count those only until the model
-            // first produces a usable estimate.
-            if (!predictor_has_extrapolated && !std::isnan(est_success_iteration)) {
-                if (std::isinf(est_success_iteration)) {
-                    ++initial_degenerate_predictions;
-                } else {
-                    predictor_has_extrapolated = true;
-                }
-            }
-
-            bool awaiting_usable_prediction = router_opts.routing_failure_predictor == SAFE
-                                              && std::isinf(est_success_iteration)
-                                              && !predictor_has_extrapolated
-                                              && initial_degenerate_predictions <= ROUTING_PREDICTOR_MAX_DEGENERATE_ITERATIONS;
-
-            VTR_LOGV(router_opts.route_verbosity > 1 && predictor_fit.num_samples > 0,
-                     "Routing predictor: fit over iterations %zu-%zu (%zu samples), log-overuse slope %+.4g,"
-                     " estimated success iteration %.1f, abort threshold %.1f%s\n",
-                     predictor_fit.first_iteration, predictor_fit.last_iteration, predictor_fit.num_samples,
-                     predictor_fit.slope, est_success_iteration, abort_iteration_threshold,
-                     awaiting_usable_prediction ? " (waiting for an extrapolable fit)" : "");
-
-            if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold
-                && !awaiting_usable_prediction && router_opts.routing_budgets_algorithm != YOYO) {
-                VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high"
-                        " (abort threshold %.1f, %zu overused nodes, log-overuse slope %+.4g over iterations %zu-%zu).\n",
-                        est_success_iteration, abort_iteration_threshold, overuse_info.overused_nodes,
-                        predictor_fit.slope, predictor_fit.first_iteration, predictor_fit.last_iteration);
-                break; //Abort
-            }
+            VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high"
+                    " (abort threshold %.1f, %zu overused nodes, log-overuse slope %+.4g over iterations %zu-%zu).\n",
+                    est_success_iteration, abort_iteration_threshold, overuse_info.overused_nodes,
+                    predictor_fit.slope, predictor_fit.first_iteration, predictor_fit.last_iteration);
+            break; //Abort
         }
 
         if (itry == 1 && router_opts.exit_after_first_routing_iteration) {

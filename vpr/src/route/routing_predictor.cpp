@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "vtr_assert.h"
+#include "vtr_log.h"
 
 #include "routing_predictor.h"
 
@@ -167,8 +168,10 @@ LinearModel fit_model(const std::vector<size_t>& iterations,
     return model;
 }
 
-RoutingPredictor::RoutingPredictor(size_t min_history, float history_factor)
+RoutingPredictor::RoutingPredictor(size_t min_history, bool safe_mode, int verbosity, float history_factor)
     : min_history_(min_history)
+    , safe_mode_(safe_mode)
+    , verbosity_(verbosity)
     , history_factor_(history_factor)
     , slope_(-1) {
     //nop
@@ -194,7 +197,43 @@ float RoutingPredictor::estimate_success_iteration() {
         }
     }
 
+    last_estimate_ = success_iteration;
     return success_iteration;
+}
+
+bool RoutingPredictor::prediction_is_valid(size_t num_overused_nodes) {
+    if (num_overused_nodes <= ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
+        //Only consider the prediction actionable if there is a significant number of
+        //overused resources; near-legal routings may converge slowly
+        return false;
+    }
+
+    // An infinite estimate means the fit over the recent history has a non-negative
+    // slope, so the model could not extrapolate. Count those only until the model
+    // first produces a usable estimate.
+    if (!has_extrapolated_ && !std::isnan(last_estimate_)) {
+        if (std::isinf(last_estimate_)) {
+            ++initial_degenerate_predictions_;
+        } else {
+            has_extrapolated_ = true;
+        }
+    }
+
+    // In safe mode, tolerate an initial run of degenerate fits rather than treating
+    // their infinite estimates as predictions that routing will never converge
+    bool awaiting_usable_prediction = safe_mode_
+                                      && std::isinf(last_estimate_)
+                                      && !has_extrapolated_
+                                      && initial_degenerate_predictions_ <= ROUTING_PREDICTOR_MAX_DEGENERATE_ITERATIONS;
+
+    VTR_LOGV(verbosity_ > 1 && last_fit_.num_samples > 0,
+             "Routing predictor: fit over iterations %zu-%zu (%zu samples), log-overuse slope %+.4g,"
+             " estimated success iteration %.1f%s\n",
+             last_fit_.first_iteration, last_fit_.last_iteration, last_fit_.num_samples,
+             last_fit_.slope, last_estimate_,
+             awaiting_usable_prediction ? " (waiting for an extrapolable fit)" : "");
+
+    return !std::isnan(last_estimate_) && !awaiting_usable_prediction;
 }
 
 float RoutingPredictor::estimate_overuse_slope() {
