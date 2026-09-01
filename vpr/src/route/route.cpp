@@ -320,9 +320,6 @@ bool route(const Netlist<>& net_list,
 
         wirelength_info = calculate_wirelength_info(net_list, available_wirelength);
         routing_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes);
-
-        // Estimate after recording this iteration, so the prediction and the cached fit both
-        // reflect the overuse just measured rather than lagging it by one iteration.
         float est_success_iteration = routing_predictor.estimate_success_iteration();
 
         //Update timing based on the new routing
@@ -433,7 +430,7 @@ bool route(const Netlist<>& net_list,
         }
 
         //Estimate at what iteration we will converge to a legal routing
-        if (routing_predictor.prediction_is_valid(overuse_info.overused_nodes)
+        if (routing_predictor.prediction_is_valid()
             && est_success_iteration > abort_iteration_threshold
             && router_opts.routing_budgets_algorithm != YOYO) {
             const t_routing_predictor_fit& predictor_fit = routing_predictor.get_last_fit();

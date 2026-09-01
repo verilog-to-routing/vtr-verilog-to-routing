@@ -33,26 +33,33 @@ class RoutingPredictor {
   public:
     RoutingPredictor(size_t min_history = 8, bool safe_mode = false, int verbosity = 0, float history_factor = 0.5);
 
-    //Returns the estimated iteration when routing will succeed
-    float estimate_success_iteration();
+    //Returns the estimated iteration when routing will succeed.
+    float estimate_success_iteration() const;
 
     //Returns the current estimated slope (RR nodes per iteration)
     float estimate_overuse_slope();
 
+    /**
+     * @brief Records the overuse measured for a routing iteration, and updates all
+     *        derived state. Call once per routing iteration.
+     */
     void add_iteration_overuse(size_t iteration, size_t overused_rr_node_count);
 
     float get_slope() const;
 
-    ///@brief Returns the fit used by the most recent estimate_success_iteration() call
+    ///@brief Returns the fit reflecting the most recent add_iteration_overuse() call
     const t_routing_predictor_fit& get_last_fit() const { return last_fit_; }
 
     /**
-     * @brief Returns whether the most recent estimate_success_iteration() result should be
+     * @brief Returns whether the current estimate_success_iteration() result should be
      *        trusted when deciding to abort routing.
      */
-    bool prediction_is_valid(size_t num_overused_nodes);
+    bool prediction_is_valid() const;
 
   private:
+    ///@brief True while safe mode is tolerating the predictor's initial run of degenerate fits
+    bool awaiting_usable_prediction_() const;
+
     size_t min_history_;
     bool safe_mode_;
     int verbosity_;
@@ -61,8 +68,8 @@ class RoutingPredictor {
     std::vector<size_t> iterations_;
     std::vector<size_t> iteration_overused_rr_node_counts_;
     float slope_;
-    t_routing_predictor_fit last_fit_;                              ///< Fit recorded by the most recent estimate_success_iteration() call
-    float last_estimate_ = std::numeric_limits<float>::quiet_NaN(); ///< Result of the most recent estimate_success_iteration() call
+    t_routing_predictor_fit last_fit_;                              ///< Fit reflecting the most recent add_iteration_overuse() call
+    float last_estimate_ = std::numeric_limits<float>::quiet_NaN(); ///< Success-iteration estimate reflecting the most recent add_iteration_overuse() call
     size_t initial_degenerate_predictions_ = 0;                     ///< Length of the predictor's initial run of degenerate (non-extrapolable) estimates
     bool has_extrapolated_ = false;                                 ///< True once the predictor has produced a finite estimate
 };
