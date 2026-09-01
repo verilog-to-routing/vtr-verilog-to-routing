@@ -40,10 +40,9 @@ float variance(std::vector<float> values, float avg);
 
 float covariance(const std::vector<size_t>& x_values, const std::vector<float>& y_values, float x_avg, float y_avg);
 LinearModel simple_linear_regression(const std::vector<size_t>& x_values, const std::vector<float>& y_values);
-LinearModel fit_model(const std::vector<size_t>& iterations,
-                      const std::vector<size_t>& overuse,
-                      float history_factor,
-                      t_routing_predictor_fit* fit_summary = nullptr);
+t_routing_predictor_fit fit_model(const std::vector<size_t>& iterations,
+                                  const std::vector<size_t>& overuse,
+                                  float history_factor);
 
 template<typename T>
 float variance(const std::vector<T>& values, float avg) {
@@ -84,10 +83,9 @@ LinearModel simple_linear_regression(const std::vector<size_t>& x_values, const 
     return LinearModel(beta, alpha);
 }
 
-LinearModel fit_model(const std::vector<size_t>& iterations,
-                      const std::vector<size_t>& overuse,
-                      float history_factor,
-                      t_routing_predictor_fit* fit_summary) {
+t_routing_predictor_fit fit_model(const std::vector<size_t>& iterations,
+                                  const std::vector<size_t>& overuse,
+                                  float history_factor) {
     //For pathfinder-based routing overuse tends to follow a negative-exponential:
     //
     //    ^
@@ -156,16 +154,16 @@ LinearModel fit_model(const std::vector<size_t>& iterations,
     VTR_ASSERT(!hist_iters.empty());
     LinearModel model = simple_linear_regression(hist_iters, hist_log_overuse);
 
-    // Record what the fit was built from, so callers can report and interpret it
-    if (fit_summary != nullptr) {
-        fit_summary->slope = model.get_slope();
-        fit_summary->y_intercept = model.find_y_for_x_value(0.);
-        fit_summary->first_iteration = hist_iters.front();
-        fit_summary->last_iteration = hist_iters.back();
-        fit_summary->num_samples = hist_iters.size();
-    }
+    //The slope and y-intercept fully describe the fitted model; also record what
+    //the fit was built from, so callers can report and interpret it
+    t_routing_predictor_fit fit;
+    fit.slope = model.get_slope();
+    fit.y_intercept = model.find_y_for_x_value(0.);
+    fit.first_iteration = hist_iters.front();
+    fit.last_iteration = hist_iters.back();
+    fit.num_samples = hist_iters.size();
 
-    return model;
+    return fit;
 }
 
 RoutingPredictor::RoutingPredictor(size_t min_history, bool safe_mode, int verbosity, float history_factor)
@@ -212,7 +210,8 @@ float RoutingPredictor::estimate_overuse_slope() {
     float history_factor = FIXED_HISTORY_SIZE / iterations_.size(); //Fixed history size
 
     if (iterations_.size() >= FIXED_HISTORY_SIZE) {
-        auto model = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor);
+        t_routing_predictor_fit fit = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor);
+        LinearModel model(fit.slope, fit.y_intercept);
 
         float log_curr_usage = model.find_y_for_x_value(*(--iterations_.end()));
         float log_next_usage = model.find_y_for_x_value(*(--iterations_.end()) + 1);
@@ -237,9 +236,10 @@ void RoutingPredictor::add_iteration_overuse(size_t iteration, size_t overused_r
     last_fit_ = t_routing_predictor_fit();
     last_estimate_ = std::numeric_limits<float>::quiet_NaN();
     if (iterations_.size() > min_history_) {
-        LinearModel model = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor_, &last_fit_);
-        slope_ = model.get_slope();
+        last_fit_ = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor_);
+        slope_ = last_fit_.slope;
 
+        LinearModel model(last_fit_.slope, last_fit_.y_intercept);
         last_estimate_ = model.find_x_for_y_value(0.);
         if (last_estimate_ < 0.) {
             //Iterations less than zero occurs when the slope is positive,
