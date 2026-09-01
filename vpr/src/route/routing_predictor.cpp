@@ -7,6 +7,8 @@
 
 #include "routing_predictor.h"
 
+namespace {
+
 class LinearModel {
   public:
     LinearModel(float slope = std::numeric_limits<float>::quiet_NaN(), float y_intercept = std::numeric_limits<float>::quiet_NaN())
@@ -36,15 +38,6 @@ class LinearModel {
 };
 
 template<typename T>
-float variance(std::vector<float> values, float avg);
-
-float covariance(const std::vector<size_t>& x_values, const std::vector<float>& y_values, float x_avg, float y_avg);
-LinearModel simple_linear_regression(const std::vector<size_t>& x_values, const std::vector<float>& y_values);
-t_routing_predictor_fit fit_model(const std::vector<size_t>& iterations,
-                                  const std::vector<size_t>& overuse,
-                                  float history_factor);
-
-template<typename T>
 float variance(const std::vector<T>& values, float avg) {
     float var = 0;
     for (float val : values) {
@@ -65,11 +58,6 @@ float covariance(const std::vector<size_t>& x_values, const std::vector<float>& 
     return cov;
 }
 
-float RoutingPredictor::get_slope() const {
-    //Return cached slope, computed in add_iteration_overuse()
-    return slope_;
-}
-
 LinearModel simple_linear_regression(const std::vector<size_t>& x_values, const std::vector<float>& y_values) {
     float y_avg = std::accumulate(y_values.begin(), y_values.end(), 0.) / y_values.size();
     float x_avg = std::accumulate(x_values.begin(), x_values.end(), 0.) / x_values.size();
@@ -83,9 +71,14 @@ LinearModel simple_linear_regression(const std::vector<size_t>& x_values, const 
     return LinearModel(beta, alpha);
 }
 
-t_routing_predictor_fit fit_model(const std::vector<size_t>& iterations,
-                                  const std::vector<size_t>& overuse,
-                                  float history_factor) {
+} // namespace
+
+float RoutingPredictor::get_slope() const {
+    //Return cached slope, computed in add_iteration_overuse()
+    return slope_;
+}
+
+t_routing_predictor_fit RoutingPredictor::fit_model_(float history_factor) const {
     //For pathfinder-based routing overuse tends to follow a negative-exponential:
     //
     //    ^
@@ -138,15 +131,15 @@ t_routing_predictor_fit fit_model(const std::vector<size_t>& iterations,
     //(since the history inspected grows as the number of iterations increases,
     //later iterations use a longer history which helps reduce the noise caused by
     //small numbers of overused nodes)
-    size_t start = overuse.size() - std::round(history_factor * overuse.size());
-    size_t end = overuse.size();
+    size_t start = iterations_.size() - std::round(history_factor * iterations_.size());
+    size_t end = iterations_.size();
 
     //Calculate the log overuse for the history we are interested in
     std::vector<float> hist_log_overuse;
     std::vector<size_t> hist_iters;
     for (size_t i = start; i < end; ++i) {
-        hist_log_overuse.push_back(std::log(overuse[i]));
-        hist_iters.push_back(iterations[i]);
+        hist_log_overuse.push_back(std::log(iteration_overused_rr_node_counts_[i]));
+        hist_iters.push_back(iterations_[i]);
     }
 
     //We fit a linear model to the log of the overuse, this keeps the model simple but
@@ -210,7 +203,7 @@ float RoutingPredictor::estimate_overuse_slope() {
     float history_factor = FIXED_HISTORY_SIZE / iterations_.size(); //Fixed history size
 
     if (iterations_.size() >= FIXED_HISTORY_SIZE) {
-        t_routing_predictor_fit fit = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor);
+        t_routing_predictor_fit fit = fit_model_(history_factor);
         LinearModel model(fit.slope, fit.y_intercept);
 
         float log_curr_usage = model.find_y_for_x_value(*(--iterations_.end()));
@@ -236,7 +229,7 @@ void RoutingPredictor::add_iteration_overuse(size_t iteration, size_t overused_r
     last_fit_ = t_routing_predictor_fit();
     last_estimate_ = std::numeric_limits<float>::quiet_NaN();
     if (iterations_.size() > min_history_) {
-        last_fit_ = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor_);
+        last_fit_ = fit_model_(history_factor_);
         slope_ = last_fit_.slope;
 
         LinearModel model(last_fit_.slope, last_fit_.y_intercept);

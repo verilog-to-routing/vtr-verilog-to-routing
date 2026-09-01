@@ -60,6 +60,9 @@ class RoutingPredictor {
     ///@brief True while safe mode is tolerating the predictor's initial run of degenerate fits
     bool awaiting_usable_prediction_() const;
 
+    ///@brief Fits a linear model to the log of the last history_factor of the overuse history
+    t_routing_predictor_fit fit_model_(float history_factor) const;
+
     size_t min_history_;
     bool safe_mode_;
     int verbosity_;
