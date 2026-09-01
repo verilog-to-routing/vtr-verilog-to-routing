@@ -160,7 +160,7 @@ class APClusterPlacer {
                     const char* constraints_file)
         : place_macros_(place_macros) {
         // Initialize the block loc registry.
-        auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         blk_loc_registry.init();
 
         // Place the fixed blocks and mark them as fixed.
@@ -188,7 +188,7 @@ class APClusterPlacer {
         const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
         const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
         const auto& block_locs = g_vpr_ctx.placement().block_locs();
-        auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         // If this block has already been placed, just return true.
         // TODO: This should be investigated further. What I think is happening
         //       is that a macro is being placed which contains another cluster.
@@ -232,7 +232,7 @@ class APClusterPlacer {
     //       centroid, then random, then exhaustive.
     bool exhaustively_place_cluster(ClusterBlockId clb_blk_id) {
         const auto& block_locs = g_vpr_ctx.placement().block_locs();
-        auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         // If this block has already been placed, just return true.
         // TODO: See similar comment above.
         if (is_block_placed(clb_blk_id, block_locs))
@@ -343,7 +343,7 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     for (APBlockId blk_id : ap_netlist_.blocks()) {
         t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(blk_id);
         for (PackMoleculeId mol_id : ap_netlist_.block_molecules(blk_id)) {
-            const auto& mol = prepacker_.get_molecule(mol_id);
+            const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
 
             int num_ext_inputs = prepacker_.calc_molecule_stats(mol_id, atom_netlist_, arch_.models).num_used_ext_inputs;
             bool long_chain = mol.is_chain() && prepacker_.get_molecule_chain_info(mol.chain_id).is_long_chain;
@@ -1367,7 +1367,7 @@ void FullLegalizer::update_drawing_data_structures() {
 }
 
 void FullLegalizer::recreate_device_if_needed() {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     // Capture before grid recreation: vpr_create_device_grid only writes
     // device_ctx.grid and does not touch the RR graph, so this flag remains
     // valid after the call.
