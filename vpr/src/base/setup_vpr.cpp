@@ -520,6 +520,7 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
         RouterOpts->doRouting = e_stage_action::DO;
     }
     RouterOpts->routing_failure_predictor = Options.routing_failure_predictor;
+    RouterOpts->routing_predictor_min_history = Options.routing_predictor_min_history;
     RouterOpts->routing_budgets_algorithm = Options.routing_budgets_algorithm;
     RouterOpts->save_routing_per_iteration = Options.save_routing_per_iteration;
     RouterOpts->congested_routing_iteration_threshold_frac = Options.congested_routing_iteration_threshold_frac;

@@ -1365,6 +1365,7 @@ struct t_router_opts {
     /// the configuration to be used by the routing failure predictor,
     /// how aggressive the threshold used to judge and abort routings deemed unroutable
     e_routing_failure_predictor routing_failure_predictor;
+    int routing_predictor_min_history;
     e_routing_budgets_algorithm routing_budgets_algorithm;
     bool save_routing_per_iteration;
     float congested_routing_iteration_threshold_frac;
