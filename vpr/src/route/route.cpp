@@ -98,7 +98,9 @@ bool route(const Netlist<>& net_list,
     /*
      * Configure the routing predictor
      */
-    RoutingPredictor routing_predictor;
+    RoutingPredictor routing_predictor(router_opts.routing_predictor_min_history,
+                                       /*safe_mode=*/router_opts.routing_failure_predictor == SAFE,
+                                       router_opts.route_verbosity);
     float abort_iteration_threshold = std::numeric_limits<float>::infinity(); //Default no early abort
     if (router_opts.routing_failure_predictor == SAFE) {
         abort_iteration_threshold = ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_SAFE * router_opts.max_router_iterations;
@@ -308,7 +310,6 @@ bool route(const Netlist<>& net_list,
          * Calculate metrics for the current routing
          */
         bool routing_is_feasible = feasible_routing();
-        float est_success_iteration = routing_predictor.estimate_success_iteration();
 
         //Update resource costs and overuse info
         if (itry == 1) {
@@ -319,6 +320,7 @@ bool route(const Netlist<>& net_list,
 
         wirelength_info = calculate_wirelength_info(net_list, available_wirelength);
         routing_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes);
+        float est_success_iteration = routing_predictor.estimate_success_iteration();
 
         //Update timing based on the new routing
         //Note that the net delays have already been updated by timing_driven_route_net
@@ -428,13 +430,15 @@ bool route(const Netlist<>& net_list,
         }
 
         //Estimate at what iteration we will converge to a legal routing
-        if (overuse_info.overused_nodes > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
-            //Only consider aborting if we have a significant number of overused resources
-
-            if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold && router_opts.routing_budgets_algorithm != YOYO) {
-                VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
-                break; //Abort
-            }
+        if (routing_predictor.prediction_is_valid()
+            && est_success_iteration > abort_iteration_threshold
+            && router_opts.routing_budgets_algorithm != YOYO) {
+            const t_routing_predictor_fit& predictor_fit = routing_predictor.get_last_fit();
+            VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high"
+                    " (abort threshold %.1f, %zu overused nodes, log-overuse slope %+.4g over iterations %zu-%zu).\n",
+                    est_success_iteration, abort_iteration_threshold, overuse_info.overused_nodes,
+                    predictor_fit.slope, predictor_fit.first_iteration, predictor_fit.last_iteration);
+            break; //Abort
         }
 
         if (itry == 1 && router_opts.exit_after_first_routing_iteration) {

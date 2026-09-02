@@ -2026,6 +2026,14 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``safe``
 
+.. option:: --routing_predictor_min_history <int>
+
+    Number of routing iterations of overuse history the routing failure predictor must accumulate before it starts estimating the iteration at which a successful route will be found.
+
+    .. seealso:: :option:`--routing_failure_predictor`
+
+    **Default:** ``8``
+
 .. option:: --routing_budgets_algorithm { disable | minimax | yoyo | scale_delay }
 
     .. warning:: Experimental

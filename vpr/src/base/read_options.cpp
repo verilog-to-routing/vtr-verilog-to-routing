@@ -3234,6 +3234,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .choices({"safe", "aggressive", "off"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument(args.routing_predictor_min_history, "--routing_predictor_min_history")
+        .help(
+            "Number of routing iterations of overuse history the routing failure predictor"
+            " must accumulate before it starts estimating the iteration a successful route"
+            " will be found.")
+        .default_value("8")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument<e_routing_budgets_algorithm, RouteBudgetsAlgorithm>(args.routing_budgets_algorithm, "--routing_budgets_algorithm")
         .help(
             "Controls how the routing budgets are created and applied.\n"

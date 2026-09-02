@@ -270,6 +270,7 @@ struct t_options {
     argparse::ArgValue<float> router_init_wirelength_abort_threshold;
     argparse::ArgValue<e_incr_reroute_delay_ripup> incr_reroute_delay_ripup;
     argparse::ArgValue<e_routing_failure_predictor> routing_failure_predictor;
+    argparse::ArgValue<int> routing_predictor_min_history;
     argparse::ArgValue<e_routing_budgets_algorithm> routing_budgets_algorithm;
     argparse::ArgValue<bool> save_routing_per_iteration;
     argparse::ArgValue<float> congested_routing_iteration_threshold_frac;
