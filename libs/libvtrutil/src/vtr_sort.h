@@ -28,6 +28,13 @@ namespace vtr {
  * key_of(element). Elements with equal keys keep their relative order.
  * The input and output ranges must not overlap.
  *
+ * Runs in O(num_elements + num_keys) time and allocates O(num_keys) temporary
+ * storage for the key counts. This beats a comparison sort, which takes
+ * O(num_elements log num_elements), as long as num_keys is not much larger
+ * than the number of elements. A very sparse key space (num_keys far larger
+ * than the element count) wastes both time and memory on empty counts, so
+ * such inputs are a poor match for this function.
+ *
  * @tparam InIt   Forward iterator over the input elements.
  * @tparam OutIt  Random access iterator to the output range.
  * @tparam KeyFn  Callable mapping an element to its key. The key may be any
