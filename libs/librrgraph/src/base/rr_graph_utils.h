@@ -88,16 +88,6 @@ int seg_index_of_cblock(const RRGraphView& rr_graph, e_rr_type from_rr_type, int
 int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node);
 
 /**
- * @brief This function checks whether all inter-die connections are form OPINs. Return "true"
- * if that is the case. Can be used for multiple purposes. For example, to determine which type of bounding
- * box to be used to estimate the wire-length of a net.
- *
- * @param rr_graph The routing resource graph
- * @return True if inter-die 3D connections are driven only by OPIN nodes; otherwise, false.
- */
-bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph);
-
-/**
  * @brief Check if a CHANX and a CHANY node are adjacent, regardless of their order.
  *
  * This function checks spatial adjacency between a CHANX and CHANY node without assuming

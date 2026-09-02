@@ -37,7 +37,6 @@ Placer::Placer(const Netlist<>& net_list,
                const FlatPlacementInfo& flat_placement_info,
                std::shared_ptr<PlaceDelayModel> place_delay_model,
                float anneal_auto_init_t_scale,
-               bool cube_bb,
                bool is_flat,
                bool quiet)
     : placer_opts_(placer_opts)
@@ -48,7 +47,6 @@ Placer::Placer(const Netlist<>& net_list,
     , placer_state_(placer_opts.place_algorithm.is_timing_driven())
     , rng_(placer_opts.seed)
     , net_cost_handler_(placer_state_,
-                        cube_bb,
                         placer_opts.place_algorithm,
                         placer_opts.congestion_chan_util_threshold)
     , place_delay_model_(std::move(place_delay_model))
@@ -70,7 +68,7 @@ Placer::Placer(const Netlist<>& net_list,
     if (device_ctx.grid.has_interposer_cuts()) {
         interposer_cost_handler_.emplace(placer_opts.interposer_cost_params,
                                          [this](ClusterNetId net_id, bool use_ts) -> const t_bb& {
-                                             return net_cost_handler_.cube_bb_coords(net_id, use_ts);
+                                             return net_cost_handler_.bb_coords(net_id, use_ts);
                                          });
     }
 
