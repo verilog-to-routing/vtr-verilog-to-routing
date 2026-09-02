@@ -160,7 +160,7 @@ class APClusterPlacer {
                     const char* constraints_file)
         : place_macros_(place_macros) {
         // Initialize the block loc registry.
-        auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         blk_loc_registry.init();
 
         // Place the fixed blocks and mark them as fixed.
@@ -188,7 +188,7 @@ class APClusterPlacer {
         const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
         const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
         const auto& block_locs = g_vpr_ctx.placement().block_locs();
-        auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         // If this block has already been placed, just return true.
         // TODO: This should be investigated further. What I think is happening
         //       is that a macro is being placed which contains another cluster.
@@ -232,7 +232,7 @@ class APClusterPlacer {
     //       centroid, then random, then exhaustive.
     bool exhaustively_place_cluster(ClusterBlockId clb_blk_id) {
         const auto& block_locs = g_vpr_ctx.placement().block_locs();
-        auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         // If this block has already been placed, just return true.
         // TODO: See similar comment above.
         if (is_block_placed(clb_blk_id, block_locs))
@@ -343,7 +343,7 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     for (APBlockId blk_id : ap_netlist_.blocks()) {
         t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(blk_id);
         for (PackMoleculeId mol_id : ap_netlist_.block_molecules(blk_id)) {
-            const auto& mol = prepacker_.get_molecule(mol_id);
+            const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
 
             int num_ext_inputs = prepacker_.calc_molecule_stats(mol_id, atom_netlist_, arch_.models).num_used_ext_inputs;
             bool long_chain = mol.is_chain() && prepacker_.get_molecule_chain_info(mol.chain_id).is_long_chain;
@@ -374,7 +374,7 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     // Group the molecules by root tile. Any non-zero offset gets
     // pulled back to its root.
     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> tile_blocks;
-    mol_desired_physical_tile_loc.reserve(prepacker_.molecules().size());
+    mol_desired_physical_tile_loc.resize(prepacker_.molecules().size());
     for (const auto& [mol_id, ext_pins, is_long_chain, tile_loc] : sorted_blocks) {
         int width_offset = device_grid_.get_width_offset(tile_loc);
         int height_offset = device_grid_.get_height_offset(tile_loc);
@@ -922,7 +922,7 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
 
 void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
     // Setup the global variables for placement.
-    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
+    g_vpr_ctx.mutable_placement().init_placement_context(arch_.directs);
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
 
     // The placement will be stored in the global block loc registry.
@@ -1225,8 +1225,7 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // Initialize the placement context.
-    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts,
-                                                         arch_.directs);
+    g_vpr_ctx.mutable_placement().init_placement_context(arch_.directs);
 
     const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
 
@@ -1305,7 +1304,7 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     vpr_setup_noc(vpr_setup_, arch_);
 
     // Setup the global variables for placement.
-    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
+    g_vpr_ctx.mutable_placement().init_placement_context(arch_.directs);
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
 
     // The placement will be stored in the global block loc registry.
@@ -1367,7 +1366,7 @@ void FullLegalizer::update_drawing_data_structures() {
 }
 
 void FullLegalizer::recreate_device_if_needed() {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     // Capture before grid recreation: vpr_create_device_grid only writes
     // device_ctx.grid and does not touch the RR graph, so this flag remains
     // valid after the call.
