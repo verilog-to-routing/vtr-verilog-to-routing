@@ -200,7 +200,7 @@ void t_rr_graph_storage::apply_edge_permutation(const std::vector<RREdgeId>& edg
     // then builds the new vector to have rearranged elements from 'vec' and finally move the new vector
     // to replace vec. Essentially does a permutation on vec based on edge_indices.
     auto array_rearrange = [&edge_indices](auto& vec, auto default_value) {
-        // Since vec could have any type, we need to figure out it's type to allocate new_vec.
+        // Since vec could have any type, we need to figure out its type to allocate new_vec.
         // The scary std::remove_reference stuff does exactly that. This does nothing other than building a new 'vec' sized vector.
         typename std::remove_reference<decltype(vec)>::type new_vec(vec.size(), default_value);
 
