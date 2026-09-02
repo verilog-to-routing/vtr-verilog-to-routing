@@ -59,7 +59,7 @@ class KArmedBanditAgent {
     size_t last_action() const { return last_action_; }
 
     /// @brief Overrides the action credited by the next process_outcome() call.
-    ///        See MoveGenerator::get_last_action() for the intended usage.
+    ///        See MoveGenerator::save_proposal_state() for the intended usage.
     void set_last_action(size_t action) { last_action_ = action; }
 
     /// @brief Copies the learned state (Q-values, action counts, step size) from `other`.
@@ -264,14 +264,14 @@ class SimpleRLMoveGenerator : public MoveGenerator {
     // Receives feedback about the outcome of the previously proposed move
     void process_outcome(double reward, e_reward_function reward_fun) override;
 
-    /// @brief Returns/overrides the agent action behind the most recent proposal.
-    ///        See MoveGenerator::get_last_action() for the intended usage.
-    size_t get_last_action() const override { return karmed_bandit_agent->last_action(); }
-    void set_last_action(size_t action) override { karmed_bandit_agent->set_last_action(action); }
+    /// @brief Saves/restores the agent action behind the most recent proposal.
+    ///        See MoveGenerator::save_proposal_state() for the intended usage.
+    size_t save_proposal_state() const override { return karmed_bandit_agent->last_action(); }
+    void restore_proposal_state(size_t state) override { karmed_bandit_agent->set_last_action(state); }
 
     /// @brief Copies the agent state from another SimpleRLMoveGenerator.
-    ///        See MoveGenerator::sync_state_from() for the intended usage.
-    void sync_state_from(const MoveGenerator& other) override;
+    ///        See MoveGenerator::copy_state_from() for the intended usage.
+    void copy_state_from(const MoveGenerator& other) override;
 };
 
 template<class T, class>

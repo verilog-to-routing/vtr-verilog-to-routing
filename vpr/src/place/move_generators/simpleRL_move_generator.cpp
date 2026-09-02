@@ -31,11 +31,11 @@ void SimpleRLMoveGenerator::process_outcome(double reward, e_reward_function rew
     karmed_bandit_agent->process_outcome(reward, reward_fun);
 }
 
-void SimpleRLMoveGenerator::sync_state_from(const MoveGenerator& other) {
+void SimpleRLMoveGenerator::copy_state_from(const MoveGenerator& other) {
     // Callers always pass a generator of the same concrete type,
     // and this runs once per sync rather than per move, so the cost is negligible.
     const SimpleRLMoveGenerator* other_rl = dynamic_cast<const SimpleRLMoveGenerator*>(&other);
-    VTR_ASSERT_MSG(other_rl != nullptr, "Can only sync agent state from another SimpleRLMoveGenerator.");
+    VTR_ASSERT_MSG(other_rl != nullptr, "Can only copy agent state from another SimpleRLMoveGenerator.");
     karmed_bandit_agent->copy_state_from(*other_rl->karmed_bandit_agent);
 }
 
