@@ -111,6 +111,9 @@ struct sort_key {
     KeyFn key_of;
 };
 
+// Deduction guide so that vtr::sort_key(num_keys, lambda) deduces KeyFn from the
+// lambda's type. Without it the caller would have to name the lambda type, which
+// is not possible, or wrap the lambda in a std::function.
 template<typename KeyFn>
 sort_key(size_t, KeyFn) -> sort_key<KeyFn>;
 
