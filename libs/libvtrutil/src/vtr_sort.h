@@ -42,6 +42,7 @@ namespace vtr {
  * @param num_keys  Exclusive upper bound on the keys. Every key must be smaller than this.
  */
 template<typename InIt, typename OutIt, typename KeyFn>
+    requires std::forward_iterator<InIt> && std::random_access_iterator<OutIt>
 void stable_counting_sort(InIt first, InIt last, OutIt out, size_t num_keys, KeyFn key_of) {
     // The sort runs in three passes:
     //   1. Count how many elements have each key.
