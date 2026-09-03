@@ -156,7 +156,9 @@ void stable_radix_sort(InIt first, InIt last, Container& out, const sort_key<Key
     const auto& least_significant = std::get<num_keys - 1>(key_tuple);
     stable_counting_sort(first, last, std::begin(out), least_significant.num_keys, least_significant.key_of);
 
-    // Remaining passes ping-pong between out and scratch, ending in out
+    // Remaining passes ping-pong between out and scratch, ending in out.
+    // num_keys is a compile time constant, so `if constexpr` drops this block
+    // entirely for a single key: no scratch buffer and no extra passes.
     if constexpr (num_keys > 1) {
         Container scratch(std::size(out));
         detail::stable_radix_sort_passes(out, scratch, key_tuple, std::make_index_sequence<num_keys - 1>{});
