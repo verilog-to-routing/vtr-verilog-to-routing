@@ -43,10 +43,18 @@ namespace vtr {
  */
 template<typename InIt, typename OutIt, typename KeyFn>
 void stable_counting_sort(InIt first, InIt last, OutIt out, size_t num_keys, KeyFn key_of) {
+    // The sort runs in three passes:
+    //   1. Count how many elements have each key.
+    //   2. Prefix sum the counts so that each key maps to the output position
+    //      of its first element.
+    //   3. Walk the input in order and write each element to the next free
+    //      slot for its key. Walking in input order is what makes the sort stable.
+    //
     // offsets[k + 1] first holds the number of elements with key k, then after
     // the prefix sum offsets[k] is the output position of the first element with key k.
     std::vector<uint32_t> offsets(num_keys + 1, 0);
 
+    // Pass 1: count the elements with each key
     size_t num_elements = 0;
     for (InIt it = first; it != last; ++it) {
         size_t key = static_cast<size_t>(key_of(*it));
@@ -57,11 +65,12 @@ void stable_counting_sort(InIt first, InIt last, OutIt out, size_t num_keys, Key
     VTR_ASSERT_MSG(num_elements <= std::numeric_limits<uint32_t>::max(),
                    "Number of sorted elements must fit in the 32 bit offsets");
 
+    // Pass 2: prefix sum the counts into output positions
     for (size_t key = 1; key <= num_keys; ++key) {
         offsets[key] += offsets[key - 1];
     }
 
-    // Place each element at the next free slot for its key, then advance that slot
+    // Pass 3: place each element at the next free slot for its key, then advance that slot
     for (InIt it = first; it != last; ++it) {
         size_t key = static_cast<size_t>(key_of(*it));
         out[offsets[key]] = *it;
