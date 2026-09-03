@@ -61,9 +61,11 @@ void stable_counting_sort(InIt first, InIt last, OutIt out, size_t num_keys, Key
         offsets[key] += offsets[key - 1];
     }
 
+    // Place each element at the next free slot for its key, then advance that slot
     for (InIt it = first; it != last; ++it) {
         size_t key = static_cast<size_t>(key_of(*it));
-        out[offsets[key]++] = *it;
+        out[offsets[key]] = *it;
+        offsets[key] += 1;
     }
 }
 
