@@ -14,6 +14,7 @@
 #include <iterator>
 #include <limits>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -48,6 +49,13 @@ namespace vtr {
 template<typename InIt, typename OutIt, typename KeyFn>
     requires std::forward_iterator<InIt> && std::random_access_iterator<OutIt>
 void stable_counting_sort(InIt first, InIt last, OutIt out, size_t num_keys, KeyFn key_of) {
+    // The key must be an integer like value: a built in integer, an enum, or a
+    // class such as vtr::StrongId that converts explicitly to size_t. Floating
+    // point keys would be silently truncated by the cast below, so reject them.
+    using Key = std::remove_cvref_t<std::invoke_result_t<KeyFn&, std::iter_reference_t<InIt>>>;
+    static_assert((std::is_constructible_v<size_t, Key> || std::is_enum_v<Key>) && !std::is_floating_point_v<Key>,
+                  "Sort key must be an integer, enum, or a type explicitly convertible to size_t");
+
     // The sort runs in three passes:
     //   1. Count how many elements have each key.
     //   2. Prefix sum the counts so that each key maps to the output position
