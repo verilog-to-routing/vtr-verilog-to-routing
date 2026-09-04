@@ -35,6 +35,10 @@ namespace vtr {
  * than the element count) wastes both time and memory on empty counts, so
  * such inputs are a poor match for this function.
  *
+ * The input may hold at most 2^32 - 1 elements. Output positions are stored
+ * as uint32_t to halve the memory traffic of the counts array, which is
+ * accessed randomly in the placement pass.
+ *
  * @tparam InIt   Forward iterator over the input elements.
  * @tparam OutIt  Random access iterator to the output range.
  * @tparam KeyFn  Callable mapping an element to its key. The key may be any
@@ -138,6 +142,7 @@ void stable_radix_sort_passes(Container& items, Container& scratch, const KeyTup
  * std::stable_sort by the tuple of keys, but it is computed as one stable
  * counting sort pass per key, least significant key first. The input is read
  * directly, so a generated sequence such as a vtr::StrongIdRange needs no copy first.
+ * As with stable_counting_sort, the input may hold at most 2^32 - 1 elements.
  *
  * Example, sorting edges by (source node, destination node):
  *
