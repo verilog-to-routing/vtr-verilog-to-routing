@@ -6,7 +6,7 @@
  * @brief   The objective-term interface of the nonlinear Nesterov placer.
  *
  * The placer's differentiable objective is a weighted sum of terms (wirelength,
- * density, affinity springs, proximity anchor, timing springs). The unit of
+ * density, affinity springs, timing springs). The unit of
  * genericity is the term: each term owns its value, its gradient, and its
  * Hessian-diagonal (preconditioner) contribution together, because those three
  * must never drift apart — an inconsistent pair produces steps the line search

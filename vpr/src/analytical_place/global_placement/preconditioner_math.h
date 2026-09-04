@@ -94,12 +94,7 @@ inline double affinity_spring_curvature(double weight, std::size_t group_size) {
  *   conflating them silently is what previously broke it. The one historical
  *   occupant was a trust-region bound on the continuous incompatibility
  *   penalty, removed with that penalty.
- *
- * The proximity anchor belongs to neither and is excluded. Its Hessian is
- * genuinely non-zero (it is quadratic, diagonal = proximity_weight), but the
- * anchor is the trust region coupling the continuous solve to the legalizer and
- * is deliberately allowed to act at full strength.
- *
+ * *
  * @param curvature_sum True Hessian-diagonal terms.
  * @param damping_sum   Explicit non-curvature step-control terms.
  * @param floor         Lower bound before softening (@ref kPreconditionFloor).

@@ -22,7 +22,6 @@
 class APNetlist;
 class AnalyticalSolver;
 class LogicalModels;
-class PartialLegalizer;
 class PlaceDelayModel;
 class PreClusterTimingManager;
 class Prepacker;

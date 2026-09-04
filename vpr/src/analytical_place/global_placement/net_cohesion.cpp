@@ -36,17 +36,14 @@ NetCohesion::NetCohesion(const APNetlist& ap_netlist,
                          size_t device_grid_width,
                          size_t device_grid_height,
                          size_t device_grid_num_layers,
-                         double periphery_pair_weight,
                          int log_verbosity)
     : ap_netlist_(ap_netlist)
     , density_manager_(density_manager)
     , device_grid_width_(device_grid_width)
     , device_grid_height_(device_grid_height)
     , device_grid_num_layers_(device_grid_num_layers)
-    , periphery_pair_weight_(periphery_pair_weight)
     , log_verbosity_(log_verbosity)
-    , periphery_pair_nets_(ap_netlist.nets().size(), false)
-    , periphery_pair_damping_(ap_netlist.nets().size(), 1.) {}
+    , periphery_pair_nets_(ap_netlist.nets().size(), false) {}
 
 void NetCohesion::identify_boundary_confined_dims(const std::vector<PrimitiveVectorDim>& dimensions) {
     std::vector<bool> boundary_confined(dimensions.size(), false);
@@ -140,9 +137,7 @@ bool NetCohesion::block_has_boundary_mass(APBlockId blk_id,
 
 void NetCohesion::update_periphery_pair_nets(const std::vector<PrimitiveVectorDim>& dimensions) {
     periphery_pair_nets_.resize(ap_netlist_.nets().size(), false);
-    periphery_pair_damping_.resize(ap_netlist_.nets().size(), 1.);
     std::fill(periphery_pair_nets_.begin(), periphery_pair_nets_.end(), false);
-    std::fill(periphery_pair_damping_.begin(), periphery_pair_damping_.end(), 1.);
     num_periphery_pair_nets_ = 0;
 
     // Boundary mass is a property of the block, not of the net, so evaluate it
@@ -155,17 +150,6 @@ void NetCohesion::update_periphery_pair_nets(const std::vector<PrimitiveVectorDi
             boundary_blocks++;
     }
 
-    // Block degree, counting only pins attached to a net.
-    vtr::vector<APBlockId, size_t> block_degree(ap_netlist_.blocks().size(), 0);
-    for (APBlockId blk_id : ap_netlist_.blocks()) {
-        for (APPinId pin_id : ap_netlist_.block_pins(blk_id)) {
-            if (ap_netlist_.pin_net(pin_id).is_valid())
-                block_degree[blk_id]++;
-        }
-    }
-
-    std::vector<size_t> selected_degrees;
-    std::vector<APNetId> selected_ids;
     for (APNetId net_id : ap_netlist_.nets()) {
         if (ap_netlist_.net_is_ignored(net_id))
             continue;
@@ -182,30 +166,12 @@ void NetCohesion::update_periphery_pair_nets(const std::vector<PrimitiveVectorDi
         // partial legalization scatters scarce periphery resources, so a
         // seed-length gate misses exactly the nets that need cohesion.
         periphery_pair_nets_[net_id] = true;
-        size_t degree = std::max(block_degree[first_blk_id], block_degree[second_blk_id]);
-        // Parked as the raw degree; normalized against the median below.
-        periphery_pair_damping_[net_id] = static_cast<double>(degree);
-        selected_degrees.push_back(degree);
-        selected_ids.push_back(net_id);
-    }
-    num_periphery_pair_nets_ = selected_ids.size();
-
-    // The reference degree is the median over the selected nets, so the damping
-    // is derived per design rather than tuned to any one architecture. Each
-    // net's degree is already parked in periphery_pair_damping_, so the median
-    // reorders selected_degrees in place instead of copying it.
-    if (!selected_degrees.empty()) {
-        auto median = selected_degrees.begin() + selected_degrees.size() / 2;
-        std::nth_element(selected_degrees.begin(), median, selected_degrees.end());
-        double ref = std::max<double>(1., static_cast<double>(*median));
-        for (APNetId net_id : selected_ids)
-            periphery_pair_damping_[net_id] = std::min(1., ref / std::max(1., periphery_pair_damping_[net_id]));
+        num_periphery_pair_nets_++;
     }
 
     if (log_verbosity_ >= 1) {
-        VTR_LOG("Nonlinear Nesterov periphery-pair cohesion: %zu boundary-mass blocks, %zu two-pin periphery nets, weight=%g.\n",
+        VTR_LOG("Nonlinear Nesterov periphery-pair cohesion: %zu boundary-mass blocks, %zu two-pin periphery nets.\n",
                 boundary_blocks,
-                num_periphery_pair_nets_,
-                periphery_pair_weight_);
+                num_periphery_pair_nets_);
     }
 }

@@ -63,7 +63,11 @@ void dct_ii(const std::vector<double>& input,
 }
 
 /**
- * @brief Apply the inverse of the unnormalized DCT-II through an inverse FFT.
+ * @brief Apply an inverse DCT-II via an inverse FFT.
+ *
+ * NOTE: this returns exactly 2x the true DCT-II inverse. The factor is a single
+ * frequency-independent scalar, absorbed by the density-weight normalization, so the
+ * field shape and all force directions are unaffected.
  */
 void idct_iii(const std::vector<double>& input,
               std::vector<double>& output,

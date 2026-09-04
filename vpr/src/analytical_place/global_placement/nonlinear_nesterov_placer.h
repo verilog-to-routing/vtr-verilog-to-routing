@@ -94,7 +94,6 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
         std::vector<double> dim_overflow_mass;   ///< Per-dimension absolute overflow mass.
         std::vector<double> dim_max_overflow;    ///< Per-dimension peak normalized tile overflow.
         double affinity_spring = 0.;             ///< Weighted quadratic affinity-spring penalty (all kinds).
-        double proximity = 0.;                   ///< Unweighted proximity penalty to a legalized anchor.
         double total_overflow = 0.;              ///< Sum of normalized tile overflows.
         double max_overflow = 0.;                ///< Largest normalized tile overflow.
     };
@@ -148,8 +147,6 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      */
     ObjectiveValue evaluate_objective_(const PartialPlacement& p_placement,
                                        const std::vector<double>& density_multipliers,
-                                       std::optional<std::reference_wrapper<const PartialPlacement>> legal_anchor,
-                                       double proximity_weight,
                                        std::optional<std::reference_wrapper<PlacementGradient>> grad,
                                        const FillerState& fillers,
                                        std::optional<std::reference_wrapper<FillerGradient>> filler_grad) const;
@@ -169,27 +166,6 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      * @brief Build pack-pattern affinity groups from long prepacker chains.
      */
     void initialize_pack_pattern_affinity_groups_(const Prepacker& prepacker);
-
-    /**
-     * @brief Detect direct 2-pin output-driver↔outpad pairs and register affinity groups.
-     */
-    void initialize_io_pair_affinity_groups_();
-
-    /**
-     * @brief Update pre-cluster timing for a checkpoint and return estimated CPD in ns.
-     */
-    double evaluate_checkpoint_cpd_(const PartialPlacement& placement);
-
-    /**
-     * @brief Scaled-ADMM dual update u += x - z, with windup safeguards.
-     *
-     * @param smooth         The epoch's smooth (pre-legalization) result, x.
-     * @param legalized      Its partial legalization, z.
-     * @param prev_legalized The previous epoch's z, used to detect a target jump.
-     */
-    void update_admm_dual_(const PartialPlacement& smooth,
-                           const PartialPlacement& legalized,
-                           const PartialPlacement& prev_legalized);
 
     /// @brief A position clamped into the smooth-density domain, with an integral layer.
     struct GridPosition {
@@ -278,25 +254,15 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      * preconditioned gradient step divides each block's gradient by this value,
      * giving size-independent step lengths.
      *
-     * Constraint forces (incompatibility penalty, proximity anchor) are
-     * deliberately excluded: their Hessian diagonals are either zero
-     * (piecewise-linear incompatibility) or would dampen the very force they
-     * measure (proximity). Excluding them lets constraint forces act at full
-     * strength while the preconditioner normalizes the smoothness terms.
+     * The incompatibility penalty is deliberately excluded: its Hessian diagonal
+     * is zero (piecewise-linear). Excluding it lets that constraint force act at
+     * full strength while the preconditioner normalizes the smoothness terms.
      *
      * The tuning constants and the diagonal assembly live in
      * preconditioner_math.h, which the unit tests exercise directly.
      */
     void compute_preconditioner_(const std::vector<PrimitiveVectorDim>& dimensions,
                                  const std::vector<double>& density_multipliers);
-
-    /**
-     * @brief Add a quadratic proximity penalty to the latest legalized placement.
-     */
-    double add_proximity_gradient_(const PartialPlacement& p_placement,
-                                   const PartialPlacement& legal_anchor,
-                                   double proximity_weight,
-                                   std::optional<std::reference_wrapper<PlacementGradient>> grad) const;
 
     /**
      * @brief Project all block locations into device bounds and restore fixed blocks.
@@ -361,22 +327,11 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
 
     std::vector<APBlockId> moveable_blocks_;   ///< Movable AP blocks touched by the optimizer.
     vtr::vector<APNetId, double> net_weights_; ///< Per-net weight applied to the weighted-average (WA) wirelength term computed in add_wirelength_gradient_.
-    /// @brief Average net weight from the last update_timing_net_weights_ call.
-    ///
-    /// Telemetry only: rebalancing the density weight by it was implemented and
-    /// made no measurable difference. Worth knowing that lambda_0 is normalized
-    /// against unit-weight wirelength while the epoch loop applies multipliers
-    /// well above 1, so the wirelength/density balance does carry a
-    /// design-dependent factor -- it simply does not matter.
-    double avg_net_weight_ = 1.0;
-
     vtr::vector<APBlockId, double> block_precond_;        ///< Per-block diagonal preconditioner (objective curvature estimate).
+    bool large_design_ = false;                           ///< Design is at or above @ref kPreconditionSizeThreshold: applies the Jacobi preconditioner and the unit step.
     vtr::vector<APBlockId, float> pin_density_inflation_; ///< Per-block density-term mass inflation from pin count (routability cell inflation); 1.0 for blocks at or below the reference pin count.
-    bool large_design_ = false;                           ///< Design is at or above @ref kPreconditionSizeThreshold: enables the Jacobi preconditioner, unit step scaling, and the full-strength proximity anchor.
-    vtr::vector<APNetId, bool> io_pair_locality_nets_;    ///< Direct output-driver↔outpad nets receiving pair-spring WL weight.
-    std::unique_ptr<NetCohesion> cohesion_;               ///< Structural cohesion net classes and their weight multipliers.
+    std::unique_ptr<NetCohesion> cohesion_;               ///< Periphery-pair net detection (gates pack-pattern affinity).
     std::unique_ptr<AffinitySpringTerm> affinity_term_;   ///< Affinity-spring objective term (groups + energy/gradient/curvature).
-    size_t num_io_pair_affinity_groups_ = 0;              ///< Count of IO_PAIR affinity groups.
     size_t num_pack_pattern_affinity_groups_ = 0;         ///< Count of PACK_PATTERN affinity groups.
     std::vector<double> filler_unit_mass_;                ///< [dim] density mass per dynamic filler.
     std::vector<double> filler_precond_;                  ///< [dim] density-only filler preconditioner.
@@ -420,11 +375,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     size_t device_grid_height_ = 0;              ///< Height of the placement region.
     size_t device_grid_num_layers_ = 0;          ///< Number of device layers.
     float ap_timing_tradeoff_ = 0.f;             ///< User timing tradeoff value.
-    float effective_timing_tradeoff_ = 0.f;      ///< Timing tradeoff after design-size adaptation.
-    double periphery_pair_cohesion_weight_ = 2.; ///< Weight multiplier for two-pin nets between boundary-confined blocks.
     double pack_pattern_cohesion_weight_ = 0.02; ///< I/O-gated pack-pattern affinity-spring weight (zeroed at runtime when no long direct I/O-chain nets are found).
-    double io_pair_net_weight_ = 8.;             ///< Extra smooth-WL multiplier for detected output-driver↔outpad nets.
-    double io_pair_attraction_weight_ = 8.;      ///< I/O pair spring strength (legacy per-block constant; kernel uses 2x for n=2 pack math).
 
     /// @brief B2B/QP warm-start solver. initialize_placement_ seeds the nonlinear
     ///        optimizer from a wirelength-aware analytical solve (elfPlace/ePlace
@@ -445,13 +396,6 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     ///        of the full schedule, whose result the checkpoint selection below
     ///        discards in favor of the seed on these designs anyway.
     bool sparse_seed_ = false;
-
-    /// @brief Scaled-ADMM dual variables for the legalizer anchor. u accumulates
-    ///        the per-epoch residual x - Leg(x); the proximity term then anchors
-    ///        to z - u instead of z, absorbing the steady-state bias a
-    ///        penalty-only anchor keeps.
-    vtr::vector<APBlockId, double> admm_dual_x_;
-    vtr::vector<APBlockId, double> admm_dual_y_;
 
     /// @brief Prepacker, retained for prepacker-derived affinity groups.
     const Prepacker* prepacker_ = nullptr;

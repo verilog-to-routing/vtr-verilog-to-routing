@@ -380,6 +380,8 @@ void update_timing_info_with_partial_placement(PreClusterTimingManager& pre_clus
     // For each AP pin, update the delay of the timing arc going through it.
     // The timing manager operates on the Atom netlist; however, by construction
     // of the AP netlist, every atom pin corresponds 1to1 to an AP pin.
+    // Loop-invariant (depends only on the device center + delay model): hoisted out of the loop.
+    const float delay_per_tile = get_delay_per_tile(place_delay_model);
     for (APPinId ap_pin_id : ap_netlist.pins()) {
         // Timing arcs are uniquely identified by the sink pin. Only update
         // timing for sink pins.
@@ -421,7 +423,7 @@ void update_timing_info_with_partial_placement(PreClusterTimingManager& pre_clus
         if (delay >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL) {
             int manhattan_dist = std::abs(driver_block_loc.x - sink_block_loc.x)
                                  + std::abs(driver_block_loc.y - sink_block_loc.y);
-            delay = manhattan_dist * get_delay_per_tile(place_delay_model);
+            delay = manhattan_dist * delay_per_tile;
         }
 
         // Get the atom pin associated with this AP pin (i.e. the one the AP
@@ -588,6 +590,6 @@ PartialPlacement SimPLGlobalPlacer::place() {
                           *density_manager_,
                           pre_cluster_timing_manager_);
 
-    // Return the placement from the final iteration.
+    // Return the best placement found (lowest upper-bound HPWL), tracked across iterations.
     return best_p_placement;
 }
