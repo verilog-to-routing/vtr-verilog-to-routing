@@ -24,6 +24,7 @@
 #include "echo_files.h"
 #include "logic_types.h"
 #include "physical_types.h"
+#include "user_relative_macros.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -81,7 +82,8 @@ static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_
 static bool try_expand_molecule(t_pack_molecule& molecule,
                                 const AtomBlockId blk_id,
                                 const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
-                                const AtomNetlist& atom_nlist);
+                                const AtomNetlist& atom_nlist,
+                                const UserRelativeMacros& relative_macros);
 
 static void print_pack_molecules(const char* fname,
                                  const std::vector<t_pack_patterns>& list_of_pack_patterns,
@@ -850,7 +852,8 @@ t_pb_graph_node* Prepacker::get_expected_lowest_cost_primitive_for_atom_block(co
 void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
                                               const AtomNetlist& atom_nlist,
                                               const LogicalModels& models,
-                                              const std::vector<t_logical_block_type>& logical_block_types) {
+                                              const std::vector<t_logical_block_type>& logical_block_types,
+                                              const UserRelativeMacros& relative_macros) {
     std::vector<bool> is_used(list_of_pack_patterns.size(), false);
 
     /* Find forced pack patterns
@@ -886,7 +889,8 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
             PackMoleculeId cur_molecule_id = try_create_molecule(best_pattern,
                                                                  blk_id,
                                                                  atom_molecules_multimap,
-                                                                 atom_nlist);
+                                                                 atom_nlist,
+                                                                 relative_macros);
 
             // If the molecule could not be created, move to the next block.
             if (!cur_molecule_id.is_valid())
@@ -990,7 +994,8 @@ static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_
 PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
                                               AtomBlockId blk_id,
                                               std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
-                                              const AtomNetlist& atom_nlist) {
+                                              const AtomNetlist& atom_nlist,
+                                              const UserRelativeMacros& relative_macros) {
     t_pack_patterns* pack_pattern = &list_of_pack_patterns[pack_pattern_index];
 
     // Check pack pattern validity
@@ -1014,7 +1019,7 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
     molecule.root = pack_pattern->root_block->block_id;
     molecule.chain_id = MoleculeChainId::INVALID();
 
-    if (!try_expand_molecule(molecule, blk_id, atom_molecules_multimap, atom_nlist)) {
+    if (!try_expand_molecule(molecule, blk_id, atom_molecules_multimap, atom_nlist, relative_macros)) {
         // Failed to create molecule
         return PackMoleculeId::INVALID();
     }
@@ -1058,12 +1063,22 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
 static bool try_expand_molecule(t_pack_molecule& molecule,
                                 const AtomBlockId blk_id,
                                 const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
-                                const AtomNetlist& atom_nlist) {
+                                const AtomNetlist& atom_nlist,
+                                const UserRelativeMacros& relative_macros) {
     // root block of the pack pattern, which is the starting point of this pattern
     t_pack_pattern_block* const pattern_root_block = molecule.pack_pattern->root_block;
     // bool array indicating whether a position in a pack pattern is optional or should
     // be filled with an atom for legality
     const std::vector<bool>& is_block_optional = molecule.pack_pattern->is_block_optional;
+
+    // The relative placement group of the atoms committed to the molecule so far
+    // (invalid if none of them belongs to a group). A molecule's atoms are packed
+    // into one cluster while atoms of different groups must be packed into
+    // different clusters, so a non-chain molecule must not span two groups. Chain
+    // molecules are exempt: their atoms are connected through dedicated routing
+    // and must be prepacked together regardless, so a chain spanning two groups
+    // is reported as a constraint error after prepacking instead.
+    std::pair<UserRelativeMacroId, int> molecule_group = {UserRelativeMacroId::INVALID(), -1};
 
     // create a queue of pattern block and atom block id suggested for this block
     std::queue<std::pair<t_pack_pattern_block*, AtomBlockId>> pattern_block_queue;
@@ -1090,12 +1105,24 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
             continue;
         }
 
-        if (!block_id || !primitive_type_feasible(block_id, pattern_block->pb_type) || (molecule_atom_block_id && molecule_atom_block_id != block_id) || atom_molecules.find(block_id) != atom_molecules.end()) {
+        // the relative placement group of this atom block, if it belongs to one
+        std::pair<UserRelativeMacroId, int> atom_group = {UserRelativeMacroId::INVALID(), -1};
+        if (block_id) {
+            atom_group = relative_macros.get_atom_group(block_id);
+        }
+        bool group_conflict = !molecule.pack_pattern->is_chain
+                              && atom_group.first.is_valid()
+                              && molecule_group.first.is_valid()
+                              && atom_group != molecule_group;
+
+        if (!block_id || !primitive_type_feasible(block_id, pattern_block->pb_type) || (molecule_atom_block_id && molecule_atom_block_id != block_id) || atom_molecules.find(block_id) != atom_molecules.end() || group_conflict) {
             // Stopping conditions, if:
             // 1) this is an invalid atom block (nothing)
             // 2) this atom block cannot fit in this primitive type
             // 3) this primitive is occupied by another block
             // 4) this atom block is already used by another molecule
+            // 5) this atom block belongs to a different relative placement group
+            //    than the atoms already in this (non-chain) molecule
             // then if the molecule cannot be formed without placing an atom
             // at that primitive position, then creating this molecule has failed
             // otherwise go to the next atom block and its corresponding pattern block
@@ -1107,6 +1134,12 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
 
         // set this node in the molecule as visited
         molecule.atom_block_ids[pattern_block->block_id] = block_id;
+
+        // the first grouped atom committed to the molecule establishes the
+        // molecule's relative placement group
+        if (!molecule_group.first.is_valid()) {
+            molecule_group = atom_group;
+        }
 
         // add all the connections of this block to the queue
         for (const t_pack_pattern_connections& block_connection : pattern_block->connections) {
@@ -1771,7 +1804,8 @@ static void print_chain_starting_points(t_pack_patterns* chain_pattern) {
 
 Prepacker::Prepacker(const AtomNetlist& atom_nlist,
                      const LogicalModels& models,
-                     const std::vector<t_logical_block_type>& logical_block_types) {
+                     const std::vector<t_logical_block_type>& logical_block_types,
+                     const UserRelativeMacros& relative_macros) {
     vtr::ScopedStartFinishTimer prepacker_timer("Prepacker");
 
     // Allocate the pack patterns from the logical block types.
@@ -1782,7 +1816,8 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
     alloc_and_load_pack_molecules(atom_molecules_multimap,
                                   atom_nlist,
                                   models,
-                                  logical_block_types);
+                                  logical_block_types,
+                                  relative_macros);
 
     // The multimap is a legacy thing. Since blocks can be part of multiple pack
     // patterns, during prepacking a block may be contained within multiple
@@ -1967,4 +2002,18 @@ Prepacker::~Prepacker() {
     // When the prepacker is reset (or destroyed), clean up the internal data
     // members.
     free_list_of_pack_patterns(list_of_pack_patterns);
+}
+
+std::pair<UserRelativeMacroId, int> get_molecule_relative_group(const t_pack_molecule& molecule,
+                                                                const UserRelativeMacros& relative_macros) {
+    for (AtomBlockId blk_id : molecule.atom_block_ids) {
+        if (!blk_id.is_valid())
+            continue;
+        // The molecule's constrained atoms are all in one group, so the first
+        // constrained atom determines the group of the whole molecule.
+        std::pair<UserRelativeMacroId, int> group = relative_macros.get_atom_group(blk_id);
+        if (group.first.is_valid())
+            return group;
+    }
+    return {UserRelativeMacroId::INVALID(), -1};
 }

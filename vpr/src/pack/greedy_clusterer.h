@@ -21,6 +21,7 @@ struct APPackContext;
 class AtomNetId;
 class AtomNetlist;
 class AttractionInfo;
+struct ClusterGainStats;
 struct DeviceContext;
 class GreedyCandidateSelector;
 class PreClusterTimingManager;
@@ -148,6 +149,49 @@ class GreedyClusterer {
 
   private:
     /**
+     * @brief Struct to hold statistics on the progress of clustering.
+     */
+    struct t_cluster_progress_stats {
+        /// @brief The total number of molecules in the design.
+        int num_molecules = 0;
+        /// @brief The number of molecules which have been clustered.
+        int num_molecules_processed = 0;
+        /// @brief The number of molecules clustered since the last time the
+        ///        status was logged.
+        int mols_since_last_print = 0;
+    };
+
+    /**
+     * @brief Pack each relative placement group into its own cluster, before
+     *        the main clustering loop grows any unconstrained cluster.
+     */
+    void pack_relative_groups_first(GreedyCandidateSelector& candidate_selector,
+                                    ClusterLegalizer& cluster_legalizer,
+                                    const Prepacker& prepacker,
+                                    const RamMapper& ram_mapper,
+                                    bool balance_block_type_utilization,
+                                    AttractionInfo& attraction_groups,
+                                    std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+                                    DeviceContext& mutable_device_ctx,
+                                    t_cluster_progress_stats& clustering_stats);
+
+    /**
+     * @brief Grow a cluster from the given seed molecule and report progress.
+     *
+     *  @return The ID of the created cluster (always valid).
+     */
+    LegalizationClusterId grow_cluster_from_seed(PackMoleculeId seed_mol_id,
+                                                 GreedyCandidateSelector& candidate_selector,
+                                                 ClusterLegalizer& cluster_legalizer,
+                                                 const Prepacker& prepacker,
+                                                 const RamMapper& ram_mapper,
+                                                 bool balance_block_type_utilization,
+                                                 AttractionInfo& attraction_groups,
+                                                 std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+                                                 DeviceContext& mutable_device_ctx,
+                                                 t_cluster_progress_stats& clustering_stats);
+
+    /**
      * @brief Given a seed molecule and a legalization strategy, tries to grow
      *        a cluster greedily, starting with the provided seed and adding
      *        whatever other molecules seem beneficial and legal. Will return
@@ -162,10 +206,17 @@ class GreedyClusterer {
      * If the strategy is set to FULL, the cluster will grow using the full
      * legalizer for each molecule added. This cannot fail (assuming the seed
      * can exist in a cluster), so it will always return a valid cluster ID.
+     *
+     * group_order_variant picks the sequence a relative placement group's
+     * molecules are offered in (see pack_relative_group_into_cluster). Unless
+     * is_last_attempt is set, a cluster that took only part of its group is
+     * discarded so the caller can try the next sequence.
      */
     LegalizationClusterId try_grow_cluster(PackMoleculeId seed_mol_id,
                                            GreedyCandidateSelector& candidate_selector,
                                            ClusterLegalizationStrategy strategy,
+                                           int group_order_variant,
+                                           bool is_last_attempt,
                                            ClusterLegalizer& cluster_legalizer,
                                            const Prepacker& prepacker,
                                            const RamMapper& ram_mapper,
@@ -205,6 +256,53 @@ class GreedyClusterer {
                                           LegalizationClusterId legalization_cluster_id,
                                           ClusterLegalizer& cluster_legalizer,
                                           const Prepacker& prepacker);
+
+    /**
+     * @brief Pack the relative placement group of the seed molecule into the
+     *        freshly seeded cluster.
+     *
+     * Every molecule of the group is offered to the cluster once per call:
+     * those locked to a primitive site first (in constraint-file order), then
+     * the unlocked ones largest first. order_variant only reorders them, never
+     * changes a molecule's site, but the sequence decides how the intra-cluster
+     * router assigns logically equivalent LUT/crossbar inputs, so one variant
+     * can route where another did not (see grow_cluster_from_seed).
+     *
+     * Molecules that fail are left unclustered on purpose: the end-of-pass
+     * check in pack.cpp reports the resulting split group, and the ordinary
+     * fill that follows can still admit them.
+     */
+    void pack_relative_group_into_cluster(PackMoleculeId seed_mol_id,
+                                          LegalizationClusterId legalization_cluster_id,
+                                          int order_variant,
+                                          ClusterLegalizer& cluster_legalizer,
+                                          const Prepacker& prepacker);
+
+    /**
+     * @brief Returns whether every atom of the seed molecule's relative
+     *        placement group is now in the given cluster (true when the seed
+     *        belongs to no group, or the design has no relative macros).
+     *
+     * Used to decide whether a grow attempt achieved what it was for: a
+     * cluster that took only part of its group no longer matches the sites in
+     * the constraints file.
+     */
+    static bool relative_group_fully_clustered(PackMoleculeId seed_mol_id,
+                                               LegalizationClusterId legalization_cluster_id,
+                                               const ClusterLegalizer& cluster_legalizer,
+                                               const Prepacker& prepacker);
+
+    /**
+     * @brief Returns whether the molecule's root atom is locked to a primitive
+     *        site by a relative placement macro.
+     *
+     * Sites are a property of a molecule's root primitive: the remaining
+     * primitives of a multi-atom molecule follow from its pack pattern, so the
+     * root atom's site is the one the legalizer forces.
+     */
+    static bool is_molecule_locked_to_site(PackMoleculeId mol_id,
+                                           const Prepacker& prepacker,
+                                           const UserRelativeMacros& relative_macros);
 
     /**
      * @brief Log the physical block usage of the logic element in the

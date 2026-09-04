@@ -37,9 +37,12 @@
  */
 
 #include "greedy_clusterer.h"
+#include <algorithm>
+#include <array>
 #include <cstdio>
 #include <map>
 #include <string>
+#include <unordered_set>
 #include <vector>
 #include "appack_context.h"
 #include "setup_grid.h"
@@ -49,29 +52,13 @@
 #include "cluster_util.h"
 #include "greedy_candidate_selector.h"
 #include "greedy_seed_selector.h"
+#include "globals.h"
 #include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
 #include "logical_ram_infer.h"
 #include "vpr_context.h"
 #include "vtr_math.h"
-
-namespace {
-
-/**
- * @brief Struct to hold statistics on the progress of clustering.
- */
-struct t_cluster_progress_stats {
-    // The total number of molecules in the design.
-    int num_molecules = 0;
-    // The number of molecules which have been clustered.
-    int num_molecules_processed = 0;
-    // The number of molecules clustered since the last time the status was
-    // logged.
-    int mols_since_last_print = 0;
-};
-
-} // namespace
 
 GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
                                  const t_analysis_opts& analysis_opts,
@@ -152,14 +139,29 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                      pre_cluster_timing_manager_,
                                      ram_mapper);
 
-    // Pick the first seed molecule.
-    PackMoleculeId seed_mol_id = seed_selector.get_next_seed(cluster_legalizer);
-
     /****************************************************************
      * Clustering
      *****************************************************************/
 
     print_pack_status_header();
+
+    // Pack each relative placement group into its own cluster first, so the
+    // group clusters are constructed from the constraints before any
+    // unconstrained cluster can adopt or starve a group's molecules.
+    if (g_vpr_ctx.floorplanning().relative_macros.get_num_macros() != 0) {
+        pack_relative_groups_first(candidate_selector,
+                                   cluster_legalizer,
+                                   prepacker,
+                                   ram_mapper,
+                                   balance_block_type_utilization,
+                                   attraction_groups,
+                                   num_used_type_instances,
+                                   mutable_device_ctx,
+                                   clustering_stats);
+    }
+
+    // Pick the first seed molecule.
+    PackMoleculeId seed_mol_id = seed_selector.get_next_seed(cluster_legalizer);
 
     // Continue clustering as long as a valid seed is returned from the seed
     // selector.
@@ -167,60 +169,17 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
         // Check to ensure that this molecule is unclustered.
         VTR_ASSERT(!cluster_legalizer.is_mol_clustered(seed_mol_id));
 
-        // The basic algorithm:
-        // 1) Try to put all the molecules in that you can without doing the
-        //    full intra-lb route. Then do full legalization at the end.
-        // 2) If the legalization at the end fails, try again, but this time
-        //    do full legalization for each molecule added to the cluster.
-
-        // Try to grow a cluster from the seed molecule without doing intra-lb
-        // route for each molecule (i.e. just use faster but not fully
-        // conservative legality checks).
-        LegalizationClusterId new_cluster_id = try_grow_cluster(seed_mol_id,
-                                                                candidate_selector,
-                                                                ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
-                                                                cluster_legalizer,
-                                                                prepacker,
-                                                                ram_mapper,
-                                                                balance_block_type_utilization,
-                                                                attraction_groups,
-                                                                num_used_type_instances,
-                                                                mutable_device_ctx);
-
-        if (!new_cluster_id.is_valid()) {
-            // If the previous strategy failed, try to grow the cluster again,
-            // but this time perform full legalization for each molecule added
-            // to the cluster.
-            new_cluster_id = try_grow_cluster(seed_mol_id,
-                                              candidate_selector,
-                                              ClusterLegalizationStrategy::FULL,
-                                              cluster_legalizer,
-                                              prepacker,
-                                              ram_mapper,
-                                              balance_block_type_utilization,
-                                              attraction_groups,
-                                              num_used_type_instances,
-                                              mutable_device_ctx);
-        }
-
-        // Ensure that the seed was packed successfully.
-        VTR_ASSERT(new_cluster_id.is_valid());
-        VTR_ASSERT(cluster_legalizer.is_mol_clustered(seed_mol_id));
-
-        // Update the clustering progress stats.
-        size_t num_molecules_in_cluster = cluster_legalizer.get_num_molecules_in_cluster(new_cluster_id);
-        clustering_stats.num_molecules_processed += num_molecules_in_cluster;
-        clustering_stats.mols_since_last_print += num_molecules_in_cluster;
-
-        // Print the current progress of the packing after a cluster has been
-        // successfully created.
-        print_pack_status(clustering_stats.num_molecules,
-                          clustering_stats.num_molecules_processed,
-                          clustering_stats.mols_since_last_print,
-                          mutable_device_ctx.grid.width(),
-                          mutable_device_ctx.grid.height(),
-                          attraction_groups,
-                          cluster_legalizer);
+        // Grow a cluster from the seed molecule and report progress.
+        grow_cluster_from_seed(seed_mol_id,
+                               candidate_selector,
+                               cluster_legalizer,
+                               prepacker,
+                               ram_mapper,
+                               balance_block_type_utilization,
+                               attraction_groups,
+                               num_used_type_instances,
+                               mutable_device_ctx,
+                               clustering_stats);
 
         // Pick new seed.
         seed_mol_id = seed_selector.get_next_seed(cluster_legalizer);
@@ -232,9 +191,143 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
     return num_used_type_instances;
 }
 
+void GreedyClusterer::pack_relative_groups_first(GreedyCandidateSelector& candidate_selector,
+                                                 ClusterLegalizer& cluster_legalizer,
+                                                 const Prepacker& prepacker,
+                                                 const RamMapper& ram_mapper,
+                                                 bool balance_block_type_utilization,
+                                                 AttractionInfo& attraction_groups,
+                                                 std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+                                                 DeviceContext& mutable_device_ctx,
+                                                 t_cluster_progress_stats& clustering_stats) {
+    const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
+
+    // Visit the macros and their groups in index order (deterministic).
+    for (size_t imacro = 0; imacro < relative_macros.get_num_macros(); imacro++) {
+        UserRelativeMacroId macro_id(imacro);
+        const UserRelativeMacro& macro = relative_macros.get_macro(macro_id);
+
+        for (size_t igroup = 0; igroup < macro.groups.size(); igroup++) {
+            // Seed the group's cluster with the group's largest unclustered
+            // molecule
+            PackMoleculeId seed_mol_id;
+            size_t seed_mol_num_atoms = 0;
+            for (AtomBlockId blk_id : macro.groups[igroup].atoms) {
+                PackMoleculeId mol_id = prepacker.get_atom_molecule(blk_id);
+                if (cluster_legalizer.is_mol_clustered(mol_id))
+                    continue;
+                size_t num_atoms = prepacker.get_molecule_num_valid_atoms(mol_id);
+                if (num_atoms > seed_mol_num_atoms) {
+                    seed_mol_id = mol_id;
+                    seed_mol_num_atoms = num_atoms;
+                }
+            }
+
+            // Nothing to do for a group with no unclustered molecules.
+            if (!seed_mol_id.is_valid())
+                continue;
+
+            // Grow the group's cluster through the same per-seed driver the
+            // main loop uses. try_grow_cluster() packs the seed's whole group
+            // up front (in one pass) and then fills the leftover space with
+            // unconstrained logic.
+            grow_cluster_from_seed(seed_mol_id,
+                                   candidate_selector,
+                                   cluster_legalizer,
+                                   prepacker,
+                                   ram_mapper,
+                                   balance_block_type_utilization,
+                                   attraction_groups,
+                                   num_used_type_instances,
+                                   mutable_device_ctx,
+                                   clustering_stats);
+        }
+    }
+}
+
+LegalizationClusterId GreedyClusterer::grow_cluster_from_seed(PackMoleculeId seed_mol_id,
+                                                              GreedyCandidateSelector& candidate_selector,
+                                                              ClusterLegalizer& cluster_legalizer,
+                                                              const Prepacker& prepacker,
+                                                              const RamMapper& ram_mapper,
+                                                              bool balance_block_type_utilization,
+                                                              AttractionInfo& attraction_groups,
+                                                              std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+                                                              DeviceContext& mutable_device_ctx,
+                                                              t_cluster_progress_stats& clustering_stats) {
+    // The attempts, in order. Each entry is a legalization strategy plus the
+    // sequence a relative placement group's molecules are offered in:
+    // 1) Skip the intra-lb route per molecule (faster, less conservative) and
+    //    legalize once at the end.
+    // 2) If that final legalization fails, redo it with full legalization for
+    //    each molecule added.
+    // 3) If that fails too, redo it once more with the group's locked
+    //    molecules offered in the opposite sequence. Only a cluster hosting a
+    //    relative placement group is affected by the sequence, so for every
+    //    other cluster this attempt is identical to 2) and is never reached
+    //    (2) cannot fail for them).
+    struct t_grow_attempt {
+        ClusterLegalizationStrategy strategy;
+        int group_order_variant;
+    };
+    const std::array<t_grow_attempt, 3> attempts = {{
+        {ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE, 0},
+        {ClusterLegalizationStrategy::FULL, 0},
+        {ClusterLegalizationStrategy::FULL, 1},
+    }};
+
+    LegalizationClusterId new_cluster_id;
+    for (size_t iattempt = 0; iattempt < attempts.size(); iattempt++) {
+        new_cluster_id = try_grow_cluster(seed_mol_id,
+                                          candidate_selector,
+                                          attempts[iattempt].strategy,
+                                          attempts[iattempt].group_order_variant,
+                                          /*is_last_attempt=*/iattempt + 1 == attempts.size(),
+                                          cluster_legalizer,
+                                          prepacker,
+                                          ram_mapper,
+                                          balance_block_type_utilization,
+                                          attraction_groups,
+                                          num_used_type_instances,
+                                          mutable_device_ctx);
+        if (new_cluster_id.is_valid()) {
+            VTR_LOGV(log_verbosity_ > 2 && iattempt != 0,
+                     "\tCluster %zu grown on attempt %zu (strategy %s, group order variant %d)\n",
+                     (size_t)new_cluster_id, iattempt + 1,
+                     attempts[iattempt].strategy == ClusterLegalizationStrategy::FULL ? "full" : "skip_intra_lb_route",
+                     attempts[iattempt].group_order_variant);
+            break;
+        }
+    }
+
+    // Ensure that the seed was packed successfully (growing with the FULL
+    // strategy cannot fail).
+    VTR_ASSERT(new_cluster_id.is_valid());
+    VTR_ASSERT(cluster_legalizer.is_mol_clustered(seed_mol_id));
+
+    // Update the clustering progress stats.
+    size_t num_molecules_in_cluster = cluster_legalizer.get_num_molecules_in_cluster(new_cluster_id);
+    clustering_stats.num_molecules_processed += num_molecules_in_cluster;
+    clustering_stats.mols_since_last_print += num_molecules_in_cluster;
+
+    // Print the current progress of the packing after a cluster has been
+    // successfully created.
+    print_pack_status(clustering_stats.num_molecules,
+                      clustering_stats.num_molecules_processed,
+                      clustering_stats.mols_since_last_print,
+                      mutable_device_ctx.grid.width(),
+                      mutable_device_ctx.grid.height(),
+                      attraction_groups,
+                      cluster_legalizer);
+
+    return new_cluster_id;
+}
+
 LegalizationClusterId GreedyClusterer::try_grow_cluster(PackMoleculeId seed_mol_id,
                                                         GreedyCandidateSelector& candidate_selector,
                                                         ClusterLegalizationStrategy strategy,
+                                                        int group_order_variant,
+                                                        bool is_last_attempt,
                                                         ClusterLegalizer& cluster_legalizer,
                                                         const Prepacker& prepacker,
                                                         const RamMapper& ram_mapper,
@@ -264,6 +357,48 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(PackMoleculeId seed_mol_
                                                                                        legalization_cluster_id,
                                                                                        cluster_legalizer,
                                                                                        attraction_groups);
+
+    // A cluster seeded by a relative-group molecule packs its entire group
+    // right away instead of relying on the candidate selector to propose the
+    // group's molecules one at a time.
+    //
+    // One pass per grow attempt, in the sequence selected by
+    // group_order_variant. There is no search over sites: the constraints file
+    // gives each atom of the group one primitive and that is the only one it is
+    // ever offered, so no attempt can reseat an atom - a retry can change only
+    // whether the cluster routes.
+    //
+    // It can change that, though, which is why the caller has more than one
+    // attempt (see grow_cluster_from_seed): the intra-cluster router assigns
+    // the logically equivalent LUT/crossbar inputs greedily in the order
+    // molecules arrive, so one sequence can leave two nets contending for a
+    // single crossbar input where another sequence routes. This is not
+    // hypothetical - the rpm_fpu_addsub IP has a group that only routes on the
+    // third attempt.
+    //
+    // A molecule that is not admitted stays unclustered for now; the legalizer
+    // reports why the site could not be taken, the ordinary fill below or the
+    // main loop may still admit it, and the end-of-pass check in pack.cpp turns
+    // a group that never completed into a fatal error.
+    pack_relative_group_into_cluster(seed_mol_id,
+                                     legalization_cluster_id,
+                                     group_order_variant,
+                                     cluster_legalizer,
+                                     prepacker);
+
+    // Update the candidate selector's bookkeeping (gains, marked blocks,
+    // cluster attraction group) for each group molecule packed above. The
+    // seed molecule is skipped: create_cluster_gain_stats() already accounted
+    // for it.
+    for (PackMoleculeId mol_id : cluster_legalizer.get_cluster_molecules(legalization_cluster_id)) {
+        if (mol_id == seed_mol_id)
+            continue;
+        candidate_selector.update_cluster_gain_stats_candidate_success(cluster_gain_stats,
+                                                                       mol_id,
+                                                                       legalization_cluster_id,
+                                                                       cluster_legalizer,
+                                                                       attraction_groups);
+    }
 
     // Select the first candidate molecule to try to add to this cluster.
     PackMoleculeId candidate_mol_id = candidate_selector.get_next_candidate_for_cluster(
@@ -338,7 +473,23 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(PackMoleculeId seed_mol_
     // to skipping routing on clusters that are known to be legal from the
     // PackingSignatureTree. In this case, routing must be run at least once on
     // the final cluster for later stages to use.
-    if (!cluster_legalizer.ensure_legal_final_routing(legalization_cluster_id)) {
+    bool keep_cluster = cluster_legalizer.ensure_legal_final_routing(legalization_cluster_id);
+
+    // A cluster hosting a relative placement group has only done its job if the
+    // WHOLE group is in it; an attempt that left a molecule out no longer
+    // matches the sites in the constraints file, so it is not worth keeping
+    // while another sequence is still untried. On the last attempt the cluster
+    // is kept regardless - the leftovers are then reported as a split group by
+    // the end-of-pass check.
+    if (keep_cluster && !is_last_attempt
+        && !relative_group_fully_clustered(seed_mol_id, legalization_cluster_id, cluster_legalizer, prepacker)) {
+        VTR_LOGV(log_verbosity_ > 2,
+                 "\tCluster %zu did not take its whole relative placement group; retrying with the next sequence\n",
+                 (size_t)legalization_cluster_id);
+        keep_cluster = false;
+    }
+
+    if (!keep_cluster) {
         // If the cluster is not legal, undo the cluster.
         // Update the used type instances.
         num_used_type_instances[cluster_legalizer.get_cluster_type(legalization_cluster_id)]--;
@@ -479,18 +630,38 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
     }
 
     if (!success) {
+        std::string locked_site_reason;
+        const ClusterLegalizer::UnsatisfiableLockedSite& locked_site = cluster_legalizer.get_last_unsatisfiable_locked_site();
+        if (locked_site.atom == seed_mol.atom_block_ids[seed_mol.root]) {
+            const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
+            std::string examples;
+            for (const std::string& path : locked_site.available_site_paths)
+                examples += " '" + path + "'";
+            locked_site_reason = "\tThe atom is locked to primitive site '" + locked_site.site_path
+                                 + "' by relative macro '" + relative_macros.get_macro(locked_site.rel_group.first).name
+                                 + "' group " + std::to_string(locked_site.rel_group.second)
+                                 + ", and that site was not available in any candidate block type (last tried '"
+                                 + locked_site.cluster_type_name + "', where compatible sites include"
+                                 + (examples.empty() ? std::string(" none") : examples)
+                                 + "). A site path also fixes the block type and the mode at every level, so a "
+                                   "path recorded on another architecture or another mode never matches. "
+                                   "Regenerate the macro against this netlist and architecture.\n";
+        }
+
         //Explored all candidates
         if (seed_mol.type == e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK) {
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "Can not find any logic block that can implement molecule.\n"
-                            "\tPattern %s %s\n",
+                            "\tPattern %s %s\n%s",
                             seed_mol.pack_pattern->name.c_str(),
-                            root_atom_name.c_str());
+                            root_atom_name.c_str(),
+                            locked_site_reason.c_str());
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "Can not find any logic block that can implement molecule.\n"
-                            "\tAtom %s (%s)\n",
-                            root_atom_name.c_str(), arch_.models.model_name(root_model_id).c_str());
+                            "\tAtom %s (%s)\n%s",
+                            root_atom_name.c_str(), arch_.models.model_name(root_model_id).c_str(),
+                            locked_site_reason.c_str());
         }
     }
 
@@ -558,6 +729,9 @@ bool GreedyClusterer::try_add_candidate_mol_to_cluster(PackMoleculeId candidate_
             case e_block_pack_status::BLK_FAILED_NOC_GROUP:
                 VTR_LOG("\tFAILED_NOC_GROUP_CHECK: ");
                 break;
+            case e_block_pack_status::BLK_FAILED_RELATIVE_GROUP:
+                VTR_LOG("\tFAILED_RELATIVE_GROUP_CHECK: ");
+                break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unknown pack status thrown.");
                 break;
@@ -578,6 +752,127 @@ bool GreedyClusterer::try_add_candidate_mol_to_cluster(PackMoleculeId candidate_
     }
 
     return pack_status == e_block_pack_status::BLK_PASSED;
+}
+
+void GreedyClusterer::pack_relative_group_into_cluster(PackMoleculeId seed_mol_id,
+                                                       LegalizationClusterId legalization_cluster_id,
+                                                       int order_variant,
+                                                       ClusterLegalizer& cluster_legalizer,
+                                                       const Prepacker& prepacker) {
+    const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
+    if (relative_macros.get_num_macros() == 0)
+        return;
+
+    // Find the relative placement group of the seed molecule (if any).
+    std::pair<UserRelativeMacroId, int> group = get_molecule_relative_group(prepacker.get_molecule(seed_mol_id),
+                                                                            relative_macros);
+    if (!group.first.is_valid())
+        return;
+
+    // Collect the group's molecules that are not clustered yet (the seed
+    // molecule is already in the cluster).
+    //
+    // A group molecule already in a DIFFERENT cluster means the group is split
+    // (an earlier cluster adopted the group but could not take all of it).
+    // Ripping it out is not possible, so just log it here and let the
+    // end-of-pass check in pack.cpp handle the split.
+    std::vector<PackMoleculeId> order;
+    std::unordered_set<PackMoleculeId> seen = {seed_mol_id};
+    for (AtomBlockId blk_id : relative_macros.get_macro(group.first).groups[group.second].atoms) {
+        PackMoleculeId mol_id = prepacker.get_atom_molecule(blk_id);
+        if (seen.count(mol_id))
+            continue;
+        seen.insert(mol_id);
+        if (!cluster_legalizer.is_mol_clustered(mol_id)) {
+            order.push_back(mol_id);
+        } else if (cluster_legalizer.get_atom_cluster(blk_id) != legalization_cluster_id) {
+            // Already in a different cluster, so the group is split (see above).
+            VTR_LOGV(log_verbosity_ > 1,
+                     "\tRelative macro '%s' group %d is split: molecule of atom '%s' is already in "
+                     "cluster %zu while cluster %zu is being seeded with the same group.\n",
+                     relative_macros.get_macro(group.first).name.c_str(), group.second,
+                     atom_netlist_.block_name(blk_id).c_str(),
+                     (size_t)cluster_legalizer.get_atom_cluster(blk_id),
+                     (size_t)legalization_cluster_id);
+        }
+    }
+    if (order.empty())
+        return;
+
+    // Locked molecules go first, in constraints-file order: an unlocked
+    // molecule can go anywhere still free, so any other order lets it squat a
+    // locked molecule's site. The unlocked ones then go largest first, since
+    // multi-atom molecules have the fewest legal placements left once the
+    // cluster fills up and nothing can be ripped up. Both orders are
+    // deterministic.
+    std::stable_sort(order.begin(), order.end(), [&](PackMoleculeId lhs, PackMoleculeId rhs) {
+        bool lhs_locked = is_molecule_locked_to_site(lhs, prepacker, relative_macros);
+        bool rhs_locked = is_molecule_locked_to_site(rhs, prepacker, relative_macros);
+        if (lhs_locked != rhs_locked)
+            return lhs_locked;
+        if (lhs_locked)
+            return false;
+        return prepacker.get_molecule_num_valid_atoms(lhs) > prepacker.get_molecule_num_valid_atoms(rhs);
+    });
+
+    // order_variant 1 reverses the locked molecules among themselves; the
+    // unlocked tail keeps its order, so locked molecules still go first.
+    // Reversing is the whole variation. It can matter because sites are fixed
+    // but the intra-cluster router is not: it picks which of the logically
+    // equivalent LUT/crossbar inputs each net enters through greedily as
+    // molecules arrive, so a sequence that leaves two nets contending for one
+    // input fails where another routes. No variant can move an atom off its
+    // site, and verify_clustering re-checks that afterwards.
+    if (order_variant == 1) {
+        size_t num_locked = std::count_if(order.begin(), order.end(), [&](PackMoleculeId mol_id) {
+            return is_molecule_locked_to_site(mol_id, prepacker, relative_macros);
+        });
+        std::reverse(order.begin(), order.begin() + num_locked);
+    }
+
+    // One deterministic pass: each molecule is offered to the cluster exactly
+    // once, in the order above. This is NOT the group's only chance, and the
+    // feature depends on that - the gain-driven fill that follows (see
+    // try_grow_cluster) re-proposes a molecule that failed here, and the
+    // legalizer accepts it if the cluster state has changed since. Removing
+    // that second offer was measured to break ip_rpm_fpu_mult, where six
+    // group-4 flip-flops are locked into FF slots of arithmetic-mode FLEs that
+    // the group's own 40-atom carry chain claims first. Molecules that are
+    // never admitted are reported as a split group by the end-of-pass check in
+    // pack.cpp.
+    for (PackMoleculeId mol_id : order) {
+        cluster_legalizer.add_mol_to_cluster(mol_id, legalization_cluster_id);
+    }
+}
+
+bool GreedyClusterer::relative_group_fully_clustered(PackMoleculeId seed_mol_id,
+                                                     LegalizationClusterId legalization_cluster_id,
+                                                     const ClusterLegalizer& cluster_legalizer,
+                                                     const Prepacker& prepacker) {
+    const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
+    if (relative_macros.get_num_macros() == 0)
+        return true;
+
+    std::pair<UserRelativeMacroId, int> group = get_molecule_relative_group(prepacker.get_molecule(seed_mol_id),
+                                                                            relative_macros);
+    if (!group.first.is_valid())
+        return true;
+
+    for (AtomBlockId blk_id : relative_macros.get_macro(group.first).groups[group.second].atoms) {
+        if (cluster_legalizer.get_atom_cluster(blk_id) != legalization_cluster_id)
+            return false;
+    }
+    return true;
+}
+
+bool GreedyClusterer::is_molecule_locked_to_site(PackMoleculeId mol_id,
+                                                 const Prepacker& prepacker,
+                                                 const UserRelativeMacros& relative_macros) {
+    const t_pack_molecule& molecule = prepacker.get_molecule(mol_id);
+    AtomBlockId root_blk_id = molecule.atom_block_ids[molecule.root];
+    if (!root_blk_id.is_valid())
+        return false;
+    return !relative_macros.get_atom_site_path(root_blk_id).empty();
 }
 
 void GreedyClusterer::report_le_physical_block_usage(const ClusterLegalizer& cluster_legalizer) {

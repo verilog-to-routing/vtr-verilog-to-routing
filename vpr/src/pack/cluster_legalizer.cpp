@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <vector>
 #include "atom_lookup.h"
@@ -319,6 +320,55 @@ static bool check_cluster_noc_group(AtomBlockId atom_blk_id,
     VTR_LOGV(log_verbosity > 3,
              "\t\t\t NoC Group: Atom block %d failed NoC group check for cluster. Cluster's NoC group: %d, atom's NoC group: %d\n",
              atom_blk_id, (size_t)cluster_noc_grp_id, (size_t)atom_noc_grp_id);
+    return false;
+}
+
+/**
+ * @brief Checks if an atom block can be added to a clustered block without
+ *        violating relative placement group constraints.
+ *
+ * @param atom_blk_id
+ * @param cluster_rel_group     The relative placement group (macro id, group
+ *                              index) of the clustered block. This function may
+ *                              update this group.
+ * @param relative_macros       The user-defined relative placement macros.
+ * @param log_verbosity
+ *
+ * @return True if adding the atom block to the cluster does not violate
+ *         relative placement group constraints.
+ */
+static bool check_cluster_relative_group(AtomBlockId atom_blk_id,
+                                         std::pair<UserRelativeMacroId, int>& cluster_rel_group,
+                                         const UserRelativeMacros& relative_macros,
+                                         int log_verbosity) {
+    const std::pair<UserRelativeMacroId, int> atom_rel_group = relative_macros.get_atom_group(atom_blk_id);
+
+    // Unconstrained atoms are compatible with any cluster.
+    if (!atom_rel_group.first.is_valid())
+        return true;
+
+    if (!cluster_rel_group.first.is_valid()) {
+        // If the cluster does not host a relative placement group yet, assign
+        // the atom's group to the cluster.
+        VTR_LOGV(log_verbosity > 3,
+                 "\t\t\t Relative Group: Atom block %d passed cluster, cluster's relative group was updated with the atom's group (macro %zu, group %d)\n",
+                 atom_blk_id, (size_t)atom_rel_group.first, atom_rel_group.second);
+        cluster_rel_group = atom_rel_group;
+        return true;
+    }
+
+    if (cluster_rel_group == atom_rel_group) {
+        VTR_LOGV(log_verbosity > 3,
+                 "\t\t\t Relative Group: Atom block %d passed cluster, cluster's relative group was compatible with the atom's group\n",
+                 atom_blk_id);
+        return true;
+    }
+
+    // The cluster hosts a different relative placement group than the atom's.
+    VTR_LOGV(log_verbosity > 3,
+             "\t\t\t Relative Group: Atom block %d failed relative group check for cluster. Cluster's group: (macro %zu, group %d), atom's group: (macro %zu, group %d)\n",
+             atom_blk_id, (size_t)cluster_rel_group.first, cluster_rel_group.second,
+             (size_t)atom_rel_group.first, atom_rel_group.second);
     return false;
 }
 
@@ -913,16 +963,84 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         }
     }
 
+    // Check if all atoms in the molecule can be added to the cluster without
+    // relative placement group conflicts.
+    std::pair<UserRelativeMacroId, int> new_cluster_rel_group = cluster.rel_group;
+    // The external pin utilization limit applied to this molecule. Relaxed
+    // below for molecules of the cluster's own relative placement group.
+    t_ext_pin_util effective_external_pin_util = max_external_pin_util;
+    // The hierarchical path of the primitive site this molecule is locked to,
+    // or empty when it is free to be placed anywhere in the cluster.
+    std::string_view force_site_path;
+    if (floorplanning_ctx.relative_macros.get_num_macros() != 0) {
+        for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
+            if (!atom_blk_id.is_valid())
+                continue;
+
+            bool block_pack_rel_group_status = check_cluster_relative_group(atom_blk_id,
+                                                                            new_cluster_rel_group,
+                                                                            floorplanning_ctx.relative_macros,
+                                                                            log_verbosity_);
+            if (!block_pack_rel_group_status) {
+                VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: relative_group_conflict (atom '%s')\n",
+                         atom_ctx.netlist().block_name(atom_blk_id).c_str());
+                return e_block_pack_status::BLK_FAILED_RELATIVE_GROUP;
+            }
+        }
+
+        if (!check_cluster_long_chain_ownership(molecule, new_cluster_rel_group, cluster)) {
+            VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: long_chain_ownership_conflict\n");
+            return e_block_pack_status::BLK_FAILED_RELATIVE_GROUP;
+        }
+
+        // Does the molecule contain an atom of the cluster's (possibly just
+        // adopted) relative placement group? Molecules of a different group
+        // were rejected above, so any constrained atom here belongs to it.
+        bool molecule_in_cluster_group = new_cluster_rel_group.first.is_valid()
+                                         && get_molecule_relative_group(molecule, floorplanning_ctx.relative_macros) == new_cluster_rel_group;
+
+        // Relax the external pin utilization limit for molecules of the
+        // cluster's own relative placement group
+        if (molecule_in_cluster_group) {
+            effective_external_pin_util = t_ext_pin_util(1.f, 1.f);
+        }
+
+        // Force the molecule onto the site recorded for its root atom, if any.
+        if (molecule_in_cluster_group) {
+            AtomBlockId root_blk_id = molecule.atom_block_ids[molecule.root];
+            if (root_blk_id.is_valid()) {
+                // The site path lives in the UserRelativeMacros of the
+                // floorplanning context, so it outlives this call.
+                const std::string& site_path = floorplanning_ctx.relative_macros.get_atom_site_path(root_blk_id);
+                if (!site_path.empty()) {
+                    force_site_path = site_path;
+                    VTR_LOGV(log_verbosity_ > 3,
+                             "\t\tRelative macro: atom '%s' is locked to primitive site '%s'\n",
+                             atom_ctx.netlist().block_name(root_blk_id).c_str(),
+                             site_path.c_str());
+                }
+            }
+        }
+    }
+
     // Reuse the member scratch vector to avoid a heap allocation per candidate molecule.
     primitives_list_.assign(max_molecule_size_, nullptr);
     e_block_pack_status block_pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
     LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> primitives_alive = build_primitive_candidate_queue(cluster.placement_stats,
                                                                                                                                  molecule_id,
                                                                                                                                  primitives_list_,
-                                                                                                                                 prepacker_);
+                                                                                                                                 prepacker_,
+                                                                                                                                 force_site_path);
 
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
         if (primitives_alive.empty()) {
+            if (!force_site_path.empty()) {
+                // The molecule is locked to one site, so there is nothing else
+                // to try in this cluster
+                report_unsatisfiable_locked_site(molecule, cluster, new_cluster_rel_group, force_site_path);
+                block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
+                break;
+            }
             VTR_LOGV(log_verbosity_ > 3, "\t\tFAILED No candidate primitives available\n");
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
             break; /* no more candidate primitives available, this molecule will not pack, return fail */
@@ -982,7 +1100,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 // Note: Expensive verification, do not keep in release.
                 cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
 #endif
-                if (!cluster.pin_counter.check_pins_used(cluster.pb, max_external_pin_util)) {
+                if (!cluster.pin_counter.check_pins_used(cluster.pb, effective_external_pin_util)) {
                     VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
                     block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
                 } else {
@@ -1131,6 +1249,16 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 // Update the cluster's NoC group ID. This is cheap so it does
                 // not need the check like the what the PR did above.
                 cluster.noc_grp_id = new_cluster_noc_grp_id;
+
+                // Update the cluster's relative placement group.
+                cluster.rel_group = new_cluster_rel_group;
+
+                // Record that the cluster now holds long-chain molecules and
+                // which relative placement group owns the chain.
+                if (molecule.chain_id.is_valid() && prepacker_.get_molecule_chain_info(molecule.chain_id).is_long_chain) {
+                    cluster.has_long_chain_mols = true;
+                    cluster.long_chain_owner = get_relative_chain_owner(molecule.chain_id);
+                }
 
                 for (size_t i = 0; i < molecule.atom_block_ids.size(); i++) {
                     AtomBlockId atom_blk_id = molecule.atom_block_ids[i];
@@ -1619,6 +1747,169 @@ void ClusterLegalizer::verify() {
     }
 }
 
+std::pair<UserRelativeMacroId, int> ClusterLegalizer::get_relative_chain_owner(MoleculeChainId chain_id) const {
+    auto owner_it = rel_chain_owners_.find(chain_id);
+    if (owner_it != rel_chain_owners_.end())
+        return owner_it->second;
+    return {UserRelativeMacroId::INVALID(), -1};
+}
+
+/**
+ * @brief Collect the hierarchical paths of the primitive sites under
+ *        pb_graph_node (all modes) that could host the given atom, and report
+ *        whether one of them is the wanted path.
+ *
+ * Occupancy is ignored: this answers whether the site is expressible in this
+ * cluster type at all, and - through the collected paths - what the caller
+ * could have written instead.
+ *
+ * @param wanted_path      The path the atom is locked to.
+ * @param available_paths  Appended with compatible paths, up to max_paths of
+ *                         them, for the diagnostic.
+ * @return Whether a compatible primitive with exactly the wanted path exists.
+ */
+static bool find_atom_compatible_site_path(const t_pb_graph_node* pb_graph_node,
+                                           AtomBlockId blk_id,
+                                           const std::string& wanted_path,
+                                           std::vector<std::string>& available_paths,
+                                           size_t max_paths) {
+    bool found = false;
+
+    // Depth-first walk of the pb hierarchy.
+    std::vector<const t_pb_graph_node*> to_visit = {pb_graph_node};
+    while (!to_visit.empty()) {
+        const t_pb_graph_node* node = to_visit.back();
+        to_visit.pop_back();
+
+        if (node->is_primitive()) {
+            if (!primitive_type_feasible(blk_id, node->pb_type))
+                continue;
+            std::string path = node->hierarchical_type_name();
+            if (path == wanted_path)
+                found = true;
+            else if (available_paths.size() < max_paths)
+                available_paths.push_back(std::move(path));
+            continue;
+        }
+
+        for (int imode = node->pb_type->num_modes - 1; imode >= 0; imode--) {
+            const t_mode& mode = node->pb_type->modes[imode];
+            for (int ichild = mode.num_pb_type_children - 1; ichild >= 0; ichild--) {
+                for (int ipb = mode.pb_type_children[ichild].num_pb - 1; ipb >= 0; ipb--)
+                    to_visit.push_back(&node->child_pb_graph_nodes[imode][ichild][ipb]);
+            }
+        }
+    }
+
+    return found;
+}
+
+void ClusterLegalizer::report_unsatisfiable_locked_site(const t_pack_molecule& molecule,
+                                                        const LegalizationCluster& cluster,
+                                                        const std::pair<UserRelativeMacroId, int>& rel_group,
+                                                        std::string_view force_site_path) {
+    const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
+    const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
+    AtomBlockId root_blk_id = molecule.atom_block_ids[molecule.root];
+    const std::string& macro_name = relative_macros.get_macro(rel_group.first).name;
+    // This is a cold path (a rejection), and both the record kept below and the
+    // log messages want a std::string, so make one copy up front.
+    const std::string site_path(force_site_path);
+
+    // Is the site expressible in this cluster type at all, and if not, what
+    // could have been written instead?
+    constexpr size_t MAX_REPORTED_PATHS = 3;
+    std::vector<std::string> available_paths;
+    bool site_exists = find_atom_compatible_site_path(cluster.type->pb_graph_head,
+                                                      root_blk_id,
+                                                      site_path,
+                                                      available_paths,
+                                                      MAX_REPORTED_PATHS);
+
+    // Remember the rejection: a seed molecule that is rejected by every
+    // candidate cluster type ends in a fatal error raised by the caller, which
+    // would otherwise blame the architecture without mentioning the site (see
+    // GreedyClusterer::start_new_cluster).
+    last_unsatisfiable_locked_site_ = {root_blk_id,
+                                       rel_group,
+                                       site_path,
+                                       available_paths,
+                                       cluster.type->name};
+
+    // Everything below only produces the per-attempt log message. The walk
+    // above cannot be skipped: it feeds the record the caller's fatal error
+    // reads (and it is only reached when a locked molecule is rejected).
+    if (log_verbosity_ <= 2)
+        return;
+
+    if (!site_exists) {
+        std::string examples;
+        for (const std::string& path : available_paths)
+            examples += " '" + path + "'";
+        VTR_LOG("\t\tRelative macro '%s' group %d: atom '%s' is locked to primitive site '%s', which does not "
+                "exist in cluster type '%s' for this atom. Compatible sites there include:%s\n",
+                macro_name.c_str(), rel_group.second,
+                atom_nlist.block_name(root_blk_id).c_str(), site_path.c_str(),
+                cluster.type->name.c_str(),
+                examples.empty() ? " (none)" : examples.c_str());
+        return;
+    }
+
+    // The site exists, so it is taken: name the atom sitting on it, which is
+    // the actionable information (two atoms of the group locked to one site, or
+    // fill logic that got there first).
+    for (PackMoleculeId cluster_mol_id : cluster.molecules) {
+        const t_pack_molecule& cluster_mol = prepacker_.get_molecule(cluster_mol_id);
+        for (AtomBlockId blk_id : cluster_mol.atom_block_ids) {
+            if (!blk_id.is_valid())
+                continue;
+            const t_pb* atom_pb = atom_pb_lookup().atom_pb(blk_id);
+            if (atom_pb == nullptr)
+                continue;
+            if (atom_pb->pb_graph_node->hierarchical_type_name() != site_path)
+                continue;
+
+            VTR_LOG("\t\tRelative macro '%s' group %d: atom '%s' is locked to primitive site '%s', "
+                    "which is already occupied by atom '%s'\n",
+                    macro_name.c_str(), rel_group.second,
+                    atom_nlist.block_name(root_blk_id).c_str(), site_path.c_str(),
+                    atom_nlist.block_name(blk_id).c_str());
+            return;
+        }
+    }
+
+    VTR_LOG("\t\tRelative macro '%s' group %d: atom '%s' could not be placed on the primitive site '%s' it "
+            "is locked to (the site or one of its ancestors is unavailable, or the molecule rooted at this "
+            "atom does not fit there)\n",
+            macro_name.c_str(), rel_group.second,
+            atom_nlist.block_name(root_blk_id).c_str(), site_path.c_str());
+}
+
+bool ClusterLegalizer::check_cluster_long_chain_ownership(const t_pack_molecule& molecule,
+                                                          const std::pair<UserRelativeMacroId, int>& rel_group,
+                                                          const LegalizationCluster& cluster) const {
+    if (molecule.chain_id.is_valid() && prepacker_.get_molecule_chain_info(molecule.chain_id).is_long_chain) {
+        const std::pair<UserRelativeMacroId, int> mol_chain_owner = get_relative_chain_owner(molecule.chain_id);
+        // The molecule may not join a cluster hosting a group other than its
+        // chain's owner.
+        if (rel_group.first.is_valid() && rel_group != mol_chain_owner) {
+            VTR_LOGV(log_verbosity_ > 3, "\t\t\t Long Chain: cluster hosts a relative group that does not own the molecule's chain\n");
+            return false;
+        }
+        // Long chains with different owners may not share a cluster.
+        if (cluster.has_long_chain_mols && cluster.long_chain_owner != mol_chain_owner) {
+            VTR_LOGV(log_verbosity_ > 3, "\t\t\t Long Chain: cluster holds a long chain with a different owner\n");
+            return false;
+        }
+    }
+    // A group may not move into a cluster whose long chain it does not own.
+    if (cluster.has_long_chain_mols && rel_group.first.is_valid() && rel_group != cluster.long_chain_owner) {
+        VTR_LOGV(log_verbosity_ > 3, "\t\t\t Long Chain: relative group does not own the cluster's long chain\n");
+        return false;
+    }
+    return true;
+}
+
 bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
                                               LegalizationClusterId cluster_id) const {
     VTR_ASSERT_SAFE(molecule_id.is_valid());
@@ -1632,7 +1923,24 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
     //       would be more robust, but checking individual atoms is faster.
     const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
 
+    const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
+    // Cheap early reject: an atom of one relative placement group can never
+    // join a cluster hosting a different group.
+    const bool cluster_has_rel_group = cluster.rel_group.first.is_valid();
+
+    const bool relative_macros_active = relative_macros.get_num_macros() != 0;
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
+    // Whether the molecule contains an atom of some relative placement group,
+    // and that group (a molecule's constrained atoms are all in one group).
+    bool molecule_has_rel_group = false;
+    std::pair<UserRelativeMacroId, int> molecule_rel_group = {UserRelativeMacroId::INVALID(), -1};
+    if (relative_macros_active) {
+        molecule_rel_group = get_molecule_relative_group(molecule, relative_macros);
+        molecule_has_rel_group = molecule_rel_group.first.is_valid();
+        if (molecule_has_rel_group && cluster_has_rel_group && molecule_rel_group != cluster.rel_group) {
+            return false;
+        }
+    }
     for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
         // FIXME: Why is it possible that molecules contain invalid block IDs?
         //        This should be fixed!
@@ -1643,6 +1951,16 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
         VTR_ASSERT(!is_atom_clustered(atom_blk_id));
         if (!exists_free_primitive_for_atom_block(cluster.placement_stats,
                                                   atom_blk_id)) {
+            return false;
+        }
+    }
+    // Mirror the long-chain veto in try_pack_molecule(). The group the
+    // cluster would host after the addition is the molecule's group if it has
+    // one (equal to the cluster's if both exist, checked above), else the
+    // cluster's.
+    if (relative_macros_active) {
+        const std::pair<UserRelativeMacroId, int>& rel_group = molecule_has_rel_group ? molecule_rel_group : cluster.rel_group;
+        if (!check_cluster_long_chain_ownership(molecule, rel_group, cluster)) {
             return false;
         }
     }

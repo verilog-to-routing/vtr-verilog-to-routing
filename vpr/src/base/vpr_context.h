@@ -10,6 +10,7 @@
 #include "physical_types.h"
 #include "place_macro.h"
 #include "user_place_constraints.h"
+#include "user_relative_macros.h"
 #include "user_route_constraints.h"
 #include "vpr_types.h"
 #include "vtr_cache.h"
@@ -680,6 +681,13 @@ struct FloorplanningContext : public Context {
      * The constraints are input into vpr and do not change.
      */
     UserPlaceConstraints constraints;
+
+    /**
+     * @brief Stores user-defined relative placement macros.
+     *
+     * The relative macros are input into vpr and do not change.
+     */
+    UserRelativeMacros relative_macros;
 
     /**
      * @brief Constraints for each cluster

@@ -231,8 +231,19 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     const UserPlaceConstraints& constraints = g_vpr_ctx.floorplanning().constraints;
     const t_ap_opts& ap_opts = vpr_setup.APOpts;
 
+    // User-defined relative placement macros are only honored by the traditional
+    // pack/place flow; the AP flow would silently ignore them after prepacking.
+    if (g_vpr_ctx.floorplanning().relative_macros.get_num_macros() > 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_AP,
+                        "User-defined relative placement macros are not supported in the "
+                        "analytical placement flow. Use the traditional flow (--pack --place) instead.");
+    }
+
     // Run the prepacker
-    const Prepacker prepacker(atom_nlist, device_ctx.arch->models, device_ctx.logical_block_types);
+    const Prepacker prepacker(atom_nlist,
+                              device_ctx.arch->models,
+                              device_ctx.logical_block_types,
+                              g_vpr_ctx.floorplanning().relative_macros);
 
     // Pre-compute the pre-clustering timing delays. This object will be passed
     // into the global placer and the full legalizer to make them timing driven.

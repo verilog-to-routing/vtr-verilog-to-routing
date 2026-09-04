@@ -98,6 +98,16 @@ void MoveAbortionLogger::log_move_abort(std::string_view reason) {
     }
 }
 
+void MoveAbortionLogger::log_macro_move_proposal(bool user_defined, bool aborted) {
+    if (user_defined) {
+        user_macro_proposals_++;
+        user_macro_aborts_ += aborted;
+    } else {
+        arch_macro_proposals_++;
+        arch_macro_aborts_ += aborted;
+    }
+}
+
 void MoveAbortionLogger::report_aborted_moves() const {
     VTR_LOG("\n");
     VTR_LOG("Aborted Move Reasons:\n");
@@ -106,5 +116,21 @@ void MoveAbortionLogger::report_aborted_moves() const {
     }
     for (const auto& [reason, count] : move_abort_reasons_) {
         VTR_LOG("  %s: %zu\n", reason.c_str(), count);
+    }
+
+    // Only printed when user relative placement macros were proposed
+    if (user_macro_proposals_ != 0) {
+        VTR_LOG("\n");
+        VTR_LOG("Macro Move Proposals:\n");
+        if (arch_macro_proposals_ != 0) {
+            VTR_LOG("  arch macros: %zu proposed, %zu aborted (%.2f%%)\n",
+                    arch_macro_proposals_, arch_macro_aborts_,
+                    100.0f * arch_macro_aborts_ / arch_macro_proposals_);
+        }
+        if (user_macro_proposals_ != 0) {
+            VTR_LOG("  user relative placement macros: %zu proposed, %zu aborted (%.2f%%)\n",
+                    user_macro_proposals_, user_macro_aborts_,
+                    100.0f * user_macro_aborts_ / user_macro_proposals_);
+        }
     }
 }

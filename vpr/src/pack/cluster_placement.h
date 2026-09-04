@@ -4,6 +4,8 @@
  * Author: Jason Luu
  */
 
+#include <string>
+#include <string_view>
 #include <vector>
 #include <unordered_map>
 #include "physical_types.h"
@@ -192,6 +194,9 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
  * @param prepacker
  *              The prepacker object that provides access to the molecule
  *              corresponding to given molecule id.
+ * @param force_site_path
+ *              Optional hierarchical path of the primitive on which to place the molecule
+ *              (t_pb_graph_node::hierarchical_type_name(), empty to disable).
  *
  * @return A LazyPopUniquePriorityQueue containing feasible primitive root
  *         candidates ordered by placement priority. The queue may be empty
@@ -200,7 +205,8 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
 LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_primitive_candidate_queue(t_intra_cluster_placement_stats* cluster_placement_stats,
                                                                                                           PackMoleculeId molecule_id,
                                                                                                           std::vector<t_pb_graph_node*>& primitives_list,
-                                                                                                          const Prepacker& prepacker);
+                                                                                                          const Prepacker& prepacker,
+                                                                                                          std::string_view force_site_path = {});
 
 /**
  * @brief Move a candidate root primitive from the valid set to the in-flight set.

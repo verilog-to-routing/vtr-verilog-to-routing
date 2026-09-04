@@ -244,7 +244,8 @@ static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placeme
 LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_primitive_candidate_queue(t_intra_cluster_placement_stats* cluster_placement_stats,
                                                                                                           PackMoleculeId molecule_id,
                                                                                                           std::vector<t_pb_graph_node*>& primitives_list,
-                                                                                                          const Prepacker& prepacker) {
+                                                                                                          const Prepacker& prepacker,
+                                                                                                          std::string_view force_site_path) {
     LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> primitives_alive;
     if (cluster_placement_stats->curr_molecule != molecule_id) {
         // New block, requeue tried primitives and in-flight primitives
@@ -273,6 +274,9 @@ LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_
     //        - Lower placement cost is preferred.
     //        - Higher total_primitive_count breaks ties.
     //        - Earlier encountered primitives break remaining ties.
+    //   4. If force_site_path is not empty:
+    //        - Only the primitive whose hierarchical_type_name() equals the
+    //          path is considered.
     // The returned priority queue may be empty if no feasible primitive exists.
 
     // Initialize variables
@@ -291,6 +295,25 @@ LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_
                     if (!it->second->valid) {
                         cluster_placement_stats->invalidate_primitive_and_increment_iterator(i, it); //iterator is incremented here
                         continue;
+                    }
+
+                    if (!force_site_path.empty()) {
+                        if (it->second->pb_graph_node->hierarchical_type_name() != force_site_path) {
+                            ++it;
+                            continue;
+                        }
+                        cost = try_place_molecule(cluster_placement_stats,
+                                                  molecule_id,
+                                                  it->second->pb_graph_node,
+                                                  primitives_list,
+                                                  prepacker);
+                        primitives_alive.clear();
+                        if (cost < std::numeric_limits<float>::max()) {
+                            int total_primitive_count = it->second->pb_graph_node->total_primitive_count;
+                            primitives_alive.push(it->second->pb_graph_node,
+                                                  std::make_tuple(-cost, total_primitive_count, -encounter_order));
+                        }
+                        return primitives_alive;
                     }
 
                     // Try place molecule at current root location
