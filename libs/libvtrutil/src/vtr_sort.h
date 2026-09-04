@@ -94,7 +94,7 @@ void stable_counting_sort(InIt first, InIt last, OutIt out, size_t num_keys, Key
 }
 
 /**
- * @brief Stable counting sort of a container in place.
+ * @brief Stable counting sort of a container in place, in ascending key order.
  *
  * scratch must be a different container of the same size as items. It is used
  * as the destination buffer and then swapped with items, so after the call
@@ -150,17 +150,24 @@ void stable_radix_sort_passes(Container& items, Container& scratch, const KeyTup
  * @brief Stable LSD radix sort of [first, last) into out by several keys.
  *
  * out must already have (last - first) elements. keys are listed from the
- * most significant to the least significant. The result is the same as a
+ * most significant to the least significant, and every key is sorted in
+ * ascending order (lowest key first). The result is the same as a
  * std::stable_sort by the tuple of keys, but it is computed as one stable
  * counting sort pass per key, least significant key first. The input is read
  * directly, so a generated sequence such as a vtr::StrongIdRange needs no copy first.
  * As with stable_counting_sort, the input may hold at most 2^32 - 1 elements.
  *
- * Example, sorting edges by (source node, destination node):
+ * Example, sorting edges by ascending (source node, destination node):
  *
  *     vtr::stable_radix_sort(edges.begin(), edges.end(), sorted_edges,
  *                            vtr::sort_key(num_nodes, [&](RREdgeId e) { return src_node[e]; }),
  *                            vtr::sort_key(num_nodes, [&](RREdgeId e) { return dest_node[e]; }));
+ *
+ * Afterwards sorted_edges starts with the edges of the lowest source node,
+ * ordered from the lowest to the highest destination node, and so on for
+ * each source node from lowest to highest. Edges with the same source and
+ * destination keep the relative order they had in the input. There is no
+ * option to sort highest first.
  */
 template<typename InIt, typename Container, typename... KeyFns>
     requires std::forward_iterator<InIt>
