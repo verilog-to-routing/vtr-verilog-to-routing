@@ -208,7 +208,8 @@ class NetCostHandler {
         /// Number of blocks on each edge of the bounding box.
         /// Only maintained for nets with at least SMALL_NET sinks.
         t_bb num_on_edges;
-        /// Wirelength (bounding box) cost of the net. Negative means not computed yet.
+        /// Wirelength (bounding box) cost of the net.
+        /// Negative until comp_bb_cong_cost() computes it for the first time.
         double cost = -1.;
     };
 
@@ -495,6 +496,8 @@ class NetCostHandler {
 
     // Bounding-box getters
   public:
+    /// @brief Returns the number of blocks on each edge of the net's bounding box.
+    /// Only maintained for nets with at least SMALL_NET sinks, and undefined for smaller ones.
     inline const t_bb& bb_num_on_edges(ClusterNetId net_id) const { return net_bb_[net_id].num_on_edges; }
 
     inline const t_bb& bb_coords(ClusterNetId net_id) const { return net_bb_[net_id].coords; }
