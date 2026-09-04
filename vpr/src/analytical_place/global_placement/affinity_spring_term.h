@@ -58,7 +58,6 @@ class AffinitySpringTerm final : public ObjectiveTerm {
     void add_curvature(vtr::vector<APBlockId, double>& diagonal) const final;
 
   private:
-
     std::vector<AffinityGroup> groups_;
     double pack_pattern_weight_ = 0.;
     vtr::vector<APBlockId, bool> moveable_; ///< Block mobility, precomputed (static per netlist).

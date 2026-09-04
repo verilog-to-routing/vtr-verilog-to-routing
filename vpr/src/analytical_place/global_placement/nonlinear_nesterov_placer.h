@@ -323,18 +323,16 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     const AtomNetlist& atom_netlist_;                              ///< Atom netlist used for timing criticality lookup.
     PreClusterTimingManager& pre_cluster_timing_manager_;          ///< Timing manager used to weight differentiable wirelength nets.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;           ///< Delay model used to update timing criticalities.
-    const LogicalModels& models_;                                  ///< Logical models used to classify I/O-chain primitives.
-
-    std::vector<APBlockId> moveable_blocks_;   ///< Movable AP blocks touched by the optimizer.
-    vtr::vector<APNetId, double> net_weights_; ///< Per-net weight applied to the weighted-average (WA) wirelength term computed in add_wirelength_gradient_.
-    vtr::vector<APBlockId, double> block_precond_;        ///< Per-block diagonal preconditioner (objective curvature estimate).
-    bool large_design_ = false;                           ///< Design is at or above @ref kPreconditionSizeThreshold: applies the Jacobi preconditioner and the unit step.
-    vtr::vector<APBlockId, float> pin_density_inflation_; ///< Per-block density-term mass inflation from pin count (routability cell inflation); 1.0 for blocks at or below the reference pin count.
-    std::unique_ptr<NetCohesion> cohesion_;               ///< Periphery-pair net detection (gates pack-pattern affinity).
-    std::unique_ptr<AffinitySpringTerm> affinity_term_;   ///< Affinity-spring objective term (groups + energy/gradient/curvature).
-    size_t num_pack_pattern_affinity_groups_ = 0;         ///< Count of PACK_PATTERN affinity groups.
-    std::vector<double> filler_unit_mass_;                ///< [dim] density mass per dynamic filler.
-    std::vector<double> filler_precond_;                  ///< [dim] density-only filler preconditioner.
+    std::vector<APBlockId> moveable_blocks_;                       ///< Movable AP blocks touched by the optimizer.
+    vtr::vector<APNetId, double> net_weights_;                     ///< Per-net weight applied to the weighted-average (WA) wirelength term computed in add_wirelength_gradient_.
+    vtr::vector<APBlockId, double> block_precond_;                 ///< Per-block diagonal preconditioner (objective curvature estimate).
+    bool large_design_ = false;                                    ///< Design is at or above @ref kPreconditionSizeThreshold: applies the Jacobi preconditioner and the unit step.
+    vtr::vector<APBlockId, float> pin_density_inflation_;          ///< Per-block density-term mass inflation from pin count (routability cell inflation); 1.0 for blocks at or below the reference pin count.
+    std::unique_ptr<NetCohesion> cohesion_;                        ///< Periphery-pair net detection (gates pack-pattern affinity).
+    std::unique_ptr<AffinitySpringTerm> affinity_term_;            ///< Affinity-spring objective term (groups + energy/gradient/curvature).
+    size_t num_pack_pattern_affinity_groups_ = 0;                  ///< Count of PACK_PATTERN affinity groups.
+    std::vector<double> filler_unit_mass_;                         ///< [dim] density mass per dynamic filler.
+    std::vector<double> filler_precond_;                           ///< [dim] density-only filler preconditioner.
     // Placement-invariant density-grid constants, cached once (device grid,
     // bin capacity, and target density are fixed across the optimization) and
     // reused across every objective evaluation instead of being rebuilt.

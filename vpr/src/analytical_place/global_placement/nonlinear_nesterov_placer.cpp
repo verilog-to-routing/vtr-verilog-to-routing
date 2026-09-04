@@ -10,7 +10,6 @@
 #include <cctype>
 #include <cmath>
 #include <cstdio>
-#include <cstdlib>
 #include <functional>
 #include <limits>
 #include <map>
@@ -453,7 +452,6 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     , atom_netlist_(atom_netlist)
     , pre_cluster_timing_manager_(pre_cluster_timing_manager)
     , place_delay_model_(place_delay_model)
-    , models_(models)
     , net_weights_(ap_netlist.nets().size(), 1.0)
     , device_grid_width_(device_grid.width())
     , device_grid_height_(device_grid.height())
@@ -685,13 +683,7 @@ PartialPlacement NonlinearNesterovPlacer::place() {
     // Applying it and using a unit step are one regime, not two knobs: a
     // preconditioned gradient carries position units so its natural step is ~1,
     // while a raw gradient needs the span-scaled step.
-    //
-    // ABLATION GATE (temporary): VPR_ABL_PRECOND=always preconditions every design.
-    const char* abl_precond = std::getenv("VPR_ABL_PRECOND");
-    bool precond_always = abl_precond && std::string(abl_precond) == "always";
-    if (precond_always)
-        VTR_LOG("ABL: PRECOND=always (size gate bypassed; unit step everywhere).\n");
-    large_design_ = precond_always || moveable_blocks_.size() >= kPreconditionSizeThreshold;
+    large_design_ = moveable_blocks_.size() >= kPreconditionSizeThreshold;
 
     return run_global_optimization_(density_dimensions, device_span, convergence_displacement);
 }
@@ -704,18 +696,7 @@ PartialPlacement NonlinearNesterovPlacer::run_global_optimization_(const std::ve
     if (log_verbosity_ >= 1)
         VTR_LOG("Nonlinear Nesterov phase time: warm start took %.2f seconds.\n", warmstart_timer.elapsed_sec());
     cohesion_->update_periphery_pair_nets(density_dimensions);
-    // ABLATION GATE (temporary): VPR_ABL_PACKPAT=off disables chain springs
-    // entirely; =ungated keeps them on regardless of the periphery-net gate.
-    const char* abl_packpat = std::getenv("VPR_ABL_PACKPAT");
-    bool abl_off = abl_packpat && std::string(abl_packpat) == "off";
-    bool abl_ungated = abl_packpat && std::string(abl_packpat) == "ungated";
-    if (abl_off) {
-        VTR_LOG("ABL: PACKPAT=off (chain affinity springs disabled).\n");
-        pack_pattern_cohesion_weight_ = 0.;
-        affinity_term_->set_pack_pattern_weight(0.);
-    } else if (abl_ungated) {
-        VTR_LOG("ABL: PACKPAT=ungated (periphery gate bypassed).\n");
-    } else if (pack_pattern_cohesion_weight_ > 0.
+    if (pack_pattern_cohesion_weight_ > 0.
         && cohesion_->num_periphery_pair_nets() == 0) {
         if (log_verbosity_ >= 1) {
             VTR_LOG("Nonlinear Nesterov pack-pattern affinity disabled: no two-pin periphery nets were found.\n");
@@ -785,8 +766,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         VTR_LOG("Nonlinear Nesterov sparse-seed guard: capping electrostatic phase to %zu filler-free epoch(s) of %zu iterations.\n",
                 num_epochs, iterations_per_epoch);
     }
-
-    // --- Ablation gates (env, default OFF -> bit-identical). Load-bearing campaign. ---
 
     FillerState current_fillers;
     initialize_dynamic_fillers_(seed,
@@ -887,8 +866,8 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             kMaxNesterovIterations,
             num_epochs);
     auto apply_continuation_schedule = [&](double schedule) {
-        // Ablation: fix gamma to a constant mid value (removes the coarse->sharp anneal); density
-        // weight still follows the real schedule.
+        // Anneal gamma geometrically from its coarse starting value to its sharp
+        // final value while increasing the density weight on the same schedule.
         current_gamma_fraction_ = kGammaStartFraction
                                   * std::pow(kGammaEndFraction / kGammaStartFraction, schedule);
         double density_weight_scale = std::pow(kFinalDensityWeightMultiplier, schedule);
@@ -1994,19 +1973,6 @@ void NonlinearNesterovPlacer::initialize_dynamic_fillers_(const PartialPlacement
 void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<PrimitiveVectorDim>& dimensions,
                                                       const std::vector<double>& density_multipliers) {
     block_precond_.assign(ap_netlist_.blocks().size(), 0.0);
-    // ABLATION GATE (temporary): VPR_ABL_PRECOND_ALPHA overrides the softening
-    // exponent. kPreconditionAlpha = 0.5 has no board record; every published
-    // electrostatic placer uses 1.0. The exponent changes the SHAPE of the
-    // diagonal (the per-block ratios), which is the only property the
-    // Barzilai-Borwein secant cannot absorb by rescaling.
-    static const double precondition_alpha = [] {
-        const char* e = std::getenv("VPR_ABL_PRECOND_ALPHA");
-        double a = e ? std::atof(e) : kPreconditionAlpha;
-        if (e)
-            VTR_LOG("ABL: PRECOND_ALPHA=%g (default %g).\n", a, kPreconditionAlpha);
-        return a;
-    }();
-
     // Wirelength Hessian diagonal. Under the B2B model this is exact: the
     // quadratic's diagonal is the block's incident edge-weight sum (mean of
     // the two axes, since the preconditioner is one scalar per block). Under
@@ -2052,7 +2018,7 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
         block_precond_[blk_id] = jacobi_precond_diagonal(block_precond_[blk_id] + density_curvature,
                                                          0.,
                                                          kPreconditionFloor,
-                                                         precondition_alpha);
+                                                         kPreconditionAlpha);
     }
 
     filler_precond_.assign(dimensions.size(), kPreconditionFloor);
@@ -2062,7 +2028,7 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
         filler_precond_[dim_idx] = jacobi_precond_diagonal(density_multipliers[dim_idx] * unit_mass,
                                                            0.,
                                                            kPreconditionFloor,
-                                                           precondition_alpha);
+                                                           kPreconditionAlpha);
     }
 }
 
