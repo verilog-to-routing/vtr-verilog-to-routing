@@ -104,7 +104,7 @@ ezgl::canvas* ensure_main_canvas(ezgl::application* app) {
         // sufficient — we only need a writable QImage surface.
         cnv = app->add_canvas(
             id,
-            /*draw_persistent_callback=*/[](ezgl::renderer*) {},
+            /*draw_persistent_callback=*/[](ezgl::renderer*) noexcept {},
             ezgl::rectangle({0, 0}, 256, 256),
             ezgl::WHITE);
     }
