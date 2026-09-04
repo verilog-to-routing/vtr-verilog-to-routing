@@ -105,9 +105,10 @@ class NetCostHandler {
      *
      * The change in the bounding box cost is stored in `bb_delta_c`.
      * The change in the timing cost is stored in `timing_delta_c`.
-     * ts_nets_to_update is also extended with the latest net.
      *
-     * @return The number of affected nets.
+     * Every affected net is recorded in ts_nets_to_update_ and given a slot in
+     * ts_net_info_. The slots must be released by update_move_nets() or
+     * reset_move_nets() before this method is called again.
      */
     void find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
                                              const PlacerCriticalities* criticalities,
@@ -116,14 +117,14 @@ class NetCostHandler {
                                              double& timing_delta_c);
 
     /**
-     * @brief Reset the net cost function flags (proposed_net_cost and bb_updated_before)
+     * @brief Discards the proposed state of the affected nets and releases their slots.
+     * Called when the move under evaluation is rejected.
      */
     void reset_move_nets();
 
     /**
-     * @brief Update net cost data structures (in placer context and net_cost in .cpp file)
-     * and reset flags (proposed_net_cost and bb_updated_before).
-     * It is used to determine the index up to which elements in ts_nets_to_update are valid.
+     * @brief Copies the proposed state of the affected nets into the committed state
+     * and releases their slots. Called when the move under evaluation is accepted.
      */
     void update_move_nets();
 
