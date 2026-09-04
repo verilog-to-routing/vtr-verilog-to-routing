@@ -890,8 +890,6 @@ class t_rr_graph_storage {
     /**
      * @brief Sorts edges by one or more small integer keys.
      *
-     * keys are listed from the most significant to the least significant. Each key is a
-     * vtr::sort_key whose key_of maps an RREdgeId to a value smaller than its num_keys.
      * The result is the same as a stable sort by the tuple of keys, ties keep their
      * current order, but it is computed with stable counting sort passes instead of a
      * comparison sort.
@@ -903,6 +901,16 @@ class t_rr_graph_storage {
      * Example, sorting by destination node:
      *
      *     sort_edges_by_keys(vtr::sort_key(num_nodes, [&](RREdgeId e) { return edge_dest_node_[e]; }));
+     *
+     * Example, sorting by source node, and by destination node among edges that share
+     * a source node:
+     *
+     *     sort_edges_by_keys(vtr::sort_key(num_nodes, [&](RREdgeId e) { return edge_src_node_[e]; }),
+     *                        vtr::sort_key(num_nodes, [&](RREdgeId e) { return edge_dest_node_[e]; }));
+     *
+     * @param keys  One vtr::sort_key per sort criterion, listed from the most significant
+     *              to the least significant. Each is built with vtr::sort_key(num_keys, key_of),
+     *              where key_of maps an RREdgeId to a value smaller than num_keys.
      */
     template <typename... KeyFns>
     void sort_edges_by_keys(const vtr::sort_key<KeyFns>&... keys) {
