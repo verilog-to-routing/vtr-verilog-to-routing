@@ -24,7 +24,8 @@ void APPackMaxDistThManager::init(const std::vector<std::string>& max_dist_ths,
                                   const DeviceGrid& device_grid) {
     // Compute the max device distance based on the width and height of the
     // device. This is the L1 (manhattan) distance.
-    max_distance_on_device_ = device_grid.width() + device_grid.height();
+    float layer_span_contr = device_grid.get_num_layers() > 1 ? device_grid.get_num_layers() : 0;
+    max_distance_on_device_ = device_grid.width() + device_grid.height() + layer_span_contr;
 
     // Automatically set the max distance thresholds.
     auto_set_max_distance_thresholds(logical_block_types, device_grid);
@@ -38,18 +39,6 @@ void APPackMaxDistThManager::init(const std::vector<std::string>& max_dist_ths,
 
     // Set the initialized flag to true.
     is_initialized_ = true;
-
-    // Log the max distance thresholds for each logical block type. This is
-    // similar to how the input and output pin utilizations are printed.
-    VTR_LOG("APPack is using max distance thresholds: ");
-    for (const t_logical_block_type& lb_ty : logical_block_types) {
-        if (lb_ty.is_empty())
-            continue;
-        VTR_LOG("%s:%g ",
-                lb_ty.name.c_str(),
-                get_max_dist_threshold(lb_ty));
-    }
-    VTR_LOG("\n");
 }
 
 void APPackMaxDistThManager::auto_set_max_distance_thresholds(const std::vector<t_logical_block_type>& logical_block_types,
@@ -142,4 +131,18 @@ void APPackMaxDistThManager::set_max_distance_thresholds_from_strings(
         int lb_ty_index = lb_type_name_to_index[lb_name];
         logical_block_dist_thresholds_[lb_ty_index] = logical_block_max_dist_th;
     }
+}
+
+void APPackMaxDistThManager::print_max_dist_thresholds(const std::vector<t_logical_block_type>& logical_block_types) const {
+    // Log the max distance thresholds for each logical block type. This is
+    // similar to how the input and output pin utilizations are printed.
+    VTR_LOG("APPack is using max distance thresholds: ");
+    for (const t_logical_block_type& lb_ty : logical_block_types) {
+        if (lb_ty.is_empty())
+            continue;
+        VTR_LOG("%s:%g ",
+                lb_ty.name.c_str(),
+                get_max_dist_threshold(lb_ty));
+    }
+    VTR_LOG("\n");
 }
