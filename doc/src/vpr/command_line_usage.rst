@@ -567,6 +567,23 @@ Use the options below to override this default naming behaviour.
 
     * The x, y, and sub_tile location of the cluster that contains this atom.
 
+.. option:: --flat_place_verbosity <int>
+
+    Controls how much annotation is written into flat placement files
+    (see :ref:`flat placement file format <vpr_flat_place_file>`). Annotations are
+    informational only: :option:`vpr --read_flat_place` ignores everything past the
+    ``<atom_sub_tile>`` column. Each level includes what the levels below it print.
+
+    * ``0``: No annotation and no header comments, i.e. only the columns the reader
+      parses. The output is then exactly the input format documented above, and
+      carries no build timestamp, so it is reproducible across runs.
+    * ``1``: Header comments, plus the cluster block number and the primitive type
+      of each atom.
+    * ``2``: Additionally each atom's ``site_path``, the hierarchical path of the
+      primitive it was placed on within its cluster.
+
+    **Default:** ``1``
+
 .. _netlist_options:
 
 Netlist Options
