@@ -618,10 +618,6 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         device_ctx.vib_grid = create_vib_device_grid(vpr_setup.device_layout, Arch.vib_grid_layouts);
     }
 
-    VTR_ASSERT_MSG(device_ctx.grid.get_num_layers() <= MAX_NUM_LAYERS,
-                   "Number of layers should be less than MAX_NUM_LAYERS. "
-                   "If you need more layers, please increase the value of MAX_NUM_LAYERS in vpr_types.h");
-
     report_device_grid_stats(device_ctx.grid);
 }
 
