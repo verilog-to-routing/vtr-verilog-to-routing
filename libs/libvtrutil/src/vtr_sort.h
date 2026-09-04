@@ -40,11 +40,13 @@ namespace vtr {
  * as uint32_t to halve the memory traffic of the counts array, which is
  * accessed randomly in the placement pass.
  *
- * @tparam InIt   Forward iterator over the input elements.
- * @tparam OutIt  Random access iterator to the output range.
- * @tparam KeyFn  Callable mapping an element to its key. The key may be any
- *                type explicitly convertible to size_t (integers, vtr::StrongId).
+ * @param first     Forward iterator to the first input element.
+ * @param last      Forward iterator one past the last input element.
+ * @param out       Random access iterator to the output range, which must
+ *                  already have room for (last - first) elements.
  * @param num_keys  Exclusive upper bound on the keys. Every key must be smaller than this.
+ * @param key_of    Callable mapping an element to its key. The key may be any
+ *                  type explicitly convertible to size_t (integers, enums, vtr::StrongId).
  */
 template<typename InIt, typename OutIt, typename KeyFn>
     requires std::forward_iterator<InIt> && std::random_access_iterator<OutIt>
@@ -98,8 +100,10 @@ void stable_counting_sort(InIt first, InIt last, OutIt out, size_t num_keys, Key
  * as the destination buffer and then swapped with items, so after the call
  * scratch holds the old (unsorted) contents.
  *
- * @tparam Container  Random access, swappable container (std::vector, vtr::vector, ...).
+ * @param items     Random access, swappable container (std::vector, vtr::vector, ...) to sort.
+ * @param scratch   Container of the same type and size as items, used as the destination buffer.
  * @param num_keys  Exclusive upper bound on the keys. Every key must be smaller than this.
+ * @param key_of    Callable mapping an element to its key.
  */
 template<typename Container, typename KeyFn>
 void stable_counting_sort(Container& items, Container& scratch, size_t num_keys, KeyFn key_of) {
