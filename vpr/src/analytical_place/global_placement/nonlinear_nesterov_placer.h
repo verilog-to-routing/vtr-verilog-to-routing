@@ -1,0 +1,400 @@
+#pragma once
+/**
+ * @file
+ * @author  William Zhang
+ * @date    June 2026
+ * @brief   Declaration of a nonlinear Nesterov analytical global placer.
+ */
+
+#include <functional>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+#include "electrostatic_density_utils.h"
+#include "flat_placement_density_manager.h"
+#include "global_placer.h"
+#include "affinity_spring_term.h"
+#include "net_cohesion.h"
+#include "partial_legalizer.h"
+#include "vtr_vector.h"
+
+namespace vtr {
+class thread_pool;
+}
+
+class AnalyticalSolver;
+class AtomNetlist;
+class DeviceGrid;
+class LogicalModels;
+class PlaceDelayModel;
+class PreClusterTimingManager;
+class Prepacker;
+struct t_logical_block_type;
+struct t_physical_tile_type;
+
+/**
+ * @brief Analytical global placer using accelerated first-order updates.
+ *
+ * This placer directly optimizes a differentiable nonlinear objective consisting of
+ * weighted-average wirelength and a continuous bin-density penalty. The result
+ * is then passed through the existing partial legalizer to clean up discrete
+ * architecture constraints before full legalization.
+ */
+class NonlinearNesterovPlacer : public GlobalPlacer {
+  public:
+    /**
+     * @brief Construct the nonlinear Nesterov global placer and its density/legalization helpers.
+     */
+    NonlinearNesterovPlacer(const APNetlist& ap_netlist,
+                            const Prepacker& prepacker,
+                            const AtomNetlist& atom_netlist,
+                            const DeviceGrid& device_grid,
+                            const std::vector<t_logical_block_type>& logical_block_types,
+                            const std::vector<t_physical_tile_type>& physical_tile_types,
+                            const LogicalModels& models,
+                            PreClusterTimingManager& pre_cluster_timing_manager,
+                            std::shared_ptr<PlaceDelayModel> place_delay_model,
+                            float ap_timing_tradeoff,
+                            bool generate_mass_report,
+                            const std::vector<std::string>& target_density_arg_strs,
+                            e_ap_partial_legalizer partial_legalizer_type,
+                            unsigned num_threads,
+                            int log_verbosity);
+
+    /**
+     * @brief Out-of-line destructor.
+     *
+     * Defined in the .cpp so the unique_ptr<AnalyticalSolver> member (the type is
+     * only forward-declared here) is destroyed where AnalyticalSolver is complete.
+     */
+    ~NonlinearNesterovPlacer();
+
+    /**
+     * @brief Run global placement with weighted average smooth/differentiable wirelength
+     *        and electrostatic density formulation using Nesterov Accelerated Gradient optimizer
+     *        then hand the result to the partial legalizer.
+     */
+    PartialPlacement place() final;
+
+  private:
+    /// @brief Per-block placement gradient (shared objective-term type).
+    using PlacementGradient = ::PlacementGradient;
+
+    /**
+     * @brief Objective components from a placement evaluation.
+     */
+    struct ObjectiveValue {
+        double total = 0.;                       ///< Weighted total objective.
+        double wirelength = 0.;                  ///< Unweighted differentiable wirelength.
+        double density = 0.;                     ///< Unweighted electrostatic density energy.
+        std::vector<double> density_energies;    ///< Electrostatic energy for each primitive dimension.
+        std::vector<double> dim_overflow_ratios; ///< Per-dimension overflow mass / deposited mass.
+        std::vector<double> dim_overflow_mass;   ///< Per-dimension absolute overflow mass.
+        std::vector<double> dim_max_overflow;    ///< Per-dimension peak normalized tile overflow.
+        double affinity_spring = 0.;             ///< Weighted quadratic affinity-spring penalty (all kinds).
+        double total_overflow = 0.;              ///< Sum of normalized tile overflows.
+        double max_overflow = 0.;                ///< Largest normalized tile overflow.
+    };
+
+    /**
+     * @brief Dynamic elfPlace-style filler locations.
+     *
+     * Fillers are per-resource movable whitespace particles. They carry density
+     * mass but no nets and never enter legalization, packing, or timing.
+     */
+    struct FillerState {
+        std::vector<std::vector<double>> x;  ///< [dim][filler] x coordinate.
+        std::vector<std::vector<double>> y;  ///< [dim][filler] y coordinate.
+        std::vector<std::vector<int>> layer; ///< [dim][filler] fixed device layer.
+    };
+
+    /**
+     * @brief Density-only gradients for dynamic fillers.
+     */
+    struct FillerGradient {
+        std::vector<std::vector<double>> dx; ///< [dim][filler] derivative wrt x.
+        std::vector<std::vector<double>> dy; ///< [dim][filler] derivative wrt y.
+    };
+
+    /**
+     * @brief Run one full accelerated optimization (epoch loop) from a fresh
+     *        initial placement and return the legalized result.
+     */
+    PartialPlacement run_global_optimization_(const std::vector<PrimitiveVectorDim>& density_dimensions,
+                                              double device_span,
+                                              double convergence_displacement);
+
+    /**
+     * @brief Run the Nesterov epoch loop from a fixed seed placement.
+     */
+    PartialPlacement optimize_from_seed_(const PartialPlacement& seed,
+                                         const std::vector<PrimitiveVectorDim>& density_dimensions,
+                                         double device_span,
+                                         double convergence_displacement);
+
+    /**
+     * @brief Initialize all block locations before first-order optimization.
+     *
+     * Sets @ref sparse_seed_ when the warm-start seed's physical overflow is
+     * already below the sparse gate (electrostatic-inert design).
+     */
+    PartialPlacement initialize_placement_();
+
+    /**
+     * @brief Evaluate the differentiable objective, optionally accumulating gradients.
+     */
+    ObjectiveValue evaluate_objective_(const PartialPlacement& p_placement,
+                                       const std::vector<double>& density_multipliers,
+                                       std::optional<std::reference_wrapper<PlacementGradient>> grad,
+                                       const FillerState& fillers,
+                                       std::optional<std::reference_wrapper<FillerGradient>> filler_grad) const;
+
+    /**
+     * @brief Add differentiable weighted-average wirelength value and gradient.
+     */
+    double add_wirelength_gradient_(const PartialPlacement& p_placement,
+                                    std::optional<std::reference_wrapper<PlacementGradient>> grad) const;
+
+    /**
+     * @brief Update differentiable wirelength net weights from pre-cluster timing criticalities.
+     */
+    void update_timing_net_weights_();
+
+    /**
+     * @brief Build pack-pattern affinity groups from long prepacker chains.
+     */
+    void initialize_pack_pattern_affinity_groups_(const Prepacker& prepacker);
+
+    /// @brief A position clamped into the smooth-density domain, with an integral layer.
+    struct GridPosition {
+        double x = 0.;
+        double y = 0.;
+        size_t layer = 0;
+    };
+
+    /**
+     * @brief Clamp a continuous block/filler position into the device grid.
+     *
+     * Every density pass (deposition, gradient, overflow, filler seeding) needs
+     * the same projection, and they must agree exactly: a block deposited at one
+     * coordinate and differentiated at another would break the gradient.
+     */
+    GridPosition clamp_to_grid_(double x, double y, double layer) const;
+
+    /**
+     * @brief Add the electrostatic density energy and gradient.
+     *
+     * Fills every density-derived field of @p value (energy, per-dimension
+     * energies, and the overflow measures); the gradients are optional so the
+     * same routine serves both objective-only and gradient evaluations.
+     */
+    void add_density_gradient_(const PartialPlacement& p_placement,
+                               const std::vector<double>& density_multipliers,
+                               ObjectiveValue& value,
+                               std::optional<std::reference_wrapper<PlacementGradient>> grad,
+                               const FillerState& fillers,
+                               std::optional<std::reference_wrapper<FillerGradient>> filler_grad) const;
+
+    /** @brief Build and cache the fixed per-site density targets. */
+    void initialize_density_target_cache_(const std::vector<PrimitiveVectorDim>& dimensions) const;
+
+    /**
+     * @brief Build dynamic filler particles from seed whitespace.
+     *
+     * Fillers approximate movable whitespace in the electrostatic system: each
+     * resource dimension receives particles carrying @p whitespace_fraction of
+     * target_capacity - movable_mass, initialized into capacity-bearing seed
+     * whitespace. A non-positive fraction disables fillers (empty state).
+     */
+    void initialize_dynamic_fillers_(const PartialPlacement& seed,
+                                     const std::vector<PrimitiveVectorDim>& dimensions,
+                                     double whitespace_fraction,
+                                     FillerState& fillers);
+
+    /**
+     * @brief Project dynamic filler locations into device bounds.
+     */
+    void project_fillers_(FillerState& fillers) const;
+
+    /**
+     * @brief Physical-overflow ratio: mass exceeding tile capacity over capacity.
+     *
+     * Bins physical block mass onto the tile grid and returns
+     * sum(max(0, utilization - target)) / sum(target) across dimensions.
+     * Used as the WL-favoring penalty stop signal; cheap (no Poisson solve).
+     */
+    double compute_physical_overflow_ratio_(const PartialPlacement& p_placement,
+                                            const std::vector<PrimitiveVectorDim>& dimensions) const;
+
+    /**
+     * @brief Per-resource physical-overflow ratios (overflow mass / capacity).
+     *
+     * Same deposition as @ref compute_physical_overflow_ratio_, but returns one
+     * ratio per density dimension so scarce-resource overfill is not diluted by
+     * abundant CLB capacity.
+     */
+    /// @brief Per-dimension (overflow mass, target capacity); the single source
+    ///        both overflow measures are derived from.
+    std::vector<std::pair<double, double>> compute_physical_overflow_totals_(
+        const PartialPlacement& p_placement,
+        const std::vector<PrimitiveVectorDim>& dimensions) const;
+
+    std::vector<double> compute_physical_overflow_ratios_per_dim_(const PartialPlacement& p_placement,
+                                                                  const std::vector<PrimitiveVectorDim>& dimensions) const;
+
+    /**
+     * @brief Recompute the diagonal preconditioner for the current epoch.
+     *
+     * Fills @ref block_precond_ with a per-block objective-curvature estimate:
+     * the sum of incident net weights (wirelength Hessian diagonal) plus the
+     * density multiplier times block mass summed over resource dimensions
+     * (density Hessian diagonal) plus affinity-spring curvature. The
+     * preconditioned gradient step divides each block's gradient by this value,
+     * giving size-independent step lengths.
+     *
+     * The incompatibility penalty is deliberately excluded: its Hessian diagonal
+     * is zero (piecewise-linear). Excluding it lets that constraint force act at
+     * full strength while the preconditioner normalizes the smoothness terms.
+     *
+     * The tuning constants and the diagonal assembly live in
+     * preconditioner_math.h, which the unit tests exercise directly.
+     */
+    void compute_preconditioner_(const std::vector<PrimitiveVectorDim>& dimensions,
+                                 const std::vector<double>& density_multipliers);
+
+    /**
+     * @brief Project all block locations into device bounds and restore fixed blocks.
+     */
+    void project_placement_(PartialPlacement& p_placement) const;
+
+    /**
+     * @brief Apply x = y - step * grad for movable blocks.
+     */
+    void gradient_step_(const PartialPlacement& y_placement,
+                        const PlacementGradient& grad,
+                        const FillerState& y_fillers,
+                        const FillerGradient& filler_grad,
+                        double step_size,
+                        PartialPlacement& next_placement,
+                        FillerState& next_fillers) const;
+
+    /**
+     * @brief Apply the Nesterov extrapolation y = x_next + beta * (x_next - x).
+     */
+    void extrapolate_(const PartialPlacement& current,
+                      const PartialPlacement& next,
+                      const FillerState& current_fillers,
+                      const FillerState& next_fillers,
+                      double beta,
+                      PartialPlacement& y_placement,
+                      FillerState& y_fillers) const;
+
+    /**
+     * @brief Compute the squared norm of a placement gradient.
+     */
+    double gradient_norm_squared_(const PlacementGradient& grad) const;
+
+    /**
+     * @brief Compute the squared norm of a filler gradient.
+     */
+    double filler_gradient_norm_squared_(const FillerGradient& grad) const;
+
+    /**
+     * @brief Return the largest x-y displacement between two placements.
+     */
+    double max_block_displacement_(const PartialPlacement& from,
+                                   const PartialPlacement& to) const;
+
+    /**
+     * @brief Return the largest x-y displacement between two filler states.
+     */
+    double max_filler_displacement_(const FillerState& from,
+                                    const FillerState& to) const;
+
+    /**
+     * @brief Return true if the block should be moved by the continuous optimizer.
+     */
+    bool block_is_moveable_(APBlockId blk_id) const;
+
+    std::shared_ptr<FlatPlacementDensityManager> density_manager_; ///< Owns the per-tile capacity/mass model that add_density_gradient_ deposits charge onto and legalization consumes.
+    std::unique_ptr<PartialLegalizer> partial_legalizer_;          ///< Repeatedly cleans up discrete architecture-legality violations (overlaps, resource mismatches) the continuous optimizer's placement leaves behind during "epochs", before full legalization.
+    const AtomNetlist& atom_netlist_;                              ///< Atom netlist used for timing criticality lookup.
+    PreClusterTimingManager& pre_cluster_timing_manager_;          ///< Timing manager used to weight differentiable wirelength nets.
+    std::shared_ptr<PlaceDelayModel> place_delay_model_;           ///< Delay model used to update timing criticalities.
+    std::vector<APBlockId> moveable_blocks_;                       ///< Movable AP blocks touched by the optimizer.
+    vtr::vector<APNetId, double> net_weights_;                     ///< Per-net weight applied to the weighted-average (WA) wirelength term computed in add_wirelength_gradient_.
+    vtr::vector<APBlockId, double> block_precond_;                 ///< Per-block diagonal preconditioner (objective curvature estimate).
+    bool large_design_ = false;                                    ///< Design is at or above @ref kPreconditionSizeThreshold: applies the Jacobi preconditioner and the unit step.
+    vtr::vector<APBlockId, float> pin_density_inflation_;          ///< Per-block density-term mass inflation from pin count (routability cell inflation); 1.0 for blocks at or below the reference pin count.
+    std::unique_ptr<NetCohesion> cohesion_;                        ///< Periphery-pair net detection (gates pack-pattern affinity).
+    std::unique_ptr<AffinitySpringTerm> affinity_term_;            ///< Affinity-spring objective term (groups + energy/gradient/curvature).
+    size_t num_pack_pattern_affinity_groups_ = 0;                  ///< Count of PACK_PATTERN affinity groups.
+    std::vector<double> filler_unit_mass_;                         ///< [dim] density mass per dynamic filler.
+    std::vector<double> filler_precond_;                           ///< [dim] density-only filler preconditioner.
+    // Placement-invariant density-grid constants, cached once (device grid,
+    // bin capacity, and target density are fixed across the optimization) and
+    // reused across every objective evaluation instead of being rebuilt.
+    mutable std::vector<std::vector<double>> cached_target_capacity_; ///< [dim][site] target capacity spread over each bin's footprint.
+    mutable std::vector<double> cached_target_norm_floor_;            ///< [dim] floor added when dividing by target capacity.
+    /// @brief [dim] electrostatic field domain for each resource (elfPlace's B^s).
+    ///
+    /// The tile grid above stays the domain of overflow/legality accounting. The
+    /// Poisson field for a resource is instead solved on its own grid, resolved
+    /// at the pitch of that resource's capacity, so a scarce resource's field is
+    /// not defined over -- and cannot develop structure inside -- the tiles that
+    /// cannot hold it. Abundant resources select a stride of one and keep the
+    /// tile grid unchanged.
+    /// @brief Per-resource charge unit: the mean capacity of a capacity-bearing
+    ///        tile, so resources with very different natural magnitudes (an
+    ///        abundant LUT dimension vs. a sparse DSP one) contribute comparably
+    ///        scaled charge.
+    mutable std::vector<double> cached_charge_scale_;
+    // Reused density-evaluation storage. Objective/line-search evaluations are
+    // serial, so these mutable buffers safely remove repeated device-grid-sized
+    // allocation and zero-construction from the const evaluation routine.
+    mutable std::vector<std::vector<double>> density_utilization_workspace_;       ///< [dim][tile site] deposited block mass (overflow accounting).
+    mutable std::vector<std::vector<double>> density_field_utilization_workspace_; ///< [dim][field bin] deposited block + filler mass.
+    mutable std::vector<std::vector<double>> density_potential_workspace_;         ///< [dim][field bin] electrostatic potential.
+    // Charge and layer workspaces are per dimension (not shared scratch) so the
+    // independent per-resource Poisson solves can run concurrently: each solve
+    // touches only its own dim_idx entry of these vectors.
+    mutable std::vector<std::vector<double>> density_charge_workspace_;          ///< [dim][field bin] that resource dimension's charge.
+    mutable std::vector<std::vector<double>> density_layer_charge_workspace_;    ///< [dim] one layer extracted for the Poisson solve.
+    mutable std::vector<std::vector<double>> density_layer_potential_workspace_; ///< [dim] one layer returned by the Poisson solve.
+
+    /// @brief Worker pool for concurrent per-dimension field solves. Null when
+    ///        the configured thread count is 1 (the default): the solve loop
+    ///        then runs serially, byte-identical to the historical behavior.
+    std::unique_ptr<vtr::thread_pool> field_thread_pool_;
+
+    size_t device_grid_width_ = 0;               ///< Width of the placement region.
+    size_t device_grid_height_ = 0;              ///< Height of the placement region.
+    size_t device_grid_num_layers_ = 0;          ///< Number of device layers.
+    float ap_timing_tradeoff_ = 0.f;             ///< User timing tradeoff value.
+    double pack_pattern_cohesion_weight_ = 0.02; ///< I/O-gated pack-pattern affinity-spring weight (zeroed at runtime when no long direct I/O-chain nets are found).
+
+    /// @brief B2B/QP warm-start solver. initialize_placement_ seeds the nonlinear
+    ///        optimizer from a wirelength-aware analytical solve (elfPlace/ePlace
+    ///        QP initialization) instead of a block-ID grid spread. Always built in
+    ///        the constructor.
+    std::unique_ptr<AnalyticalSolver> warmstart_solver_;
+    size_t warmstart_iters_ = 0;     ///< Minimum solve+legalize cycles (warm-start floor).
+    size_t warmstart_max_iters_ = 0; ///< Cap on the convergence-based warm-start loop.
+
+    /// @brief Active wirelength-smoothing fraction (gamma / device span). Seeded at
+    ///        the fixed default, then annealed coarse->sharp per epoch by
+    ///        run_global_optimization_ (gamma continuation).
+    double current_gamma_fraction_ = 0.02;
+
+    /// @brief True when the warm-start seed's physical overflow is already below
+    ///        the sparse gate. The electrostatic field then has nothing to spread,
+    ///        so the epoch loop is capped to a cheap filler-free probe instead
+    ///        of the full schedule, whose result the checkpoint selection below
+    ///        discards in favor of the seed on these designs anyway.
+    bool sparse_seed_ = false;
+
+    /// @brief Prepacker, retained for prepacker-derived affinity groups.
+    const Prepacker* prepacker_ = nullptr;
+};
