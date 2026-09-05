@@ -1147,31 +1147,31 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return nullptr;
     }
     inline void finish_rr_graph_rr_edges(void*& /*ctx*/) final {
+        // The sink node and the switch id of every edge must be checked before the edges are
+        // partitioned. partition_edges() sorts the edges by those two values, so an out of range
+        // value read from the file would index outside the node and switch arrays.
+        // Only the source node is checked as the edges are read, in add_rr_edges_edge().
+        for (RREdgeId edge_id : rr_nodes_->all_edges()) {
+            size_t sink_node = size_t(rr_nodes_->edge_sink_node(edge_id));
+            size_t switch_id = size_t(rr_nodes_->edge_switch(edge_id));
+            if (sink_node >= rr_nodes_->size()) {
+                report_error(
+                    "sink_node %zu is larger than rr_nodes.size() %zu",
+                    sink_node, rr_nodes_->size());
+            }
+
+            if (switch_id >= rr_switch_inf_->size()) {
+                report_error(
+                    "switch_id %zu is larger than num_rr_switches %zu",
+                    switch_id, rr_switch_inf_->size());
+            }
+        }
+
         // Partition the rr graph edges for efficient access to
         // configurable/non-configurable edge subsets. Must be done after RR
         // switches have been allocated.
         rr_graph_builder_->mark_edges_as_rr_switch_ids();
         rr_graph_builder_->partition_edges();
-
-        for (size_t source_node = 0; source_node < rr_nodes_->size(); ++source_node) {
-            int num_edges = rr_nodes_->num_edges(RRNodeId(source_node));
-            for (int iconn = 0; iconn < num_edges; ++iconn) {
-                size_t sink_node = size_t(rr_nodes_->edge_sink_node(RRNodeId(source_node), iconn));
-                size_t switch_id = rr_nodes_->edge_switch(RRNodeId(source_node), iconn);
-                if (sink_node >= rr_nodes_->size()) {
-                    report_error(
-                        "sink_node %zu is larger than rr_nodes.size() %zu",
-                        sink_node, rr_nodes_->size());
-                }
-
-                if (switch_id >= rr_switch_inf_->size()) {
-                    report_error(
-                        "switch_id %zu is larger than num_rr_switches %zu",
-                        switch_id, rr_switch_inf_->size());
-                }
-
-            }
-        }
     }
 
     inline EdgeWalker get_rr_graph_rr_edges(void*& /*ctx*/) final {
