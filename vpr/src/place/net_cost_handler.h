@@ -238,6 +238,10 @@ class NetCostHandler {
         /// and must be used as the reference for later pins of the same net.
         /// GOT_FROM_SCRATCH: the proposed bounding box was recomputed from scratch and is final.
         NetUpdateState update_status = NetUpdateState::NOT_UPDATED_YET;
+
+        /// Declared noexcept explicitly because older libstdc++ does not mark
+        /// the std::pair default constructor noexcept, which causes a -Wnoexcept warning.
+        t_ts_net_info() noexcept = default;
     };
 
     /**
@@ -252,6 +256,10 @@ class NetCostHandler {
         std::pair<float, float> avg_chan_util = {0.f, 0.f};
         /// Congestion cost of the net
         double cost = -1.;
+
+        /// Declared noexcept explicitly because older libstdc++ does not mark
+        /// the std::pair default constructor noexcept, which causes a -Wnoexcept warning.
+        t_net_cong_info() noexcept = default;
     };
 
     /// Slot value meaning that a net is not affected by the current move.
