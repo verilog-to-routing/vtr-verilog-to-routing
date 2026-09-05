@@ -10,6 +10,8 @@
 #include "place_util.h"
 #include "vtr_prefix_sum.h"
 
+#include <cstdint>
+#include <limits>
 #include <utility>
 
 class PlacerState;
@@ -103,9 +105,10 @@ class NetCostHandler {
      *
      * The change in the bounding box cost is stored in `bb_delta_c`.
      * The change in the timing cost is stored in `timing_delta_c`.
-     * ts_nets_to_update is also extended with the latest net.
      *
-     * @return The number of affected nets.
+     * Every affected net is recorded in ts_nets_to_update_ and given a slot in
+     * ts_net_info_. The slots must be released by update_move_nets() or
+     * reset_move_nets() before this method is called again.
      */
     void find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
                                              const PlacerCriticalities* criticalities,
@@ -114,14 +117,14 @@ class NetCostHandler {
                                              double& timing_delta_c);
 
     /**
-     * @brief Reset the net cost function flags (proposed_net_cost and bb_updated_before)
+     * @brief Discards the proposed state of the affected nets and releases their slots.
+     * Called when the move under evaluation is rejected.
      */
     void reset_move_nets();
 
     /**
-     * @brief Update net cost data structures (in placer context and net_cost in .cpp file)
-     * and reset flags (proposed_net_cost and bb_updated_before).
-     * It is used to determine the index up to which elements in ts_nets_to_update are valid.
+     * @brief Copies the proposed state of the affected nets into the committed state
+     * and releases their slots. Called when the move under evaluation is accepted.
      */
     void update_move_nets();
 
@@ -193,67 +196,86 @@ class NetCostHandler {
     };
 
     /**
-     * @brief The wire length estimation is based on the bounding box of the net.
+     * @brief Committed bounding box state of one net.
      *
-     * For 2D architectures, we use a 3D bounding box with the layer (z) set to 1.
-     * `ts_bb_coord_new_` and `ts_bb_edge_new_` hold the proposed bounding boxes.
-     *
-     * Temporary `ts_*` data members store the bounding box updates for nets affected by a move.
-     * If the move is accepted, these updates are copied to the permanent data members that store
-     * bounding box information for all nets.
+     * The coordinates, edge counts and cost of a net are packed together so that visiting
+     * a net during a move touches one contiguous region of memory rather than several
+     * separate num_nets-sized arrays.
      */
+    struct t_net_bb_info {
+        /// Bounding box coordinates. For 2D architectures layer_min == layer_max == 0.
+        t_bb coords;
+        /// Number of blocks on each edge of the bounding box.
+        /// Only maintained for nets with at least SMALL_NET sinks.
+        t_bb num_on_edges;
+        /// Wirelength (bounding box) cost of the net.
+        /// Negative until comp_bb_cong_cost() computes it for the first time.
+        double cost = -1.;
+    };
 
-    /* [0...cluster_ctx.clb_nlist.nets().size()-1] -> 3D bounding box*/
-    vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new_, ts_bb_edge_new_;
-    /* [0...num_affected_nets] -> net_id of the affected nets */
+    /**
+     * @brief Proposed bounding box state of one net affected by the move under evaluation.
+     *
+     * These entries live in a dense scratch array indexed by the position of the net in
+     * ts_nets_to_update_ (its slot). If the move is accepted, the proposed state is copied
+     * into net_bb_ and net_cong_.
+     */
+    struct t_ts_net_info {
+        /// Proposed bounding box coordinates
+        t_bb coords;
+        /// Proposed number of blocks on each edge of the bounding box
+        t_bb num_on_edges;
+        /// Proposed wirelength cost
+        double proposed_cost = 0.;
+        /// Proposed congestion cost. Only valid when congestion modeling is enabled.
+        double proposed_cong_cost = 0.;
+        /// Proposed average CHANX and CHANY utilization within the bounding box.
+        /// Only valid when congestion modeling is enabled.
+        std::pair<float, float> avg_chan_util = {0.f, 0.f};
+        /// How far the bounding box of this net has been updated for the current move.
+        /// NOT_UPDATED_YET: the committed bounding box is still the reference.
+        /// UPDATED_ONCE: the proposed bounding box has been updated incrementally at least once
+        /// and must be used as the reference for later pins of the same net.
+        /// GOT_FROM_SCRATCH: the proposed bounding box was recomputed from scratch and is final.
+        NetUpdateState update_status = NetUpdateState::NOT_UPDATED_YET;
+    };
+
+    /**
+     * @brief Committed congestion state of one net.
+     *
+     * The congestion cost of a net is based on the extent to which its average routing
+     * channel utilization exceeds congestion_chan_util_threshold_. Only the excess portion
+     * contributes to the cost.
+     */
+    struct t_net_cong_info {
+        /// Average CHANX and CHANY utilization within the net's bounding box
+        std::pair<float, float> avg_chan_util = {0.f, 0.f};
+        /// Congestion cost of the net
+        double cost = -1.;
+    };
+
+    /// Slot value meaning that a net is not affected by the current move.
+    static constexpr uint32_t NO_TS_SLOT = std::numeric_limits<uint32_t>::max();
+
+    /// Committed bounding box state of every net.
+    /// [0..cluster_ctx.clb_nlist.nets().size()-1]
+    vtr::vector<ClusterNetId, t_net_bb_info> net_bb_;
+
+    /// Committed congestion state of every net.
+    /// Empty until congestion modeling is enabled by estimate_routing_chan_util().
+    vtr::vector<ClusterNetId, t_net_cong_info> net_cong_;
+
+    /// Nets affected by the move under evaluation, in the order they were recorded.
+    /// The position of a net in this vector is its slot in ts_net_info_.
     std::vector<ClusterNetId> ts_nets_to_update_;
 
-    vtr::vector<ClusterNetId, std::pair<float, float>> ts_avg_chan_util_new_;
+    /// Proposed state of the affected nets, indexed by slot.
+    /// Only the first ts_nets_to_update_.size() entries are valid.
+    std::vector<t_ts_net_info> ts_net_info_;
 
-    /// Store the number of blocks on each of a net's bounding box (to allow efficient updates)
+    /// Slot of each net in ts_net_info_, or NO_TS_SLOT if the net is not affected by the current move.
     /// [0..cluster_ctx.clb_nlist.nets().size()-1]
-    vtr::vector<ClusterNetId, t_bb> bb_num_on_edges_;
-
-    /// Store the bounding box coordinates of a net's bounding box
-    /// [0..cluster_ctx.clb_nlist.nets().size()-1]
-    vtr::vector<ClusterNetId, t_bb> bb_coords_;
-
-    vtr::vector<ClusterNetId, std::pair<float, float>> avg_chan_util_;
-
-    /**
-     * @brief In each of these vectors, there is one entry per cluster level net:
-     * [0...cluster_ctx.clb_nlist.nets().size()-1].
-     * net_cost and proposed_net_cost: Cost of a net, and a temporary cost of a net used during move assessment.
-     * We also use negative cost values in proposed_net_cost as a flag to indicate that
-     * the cost of a net has not yet been updated.
-     * bb_update_status: Flag array to indicate whether the specific bounding box has been updated
-     * in this particular swap or not. If it has been updated before, the code
-     * must use the updated data, instead of the out-of-date data passed into the
-     * subroutine, particularly used in try_swap(). The value NOT_UPDATED_YET
-     * indicates that the net has not been updated before, UPDATED_ONCE indicated
-     * that the net has been updated once, if it is going to be updated again, the
-     * values from the previous update must be used. GOT_FROM_SCRATCH is only
-     * applicable for nets larger than SMALL_NETS and it indicates that the
-     * particular bounding box is not incrementally updated, and hence the
-     * bounding box is got from scratch, so the bounding box would definitely be
-     * right, DO NOT update again.
-     */
-    vtr::vector<ClusterNetId, double> net_cost_;
-    vtr::vector<ClusterNetId, double> proposed_net_cost_;
-
-    /**
-     * @brief The congestion cost for each net is based on the extent to which its
-     * average routing channel utilization exceeds a predefined threshold.
-     * This is computed by measuring the average utilization within the net's
-     * bounding box and subtracting the congestion threshold.
-     * Only the excess portion contributes to the net's congestion cost.
-     * The valid range is [0...cluster_ctx.clb_nlist.nets().size()-1] when
-     * congestion modeling is enabled. Otherwise, this vector would be empty.
-     */
-    vtr::vector<ClusterNetId, double> net_cong_cost_;
-    vtr::vector<ClusterNetId, double> proposed_net_cong_cost_;
-
-    vtr::vector<ClusterNetId, NetUpdateState> bb_update_status_;
+    vtr::vector<ClusterNetId, uint32_t> net_ts_slot_;
 
     /**
      * @brief Matrices below are used to precompute the inverse of the average
@@ -359,25 +381,26 @@ class NetCostHandler {
                                 bool is_src_moving);
 
     /**
-     * @brief Updates the bounding box coordinates of a net in the placer state
-     * with coordinates stored in the `ts` bounding box coordinates container.
-     * @param net_id ID of the net whose bounding box coordinates it to be updated.
+     * @brief Returns the proposed state of a net that has already been recorded
+     * as affected by the current move (see record_affected_net_()).
+     * @param net_id ID of an affected net
      */
-    void set_ts_bb_coord_(const ClusterNetId net_id);
+    t_ts_net_info& ts_info_(ClusterNetId net_id) {
+        VTR_ASSERT_SAFE(net_ts_slot_[net_id] != NO_TS_SLOT);
+        return ts_net_info_[net_ts_slot_[net_id]];
+    }
 
-    /**
-     * @brief Updates the number of pins on each boundary of the bounding box for a net
-     * in the placer state with the number of pins stores in the 'ts' num_on_edges containers.
-     * @param net_id ID of the net whose number of pins on each BB edge is to be updated.
-     */
-    void set_ts_edge_(const ClusterNetId net_id);
+    const t_ts_net_info& ts_info_(ClusterNetId net_id) const {
+        VTR_ASSERT_SAFE(net_ts_slot_[net_id] != NO_TS_SLOT);
+        return ts_net_info_[net_ts_slot_[net_id]];
+    }
 
     /**
      * @brief Calculate the 3D bounding box of "net_id" from scratch (based on the block locations
-     * stored in placer_state_.blk_loc_registry) and store them in bb_coord_new
+     * stored in placer_state_.blk_loc_registry). Does not compute the number of blocks on each edge.
      * @param net_id ID of the net for which the bounding box is requested
-     * @param use_ts Specifies whether the `ts` bounding box is updated or
-     * the one stored in placer_state_
+     * @param use_ts Specifies whether the proposed (`ts`) bounding box is updated or the committed one.
+     * When use_ts is true, the net must already have been recorded by record_affected_net_().
      */
     void get_non_updatable_bb_(ClusterNetId net_id, bool use_ts);
 
@@ -387,7 +410,8 @@ class NetCostHandler {
      * It updates both the coordinate and number of pins on each edge information. It should only be called when the bounding box
      * information is not valid.
      * @param net_id ID of the net which the moving pin belongs to
-     * @param use_ts Specifies whether the `ts` bounding box is updated or the actual one.
+     * @param use_ts Specifies whether the proposed (`ts`) bounding box is updated or the committed one.
+     * When use_ts is true, the net must already have been recorded by record_affected_net_().
      */
     void get_bb_from_scratch_(ClusterNetId net_id, bool use_ts);
 
@@ -409,7 +433,8 @@ class NetCostHandler {
                     t_physical_tile_loc pin_new_loc);
 
     /**
-     * @brief if "net" is not already stored as an affected net, add it in ts_nets_to_update.
+     * @brief If "net" is not already recorded as affected by the current move, append it to
+     * ts_nets_to_update_ and assign it a slot in ts_net_info_.
      * @param net ID of a net affected by a move
      */
     void record_affected_net_(const ClusterNetId net);
@@ -425,21 +450,19 @@ class NetCostHandler {
 
     /**
      * @brief Given the 3D BB, calculate the wire-length cost of the net
-     * @param net_id ID of the net whose cost is requested.
-     * @param use_ts Specifies if the bounding box is retrieved from ts data structures
-     *               or permanent data structures.
+     * @param net_id ID of the net whose cost is requested. Used to look up the net's fanout.
+     * @param bb The (committed or proposed) bounding box of the net.
      * @return Wirelength cost of the net
      */
-    double get_net_bb_cost_(ClusterNetId net_id, bool use_ts);
+    double get_net_bb_cost_(ClusterNetId net_id, const t_bb& bb) const;
 
     /**
-     * @brief Calculate the congestion cost of net using its 3D bounding box.
-     * @param net_id ID of the net whose cost is requested.
-     * @param use_ts Specifies if the bounding box is retrieved from ts data structures
-     *               or move context.
+     * @brief Calculate the congestion cost of a net from the average channel
+     * utilization within its bounding box.
+     * @param avg_chan_util Average CHANX and CHANY utilization within the net's bounding box.
      * @return Congestion cost of the net
      */
-    double get_net_cong_cost_(ClusterNetId net_id, bool use_ts);
+    double get_net_cong_cost_(const std::pair<float, float>& avg_chan_util) const;
 
     /**
      * @brief Computes the inverse of average channel width for horizontal and
@@ -450,7 +473,7 @@ class NetCostHandler {
      *         first  -> The inverse of average channel width for horizontal channels.
      *         second -> The inverse of average channel width for vertical channels.
      */
-    std::pair<double, double> get_chanxy_cost_fac_(const t_bb& bb);
+    std::pair<double, double> get_chanxy_cost_fac_(const t_bb& bb) const;
 
     /**
      * @brief Calculate the chanz cost factor based on the inverse of the average number of inter-die connections 
@@ -462,7 +485,7 @@ class NetCostHandler {
      * @param bb Bounding box of the net which chanz cost factor is to be calculated
      * @return ChanZ cost factor
      */
-    float get_chanz_cost_factor_(const t_bb& bb);
+    float get_chanz_cost_factor_(const t_bb& bb) const;
 
     /**
      * @brief Given the 3D BB, calculate the wire-length estimate of the net
@@ -473,10 +496,13 @@ class NetCostHandler {
 
     // Bounding-box getters
   public:
-    inline const t_bb& bb_num_on_edges(ClusterNetId net_id) const { return bb_num_on_edges_[net_id]; }
+    /// @brief Returns the number of blocks on each edge of the net's bounding box.
+    /// Only maintained for nets with at least SMALL_NET sinks, and undefined for smaller ones.
+    inline const t_bb& bb_num_on_edges(ClusterNetId net_id) const { return net_bb_[net_id].num_on_edges; }
 
-    inline const t_bb& bb_coords(ClusterNetId net_id) const { return bb_coords_[net_id]; }
+    inline const t_bb& bb_coords(ClusterNetId net_id) const { return net_bb_[net_id].coords; }
 
     /// @brief Returns the net's bounding box, either the proposed (`ts`) one or the committed one.
-    inline const t_bb& bb_coords(ClusterNetId net_id, bool use_ts) const { return use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id]; }
+    /// The proposed one is only available for nets affected by the current move.
+    inline const t_bb& bb_coords(ClusterNetId net_id, bool use_ts) const { return use_ts ? ts_info_(net_id).coords : net_bb_[net_id].coords; }
 };
