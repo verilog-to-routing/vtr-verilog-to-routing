@@ -5,6 +5,7 @@
 #include "vtr_assert.h"
 #include "vtr_error.h"
 #include "librrgraph_types.h"
+#include "vtr_sort.h"
 #include "vtr_util.h"
 
 #include <algorithm>
@@ -194,23 +195,32 @@ void t_rr_graph_storage::init_fan_in() {
     }
 }
 
-namespace {
-/// Functor for sorting edges according to destination node's ID.
-class edge_compare_dest_node {
-public:
-    edge_compare_dest_node(const t_rr_graph_storage& rr_graph_storage) : rr_graph_storage_(rr_graph_storage) {}
+void t_rr_graph_storage::apply_edge_permutation(const std::vector<RREdgeId>& edge_indices) {
+    // Generic lambda that allocates a 'vec'-sized new vector with all elements set to default value,
+    // then builds the new vector to have rearranged elements from 'vec' and finally move the new vector
+    // to replace vec. Essentially does a permutation on vec based on edge_indices.
+    auto array_rearrange = [&edge_indices](auto& vec, auto default_value) {
+        // Since vec could have any type, we need to figure out its type to allocate new_vec.
+        // The scary std::remove_reference stuff does exactly that. This does nothing other than building a new 'vec' sized vector.
+        typename std::remove_reference<decltype(vec)>::type new_vec(vec.size(), default_value);
 
-    bool operator()(RREdgeId lhs, RREdgeId rhs) const {
-        RRNodeId lhs_dest_node = rr_graph_storage_.edge_sink_node(lhs);
-        RRNodeId rhs_dest_node = rr_graph_storage_.edge_sink_node(rhs);
+        size_t new_index = 0;
+        for (RREdgeId edge_index : edge_indices) {
+            RREdgeId new_edge_index = RREdgeId(new_index);
+            new_vec[new_edge_index] = vec[edge_index];
 
-        return lhs_dest_node < rhs_dest_node;
-    }
+            new_index++;
+        }
+        VTR_ASSERT(new_index == vec.size());
 
-private:
-    const t_rr_graph_storage& rr_graph_storage_;
-};
-} // namespace
+        vec = std::move(new_vec);
+    };
+
+    array_rearrange(edge_src_node_, RRNodeId::INVALID());
+    array_rearrange(edge_dest_node_, RRNodeId::INVALID());
+    array_rearrange(edge_switch_, LIBRRGRAPH_UNDEFINED_VAL);
+    array_rearrange(edge_remapped_, false);
+}
 
 size_t t_rr_graph_storage::count_rr_switches(const std::vector<t_arch_switch_inf>& arch_switch_inf,
                                              t_arch_switch_fanin& arch_switch_fanins) {
@@ -222,7 +232,7 @@ size_t t_rr_graph_storage::count_rr_switches(const std::vector<t_arch_switch_inf
 
     // Sort by destination node to collect per node/per switch fan in values
     // This sort is safe to do because partition_edges() has not been invoked yet.
-    sort_edges(edge_compare_dest_node(*this));
+    sort_edges_by_keys(vtr::sort_key(node_storage_.size(), [&](RREdgeId e) { return edge_dest_node_[e]; }));
 
     // Collect the fan-in per switch type for each node in the graph
     // Record the unique switch type/fanin combinations
@@ -318,35 +328,6 @@ void t_rr_graph_storage::mark_edges_as_rr_switch_ids() {
     remapped_edges_ = true;
 }
 
-namespace{
-/// Functor for sorting edges according to source node, with configurable edges coming first
-class edge_compare_src_node_and_configurable_first {
-  public:
-    edge_compare_src_node_and_configurable_first(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf, const t_rr_graph_storage& rr_graph_storage)
-        : rr_switch_inf_(rr_switch_inf),
-          rr_graph_storage_(rr_graph_storage) {}
-
-    bool operator()(RREdgeId lhs, RREdgeId rhs) const {
-
-        RRNodeId lhs_dest_node = rr_graph_storage_.edge_sink_node(lhs);
-        RRNodeId lhs_src_node = rr_graph_storage_.edge_source_node(lhs);
-        RRSwitchId lhs_switch_type = RRSwitchId(rr_graph_storage_.edge_switch(lhs));
-        bool lhs_is_configurable = rr_switch_inf_[lhs_switch_type].configurable();
-
-        RRNodeId rhs_dest_node = rr_graph_storage_.edge_sink_node(rhs);
-        RRNodeId rhs_src_node = rr_graph_storage_.edge_source_node(rhs);
-        RRSwitchId rhs_switch_type = RRSwitchId(rr_graph_storage_.edge_switch(rhs));
-        bool rhs_is_configurable = rr_switch_inf_[rhs_switch_type].configurable();
-
-        return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs_switch_type) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs_switch_type);
-    }
-
-  private:
-    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
-    const t_rr_graph_storage& rr_graph_storage_;
-};
-} // namespace
-
 void t_rr_graph_storage::partition_edges(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) {
     if (partitioned_) {
         return;
@@ -359,7 +340,11 @@ void t_rr_graph_storage::partition_edges(const vtr::vector<RRSwitchId, t_rr_swit
     //    by assign_first_edges()
     //  - Edges within a source node have the configurable edges before the
     //    non-configurable edges.
-    sort_edges(edge_compare_src_node_and_configurable_first(rr_switches, *this));
+    // Keys are listed from the most significant to the least significant.
+    sort_edges_by_keys(vtr::sort_key(node_storage_.size(), [&](RREdgeId e) { return edge_src_node_[e]; }),
+                       vtr::sort_key(2, [&](RREdgeId e) { return !rr_switches[RRSwitchId(edge_switch_[e])].configurable(); }),
+                       vtr::sort_key(node_storage_.size(), [&](RREdgeId e) { return edge_dest_node_[e]; }),
+                       vtr::sort_key(rr_switches.size(), [&](RREdgeId e) { return edge_switch_[e]; }));
 
     partitioned_ = true;
 
