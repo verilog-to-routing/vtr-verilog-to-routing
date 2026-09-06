@@ -17,6 +17,14 @@ struct t_routing_predictor_fit {
     size_t num_samples = 0;                                      ///< Number of iterations included in the fit
 };
 
+/**
+ * @brief Tracks per-iteration routing overuse and predicts when routing will become legal.
+ *
+ * The predictor fits a line to the log of the recent overuse history and extrapolates
+ * the iteration at which overuse reaches zero. It also owns the routing failure
+ * prediction policy: should_abort_routing() decides whether the router should give up
+ * based on the configured --routing_failure_predictor mode.
+ */
 class RoutingPredictor {
   public:
     ///@brief Configures the predictor and its abort policy from the router options
@@ -55,15 +63,15 @@ class RoutingPredictor {
     ///@brief Fits a linear model to the log of the last history_factor of the overuse history
     t_routing_predictor_fit fit_model_(float history_factor) const;
 
-    size_t min_history_;
-    bool safe_mode_;
-    int verbosity_;
-    float history_factor_;
+    size_t min_history_;              ///< Number of iterations recorded before any estimate is made
+    bool safe_mode_;                  ///< True for the SAFE routing failure predictor mode
+    int verbosity_;                   ///< Router verbosity level controlling diagnostic output
+    float history_factor_;            ///< Fraction of the recorded history used for the success-iteration fit
     float abort_iteration_threshold_; ///< Estimated success iteration above which routing is abandoned (infinity disables aborting)
 
-    std::vector<size_t> iterations_;
-    std::vector<size_t> iteration_overused_rr_node_counts_;
-    float slope_;
+    std::vector<size_t> iterations_;                                ///< Routing iterations recorded so far
+    std::vector<size_t> iteration_overused_rr_node_counts_;         ///< Overused RR node count for each recorded iteration
+    float slope_;                                                   ///< Cached slope of the most recent fit
     t_routing_predictor_fit last_fit_;                              ///< Fit reflecting the most recent add_iteration_overuse() call
     float last_estimate_ = std::numeric_limits<float>::quiet_NaN(); ///< Success-iteration estimate reflecting the most recent add_iteration_overuse() call
     size_t initial_degenerate_predictions_ = 0;                     ///< Length of the predictor's initial run of degenerate (non-extrapolable) estimates
