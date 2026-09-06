@@ -58,6 +58,12 @@ float covariance(const std::vector<size_t>& x_values, const std::vector<float>& 
     return cov;
 }
 
+/**
+ * @brief Fits a straight line, y = slope * x + intercept, to the given data using ordinary least squares.
+ *
+ * x_values and y_values must have the same number of elements.
+ * The slope cannot be computed if all x_values are identical.
+ */
 LinearModel simple_linear_regression(const std::vector<size_t>& x_values, const std::vector<float>& y_values) {
     float y_avg = std::accumulate(y_values.begin(), y_values.end(), 0.) / y_values.size();
     float x_avg = std::accumulate(x_values.begin(), x_values.end(), 0.) / x_values.size();
