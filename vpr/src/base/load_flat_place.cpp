@@ -43,11 +43,11 @@ static void print_flat_placement_file_header(FILE* fp, int flat_place_verbosity)
             vtr::BUILD_TIMESTAMP);
     fprintf(fp, "#\n");
     fprintf(fp, "# This file prints the following information for each atom in the netlist:\n");
+    fprintf(fp, "# <atom_name> <x> <y> <layer> <atom_sub_tile> #<clb_blk_id> <atom_pb_type>");
     if (flat_place_verbosity >= 2) {
-        fprintf(fp, "# <atom_name> <x> <y> <layer> <atom_sub_tile> #<clb_blk_id> <atom_pb_type> <site_path>\n");
-    } else {
-        fprintf(fp, "# <atom_name> <x> <y> <layer> <atom_sub_tile> #<clb_blk_id> <atom_pb_type>\n");
+        fprintf(fp, " <site_path>");
     }
+    fprintf(fp, "\n");
     fprintf(fp, "\n");
 }
 
