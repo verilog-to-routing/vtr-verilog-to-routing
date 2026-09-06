@@ -10,6 +10,20 @@
 
 namespace {
 
+// When the estimated number of routing iterations exceeds these factors
+// (for SAFE or AGGRESSIVE mode respectively) times the max router iterations
+// specified by the router aborts early
+constexpr float ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_SAFE = 3;
+constexpr float ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_AGGRESSIVE = 1.5;
+
+// If the number of overused resources is below this threshold do not abort.
+// This avoids giving up when solutions are nearly legal, but converging slowly
+constexpr size_t ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD = 100;
+
+// If overuse is flat or increasing, the predictor cannot extrapolate and returns infinity.
+// In SAFE mode, allow a few such predictions before giving up.
+constexpr size_t ROUTING_PREDICTOR_MAX_DEGENERATE_ITERATIONS = 10;
+
 // Fraction of the recorded overuse history used when fitting the success-iteration model
 constexpr float ROUTING_PREDICTOR_HISTORY_FACTOR = 0.5;
 
