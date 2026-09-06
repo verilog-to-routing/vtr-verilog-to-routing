@@ -59,14 +59,6 @@
 
 //#define VERBOSE //Prints additional intermediate data
 
-/*
- * We need to define the maximum number of layers to address a specific issue.
- * For certain data structures, such as `num_sink_pin_layer` in the placer context, dynamically allocating
- * memory based on the number of layers can lead to a performance hit due to additional pointer chasing and
- * cache locality concerns. Defining a constant variable helps optimize the memory allocation process.
- */
-constexpr int MAX_NUM_LAYERS = 2;
-
 /**
  * @brief For update_screen. Denotes importance of update.
  *
@@ -447,30 +439,6 @@ struct t_bb {
     int ymax = UNDEFINED;
     int layer_min = UNDEFINED;
     int layer_max = UNDEFINED;
-};
-
-/**
- * @brief Stores a 2D bounding box in terms of the minimum and maximum x and y
- * @note layer_num indicates the layer that the bounding box is on.
- */
-struct t_2D_bb {
-    t_2D_bb() = default;
-    t_2D_bb(int xmin_, int xmax_, int ymin_, int ymax_, int layer_num_)
-        : xmin(xmin_)
-        , xmax(xmax_)
-        , ymin(ymin_)
-        , ymax(ymax_)
-        , layer_num(layer_num_) {
-        VTR_ASSERT(xmax_ >= xmin_);
-        VTR_ASSERT(ymax_ >= ymin_);
-        VTR_ASSERT(layer_num_ >= 0);
-    }
-
-    int xmin = UNDEFINED;
-    int xmax = UNDEFINED;
-    int ymin = UNDEFINED;
-    int ymax = UNDEFINED;
-    int layer_num = UNDEFINED;
 };
 
 /**
@@ -858,12 +826,6 @@ enum class e_place_algorithm {
     SLACK_TIMING_PLACE
 };
 
-enum class e_place_bounding_box_mode {
-    AUTO_BB,
-    CUBE_BB,
-    PER_LAYER_BB
-};
-
 /**
  * @brief Provides a wrapper around enum e_place_algorithm.
  *
@@ -1132,8 +1094,6 @@ struct t_placer_opts {
     bool place_checkpointing;
 
     int place_high_fanout_net;
-
-    e_place_bounding_box_mode place_bounding_box_mode;
 
     e_agent_algorithm place_agent_algorithm;
 

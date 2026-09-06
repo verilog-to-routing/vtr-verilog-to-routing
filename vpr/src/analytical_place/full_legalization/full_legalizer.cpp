@@ -922,7 +922,7 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
 
 void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
     // Setup the global variables for placement.
-    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
+    g_vpr_ctx.mutable_placement().init_placement_context(arch_.directs);
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
 
     // The placement will be stored in the global block loc registry.
@@ -1225,8 +1225,7 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // Initialize the placement context.
-    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts,
-                                                         arch_.directs);
+    g_vpr_ctx.mutable_placement().init_placement_context(arch_.directs);
 
     const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
 
@@ -1305,7 +1304,7 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     vpr_setup_noc(vpr_setup_, arch_);
 
     // Setup the global variables for placement.
-    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
+    g_vpr_ctx.mutable_placement().init_placement_context(arch_.directs);
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
 
     // The placement will be stored in the global block loc registry.
