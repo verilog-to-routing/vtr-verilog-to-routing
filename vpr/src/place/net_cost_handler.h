@@ -45,6 +45,27 @@ struct t_net_cost_terms {
     double cong_cost = 0.;
 };
 
+/**
+ * @brief The committed values an evaluated move writes for one affected net,
+ * i.e. what update_move_nets() would copy out of the proposed state.
+ *
+ * A commit record is a vector of these entries, one per affected net. It is
+ * captured with NetCostHandler::extract_commit_record() and replayed on another
+ * handler with apply_commit_record(), so an accepted move can be committed
+ * there without re-evaluating it.
+ */
+struct t_net_commit_entry {
+    ClusterNetId net_id;
+    /// New bounding box.
+    t_bb bb_coords;
+    /// New number of blocks on each edge of the bounding box. Valid only when update_edges is true.
+    t_bb bb_num_on_edges;
+    /// New wirelength (bounding box) cost of the net.
+    double net_cost = 0.;
+    /// True for nets with at least SMALL_NET sinks, whose edge counts are maintained incrementally.
+    bool update_edges = false;
+};
+
 class NetCostHandler {
   public:
     NetCostHandler() = delete;
