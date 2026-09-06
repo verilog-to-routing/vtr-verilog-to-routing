@@ -43,7 +43,6 @@ WindowedBiMatchingDetailedPlacer::WindowedBiMatchingDetailedPlacer(
     const t_placer_opts& placer_opts)
     : placer_state_(false)
     , net_cost_handler_(placer_state_,
-                        g_vpr_ctx.placement().cube_bb,
                         e_place_algorithm::BOUNDING_BOX_PLACE,
                         placer_opts.congestion_chan_util_threshold) {
     BlkLocRegistry& blk_loc_registry = placer_state_.mutable_blk_loc_registry();

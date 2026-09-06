@@ -454,13 +454,10 @@ struct PlacementContext : public Context {
      *        must be called before performing placement, but must be called
      *        after the clusters are loaded.
      *
-     *  @param placer_opts
-     *      The options passed into the placer.
      *  @param directs
      *      A list of the direct connections in the architecture.
      */
-    void init_placement_context(const t_placer_opts& placer_opts,
-                                const std::vector<t_direct_inf>& directs);
+    void init_placement_context(const std::vector<t_direct_inf>& directs);
 
     /**
      * @brief Clean variables from the placement context which are not used
@@ -560,12 +557,6 @@ struct PlacementContext : public Context {
      * placer_debug_net or placer_debug_block parameters in the command line.
      */
     bool f_placer_debug = false;
-
-    /**
-     * Set this variable to true if the type of the bounding box used in placement is of the type cube. If it is false,
-     * it would mean that per-layer bounding box is used. For the 2D architecture, the cube bounding box would be used.
-     */
-    bool cube_bb = false;
 };
 
 /**

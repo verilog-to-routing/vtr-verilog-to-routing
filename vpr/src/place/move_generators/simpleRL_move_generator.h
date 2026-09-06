@@ -55,6 +55,17 @@ class KArmedBanditAgent {
      */
     void set_step(float gamma, int move_lim);
 
+    /// @brief Returns the action (arm) selected by the most recent propose_action() call.
+    size_t last_action() const { return last_action_; }
+
+    /// @brief Overrides the action credited by the next process_outcome() call.
+    ///        See MoveGenerator::save_proposal_state() for the intended usage.
+    void set_last_action(size_t action) { last_action_ = action; }
+
+    /// @brief Copies the learned state (Q-values, action counts, step size) from `other`.
+    ///        Both agents must have been constructed with identical configurations.
+    void copy_state_from(const KArmedBanditAgent& other);
+
   protected:
     /**
      * @brief Converts an action index to a move type.
@@ -252,6 +263,15 @@ class SimpleRLMoveGenerator : public MoveGenerator {
 
     // Receives feedback about the outcome of the previously proposed move
     void process_outcome(double reward, e_reward_function reward_fun) override;
+
+    /// @brief Saves/restores the agent action behind the most recent proposal.
+    ///        See MoveGenerator::save_proposal_state() for the intended usage.
+    size_t save_proposal_state() const override { return karmed_bandit_agent->last_action(); }
+    void restore_proposal_state(size_t state) override { karmed_bandit_agent->set_last_action(state); }
+
+    /// @brief Copies the agent state from another SimpleRLMoveGenerator.
+    ///        See MoveGenerator::copy_state_from() for the intended usage.
+    void copy_state_from(const MoveGenerator& other) override;
 };
 
 template<class T, class>

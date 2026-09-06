@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <bitset>
 
 #include "librrgraph_types.h"
@@ -15,6 +14,7 @@
 #include "rr_switch.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
+#include "vtr_sort.h"
 #include "vtr_strong_id_range.h"
 #include "vtr_array_view.h"
 #include <numeric>
@@ -886,48 +886,42 @@ class t_rr_graph_storage {
     /** @brief Validate that edge data is partitioned correctly.*/
     bool validate_node(RRNodeId node_id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
     bool validate(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
-    
-    /**
-     * @brief Sorts edges according to comparison_function. This is an expensive method that builds the edge array from scratch
-     * and invalidates all the RREdgeIds. This is not an inplace sort, and it is very expensive.
-     * You should not be calling this method more than once or twice in the entire program, definitely do not use it in a hot loop.
-     * @tparam t_comp_func callable object with two size_t arguments. See 'edge_compare_dest_node' for example.
-     * @param comparison_function Comparison function to order edges with.
-     */
-    template <typename t_comp_func>
-    void sort_edges(t_comp_func comparison_function) {
 
+    /**
+     * @brief Sorts edges by one or more small integer keys.
+     *
+     * The result is the same as a stable sort by the tuple of keys, ties keep their
+     * current order, but it is computed with stable counting sort passes instead of a
+     * comparison sort.
+     *
+     * This is an expensive method that rebuilds the edge arrays from scratch and
+     * invalidates all RREdgeIds. It should only be called a few times while the graph
+     * is being built, never in a hot loop.
+     *
+     * Example, sorting by destination node:
+     *
+     *     sort_edges_by_keys(vtr::sort_key(num_nodes, [&](RREdgeId e) { return edge_dest_node_[e]; }));
+     *
+     * Example, sorting by source node, and by destination node among edges that share
+     * a source node:
+     *
+     *     sort_edges_by_keys(vtr::sort_key(num_nodes, [&](RREdgeId e) { return edge_src_node_[e]; }),
+     *                        vtr::sort_key(num_nodes, [&](RREdgeId e) { return edge_dest_node_[e]; }));
+     *
+     * @param keys  One vtr::sort_key per sort criterion, listed from the most significant
+     *              to the least significant. Each is built with vtr::sort_key(num_keys, key_of),
+     *              where key_of maps an RREdgeId to a value smaller than num_keys.
+     */
+    template <typename... KeyFns>
+    void sort_edges_by_keys(const vtr::sort_key<KeyFns>&... keys) {
         size_t num_edges = edge_src_node_.size();
         vtr::StrongIdRange<RREdgeId> edge_range(RREdgeId(0), RREdgeId(num_edges));
-        std::vector<RREdgeId> edge_indices(edge_range.begin(), edge_range.end());
 
-        std::stable_sort(edge_indices.begin(), edge_indices.end(), comparison_function);
-        
-        // Generic lambda that allocates a 'vec'-sized new vector with all elements set to default value,
-        // then builds the new vector to have rearranged elements from 'vec' and finally move the new vector
-        // to replace vec. Essentially does a permutation on vec based on edge_indices.
-        auto array_rearrange = [&edge_indices] (auto& vec, auto default_value) {
+        // Sort the edge ids 0..num_edges-1 by the keys directly into edge_indices
+        std::vector<RREdgeId> edge_indices(num_edges);
+        vtr::stable_radix_sort(edge_range.begin(), edge_range.end(), edge_indices, keys...);
 
-            // Since vec could have any type, we need to figure out it's type to allocate new_vec.
-            // The scary std::remove_reference stuff does exactly that. This does nothing other than building a new 'vec' sized vector.
-            typename std::remove_reference<decltype(vec)>::type new_vec(vec.size(), default_value);
-
-            size_t new_index = 0;
-            for (RREdgeId edge_index : edge_indices) {
-                RREdgeId new_edge_index = RREdgeId(new_index);
-                new_vec[new_edge_index] = vec[edge_index];
-
-                new_index++;
-            }
-            VTR_ASSERT(new_index == vec.size());
-
-            vec = std::move(new_vec);
-        };
-
-        array_rearrange(edge_src_node_, RRNodeId::INVALID());
-        array_rearrange(edge_dest_node_, RRNodeId::INVALID());
-        array_rearrange(edge_switch_, LIBRRGRAPH_UNDEFINED_VAL);
-        array_rearrange(edge_remapped_, false);
+        apply_edge_permutation(edge_indices);
     }
 
     /******************
@@ -978,6 +972,12 @@ class t_rr_graph_storage {
      * sort, and assign the first edge for each
      */
     void assign_first_edges();
+
+    /**
+     * @brief Rearranges every edge array so that the new edge i is the old edge edge_indices[i].
+     * Invalidates all RREdgeIds held elsewhere.
+     */
+    void apply_edge_permutation(const std::vector<RREdgeId>& edge_indices);
 
     /** @brief Verify that first_edge_ array correctly partitions rr edge data. */
     bool verify_first_edges() const;
