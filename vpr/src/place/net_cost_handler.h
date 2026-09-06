@@ -10,6 +10,7 @@
 #include "place_util.h"
 #include "vtr_prefix_sum.h"
 
+#include <atomic>
 #include <cstdint>
 #include <limits>
 #include <utility>
@@ -43,6 +44,27 @@ struct t_net_cost_terms {
     double interposer_cost = 0.;
     double interposer_cong_cost = 0.;
     double cong_cost = 0.;
+};
+
+/**
+ * @brief Cancellation token polled during swap evaluation. The evaluation of
+ * attempt `slot_index` is abandoned once a lower-id attempt is accepted.
+ * A default-constructed token never cancels. Cancellation only skips work
+ * whose result is discarded, so polling granularity cannot affect the
+ * annealing trajectory.
+ */
+struct t_swap_cancel_token {
+    /// Lowest accepted attempt id of the current batch. nullptr means never cancel.
+    const std::atomic<int>* first_accepted_id = nullptr;
+    /// Id of the attempt this evaluation belongs to.
+    int slot_index = 0;
+
+    /// @brief Returns true once this evaluation should be abandoned.
+    inline bool cancelled() const {
+        // Relaxed ordering suffices. A stale read only delays a cancellation.
+        return first_accepted_id != nullptr
+               && slot_index > first_accepted_id->load(std::memory_order_relaxed);
+    }
 };
 
 class NetCostHandler {
@@ -109,12 +131,19 @@ class NetCostHandler {
      * Every affected net is recorded in ts_nets_to_update_ and given a slot in
      * ts_net_info_. The slots must be released by update_move_nets() or
      * reset_move_nets() before this method is called again.
+     *
+     * @param cancel_token Polled during the update. Once it reports
+     * cancellation, the update is abandoned and this method returns false.
+     * The caller must still revert the move as if it had been evaluated.
+     *
+     * @return True when the update completed. False when it was cancelled.
      */
-    void find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
+    bool find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
                                              const PlacerCriticalities* criticalities,
                                              t_pl_blocks_to_be_moved& blocks_affected,
                                              t_net_cost_terms& cost_terms_delta,
-                                             double& timing_delta_c);
+                                             double& timing_delta_c,
+                                             t_swap_cancel_token cancel_token = {});
 
     /**
      * @brief Discards the proposed state of the affected nets and releases their slots.
@@ -341,14 +370,18 @@ class NetCostHandler {
      * @param affected_pins Netlist pins which are affected, in terms placement cost, by the proposed move.
      * @param timing_delta_c Timing cost change based on the proposed move
      * @param is_src_moving Is the moving pin the source of a net.
+     * @param cancel_token Polled during the timing-cost update. On cancellation
+     * the update is abandoned and false is returned.
+     * @return True when the update completed. False when it was cancelled.
      */
-    void update_net_info_on_pin_move_(const PlaceDelayModel* delay_model,
+    bool update_net_info_on_pin_move_(const PlaceDelayModel* delay_model,
                                       const PlacerCriticalities* criticalities,
                                       const ClusterPinId pin_id,
                                       const t_pl_moved_block& moving_blk_inf,
                                       std::vector<ClusterPinId>& affected_pins,
                                       double& timing_delta_c,
-                                      bool is_src_moving);
+                                      bool is_src_moving,
+                                      t_swap_cancel_token cancel_token);
 
     /**
      * @brief Accumulates the placement cost deltas for all nets affected by the proposed move.
@@ -379,14 +412,17 @@ class NetCostHandler {
      * @param affected_pins Updated by this routine to store the sink pins whose delays are changed due to moving the block
      * @param delta_timing_cost Computed by this routine and returned by reference.
      * @param is_src_moving True if "pin" is a sink pin and its driver is among the moving blocks
+     * @param cancel_token Polled between sinks of a moved driver.
+     * @return True when the update completed. False when it was cancelled.
      */
-    void update_td_delta_costs_(const PlaceDelayModel* delay_model,
+    bool update_td_delta_costs_(const PlaceDelayModel* delay_model,
                                 const PlacerCriticalities& criticalities,
                                 const ClusterNetId net,
                                 const ClusterPinId pin,
                                 std::vector<ClusterPinId>& affected_pins,
                                 double& delta_timing_cost,
-                                bool is_src_moving);
+                                bool is_src_moving,
+                                t_swap_cancel_token cancel_token);
 
     /**
      * @brief Returns the proposed state of a net that has already been recorded
