@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <limits>
 
+struct t_router_opts;
+
 //When the estimated number of routing iterations exceeds these factors
 //(for SAFE or AGGRESSIVE mode respectively) times the max router iterations
 //specified by the router aborts early
@@ -31,7 +33,8 @@ struct t_routing_predictor_fit {
 
 class RoutingPredictor {
   public:
-    RoutingPredictor(size_t min_history = 8, bool safe_mode = false, int verbosity = 0, float history_factor = 0.5);
+    ///@brief Configures the predictor and its abort policy from the router options
+    explicit RoutingPredictor(const t_router_opts& router_opts);
 
     //Returns the estimated iteration when routing will succeed.
     float estimate_success_iteration() const;
@@ -47,16 +50,19 @@ class RoutingPredictor {
 
     float get_slope() const;
 
-    ///@brief Returns the fit reflecting the most recent add_iteration_overuse() call
-    const t_routing_predictor_fit& get_last_fit() const { return last_fit_; }
+    /**
+     * @brief Returns whether the router should give up because a legal routing is
+     *        predicted to take too many iterations. Logs the reason when it returns true.
+     */
+    bool should_abort_routing() const;
 
+  private:
     /**
      * @brief Returns whether the current estimate_success_iteration() result should be
      *        trusted when deciding to abort routing.
      */
-    bool prediction_is_valid() const;
+    bool prediction_is_valid_() const;
 
-  private:
     ///@brief True while safe mode is tolerating the predictor's initial run of degenerate fits
     bool awaiting_usable_prediction_() const;
 
@@ -67,6 +73,7 @@ class RoutingPredictor {
     bool safe_mode_;
     int verbosity_;
     float history_factor_;
+    float abort_iteration_threshold_; ///< Estimated success iteration above which routing is abandoned (infinity disables aborting)
 
     std::vector<size_t> iterations_;
     std::vector<size_t> iteration_overused_rr_node_counts_;

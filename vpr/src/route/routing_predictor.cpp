@@ -6,8 +6,12 @@
 #include "vtr_log.h"
 
 #include "routing_predictor.h"
+#include "vpr_types.h"
 
 namespace {
+
+// Fraction of the recorded overuse history used when fitting the success-iteration model
+constexpr float ROUTING_PREDICTOR_HISTORY_FACTOR = 0.5;
 
 class LinearModel {
   public:
@@ -165,20 +169,44 @@ t_routing_predictor_fit RoutingPredictor::fit_model_(float history_factor) const
     return fit;
 }
 
-RoutingPredictor::RoutingPredictor(size_t min_history, bool safe_mode, int verbosity, float history_factor)
-    : min_history_(min_history)
-    , safe_mode_(safe_mode)
-    , verbosity_(verbosity)
-    , history_factor_(history_factor)
+RoutingPredictor::RoutingPredictor(const t_router_opts& router_opts)
+    : min_history_(router_opts.routing_predictor_min_history)
+    , safe_mode_(router_opts.routing_failure_predictor == SAFE)
+    , verbosity_(router_opts.route_verbosity)
+    , history_factor_(ROUTING_PREDICTOR_HISTORY_FACTOR)
+    , abort_iteration_threshold_(std::numeric_limits<float>::infinity()) // Default no early abort
     , slope_(-1) {
-    //nop
+    if (router_opts.routing_failure_predictor == SAFE) {
+        abort_iteration_threshold_ = ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_SAFE * router_opts.max_router_iterations;
+    } else if (router_opts.routing_failure_predictor == AGGRESSIVE) {
+        abort_iteration_threshold_ = ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_AGGRESSIVE * router_opts.max_router_iterations;
+    } else {
+        VTR_ASSERT_MSG(router_opts.routing_failure_predictor == OFF, "Unrecognized routing failure predictor setting");
+    }
+
+    if (router_opts.routing_budgets_algorithm == YOYO) {
+        // RCV keeps re-routing to resolve hold violations, so never give up early
+        abort_iteration_threshold_ = std::numeric_limits<float>::infinity();
+    }
 }
 
 float RoutingPredictor::estimate_success_iteration() const {
     return last_estimate_;
 }
 
-bool RoutingPredictor::prediction_is_valid() const {
+bool RoutingPredictor::should_abort_routing() const {
+    if (!prediction_is_valid_() || last_estimate_ <= abort_iteration_threshold_) {
+        return false;
+    }
+
+    VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high"
+            " (abort threshold %.1f, %zu overused nodes, log-overuse slope %+.4g over iterations %zu-%zu).\n",
+            last_estimate_, abort_iteration_threshold_, iteration_overused_rr_node_counts_.back(),
+            last_fit_.slope, last_fit_.first_iteration, last_fit_.last_iteration);
+    return true;
+}
+
+bool RoutingPredictor::prediction_is_valid_() const {
     if (iteration_overused_rr_node_counts_.empty()
         || iteration_overused_rr_node_counts_.back() <= ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
         //Only consider the prediction actionable if there is a significant number of

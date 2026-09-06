@@ -98,17 +98,7 @@ bool route(const Netlist<>& net_list,
     /*
      * Configure the routing predictor
      */
-    RoutingPredictor routing_predictor(router_opts.routing_predictor_min_history,
-                                       /*safe_mode=*/router_opts.routing_failure_predictor == SAFE,
-                                       router_opts.route_verbosity);
-    float abort_iteration_threshold = std::numeric_limits<float>::infinity(); //Default no early abort
-    if (router_opts.routing_failure_predictor == SAFE) {
-        abort_iteration_threshold = ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_SAFE * router_opts.max_router_iterations;
-    } else if (router_opts.routing_failure_predictor == AGGRESSIVE) {
-        abort_iteration_threshold = ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_AGGRESSIVE * router_opts.max_router_iterations;
-    } else {
-        VTR_ASSERT_MSG(router_opts.routing_failure_predictor == OFF, "Unrecognized routing failure predictor setting");
-    }
+    RoutingPredictor routing_predictor(router_opts);
 
     float high_effort_congestion_mode_iteration_threshold = router_opts.congested_routing_iteration_threshold_frac * router_opts.max_router_iterations;
 
@@ -429,15 +419,8 @@ bool route(const Netlist<>& net_list,
             break;
         }
 
-        //Estimate at what iteration we will converge to a legal routing
-        if (routing_predictor.prediction_is_valid()
-            && est_success_iteration > abort_iteration_threshold
-            && router_opts.routing_budgets_algorithm != YOYO) {
-            const t_routing_predictor_fit& predictor_fit = routing_predictor.get_last_fit();
-            VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high"
-                    " (abort threshold %.1f, %zu overused nodes, log-overuse slope %+.4g over iterations %zu-%zu).\n",
-                    est_success_iteration, abort_iteration_threshold, overuse_info.overused_nodes,
-                    predictor_fit.slope, predictor_fit.first_iteration, predictor_fit.last_iteration);
+        //Give up if a legal routing is predicted to take too many more iterations
+        if (routing_predictor.should_abort_routing()) {
             break; //Abort
         }
 
