@@ -728,10 +728,12 @@ the sub-tile of an atom is unknown (allowing the packing algorithm to choose
 any sub-tile at the given (x, y, layer) location).
 
 Lines written by VPR (:option:`vpr --write_flat_place`) carry additional annotation
-columns after ``<atom_sub_tile>``, controlled by :option:`vpr --flat_place_verbosity`.
-These are informational only and are ignored when the file is read back. By default
-the cluster block number the atom was packed into and the primitive type it was placed
-on are appended; at verbosity ``2`` the path of that primitive is appended as well:
+after ``<atom_sub_tile>``, introduced by a pound symbol (``#``). Everything from the
+``#`` onwards is a comment: VPR does not parse it when the file is read back, it is
+only there to help a user understand and interpret the file. How much annotation is
+written is controlled by :option:`vpr --flat_place_verbosity`. By default the cluster
+block number the atom was packed into and the primitive type it was placed on are
+appended; at verbosity ``2`` the path of that primitive is appended as well:
 
 .. code-block:: none
 

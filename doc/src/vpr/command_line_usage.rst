@@ -571,8 +571,9 @@ Use the options below to override this default naming behaviour.
 
     Controls how much annotation is written into flat placement files
     (see :ref:`flat placement file format <vpr_flat_place_file>`). Annotations are
-    informational only: :option:`vpr --read_flat_place` ignores everything past the
-    ``<atom_sub_tile>`` column. Each level includes what the levels below it print.
+    written as a ``#`` comment after the ``<atom_sub_tile>`` column and are
+    informational only: :option:`vpr --read_flat_place` does not parse them. Each
+    level includes what the levels below it print.
 
     * ``0``: No annotation and no header comments, i.e. only the columns the reader
       parses. The output is then exactly the input format documented above, and
