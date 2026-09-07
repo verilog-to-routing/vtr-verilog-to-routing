@@ -213,6 +213,13 @@ class NetCostHandler {
      */
     void extract_commit_record(std::vector<t_net_commit_entry>& record) const;
 
+    /**
+     * @brief Writes an extracted commit record into this handler's committed state.
+     * @note This handler must have no move in flight.
+     * @note Not supported while congestion modeling is enabled.
+     */
+    void apply_commit_record(const std::vector<t_net_commit_entry>& record);
+
   private:
     /// Indicates whether congestion cost modeling is enabled.
     bool congestion_modeling_started_;

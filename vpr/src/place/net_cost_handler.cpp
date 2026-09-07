@@ -934,6 +934,7 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
 
 void NetCostHandler::update_move_nets() {
     // Copy the proposed state of every affected net into the committed state and release its slot.
+    // extract_commit_record() and apply_commit_record() must be kept consistent with the values committed here.
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     for (size_t slot = 0; slot < ts_nets_to_update_.size(); slot++) {
@@ -978,6 +979,22 @@ void NetCostHandler::extract_commit_record(std::vector<t_net_commit_entry>& reco
             entry.bb_num_on_edges = ts_net.num_on_edges;
         }
         entry.net_cost = ts_net.proposed_cost;
+    }
+}
+
+void NetCostHandler::apply_commit_record(const std::vector<t_net_commit_entry>& record) {
+    // The applying handler has no move in flight, so its slots are already released.
+    VTR_ASSERT_SAFE_MSG(!congestion_modeling_started_,
+                        "Commit records do not support congestion modeling.");
+
+    for (const t_net_commit_entry& entry : record) {
+        t_net_bb_info& net_bb = net_bb_[entry.net_id];
+
+        net_bb.coords = entry.bb_coords;
+        if (entry.update_edges) {
+            net_bb.num_on_edges = entry.bb_num_on_edges;
+        }
+        net_bb.cost = entry.net_cost;
     }
 }
 
