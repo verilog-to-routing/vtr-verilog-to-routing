@@ -198,6 +198,14 @@ class NetCostHandler {
     /// @brief Returns the routing congestion channel utilization threshold this handler was built with.
     double congestion_chan_util_threshold() const { return congestion_chan_util_threshold_; }
 
+    /**
+     * @brief Copies the committed net state from `other`, which must have been
+     * constructed with identical parameters.
+     * @note Neither handler may have a move in flight.
+     * @note Not supported while congestion modeling is enabled.
+     */
+    void copy_committed_state_from(const NetCostHandler& other);
+
   private:
     /// Indicates whether congestion cost modeling is enabled.
     bool congestion_modeling_started_;

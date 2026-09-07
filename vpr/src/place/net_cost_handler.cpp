@@ -958,6 +958,15 @@ void NetCostHandler::update_move_nets() {
     }
 }
 
+void NetCostHandler::copy_committed_state_from(const NetCostHandler& other) {
+    VTR_ASSERT_MSG(!congestion_modeling_started_ && !other.congestion_modeling_started_,
+                   "Copying committed state does not support congestion modeling.");
+    VTR_ASSERT(net_bb_.size() == other.net_bb_.size());
+    VTR_ASSERT_SAFE(std::ranges::all_of(ts_nets_to_update_, [this](ClusterNetId net_id) { return net_ts_slot_[net_id] == NO_TS_SLOT; }));
+
+    net_bb_ = other.net_bb_;
+}
+
 void NetCostHandler::reset_move_nets() {
     // Release the slots of the affected nets. The proposed state is simply discarded.
     for (const ClusterNetId net_id : ts_nets_to_update_) {
