@@ -53,7 +53,7 @@ jobs:
     - name: Install dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}
 
@@ -104,7 +104,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install qtbase5-dev
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}
 
@@ -278,7 +278,7 @@ jobs:
     - name: Install GUI test dependencies
       run: ./dev/install_gui_test_deps.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}
 
@@ -377,7 +377,7 @@ jobs:
     - name: Install GUI test dependencies
       run: ./dev/install_gui_test_deps.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}
 
@@ -475,7 +475,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: 'ccache'
-      uses: hendrikmuhs/ccache-action@v1.2.23
+      uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}
 
@@ -883,7 +883,7 @@ jobs:
       run: |
         pip install -r requirements.txt
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}-${{ matrix.suite }}
 
@@ -1053,7 +1053,7 @@ jobs:
     - name: Install dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}-${{ matrix.CC }}
 
@@ -1084,7 +1084,7 @@ jobs:
     - name: Install Dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}-gcc-11
 
@@ -1115,7 +1115,7 @@ jobs:
     - name: Install Dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}-gcc-15
 
@@ -1199,7 +1199,7 @@ jobs:
           ls /${{ matrix.config.prefix }}/lib/gcc/x86_64-w64-mingw32/*/adalib/libgnat.a
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.23
+        uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: ${{ runner.os }}-msys2-${{ github.job }}-${{ hashFiles('**/CMakeLists.txt', '**/Makefile') }}
           restore-keys: |
@@ -1275,7 +1275,7 @@ jobs:
         run: cl
 
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2.23
+        uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: ${{ runner.os }}-msvc-${{ github.sha }}
           restore-keys: ${{ runner.os }}-msvc-
