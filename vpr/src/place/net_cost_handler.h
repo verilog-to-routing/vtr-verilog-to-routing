@@ -195,6 +195,9 @@ class NetCostHandler {
      */
     const ChannelMetric<vtr::NdMatrix<double, 3>>& get_chan_util() const;
 
+    /// @brief Returns the routing congestion channel utilization threshold this handler was built with.
+    double congestion_chan_util_threshold() const { return congestion_chan_util_threshold_; }
+
   private:
     /// Indicates whether congestion cost modeling is enabled.
     bool congestion_modeling_started_;
