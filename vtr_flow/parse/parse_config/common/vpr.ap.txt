@@ -2,6 +2,20 @@
 ## Entire AP Flow
 ap_mem;vpr.out;.*Analytical Placement took.*\(max_rss (.*), .*\)
 ap_time;vpr.out;\s*Analytical Placement took (.*) seconds
-## Full Legalizer
-ap_full_legalizer_mem;vpr.out;.*AP Full Legalizer took.*\(max_rss (.*), .*\)
-ap_full_legalizer_time;vpr.out;\s*AP Full Legalizer took (.*) seconds
+## HPWL estimates during the flow.
+post_gp_hpwl;vpr.out;\s*Placement estimated wirelength: (.*)
+post_fl_hpwl;vpr.out;Initial placement BB estimate of wirelength: (.*)
+post_dp_hpwl;vpr.out;BB estimate of min-dist \(placement\) wire length: (.*)
+## CPD estimates during the flow
+post_gp_cpd;vpr.out;\s*Placement estimated CPD: (.*) ns
+post_fl_cpd;vpr.out;Initial placement estimated Critical Path Delay \(CPD\): (.*) ns
+post_dp_cpd;vpr.out;Placement estimated critical path delay \(least slack\): (.*) ns
+## Setup total negative slack estimates
+post_gp_sTNS;vpr.out;\s*Placement estimated sTNS: (.*) ns
+post_fl_sTNS;vpr.out;Initial placement estimated setup Total Negative Slack \(sTNS\): (.*) ns
+post_dp_sTNS;vpr.out;Placement estimated setup Total Negative Slack \(sTNS\): (.*) ns
+post_route_sTNS;vpr.out;Final setup Total Negative Slack \(sTNS\): (.*) ns
+## Per-stage flow runtime
+ap_gp_runtime;vpr.out;AP Global Placer took (.*) seconds
+ap_fl_runtime;vpr.out;AP Full Legalizer took (.*) seconds
+ap_dp_runtime;vpr.out;AP Detailed Placer took (.*) seconds
