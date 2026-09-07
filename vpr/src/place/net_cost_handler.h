@@ -206,6 +206,13 @@ class NetCostHandler {
      */
     void copy_committed_state_from(const NetCostHandler& other);
 
+    /**
+     * @brief Records the values update_move_nets() would commit for the move under evaluation.
+     * @note Must be called after find_affected_nets_and_update_costs() and before the move is committed or reverted.
+     * @note Not supported while congestion modeling is enabled.
+     */
+    void extract_commit_record(std::vector<t_net_commit_entry>& record) const;
+
   private:
     /// Indicates whether congestion cost modeling is enabled.
     bool congestion_modeling_started_;

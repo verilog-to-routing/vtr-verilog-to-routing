@@ -958,6 +958,29 @@ void NetCostHandler::update_move_nets() {
     }
 }
 
+void NetCostHandler::extract_commit_record(std::vector<t_net_commit_entry>& record) const {
+    VTR_ASSERT_SAFE_MSG(!congestion_modeling_started_,
+                        "Commit records do not support congestion modeling.");
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+
+    const size_t num_affected_nets = ts_nets_to_update_.size();
+    record.resize(num_affected_nets);
+
+    for (size_t slot = 0; slot < num_affected_nets; slot++) {
+        const ClusterNetId net_id = ts_nets_to_update_[slot];
+        const t_ts_net_info& ts_net = ts_net_info_[slot];
+        t_net_commit_entry& entry = record[slot];
+
+        entry.net_id = net_id;
+        entry.bb_coords = ts_net.coords;
+        entry.update_edges = cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET;
+        if (entry.update_edges) {
+            entry.bb_num_on_edges = ts_net.num_on_edges;
+        }
+        entry.net_cost = ts_net.proposed_cost;
+    }
+}
+
 void NetCostHandler::copy_committed_state_from(const NetCostHandler& other) {
     VTR_ASSERT_MSG(!congestion_modeling_started_ && !other.congestion_modeling_started_,
                    "Copying committed state does not support congestion modeling.");
