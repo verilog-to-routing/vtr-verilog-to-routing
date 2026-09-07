@@ -69,6 +69,12 @@ struct PlacerTimingContext : public Context {
                                           std::vector<t_connection_commit_entry>& record) const;
 
     /**
+     * @brief Writes an extracted commit record into the committed connection delays and timing costs.
+     * @note This state must have no move in flight.
+     */
+    void apply_connection_commit_record(const std::vector<t_connection_commit_entry>& record);
+
+    /**
      * @brief Net connection delays based on the committed block positions.
      *
      * Index ranges: [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]

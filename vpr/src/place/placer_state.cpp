@@ -71,6 +71,15 @@ void PlacerTimingContext::extract_connection_commit_record(const std::vector<Clu
     }
 }
 
+void PlacerTimingContext::apply_connection_commit_record(const std::vector<t_connection_commit_entry>& record) {
+    // Mirrors the writing side of commit_td_cost(), minus the proposed_* resets.
+    // The applying state has no move in flight.
+    for (const t_connection_commit_entry& entry : record) {
+        connection_delay[entry.net_id][entry.ipin] = entry.connection_delay;
+        connection_timing_cost[entry.net_id][entry.ipin] = entry.connection_timing_cost;
+    }
+}
+
 void PlacerTimingContext::revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
 #ifndef VTR_ASSERT_SAFE_ENABLED
     (void)blocks_affected;
