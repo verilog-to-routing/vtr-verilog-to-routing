@@ -15,6 +15,20 @@
 #include "PlacerTimingCosts.h"
 
 /**
+ * @brief The committed timing values an evaluated move writes for one affected connection.
+ *
+ * A commit record is a vector of these entries. It is captured with
+ * PlacerTimingContext::extract_connection_commit_record() on the state that
+ * evaluated the move and replayed on another state with apply_connection_commit_record().
+ */
+struct t_connection_commit_entry {
+    ClusterNetId net_id;
+    int ipin;
+    float connection_delay;
+    double connection_timing_cost;
+};
+
+/**
  * @brief State relating to the timing driven data.
  *
  * These structures are used when the placer is using a timing driven
