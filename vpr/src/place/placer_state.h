@@ -62,6 +62,13 @@ struct PlacerTimingContext : public Context {
     void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
 
     /**
+     * @brief Records the values commit_td_cost() would commit for the given affected pins.
+     * @note Must be called before the move is committed or reverted on this state.
+     */
+    void extract_connection_commit_record(const std::vector<ClusterPinId>& affected_pins,
+                                          std::vector<t_connection_commit_entry>& record) const;
+
+    /**
      * @brief Net connection delays based on the committed block positions.
      *
      * Index ranges: [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]
