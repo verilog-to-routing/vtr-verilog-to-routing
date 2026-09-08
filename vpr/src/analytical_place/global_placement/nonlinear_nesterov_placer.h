@@ -6,17 +6,17 @@
  * @brief   Declaration of a nonlinear Nesterov analytical global placer.
  */
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <string>
 #include <utility>
 #include <vector>
+#include "ap_netlist.h"
 #include "electrostatic_density_utils.h"
 #include "flat_placement_density_manager.h"
 #include "global_placer.h"
-#include "affinity_spring_term.h"
-#include "net_cohesion.h"
 #include "partial_legalizer.h"
 #include "vtr_vector.h"
 
@@ -79,8 +79,20 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     PartialPlacement place() final;
 
   private:
-    /// @brief Per-block placement gradient (shared objective-term type).
-    using PlacementGradient = ::PlacementGradient;
+    /// @brief Per-block placement gradient.
+    struct PlacementGradient {
+        vtr::vector<APBlockId, double> dx;
+        vtr::vector<APBlockId, double> dy;
+
+        explicit PlacementGradient(const APNetlist& ap_netlist)
+            : dx(ap_netlist.blocks().size(), 0.)
+            , dy(ap_netlist.blocks().size(), 0.) {}
+
+        void clear() {
+            std::fill(dx.begin(), dx.end(), 0.);
+            std::fill(dy.begin(), dy.end(), 0.);
+        }
+    };
 
     /**
      * @brief Objective components from a placement evaluation.
@@ -93,7 +105,6 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
         std::vector<double> dim_overflow_ratios; ///< Per-dimension overflow mass / deposited mass.
         std::vector<double> dim_overflow_mass;   ///< Per-dimension absolute overflow mass.
         std::vector<double> dim_max_overflow;    ///< Per-dimension peak normalized tile overflow.
-        double affinity_spring = 0.;             ///< Weighted quadratic affinity-spring penalty (all kinds).
         double total_overflow = 0.;              ///< Sum of normalized tile overflows.
         double max_overflow = 0.;                ///< Largest normalized tile overflow.
     };
@@ -161,11 +172,6 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      * @brief Update differentiable wirelength net weights from pre-cluster timing criticalities.
      */
     void update_timing_net_weights_();
-
-    /**
-     * @brief Build pack-pattern affinity groups from long prepacker chains.
-     */
-    void initialize_pack_pattern_affinity_groups_(const Prepacker& prepacker);
 
     /// @brief A position clamped into the smooth-density domain, with an integral layer.
     struct GridPosition {
@@ -250,13 +256,9 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      * Fills @ref block_precond_ with a per-block objective-curvature estimate:
      * the sum of incident net weights (wirelength Hessian diagonal) plus the
      * density multiplier times block mass summed over resource dimensions
-     * (density Hessian diagonal) plus affinity-spring curvature. The
+     * (density Hessian diagonal). The
      * preconditioned gradient step divides each block's gradient by this value,
      * giving size-independent step lengths.
-     *
-     * The incompatibility penalty is deliberately excluded: its Hessian diagonal
-     * is zero (piecewise-linear). Excluding it lets that constraint force act at
-     * full strength while the preconditioner normalizes the smoothness terms.
      *
      * The tuning constants and the diagonal assembly live in
      * preconditioner_math.h, which the unit tests exercise directly.
@@ -327,9 +329,6 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     vtr::vector<APNetId, double> net_weights_;                     ///< Per-net weight applied to the weighted-average (WA) wirelength term computed in add_wirelength_gradient_.
     vtr::vector<APBlockId, double> block_precond_;                 ///< Per-block diagonal preconditioner (objective curvature estimate).
     vtr::vector<APBlockId, float> pin_density_inflation_;          ///< Per-block density-term mass inflation from pin count (routability cell inflation); 1.0 for blocks at or below the reference pin count.
-    std::unique_ptr<NetCohesion> cohesion_;                        ///< Periphery-pair net detection (gates pack-pattern affinity).
-    std::unique_ptr<AffinitySpringTerm> affinity_term_;            ///< Affinity-spring objective term (groups + energy/gradient/curvature).
-    size_t num_pack_pattern_affinity_groups_ = 0;                  ///< Count of PACK_PATTERN affinity groups.
     std::vector<double> filler_unit_mass_;                         ///< [dim] density mass per dynamic filler.
     std::vector<double> filler_precond_;                           ///< [dim] density-only filler preconditioner.
     // Placement-invariant density-grid constants, cached once (device grid,
@@ -372,7 +371,6 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     size_t device_grid_height_ = 0;              ///< Height of the placement region.
     size_t device_grid_num_layers_ = 0;          ///< Number of device layers.
     float ap_timing_tradeoff_ = 0.f;             ///< User timing tradeoff value.
-    double pack_pattern_cohesion_weight_ = 0.02; ///< I/O-gated pack-pattern affinity-spring weight (zeroed at runtime when no long direct I/O-chain nets are found).
 
     /// @brief B2B/QP warm-start solver. initialize_placement_ seeds the nonlinear
     ///        optimizer from a wirelength-aware analytical solve (elfPlace/ePlace
@@ -393,7 +391,4 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     ///        of the full schedule, whose result the checkpoint selection below
     ///        discards in favor of the seed on these designs anyway.
     bool sparse_seed_ = false;
-
-    /// @brief Prepacker, retained for prepacker-derived affinity groups.
-    const Prepacker* prepacker_ = nullptr;
 };

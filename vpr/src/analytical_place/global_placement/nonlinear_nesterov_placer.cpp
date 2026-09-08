@@ -7,15 +7,12 @@
 
 #include "nonlinear_nesterov_placer.h"
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <functional>
 #include <limits>
-#include <map>
 #include <optional>
 #include <random>
-#include <set>
 #include <string>
 #include <vector>
 #include "PreClusterTimingManager.h"
@@ -31,7 +28,6 @@
 #include "physical_types.h"
 #include "place_delay_model.h"
 #include "preconditioner_math.h"
-#include "prepack.h"
 #include "primitive_dim_manager.h"
 #include "primitive_vector.h"
 #include "timing_info.h"
@@ -338,19 +334,6 @@ constexpr double kDynamicFillerUnitFraction = 1.0;
 constexpr size_t kMaxDynamicFillersPerDim = 60000;
 
 // --------------------------------------------------------------------------
-// Net cohesion and affinity springs
-// --------------------------------------------------------------------------
-
-/**
- * @brief Long-chain pack-pattern affinity-spring weight for I/O-chain designs.
- *
- * Probing showed that ungated pack springs worsen general QoR, while gating the
- * 0.02 weight to designs with long direct I/O-chain nets is required to recover
- * the win on the designs that motivated it.
- */
-constexpr double kPackPatternCohesionWeight = 0.02;
-
-// --------------------------------------------------------------------------
 // Numerics
 // --------------------------------------------------------------------------
 
@@ -442,12 +425,10 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     , device_grid_width_(device_grid.width())
     , device_grid_height_(device_grid.height())
     , device_grid_num_layers_(device_grid.get_num_layers())
-    , ap_timing_tradeoff_(ap_timing_tradeoff)
-    , pack_pattern_cohesion_weight_(kPackPatternCohesionWeight) {
+    , ap_timing_tradeoff_(ap_timing_tradeoff) {
 
     vtr::ScopedStartFinishTimer nonlinear_nesterov_placer_building_timer("Constructing Nonlinear Nesterov Global Placer");
 
-    prepacker_ = &prepacker;
     density_manager_ = std::make_shared<FlatPlacementDensityManager>(ap_netlist_,
                                                                      prepacker,
                                                                      atom_netlist,
@@ -459,19 +440,6 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
                                                                      log_verbosity_);
     if (generate_mass_report)
         density_manager_->generate_mass_report();
-
-    cohesion_ = std::make_unique<NetCohesion>(ap_netlist_,
-                                              *density_manager_,
-                                              device_grid_width_,
-                                              device_grid_height_,
-                                              device_grid_num_layers_,
-                                              log_verbosity_);
-
-    affinity_term_ = std::make_unique<AffinitySpringTerm>(ap_netlist_,
-                                                          pack_pattern_cohesion_weight_);
-
-    num_pack_pattern_affinity_groups_ = 0;
-    initialize_pack_pattern_affinity_groups_(prepacker);
 
     partial_legalizer_ = make_partial_legalizer(partial_legalizer_type,
                                                 ap_netlist_,
@@ -515,19 +483,11 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     warmstart_max_iters_ = std::max(kWarmStartMaxIters, warmstart_iters_);
 
     if (log_verbosity_ >= 1) {
-        size_t affinity_blocks = 0;
-        for (const AffinityGroup& group : affinity_term_->groups())
-            affinity_blocks += group.blocks.size();
         VTR_LOG("Nonlinear Nesterov adaptive policy: blocks=%zu pins/block=%.2f warm-start-floor=%zu timing=%g.\n",
                 moveable_blocks_.size(),
                 pins_per_moveable_block,
                 warmstart_iters_,
                 ap_timing_tradeoff_);
-
-        VTR_LOG("Nonlinear Nesterov affinity springs: pack_groups=%zu weight=%g; blocks=%zu.\n",
-                num_pack_pattern_affinity_groups_,
-                pack_pattern_cohesion_weight_,
-                affinity_blocks);
         VTR_LOG("Nonlinear Nesterov pin-density inflation: reference=%.2f pins/block max_inflation=%.3g.\n",
                 pin_density_inflation_reference,
                 max_pin_density_inflation);
@@ -659,8 +619,6 @@ PartialPlacement NonlinearNesterovPlacer::place() {
     vtr::ScopedStartFinishTimer global_placer_time("AP Nonlinear Nesterov Global Placer");
 
     std::vector<PrimitiveVectorDim> density_dimensions = density_manager_->get_used_dims_mask().get_non_zero_dims();
-    cohesion_->identify_boundary_confined_dims(density_dimensions);
-
     double device_span = std::max<double>(device_grid_width_, device_grid_height_);
     double convergence_displacement = std::max(kMinConvergenceDisplacement,
                                                device_span * kConvergenceDisplacementFraction);
@@ -675,16 +633,6 @@ PartialPlacement NonlinearNesterovPlacer::run_global_optimization_(const std::ve
     PartialPlacement seed = initialize_placement_();
     if (log_verbosity_ >= 1)
         VTR_LOG("Nonlinear Nesterov phase time: warm start took %.2f seconds.\n", warmstart_timer.elapsed_sec());
-    cohesion_->update_periphery_pair_nets(density_dimensions);
-    if (pack_pattern_cohesion_weight_ > 0.
-        && cohesion_->num_periphery_pair_nets() == 0) {
-        if (log_verbosity_ >= 1) {
-            VTR_LOG("Nonlinear Nesterov pack-pattern affinity disabled: no two-pin periphery nets were found.\n");
-        }
-        pack_pattern_cohesion_weight_ = 0.;
-        affinity_term_->set_pack_pattern_weight(0.);
-    }
-
     PartialPlacement result = optimize_from_seed_(seed, density_dimensions, device_span, convergence_displacement);
 
     // Leave the pre-cluster timing manager consistent with the returned placement,
@@ -1279,9 +1227,7 @@ NonlinearNesterovPlacer::ObjectiveValue NonlinearNesterovPlacer::evaluate_object
     ObjectiveValue value;
     value.wirelength = add_wirelength_gradient_(p_placement, grad);
     add_density_gradient_(p_placement, density_multipliers, value, grad, fillers, filler_grad);
-    value.affinity_spring = affinity_term_->evaluate(p_placement, grad);
-    value.total = value.wirelength
-                  + value.affinity_spring;
+    value.total = value.wirelength;
     for (size_t dim_idx = 0; dim_idx < value.density_energies.size(); dim_idx++) {
         double energy = value.density_energies[dim_idx];
         value.total += density_multipliers[dim_idx] * energy;
@@ -1418,39 +1364,6 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
                 avg_net_weight,
                 max_weight,
                 weighted_nets);
-    }
-}
-
-void NonlinearNesterovPlacer::initialize_pack_pattern_affinity_groups_(const Prepacker& prepacker) {
-    if (pack_pattern_cohesion_weight_ == 0.)
-        return;
-
-    std::vector<std::vector<APBlockId>> chain_groups(prepacker.get_num_molecule_chains());
-    for (APBlockId blk_id : ap_netlist_.blocks()) {
-        std::vector<MoleculeChainId> block_chain_ids;
-        for (PackMoleculeId mol_id : ap_netlist_.block_molecules(blk_id)) {
-            const t_pack_molecule& molecule = prepacker.get_molecule(mol_id);
-            if (!molecule.is_chain() || !molecule.chain_id.is_valid())
-                continue;
-            if (!prepacker.get_molecule_chain_info(molecule.chain_id).is_long_chain)
-                continue;
-            if (std::find(block_chain_ids.begin(), block_chain_ids.end(), molecule.chain_id) != block_chain_ids.end())
-                continue;
-
-            size_t chain_idx = static_cast<size_t>(molecule.chain_id);
-            VTR_ASSERT_SAFE(chain_idx < chain_groups.size());
-            chain_groups[chain_idx].push_back(blk_id);
-            block_chain_ids.push_back(molecule.chain_id);
-        }
-    }
-
-    for (std::vector<APBlockId>& group : chain_groups) {
-        if (group.size() < 2)
-            continue;
-        AffinityGroup affinity;
-        affinity.blocks = std::move(group);
-        affinity_term_->add_group(std::move(affinity));
-        num_pack_pattern_affinity_groups_++;
     }
 }
 
@@ -1966,10 +1879,6 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
             block_precond_[blk_id] += net_weight;
         }
     }
-    // Affinity-spring Hessian diagonal (frozen-centroid approximation; see
-    // affinity_spring_curvature() for why the exact (1 - 1/n) factor is not used).
-    affinity_term_->add_curvature(block_precond_);
-
     // Density Hessian diagonal: the per-dimension density weight scales the block
     // mass it deposits into that resource's field. Heavier blocks under a
     // stronger density push have larger curvature and so take proportionally
@@ -1985,16 +1894,7 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
             double mass = block_mass.get_dim_val(dimensions[dim_idx]) * inflation;
             density_curvature += density_multipliers[dim_idx] * mass;
         }
-        // Floor, then soften toward uniform with an exponent < 1 to reduce
-        // over-correction on high-curvature blocks (dense DSP/RAM in
-        // heterogeneous FPGAs have much wider curvature range than ASIC cells).
-        // No non-curvature damping terms remain in the objective, so the
-        // damping argument is zero; it stays in the signature because the
-        // separation of true curvature from step-control damping is the
-        // invariant that made this diagonal reasonable about (see
-        // preconditioner_math.h).
         block_precond_[blk_id] = jacobi_precond_diagonal(block_precond_[blk_id] + density_curvature,
-                                                         0.,
                                                          kPreconditionFloor,
                                                          kPreconditionAlpha);
     }
@@ -2002,9 +1902,8 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
     filler_precond_.assign(dimensions.size(), kPreconditionFloor);
     for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
         double unit_mass = dim_idx < filler_unit_mass_.size() ? filler_unit_mass_[dim_idx] : 0.;
-        // Fillers carry density mass only: no nets, no affinity, no incompatibility.
+        // Fillers carry density mass only and have no incident nets.
         filler_precond_[dim_idx] = jacobi_precond_diagonal(density_multipliers[dim_idx] * unit_mass,
-                                                           0.,
                                                            kPreconditionFloor,
                                                            kPreconditionAlpha);
     }
