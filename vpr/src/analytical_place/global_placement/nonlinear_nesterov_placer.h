@@ -367,10 +367,10 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     ///        then runs serially, byte-identical to the historical behavior.
     std::unique_ptr<vtr::thread_pool> field_thread_pool_;
 
-    size_t device_grid_width_ = 0;               ///< Width of the placement region.
-    size_t device_grid_height_ = 0;              ///< Height of the placement region.
-    size_t device_grid_num_layers_ = 0;          ///< Number of device layers.
-    float ap_timing_tradeoff_ = 0.f;             ///< User timing tradeoff value.
+    size_t device_grid_width_ = 0;      ///< Width of the placement region.
+    size_t device_grid_height_ = 0;     ///< Height of the placement region.
+    size_t device_grid_num_layers_ = 0; ///< Number of device layers.
+    float ap_timing_tradeoff_ = 0.f;    ///< User timing tradeoff value.
 
     /// @brief B2B/QP warm-start solver. initialize_placement_ seeds the nonlinear
     ///        optimizer from a wirelength-aware analytical solve (elfPlace/ePlace
