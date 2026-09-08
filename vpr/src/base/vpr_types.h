@@ -655,6 +655,8 @@ struct t_file_name_opts {
     std::string write_legalized_flat_place_file;
     std::string write_block_usage;
     bool verify_file_digests;
+    ///@brief How much annotation to write into flat placement files.
+    int flat_place_verbosity;
 };
 
 ///@brief Options for netlist loading
