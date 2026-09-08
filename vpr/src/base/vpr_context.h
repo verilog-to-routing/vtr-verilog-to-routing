@@ -243,7 +243,7 @@ struct DeviceContext : public Context {
                          rr_graph_builder.rr_node_metadata(),
                          rr_graph_builder.rr_edge_metadata(),
                          rr_indexed_data,
-                         rr_rc_data.values(),
+                         rr_rc_data,
                          rr_graph_builder.rr_segments(),
                          rr_graph_builder.rr_switch()};
 

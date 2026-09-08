@@ -777,7 +777,7 @@ static void compute_tile_lookahead(std::unordered_map<int, util::t_ipin_primitiv
                          rr_graph_builder.rr_node_metadata(),
                          rr_graph_builder.rr_edge_metadata(),
                          g_vpr_ctx.device().rr_indexed_data,
-                         g_vpr_ctx.device().rr_rc_data.values(),
+                         g_vpr_ctx.device().rr_rc_data,
                          rr_graph_builder.rr_segments(),
                          rr_graph_builder.rr_switch()};
 
