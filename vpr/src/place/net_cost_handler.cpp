@@ -80,25 +80,14 @@ NetCostHandler::NetCostHandler(PlacerState& placer_state,
 
     is_multi_layer_ = num_layers > 1;
 
-    ts_bb_edge_new_.resize(num_nets, t_bb());
-    ts_bb_coord_new_.resize(num_nets, t_bb());
+    // Committed bounding box state. Costs start negative, meaning not computed yet.
+    net_bb_.resize(num_nets);
 
-    bb_coords_.resize(num_nets, t_bb());
-
-    bb_num_on_edges_.resize(num_nets, t_bb());
-
-    ts_nets_to_update_.resize(num_nets, ClusterNetId::INVALID());
-
-    // negative net costs mean the cost is not valid.
-    net_cost_.resize(num_nets, -1.);
-
-    // Used to store costs for moves not yet made and to indicate when a net's
-    // cost has been recomputed. proposed_net_cost_[inet] < 0 means net's cost hasn't
-    // been recomputed.
-    proposed_net_cost_.resize(num_nets, -1.);
-
-    // Tracks how far each net's bounding box has been updated for the proposed move.
-    bb_update_status_.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
+    // Scratch state for the nets affected by a move. A move can affect at most every net once,
+    // so num_nets slots are enough. Only the first ts_nets_to_update_.size() slots are in use.
+    ts_nets_to_update_.reserve(num_nets);
+    ts_net_info_.resize(num_nets);
+    net_ts_slot_.resize(num_nets, NO_TS_SLOT);
 
     alloc_and_load_chan_w_factors_for_place_cost_();
 
@@ -107,9 +96,7 @@ NetCostHandler::NetCostHandler(PlacerState& placer_state,
     VTR_ASSERT(!congestion_modeling_started_);
     VTR_ASSERT(chan_util_.x.empty() && chan_util_.y.empty());
     VTR_ASSERT(acc_chan_util_.x.empty() && acc_chan_util_.y.empty());
-    VTR_ASSERT(ts_avg_chan_util_new_.empty());
-    VTR_ASSERT(avg_chan_util_.empty());
-    VTR_ASSERT(net_cong_cost_.empty() && proposed_net_cong_cost_.empty());
+    VTR_ASSERT(net_cong_.empty());
 }
 
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
@@ -178,8 +165,9 @@ std::pair<t_net_cost_terms, double> NetCostHandler::comp_bb_cong_cost(e_cost_met
             get_non_updatable_bb_(net_id, /*use_ts=*/false);
         }
 
-        net_cost_[net_id] = get_net_bb_cost_(net_id, /*use_ts=*/false);
-        cost_terms.bb_cost += net_cost_[net_id];
+        t_net_bb_info& net_bb = net_bb_[net_id];
+        net_bb.cost = get_net_bb_cost_(net_id, net_bb.coords);
+        cost_terms.bb_cost += net_bb.cost;
         if (method == e_cost_methods::CHECK) {
             expected_wirelength += get_net_wirelength_estimate_(net_id);
         }
@@ -188,8 +176,9 @@ std::pair<t_net_cost_terms, double> NetCostHandler::comp_bb_cong_cost(e_cost_met
     // Compute congestion cost using recomputed bounding boxes and channel utilization map
     if (congestion_modeling_started_) {
         for (ClusterNetId net_id : cluster_ctx.clb_nlist.non_ignored_nets()) {
-            net_cong_cost_[net_id] = get_net_cong_cost_(net_id, /*use_ts=*/false);
-            cost_terms.cong_cost += net_cong_cost_[net_id];
+            t_net_cong_info& net_cong = net_cong_[net_id];
+            net_cong.cost = get_net_cong_cost_(net_cong.avg_chan_util);
+            cost_terms.cong_cost += net_cong.cost;
         }
     }
 
@@ -206,8 +195,12 @@ void NetCostHandler::update_net_bb_(const ClusterNetId net,
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
         //For small nets brute-force bounding box update is faster
 
-        if (bb_update_status_[net] == NetUpdateState::NOT_UPDATED_YET) { //Only once per-net
+        // The from-scratch bounding box already reflects every moved block, so it only
+        // needs to be computed once per net even when several of its pins moved.
+        t_ts_net_info& ts_net = ts_info_(net);
+        if (ts_net.update_status == NetUpdateState::NOT_UPDATED_YET) {
             get_non_updatable_bb_(net, /*use_ts=*/true);
+            ts_net.update_status = NetUpdateState::GOT_FROM_SCRATCH;
         }
     } else {
         //For large nets, update bounding box incrementally
@@ -317,14 +310,14 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
 }
 
 void NetCostHandler::record_affected_net_(const ClusterNetId net) {
-    /* Record effected nets. */
-    if (proposed_net_cost_[net] < 0.) {
-        /* Net not marked yet. */
-        VTR_ASSERT_SAFE(ts_nets_to_update_.size() < ts_nets_to_update_.capacity());
-        ts_nets_to_update_.push_back(net);
+    if (net_ts_slot_[net] == NO_TS_SLOT) {
+        // Net not recorded yet. Give it the next free slot in the scratch array.
+        const uint32_t slot = ts_nets_to_update_.size();
+        VTR_ASSERT_SAFE(slot < ts_net_info_.size());
 
-        /* Flag to say we've marked this net. */
-        proposed_net_cost_[net] = 1.;
+        net_ts_slot_[net] = slot;
+        ts_nets_to_update_.push_back(net);
+        ts_net_info_[slot].update_status = NetUpdateState::NOT_UPDATED_YET;
     }
 }
 
@@ -372,7 +365,7 @@ void NetCostHandler::get_non_updatable_bb_(ClusterNetId net_id, bool use_ts) {
     const BlkLocRegistry& blk_loc_registry = placer_state_.blk_loc_registry();
 
     // the bounding box coordinates that is going to be updated by this function
-    t_bb& bb_coord_new = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
+    t_bb& bb_coord_new = use_ts ? ts_info_(net_id).coords : net_bb_[net_id].coords;
 
     // get the source pin's location
     ClusterPinId source_pin_id = cluster_ctx.clb_nlist.net_pin(net_id, 0);
@@ -410,7 +403,7 @@ void NetCostHandler::get_non_updatable_bb_(ClusterNetId net_id, bool use_ts) {
 
     // Update average CHANX and CHANY usage for this net within its bounding box if congestion modeling is enabled
     if (congestion_modeling_started_) {
-        auto& [x_chan_util, y_chan_util] = use_ts ? ts_avg_chan_util_new_[net_id] : avg_chan_util_[net_id];
+        auto& [x_chan_util, y_chan_util] = use_ts ? ts_info_(net_id).avg_chan_util : net_cong_[net_id].avg_chan_util;
         const int total_channels = (bb_coord_new.xmax - bb_coord_new.xmin + 1) * (bb_coord_new.ymax - bb_coord_new.ymin + 1);
         x_chan_util = acc_chan_util_.x.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
         y_chan_util = acc_chan_util_.y.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
@@ -421,24 +414,26 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
                                 t_physical_tile_loc pin_old_loc,
                                 t_physical_tile_loc pin_new_loc) {
     //TODO: account for multiple physical pin instances per logical pin
+    t_ts_net_info& ts_net = ts_info_(net_id);
 
     // Number of blocks on the edges of the bounding box
-    t_bb& bb_edge_new = ts_bb_edge_new_[net_id];
+    t_bb& bb_edge_new = ts_net.num_on_edges;
     // Coordinates of the bounding box
-    t_bb& bb_coord_new = ts_bb_coord_new_[net_id];
+    t_bb& bb_coord_new = ts_net.coords;
 
     /* Check if the net had been updated before. */
-    if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+    if (ts_net.update_status == NetUpdateState::GOT_FROM_SCRATCH) {
         /* The net had been updated from scratch, DO NOT update again! */
         return;
     }
 
     const t_bb *curr_bb_edge, *curr_bb_coord;
-    if (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET) {
+    if (ts_net.update_status == NetUpdateState::NOT_UPDATED_YET) {
         /* The net had NOT been updated before, could use the old values */
-        curr_bb_edge = &bb_num_on_edges_[net_id];
-        curr_bb_coord = &bb_coords_[net_id];
-        bb_update_status_[net_id] = NetUpdateState::UPDATED_ONCE;
+        const t_net_bb_info& net_bb = net_bb_[net_id];
+        curr_bb_edge = &net_bb.num_on_edges;
+        curr_bb_coord = &net_bb.coords;
+        ts_net.update_status = NetUpdateState::UPDATED_ONCE;
     } else {
         /* The net had been updated before, must use the new values */
         curr_bb_coord = &bb_coord_new;
@@ -454,7 +449,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
         if (pin_old_loc.x == curr_bb_coord->xmax) { /* Old position at xmax. */
             if (curr_bb_edge->xmax == 1) {
                 get_bb_from_scratch_(net_id, /*use_ts=*/true);
-                bb_update_status_[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
+                ts_net.update_status = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
                 bb_edge_new.xmax = curr_bb_edge->xmax - 1;
@@ -486,7 +481,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
         if (pin_old_loc.x == curr_bb_coord->xmin) { /* Old position at xmin. */
             if (curr_bb_edge->xmin == 1) {
                 get_bb_from_scratch_(net_id, /*use_ts=*/true);
-                bb_update_status_[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
+                ts_net.update_status = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
                 bb_edge_new.xmin = curr_bb_edge->xmin - 1;
@@ -527,7 +522,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
         if (pin_old_loc.y == curr_bb_coord->ymax) { /* Old position at ymax. */
             if (curr_bb_edge->ymax == 1) {
                 get_bb_from_scratch_(net_id, /*use_ts=*/true);
-                bb_update_status_[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
+                ts_net.update_status = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
                 bb_edge_new.ymax = curr_bb_edge->ymax - 1;
@@ -559,7 +554,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
         if (pin_old_loc.y == curr_bb_coord->ymin) { /* Old position at ymin. */
             if (curr_bb_edge->ymin == 1) {
                 get_bb_from_scratch_(net_id, /*use_ts=*/true);
-                bb_update_status_[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
+                ts_net.update_status = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
                 bb_edge_new.ymin = curr_bb_edge->ymin - 1;
@@ -597,7 +592,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
             if (pin_old_loc.layer_num == curr_bb_coord->layer_max) {
                 if (curr_bb_edge->layer_max == 1) {
                     get_bb_from_scratch_(net_id, /*use_ts=*/true);
-                    bb_update_status_[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
+                    ts_net.update_status = NetUpdateState::GOT_FROM_SCRATCH;
                     return;
                 } else {
                     bb_edge_new.layer_max = curr_bb_edge->layer_max - 1;
@@ -623,7 +618,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
             if (pin_old_loc.layer_num == curr_bb_coord->layer_min) {
                 if (curr_bb_edge->layer_min == 1) {
                     get_bb_from_scratch_(net_id, /*use_ts=*/true);
-                    bb_update_status_[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
+                    ts_net.update_status = NetUpdateState::GOT_FROM_SCRATCH;
                     return;
                 } else {
                     bb_edge_new.layer_min = curr_bb_edge->layer_min - 1;
@@ -659,13 +654,9 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
         bb_edge_new.layer_max = curr_bb_edge->layer_max;
     }
 
-    if (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET) {
-        bb_update_status_[net_id] = NetUpdateState::UPDATED_ONCE;
-    }
-
     // Update average CHANX and CHANY usage for this net within its bounding box if congestion modeling is enabled
     if (congestion_modeling_started_) {
-        auto& [x_chan_util, y_chan_util] = ts_avg_chan_util_new_[net_id];
+        auto& [x_chan_util, y_chan_util] = ts_net.avg_chan_util;
         const int total_channels = (bb_coord_new.xmax - bb_coord_new.xmin + 1) * (bb_coord_new.ymax - bb_coord_new.ymin + 1);
         x_chan_util = acc_chan_util_.x.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
         y_chan_util = acc_chan_util_.y.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
@@ -676,8 +667,8 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const BlkLocRegistry& blk_loc_registry = placer_state_.blk_loc_registry();
 
-    t_bb& coords = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
-    t_bb& num_on_edges = use_ts ? ts_bb_edge_new_[net_id] : bb_num_on_edges_[net_id];
+    t_bb& coords = use_ts ? ts_info_(net_id).coords : net_bb_[net_id].coords;
+    t_bb& num_on_edges = use_ts ? ts_info_(net_id).num_on_edges : net_bb_[net_id].num_on_edges;
 
     // get the source pin's location
     ClusterPinId source_pin_id = cluster_ctx.clb_nlist.net_pin(net_id, 0);
@@ -759,18 +750,16 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
 
     // Update average CHANX and CHANY usage for this net within its bounding box if congestion modeling is enabled
     if (congestion_modeling_started_) {
-        auto& [x_chan_util, y_chan_util] = use_ts ? ts_avg_chan_util_new_[net_id] : avg_chan_util_[net_id];
+        auto& [x_chan_util, y_chan_util] = use_ts ? ts_info_(net_id).avg_chan_util : net_cong_[net_id].avg_chan_util;
         const int total_channels = (coords.xmax - coords.xmin + 1) * (coords.ymax - coords.ymin + 1);
         x_chan_util = acc_chan_util_.x.get_sum(coords.xmin, coords.ymin, coords.xmax, coords.ymax) / total_channels;
         y_chan_util = acc_chan_util_.y.get_sum(coords.xmin, coords.ymin, coords.xmax, coords.ymax) / total_channels;
     }
 }
 
-double NetCostHandler::get_net_bb_cost_(ClusterNetId net_id, bool use_ts) {
+double NetCostHandler::get_net_bb_cost_(ClusterNetId net_id, const t_bb& bb) const {
     // Finds the cost due to one net by looking at its coordinate bounding box.
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
-
-    const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
 
     const double crossing = wirelength_crossing_count(cluster_ctx.clb_nlist.net_pins(net_id).size());
 
@@ -800,9 +789,9 @@ double NetCostHandler::get_net_bb_cost_(ClusterNetId net_id, bool use_ts) {
     return ncost;
 }
 
-double NetCostHandler::get_net_cong_cost_(ClusterNetId net_id, bool use_ts) {
+double NetCostHandler::get_net_cong_cost_(const std::pair<float, float>& avg_chan_util) const {
     VTR_ASSERT_SAFE(congestion_modeling_started_);
-    const auto [x_chan_util, y_chan_util] = use_ts ? ts_avg_chan_util_new_[net_id] : avg_chan_util_[net_id];
+    const auto [x_chan_util, y_chan_util] = avg_chan_util;
 
     const float threshold = congestion_chan_util_threshold_;
 
@@ -813,7 +802,7 @@ double NetCostHandler::get_net_cong_cost_(ClusterNetId net_id, bool use_ts) {
 }
 
 double NetCostHandler::get_net_wirelength_estimate_(ClusterNetId net_id) const {
-    const t_bb& bb = bb_coords_[net_id];
+    const t_bb& bb = net_bb_[net_id].coords;
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     double crossing = wirelength_crossing_count(cluster_ctx.clb_nlist.net_pins(net_id).size());
@@ -832,7 +821,7 @@ double NetCostHandler::get_net_wirelength_estimate_(ClusterNetId net_id) const {
     return ncost;
 }
 
-std::pair<double, double> NetCostHandler::get_chanxy_cost_fac_(const t_bb& bb) {
+std::pair<double, double> NetCostHandler::get_chanxy_cost_fac_(const t_bb& bb) const {
     const int total_chanx_width = acc_chan_width_.x.get_sum(bb.ymin, bb.ymax);
     const double inverse_average_chanx_width = (bb.ymax - bb.ymin + 1.0) / total_chanx_width;
 
@@ -842,7 +831,7 @@ std::pair<double, double> NetCostHandler::get_chanxy_cost_fac_(const t_bb& bb) {
     return {inverse_average_chanx_width, inverse_average_chany_width};
 }
 
-float NetCostHandler::get_chanz_cost_factor_(const t_bb& bb) {
+float NetCostHandler::get_chanz_cost_factor_(const t_bb& bb) const {
     int num_inter_dir_conn = acc_tile_num_inter_die_conn_.get_sum(bb.xmin,
                                                                   bb.ymin,
                                                                   bb.xmax,
@@ -866,10 +855,10 @@ t_net_cost_terms NetCostHandler::recompute_bb_cong_cost_() {
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.non_ignored_nets()) {
         // Bounding boxes don't have to be recomputed; they're correct.
-        cost_terms.bb_cost += net_cost_[net_id];
+        cost_terms.bb_cost += net_bb_[net_id].cost;
 
         if (congestion_modeling_started_) {
-            cost_terms.cong_cost += net_cong_cost_[net_id];
+            cost_terms.cong_cost += net_cong_[net_id].cost;
         }
     }
 
@@ -887,15 +876,16 @@ double wirelength_crossing_count(size_t fanout) {
 }
 
 void NetCostHandler::set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta) {
-    for (const ClusterNetId ts_net : ts_nets_to_update_) {
-        ClusterNetId net_id = ts_net;
+    for (size_t slot = 0; slot < ts_nets_to_update_.size(); slot++) {
+        const ClusterNetId net_id = ts_nets_to_update_[slot];
+        t_ts_net_info& ts_net = ts_net_info_[slot];
 
-        proposed_net_cost_[net_id] = get_net_bb_cost_(net_id, /*use_ts=*/true);
-        cost_terms_delta.bb_cost += proposed_net_cost_[net_id] - net_cost_[net_id];
+        ts_net.proposed_cost = get_net_bb_cost_(net_id, ts_net.coords);
+        cost_terms_delta.bb_cost += ts_net.proposed_cost - net_bb_[net_id].cost;
 
         if (congestion_modeling_started_) {
-            proposed_net_cong_cost_[net_id] = get_net_cong_cost_(net_id, /*use_ts=*/true);
-            cost_terms_delta.cong_cost += proposed_net_cong_cost_[net_id] - net_cong_cost_[net_id];
+            ts_net.proposed_cong_cost = get_net_cong_cost_(ts_net.avg_chan_util);
+            cost_terms_delta.cong_cost += ts_net.proposed_cong_cost - net_cong_[net_id].cost;
         }
     }
 }
@@ -911,7 +901,9 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
     VTR_ASSERT_DEBUG(timing_delta_c == 0.);
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
-    ts_nets_to_update_.resize(0);
+    // update_move_nets() or reset_move_nets() must have released the slots of the previous move.
+    VTR_ASSERT_SAFE(std::ranges::all_of(ts_nets_to_update_, [this](ClusterNetId net_id) { return net_ts_slot_[net_id] == NO_TS_SLOT; }));
+    ts_nets_to_update_.clear();
 
     // Go through all the blocks moved.
     for (const t_pl_moved_block& moving_block : blocks_affected.moved_blocks) {
@@ -941,41 +933,35 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
 }
 
 void NetCostHandler::update_move_nets() {
-    // update net cost functions and reset flags.
+    // Copy the proposed state of every affected net into the committed state and release its slot.
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
-    for (const ClusterNetId ts_net : ts_nets_to_update_) {
-        ClusterNetId net_id = ts_net;
+    for (size_t slot = 0; slot < ts_nets_to_update_.size(); slot++) {
+        const ClusterNetId net_id = ts_nets_to_update_[slot];
+        const t_ts_net_info& ts_net = ts_net_info_[slot];
+        t_net_bb_info& net_bb = net_bb_[net_id];
 
-        set_ts_bb_coord_(net_id);
-
+        net_bb.coords = ts_net.coords;
+        // Edge counts are only maintained for nets that are updated incrementally.
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET) {
-            set_ts_edge_(net_id);
+            net_bb.num_on_edges = ts_net.num_on_edges;
         }
-
-        net_cost_[net_id] = proposed_net_cost_[net_id];
-        // negative proposed_net_cost value is acting as a flag to mean not computed yet.
-        proposed_net_cost_[net_id] = -1;
+        net_bb.cost = ts_net.proposed_cost;
 
         if (congestion_modeling_started_) {
-            net_cong_cost_[net_id] = proposed_net_cong_cost_[net_id];
-            proposed_net_cong_cost_[net_id] = -1;
+            t_net_cong_info& net_cong = net_cong_[net_id];
+            net_cong.avg_chan_util = ts_net.avg_chan_util;
+            net_cong.cost = ts_net.proposed_cong_cost;
         }
 
-        bb_update_status_[net_id] = NetUpdateState::NOT_UPDATED_YET;
+        net_ts_slot_[net_id] = NO_TS_SLOT;
     }
 }
 
 void NetCostHandler::reset_move_nets() {
-    // Reset the net cost function flags first.
+    // Release the slots of the affected nets. The proposed state is simply discarded.
     for (const ClusterNetId net_id : ts_nets_to_update_) {
-        proposed_net_cost_[net_id] = -1;
-
-        if (congestion_modeling_started_) {
-            proposed_net_cong_cost_[net_id] = -1;
-        }
-
-        bb_update_status_[net_id] = NetUpdateState::NOT_UPDATED_YET;
+        net_ts_slot_[net_id] = NO_TS_SLOT;
     }
 }
 
@@ -1036,7 +1022,7 @@ int NetCostHandler::get_num_nets_spanning_multiple_layers() const {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     return static_cast<int>(std::ranges::count_if(clb_nlist.non_ignored_nets(), [this](ClusterNetId net_id) {
-        const t_bb& bb = bb_coords_[net_id];
+        const t_bb& bb = net_bb_[net_id].coords;
         return bb.layer_min != bb.layer_max;
     }));
 }
@@ -1075,10 +1061,7 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
                                                         return chan_util_.y[0][x][y];
                                                     });
 
-        ts_avg_chan_util_new_.resize(num_nets, {0., 0.});
-        avg_chan_util_.resize(num_nets, {0., 0.});
-        net_cong_cost_.resize(num_nets, -1.);
-        proposed_net_cong_cost_.resize(num_nets, -1.);
+        net_cong_.resize(num_nets);
     }
 
     chan_util_.x.fill(0.);
@@ -1092,7 +1075,7 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
     // the channel utilization matrices.
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.non_ignored_nets()) {
-        const t_bb& bb = bb_coords_[net_id];
+        const t_bb& bb = net_bb_[net_id].coords;
         double expected_wirelength = get_net_wirelength_estimate_(net_id);
 
         int distance_x = bb.xmax - bb.xmin + 1;
@@ -1163,8 +1146,9 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
     // Compute congestion cost using computed bounding boxes and channel utilization map
     if (compute_congestion_cost) {
         for (ClusterNetId net_id : cluster_ctx.clb_nlist.non_ignored_nets()) {
-            net_cong_cost_[net_id] = get_net_cong_cost_(net_id, /*use_ts=*/false);
-            cong_cost += net_cong_cost_[net_id];
+            t_net_cong_info& net_cong = net_cong_[net_id];
+            net_cong.cost = get_net_cong_cost_(net_cong.avg_chan_util);
+            cong_cost += net_cong.cost;
         }
     }
 
@@ -1173,15 +1157,4 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
 
 const ChannelMetric<vtr::NdMatrix<double, 3>>& NetCostHandler::get_chan_util() const {
     return chan_util_;
-}
-
-void NetCostHandler::set_ts_bb_coord_(const ClusterNetId net_id) {
-    bb_coords_[net_id] = ts_bb_coord_new_[net_id];
-    if (congestion_modeling_started_) {
-        avg_chan_util_[net_id] = ts_avg_chan_util_new_[net_id];
-    }
-}
-
-void NetCostHandler::set_ts_edge_(const ClusterNetId net_id) {
-    bb_num_on_edges_[net_id] = ts_bb_edge_new_[net_id];
 }
