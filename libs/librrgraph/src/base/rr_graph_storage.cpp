@@ -41,7 +41,7 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
 
     size_t required_size = edge_src_node_.size() + rr_edges_to_create->size();
     if (edge_src_node_.capacity() < required_size) {
-        size_t new_capacity = std::min(edge_src_node_.capacity(), node_storage_.size() * kEdgeToNodeRatio);
+        size_t new_capacity = std::max(edge_src_node_.capacity(), node_storage_.size() * kEdgeToNodeRatio);
         if (new_capacity < 1) {
             new_capacity = 1;
         }
