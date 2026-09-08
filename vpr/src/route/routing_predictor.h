@@ -74,6 +74,6 @@ class RoutingPredictor {
     float slope_;                                                   ///< Cached slope of the most recent fit
     t_routing_predictor_fit last_fit_;                              ///< Fit reflecting the most recent add_iteration_overuse() call
     float last_estimate_ = std::numeric_limits<float>::quiet_NaN(); ///< Success-iteration estimate reflecting the most recent add_iteration_overuse() call
-    size_t initial_degenerate_predictions_ = 0;                     ///< Length of the predictor's initial run of degenerate (non-extrapolable) estimates
-    bool has_extrapolated_ = false;                                 ///< True once the predictor has produced a finite estimate
+    size_t initial_degenerate_predictions_ = 0;                     ///< Length of the predictor's initial run of degenerate (non-extrapolable) estimates; frozen once has_extrapolated_ is set
+    bool has_extrapolated_ = false;                                 ///< True once the predictor has produced a finite estimate; permanently ends the safe-mode grace period
 };

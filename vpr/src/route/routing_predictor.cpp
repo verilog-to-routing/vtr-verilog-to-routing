@@ -21,7 +21,8 @@ constexpr float ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_AGGRESSIVE = 1.5;
 constexpr size_t ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD = 100;
 
 // If overuse is flat or increasing, the predictor cannot extrapolate and returns infinity.
-// In SAFE mode, allow a few such predictions before giving up.
+// In SAFE mode, tolerate up to this many such estimates in the predictor's initial run only
+// (before its first finite estimate). Later infinities are acted on immediately.
 constexpr size_t ROUTING_PREDICTOR_MAX_DEGENERATE_ITERATIONS = 10;
 
 // Fraction of the recorded overuse history used when fitting the success-iteration model
@@ -233,7 +234,9 @@ bool RoutingPredictor::prediction_is_valid_() const {
 
 bool RoutingPredictor::awaiting_usable_prediction_() const {
     // In safe mode, tolerate an initial run of degenerate fits rather than treating
-    // their infinite estimates as predictions that routing will never converge
+    // their infinite estimates as predictions that routing will never converge.
+    // Both exits are permanent: has_extrapolated_ is never cleared and the counter
+    // (advanced in add_iteration_overuse()) never decreases.
     return safe_mode_
            && std::isinf(last_estimate_)
            && !has_extrapolated_
@@ -293,8 +296,10 @@ void RoutingPredictor::add_iteration_overuse(size_t iteration, size_t overused_r
     }
 
     if (overused_rr_node_count > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
-        // An infinite estimate means the fit over the recent history has a non-negative
-        // slope.
+        // Count the predictor's initial run of degenerate (infinite) estimates; safe mode
+        // tolerates that run for a bounded number of iterations (see awaiting_usable_prediction_()).
+        // The grace period ends permanently on the first finite estimate or once the run exceeds
+        // ROUTING_PREDICTOR_MAX_DEGENERATE_ITERATIONS; after that the counter is no longer consulted.
         if (!has_extrapolated_ && !std::isnan(last_estimate_)) {
             if (std::isinf(last_estimate_)) {
                 ++initial_degenerate_predictions_;
