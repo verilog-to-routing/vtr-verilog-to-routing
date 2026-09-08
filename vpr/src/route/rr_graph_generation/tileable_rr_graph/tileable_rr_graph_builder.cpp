@@ -359,8 +359,7 @@ static void remove_dangling_chan_nodes(const DeviceGrid& grid,
         node_lookup.resize_nodes(grid.get_num_layers(),
                                  grid.width(),
                                  grid.height(),
-                                 rr_type,
-                                 NUM_2D_SIDES);
+                                 rr_type);
     }
 
     // Update other data structures related to lookup after removing dangling chan nodes

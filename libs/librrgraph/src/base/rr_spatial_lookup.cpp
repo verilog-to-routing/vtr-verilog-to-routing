@@ -1,6 +1,7 @@
 #include "rr_graph_fwd.h"
 #include "vtr_assert.h"
 #include "rr_spatial_lookup.h"
+#include <array>
 #include <set>
 
 RRNodeId RRSpatialLookup::find_node(int layer,
@@ -235,7 +236,7 @@ void RRSpatialLookup::reserve_nodes(int layer,
         VTR_ASSERT(side == TOTAL_2D_SIDES[0]);
     }
 
-    resize_nodes(layer, x, y, type, side);
+    VTR_ASSERT(is_in_range(layer, x, y, type, side));
 
     rr_node_indices_[type][layer][x][y][side].reserve(num_nodes);
 }
@@ -255,14 +256,14 @@ void RRSpatialLookup::add_node(RRNodeId node,
         VTR_ASSERT(side == TOTAL_2D_SIDES[0]);
     }
 
-    resize_nodes(layer, x, y, type, side);
+    VTR_ASSERT(is_in_range(layer, x, y, type, side));
 
     if (size_t(ptc) >= rr_node_indices_[type][layer][x][y][side].size()) {
         /* Deposit invalid ids to newly allocated elements while original elements are untouched */
         rr_node_indices_[type][layer][x][y][side].resize(ptc + 1, RRNodeId::INVALID());
     }
 
-    /* Resize on demand finished; Register the node */
+    /* Register the node */
     rr_node_indices_[type][layer][x][y][side][ptc] = node;
 }
 
@@ -303,33 +304,52 @@ void RRSpatialLookup::mirror_nodes(const int layer,
                                    e_rr_type type,
                                    e_side side) {
     VTR_ASSERT(e_rr_type::SOURCE == type || e_rr_type::SINK == type);
-    resize_nodes(layer, des_coord.x(), des_coord.y(), type, side);
+    VTR_ASSERT(is_in_range(layer, des_coord.x(), des_coord.y(), type, side));
     rr_node_indices_[type][layer][des_coord.x()][des_coord.y()][side] = rr_node_indices_[type][layer][src_coord.x()][src_coord.y()][side];
 }
 
-void RRSpatialLookup::resize_nodes(int layer,
-                                   int x,
-                                   int y,
-                                   e_rr_type type,
-                                   e_side side) {
-    /* Expand the fast look-up if the new node is out-of-range
-     * This may seldom happen because the rr_graph building function
-     * should ensure the fast look-up well organized  
-     */
+void RRSpatialLookup::resize_nodes(size_t num_layers,
+                                   size_t width,
+                                   size_t height,
+                                   e_rr_type type) {
     VTR_ASSERT((size_t)type < rr_node_indices_.size());
-    VTR_ASSERT(x >= 0);
-    VTR_ASSERT(y >= 0);
-    VTR_ASSERT(layer >= 0);
 
-    if ((layer >= int(rr_node_indices_[type].dim_size(0)))
-        || (x >= int(rr_node_indices_[type].dim_size(1)))
-        || (y >= int(rr_node_indices_[type].dim_size(2)))
-        || (size_t(side) >= rr_node_indices_[type].dim_size(3))) {
-        rr_node_indices_[type].resize({std::max(rr_node_indices_[type].dim_size(0), size_t(layer)+1),
-                                       std::max(rr_node_indices_[type].dim_size(1), size_t(x) + 1),
-                                       std::max(rr_node_indices_[type].dim_size(2), size_t(y) + 1),
-                                       std::max(rr_node_indices_[type].dim_size(3), size_t(side) + 1)});
+    // Only IPIN and OPIN nodes are stored per side. Every other type uses side index 0 only,
+    // following the convention in add_node() and find_node().
+    size_t num_sides = 1;
+    if (type == e_rr_type::IPIN || type == e_rr_type::OPIN) {
+        num_sides = NUM_2D_SIDES;
     }
+
+    std::array<size_t, 4> dim_sizes = {num_layers, width, height, num_sides};
+
+    // NdMatrix::resize() discards the existing contents, so refuse to change the dimensions of a populated lookup
+    if (!rr_node_indices_[type].empty()) {
+        for (size_t dim = 0; dim < dim_sizes.size(); dim++) {
+            VTR_ASSERT_MSG(rr_node_indices_[type].dim_size(dim) == dim_sizes[dim],
+                           "Cannot resize a populated RRSpatialLookup");
+        }
+        return;
+    }
+
+    rr_node_indices_[type].resize(dim_sizes);
+}
+
+bool RRSpatialLookup::is_in_range(int layer,
+                                  int x,
+                                  int y,
+                                  e_rr_type type,
+                                  e_side side) const {
+    if (layer < 0 || x < 0 || y < 0) {
+        return false;
+    }
+    if (size_t(type) >= rr_node_indices_.size()) {
+        return false;
+    }
+    return size_t(layer) < rr_node_indices_[type].dim_size(0)
+           && size_t(x) < rr_node_indices_[type].dim_size(1)
+           && size_t(y) < rr_node_indices_[type].dim_size(2)
+           && size_t(side) < rr_node_indices_[type].dim_size(3);
 }
 
 void RRSpatialLookup::reorder(const vtr::vector<RRNodeId, RRNodeId>& dest_order) {

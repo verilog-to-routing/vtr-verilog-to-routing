@@ -171,6 +171,8 @@ class RRSpatialLookup {
      *
      * @note a node added with this call will not create a node in the rr_graph_storage node list
      * You MUST add the node in the rr_graph_storage so that the node is valid  
+     *
+     * @note The lookup must be sized with resize_nodes() before nodes are added. (layer, x, y, side) must be in range.
      */
     /*
      * TODO: Consider to try to return a reference to *this so that we can do chain calls
@@ -257,21 +259,15 @@ class RRSpatialLookup {
                       e_side side);
 
     /**
-     * @brief Resize the given 4 dimensions (layer, x, y, side) of the RRSpatialLookup data structure for the given type
+     * @brief Size the lookup of the given type to num_layers layers, a width x height grid and the sides that type uses
      *
-     * This function will keep any existing data
-     *
-     * @note Strongly recommend to use when the sizes of dimensions are deterministic
+     * IPIN and OPIN nodes are stored per side. All other types use a single side entry.
+     * Existing data is not preserved, so the lookup of the type must be empty or already have these dimensions.
      */
-    /*
-     * TODO: should have a reserve function but vtd::ndmatrix does not have such API
-     *       as a result, resize can be an internal one while reserve function is a public mutator
-     */
-    void resize_nodes(int layer,
-                      int x,
-                      int y,
-                      e_rr_type type,
-                      e_side side);
+    void resize_nodes(size_t num_layers,
+                      size_t width,
+                      size_t height,
+                      e_rr_type type);
 
     /** @brief Reorder the internal look up to be more memory efficient */
     void reorder(const vtr::vector<RRNodeId, RRNodeId>& dest_order);
@@ -291,6 +287,13 @@ class RRSpatialLookup {
                                      int y,
                                      e_rr_type type,
                                      e_side side = TOTAL_2D_SIDES[0]) const;
+
+    /* Returns true if (layer, x, y, side) is inside the allocated dimensions of the lookup for the given type */
+    bool is_in_range(int layer,
+                     int x,
+                     int y,
+                     e_rr_type type,
+                     e_side side) const;
 
     /* -- Internal data storage -- */
   private:

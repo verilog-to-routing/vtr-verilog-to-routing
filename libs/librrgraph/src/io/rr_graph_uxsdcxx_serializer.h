@@ -1858,7 +1858,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         // Alloc the lookup table
         for (e_rr_type rr_type : RR_TYPES) {
-            rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.width(), grid_.height(), rr_type, NUM_2D_SIDES);
+            rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.width(), grid_.height(), rr_type);
         }
 
         // Add the correct node into the vector

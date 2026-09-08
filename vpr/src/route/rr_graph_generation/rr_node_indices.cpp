@@ -314,7 +314,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const t_chan_details& chan_details_y) {
     // Alloc the lookup table
     for (e_rr_type rr_type : RR_TYPES) {
-        rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.width(), grid.height(), rr_type, NUM_2D_SIDES);
+        rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.width(), grid.height(), rr_type);
     }
 
     // Assign indices for block nodes
