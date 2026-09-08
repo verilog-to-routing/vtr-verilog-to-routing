@@ -73,7 +73,7 @@ class ParallelNetlistRouter : public NetlistRouter {
             *router_lookahead,
             device_ctx.rr_graph.rr_nodes(),
             &device_ctx.rr_graph,
-            device_ctx.rr_rc_data.values(),
+            device_ctx.rr_rc_data,
             device_ctx.rr_graph.rr_switch(),
             route_ctx.rr_node_route_inf,
             is_flat,

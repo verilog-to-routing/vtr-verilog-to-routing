@@ -41,7 +41,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const RouterLookahead& router_lookahead,
         const t_rr_graph_storage& rr_nodes,
         const RRGraphView* rr_graph,
-        const std::vector<t_rr_rc_data>& rr_rc_data,
+        const RRRCData& rr_rc_data,
         const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
         vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
         bool is_flat,
@@ -50,7 +50,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , router_lookahead_(router_lookahead)
         , rr_nodes_(rr_nodes.view())
         , rr_graph_(rr_graph)
-        , rr_rc_data_(rr_rc_data.data(), rr_rc_data.size())
+        , rr_rc_data_(rr_rc_data.values().data(), rr_rc_data.values().size())
         , rr_switch_inf_(rr_switch_inf.data(), rr_switch_inf.size())
         , net_terminal_groups(g_vpr_ctx.routing().net_terminal_groups)
         , net_terminal_group_num(g_vpr_ctx.routing().net_terminal_group_num)
