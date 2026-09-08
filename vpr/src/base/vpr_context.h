@@ -19,6 +19,7 @@
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "rr_graph_view.h"
+#include "rr_rc_data.h"
 #include "rr_graph_builder.h"
 #include "rr_node.h"
 #include "tatum/TimingGraph.hpp"
@@ -221,7 +222,7 @@ struct DeviceContext : public Context {
     vtr::vector<RRIndexedDataId, t_rr_indexed_data> rr_indexed_data; // [0 .. num_rr_indexed_data-1]
 
     ///@brief Fly-weighted Resistance/Capacitance data for RR Nodes
-    std::vector<t_rr_rc_data> rr_rc_data;
+    RRRCData rr_rc_data;
 
     ///@brief Sets of non-configurably connected nodes
     std::vector<std::vector<RRNodeId>> rr_non_config_node_sets;
@@ -242,7 +243,7 @@ struct DeviceContext : public Context {
                          rr_graph_builder.rr_node_metadata(),
                          rr_graph_builder.rr_edge_metadata(),
                          rr_indexed_data,
-                         rr_rc_data,
+                         rr_rc_data.values(),
                          rr_graph_builder.rr_segments(),
                          rr_graph_builder.rr_switch()};
 

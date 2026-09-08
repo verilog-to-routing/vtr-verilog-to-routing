@@ -1,27 +1,27 @@
 #include "rr_rc_data.h"
 
+#include <bit>
+
+/// @brief Bit pattern of a float, with negative zero folded into positive zero so equal floats give equal keys.
+static uint32_t float_key(float value);
+
 t_rr_rc_data::t_rr_rc_data(float Rval, float Cval) noexcept
     : R(Rval)
     , C(Cval) {}
 
-NodeRCIndex find_create_rr_rc_data(const float R, const float C, std::vector<t_rr_rc_data>& rr_rc_data) {
+NodeRCIndex RRRCData::find_create(float R, float C) {
+    uint64_t key = (uint64_t(float_key(R)) << 32) | float_key(C);
 
-    auto match = [&](const t_rr_rc_data& val) {
-        return val.R == R
-               && val.C == C;
-    };
-
-    // Just a linear search for now
-    auto itr = std::find_if(rr_rc_data.begin(),
-                            rr_rc_data.end(),
-                            match);
-
-    if (itr == rr_rc_data.end()) {
-        // Not found -> create it
-        rr_rc_data.emplace_back(R, C);
-
-        itr = --rr_rc_data.end(); // Iterator to inserted value
+    auto [itr, inserted] = index_.try_emplace(key, NodeRCIndex(values_.size()));
+    if (inserted) {
+        values_.emplace_back(R, C);
     }
+    return itr->second;
+}
 
-    return NodeRCIndex(std::distance(rr_rc_data.begin(), itr));
+static uint32_t float_key(float value) {
+    if (value == 0.0f) {
+        value = 0.0f;
+    }
+    return std::bit_cast<uint32_t>(value);
 }

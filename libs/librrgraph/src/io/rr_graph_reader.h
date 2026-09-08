@@ -5,6 +5,7 @@
 #include "rr_graph_cost.h"
 #include "rr_graph_builder.h"
 #include "rr_graph_view.h"
+#include "rr_rc_data.h"
 #include "rr_graph_fwd.h"
 #include "rr_node.h"
 #include "device_grid.h"
@@ -16,7 +17,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   const std::vector<t_physical_tile_type>& physical_tile_types,
                   const std::vector<t_segment_inf>& segment_inf,
                   vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
-                  std::vector<t_rr_rc_data>* rr_rc_data,
+                  RRRCData* rr_rc_data,
                   const DeviceGrid& grid,
                   const std::vector<t_arch_switch_inf>& arch_switch_inf,
                   e_graph_type graph_type,
