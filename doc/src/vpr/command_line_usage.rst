@@ -493,7 +493,7 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --write_placement_delay_lookup <file>
 
-    Writes the placement delay lookup to the specified file. Expects a file extension of either ``.capnp`` or ``.bin``.
+    Writes the placement delay lookup to the specified file. Expects a file extension of either ``.capnp`` or ``.bin``. Not supported for the simple place delay model.
 
 .. option:: --read_initial_place_file <file>
 

@@ -5,7 +5,7 @@
 #include "router_lookahead.h"
 #include "router_lookahead_map_utils.h"
 
-class CompressedMapLookahead : public RouterLookahead {
+class CompressedMapLookahead final : public RouterLookahead {
   public:
     explicit CompressedMapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings);
 
@@ -48,8 +48,11 @@ class CompressedMapLookahead : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::write_intra_cluster unimplemented");
     }
 
+  public:
+    // Public so SimpleDelayModel can call it through the
+    // concrete type statically, without using dynamic dispatch.
     float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
-        return -1.;
+        VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::get_opin_distance_min_delay unimplemented");
     }
 };
 
