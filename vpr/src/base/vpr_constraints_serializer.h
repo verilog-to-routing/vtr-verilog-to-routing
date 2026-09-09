@@ -166,8 +166,10 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         name_pattern_ = name_pattern;
     }
 
-    virtual inline const char* get_add_atom_logical_block_location(AtomBlockId& /*blk_id*/) final {
-        return logical_block_location_.c_str();
+    virtual inline const char* get_add_atom_logical_block_location(AtomBlockId& blk_id) final {
+        // The generated writer skips this optional attribute when nullptr is returned
+        temp_logical_block_location_string_ = constraints_.place_constraints().get_atom_logical_block_location(blk_id);
+        return temp_logical_block_location_string_.empty() ? nullptr : temp_logical_block_location_string_.c_str();
     }
 
     virtual inline void set_add_atom_logical_block_location(const char* logical_block_location, void*& /*ctx*/) final {
@@ -1210,6 +1212,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     std::string temp_part_string_;
     std::string temp_name_string_;
     std::string temp_macro_string_;
+    std::string temp_logical_block_location_string_;
 
     /*
      * Temp data for loads and writes.
