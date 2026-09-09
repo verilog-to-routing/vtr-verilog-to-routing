@@ -9,8 +9,10 @@
 
 #include <string>
 #include <vector>
+#include "flat_placement_types.h"
 #include "physical_types.h"
 #include "vtr_assert.h"
+#include "vtr_prefix_sum.h"
 
 // Forward declarations.
 class DeviceGrid;
@@ -39,7 +41,7 @@ class APPackMaxDistThManager {
 
     // This is the default scale and offset. Logical blocks that we do not
     // recognize as being of the special categories will have this threshold.
-    static constexpr float default_max_dist_th_scale_ = 0.15f;
+    static constexpr float default_max_dist_th_scale_ = 0.02f;
     static constexpr float default_max_dist_th_offset_ = 10.0f;
 
     // Logic blocks (such as CLBs and LABs) tend to have more resources on the
@@ -120,6 +122,28 @@ class APPackMaxDistThManager {
         logical_block_dist_thresholds_[logical_block_ty.index] = new_threshold;
     }
 
+    /**
+     * @brief Gets the distance between the two given locations in "valid tile hops".
+     *
+     * This is the min, over all axis-aligned manhattan paths between loc1 and loc2,
+     * of the number of tiles compatible with lb_type that lie strictly between the
+     * two locations, plus 1 for the cost of leaving loc1's tile, plus the number of
+     * layer hops between them. If loc1 and loc2 are in the same tile, the distance
+     * is 0.
+     *
+     * This is useful for the max distance thresholding since it ignores tile locations which
+     * are not compatible. For example, for DSP columns, DSPs in different columns appear closer than
+     * they actually are.
+     *
+     * Fractional intra-tile offsets are ignored, so the result may be off by up to
+     * ~1 per axis relative to the true distance.
+     *
+     * loc1 and loc2 are assumed to lie within the device grid.
+     */
+    float get_distance_between_points(const t_flat_pl_loc& loc1,
+                                      const t_flat_pl_loc& loc2,
+                                      t_logical_block_type_ptr lb_type) const;
+
   private:
     /**
      * @brief Helper method that initializes the thresholds of all logical
@@ -147,4 +171,9 @@ class APPackMaxDistThManager {
     ///        is the distance of traveling from the bottom-left corner of the device
     ///        to the top right.
     float max_distance_on_device_;
+
+    /// @brief Prefix sums which are used to compute the distance between points.
+    ///        logical_block_dist_lookups_[lb_type_index][layer] -> Per-layer indicator for lb_type at each grid tile.
+    ///        Lookups into this prefix sum counts the number of compatible tiles in that region.
+    std::vector<std::vector<vtr::PrefixSum2D<unsigned>>> logical_block_dist_lookups_;
 };

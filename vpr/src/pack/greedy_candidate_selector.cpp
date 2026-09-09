@@ -1037,7 +1037,9 @@ static void add_molecule_to_pb_stats_candidates(PackMoleculeId molecule_id,
         const t_flat_pl_loc mol_loc = get_molecule_pos(molecule_id,
                                                        prepacker,
                                                        appack_ctx);
-        float dist = get_manhattan_distance(mol_loc, cluster_gain_stats.flat_cluster_position);
+        float dist = appack_ctx.max_distance_threshold_manager.get_distance_between_points(mol_loc,
+                                                                                           cluster_gain_stats.flat_cluster_position,
+                                                                                           cluster_type);
         if (dist > max_dist)
             return;
     }
@@ -1373,11 +1375,13 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
         // Pop a position to search from the queue.
         const t_physical_tile_loc& node_loc = search_queue.front();
 
-        // Get the distance from the cluster to the current tile in tiles.
-        float node_dx = std::abs(node_loc.x - cluster_tile_loc.x);
-        float node_dy = std::abs(node_loc.y - cluster_tile_loc.y);
-        float node_dlayer = std::abs(node_loc.layer_num - cluster_tile_loc.layer_num);
-        float dist = node_dx + node_dy + node_dlayer;
+        // Get the distance from the cluster to the current tile.
+        t_flat_pl_loc node_f_loc({.x = static_cast<float>(node_loc.x),
+                                  .y = static_cast<float>(node_loc.y),
+                                  .layer = static_cast<float>(node_loc.layer_num)});
+        float dist = appack_ctx_.max_distance_threshold_manager.get_distance_between_points(node_f_loc,
+                                                                                            cluster_gain_stats.flat_cluster_position,
+                                                                                            cluster_type);
 
         // If this position is too far from the source, skip it.
         if (dist > max_dist) {
