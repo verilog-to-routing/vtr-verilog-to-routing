@@ -370,6 +370,7 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timi
             // if ((size_t)net_id == 10) {
             //     VTR_LOG("NET 10 TOTAL PATH DELAY IS %e\n", total_path_delay);
             // }
+            
 
             if (total_path_delay == -1) {
                 /*Delay node is not valid, leave the budgets as is*/
@@ -422,7 +423,17 @@ float route_budgets::calculate_clb_pin_slack(ParentNetId net_id,
     if (is_flat_) {
         auto curr_atom_pin = convert_to_atom_pin_id(pin);
         atom_pin = curr_atom_pin;
-        curr_min_slack = timing_info->setup_pin_slack(curr_atom_pin);
+
+        /*Get the slack according to the requested analysis type (setup vs hold).
+         *If the given pin has an infinite slack (e.g. a pin driven by a constant generator), leave
+         *the 'curr_min_slack' at its finite 'delay_upper_bound'.
+         *If the slack is finite, then we can safely assign the value to 'curr_min_slack'.
+         */
+        float pin_slack = (type == HOLD) ? timing_info->hold_pin_slack(curr_atom_pin)
+                                         : timing_info->setup_pin_slack(curr_atom_pin);
+        if (!std::isinf(pin_slack)) {
+            curr_min_slack = pin_slack;
+        }
     } else {
         /*
          *There may be multiple atom netlist pins connected to this CLB pin. Iterate through them all

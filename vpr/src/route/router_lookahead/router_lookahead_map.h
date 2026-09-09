@@ -16,6 +16,12 @@ class MapLookahead : public RouterLookahead {
 
   private:
     float get_expected_cost_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const;
+    //Same as get_expected_cost_flat_router(), but returns the delay and congestion costs separately
+    //instead of their sum (RCV requires this). It is called by get_expected_delay_and_cong() when is_flat_ is true.
+    std::pair<float, float> get_expected_delay_and_cong_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const;
+    //The original non-flat routing delay/congestion lookup.
+    //Called directly by get_expected_delay_and_cong_flat_router() and by get_expected_delay_and_cong() when !is_flat_.
+    std::pair<float, float> get_expected_delay_and_cong_global(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const;
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
     util::t_src_opin_delays src_opin_delays;
     // Lookup table from a tile pins to the primitive classes inside that tile

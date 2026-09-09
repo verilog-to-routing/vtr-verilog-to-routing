@@ -206,6 +206,13 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
 }
 
 float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
+    auto [delay_cost, cong_cost] = get_expected_delay_and_cong_flat_router(current_node, target_node, params, R_upstream);
+    return delay_cost + cong_cost;
+}
+
+// RCV's ConnectionRouter::compute_node_cost_using_rcv() needs the delay and congestion costs to be kept separate.
+// This function returns the two costs separately to allow flat routing to be compatible with RCV.
+std::pair<float, float> MapLookahead::get_expected_delay_and_cong_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -230,22 +237,22 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
     // We have not checked the multi-layer FPGA for flat routing
     VTR_ASSERT(rr_graph.node_layer_low(current_node) == rr_graph.node_layer_low(target_node));
     if (from_rr_type == e_rr_type::CHANX || from_rr_type == e_rr_type::CHANY) {
-        std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
+        std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong_global(current_node, target_node, params, R_upstream);
 
         // delay_cost and cong_cost only represent the cost to get to the root-level pins. The below offsets are used to represent the intra-cluster cost
         // of getting to a sink
         delay_offset_cost = params.criticality * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).delay;
         cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).congestion;
 
-        return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
+        return {delay_cost + delay_offset_cost, cong_cost + cong_offset_cost};
     } else if (from_rr_type == e_rr_type::OPIN) {
         if (is_inter_cluster_node(rr_graph, current_node)) {
             // Similar to CHANX and CHANY
-            std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
+            std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong_global(current_node, target_node, params, R_upstream);
 
             delay_offset_cost = params.criticality * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).delay;
             cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).congestion;
-            return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
+            return {delay_cost + delay_offset_cost, cong_cost + cong_offset_cost};
         } else {
             if (node_in_same_physical_tile(current_node, target_node)) {
                 delay_offset_cost = 0.;
@@ -258,7 +265,7 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
                     // since it does not consider the cost of going outside of the cluster and, then, returning to it.
                     delay_cost = params.criticality * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).delay;
                     cong_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).congestion;
-                    return delay_cost + cong_cost;
+                    return {delay_cost, cong_cost};
                 } else {
                     delay_cost = params.criticality * pin_delay_itr->second.delay;
                     cong_cost = (1. - params.criticality) * pin_delay_itr->second.congestion;
@@ -276,7 +283,7 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
                 delay_offset_cost = params.criticality * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).delay;
                 cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).congestion;
             }
-            return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
+            return {delay_cost + delay_offset_cost, cong_cost + cong_offset_cost};
         }
     } else if (from_rr_type == e_rr_type::IPIN) {
         // we assume that route-through is not enabled.
@@ -290,7 +297,7 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
             delay_cost = params.criticality * pin_delay_itr->second.delay;
             cong_cost = (1. - params.criticality) * pin_delay_itr->second.congestion;
         }
-        return delay_cost + cong_cost;
+        return {delay_cost, cong_cost};
     } else if (from_rr_type == e_rr_type::SOURCE) {
         if (node_in_same_physical_tile(current_node, target_node)) {
             delay_cost = 0.;
@@ -307,17 +314,24 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
             delay_offset_cost = params.criticality * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).delay;
             cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).congestion;
         }
-        return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
+        return {delay_cost + delay_offset_cost, cong_cost + cong_offset_cost};
     } else {
         VTR_ASSERT(from_rr_type == e_rr_type::SINK);
-        return (0.);
+        return {0., 0.};
     }
 }
 
 /******** Function Definitions ********/
 /* queries the lookahead_map (should have been computed prior to routing) to get the expected cost
  * from the specified source to the specified target */
-std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
+std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const {
+    if (is_flat_) {
+        return get_expected_delay_and_cong_flat_router(from_node, to_node, params, R_upstream);
+    }
+    return get_expected_delay_and_cong_global(from_node, to_node, params, R_upstream);
+}
+
+std::pair<float, float> MapLookahead::get_expected_delay_and_cong_global(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
