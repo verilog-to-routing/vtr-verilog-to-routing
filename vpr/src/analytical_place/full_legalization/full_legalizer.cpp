@@ -72,7 +72,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                    const RamMapper& ram_mapper,
                                                    const t_vpr_setup& vpr_setup,
                                                    const t_arch& arch,
-                                                   const DeviceGrid& device_grid) {
+                                                   const DeviceGrid& device_grid,
+                                                   const std::map<t_logical_block_type_ptr, size_t>& estimated_type_instance_counts) {
     switch (full_legalizer_type) {
         case e_ap_full_legalizer::Naive:
             return std::make_unique<NaiveFullLegalizer>(ap_netlist,
@@ -82,7 +83,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                         ram_mapper,
                                                         vpr_setup,
                                                         arch,
-                                                        device_grid);
+                                                        device_grid,
+                                                        estimated_type_instance_counts);
         case e_ap_full_legalizer::APPack:
             return std::make_unique<APPack>(ap_netlist,
                                             atom_netlist,
@@ -91,7 +93,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                             ram_mapper,
                                             vpr_setup,
                                             arch,
-                                            device_grid);
+                                            device_grid,
+                                            estimated_type_instance_counts);
         case e_ap_full_legalizer::FlatRecon:
             return std::make_unique<FlatRecon>(ap_netlist,
                                                atom_netlist,
@@ -100,7 +103,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                ram_mapper,
                                                vpr_setup,
                                                arch,
-                                               device_grid);
+                                               device_grid,
+                                               estimated_type_instance_counts);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized full legalizer type");
@@ -1289,7 +1293,8 @@ void APPack::legalize(const PartialPlacement& p_placement) {
                  pre_cluster_timing_manager_,
                  flat_placement_info,
                  vpr_setup_,
-                 ram_mapper_);
+                 ram_mapper_,
+                 estimated_type_instance_counts_);
     }
 
     // The Packer stores the clusters into a .net file. Load the packing file.
