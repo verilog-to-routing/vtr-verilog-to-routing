@@ -68,4 +68,13 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
         echo_constraints(getEchoFileName(E_ECHO_VPR_CONSTRAINTS), ctx_constraints, relative_macros);
     }
 
+    // Temporary guard: the packer and placer do not honor relative placement
+    // macros yet. Stop here rather than silently ignore the constraints.
+    // Remove once packing and placement support for relative macros is in.
+    if (relative_macros.get_num_macros() > 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "Constraints file '%s' contains relative placement macros, which are not yet honored by the flow. "
+                        "Remove the <relative_macro_list> to run without them.\n",
+                        read_vpr_constraints_name);
+    }
 }
