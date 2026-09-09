@@ -6,6 +6,7 @@
  *        constraints file.
  */
 
+#include <cstdio>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -128,3 +129,8 @@ class UserRelativeMacros {
     ///        read from the macro through it rather than stored a second time.
     std::unordered_map<AtomBlockId, t_atom_location> atom_locations_;
 };
+
+/**
+ * @brief Print the relative placement macros to an (echo) file.
+ */
+void print_relative_macros(FILE* fp, const UserRelativeMacros& relative_macros);

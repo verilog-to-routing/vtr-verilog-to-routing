@@ -64,3 +64,29 @@ const std::string& UserRelativeMacros::get_atom_locked_site_path(AtomBlockId blk
     }
     return group.atom_site_paths[location.atom_idx];
 }
+
+void print_relative_macros(FILE* fp, const UserRelativeMacros& relative_macros) {
+    fprintf(fp, "\n Number of relative macros is %zu \n", relative_macros.get_num_macros());
+
+    for (UserRelativeMacroId macro_id : relative_macros.macros()) {
+        const t_user_relative_macro& macro = relative_macros.get_macro(macro_id);
+        fprintf(fp, "\nrelative_macro_id: %zu name: %s\n", size_t(macro_id), macro.name.c_str());
+
+        for (size_t igroup = 0; igroup < macro.groups.size(); igroup++) {
+            const t_user_relative_group& group = macro.groups[igroup];
+            fprintf(fp, "\t%s: offset (x %d, y %d, sub_tile %d, layer %d), %zu atom(s)\n",
+                    igroup == 0 ? "reference group" : "relative group",
+                    group.offset.x, group.offset.y, group.offset.sub_tile, group.offset.layer,
+                    group.atoms.size());
+            fprintf(fp, "\tIds of atoms in group (with site_path if locked):\n");
+            for (size_t iatom = 0; iatom < group.atoms.size(); iatom++) {
+                bool locked = !group.atom_site_paths.empty() && !group.atom_site_paths[iatom].empty();
+                if (locked) {
+                    fprintf(fp, "\t#%zu %s\n", size_t(group.atoms[iatom]), group.atom_site_paths[iatom].c_str());
+                } else {
+                    fprintf(fp, "\t#%zu\n", size_t(group.atoms[iatom]));
+                }
+            }
+        }
+    }
+}
