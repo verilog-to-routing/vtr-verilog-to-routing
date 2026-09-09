@@ -37,12 +37,17 @@
  * For more detail on how the load and write interfaces work with uxsdcxx, refer to 'vpr/src/route/SCHEMA_GENERATOR.md'
  */
 
+#include <algorithm>
 #include <regex>
+#include <unordered_map>
+#include <utility>
 #include "region.h"
 #include "vpr_constraints.h"
+#include "vtr_assert.h"
 #include "partition.h"
 #include "partition_region.h"
 #include "vpr_context.h"
+#include "vpr_utils.h"
 #include "vtr_log.h"
 #include "globals.h" //for the g_vpr_ctx
 #include "clock_modeling.h"
@@ -73,6 +78,11 @@ struct VprConstraintsContextTypes : public uxsd::DefaultVprConstraintsContextTyp
     using AddLogicalBlockReadContext = t_logical_block_type_ptr;
     using PartitionReadContext = partition_info;
     using PartitionListReadContext = void*;
+    // (macro id, group index) pairs identify a group when writing out relative macros
+    using ReferenceGroupReadContext = std::pair<UserRelativeMacroId, int>;
+    using RelativeGroupReadContext = std::pair<UserRelativeMacroId, int>;
+    using RelativeMacroReadContext = UserRelativeMacroId;
+    using RelativeMacroListReadContext = void*;
     using SetGlobalSignalReadContext = std::pair<std::string, RoutingScheme>;
     using GlobalRouteConstraintsReadContext = void*;
     using VprConstraintsReadContext = void*;
@@ -81,6 +91,10 @@ struct VprConstraintsContextTypes : public uxsd::DefaultVprConstraintsContextTyp
     using AddLogicalBlockWriteContext = void*;
     using PartitionWriteContext = void*;
     using PartitionListWriteContext = void*;
+    using ReferenceGroupWriteContext = void*;
+    using RelativeGroupWriteContext = void*;
+    using RelativeMacroWriteContext = void*;
+    using RelativeMacroListWriteContext = void*;
     using SetGlobalSignalWriteContext = void*;
     using GlobalRouteConstraintsWriteContext = void*;
     using VprConstraintsWriteContext = void*;
@@ -100,8 +114,12 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         report_error_ = report_error_in;
     }
 
-    virtual void start_write() final {}
-    virtual void finish_write() final {}
+    virtual void start_write() final {
+        writing_relative_macros_ = false;
+    }
+    virtual void finish_write() final {
+        writing_relative_macros_ = false;
+    }
 
     // error_encountered will be invoked by the reader implementation whenever
     // any error is encountered.
@@ -128,8 +146,9 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     /** Generated for complex type "add_atom":
      * <xs:complexType name="add_atom">
      *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
-     *   <xs:attribute name="is_regex" type="xs:boolean" default="false" />
+     *   <xs:attribute name="is_regex" type="xs:string" default="false" />
      *   <xs:attribute name="logical_block_location" type="xs:string" use="optional" />
+     *   <xs:attribute name="site_path" type="xs:string" use="optional" />
      * </xs:complexType>
      */
     virtual inline const char* get_add_atom_name_pattern(AtomBlockId& blk_id) final {
@@ -153,6 +172,24 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
     virtual inline void set_add_atom_logical_block_location(const char* logical_block_location, void*& /*ctx*/) final {
         logical_block_location_ = logical_block_location;
+    }
+
+    virtual inline const char* get_add_atom_site_path(AtomBlockId& blk_id) final {
+        // The generated writer omits this optional attribute when nullptr is
+        // returned. add_atom is shared with partitions, where a site_path is
+        // meaningless, so it is only written while the relative macros are.
+        if (!writing_relative_macros_) {
+            return nullptr;
+        }
+        const std::string& site_path = constraints_.relative_macros().get_atom_locked_site_path(blk_id);
+        return site_path.empty() ? nullptr : site_path.c_str();
+    }
+
+    virtual inline void set_add_atom_site_path(const char* site_path, void*& /*ctx*/) final {
+        site_path_ = site_path;
+        // an empty site_path is not the same as no site_path at all: the former
+        // is a malformed constraint, the latter means the atom is unlocked
+        site_path_present_ = true;
     }
 
     virtual inline void set_add_atom_is_regex(const char* is_regex, void*& /*ctx*/) final {
@@ -283,10 +320,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void preallocate_partition_add_atom(void*& /*ctx*/, size_t /*size*/) final {}
 
     virtual inline void* add_partition_add_atom(void*& /*ctx*/) final {
-        //clear out the temporary data for this atom
-        name_pattern_.clear();
-        logical_block_location_.clear();
-        is_regex_ = false;
+        clear_loaded_add_atom();
         return nullptr;
     }
 
@@ -294,6 +328,13 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         PartitionId part_id(num_partitions_);
         auto& atom_ctx = g_vpr_ctx.atom();
         bool found = false;
+
+        if (site_path_present_) {
+            // site_path pins an atom to a primitive site inside its cluster,
+            // which is only meaningful for relative placement macros
+            VTR_LOG_WARN("Partition '%s': site_path is not supported on partition atoms, ignoring it for atom pattern %s.\n",
+                         loaded_partition.get_name().c_str(), name_pattern_.c_str());
+        }
 
         if (!is_regex_) { //the name pattern is not a regex, look for an exact match for the atom name
             AtomBlockId atom_id = atom_ctx.netlist().find_block(name_pattern_);
@@ -306,7 +347,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             }
 
         } else { //the name pattern is a regex, look for all atoms matching the regex pattern
-            auto atom_name_regex = std::regex(name_pattern_);
+            std::regex atom_name_regex = compile_atom_name_regex("Partition '" + loaded_partition.get_name() + "'");
             for (auto block_id : atom_ctx.netlist().blocks()) { // loop through all block names and add the names that matches with the name_pattern
                 auto block_name = atom_ctx.netlist().block_name(block_id);
 
@@ -472,6 +513,264 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return part_info;
     }
 
+    /** Generated for complex type "reference_group":
+     * <xs:complexType name="reference_group">
+     *   <xs:sequence>
+     *     <xs:element name="add_atom" type="add_atom" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     * </xs:complexType>
+     */
+    virtual inline void preallocate_reference_group_add_atom(void*& /*ctx*/, size_t /*size*/) final {}
+
+    virtual inline void* add_reference_group_add_atom(void*& /*ctx*/) final {
+        clear_loaded_add_atom();
+        return nullptr;
+    }
+
+    virtual inline void finish_reference_group_add_atom(void*& /*ctx*/) final {
+        resolve_atoms_into_loaded_relative_group();
+    }
+
+    virtual inline size_t num_reference_group_add_atom(std::pair<UserRelativeMacroId, int>& group_ctx) final {
+        return get_relative_group_from_ctx(group_ctx).atoms.size();
+    }
+    virtual inline AtomBlockId get_reference_group_add_atom(int n, std::pair<UserRelativeMacroId, int>& group_ctx) final {
+        return get_relative_group_from_ctx(group_ctx).atoms[n];
+    }
+
+    /** Generated for complex type "relative_group":
+     * <xs:complexType name="relative_group">
+     *   <xs:sequence>
+     *     <xs:element name="add_atom" type="add_atom" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     *   <xs:attribute name="x_offset" type="xs:int" use="required" />
+     *   <xs:attribute name="y_offset" type="xs:int" use="required" />
+     *   <xs:attribute name="sub_tile_offset" type="xs:int" use="required" />
+     *   <xs:attribute name="layer_offset" type="xs:int" default="0" />
+     * </xs:complexType>
+     */
+    virtual inline int get_relative_group_x_offset(std::pair<UserRelativeMacroId, int>& group_ctx) final {
+        return get_relative_group_from_ctx(group_ctx).offset.x;
+    }
+    virtual inline int get_relative_group_y_offset(std::pair<UserRelativeMacroId, int>& group_ctx) final {
+        return get_relative_group_from_ctx(group_ctx).offset.y;
+    }
+    virtual inline int get_relative_group_sub_tile_offset(std::pair<UserRelativeMacroId, int>& group_ctx) final {
+        return get_relative_group_from_ctx(group_ctx).offset.sub_tile;
+    }
+    virtual inline int get_relative_group_layer_offset(std::pair<UserRelativeMacroId, int>& group_ctx) final {
+        return get_relative_group_from_ctx(group_ctx).offset.layer;
+    }
+
+    virtual inline void set_relative_group_layer_offset(int layer_offset, void*& /*ctx*/) final {
+        loaded_relative_group_.offset.layer = layer_offset;
+    }
+
+    virtual inline void preallocate_relative_group_add_atom(void*& /*ctx*/, size_t /*size*/) final {}
+
+    virtual inline void* add_relative_group_add_atom(void*& /*ctx*/) final {
+        clear_loaded_add_atom();
+        return nullptr;
+    }
+
+    virtual inline void finish_relative_group_add_atom(void*& /*ctx*/) final {
+        resolve_atoms_into_loaded_relative_group();
+    }
+
+    virtual inline size_t num_relative_group_add_atom(std::pair<UserRelativeMacroId, int>& group_ctx) final {
+        return get_relative_group_from_ctx(group_ctx).atoms.size();
+    }
+    virtual inline AtomBlockId get_relative_group_add_atom(int n, std::pair<UserRelativeMacroId, int>& group_ctx) final {
+        return get_relative_group_from_ctx(group_ctx).atoms[n];
+    }
+
+    /** Generated for complex type "relative_macro":
+     * <xs:complexType name="relative_macro">
+     *   <xs:sequence>
+     *     <xs:element name="reference_group" type="reference_group" />
+     *     <xs:element name="relative_group" type="relative_group" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     *   <xs:attribute name="name" type="xs:string" use="required" />
+     * </xs:complexType>
+     */
+    virtual inline const char* get_relative_macro_name(UserRelativeMacroId& macro_id) final {
+        temp_macro_string_ = constraints_.relative_macros().get_macro(macro_id).name;
+        return temp_macro_string_.c_str();
+    }
+    virtual inline void set_relative_macro_name(const char* name, void*& /*ctx*/) final {
+        loaded_relative_macro_.name = name;
+    }
+
+    virtual inline void* init_relative_macro_reference_group(void*& /*ctx*/) final {
+        // the reference group is the anchor of the macro: implicit zero offset
+        begin_loaded_relative_group();
+        return nullptr;
+    }
+
+    virtual inline void finish_relative_macro_reference_group(void*& /*ctx*/) final {
+        // the reference group is always groups[0], even when it matched no atoms
+        // (whether an empty reference group is an error is decided when the whole
+        // macro has been read, see finish_relative_macro_list_relative_macro;
+        // keep its failed patterns until then so the diagnostic can name them)
+        VTR_ASSERT(loaded_relative_macro_.groups.empty());
+        loaded_relative_macro_.groups.push_back(loaded_relative_group_);
+        loaded_reference_group_failed_patterns_ = loaded_relative_group_failed_patterns_;
+    }
+
+    virtual inline std::pair<UserRelativeMacroId, int> get_relative_macro_reference_group(UserRelativeMacroId& macro_id) final {
+        return {macro_id, 0};
+    }
+
+    virtual inline void preallocate_relative_macro_relative_group(void*& /*ctx*/, size_t /*size*/) final {}
+
+    virtual inline void* add_relative_macro_relative_group(void*& /*ctx*/, int sub_tile_offset, int x_offset, int y_offset) final {
+        begin_loaded_relative_group();
+        loaded_relative_group_.offset.x = x_offset;
+        loaded_relative_group_.offset.y = y_offset;
+        loaded_relative_group_.offset.sub_tile = sub_tile_offset;
+        loaded_relative_group_.offset.layer = 0; // optional attribute, may be overwritten by set_relative_group_layer_offset
+        return nullptr;
+    }
+
+    virtual inline void finish_relative_macro_relative_group(void*& /*ctx*/) final {
+        if (loaded_relative_group_.offset.layer != 0) {
+            // cross-layer relative macros are not supported yet: no macro code path
+            // exercises nonzero layer offsets, so reject them at load time
+            report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name
+                                          + "': layer_offset must be 0. Cross-layer relative macros are not supported.");
+        }
+
+        if (loaded_relative_group_.atoms.empty()) {
+            VTR_LOG_WARN("Relative macro '%s': the relative_group at %s matched no atoms (failed name_pattern(s): %s), skipping the group.\n",
+                         loaded_relative_macro_.name.c_str(),
+                         offset_description(loaded_relative_group_.offset).c_str(),
+                         join_name_patterns(loaded_relative_group_failed_patterns_).c_str());
+            return;
+        }
+
+        loaded_relative_macro_.groups.push_back(loaded_relative_group_);
+    }
+
+    virtual inline size_t num_relative_macro_relative_group(UserRelativeMacroId& macro_id) final {
+        // groups[0] is the reference group; the rest are the relative groups
+        return constraints_.relative_macros().get_macro(macro_id).groups.size() - 1;
+    }
+    virtual inline std::pair<UserRelativeMacroId, int> get_relative_macro_relative_group(int n, UserRelativeMacroId& macro_id) final {
+        return {macro_id, n + 1};
+    }
+
+    /** Generated for complex type "relative_macro_list":
+     * <xs:complexType name="relative_macro_list">
+     *   <xs:sequence>
+     *     <xs:element name="relative_macro" type="relative_macro" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     * </xs:complexType>
+     */
+    virtual inline void preallocate_relative_macro_list_relative_macro(void*& /*ctx*/, size_t /*size*/) final {}
+
+    virtual inline void* add_relative_macro_list_relative_macro(void*& /*ctx*/) final {
+        loaded_relative_macro_ = t_user_relative_macro();
+        return nullptr;
+    }
+
+    virtual inline void finish_relative_macro_list_relative_macro(void*& /*ctx*/) final {
+        const std::string& macro_name = loaded_relative_macro_.name;
+        const std::vector<t_user_relative_group>& groups = loaded_relative_macro_.groups;
+        VTR_ASSERT(!groups.empty()); // the reference group is always present
+
+        // macro names must be unique since they identify macros in error messages
+        for (UserRelativeMacroId other_macro_id : constraints_.relative_macros().macros()) {
+            if (constraints_.relative_macros().get_macro(other_macro_id).name == macro_name) {
+                report_constraints_load_error("Relative macro name '" + macro_name + "' is used more than once. Macro names must be unique.");
+            }
+        }
+
+        // empty relative groups were dropped when they were read, so any group
+        // past the reference group is non-empty
+        if (groups[0].atoms.empty()) {
+            if (groups.size() == 1) {
+                VTR_LOG_WARN("Relative macro '%s': no group matched any atoms, dropping the macro.\n",
+                             macro_name.c_str());
+            } else {
+                report_constraints_load_error("Relative macro '" + macro_name
+                                              + "': the reference group matched no atoms (failed name_pattern(s): "
+                                              + join_name_patterns(loaded_reference_group_failed_patterns_)
+                                              + ") but a relative group did. The macro has no anchor.");
+            }
+            return;
+        }
+
+        if (groups.size() == 1) {
+            VTR_LOG_WARN("Relative macro '%s': all relative groups matched no atoms, dropping the macro.\n",
+                         macro_name.c_str());
+            return;
+        }
+
+        // two groups at the same offset would require two clusters at the same location
+        for (size_t i = 0; i < groups.size(); i++) {
+            for (size_t j = i + 1; j < groups.size(); j++) {
+                if (groups[i].offset == groups[j].offset) {
+                    // groups[0] is the reference group at the implicit zero offset
+                    std::string where = (i == 0)
+                                            ? "a relative_group is at " + offset_description(groups[j].offset) + ", the reference group's location"
+                                            : "two relative groups are at the same " + offset_description(groups[j].offset);
+                    report_constraints_load_error("Relative macro '" + macro_name + "': " + where
+                                                  + ". Two groups of a macro cannot be placed at the same location.");
+                }
+            }
+        }
+
+        // an atom may belong to at most one group across all relative macros
+        const auto& atom_ctx = g_vpr_ctx.atom();
+        std::unordered_map<AtomBlockId, size_t> atoms_seen;
+        for (size_t igroup = 0; igroup < groups.size(); igroup++) {
+            for (AtomBlockId blk_id : groups[igroup].atoms) {
+                auto [seen_itr, first_time] = atoms_seen.insert({blk_id, igroup});
+                if (!first_time) {
+                    report_constraints_load_error("Relative macro '" + macro_name + "': atom '"
+                                                  + atom_ctx.netlist().block_name(blk_id) + "' appears in "
+                                                  + group_description(groups, seen_itr->second) + " and in "
+                                                  + group_description(groups, igroup)
+                                                  + ". An atom may belong to at most one relative placement group.");
+                }
+
+                UserRelativeMacroId other_macro_id = constraints_.relative_macros().get_atom_group(blk_id).first;
+                if (other_macro_id.is_valid()) {
+                    report_constraints_load_error("Atom '" + atom_ctx.netlist().block_name(blk_id)
+                                                  + "' appears in relative macro '" + macro_name + "' and in relative macro '"
+                                                  + constraints_.relative_macros().get_macro(other_macro_id).name
+                                                  + "'. An atom may belong to at most one relative placement group.");
+                }
+            }
+        }
+
+        constraints_.mutable_relative_macros().add_macro(std::move(loaded_relative_macro_));
+    }
+
+    virtual inline size_t num_relative_macro_list_relative_macro(void*& /*ctx*/) final {
+        return constraints_.relative_macros().get_num_macros();
+    }
+    virtual inline UserRelativeMacroId get_relative_macro_list_relative_macro(int n, void*& /*ctx*/) final {
+        return UserRelativeMacroId(n);
+    }
+
+    virtual inline void* init_vpr_constraints_relative_macro_list(void*& /*ctx*/) final {
+        return nullptr;
+    }
+
+    virtual inline void finish_vpr_constraints_relative_macro_list(void*& /*ctx*/) final {}
+
+    virtual inline void* get_vpr_constraints_relative_macro_list(void*& /*ctx*/) final {
+        // partition_list is written before relative_macro_list (schema order),
+        // so from here on add_atom belongs to a relative macro
+        writing_relative_macros_ = true;
+        return nullptr;
+    }
+
+    virtual inline bool has_vpr_constraints_relative_macro_list(void*& /*ctx*/) final {
+        return constraints_.relative_macros().get_num_macros() > 0;
+    }
+
     /** Generated for complex type "set_global_signal":
      * <xs:complexType name="set_global_signal">
      *   <xs:attribute name="name" type="xs:string" use="required" />
@@ -580,6 +879,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
      *      <xs:all minOccurs="0">
      *       <xs:element name="partition_list" type="partition_list" />
+     *       <xs:element name="relative_macro_list" type="relative_macro_list" />
      *       <xs:element name="global_route_constraints" type="global_route_constraints" />
      *     </xs:all>
      *     <xs:attribute name="tool_name" type="xs:string" />
@@ -616,10 +916,300 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual void finish_load() final {
     }
 
+    /**
+     * @brief Report an error found while loading the constraints file, with XML
+     *        file/line context when available.
+     */
+    void report_constraints_load_error(const std::string& msg) {
+        if (report_error_ == nullptr) {
+            VPR_ERROR(VPR_ERROR_PLACE, "\n%s\n", msg.c_str());
+        } else {
+            report_error_->operator()(msg.c_str());
+        }
+    }
+
+    /**
+     * @brief Compile the current add_atom name pattern into a regex, reporting a
+     *        load error if the pattern is not a valid regular expression.
+     *        std::regex throws std::regex_error on malformed patterns (e.g. "["),
+     *        which no caller of the constraints loader catches; without this,
+     *        VPR would abort with no file/line context.
+     *
+     * @param error_context  Prefix identifying the constraint being loaded (e.g.
+     *                       the partition or relative macro name), used in the
+     *                       error message.
+     */
+    std::regex compile_atom_name_regex(const std::string& error_context) {
+        try {
+            return std::regex(name_pattern_);
+        } catch (const std::regex_error& e) {
+            report_constraints_load_error(error_context + ": invalid atom name_pattern regex '"
+                                          + name_pattern_ + "' (" + e.what() + ").");
+            // report_constraints_load_error() throws, so this is unreachable; it
+            // only satisfies the compiler's return-path check.
+            return std::regex();
+        }
+    }
+
+    /**
+     * @brief Resolve the current add_atom name pattern (exact or regex, same
+     *        semantics as partition atoms) and append the matched atoms to the
+     *        relative placement group being loaded.
+     */
+    void resolve_atoms_into_loaded_relative_group() {
+        const auto& atom_ctx = g_vpr_ctx.atom();
+        bool found = false;
+
+        // A site path that is present but empty, or that contains whitespace,
+        // can never match a primitive. Rejecting it here is what stops a
+        // hand-written or hand-edited constraints file from silently degrading
+        // to "unlocked" (an absent attribute) or to a site that never matches.
+        // The scripts that write constraints files enforce the same rule, but a
+        // constraints file does not have to come from them.
+        if (site_path_present_
+            && (site_path_.empty() || site_path_.find_first_of(" \t\n\v\f\r") != std::string::npos)) {
+            report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name + "', "
+                                          + loaded_group_description()
+                                          + ": the site_path of atom pattern '" + name_pattern_ + "' is '"
+                                          + site_path_
+                                          + "', which is empty or contains whitespace. A site path is the "
+                                            "hierarchical path of one primitive, e.g. "
+                                            "'clb[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]'. Omit the "
+                                            "attribute entirely to leave the atom unlocked.");
+        }
+
+        // A site path must name a primitive of some logical block type, or it
+        // could never be honored. Checked once per pattern, since it does not
+        // depend on the matched atom.
+        const t_pb_graph_node* site = site_path_.empty() ? nullptr : find_primitive_site_or_error();
+
+        if (!is_regex_) { // the name pattern is not a regex, look for an exact match for the atom name
+            AtomBlockId atom_id = atom_ctx.netlist().find_block(name_pattern_);
+            if (atom_id != AtomBlockId::INVALID()) {
+                add_atom_to_loaded_relative_group(atom_id, site);
+                found = true;
+            }
+        } else { // the name pattern is a regex, look for all atoms matching the regex pattern
+            std::regex atom_name_regex = compile_atom_name_regex("Relative macro '" + loaded_relative_macro_.name + "'");
+            size_t num_matched = 0;
+            for (AtomBlockId block_id : atom_ctx.netlist().blocks()) {
+                if (std::regex_search(atom_ctx.netlist().block_name(block_id), atom_name_regex)) {
+                    add_atom_to_loaded_relative_group(block_id, site);
+                    found = true;
+                    num_matched++;
+                }
+            }
+            if (!site_path_.empty() && num_matched > 1) {
+                // every matched atom would be locked to the same primitive,
+                // which no two atoms can share
+                report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name
+                                              + "': name_pattern '" + name_pattern_ + "' with site_path '"
+                                              + site_path_ + "' matched " + std::to_string(num_matched)
+                                              + " atoms. A site_path locks one atom to one primitive, so a pattern "
+                                                "that carries one may match at most one atom.");
+            }
+        }
+
+        if (!logical_block_location_.empty()) {
+            VTR_LOG_WARN("Relative macro '%s': logical_block_location is not supported on relative macro atoms, ignoring it for atom pattern %s.\n",
+                         loaded_relative_macro_.name.c_str(), name_pattern_.c_str());
+        }
+
+        if (!found) {
+            // A missed pattern (e.g. a typo'd name or regex) silently discards
+            // placement intent, so name the macro and the pattern; the pattern
+            // is also referenced again if the whole group ends up empty.
+            VTR_LOG_WARN("Relative macro '%s': no atom matched name_pattern '%s', skipping the pattern.\n",
+                         loaded_relative_macro_.name.c_str(), name_pattern_.c_str());
+            loaded_relative_group_failed_patterns_.push_back(name_pattern_);
+        }
+    }
+
+    /**
+     * @brief Join name patterns into a single quoted, comma-separated string
+     *        for warning/error messages.
+     */
+    static std::string join_name_patterns(const std::vector<std::string>& patterns) {
+        std::string joined;
+        for (size_t i = 0; i < patterns.size(); i++) {
+            if (i != 0)
+                joined += ", ";
+            joined += "'" + patterns[i] + "'";
+        }
+        return joined;
+    }
+
+    /**
+     * @brief Append an atom, with the site it is locked to, to the relative
+     *        placement group being loaded.
+     *
+     * An atom matched by several patterns of the same group is stored once. A
+     * pattern without a site_path has no opinion on the atom's site, so it
+     * neither conflicts with nor clears an earlier lock, and a locked pattern
+     * upgrades an earlier unlocked match. Two different sites for the same atom
+     * are contradictory placement intent, so that is a load error rather than a
+     * silent first-wins.
+     *
+     * The feasibility check requires a compressed atom netlist, which VPR
+     * guarantees before the constraints file is read.
+     *
+     * @param blk_id  The matched atom.
+     * @param site    The primitive named by the current site_path, or nullptr
+     *                when the pattern has no site_path.
+     */
+    void add_atom_to_loaded_relative_group(AtomBlockId blk_id, const t_pb_graph_node* site) {
+        const AtomNetlist& netlist = g_vpr_ctx.atom().netlist();
+
+        if (site != nullptr && !primitive_type_feasible(blk_id, site->pb_type)) {
+            report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name + "': atom '"
+                                          + netlist.block_name(blk_id) + "' (model '"
+                                          + g_vpr_ctx.device().arch->models.model_name(netlist.block_model(blk_id))
+                                          + "') cannot be placed on the primitive site '" + site_path_ + "' (a '"
+                                          + std::string(site->pb_type->name)
+                                          + "' primitive): the primitive's model or pin count does not match the atom.");
+        }
+
+        std::vector<AtomBlockId>& atoms = loaded_relative_group_.atoms;
+        std::vector<std::string>& atom_site_paths = loaded_relative_group_.atom_site_paths;
+        auto [itr, first_time] = loaded_relative_group_atom_index_.insert({blk_id, atoms.size()});
+        if (first_time) {
+            atoms.push_back(blk_id);
+            atom_site_paths.push_back(site_path_);
+            return;
+        }
+
+        if (site_path_.empty()) {
+            return;
+        }
+        std::string& prev_site_path = atom_site_paths[itr->second];
+        if (prev_site_path.empty()) {
+            prev_site_path = site_path_;
+        } else if (prev_site_path != site_path_) {
+            report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name
+                                          + "': atom '" + netlist.block_name(blk_id)
+                                          + "' is matched twice in the same group with two different site paths ('"
+                                          + prev_site_path + "' and '" + site_path_
+                                          + "'); an atom can only be locked to one primitive site.");
+        }
+    }
+
+    /**
+     * @brief Look up the primitive named by the site_path of the add_atom being
+     *        read, reporting a load error if no logical block type has a
+     *        primitive at that hierarchical path.
+     *
+     * The table of all primitives of all logical block types is built on first
+     * use, so constraints files without site paths pay nothing for it.
+     */
+    const t_pb_graph_node* find_primitive_site_or_error() {
+        if (!primitive_sites_built_) {
+            for (const t_logical_block_type& lb_type : g_vpr_ctx.device().logical_block_types) {
+                if (lb_type.pb_graph_head != nullptr) {
+                    collect_primitive_sites(lb_type.pb_graph_head, primitive_sites_);
+                }
+            }
+            primitive_sites_built_ = true;
+        }
+
+        auto itr = primitive_sites_.find(site_path_);
+        if (itr == primitive_sites_.end()) {
+            report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name + "', "
+                                          + loaded_group_description() + ": the site_path '" + site_path_
+                                          + "' of atom pattern '" + name_pattern_
+                                          + "' does not name a primitive of any logical block type. The site paths "
+                                            "of a placed design are written by --write_flat_place with "
+                                            "--flat_place_verbosity 2.");
+            return nullptr;
+        }
+        return itr->second;
+    }
+
+    /**
+     * @brief Record every primitive below a pb_graph node under its hierarchical
+     *        type name, which is the form site paths are written in.
+     */
+    static void collect_primitive_sites(const t_pb_graph_node* node, std::unordered_map<std::string, const t_pb_graph_node*>& sites) {
+        if (node->is_primitive()) {
+            sites.emplace(node->hierarchical_type_name(), node);
+            return;
+        }
+
+        const t_pb_type* pb_type = node->pb_type;
+        for (int imode = 0; imode < pb_type->num_modes; imode++) {
+            const t_mode& mode = pb_type->modes[imode];
+            for (int ichild = 0; ichild < mode.num_pb_type_children; ichild++) {
+                for (int ipb = 0; ipb < mode.pb_type_children[ichild].num_pb; ipb++) {
+                    collect_primitive_sites(&node->child_pb_graph_nodes[imode][ichild][ipb], sites);
+                }
+            }
+        }
+    }
+
+    /**
+     * @brief Reset the per-add_atom temporary state before a new add_atom is read.
+     */
+    void clear_loaded_add_atom() {
+        name_pattern_.clear();
+        logical_block_location_.clear();
+        is_regex_ = false;
+        site_path_.clear();
+        site_path_present_ = false;
+    }
+
+    /**
+     * @brief Reset the per-group temporary state before a new reference or
+     *        relative group is read.
+     */
+    void begin_loaded_relative_group() {
+        loaded_relative_group_ = t_user_relative_group();
+        loaded_relative_group_failed_patterns_.clear();
+        loaded_relative_group_atom_index_.clear();
+    }
+
+    /**
+     * @brief Describe a group offset for diagnostics, e.g. "offset (1, 0, sub_tile 0)".
+     */
+    static std::string offset_description(const t_pl_offset& offset) {
+        return "offset (" + std::to_string(offset.x) + ", " + std::to_string(offset.y)
+               + ", sub_tile " + std::to_string(offset.sub_tile) + ")";
+    }
+
+    /**
+     * @brief Describe a group of a fully read macro for diagnostics, by its offset
+     *        rather than its index: indices shift when an empty relative group is
+     *        dropped, so they would not match the file.
+     */
+    static std::string group_description(const std::vector<t_user_relative_group>& groups, size_t igroup) {
+        if (igroup == 0) {
+            return "the reference group";
+        }
+        return "the relative_group at " + offset_description(groups[igroup].offset);
+    }
+
+    /**
+     * @brief Describe the group currently being read for diagnostics.
+     */
+    std::string loaded_group_description() const {
+        // the reference group is read first and pushed when finished, so the
+        // macro has no group yet while it is being read
+        if (loaded_relative_macro_.groups.empty()) {
+            return "reference group";
+        }
+        return "relative_group at " + offset_description(loaded_relative_group_.offset);
+    }
+
+    /**
+     * @brief Return the group identified by a (macro id, group index) read context.
+     */
+    const t_user_relative_group& get_relative_group_from_ctx(const std::pair<UserRelativeMacroId, int>& group_ctx) const {
+        return constraints_.relative_macros().get_macro(group_ctx.first).groups[group_ctx.second];
+    }
+
     //temp data for writes
     std::string temp_atom_string_;
     std::string temp_part_string_;
     std::string temp_name_string_;
+    std::string temp_macro_string_;
 
     /*
      * Temp data for loads and writes.
@@ -635,6 +1225,26 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     Partition loaded_partition;
     PartitionRegion loaded_part_region;
     std::pair<std::string, RoutingScheme> loaded_route_constraint;
+    t_user_relative_macro loaded_relative_macro_;
+    t_user_relative_group loaded_relative_group_;
+    // atom -> index into loaded_relative_group_.atoms, to merge an atom matched
+    // by several patterns of the same group without a linear search
+    std::unordered_map<AtomBlockId, size_t> loaded_relative_group_atom_index_;
+
+    // site path -> primitive, over all logical block types; built on first use
+    std::unordered_map<std::string, const t_pb_graph_node*> primitive_sites_;
+    bool primitive_sites_built_ = false;
+
+    // set while the relative macros are written out: add_atom is shared with
+    // partitions, whose atoms must not be written with a site_path
+    bool writing_relative_macros_ = false;
+
+    // name patterns of the relative group being loaded that matched no atom,
+    // referenced in the warning/error emitted when the whole group is empty
+    std::vector<std::string> loaded_relative_group_failed_patterns_;
+    // same, kept for the macro's reference group until the whole macro is read
+    // (an empty reference group is only diagnosed then)
+    std::vector<std::string> loaded_reference_group_failed_patterns_;
 
     //temp string used when a method must return a const char*
     std::string temp_ = "vpr";
@@ -643,11 +1253,16 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     int num_partitions_ = 0;
 
     //used when reading in atom names and regular expressions for atoms
-    bool is_regex_;
+    bool is_regex_ = false;
     std::string name_pattern_;
     std::string logical_block_location_;
+    // the hierarchical path of the primitive site the add_atom being read is
+    // locked to, and whether the attribute was present at all (an empty value
+    // is a malformed constraint, an absent one means unlocked)
+    std::string site_path_;
+    bool site_path_present_ = false;
 
     // Used when reading in regex LB type constraints for a partition.
-    bool lb_type_is_regex_;
+    bool lb_type_is_regex_ = false;
     std::string lb_type_name_pattern_;
 };
