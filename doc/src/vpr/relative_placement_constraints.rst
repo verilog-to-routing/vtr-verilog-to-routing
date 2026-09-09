@@ -102,33 +102,3 @@ The ``<vpr_constraints>`` top-level tag may contain one ``<relative_macro_list>`
 			The site paths of a placed design can be obtained by running VPR with
 			:option:`vpr --write_flat_place` and :option:`vpr --flat_place_verbosity` set to ``2``.
 			**Default:** none (the packer picks the site)
-
-Load-time Checks
-----------------
-
-The relative macros are validated when the constraints file is read, with the file and line reported on error. The file is rejected when:
-
-* a macro name is used more than once;
-* a ``<relative_group>`` has a ``layer_offset`` other than ``0``;
-* two groups of a macro have the same offset (this includes a ``<relative_group>`` at ``(0, 0, 0)``, the reference group's location);
-* an atom appears in two groups of a macro, or in two different macros;
-* the ``<reference_group>`` matches no atom while a ``<relative_group>`` does, since the macro would have no anchor;
-* a ``name_pattern`` with ``is_regex="true"`` is not a valid regular expression;
-* a ``site_path`` is empty or contains whitespace, does not name a primitive of any logical block type, or names a primitive that cannot implement the atom;
-* a pattern with a ``site_path`` matches more than one atom, or the same atom is locked to two different sites.
-
-The following are accepted with a warning:
-
-* a ``name_pattern`` that matches no atom is skipped;
-* a ``<relative_group>`` whose patterns all match nothing is dropped, and a macro left with no relative group (or whose groups all match nothing) is dropped;
-* ``logical_block_location`` on a group's ``<add_atom>`` is ignored, as is ``site_path`` on a partition's ``<add_atom>``.
-
-Semantics and Restrictions
---------------------------
-
-* **One group, one cluster.** All atoms of a group must fit into a single cluster; this is enforced. If a group cannot be packed into one cluster (e.g. it is larger than the cluster type allows, or conflicts with architectural pack patterns), packing fails with an error naming the group. Prepacked molecules (e.g. a LUT and the FF it drives, or carry-chain segments) that mix a constrained atom with unconstrained atoms are pulled into the group's cluster as a whole. A molecule whose atoms belong to two *different* groups is reported as an error: a molecule is indivisible (all its atoms always pack into one cluster), so it can never satisfy constraints that require its atoms to be in different clusters.
-* **Groups never share a cluster.** This holds between groups of the same macro and between groups of different macros. Unconstrained atoms may fill the remaining capacity of any group's cluster.
-* **Offsets must match the device grid.** The placer never adjusts an offset: it only uses positions where every member of the macro lands on a tile that can host its cluster. For example, ``x_offset="1"`` between a RAM cluster and a CLB cluster only works if the device has a CLB column immediately to the right of a RAM column. A cluster's location is the root (bottom-left) grid tile of the physical tile it occupies, so for tiles larger than one grid location the offsets must point at root tiles: if the RAM tile spans four grid rows, the RAM member can only sit on a RAM tile's root row, and the macro can only move vertically in steps of four. If no position on the device satisfies all members, placement fails after an exhaustive search.
-* **Members may have different block types** (e.g. a CLB next to a DSP).
-* **Interaction with carry chains:** a carry chain's atoms may only be listed in one group. A chain spanning several clusters becomes part of that group's macro, with its clusters at the offsets fixed by the chain.
-* Relative macro constraints are validated when a packed netlist (``.net``) or placement (``.place``) file is loaded, so stale files that do not satisfy the constraints are rejected.
