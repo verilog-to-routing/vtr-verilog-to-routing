@@ -18,7 +18,8 @@ void setup_net(int itry,
                const Netlist<>& net_list,
                CBRR& connections_inf,
                const t_router_opts& router_opts,
-               float worst_neg_slack) {
+               float worst_neg_slack,
+               bool ripup_for_skew) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     /* "tree" points to this net's spot in the global context here, so re-initializing it etc. changes the global state */
@@ -28,8 +29,10 @@ void setup_net(int itry,
     int num_sinks = net_list.net_sinks(net_id).size();
 
     // for nets below a certain size (min_incremental_reroute_fanout), rip up any old routing
-    // otherwise, we incrementally reroute by reusing legal parts of the previous iteration
-    if (num_sinks < router_opts.min_incremental_reroute_fanout || itry == 1 || ripup_high_fanout_nets) {
+    // otherwise, we incrementally reroute by reusing legal parts of the previous iteration.
+    // ripup_for_skew forces a full rip-up when the low-skew clock algorithm has just loaded
+    // new per-connection delay budgets for this net.
+    if (num_sinks < router_opts.min_incremental_reroute_fanout || itry == 1 || ripup_high_fanout_nets || ripup_for_skew) {
         profiling::net_rerouted();
 
         /* rip up the whole net */

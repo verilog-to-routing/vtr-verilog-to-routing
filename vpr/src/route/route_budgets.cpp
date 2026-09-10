@@ -161,8 +161,8 @@ void route_budgets::set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay) 
         if (!route_ctx.is_clock_net[net_id]) continue;
 
         float target_delay = (low_skew_clock_target_scope_ == e_low_skew_clock_target_scope::GLOBAL)
-                                  ? max_clock_delay_global
-                                  : max_clock_delay_by_domain[net_id];
+                                 ? max_clock_delay_global
+                                 : max_clock_delay_by_domain[net_id];
 
         for (auto pin_id : net_list_.net_sinks(net_id)) {
             int ipin = net_list_.pin_net_index(pin_id);

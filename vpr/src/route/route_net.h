@@ -53,13 +53,17 @@ constexpr bool is_high_fanout(int fanout, int fanout_threshold) {
 
 /** Setup the current route tree for this net.
  * Depending on # of fanouts, this fn either resets or prunes the route tree
- * and updates other global data structures to match its state. */
+ * and updates other global data structures to match its state.
+ * \p ripup_for_skew forces a full rip-up (used when the low-skew clock algorithm
+ * has just loaded new delay budgets for this net and its existing branches must be
+ * re-routed toward the new targets). */
 void setup_net(int itry,
                ParentNetId net_id,
                const Netlist<>& net_list,
                CBRR& connections_inf,
                const t_router_opts& router_opts,
-               float worst_neg_slack);
+               float worst_neg_slack,
+               bool ripup_for_skew = false);
 
 /** Detect if \p net_id should be routed or not */
 bool should_route_net(const Netlist<>& net_list,

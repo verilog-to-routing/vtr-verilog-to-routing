@@ -87,6 +87,8 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
     VTR_LOGV_DEBUG(f_router_debug, "Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
     /* Prune or rip-up existing routing for the net */
+    /* If re-routing for skew, rip-up full net. */
+    bool ripup_for_skew = budgeting_inf.if_set() && budgeting_inf.get_should_reroute_for_skew(net_id);
     if (should_setup) {
         setup_net(
             itry,
@@ -94,7 +96,8 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
             net_list,
             connections_inf,
             router_opts,
-            worst_negative_slack);
+            worst_negative_slack,
+            ripup_for_skew);
     }
 
     VTR_ASSERT(route_ctx.route_trees[net_id]);
@@ -261,19 +264,26 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Cannot route net \"%s\" through given clock network. Unknown clock network name \"%s\"", net_name.c_str(), clock_network_name.c_str());
             }
 
-            flags = pre_route_to_clock_root(router,
-                                            net_id,
-                                            net_list,
-                                            sink_node,
-                                            cost_params,
-                                            router_opts.high_fanout_threshold,
-                                            tree,
-                                            spatial_route_tree_lookup,
-                                            router_stats,
-                                            is_flat);
+            /* Stage 1 (SOURCE -> clock-network drive point) only needs to run when no clock
+             * sink is routed yet. If setup_net()'s prune kept any sink, its retained path
+             * already carries the SOURCE -> drive-point spine and stage 2 (the loop below)
+             * extends from it. */
+            bool any_clock_sink_routed = !tree.get_reached_isinks().empty();
+            if (!any_clock_sink_routed) {
+                flags = pre_route_to_clock_root(router,
+                                                net_id,
+                                                net_list,
+                                                sink_node,
+                                                cost_params,
+                                                router_opts.high_fanout_threshold,
+                                                tree,
+                                                spatial_route_tree_lookup,
+                                                router_stats,
+                                                is_flat);
 
-            if (flags.success == false)
-                return flags;
+                if (flags.success == false)
+                    return flags;
+            }
         }
     }
 
