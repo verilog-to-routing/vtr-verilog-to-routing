@@ -142,6 +142,8 @@ bool should_route_net(const Netlist<>& net_list,
         return true;
     if (worst_negative_slack != 0 && budgeting_inf.if_set() && budgeting_inf.get_should_reroute(net_id)) /* Reroute for hold */
         return true;
+    if (budgeting_inf.if_set() && budgeting_inf.get_should_reroute_for_skew(net_id)) /* Reroute for low-skew clock budgets */
+        return true;
 
     const RouteTree& tree = route_ctx.route_trees[net_id].value();
 

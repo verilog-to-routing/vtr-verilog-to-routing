@@ -124,8 +124,72 @@ void route_budgets::load_route_budgets(NetPinsMatrix<float>& net_delay,
         calculate_delay_targets();
     } else if (router_opts.routing_budgets_algorithm == SCALE_DELAY) {
         allocate_slack_using_delays_and_criticalities(net_delay, timing_info, netlist_pin_lookup, router_opts);
+    } else if (router_opts.routing_budgets_algorithm == LOW_SKEW_CLOCK) {
+        set_low_skew_clock_budgets(net_delay);
     }
     set = true;
+}
+
+void route_budgets::set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay) {
+    /*Sets the target delay of every clock connection to the maximum delay currently seen within
+     * its own clock domain (or across all clock domains combined, see
+     * e_low_skew_clock_target_scope), so the router (via RCV) is pushed to equalize clock delays
+     * and reduce skew. Non-clock connections are left at their initial (unconstrained) budgets
+     * loaded by load_initial_budgets(), so they route for shortest path as usual.
+     *
+     * Each clock domain corresponds to one clock net (one source fanning out to all its sinks),
+     * so "per clock domain" and "per clock net" are the same grouping here.*/
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    // Maximum observed clock-connection delay within each clock net (domain).
+    std::map<ParentNetId, float> max_clock_delay_by_domain;
+    float max_clock_delay_global = 0.;
+
+    for (auto net_id : net_list_.nets()) {
+        if (!route_ctx.is_clock_net[net_id]) continue;
+
+        float max_domain_delay = 0.;
+        for (auto pin_id : net_list_.net_sinks(net_id)) {
+            int ipin = net_list_.pin_net_index(pin_id);
+            max_domain_delay = std::max(max_domain_delay, net_delay[net_id][ipin]);
+        }
+        max_clock_delay_by_domain[net_id] = max_domain_delay;
+        max_clock_delay_global = std::max(max_clock_delay_global, max_domain_delay);
+    }
+
+    for (auto net_id : net_list_.nets()) {
+        if (!route_ctx.is_clock_net[net_id]) continue;
+
+        float target_delay = (low_skew_clock_target_scope_ == e_low_skew_clock_target_scope::GLOBAL)
+                                  ? max_clock_delay_global
+                                  : max_clock_delay_by_domain[net_id];
+
+        for (auto pin_id : net_list_.net_sinks(net_id)) {
+            int ipin = net_list_.pin_net_index(pin_id);
+            delay_min_budget[net_id][ipin] = target_delay;
+            delay_max_budget[net_id][ipin] = target_delay;
+            delay_target[net_id][ipin] = target_delay;
+        }
+
+        // An already-routed, non-critical, non-congested clock net would otherwise never be
+        // revisited by should_route_net(), so it would keep its pre-budget shortest-path delay
+        // forever. Force it through the router once so it picks up the new target.
+        should_reroute_for_skew[net_id] = true;
+    }
+
+    // Non-clock connections keep min == target == 0 from load_initial_budgets(), so the
+    // target/min bias terms never fire for them. But load_initial_budgets() also leaves their
+    // max budget at 0, and the max-delay penalty (enabled for LOW_SKEW_CLOCK connections above)
+    // would then fire on every non-clock connection with nonzero delay. Raise their max budget
+    // to the unconstrained upper bound so they keep routing for shortest path as usual.
+    for (auto net_id : net_list_.nets()) {
+        if (route_ctx.is_clock_net[net_id]) continue;
+
+        for (auto pin_id : net_list_.net_sinks(net_id)) {
+            int ipin = net_list_.pin_net_index(pin_id);
+            delay_max_budget[net_id][ipin] = delay_upper_bound[net_id][ipin];
+        }
+    }
 }
 
 void route_budgets::calculate_delay_targets() {
@@ -917,5 +981,15 @@ void route_budgets::set_should_reroute(ParentNetId net_id, bool value) {
     /*Returns if the budgets have been loaded yet*/
     if (set) {
         should_reroute_for_hold[net_id] = value;
+    }
+}
+
+bool route_budgets::get_should_reroute_for_skew(ParentNetId net_id) {
+    return (set && should_reroute_for_skew[net_id]);
+}
+
+void route_budgets::set_should_reroute_for_skew(ParentNetId net_id, bool value) {
+    if (set) {
+        should_reroute_for_skew[net_id] = value;
     }
 }

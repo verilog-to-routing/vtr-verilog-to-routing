@@ -279,6 +279,7 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
 
     if (budgeting_inf.if_set()) {
         budgeting_inf.set_should_reroute(net_id, false);
+        budgeting_inf.set_should_reroute_for_skew(net_id, false);
     }
 
     // explore in order of decreasing criticality (no longer need sink_order array)

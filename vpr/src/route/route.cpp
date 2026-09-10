@@ -537,7 +537,7 @@ bool route(const Netlist<>& net_list,
                 //load budgets using information from uncongested delay information
                 budgeting_inf.load_route_budgets(net_delay, timing_info, netlist_pin_lookup, router_opts);
 
-                if (router_opts.routing_budgets_algorithm == YOYO)
+                if (router_opts.routing_budgets_algorithm == YOYO || router_opts.routing_budgets_algorithm == LOW_SKEW_CLOCK)
                     netlist_router->set_rcv_enabled(true);
             } else {
                 bool stable_routing_configuration = true;
