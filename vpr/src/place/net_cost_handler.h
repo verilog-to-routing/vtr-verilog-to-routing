@@ -494,6 +494,12 @@ class NetCostHandler {
     void record_affected_net_(const ClusterNetId net);
 
     /**
+     * @brief Returns true if a move has been evaluated by find_affected_nets_and_update_costs()
+     * and not yet committed by update_move_nets() or reverted by reset_move_nets().
+     */
+    bool move_in_flight_() const;
+
+    /**
      * @brief To mitigate round-off errors, every once in a while, the costs of nets are summed up from scratch.
      *        This function is called to do that for bb and congestion cost.
      *        It doesn't calculate the BBs or channel usage estimate from scratch,
