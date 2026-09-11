@@ -16,13 +16,13 @@
  * @param origin The SINK whose cluster-edge IPINs are to be collected
  */
 static void rr_walk_cluster_recursive(const RRGraphView& rr_graph,
-                                      const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fanins,
+                                      const RRFanInList& fanins,
                                       std::unordered_set<RRNodeId>& sink_ipins,
                                       const RRNodeId curr,
                                       const RRNodeId origin);
 
 static void rr_walk_cluster_recursive(const RRGraphView& rr_graph,
-                                      const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fanins,
+                                      const RRFanInList& fanins,
                                       std::unordered_set<RRNodeId>& sink_ipins,
                                       const RRNodeId curr,
                                       const RRNodeId origin) {
@@ -35,8 +35,7 @@ static void rr_walk_cluster_recursive(const RRGraphView& rr_graph,
     VTR_ASSERT_SAFE(rr_graph.node_type(origin) == e_rr_type::SINK);
 
     // We want to go "backward" to the cluster IPINs connected to the origin node
-    const std::vector<RREdgeId>& incoming_edges = fanins[curr];
-    for (RREdgeId edge : incoming_edges) {
+    for (RREdgeId edge : fanins.edges(curr)) {
         RRNodeId parent = rr_graph.edge_src_node(edge);
         VTR_ASSERT_SAFE(parent != RRNodeId::INVALID());
 
@@ -128,24 +127,41 @@ int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node)
     }
 }
 
-vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& rr_graph) {
-    vtr::vector<RRNodeId, std::vector<RREdgeId>> node_fan_in_list;
+RRFanInList::RRFanInList(const RRGraphView& rr_graph) {
+    size_t num_nodes = rr_graph.num_nodes();
 
-    node_fan_in_list.resize(rr_graph.num_nodes(), std::vector<RREdgeId>(0));
-    node_fan_in_list.shrink_to_fit();
+    // first_edge_ has one entry per node plus a trailing entry at index num_nodes.
+    // It is built in three passes and only holds start offsets after the last one.
 
-    // Walk the graph and increment fanin on all downstream nodes
-    rr_graph.rr_nodes().for_each_edge(
-        [&](RREdgeId edge, RRNodeId src, RRNodeId sink) -> void {
-            (void) src;
-            node_fan_in_list[sink].push_back(edge);
-        });
+    // Pass 1: first_edge_[n] is the number of fan-in edges of node n.
+    // The trailing entry stays 0 since no edge sinks at index num_nodes.
+    first_edge_.assign(num_nodes + 1, 0);
+    for (RREdgeId edge : rr_graph.all_edges()) {
+        first_edge_[rr_graph.edge_sink_node(edge)]++;
+    }
 
-    return node_fan_in_list;
+    // Pass 2: inclusive prefix sum. first_edge_[n] is now the offset one past the
+    // last fan-in edge of node n. The trailing entry becomes the total edge count.
+    for (size_t inode = 1; inode <= num_nodes; ++inode) {
+        first_edge_[RRNodeId(inode)] += first_edge_[RRNodeId(inode - 1)];
+    }
+
+    // Pass 3: place each edge at its sink's decremented offset. Each first_edge_[n]
+    // ends up as the offset of node n's first fan-in edge. The trailing entry is
+    // never decremented. Going backwards keeps each node's edges in ascending order.
+    fan_in_edges_.resize(first_edge_[RRNodeId(num_nodes)]);
+    for (size_t iedge = fan_in_edges_.size(); iedge > 0; --iedge) {
+        RREdgeId edge = RREdgeId(iedge - 1);
+        RRNodeId sink = rr_graph.edge_sink_node(edge);
+        fan_in_edges_[--first_edge_[sink]] = edge;
+    }
+
+    VTR_ASSERT(first_edge_[RRNodeId(0)] == 0);
+    VTR_ASSERT(first_edge_[RRNodeId(num_nodes)] == fan_in_edges_.size());
 }
 
 void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, const DeviceGrid& grid) {
-    const vtr::vector<RRNodeId, std::vector<RREdgeId>> node_fanins = get_fan_in_list(rr_graph);
+    const RRFanInList node_fanins(rr_graph);
 
     // Keep track of offsets for SINKs for each tile type, to avoid repeated calculations
     std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<int, vtr::Point<int>>> physical_type_offsets;

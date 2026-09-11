@@ -54,7 +54,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
                                      int& num_switches,
                                      int& num_shorts,
                                      short& buffered,
-                                     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list);
+                                     const RRFanInList& fan_in_list);
 
 static void fixup_rr_indexed_data_T_values(vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                                            const vtr::vector<RRIndexedDataId, int>& num_nodes_of_index,
@@ -527,7 +527,7 @@ static vtr::vector<RRIndexedDataId, int> load_rr_indexed_data_T_values(const RRG
                                                                       vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                                                                       int route_verbosity,
                                                                       bool device_model_warnings) {
-    vtr::vector<RRNodeId, std::vector<RREdgeId>> fan_in_list = get_fan_in_list(rr_graph);
+    const RRFanInList fan_in_list(rr_graph);
 
     vtr::vector<RRIndexedDataId, int> num_nodes_of_index(rr_indexed_data.size(), 0);
     vtr::vector<RRIndexedDataId, std::vector<float>> C_total(rr_indexed_data.size());
@@ -555,7 +555,7 @@ static vtr::vector<RRIndexedDataId, int> load_rr_indexed_data_T_values(const RRG
         e_rr_type rr_type = rr_graph.node_type(rr_id);
 
         if (rr_type == e_rr_type::IPIN) {
-            for (const RREdgeId edge : fan_in_list[rr_id]) {
+            for (const RREdgeId edge : fan_in_list.edges(rr_id)) {
                 RRSwitchId rr_switch_id = RRSwitchId(rr_graph.edge_switch(edge));
                 float switch_T_del = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
                 ipin_switch_T_total += switch_T_del;
@@ -700,7 +700,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
                                      int& num_switches,
                                      int& num_shorts,
                                      short& buffered,
-                                     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list) {
+                                     const RRFanInList& fan_in_list) {
 
     avg_switch_R = 0;
     avg_switch_T = 0;
@@ -709,7 +709,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
     num_shorts = 0;
     buffered = LIBRRGRAPH_UNDEFINED_VAL;
     
-    for (const RREdgeId edge : fan_in_list[inode]) {
+    for (const RREdgeId edge : fan_in_list.edges(inode)) {
         // Want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments
         e_rr_type node_type = rr_graph.node_type(inode);
 
