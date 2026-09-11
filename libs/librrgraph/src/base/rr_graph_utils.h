@@ -10,6 +10,7 @@
 #include "rr_graph_builder.h"
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
+#include "vtr_range.h"
 #include "device_grid.h"
 
 class RRGraphView;
@@ -54,12 +55,30 @@ std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
                                                RRNodeId to_node);
 
 /**
- * @brief This function generates and returns a vector indexed by RRNodeId containing a vector of fan-in edges for each node.
+ * @brief Fan-in edges of every RR node, stored in compressed sparse row form.
  *
- * @note
- * This function is CPU expensive; complexity O(E) where E is the number of edges in rr_graph
+ * All fan-in edges live in one flat array grouped by sink node.
+ * Building it costs O(V + E) time.
  */
-vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& rr_graph);
+class RRFanInList {
+  public:
+    /// @brief Builds the fan-in list of every node in rr_graph.
+    explicit RRFanInList(const RRGraphView& rr_graph);
+
+    /// @brief Returns the fan-in edges of node in ascending edge id order.
+    vtr::Range<const RREdgeId*> edges(RRNodeId node) const {
+        const RREdgeId* first = fan_in_edges_.data() + first_edge_[node];
+        const RREdgeId* last = fan_in_edges_.data() + first_edge_[RRNodeId(size_t(node) + 1)];
+        return vtr::make_range(first, last);
+    }
+
+  private:
+    /// Offset into fan_in_edges_ of the first fan-in edge of each node,
+    // with one trailing entry holding the total edge count
+    vtr::vector<RRNodeId, uint32_t> first_edge_;
+    /// Fan-in edges of all nodes, grouped by sink node
+    std::vector<RREdgeId> fan_in_edges_;
+};
 
 /**
  * @brief This function sets better locations for SINK nodes.
