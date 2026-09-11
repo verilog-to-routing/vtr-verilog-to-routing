@@ -1151,7 +1151,10 @@ struct t_ap_opts {
     /// True if analytical placement is supposed to be done in the CAD flow. False if otherwise.
     e_stage_action doAP;
 
-    /// The type of analytical solver the Global Placer in the AP flow will use.
+    /// The type of Global Placer the AP flow will use.
+    e_ap_global_placer global_placer_type;
+
+    /// The type of analytical solver the SimPL Global Placer in the AP flow will use.
     e_ap_analytical_solver analytical_solver_type;
 
     /// The type of partial legalizer the Global Placer in the AP flow will use.

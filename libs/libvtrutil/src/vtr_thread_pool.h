@@ -68,9 +68,12 @@ class thread_pool {
         for (size_t i = 0; i < thread_count; i++) {
             auto thread_data = std::make_unique<ThreadData>();
 
-            thread_data->thread = std::thread([&]() {
-                ThreadData* td = thread_data.get();
-
+            // Capture the ThreadData pointer by value. Capturing the local
+            // unique_ptr by reference races with the std::move below: the
+            // thread may dereference the moved-from (or already destroyed)
+            // local, which crashes at pool construction.
+            ThreadData* td = thread_data.get();
+            thread_data->thread = std::thread([td]() {
                 while (true) {
                     std::function<void()> task;
 
@@ -125,6 +128,10 @@ class thread_pool {
 
             size_t remaining = --active_tasks;
             if (remaining == 0) {
+                // Take the completion mutex before notifying, otherwise the
+                // notification can fire between a waiter's predicate check and
+                // its sleep and be lost, deadlocking wait_for_all().
+                std::lock_guard<std::mutex> lock(completion_mutex);
                 completion_cv.notify_all();
             }
         };
