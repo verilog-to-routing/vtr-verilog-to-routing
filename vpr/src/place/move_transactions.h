@@ -88,6 +88,13 @@ struct t_pl_blocks_to_be_moved {
                                           const BlkLocRegistry& blk_loc_registry);
 
     /**
+     * @brief Loads a previously recorded list of moved blocks into this object,
+     * so the same move can be applied to another placement state.
+     * This object must be empty.
+     */
+    void set_moved_blocks(const std::vector<t_pl_moved_block>& moves);
+
+    /**
      * @brief Examines the currently proposed move and determines any empty locations.
      */
     std::set<t_pl_loc> determine_locations_emptied_by_move() const;
