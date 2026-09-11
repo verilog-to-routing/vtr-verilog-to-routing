@@ -215,6 +215,14 @@ struct DeviceContext : public Context {
     ///@brief chan_width is for x|y-directed channels; i.e. between rows
     t_chan_width chan_width;
 
+    /**
+     * @brief The channel width that was requested the last time the RR graph was (re)built.
+     *
+     * May be different than chan_width above since some architectures add to the requested
+     * channel width (for example, dedicated clock networks).
+     */
+    t_chan_width requested_chan_width;
+
     /*
      * Structures to define the routing architecture of the FPGA.
      */

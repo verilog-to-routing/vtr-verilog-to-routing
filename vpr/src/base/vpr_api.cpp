@@ -1347,6 +1347,7 @@ void free_device(const t_det_routing_arch& /*routing_arch*/) {
     device_ctx.chan_width.x_list.clear();
     device_ctx.chan_width.y_list.clear();
     device_ctx.chan_width.max = device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
+    device_ctx.requested_chan_width = t_chan_width();
 
     device_ctx.arch_switch_inf.clear();
 

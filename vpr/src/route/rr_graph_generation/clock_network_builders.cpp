@@ -31,7 +31,9 @@ void populate_segment_values(int seg_index,
                              e_directionality directionality) {
     segment_inf[seg_index].name = name;
     segment_inf[seg_index].length = length;
-    segment_inf[seg_index].frequency = 1;
+    // We set the frequency to zero to indicate that this segment
+    // is not part of the general routing fabric.
+    segment_inf[seg_index].frequency = 0;
     segment_inf[seg_index].Rmetal = layer.r_metal;
     segment_inf[seg_index].Cmetal = layer.c_metal;
     segment_inf[seg_index].directionality = directionality;
