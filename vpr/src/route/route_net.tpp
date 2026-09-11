@@ -7,6 +7,7 @@
 #include "route_net.h"
 
 #include <algorithm>
+#include <limits>
 #include <tuple>
 
 #include "connection_based_routing.h"
@@ -218,7 +219,11 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
     /* Update base costs according to fanout and criticality rules */
     update_rr_base_costs(num_sinks);
 
-    t_conn_delay_budget conn_delay_budget;
+    t_conn_delay_budget conn_delay_budget{.short_path_criticality=0.f,
+                                          .min_delay=0.f,
+                                          .target_delay=0.f,
+                                          .max_delay=std::numeric_limits<float>::infinity(),
+                                          .routing_budgets_algorithm=router_opts.routing_budgets_algorithm};
     t_conn_cost_params cost_params;
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.astar_offset = router_opts.astar_offset;
