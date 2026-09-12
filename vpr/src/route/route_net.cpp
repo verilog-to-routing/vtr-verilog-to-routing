@@ -19,7 +19,7 @@ void setup_net(int itry,
                CBRR& connections_inf,
                const t_router_opts& router_opts,
                float worst_neg_slack,
-               route_budgets& budgeting_inf) {
+               const route_budgets& budgeting_inf) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     /* "tree" points to this net's spot in the global context here, so re-initializing it etc. changes the global state */

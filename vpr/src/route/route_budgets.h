@@ -69,7 +69,7 @@ class route_budgets {
     /*One-shot reroute request, independent of get/set_should_reroute's hold-slack gating.
      * Used to force clock connections through the router once their skew budgets are (re)computed,
      * since otherwise an already-legally-routed, non-critical net is never revisited. */
-    bool get_should_reroute_for_skew(ParentNetId net_id);
+    bool get_should_reroute_for_skew(ParentNetId net_id) const;
     void set_should_reroute_for_skew(ParentNetId net_id, bool value);
 
   private:

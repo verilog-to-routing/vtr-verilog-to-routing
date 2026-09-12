@@ -60,7 +60,7 @@ void setup_net(int itry,
                CBRR& connections_inf,
                const t_router_opts& router_opts,
                float worst_neg_slack,
-               route_budgets& budgeting_inf);
+               const route_budgets& budgeting_inf);
 
 /** Detect if \p net_id should be routed or not */
 bool should_route_net(const Netlist<>& net_list,

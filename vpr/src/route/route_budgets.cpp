@@ -980,11 +980,23 @@ void route_budgets::set_should_reroute(ParentNetId net_id, bool value) {
     }
 }
 
-bool route_budgets::get_should_reroute_for_skew(ParentNetId net_id) {
-    return (set && should_reroute_for_skew[net_id]);
+bool route_budgets::get_should_reroute_for_skew(ParentNetId net_id) const {
+    if (!set)
+        return false;
+
+    VTR_ASSERT_SAFE(net_id.is_valid());
+    auto iter = should_reroute_for_skew.find(net_id);
+
+    // If the map does not contain the net id, the net should not be rerouted
+    // for skew (false by default).
+    if (iter == should_reroute_for_skew.end())
+        return false;
+
+    return iter->second;
 }
 
 void route_budgets::set_should_reroute_for_skew(ParentNetId net_id, bool value) {
+    VTR_ASSERT_SAFE(net_id.is_valid());
     if (set) {
         should_reroute_for_skew[net_id] = value;
     }
