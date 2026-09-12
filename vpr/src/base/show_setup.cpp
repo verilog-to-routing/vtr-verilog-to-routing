@@ -484,6 +484,8 @@ static void show_router_opts(const t_router_opts& router_opts) {
             VTR_LOG("router_opts.routing_budgets_algorithm = YOYO\n");
         } else if (router_opts.routing_budgets_algorithm == SCALE_DELAY) {
             VTR_LOG("router_opts.routing_budgets_algorithm = SCALE_DELAY\n");
+        } else if (router_opts.routing_budgets_algorithm == LOW_SKEW_CLOCK) {
+            VTR_LOG("router_opts.routing_budgets_algorithm = LOW_SKEW_CLOCK\n");
         }
     }
 

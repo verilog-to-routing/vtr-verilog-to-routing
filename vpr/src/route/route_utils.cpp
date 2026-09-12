@@ -18,6 +18,7 @@
 #include "tatum/TimingReporter.hpp"
 #include "stats.h"
 #include "timing_util.h"
+#include "vpr_types.h"
 
 #ifdef VPR_USE_TBB
 #include <tbb/combinable.h>
@@ -217,14 +218,31 @@ bool is_better_quality_routing(const vtr::vector<ParentNetId, vtr::optional<Rout
 }
 
 bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router_opts, int itry, std::shared_ptr<const SetupHoldTimingInfo> timing_info, bool rcv_finished) {
-    if (routing_is_feasible) {
-        if (router_opts.routing_budgets_algorithm != YOYO) {
+    // If the routing is not feasible, the iteration is not complete.
+    if (!routing_is_feasible)
+        return false;
+
+    // For the yoyo algorithm, we want to continue until the slack is resolved
+    // or RCV is delcared finished. We also want at least one iteration so the
+    // timing budgets get set properly.
+    if (router_opts.routing_budgets_algorithm == YOYO) {
+        if ((timing_info->hold_worst_negative_slack() == 0 || rcv_finished) && itry != 1)
             return true;
-        } else if (router_opts.routing_budgets_algorithm == YOYO && (timing_info->hold_worst_negative_slack() == 0 || rcv_finished) && itry != 1) {
-            return true;
-        }
+        else
+            return false;
     }
-    return false;
+
+    // For low-skew clock, we always want to do at least two iterations. The first iteration
+    // selects the low-skew budgets, so we need another iteration to resolve it.
+    if (router_opts.routing_budgets_algorithm == LOW_SKEW_CLOCK) {
+        if (itry != 1)
+            return true;
+        else
+            return false;
+    }
+
+    // The routing iteration is complete when routing is feasible.
+    return true;
 }
 
 void generate_route_timing_reports(const t_router_opts& router_opts,

@@ -1,0 +1,32 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/blif
+
+# Path to directory of architectures to use
+archs_dir=arch/clock_networks
+
+# Add circuits to list to sweep
+circuit_list_add=6/s38417.blif
+circuit_list_add=multiclock/multiclock.blif
+
+# Add architectures to list to sweep
+arch_list_add=micro/clock_sb_only_routed_clk.xml
+
+# Parse info and how to parse
+parse_file=vpr_clock_modeling.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_clock_modeling.txt
+
+# Script parameters
+script_params_common=-starting_stage vpr --routing_budgets_algorithm low_skew_clock --route_chan_width 50 -sdc_file sdc/samples/default_vpr_no_io_constraints.sdc
+script_params_list_add=--clock_modeling ideal
+script_params_list_add=--clock_modeling route
+script_params_list_add=--clock_modeling dedicated_network
+script_params_list_add=--clock_modeling dedicated_network --two_stage_clock_routing
