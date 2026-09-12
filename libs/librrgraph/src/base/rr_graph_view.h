@@ -69,6 +69,7 @@
 #include "rr_node.h"
 #include "physical_types.h"
 #include "rr_node_types.h"
+#include "rr_rc_data.h"
 #include "rr_spatial_lookup.h"
 #include "vtr_geometry.h"
 #include "rr_graph_utils.h"
@@ -83,7 +84,7 @@ class RRGraphView {
                 const MetadataStorage<int>& rr_node_metadata,
                 const MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata,
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                const std::vector<t_rr_rc_data>& rr_rc_data,
+                const RRRCData& rr_rc_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
                 const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
 

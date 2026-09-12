@@ -385,7 +385,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         int length = end - start + 1;
         float R = length * seg_details[track].Rmetal();
         float C = length * seg_details[track].Cmetal();
-        rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data));
+        rr_graph_builder.set_node_rc_index(node, mutable_device_ctx.rr_rc_data.find_create(R, C));
 
         rr_graph_builder.set_node_type(node, chan_type);
         rr_graph_builder.set_node_track_num(node, track);

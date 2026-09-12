@@ -447,7 +447,7 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
  */
 static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                 vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
-                                                std::vector<t_rr_rc_data>& rr_rc_data,
+                                                RRRCData& rr_rc_data,
                                                 const size_t& layer,
                                                 const vtr::Point<size_t>& grid_coordinate,
                                                 const DeviceGrid& grids,
@@ -487,7 +487,7 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                     rr_node_driver_switches[node] = delayless_switch;
 
                     // RC data
-                    rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(0., 0., rr_rc_data));
+                    rr_graph_builder.set_node_rc_index(node, rr_rc_data.find_create(0., 0.));
 
                 } // End of loading OPIN rr_nodes
             } // End of side enumeration
@@ -501,7 +501,7 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
  */
 static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                 vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
-                                                std::vector<t_rr_rc_data>& rr_rc_data,
+                                                RRRCData& rr_rc_data,
                                                 const size_t& layer,
                                                 const vtr::Point<size_t>& grid_coordinate,
                                                 const DeviceGrid& grids,
@@ -540,7 +540,7 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                     rr_node_driver_switches[node] = wire_to_ipin_switch;
 
                     // RC data
-                    rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(0., 0., rr_rc_data));
+                    rr_graph_builder.set_node_rc_index(node, rr_rc_data.find_create(0., 0.));
 
                 } // End of loading IPIN rr_nodes
             } // End of side enumeration
@@ -554,7 +554,7 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
  */
 static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                   vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
-                                                  std::vector<t_rr_rc_data>& rr_rc_data,
+                                                  RRRCData& rr_rc_data,
                                                   const size_t& layer,
                                                   const vtr::Point<size_t>& grid_coordinate,
                                                   const DeviceGrid& grids,
@@ -589,7 +589,7 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
         rr_node_driver_switches[node] = delayless_switch;
 
         // RC data
-        rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(0., 0., rr_rc_data));
+        rr_graph_builder.set_node_rc_index(node, rr_rc_data.find_create(0., 0.));
 
     } // End of class enumeration
 }
@@ -600,7 +600,7 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
  */
 static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                 vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
-                                                std::vector<t_rr_rc_data>& rr_rc_data,
+                                                RRRCData& rr_rc_data,
                                                 const size_t& layer,
                                                 const vtr::Point<size_t>& grid_coordinate,
                                                 const DeviceGrid& grids,
@@ -637,14 +637,14 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
         rr_node_driver_switches[node] = delayless_switch;
 
         // RC data
-        rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(0., 0., rr_rc_data));
+        rr_graph_builder.set_node_rc_index(node, rr_rc_data.find_create(0., 0.));
 
     } // End of class enumeration
 }
 
 static void load_one_grid_mux_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
-                                               std::vector<t_rr_rc_data>& rr_rc_data,
+                                               RRRCData& rr_rc_data,
                                                const size_t& layer,
                                                const vtr::Point<size_t>& grid_coordinate,
                                                const VibDeviceGrid& vib_grid) {
@@ -672,7 +672,7 @@ static void load_one_grid_mux_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
         rr_node_driver_switches[node] = RRSwitchId(vib->get_switch_idx());
 
         // RC data
-        rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(0., 0., rr_rc_data));
+        rr_graph_builder.set_node_rc_index(node, rr_rc_data.find_create(0., 0.));
     }
 }
 
@@ -681,7 +681,7 @@ static void load_one_grid_mux_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
  */
 static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                        vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
-                                       std::vector<t_rr_rc_data>& rr_rc_data,
+                                       RRRCData& rr_rc_data,
                                        const DeviceGrid& grids,
                                        const VibDeviceGrid& vib_grid,
                                        const size_t& layer,
@@ -814,7 +814,7 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
                                               RRGraphBuilder& rr_graph_builder,
                                               vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                               std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,
-                                              std::vector<t_rr_rc_data>& rr_rc_data,
+                                              RRRCData& rr_rc_data,
                                               const size_t& layer,
                                               const vtr::Point<size_t>& chan_coordinate,
                                               const e_rr_type& chan_type,
@@ -900,7 +900,7 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
             size_t parallel_seg_id = find_parallel_seg_index(seg_id, seg_index_map, wanted_axis);
             float node_R = rr_graph.node_length(rr_node_id) * segment_infs[parallel_seg_id].Rmetal;
             float node_C = rr_graph.node_length(rr_node_id) * segment_infs[parallel_seg_id].Cmetal;
-            rr_graph_builder.set_node_rc_index(rr_node_id, find_create_rr_rc_data(node_R, node_C, rr_rc_data));
+            rr_graph_builder.set_node_rc_index(rr_node_id, rr_rc_data.find_create(node_R, node_C));
 
             if (chan_details.is_track_start(itrack)) {
                 rr_graph_builder.set_node_bend_start(rr_node_id, chan_details.get_track_bend_start(itrack));
@@ -954,7 +954,7 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
                                            RRGraphBuilder& rr_graph_builder,
                                            vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                            std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,
-                                           std::vector<t_rr_rc_data>& rr_rc_data,
+                                           RRRCData& rr_rc_data,
                                            const DeviceGrid& grids,
                                            const size_t& layer,
                                            const size_t& chan_width,
@@ -1087,7 +1087,7 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
                                            RRGraphBuilder& rr_graph_builder,
                                            vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                            std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,
-                                           std::vector<t_rr_rc_data>& rr_rc_data,
+                                           RRRCData& rr_rc_data,
                                            const DeviceGrid& grids,
                                            const size_t& layer,
                                            const size_t& chan_width,
@@ -1245,7 +1245,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     RRGraphBuilder& rr_graph_builder,
                                     vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                     std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,
-                                    std::vector<t_rr_rc_data>& rr_rc_data,
+                                    RRRCData& rr_rc_data,
                                     const DeviceGrid& grids,
                                     const VibDeviceGrid& vib_grid,
                                     const size_t& layer,
