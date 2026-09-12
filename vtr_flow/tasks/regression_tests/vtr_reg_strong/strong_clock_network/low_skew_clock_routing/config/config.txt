@@ -15,9 +15,6 @@ circuit_list_add=multiclock/multiclock.blif
 # Add architectures to list to sweep
 arch_list_add=micro/clock_sb_only_routed_clk.xml
 
-# Add per-circuit constraints.
-circuit_constraint_list_add=(6/s38417.blif, device_width=22)
-
 # Parse info and how to parse
 parse_file=vpr_clock_modeling.txt
 
