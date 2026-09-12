@@ -45,8 +45,10 @@ void TracebackCompat::traceback_to_route_tree_x(t_trace* trace, RouteTree& tree,
         else
             new_node->re_expand = true;
 
-        if (node_type == e_rr_type::SINK) {
-            /* The traceback returns to the previous branch point if there is more than one SINK, otherwise we are at the last SINK */
+        if (trace->iswitch == UNDEFINED) {
+            // A traceback branch ends when its switch is undefined. Most
+            // branches end at SINK nodes, but non-configurable routing can
+            // also leave a non-SINK leaf in the route tree.
             if (trace->next) {
                 RRNodeId next_rr_node = RRNodeId(trace->next->index);
                 RouteTreeNode* branch = tree._rr_node_to_rt_node.at(next_rr_node);
