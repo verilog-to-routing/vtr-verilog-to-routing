@@ -20,16 +20,6 @@ enum slack_allocated_type {
     BOTH
 };
 
-/*Scope over which set_low_skew_clock_budgets() computes its target delay.
- * PER_CLOCK_DOMAIN (default) minimizes skew within each clock domain independently.
- * GLOBAL minimizes skew across all clock domains combined, using a single delay target
- * shared by every clock connection in the design.
- * TODO: expose this as a command-line option once there's demand for GLOBAL.*/
-enum class e_low_skew_clock_target_scope {
-    PER_CLOCK_DOMAIN,
-    GLOBAL
-};
-
 #define UNINITIALIZED_PATH_DELAY (-2)
 class route_budgets {
   public:
