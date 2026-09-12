@@ -74,8 +74,12 @@ class FullLegalizer {
      * The device grid estimated before packing may differ from the one needed
      * after final clustering. This method finalizes the device size and ensures
      * the RR graph matches it before placement begins.
+     *
+     * @param prev_grid_width   The device grid width before packing.
+     * @param prev_grid_height  The device grid height before packing.
+     * @param prev_grid_num_layers  The device grid's number of layers before packing.
      */
-    void recreate_device_if_needed();
+    void recreate_device_if_needed(size_t prev_grid_width, size_t prev_grid_height, size_t prev_grid_num_layers);
 
     /// @brief The AP Netlist to fully legalize the flat placement of.
     const APNetlist& ap_netlist_;
