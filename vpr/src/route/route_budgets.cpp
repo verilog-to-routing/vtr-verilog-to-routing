@@ -177,7 +177,7 @@ void route_budgets::set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay) 
     // target/min bias terms never fire for them. But load_initial_budgets() also leaves their
     // max budget at 0, and the max-delay penalty (enabled for LOW_SKEW_CLOCK connections above)
     // would then fire on every non-clock connection with nonzero delay. Raise their max budget
-    // to the unconstrained upper bound so they keep routing for shortest path as usual.
+    // to the unconstrained upper bound so they aim for the shortest path.
     for (auto net_id : net_list_.nets()) {
         if (route_ctx.is_clock_net[net_id]) continue;
 
