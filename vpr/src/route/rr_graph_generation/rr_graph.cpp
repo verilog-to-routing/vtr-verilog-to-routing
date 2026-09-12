@@ -340,8 +340,9 @@ void create_rr_graph(e_graph_type graph_type,
     const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
     bool load_rr_graph = !det_routing_arch.read_rr_graph_filename.empty();
 
-    if (device_ctx.chan_width == nodes_per_chan && !device_ctx.rr_graph.empty()) {
-        // No change in channel width, so skip re-building RR graph
+    if (device_ctx.requested_chan_width == nodes_per_chan && !device_ctx.rr_graph.empty()) {
+        // The requested channel width is unchanged from the last build, so the existing RR
+        // graph is still valid and can be reused as-is.
         if (is_flat && !device_ctx.rr_graph_is_flat) {
             VTR_LOG("RR graph channel widths unchanged, intra-cluster resources should be added...\n");
         } else {
@@ -349,6 +350,8 @@ void create_rr_graph(e_graph_type graph_type,
             return;
         }
     } else {
+        mutable_device_ctx.requested_chan_width = nodes_per_chan;
+
         if (load_rr_graph) {
             if (device_ctx.loaded_rr_graph_filename != det_routing_arch.read_rr_graph_filename) {
                 free_rr_graph();
