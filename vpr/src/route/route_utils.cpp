@@ -18,6 +18,7 @@
 #include "tatum/TimingReporter.hpp"
 #include "stats.h"
 #include "timing_util.h"
+#include "vpr_types.h"
 
 #ifdef VPR_USE_TBB
 #include <tbb/combinable.h>
@@ -221,6 +222,10 @@ bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router
         if (router_opts.routing_budgets_algorithm != YOYO) {
             return true;
         } else if (router_opts.routing_budgets_algorithm == YOYO && (timing_info->hold_worst_negative_slack() == 0 || rcv_finished) && itry != 1) {
+            return true;
+        } else if (router_opts.routing_budgets_algorithm == LOW_SKEW_CLOCK && itry != 1) {
+            // For low-skew clock, we always want to do at least two iterations. The first iteration
+            // selects the low-skew budgets, so we need another iteration to resolve it.
             return true;
         }
     }

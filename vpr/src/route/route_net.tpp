@@ -88,8 +88,6 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
     VTR_LOGV_DEBUG(f_router_debug, "Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
     /* Prune or rip-up existing routing for the net */
-    /* If re-routing for skew, rip-up full net. */
-    bool ripup_for_skew = budgeting_inf.if_set() && budgeting_inf.get_should_reroute_for_skew(net_id);
     if (should_setup) {
         setup_net(
             itry,
@@ -98,7 +96,7 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
             connections_inf,
             router_opts,
             worst_negative_slack,
-            ripup_for_skew);
+            budgeting_inf);
     }
 
     VTR_ASSERT(route_ctx.route_trees[net_id]);

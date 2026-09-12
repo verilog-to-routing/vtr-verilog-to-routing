@@ -164,7 +164,6 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
             if (!should_route_net(_net_list, net_id, _connections_inf, _budgeting_inf, _worst_neg_slack, true))
                 continue;
             /* Setup the net (reset or prune) only once here in the flow. Then all calls to route_net turn off auto-setup */
-            bool ripup_for_skew = _budgeting_inf.if_set() && _budgeting_inf.get_should_reroute_for_skew(net_id);
             setup_net(
                 _itry,
                 net_id,
@@ -172,7 +171,7 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
                 _connections_inf,
                 _router_opts,
                 _worst_neg_slack,
-                ripup_for_skew);
+                _budgeting_inf);
             /* Try decomposing the net. */
             if (should_decompose_net(net_id, node)) {
                 VirtualNet left_vnet, right_vnet;

@@ -143,7 +143,6 @@ void route_budgets::set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay) 
 
     // Maximum observed clock-connection delay within each clock net (domain).
     std::map<ParentNetId, float> max_clock_delay_by_domain;
-    float max_clock_delay_global = 0.;
 
     for (auto net_id : net_list_.nets()) {
         if (!route_ctx.is_clock_net[net_id]) continue;
@@ -154,15 +153,12 @@ void route_budgets::set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay) 
             max_domain_delay = std::max(max_domain_delay, net_delay[net_id][ipin]);
         }
         max_clock_delay_by_domain[net_id] = max_domain_delay;
-        max_clock_delay_global = std::max(max_clock_delay_global, max_domain_delay);
     }
 
     for (auto net_id : net_list_.nets()) {
         if (!route_ctx.is_clock_net[net_id]) continue;
 
-        float target_delay = (low_skew_clock_target_scope_ == e_low_skew_clock_target_scope::GLOBAL)
-                                 ? max_clock_delay_global
-                                 : max_clock_delay_by_domain[net_id];
+        float target_delay = max_clock_delay_by_domain[net_id];
 
         for (auto pin_id : net_list_.net_sinks(net_id)) {
             int ipin = net_list_.pin_net_index(pin_id);

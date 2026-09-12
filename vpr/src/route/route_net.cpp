@@ -19,13 +19,14 @@ void setup_net(int itry,
                CBRR& connections_inf,
                const t_router_opts& router_opts,
                float worst_neg_slack,
-               bool ripup_for_skew) {
+               route_budgets& budgeting_inf) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     /* "tree" points to this net's spot in the global context here, so re-initializing it etc. changes the global state */
     vtr::optional<RouteTree>& tree = route_ctx.route_trees[net_id];
 
     bool ripup_high_fanout_nets = check_hold(router_opts, worst_neg_slack);
+    bool ripup_for_skew = budgeting_inf.if_set() && budgeting_inf.get_should_reroute_for_skew(net_id);
     int num_sinks = net_list.net_sinks(net_id).size();
 
     // for nets below a certain size (min_incremental_reroute_fanout), rip up any old routing

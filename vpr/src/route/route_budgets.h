@@ -161,7 +161,4 @@ class route_budgets {
 
     /*flag to force a one-shot reroute of a net after its skew budgets are (re)computed*/
     std::map<ParentNetId, bool> should_reroute_for_skew;
-
-    /*see e_low_skew_clock_target_scope*/
-    e_low_skew_clock_target_scope low_skew_clock_target_scope_ = e_low_skew_clock_target_scope::PER_CLOCK_DOMAIN;
 };
