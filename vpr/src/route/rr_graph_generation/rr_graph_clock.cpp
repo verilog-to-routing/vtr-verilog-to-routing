@@ -279,6 +279,11 @@ void ClockRRGraphBuilder::add_edge(t_rr_edge_info_set* rr_edges_to_create,
                                    RRNodeId sink_node,
                                    int arch_switch_idx,
                                    bool edge_remapped) const {
+    // This self-edge check was added since adding self-edges caused some routing
+    // algorithms to create an infinite loop. Self-edges should not occur naturally
+    // in an RR-graph, so added an assert here to prevent them from being created.
+    VTR_ASSERT_MSG(src_node != sink_node, "Should not add an edge from a node to itself.");
+
     VTR_ASSERT(edge_remapped == false);
     const auto& device_ctx = g_vpr_ctx.device();
     VTR_ASSERT(arch_switch_idx < (int)device_ctx.arch_switch_inf.size());

@@ -170,12 +170,16 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
         // Connect to x-channel wires
         unsigned num_wires_x = x_wire_indices.size() * fc;
         for (size_t i = 0; i < num_wires_x; i++) {
+            // Prevent self-edges.
+            if (x_wire_indices[i] == RRNodeId(clock_index)) continue;
             clock_graph.add_edge(rr_edges_to_create, x_wire_indices[i], RRNodeId(clock_index), arch_switch_idx, false);
         }
 
         // Connect to y-channel wires
         unsigned num_wires_y = y_wire_indices.size() * fc;
         for (size_t i = 0; i < num_wires_y; i++) {
+            // Prevent self-edges.
+            if (y_wire_indices[i] == RRNodeId(clock_index)) continue;
             clock_graph.add_edge(rr_edges_to_create, y_wire_indices[i], RRNodeId(clock_index), arch_switch_idx, false);
         }
 

@@ -666,41 +666,6 @@ struct ParseInterposerStageNetCostType {
     }
 };
 
-struct ParsePlaceBoundingBox {
-    ConvertedValue<e_place_bounding_box_mode> from_str(const std::string& str) {
-        ConvertedValue<e_place_bounding_box_mode> conv_value;
-        if (str == "auto_bb") {
-            conv_value.set_value(e_place_bounding_box_mode::AUTO_BB);
-        } else if (str == "cube_bb") {
-            conv_value.set_value(e_place_bounding_box_mode::CUBE_BB);
-        } else if (str == "per_layer_bb") {
-            conv_value.set_value(e_place_bounding_box_mode::PER_LAYER_BB);
-        } else {
-            std::stringstream msg;
-            msg << "Invalid conversion from '" << str << "' to e_place_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
-            conv_value.set_error(msg.str());
-        }
-        return conv_value;
-    }
-
-    ConvertedValue<std::string> to_str(e_place_bounding_box_mode val) {
-        ConvertedValue<std::string> conv_value;
-        if (val == e_place_bounding_box_mode::AUTO_BB) {
-            conv_value.set_value("auto_bb");
-        } else if (val == e_place_bounding_box_mode::CUBE_BB) {
-            conv_value.set_value("cube_bb");
-        } else {
-            VTR_ASSERT(val == e_place_bounding_box_mode::PER_LAYER_BB);
-            conv_value.set_value("per_layer_bb");
-        }
-        return conv_value;
-    }
-
-    std::vector<std::string> default_choices() {
-        return {"auto_bb", "cube_bb", "per_layer_bb"};
-    }
-};
-
 struct ParsePlacementFreq {
     ConvertedValue<e_place_freq> from_str(const std::string& str) {
         ConvertedValue<e_place_freq> conv_value;
@@ -2066,6 +2031,19 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "VPR's (or reconstructed external) placement solution after legalization and before anneal in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument<int>(args.flat_place_verbosity, "--flat_place_verbosity")
+        .help(
+            "Controls how much annotation is written into flat placement files."
+            " Annotations are informational only; the flat placement reader ignores"
+            " everything past the sub-tile column."
+            " 0: no annotations and no header comments, i.e. only the columns the reader parses."
+            " 1: header comments, plus the cluster block id and primitive type of each atom."
+            " 2: additionally the site_path of each atom, the hierarchical path of the"
+            " primitive it was placed on within its cluster."
+            " Larger values produce more detail.")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")
         .help(
             "Reads the lookahead data from the specified file instead of computing it.")
@@ -2665,20 +2643,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Sets the assumed high fanout net during placement. "
             "Any net with higher fanout would be ignored while calculating some of the directed moves: Median and WeightedMedian")
         .default_value("10")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_grp.add_argument<e_place_bounding_box_mode, ParsePlaceBoundingBox>(args.place_bounding_box_mode, "--place_bounding_box_mode")
-        .help(
-            "Specifies the type of bounding box to be used in 3D architectures.\n"
-            "\n"
-            "MODE options:\n"
-            "  auto_bb      : Automatically determine the appropriate bounding box based on the connections between layers.\n"
-            "  cube_bb      : Use 3D bounding boxes.\n"
-            "  per_layer_bb : Use per-layer bounding boxes.\n"
-            "\n"
-            "Choose one of the available modes to define the behavior of bounding boxes in your 3D architecture. The default mode is 'automatic'.")
-        .default_value("auto_bb")
-        .choices({"auto_bb", "cube_bb", "per_layer_bb"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_freq, ParsePlacementFreq>(args.place_placement_freq, "--place_frequency")
