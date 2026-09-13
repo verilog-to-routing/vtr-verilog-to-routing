@@ -223,7 +223,7 @@ bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router
         return false;
 
     // For the yoyo algorithm, we want to continue until the slack is resolved
-    // or RCV is delcared finished. We also want at least one iteration so the
+    // or RCV is declared finished. We also want at least one iteration so the
     // timing budgets get set properly.
     if (router_opts.routing_budgets_algorithm == YOYO) {
         if ((timing_info->hold_worst_negative_slack() == 0 || rcv_finished) && itry != 1)
