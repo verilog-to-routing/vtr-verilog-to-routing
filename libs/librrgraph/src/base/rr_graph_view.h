@@ -69,6 +69,7 @@
 #include "rr_node.h"
 #include "physical_types.h"
 #include "rr_node_types.h"
+#include "rr_rc_data.h"
 #include "rr_spatial_lookup.h"
 #include "vtr_geometry.h"
 #include "rr_graph_utils.h"
@@ -83,7 +84,7 @@ class RRGraphView {
                 const MetadataStorage<int>& rr_node_metadata,
                 const MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata,
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                const std::vector<t_rr_rc_data>& rr_rc_data,
+                const RRRCData& rr_rc_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
                 const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
 
@@ -181,23 +182,18 @@ class RRGraphView {
         return node_storage_.node_direction_string(node);
     }
 
-    /** @brief Return the capacitance of a specified node.
-    */
+    /// @brief Return the capacitance of a specified node.
     inline float node_C(RRNodeId node) const {
-        VTR_ASSERT(node_rc_index(node) < (short)rr_rc_data_.size());
         return rr_rc_data_[node_rc_index(node)].C;
     }
 
-    /** @brief Return the resistance of a specified node.
-    */
+    /// @brief Return the resistance of a specified node.
     inline float node_R(RRNodeId node) const {
-        VTR_ASSERT(node_rc_index(node) < (short)rr_rc_data_.size());
         return rr_rc_data_[node_rc_index(node)].R;
     }
 
-    /** @brief Return the rc_index of a specified node.
-    */
-    inline int16_t node_rc_index(RRNodeId node) const {
+    /// @brief Return the rc_index of a specified node.
+    inline NodeRCIndex node_rc_index(RRNodeId node) const {
         return node_storage_.node_rc_index(node);
     }
 
@@ -789,7 +785,7 @@ class RRGraphView {
     const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data_;
 
     /// RC data for nodes. This is a flyweight data
-    const std::vector<t_rr_rc_data>& rr_rc_data_;
+    const RRRCData& rr_rc_data_;
 
     /// Segment info for rr nodes
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
