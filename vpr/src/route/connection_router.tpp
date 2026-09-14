@@ -278,10 +278,10 @@ float ConnectionRouter<Heap>::evaluate_timing_driven_backward_costs(RTExploredNo
 
     // To node info
     NodeRCIndex rc_index = rr_graph_->node_rc_index(to->index);
-    float node_R = rr_rc_data_[size_t(rc_index)].R;
+    float node_R = rr_rc_data_[rc_index].R;
 
     // From node info
-    float from_node_R = rr_rc_data_[size_t(rr_graph_->node_rc_index(from_node))].R;
+    float from_node_R = rr_rc_data_[rr_graph_->node_rc_index(from_node)].R;
 
     // Update R_upstream
     if (switch_buffered) {
