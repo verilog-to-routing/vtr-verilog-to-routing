@@ -182,21 +182,18 @@ class RRGraphView {
         return node_storage_.node_direction_string(node);
     }
 
-    /** @brief Return the capacitance of a specified node.
-    */
+    /// @brief Return the capacitance of a specified node.
     inline float node_C(RRNodeId node) const {
-        return rr_rc_data_[NodeRCIndex(node_rc_index(node))].C;
+        return rr_rc_data_[node_rc_index(node)].C;
     }
 
-    /** @brief Return the resistance of a specified node.
-    */
+    /// @brief Return the resistance of a specified node.
     inline float node_R(RRNodeId node) const {
-        return rr_rc_data_[NodeRCIndex(node_rc_index(node))].R;
+        return rr_rc_data_[node_rc_index(node)].R;
     }
 
-    /** @brief Return the rc_index of a specified node.
-    */
-    inline int16_t node_rc_index(RRNodeId node) const {
+    /// @brief Return the rc_index of a specified node.
+    inline NodeRCIndex node_rc_index(RRNodeId node) const {
         return node_storage_.node_rc_index(node);
     }
 
