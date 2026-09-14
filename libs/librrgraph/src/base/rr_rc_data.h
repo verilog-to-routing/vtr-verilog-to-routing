@@ -1,11 +1,11 @@
 #pragma once
 
 #include <unordered_map>
-#include <vector>
 
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
 #include "vtr_assert.h"
+#include "vtr_vector.h"
 
 /**
  * @brief Fly-weighted resistance and capacitance values of RR nodes.
@@ -20,7 +20,7 @@ class RRRCData {
     /// @brief Returns the (R, C) pair at the given index.
     const t_rr_rc_data& operator[](NodeRCIndex index) const {
         VTR_ASSERT_SAFE(size_t(index) < values_.size());
-        return values_[size_t(index)];
+        return values_[index];
     }
 
     /// @brief Returns the number of distinct (R, C) pairs.
@@ -30,7 +30,7 @@ class RRRCData {
 
   private:
     /// Distinct (R, C) pairs in creation order
-    std::vector<t_rr_rc_data> values_;
+    vtr::vector<NodeRCIndex, t_rr_rc_data> values_;
     /// Index into values_ keyed on the bit patterns of R and C
     std::unordered_map<uint64_t, NodeRCIndex> index_;
 };
