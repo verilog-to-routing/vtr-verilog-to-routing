@@ -21,7 +21,7 @@ RRGraphView::RRGraphView(const t_rr_graph_storage& node_storage,
     , rr_node_metadata_(rr_node_metadata)
     , rr_edge_metadata_(rr_edge_metadata)
     , rr_indexed_data_(rr_indexed_data)
-    , rr_rc_data_(rr_rc_data.values())
+    , rr_rc_data_(rr_rc_data)
     , rr_segments_(rr_segments)
     , rr_switch_inf_(rr_switch_inf) {}
 

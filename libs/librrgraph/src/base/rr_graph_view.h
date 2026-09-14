@@ -185,15 +185,13 @@ class RRGraphView {
     /** @brief Return the capacitance of a specified node.
     */
     inline float node_C(RRNodeId node) const {
-        VTR_ASSERT(node_rc_index(node) < (short)rr_rc_data_.size());
-        return rr_rc_data_[node_rc_index(node)].C;
+        return rr_rc_data_[NodeRCIndex(node_rc_index(node))].C;
     }
 
     /** @brief Return the resistance of a specified node.
     */
     inline float node_R(RRNodeId node) const {
-        VTR_ASSERT(node_rc_index(node) < (short)rr_rc_data_.size());
-        return rr_rc_data_[node_rc_index(node)].R;
+        return rr_rc_data_[NodeRCIndex(node_rc_index(node))].R;
     }
 
     /** @brief Return the rc_index of a specified node.
@@ -790,7 +788,7 @@ class RRGraphView {
     const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data_;
 
     /// RC data for nodes. This is a flyweight data
-    const std::vector<t_rr_rc_data>& rr_rc_data_;
+    const RRRCData& rr_rc_data_;
 
     /// Segment info for rr nodes
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
