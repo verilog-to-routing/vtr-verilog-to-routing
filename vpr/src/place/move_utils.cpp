@@ -8,6 +8,7 @@
 #include "place_macro.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
+#include "vtr_dynamic_bitset.h"
 #include "vtr_random.h"
 
 #include "place_constraints.h"
@@ -1045,7 +1046,18 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
     VTR_ASSERT(to_layer_num == from_loc.layer_num);
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
     to_loc.layer_num = to_layer_num;
-    std::unordered_set<int> tried_cx_to;
+
+    // Which candidate locations have already been tried. These are reused across calls so that this
+    // per-move path does not allocate. Both are indexed by a compressed index, which is bounded by
+    // the corresponding device grid dimension.
+    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
+    static thread_local vtr::dynamic_bitset<> tried_cx_to;
+    static thread_local vtr::dynamic_bitset<> tried_dy;
+    tried_cx_to.resize(device_grid.width());
+    tried_dy.resize(device_grid.height());
+    tried_cx_to.fill(false);
+    int num_tried_cx = 0;
+
     bool legal = false;
     int possibilities;
     if (is_median)
@@ -1053,7 +1065,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
     else
         possibilities = delta_cx;
 
-    while (!legal && (int)tried_cx_to.size() < possibilities) { //Until legal or all possibilities exhausted
+    while (!legal && num_tried_cx < possibilities) { //Until legal or all possibilities exhausted
         //Pick a random x-location within [min_cx, max_cx],
         //until we find a legal swap, or have exhausted all possibilities
         to_loc.x = search_range.xmin + rng.irand(delta_cx);
@@ -1062,10 +1074,11 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         VTR_ASSERT(to_loc.x <= search_range.xmax);
 
         //Record this x location as tried
-        auto res = tried_cx_to.insert(to_loc.x);
-        if (!res.second) {
+        if (tried_cx_to.get(to_loc.x)) {
             continue; //Already tried this position
         }
+        tried_cx_to.set(to_loc.x, true);
+        num_tried_cx++;
 
         //Pick a random y location
         //
@@ -1092,16 +1105,18 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         //At this point we know y_lower_iter and y_upper_iter
         //bound the range of valid blocks at this x-location, which
         //are within rlim_y
-        std::unordered_set<int> tried_dy;
-        while (!legal && (int)tried_dy.size() < y_range) { //Until legal or all possibilities exhausted
+        tried_dy.fill(false);
+        int num_tried_dy = 0;
+        while (!legal && num_tried_dy < y_range) { //Until legal or all possibilities exhausted
             //Randomly pick a y location
             int dy = rng.irand(y_range - 1);
 
             //Record this y location as tried
-            auto res2 = tried_dy.insert(dy);
-            if (!res2.second) {
+            if (tried_dy.get(dy)) {
                 continue; //Already tried this position
             }
+            tried_dy.set(dy, true);
+            num_tried_dy++;
 
             //Key in the y-dimension is the compressed index location
             to_loc.y = (y_lower_iter + dy)->first;
