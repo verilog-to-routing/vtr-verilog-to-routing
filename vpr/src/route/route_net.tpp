@@ -229,7 +229,7 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
     cost_params.post_target_prune_offset = router_opts.post_target_prune_offset;
     cost_params.bend_cost = router_opts.bend_cost;
     cost_params.pres_fac = pres_fac;
-    cost_params.delay_budget = ((budgeting_inf.if_set()) ? &conn_delay_budget : nullptr);
+    cost_params.delay_budget = &conn_delay_budget;
 
     // Pre-route to clock source for clock nets (marked as global nets)
     if (net_list.net_is_global(net_id) && router_opts.two_stage_clock_routing) {
@@ -262,6 +262,9 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
             // Set to the max timing criticality which should intern minimize clock insertion
             // delay by selecting a direct route from the clock source to the virtual sink
             cost_params.criticality = router_opts.max_criticality;
+
+            // Do not use RCV to route to the drive point of the clock network.
+            router.set_rcv_enabled(false);
 
             if (sink_node == RRNodeId::INVALID()) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Cannot route net \"%s\" through given clock network. Unknown clock network name \"%s\"", net_name.c_str(), clock_network_name.c_str());
@@ -305,13 +308,15 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
 
         cost_params.criticality = pin_criticality[target_pin];
 
-        if (budgeting_inf.if_set()) {
+        bool use_rcv = budgeting_inf.should_use_rcv(net_id, target_pin);
+        if (use_rcv) {
             conn_delay_budget.max_delay = budgeting_inf.get_max_delay_budget(net_id, target_pin);
             conn_delay_budget.target_delay = budgeting_inf.get_delay_target(net_id, target_pin);
             conn_delay_budget.min_delay = budgeting_inf.get_min_delay_budget(net_id, target_pin);
             conn_delay_budget.short_path_criticality = budgeting_inf.get_crit_short_path(net_id, target_pin);
             conn_delay_budget.routing_budgets_algorithm = router_opts.routing_budgets_algorithm;
         }
+        router.set_rcv_enabled(use_rcv);
 
         profiling::conn_start();
 

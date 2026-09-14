@@ -36,6 +36,12 @@ class route_budgets {
     float get_crit_short_path(ParentNetId net_id, int ipin);
     bool if_set() const;
 
+    /**
+     * @brief Returns true if RCV is enabled for the given connection,
+     *        specified by its net_id and ipin.
+     */
+    bool should_use_rcv(ParentNetId net_id, int ipin) const;
+
     /*main loader function*/
     void load_route_budgets(NetPinsMatrix<float>& net_delay,
                             std::shared_ptr<SetupTimingInfo> timing_info,
@@ -131,6 +137,10 @@ class route_budgets {
     NetPinsMatrix<float> delay_lower_bound; //[0..num_nets][0..clb_net[inet].pins]
     NetPinsMatrix<float> delay_upper_bound; //[0..num_nets][0..clb_net[inet].pins]
     NetPinsMatrix<float> short_path_crit;   //[0..num_nets][0..clb_net[inet].pins]
+
+    /// Per-connection flag to signify if RCV should be used for that connection.
+    /// NOTE: Used uint8_t since bool does not work with NetPinsMatrix currently.
+    NetPinsMatrix<uint8_t> use_rcv; //[0..num_nets][0..clb_net[inet].pins]
 
     NetPinsMatrix<float> total_path_delays_hold;
     NetPinsMatrix<float> total_path_delays_setup;

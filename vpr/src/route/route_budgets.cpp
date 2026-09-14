@@ -28,6 +28,7 @@
 #include "vtr_assert.h"
 #include "concrete_timing_info.h"
 #include "route_budgets.h"
+#include "vtr_memory.h"
 #include "vtr_time.h"
 
 #define SHORT_PATH_EXP 0.5
@@ -52,6 +53,7 @@ void route_budgets::free_budgets() {
         vtr::release_memory(delay_lower_bound);
         vtr::release_memory(delay_upper_bound);
         vtr::release_memory(short_path_crit);
+        vtr::release_memory(use_rcv);
         vtr::release_memory(num_times_congested);
 
         vtr::release_memory(total_path_delays_hold);
@@ -69,6 +71,7 @@ void route_budgets::alloc_budget_memory() {
     delay_lower_bound = make_net_pins_matrix<float>(net_list_);
     delay_upper_bound = make_net_pins_matrix<float>(net_list_);
     short_path_crit = make_net_pins_matrix<float>(net_list_);
+    use_rcv = make_net_pins_matrix<uint8_t>(net_list_, false);
 
     total_path_delays_hold = make_net_pins_matrix<float>(net_list_);
     total_path_delays_setup = make_net_pins_matrix<float>(net_list_);
@@ -76,6 +79,7 @@ void route_budgets::alloc_budget_memory() {
 
 void route_budgets::load_initial_budgets() {
     for (auto net_id : net_list_.nets()) {
+        use_rcv[net_id][0] = true;
         for (auto pin_id : net_list_.net_sinks(net_id)) {
             int ipin = net_list_.pin_net_index(pin_id);
             delay_lower_bound[net_id][ipin] = 0;
@@ -87,6 +91,7 @@ void route_budgets::load_initial_budgets() {
             should_reroute_for_hold[net_id] = false;
 
             short_path_crit[net_id][ipin] = 1;
+            use_rcv[net_id][ipin] = true;
             total_path_delays_hold[net_id][ipin] = UNINITIALIZED_PATH_DELAY;
             total_path_delays_setup[net_id][ipin] = UNINITIALIZED_PATH_DELAY;
         }
@@ -134,8 +139,8 @@ void route_budgets::set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay) 
     /*Sets the target delay of every clock connection to the maximum delay currently seen within
      * its own clock domain (or across all clock domains combined, see
      * e_low_skew_clock_target_scope), so the router (via RCV) is pushed to equalize clock delays
-     * and reduce skew. Non-clock connections are left at their initial (unconstrained) budgets
-     * loaded by load_initial_budgets(), so they route for shortest path as usual.
+     * and reduce skew. Non-clock connections do not have RCV applied to them, so they route using
+     * the default routing algorithm.
      *
      * Each clock domain corresponds to one clock net (one source fanning out to all its sinks),
      * so "per clock domain" and "per clock net" are the same grouping here.*/
@@ -160,11 +165,13 @@ void route_budgets::set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay) 
 
         float target_delay = max_clock_delay_by_domain[net_id];
 
+        use_rcv[net_id][0] = true;
         for (auto pin_id : net_list_.net_sinks(net_id)) {
             int ipin = net_list_.pin_net_index(pin_id);
             delay_min_budget[net_id][ipin] = target_delay;
             delay_max_budget[net_id][ipin] = target_delay;
             delay_target[net_id][ipin] = target_delay;
+            use_rcv[net_id][ipin] = true;
         }
 
         // An already-routed, non-critical, non-congested clock net would otherwise never be
@@ -173,17 +180,14 @@ void route_budgets::set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay) 
         should_reroute_for_skew[net_id] = true;
     }
 
-    // Non-clock connections keep min == target == 0 from load_initial_budgets(), so the
-    // target/min bias terms never fire for them. But load_initial_budgets() also leaves their
-    // max budget at 0, and the max-delay penalty (enabled for LOW_SKEW_CLOCK connections above)
-    // would then fire on every non-clock connection with nonzero delay. Raise their max budget
-    // to the unconstrained upper bound so they aim for the shortest path.
+    // Non-clock connections do not use RCV and route for shortest path as usual.
     for (auto net_id : net_list_.nets()) {
         if (route_ctx.is_clock_net[net_id]) continue;
 
+        use_rcv[net_id][0] = false;
         for (auto pin_id : net_list_.net_sinks(net_id)) {
             int ipin = net_list_.pin_net_index(pin_id);
-            delay_max_budget[net_id][ipin] = delay_upper_bound[net_id][ipin];
+            use_rcv[net_id][ipin] = false;
         }
     }
 }
@@ -966,6 +970,12 @@ void route_budgets::print_temporary_budgets_to_file(NetPinsMatrix<float>& temp_b
 bool route_budgets::if_set() const {
     /*Returns if the budgets have been loaded yet*/
     return set;
+}
+
+bool route_budgets::should_use_rcv(ParentNetId net_id, int ipin) const {
+    if (!set) return false;
+
+    return use_rcv[net_id][ipin];
 }
 
 bool route_budgets::get_should_reroute(ParentNetId net_id) {
