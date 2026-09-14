@@ -33,9 +33,9 @@ struct t_user_relative_group {
     std::vector<AtomBlockId> atoms;
 
     /// @brief The primitive site each atom is locked to: atom_site_paths[i] is
-    ///        the site of atoms[i]. An empty string leaves that atom unlocked
-    ///        (the packer picks its site); an empty vector leaves the whole
-    ///        group unlocked.
+    ///        the site of atoms[i], so there is always one entry per atom. An
+    ///        empty string leaves that atom unlocked, i.e. the packer picks its
+    ///        site.
     std::vector<std::string> atom_site_paths;
 
     /// @brief Placement offset of this group's cluster relative to the
@@ -67,12 +67,7 @@ class UserRelativeMacros {
     typedef vtr::vector<UserRelativeMacroId, t_user_relative_macro>::key_range macro_range;
 
     /**
-     * @brief Take ownership of a macro and register its atoms in the reverse
-     *        lookup.
-     *
-     * The macro is moved into this class, which maintains it from then on: the
-     * loader builds a macro up and hands it over once it is complete. Pass it
-     * with std::move to avoid copying its atom lists and site paths.
+     * @brief Store a macro and register its atoms in the reverse lookup.
      *
      * @return The id of the newly added macro.
      */
@@ -124,9 +119,8 @@ class UserRelativeMacros {
     /// @brief All user-defined relative placement macros.
     vtr::vector<UserRelativeMacroId, t_user_relative_macro> macros_;
 
-    /// @brief Reverse lookup: atom -> its position in macros_. Only holds the
-    ///        atoms that belong to a group; the site path of a locked atom is
-    ///        read from the macro through it rather than stored a second time.
+    /// @brief Reverse lookup: atom -> where it sits in macros_. Only atoms that
+    ///        belong to a group have an entry.
     std::unordered_map<AtomBlockId, t_atom_location> atom_locations_;
 };
 

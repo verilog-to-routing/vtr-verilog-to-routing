@@ -9,8 +9,8 @@ UserRelativeMacroId UserRelativeMacros::add_macro(t_user_relative_macro macro) {
 
     for (size_t group_idx = 0; group_idx < macro.groups.size(); group_idx++) {
         const t_user_relative_group& group = macro.groups[group_idx];
-        VTR_ASSERT_MSG(group.atom_site_paths.empty() || group.atom_site_paths.size() == group.atoms.size(),
-                       "A relative placement group must have one atom site path per atom");
+        VTR_ASSERT_MSG(group.atom_site_paths.size() == group.atoms.size(),
+                       "A relative placement group must have one atom_site_paths entry per atom (an empty entry for an unlocked atom)");
         for (size_t atom_idx = 0; atom_idx < group.atoms.size(); atom_idx++) {
             bool first_time = atom_locations_.emplace(group.atoms[atom_idx], t_atom_location{macro_id, group_idx, atom_idx}).second;
             VTR_ASSERT_MSG(first_time, "An atom may belong to at most one relative placement group");
@@ -58,10 +58,7 @@ const std::string& UserRelativeMacros::get_atom_locked_site_path(AtomBlockId blk
     }
     const t_atom_location& location = itr->second;
     const t_user_relative_group& group = macros_[location.macro_id].groups[location.group_idx];
-    if (group.atom_site_paths.empty()) {
-        // the whole group was authored without site information
-        return unlocked;
-    }
+    // Empty for an atom its group leaves unlocked.
     return group.atom_site_paths[location.atom_idx];
 }
 
@@ -80,8 +77,7 @@ void print_relative_macros(FILE* fp, const UserRelativeMacros& relative_macros) 
                     group.atoms.size());
             fprintf(fp, "\tIds of atoms in group (with site_path if locked):\n");
             for (size_t iatom = 0; iatom < group.atoms.size(); iatom++) {
-                bool locked = !group.atom_site_paths.empty() && !group.atom_site_paths[iatom].empty();
-                if (locked) {
+                if (!group.atom_site_paths[iatom].empty()) {
                     fprintf(fp, "\t#%zu %s\n", size_t(group.atoms[iatom]), group.atom_site_paths[iatom].c_str());
                 } else {
                     fprintf(fp, "\t#%zu\n", size_t(group.atoms[iatom]));

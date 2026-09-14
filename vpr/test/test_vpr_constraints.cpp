@@ -598,11 +598,15 @@ TEST_CASE("UserRelativeMacros", "[vpr]") {
 
     t_user_relative_group ref_group;
     ref_group.atoms = {AtomBlockId(0), AtomBlockId(1)};
+    // No atom of this macro is locked to a site, but there is still one (empty)
+    // site path per atom
+    ref_group.atom_site_paths = {"", ""};
     ref_group.offset = t_pl_offset(0, 0, 0, 0);
     macro1.groups.push_back(ref_group);
 
     t_user_relative_group rel_group;
     rel_group.atoms = {AtomBlockId(2)};
+    rel_group.atom_site_paths = {""};
     rel_group.offset = t_pl_offset(1, -2, 0, 0);
     macro1.groups.push_back(rel_group);
 
@@ -626,9 +630,11 @@ TEST_CASE("UserRelativeMacros", "[vpr]") {
     macro2.name = "macro2";
     t_user_relative_group ref_group2;
     ref_group2.atoms = {AtomBlockId(3)};
+    ref_group2.atom_site_paths = {""};
     macro2.groups.push_back(ref_group2);
     t_user_relative_group rel_group2;
     rel_group2.atoms = {AtomBlockId(4)};
+    rel_group2.atom_site_paths = {""};
     rel_group2.offset = t_pl_offset(0, 3, 0, 0);
     macro2.groups.push_back(rel_group2);
 
