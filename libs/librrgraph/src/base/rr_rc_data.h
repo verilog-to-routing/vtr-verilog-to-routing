@@ -10,7 +10,7 @@
 /**
  * @brief Fly-weighted resistance and capacitance values of RR nodes.
  *
- * Each distinct (R, C) pair is stored once. Node RC indices point into values().
+ * Each distinct (R, C) pair is stored once and is addressed by a NodeRCIndex.
  */
 class RRRCData {
   public:
@@ -26,10 +26,6 @@ class RRRCData {
     /// @brief Returns the number of distinct (R, C) pairs.
     size_t size() const {
         return values_.size();
-    }
-
-    const std::vector<t_rr_rc_data>& values() const {
-        return values_;
     }
 
   private:
