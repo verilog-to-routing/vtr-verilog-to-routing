@@ -56,6 +56,12 @@ class route_budgets {
     int get_hold_fac(ParentNetId net_id);
     void set_hold_fac(ParentNetId net_id, int value);
 
+    /*One-shot reroute request, independent of get/set_should_reroute's hold-slack gating.
+     * Used to force clock connections through the router once their skew budgets are (re)computed,
+     * since otherwise an already-legally-routed, non-critical net is never revisited. */
+    bool get_should_reroute_for_skew(ParentNetId net_id) const;
+    void set_should_reroute_for_skew(ParentNetId net_id, bool value);
+
   private:
     /*For allocating and freeing memory*/
     void free_budgets();
@@ -68,6 +74,10 @@ class route_budgets {
                                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                                        const t_router_opts& router_opts);
     void allocate_slack_using_weights(NetPinsMatrix<float>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, bool negative_hold_slack);
+    /*Sets the target (and min/max) delay of every clock connection to the maximum observed
+     * clock delay, to encourage the router to equalize clock delays and reduce skew. All
+     * other connections are left at their initial (unconstrained) budgets.*/
+    void set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay);
     /*Sometimes want to allocate only positive or negative slack.
      * By default, allocate both*/
     float minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timing_info,
@@ -138,4 +148,7 @@ class route_budgets {
     /*flag to reroute each net for hold violation*/
     std::map<ParentNetId, bool> should_reroute_for_hold;
     std::map<ParentNetId, int> hold_fac;
+
+    /*flag to force a one-shot reroute of a net after its skew budgets are (re)computed*/
+    std::map<ParentNetId, bool> should_reroute_for_skew;
 };

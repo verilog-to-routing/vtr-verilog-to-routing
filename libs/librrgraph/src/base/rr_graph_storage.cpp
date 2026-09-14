@@ -41,7 +41,7 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
 
     size_t required_size = edge_src_node_.size() + rr_edges_to_create->size();
     if (edge_src_node_.capacity() < required_size) {
-        size_t new_capacity = std::min(edge_src_node_.capacity(), node_storage_.size() * kEdgeToNodeRatio);
+        size_t new_capacity = std::max(edge_src_node_.capacity(), node_storage_.size() * kEdgeToNodeRatio);
         if (new_capacity < 1) {
             new_capacity = 1;
         }
@@ -365,7 +365,7 @@ t_edge_size t_rr_graph_storage::num_configurable_edges(RRNodeId id, const vtr::v
     auto first_id = size_t(node_first_edge_[id]);
     auto last_id = size_t((&node_first_edge_[id])[1]);
     for (size_t idx = first_id; idx < last_id; ++idx) {
-        auto switch_idx = edge_switch_[RREdgeId(idx)];
+        short switch_idx = edge_switch_[RREdgeId(idx)];
         if (!rr_switches[RRSwitchId(switch_idx)].configurable()) {
             return idx - first_id;
         }
@@ -391,7 +391,7 @@ bool t_rr_graph_storage::edge_is_configurable(RRNodeId id, t_edge_size iedge, co
 bool t_rr_graph_storage::validate_node(RRNodeId node_id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
    t_edge_size iedge = 0;
    const t_edge_size configurable_edge_count = num_configurable_edges(node_id, rr_switches);
-   for (auto edge : edges(node_id)) {
+   for (t_edge_size edge : edges(node_id)) {
        if (edge < configurable_edge_count) {
            if (!edge_is_configurable(node_id, edge, rr_switches)) {
                VTR_LOG_ERROR("RR Node non-configurable edge found in configurable edge list");
@@ -671,7 +671,7 @@ void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
 
 void t_rr_graph_storage::set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx) {
     // Retrieve the name string for the specified RRNodeId.
-    auto clock_network_name_str = node_name(virtual_clock_network_root_idx);
+    std::optional<const std::string*> clock_network_name_str = node_name(virtual_clock_network_root_idx);
 
     // If the name is available, associate it with the given node id for the clock network virtual sink.
     if(clock_network_name_str) {
@@ -821,7 +821,7 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
                                  const vtr::vector<RRNodeId, RRNodeId>& inverse_order) {
     VTR_ASSERT(order.size() == inverse_order.size());
     {
-        auto old_node_storage = node_storage_;
+        vtr::vector<RRNodeId, t_rr_node_data> old_node_storage = node_storage_;
 
         // Reorder nodes
         for (size_t i = 0; i < node_storage_.size(); i++) {
@@ -831,11 +831,11 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
         }
     }
     {
-        auto old_node_first_edge = node_first_edge_;
-        auto old_edge_src_node = edge_src_node_;
-        auto old_edge_dest_node = edge_dest_node_;
-        auto old_edge_switch = edge_switch_;
-        auto old_edge_remapped = edge_remapped_;
+        vtr::vector<RRNodeId, RREdgeId> old_node_first_edge = node_first_edge_;
+        vtr::vector<RREdgeId, RRNodeId> old_edge_src_node = edge_src_node_;
+        vtr::vector<RREdgeId, RRNodeId> old_edge_dest_node = edge_dest_node_;
+        vtr::vector<RREdgeId, short> old_edge_switch = edge_switch_;
+        vtr::vector<RREdgeId, bool> old_edge_remapped = edge_remapped_;
         RREdgeId cur_edge(0);
 
         // Reorder edges by source node
@@ -854,13 +854,13 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
         }
     }
     {
-        auto old_node_ptc = node_ptc_;
+        vtr::vector<RRNodeId, t_rr_node_ptc_data> old_node_ptc = node_ptc_;
         for (size_t i = 0; i < node_ptc_.size(); i++) {
             node_ptc_[order[RRNodeId(i)]] = old_node_ptc[RRNodeId(i)];
         }
     }
     {
-        auto old_node_fan_in = node_fan_in_;
+        vtr::vector<RRNodeId, t_edge_size> old_node_fan_in = node_fan_in_;
         for (size_t i = 0; i < node_fan_in_.size(); i++) {
             node_fan_in_[order[RRNodeId(i)]] = old_node_fan_in[RRNodeId(i)];
         }
