@@ -1032,11 +1032,11 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
 
         /* Fill opin_rr_nodes */
         /* Copy from temp_opin_rr_node to opin_rr_node */
-        for (const RRNodeId& inode : temp_opin_rr_nodes[0]) {
+        for (RRNodeId inode : temp_opin_rr_nodes[0]) {
             /* Grid[x+1][y+1] Bottom side outputs pins */
             rr_gsb.add_opin_node(inode, side_manager.get_side());
         }
-        for (const RRNodeId& inode : temp_opin_rr_nodes[1]) {
+        for (RRNodeId inode : temp_opin_rr_nodes[1]) {
             /* Grid[x+1][y] TOP side outputs pins */
             rr_gsb.add_opin_node(inode, side_manager.get_side());
         }
@@ -1134,7 +1134,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
         temp_ipin_rr_nodes = find_rr_graph_grid_nodes(rr_graph, grids,
                                                       layer, ix, iy, e_rr_type::IPIN, ipin_rr_node_grid_side);
         /* Fill the ipin nodes of RRGSB */
-        for (const RRNodeId& inode : temp_ipin_rr_nodes) {
+        for (RRNodeId inode : temp_ipin_rr_nodes) {
             rr_gsb.add_ipin_node(inode, side_manager.get_side());
         }
         /* Clear the temp data */
@@ -1198,7 +1198,7 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
                 for (size_t to_side = 0; to_side < opin2track_map[gsb_side][inode].size(); ++to_side) {
                     /* 1. create edges between OPINs and CHANX|CHANY, using opin2track_map */
                     /* add edges to the opin_node */
-                    for (const RRNodeId& track_node : opin2track_map[gsb_side][inode][to_side]) {
+                    for (RRNodeId track_node : opin2track_map[gsb_side][inode][to_side]) {
                         rr_graph_builder.create_edge_in_cache(opin_node, track_node, rr_node_driver_switches[track_node], false);
                         edge_count++;
                     }
@@ -1216,7 +1216,7 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
                 /* 2. create edges between CHANX|CHANY and IPINs, using ipin2track_map */
                 for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
                     const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
-                    for (const RRNodeId& ipin_node : track2ipin_map[gsb_side][inode]) {
+                    for (RRNodeId ipin_node : track2ipin_map[gsb_side][inode]) {
                         rr_graph_builder.create_edge_in_cache(chan_node, ipin_node, rr_node_driver_switches[ipin_node], false);
                         edge_count++;
                     }
@@ -1228,7 +1228,7 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
         if (track2track_map.size() > 0) {
             for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
                 const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
-                for (const RRNodeId& track_node : track2track_map[gsb_side][inode]) {
+                for (RRNodeId track_node : track2track_map[gsb_side][inode]) {
                     rr_graph_builder.create_edge_in_cache(chan_node, track_node, rr_node_driver_switches[track_node], false);
                     edge_count++;
                 }
@@ -1260,7 +1260,7 @@ void build_edges_for_one_tileable_rr_gsb_vib(RRGraphBuilder& rr_graph_builder,
             for (size_t to_side = 0; to_side < opin2track_map[gsb_side][inode].size(); ++to_side) {
                 /* 1. create edges between OPINs and CHANX|CHANY, using opin2track_map */
                 /* add edges to the opin_node */
-                for (const RRNodeId& track_node : opin2track_map[gsb_side][inode][to_side]) {
+                for (RRNodeId track_node : opin2track_map[gsb_side][inode][to_side]) {
                     rr_graph_builder.create_edge_in_cache(opin_node, track_node, rr_node_driver_switches[track_node], false);
                     edge_count++;
                 }
@@ -1276,7 +1276,7 @@ void build_edges_for_one_tileable_rr_gsb_vib(RRGraphBuilder& rr_graph_builder,
             /* 2. create edges between CHANX|CHANY and IPINs, using ipin2track_map */
             for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
                 const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
-                for (const RRNodeId& ipin_node : track2ipin_map[gsb_side][inode]) {
+                for (RRNodeId ipin_node : track2ipin_map[gsb_side][inode]) {
                     rr_graph_builder.create_edge_in_cache(chan_node, ipin_node, rr_node_driver_switches[ipin_node], false);
                     edge_count++;
                 }
@@ -1286,7 +1286,7 @@ void build_edges_for_one_tileable_rr_gsb_vib(RRGraphBuilder& rr_graph_builder,
         /* 3. create edges between CHANX|CHANY and CHANX|CHANY, using track2track_map */
         for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
             const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
-            for (const RRNodeId& track_node : track2track_map[gsb_side][inode]) {
+            for (RRNodeId track_node : track2track_map[gsb_side][inode]) {
                 rr_graph_builder.create_edge_in_cache(chan_node, track_node, rr_node_driver_switches[track_node], false);
                 edge_count++;
             }

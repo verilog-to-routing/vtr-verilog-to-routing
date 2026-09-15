@@ -28,7 +28,7 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
                                            const size_t& layer,
                                            size_t& num_edges_to_create) {
     size_t edge_count = 0;
-    for (const RRNodeId& node : rr_graph.nodes()) {
+    for (RRNodeId node : rr_graph.nodes()) {
         /* Bypass all the non OPIN nodes */
         if (e_rr_type::OPIN != rr_graph.node_type(node)) {
             continue;
@@ -66,7 +66,7 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
                                          const size_t& layer,
                                          size_t& num_edges_to_create) {
     size_t edge_count = 0;
-    for (const RRNodeId& node : rr_graph.nodes()) {
+    for (RRNodeId node : rr_graph.nodes()) {
         /* Bypass all the non IPIN nodes */
         if (e_rr_type::IPIN != rr_graph.node_type(node)) {
             continue;
