@@ -1,14 +1,11 @@
-#include <algorithm>
-
 #include "vtr_assert.h"
-#include "vtr_log.h"
 
 #include "tileable_rr_graph_utils.h"
 #include "rr_graph_view.h"
 #include "vtr_geometry.h"
 
 vtr::Point<size_t> get_track_rr_node_start_coordinate(const RRGraphView& rr_graph,
-                                                      const RRNodeId& track_rr_node) {
+                                                      RRNodeId track_rr_node) {
     // Make sure we have CHANX or CHANY
     VTR_ASSERT((e_rr_type::CHANX == rr_graph.node_type(track_rr_node))
                || (e_rr_type::CHANY == rr_graph.node_type(track_rr_node)));
@@ -26,7 +23,7 @@ vtr::Point<size_t> get_track_rr_node_start_coordinate(const RRGraphView& rr_grap
 }
 
 vtr::Point<size_t> get_track_rr_node_end_coordinate(const RRGraphView& rr_graph,
-                                                    const RRNodeId& track_rr_node) {
+                                                    RRNodeId track_rr_node) {
     // Make sure we have CHANX or CHANY
     VTR_ASSERT((e_rr_type::CHANX == rr_graph.node_type(track_rr_node))
                || (e_rr_type::CHANY == rr_graph.node_type(track_rr_node)));
