@@ -4,7 +4,6 @@
 #include "vtr_log.h"
 
 #include "tileable_rr_graph_utils.h"
-#include "tileable_rr_graph_types.h"
 #include "rr_graph_view.h"
 #include "vtr_geometry.h"
 
