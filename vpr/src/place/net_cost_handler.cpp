@@ -255,6 +255,11 @@ bool NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
      * This is also done to minimize the number of timing node/edge invalidations
      * for incremental static timing analysis (incremental STA).
      */
+#ifndef VPR_USE_TBB
+    // The only use of the token is the poll below, which a serial build omits.
+    (void)cancel_token;
+#endif
+
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = placer_state_.block_locs();
 
@@ -271,9 +276,12 @@ bool NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
             // arbitrarily expensive for high-fanout nets, so poll between sinks.
             // The sinks staged so far are recorded in affected_pins, so a
             // revert restores them.
+            // Guarded like the poll in find_affected_nets_and_update_costs().
+#ifdef VPR_USE_TBB
             if (cancel_token.cancelled()) {
                 return false;
             }
+#endif
 
             float temp_delay = comp_td_single_connection_delay(delay_model, block_locs, net, ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
@@ -936,9 +944,13 @@ bool NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
         for (ClusterPinId blk_pin : clb_nlist.block_pins(blk_id)) {
             // Abandon the update if the caller no longer needs this evaluation.
             // A subsequent revert restores everything.
+            // Only a parallel build cancels, and cancelling only skips work whose
+            // result is discarded, so a serial build omits the poll.
+#ifdef VPR_USE_TBB
             if (cancel_token.cancelled()) {
                 return false;
             }
+#endif
 
             bool is_src_moving = false;
             if (clb_nlist.pin_type(blk_pin) == PinType::SINK) {
