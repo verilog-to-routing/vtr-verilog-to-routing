@@ -52,7 +52,7 @@ enum e_track_status {
 static enum e_track_status determine_track_status_of_gsb(const RRGraphView& rr_graph,
                                                          const RRGSB& rr_gsb,
                                                          const enum e_side& gsb_side,
-                                                         const size_t& track_id) {
+                                                         size_t track_id) {
     enum e_track_status track_status = TRACK_PASS;
     /* Get the rr_node */
     RRNodeId track_node = rr_gsb.get_chan_node(gsb_side, track_id);
@@ -101,7 +101,7 @@ static enum e_track_status determine_track_status_of_gsb(const RRGraphView& rr_g
 static bool is_gsb_in_track_cb_population(const RRGraphView& rr_graph,
                                           const RRGSB& rr_gsb,
                                           const e_side& gsb_side,
-                                          const int& track_id,
+                                          int track_id,
                                           const std::vector<t_segment_inf>& segment_inf) {
     /* Get the rr_node */
     RRNodeId track_node = rr_gsb.get_chan_node(gsb_side, track_id);
@@ -143,7 +143,7 @@ static bool is_gsb_in_track_cb_population(const RRGraphView& rr_graph,
 static bool is_gsb_in_track_sb_population(const RRGraphView& rr_graph,
                                           const RRGSB& rr_gsb,
                                           const e_side& gsb_side,
-                                          const int& track_id,
+                                          int track_id,
                                           const std::vector<t_segment_inf>& segment_inf) {
     /* Get the rr_node */
     const RRNodeId& track_node = rr_gsb.get_chan_node(gsb_side, track_id);
@@ -175,7 +175,7 @@ static bool is_gsb_in_track_sb_population(const RRGraphView& rr_graph,
  * We consider the following list [to_track, to_track + Fs/3 - 1]
  * if the [to_track + Fs/3 - 1] exceeds the num_to_tracks, we start over from 0!
  ***********************************************************************/
-static std::vector<size_t> get_to_track_list(const int& Fs, const int& to_track, const int& num_to_tracks) {
+static std::vector<size_t> get_to_track_list(int Fs, int to_track, int num_to_tracks) {
     std::vector<size_t> to_tracks;
 
     for (int i = 0; i < Fs; i = i + 3) {
@@ -201,12 +201,12 @@ static std::vector<size_t> get_to_track_list(const int& Fs, const int& to_track,
  * The track_ids to return will depend on different topologies of SB
  *  SUBSET, UNIVERSAL, and WILTON.
  ***********************************************************************/
-static std::vector<size_t> get_switch_block_to_track_id(const e_switch_block_type& switch_block_type,
-                                                        const int& Fs,
+static std::vector<size_t> get_switch_block_to_track_id(e_switch_block_type switch_block_type,
+                                                        int Fs,
                                                         const e_side& from_side,
-                                                        const int& from_track,
+                                                        int from_track,
                                                         const e_side& to_side,
-                                                        const int& num_to_tracks) {
+                                                        int num_to_tracks) {
     /* This routine returns the track number to which the from_track should
      * connect.  It supports any Fs % 3 == 0, switch blocks.
      */
@@ -312,9 +312,9 @@ static std::vector<size_t> get_switch_block_to_track_id(const e_switch_block_typ
  ***********************************************************************/
 static void build_gsb_one_group_track_to_track_map(const RRGraphView& rr_graph,
                                                    const RRGSB& rr_gsb,
-                                                   const e_switch_block_type& sb_type,
-                                                   const int& Fs,
-                                                   const bool& wire_opposite_side,
+                                                   e_switch_block_type sb_type,
+                                                   int Fs,
+                                                   bool wire_opposite_side,
                                                    const t_track_group& from_tracks, /* [0..gsb_side][track_indices] */
                                                    const t_track_group& to_tracks,   /* [0..gsb_side][track_indices] */
                                                    t_track2track_map& track2track_map) {
@@ -437,12 +437,12 @@ static void build_gsb_one_group_track_to_track_map(const RRGraphView& rr_graph,
  ***********************************************************************/
 t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
                                                const RRGSB& rr_gsb,
-                                               const e_switch_block_type& sb_type,
-                                               const int& Fs,
-                                               const e_switch_block_type& sb_subtype,
-                                               const int& sub_fs,
-                                               const bool& concat_wire,
-                                               const bool& wire_opposite_side,
+                                               e_switch_block_type sb_type,
+                                               int Fs,
+                                               e_switch_block_type sb_subtype,
+                                               int sub_fs,
+                                               bool concat_wire,
+                                               bool wire_opposite_side,
                                                const std::vector<t_segment_inf>& segment_inf) {
     t_track2track_map track2track_map; /* [0..gsb_side][0..chan_width][track_indices] */
 
@@ -537,9 +537,9 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                                                      RRGraphBuilder& rr_graph_builder,
                                                      const RRGraphView& rr_graph,
                                                      const std::vector<t_segment_inf>& segment_inf,
-                                                     const size_t& layer,
+                                                     size_t layer,
                                                      const vtr::Point<size_t>& gsb_coordinate,
-                                                     const RRSwitchId& delayless_switch,
+                                                     RRSwitchId delayless_switch,
                                                      vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches) {
 
     std::vector<std::vector<std::vector<std::vector<RRNodeId>>>> chan_rr_nodes_all_sides; //[side][bend_num][start/end][node]
@@ -766,7 +766,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
 }
 
 /* Build a RRChan Object with the given channel type and coorindators */
-static RRChan build_one_tileable_rr_chan(const size_t& layer,
+static RRChan build_one_tileable_rr_chan(size_t layer,
                                          const vtr::Point<size_t>& chan_coordinate,
                                          const e_rr_type& chan_type,
                                          const RRGraphView& rr_graph,
@@ -853,9 +853,9 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                 const vtr::Point<size_t>& device_chan_width,
                                 const std::vector<t_segment_inf>& segment_inf_x,
                                 const std::vector<t_segment_inf>& segment_inf_y,
-                                const size_t& layer,
+                                size_t layer,
                                 const vtr::Point<size_t>& gsb_coordinate,
-                                const bool& perimeter_cb,
+                                bool perimeter_cb,
                                 e_gsb_version gsb_version) {
     /* Create an object to return */
     RRGSB rr_gsb(gsb_version);
@@ -1314,9 +1314,9 @@ void build_edges_for_one_tileable_rr_gsb_vib(RRGraphBuilder& rr_graph_builder,
 static void build_gsb_one_ipin_track2pin_map(const RRGraphView& rr_graph,
                                              const RRGSB& rr_gsb,
                                              const enum e_side& ipin_side,
-                                             const size_t& ipin_node_id,
+                                             size_t ipin_node_id,
                                              const std::vector<int>& Fc,
-                                             const size_t& offset,
+                                             size_t offset,
                                              const std::vector<t_segment_inf>& segment_inf,
                                              t_track2pin_map& track2ipin_map) {
     /* Get a list of segment_ids*/
@@ -1407,10 +1407,10 @@ static void build_gsb_one_ipin_track2pin_map(const RRGraphView& rr_graph,
 static void build_gsb_one_opin_pin2track_map(const RRGraphView& rr_graph,
                                              const RRGSB& rr_gsb,
                                              const enum e_side& opin_side,
-                                             const size_t& opin_node_id,
+                                             size_t opin_node_id,
                                              const enum e_side& chan_side,
                                              const std::vector<int>& Fc,
-                                             const size_t& offset,
+                                             size_t offset,
                                              const std::vector<t_segment_inf>& segment_inf,
                                              t_pin2track_map& opin2track_map) {
     // Get a list of segment_ids*/
@@ -1581,7 +1581,7 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
                                             const DeviceGrid& grids,
                                             const std::vector<t_segment_inf>& segment_inf,
                                             const std::vector<vtr::Matrix<int>>& Fc_out,
-                                            const bool& opin2all_sides) {
+                                            bool opin2all_sides) {
     t_pin2track_map opin2track_map;
     /* Resize the matrix */
     opin2track_map.resize(rr_gsb.get_num_sides());
@@ -1667,7 +1667,7 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
 void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                                           RRGraphBuilder& rr_graph_builder,
                                           const DeviceGrid& grids,
-                                          const size_t& layer,
+                                          size_t layer,
                                           const vtr::Point<size_t>& from_grid_coordinate,
                                           const std::vector<t_direct_inf>& directs,
                                           const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs) {
@@ -1823,7 +1823,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                         const VibDeviceGrid& vib_grid,
                         const RRGSB& rr_gsb,
                         const std::vector<t_segment_inf>& segment_inf,
-                        const size_t& layer,
+                        size_t layer,
                         const vtr::Point<size_t>& gsb_coordinate,
                         const vtr::Point<size_t>& actual_coordinate) {
     VTR_ASSERT(rr_gsb.get_x() == gsb_coordinate.x() && rr_gsb.get_y() == gsb_coordinate.y());
