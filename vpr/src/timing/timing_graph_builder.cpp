@@ -523,7 +523,31 @@ void TimingGraphBuilder::create_block_internal_clock_timing_edges(const AtomBloc
             NodeId tnode = netlist_lookup_.atom_pin_tnode(pin, blk_tnode_type);
             if (!tnode) continue;
 
-            if (clock_generator_tnodes.count(tnode)) continue; //Clock sources don't have incoming clock pin connections
+            if (clock_generator_tnodes.count(tnode)) {
+                // Clock generator SOURCE nodes don't participate in the normal clock-to-Q
+                // edge creation (they are level-0 sources for the generated clock domain).
+                // However, we add a disabled PRIMITIVE_CLOCK_LAUNCH edge here so that
+                // update_generated_clock_source_latencies() can query the clk-to-Q delay
+                // when computing the source latency for the generated clock.
+                // The edge is disabled so this node remains at level 0 (node_num_active_in_edges == 0),
+                // leaving normal Tatum traversal completely unchanged.
+                AtomPortId port = netlist_.pin_port(pin);
+                const t_model_ports* model_port = netlist_.port_model(port);
+                if (!model_port->clock.empty()) {
+                    AtomPortId clk_port = netlist_.find_port(blk, model_port->clock);
+                    if (clk_port && netlist_.port_width(clk_port) == 1) {
+                        AtomPinId clk_pin = netlist_.port_pin(clk_port, 0);
+                        if (clk_pin) {
+                            NodeId clk_tnode = netlist_lookup_.atom_pin_tnode(clk_pin);
+                            if (clk_tnode) {
+                                tatum::EdgeId launch_edge = tg_->add_edge(tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH, clk_tnode, tnode);
+                                tg_->disable_edge(launch_edge);
+                            }
+                        }
+                    }
+                }
+                continue;
+            }
 
             auto node_type = tg_->node_type(tnode);
 

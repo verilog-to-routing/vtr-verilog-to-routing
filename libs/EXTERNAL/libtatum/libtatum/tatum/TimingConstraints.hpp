@@ -35,6 +35,16 @@ class TimingConstraints {
         typedef tatum::util::Range<source_latency_iterator> source_latency_range;
         typedef tatum::util::Range<constant_generator_iterator> constant_generator_range;
 
+    public: //Types
+        // An element of the stored critical path from a master clock's source node through
+        // the clock routing network to the generator flip-flop's clock pin. Used by the
+        // timing reporter to expand the "clock source latency" line into its actual segments.
+        struct GeneratedClockSourcePathElem {
+            NodeId node;
+            EdgeId incoming_edge; // Invalid for the first element (the master source node)
+            Time cumulative_delay; // Absolute arrival time at this node from the master traversal
+        };
+
     public: //Accessors
         ///\returns A range containing all defined clock domains
         domain_range clock_domains() const;
@@ -87,6 +97,22 @@ class TimingConstraints {
         //
         //Corresponds to the delay from the clock's true source to it's definition point on-chip
         Time source_latency(const DomainId domain_id, ArrivalType arrival_type) const;
+
+        ///\returns The master (source) clock domain for a generated clock, or DomainId::INVALID() if not a generated clock
+        DomainId generated_clock_master(const DomainId generated_domain) const;
+
+        ///\returns True if a critical source path has been stored for this generated clock domain
+        bool has_generated_clock_source_path(DomainId gen_domain) const;
+
+        ///\returns The stored critical source path for the generated clock domain and arrival type.
+        /// Only valid after update_generated_clock_source_latencies() has run.
+        const std::vector<GeneratedClockSourcePathElem>& generated_clock_source_path(
+            DomainId gen_domain, ArrivalType arrival_type) const;
+
+        ///\returns The user-specified source latency (from set_clock_latency -source).
+        /// Defaults to zero if not explicitly set. For generated clocks this value is stacked
+        /// on top of the computed network delay.
+        Time user_source_latency(DomainId domain_id, ArrivalType arrival_type) const;
 
         ///\returns A range of all constant generator nodes
         constant_generator_range constant_generators() const;
@@ -147,6 +173,16 @@ class TimingConstraints {
         ///Sets the source latency of the specified clock domain
         void set_source_latency(const DomainId domain_id, const ArrivalType arrival_type, const Time latency);
 
+        ///Records that generated_domain is derived from master_domain (used to compute source latency)
+        void set_generated_clock_master(const DomainId generated_domain, const DomainId master_domain);
+
+        ///Stores the critical source path for the given generated clock domain and arrival type.
+        void set_generated_clock_source_path(DomainId gen_domain, ArrivalType arrival_type,
+                                             std::vector<GeneratedClockSourcePathElem> path);
+
+        ///Stores the user-specified source latency for stacking on top of computed network delay.
+        void set_user_source_latency(DomainId domain_id, ArrivalType arrival_type, Time latency);
+
         ///Sets the source node for the specified clock domain
         void set_clock_domain_source(const NodeId node_id, const DomainId domain_id);
 
@@ -191,6 +227,20 @@ class TimingConstraints {
 
         std::map<DomainId,Time> source_latencies_early_;
         std::map<DomainId,Time> source_latencies_late_;
+
+        // Maps each generated clock domain to the master clock domain it is derived from.
+        std::map<DomainId,DomainId> generated_clock_masters_;
+
+        // Critical source paths for generated clocks: master SOURCE → generator CPIN.
+        // Populated by update_generated_clock_source_latencies(); cleared on remap_nodes().
+        std::map<DomainId, std::vector<GeneratedClockSourcePathElem>> generated_clock_source_paths_late_;
+        std::map<DomainId, std::vector<GeneratedClockSourcePathElem>> generated_clock_source_paths_early_;
+
+        // User-specified source latencies (from set_clock_latency -source). Kept separate so
+        // that update_generated_clock_source_latencies() can stack them on top of the computed
+        // network delay without double-counting across repeated STA runs.
+        std::map<DomainId, Time> user_source_latencies_late_;
+        std::map<DomainId, Time> user_source_latencies_early_;
 };
 
 /*
