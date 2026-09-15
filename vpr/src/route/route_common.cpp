@@ -162,7 +162,7 @@ bool feasible_routing() {
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
-    for (const RRNodeId& rr_id : rr_graph.nodes()) {
+    for (RRNodeId rr_id : rr_graph.nodes()) {
         if (route_ctx.rr_node_route_inf[rr_id].occ() > rr_graph.node_capacity(rr_id)) {
             return (false);
         }
@@ -253,7 +253,7 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
 #else
     size_t overused_nodes = 0, total_overuse = 0, worst_overuse = 0;
 
-    for (const RRNodeId& rr_id : rr_graph.nodes()) {
+    for (RRNodeId rr_id : rr_graph.nodes()) {
         int overuse = route_ctx.rr_node_route_inf[rr_id].occ() - rr_graph.node_capacity(rr_id);
 
         // If overused, update the acc_cost and add this node to the overuse info

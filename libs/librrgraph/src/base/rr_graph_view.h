@@ -105,11 +105,11 @@ class RRGraphView {
      * @brief Aggregates for creating range-based loops for nodes.
      *
      * To iterate over the nodes in an RRGraph, using a range-based loop is recommended.
-     * 
+     *
      * @code
-     * 
-     * // Strongly suggest using a read-only rr_graph object const RRGraph& rr_graph;
-     * for (const RRNodeId& node : rr_graph.nodes()) {
+     * // Strongly suggest using a read-only rr_graph object
+     * const RRGraphView& rr_graph;
+     * for (RRNodeId node : rr_graph.nodes()) {
      *     // Do something with each node
      * }
      * @endcode

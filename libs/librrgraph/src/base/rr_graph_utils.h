@@ -43,18 +43,6 @@ struct t_cluster_pin_chain {
 };
 
 /**
- * @brief Get switches in a RRGraph starting at from_node and ending at to_node.
- *
- * @details
- * Uses RRGraphView::find_edges(), then converts these edges to switch IDs.
- *
- * @return A vector of switch IDs
- */
-std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
-                                               RRNodeId from_node,
-                                               RRNodeId to_node);
-
-/**
  * @brief Fan-in edges of every RR node, stored in compressed sparse row form.
  *
  * All fan-in edges live in one flat array grouped by sink node.
