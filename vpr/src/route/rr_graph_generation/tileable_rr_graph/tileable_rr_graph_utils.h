@@ -9,7 +9,6 @@
 #include "vtr_geometry.h"
 
 /* Headers from vpr library */
-#include "rr_graph_obj.h"
 #include "rr_graph_view.h"
 
 /**

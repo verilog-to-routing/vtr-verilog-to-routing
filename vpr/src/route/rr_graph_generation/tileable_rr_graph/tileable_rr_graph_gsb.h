@@ -12,7 +12,6 @@
 #include "device_grid.h"
 
 #include "rr_gsb.h"
-#include "rr_graph_obj.h"
 #include "rr_graph.h"
 #include "rr_graph_view.h"
 #include "rr_graph_builder.h"

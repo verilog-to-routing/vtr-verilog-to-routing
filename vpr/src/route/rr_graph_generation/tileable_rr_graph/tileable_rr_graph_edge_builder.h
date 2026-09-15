@@ -11,7 +11,6 @@
 
 #include "physical_types.h"
 #include "device_grid.h"
-#include "rr_graph_obj.h"
 #include "rr_graph_type.h"
 #include "rr_graph_view.h"
 #include "rr_graph.h"
