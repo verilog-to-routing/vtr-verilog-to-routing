@@ -315,6 +315,13 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
             conn_delay_budget.min_delay = budgeting_inf.get_min_delay_budget(net_id, target_pin);
             conn_delay_budget.short_path_criticality = budgeting_inf.get_crit_short_path(net_id, target_pin);
             conn_delay_budget.routing_budgets_algorithm = router_opts.routing_budgets_algorithm;
+
+            if (router_opts.routing_budgets_algorithm == LOW_SKEW_CLOCK) {
+                // The RCV cost function accumulates backward_delay as criticality * Tdel.
+                // This can throw off the RCV calculations since the delay no longer appears
+                // to be accurate. Setting the criticality to 1.0 to ignore this affect.
+                cost_params.criticality = 1.0f;
+            }
         }
         router.set_rcv_enabled(use_rcv);
 

@@ -25,6 +25,21 @@ static inline bool rcv_post_target_prune_node(float new_total_cost,
     return (new_total_cost * params.post_target_prune_fac) - params.post_target_prune_offset > best_total_cost_to_target;
 }
 
+/**
+ * @brief Computes the RCV backward congestion cost accumulated over the
+ *        already-routed part of the route tree from its root down to
+ *        (and including) rt_node.
+ */
+static inline float rcv_route_tree_backward_cong(const RouteTreeNode& rt_node, const t_conn_cost_params& cost_params) {
+    float backward_cong = 0.f;
+    const RouteTreeNode* node = &rt_node;
+    while (vtr::optional<const RouteTreeNode&> parent = node->parent()) {
+        backward_cong += (1.f - cost_params.criticality) * get_rr_cong_cost(node->inode, cost_params.pres_fac);
+        node = &(*parent);
+    }
+    return backward_cong;
+}
+
 template<typename Heap>
 void SerialConnectionRouter<Heap>::timing_driven_find_single_shortest_path_from_heap(RRNodeId sink_node,
                                                                                      const t_conn_cost_params& cost_params,
@@ -518,7 +533,8 @@ void SerialConnectionRouter<Heap>::add_route_tree_node_to_heap(
         this->rr_node_route_inf_[inode].R_upstream = R_upstream;
         this->heap_.push_back({tot_cost, inode});
     } else {
-        float expected_total_cost = this->compute_node_cost_using_rcv(cost_params, inode, target_node, rt_node.Tdel, 0, R_upstream);
+        float backward_cong = rcv_route_tree_backward_cong(rt_node, cost_params);
+        float expected_total_cost = this->compute_node_cost_using_rcv(cost_params, inode, target_node, rt_node.Tdel, backward_cong, R_upstream);
 
         add_to_mod_list(inode);
         this->rr_node_route_inf_[inode].path_cost = expected_total_cost;
@@ -528,6 +544,7 @@ void SerialConnectionRouter<Heap>::add_route_tree_node_to_heap(
 
         this->rcv_path_manager.alloc_path_struct(this->rcv_path_data[inode]);
         this->rcv_path_data[inode]->backward_delay = rt_node.Tdel;
+        this->rcv_path_data[inode]->backward_cong = backward_cong;
 
         this->heap_.push_back({expected_total_cost, inode});
     }
