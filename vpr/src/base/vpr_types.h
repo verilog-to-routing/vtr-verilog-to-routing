@@ -1166,6 +1166,11 @@ struct t_ap_opts {
     /// A trade-off parameter used to decide how focused the AP flow should be on optimizing timing over wirelength.
     float ap_timing_tradeoff;
 
+    /// A trade-off parameter controlling which blocks the partial legalizer prefers to displace.
+    /// 0 = purely proximity-based (displace blocks closest to the partition line),
+    /// 1 = purely criticality-based (displace the least-critical blocks first).
+    float ap_pl_crit_tradeoff;
+
     /// The threshold to ignore nets with higher fanout than that value while constructing the solver.
     int ap_high_fanout_threshold;
 

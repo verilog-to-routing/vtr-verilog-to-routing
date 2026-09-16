@@ -21,6 +21,7 @@
 #include "vtr_geometry.h"
 #include "vtr_time.h"
 #include "vtr_vector.h"
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -79,6 +80,39 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
         }
     }
 
+    // Pre-create one AP block per long chain. A long chain spans multiple
+    // clusters (multiple molecules with the same chain_id) and must move as
+    // one unit during global placement.
+    // Build a map from each chain atom to the AP block that represents its chain.
+    vtr::vector<AtomBlockId, APBlockId> chain_atom_to_ap_block(atom_netlist.blocks().size());
+    {
+        // Group all long-chain molecule IDs by their shared chain_id.
+        std::unordered_map<size_t, std::vector<PackMoleculeId>> chain_id_to_molecules;
+        for (PackMoleculeId mol_id : prepacker.molecules()) {
+            const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
+            if (!mol.is_chain() || !mol.chain_id.is_valid())
+                continue;
+            if (!prepacker.get_molecule_chain_info(mol.chain_id).is_long_chain)
+                continue;
+            chain_id_to_molecules[size_t(mol.chain_id)].push_back(mol_id);
+        }
+        for (auto& [chain_id_val, mol_ids] : chain_id_to_molecules) {
+            VTR_ASSERT(!mol_ids.empty());
+            // Name the super-block after the root atom of the first molecule.
+            const t_pack_molecule& first_mol = prepacker.get_molecule(mol_ids[0]);
+            const std::string& blk_name = atom_netlist.block_name(first_mol.atom_block_ids[first_mol.root]);
+            APBlockId chain_ap_blk_id = ap_netlist.create_block(blk_name, mol_ids);
+            for (PackMoleculeId mol_id : mol_ids) {
+                for (AtomBlockId atom_id : prepacker.get_molecule(mol_id).atom_block_ids) {
+                    // atom_block_ids may contain INVALID entries when the molecule
+                    // does not completely fill the pack pattern.
+                    if (atom_id.is_valid())
+                        chain_atom_to_ap_block[atom_id] = chain_ap_blk_id;
+                }
+            }
+        }
+    }
+
     // Add the APBlocks based on the atom block molecules. This essentially
     // creates supernodes.
     // Each AP block has the name of the first atom block in the molecule.
@@ -89,9 +123,12 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
         if (ram_atom_to_ap_block[atom_blk_id].is_valid()) {
             // RAM atom: use the pre-created super-block for its physical group.
             ap_blk_id = ram_atom_to_ap_block[atom_blk_id];
+        } else if (chain_atom_to_ap_block[atom_blk_id].is_valid()) {
+            // Long-chain atom: use the pre-created super-block for its chain.
+            ap_blk_id = chain_atom_to_ap_block[atom_blk_id];
         } else {
-            // Non-RAM atom: Get the molecule of this block and create the AP
-            // block (if not already done)
+            // Non-RAM, non-chain atom: Get the molecule of this block and
+            // create the AP block (if not already done)
             PackMoleculeId molecule_id = prepacker.get_atom_molecule(atom_blk_id);
             const t_pack_molecule& mol = prepacker.get_molecule(molecule_id);
             const std::string& first_blk_name = atom_netlist.block_name(mol.atom_block_ids[0]);
