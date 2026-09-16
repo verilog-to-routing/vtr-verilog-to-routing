@@ -15,6 +15,7 @@
 #include "rr_node_types.h"
 #include "rr_graph_type.h"
 #include "rr_graph_view.h"
+#include "rr_rc_data.h"
 #include "rr_graph_builder.h"
 
 /**
@@ -40,7 +41,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     RRGraphBuilder& rr_graph_builder,
                                     vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                     std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,
-                                    std::vector<t_rr_rc_data>& rr_rc_data,
+                                    RRRCData& rr_rc_data,
                                     const DeviceGrid& grids,
                                     const VibDeviceGrid& vib_grid,
                                     const size_t& layer,

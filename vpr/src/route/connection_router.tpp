@@ -282,7 +282,7 @@ float ConnectionRouter<Heap>::evaluate_timing_driven_backward_costs(RTExploredNo
     float switch_Cinternal = rr_switch_inf_[iswitch].Cinternal;
 
     // To node info
-    int16_t rc_index = rr_graph_->node_rc_index(to->index);
+    NodeRCIndex rc_index = rr_graph_->node_rc_index(to->index);
     float node_R = rr_rc_data_[rc_index].R;
 
     // From node info

@@ -1,13 +1,36 @@
 #pragma once
 
+#include <unordered_map>
+
+#include "rr_graph_fwd.h"
 #include "rr_node_types.h"
+#include "vtr_assert.h"
+#include "vtr_vector.h"
 
 /**
- * @brief Returns the index to a t_rr_rc_data matching the specified values.
+ * @brief Fly-weighted resistance and capacitance values of RR nodes.
  *
- * If an existing t_rr_rc_data matches the specified R/C it's index
- * is returned, otherwise the t_rr_rc_data is created.
- *
- * The returned indices index into DeviceContext.rr_rc_data.
+ * Each distinct (R, C) pair is stored once and is addressed by a NodeRCIndex.
  */
-NodeRCIndex find_create_rr_rc_data(const float R, const float C, std::vector<t_rr_rc_data>& rr_rc_data);
+class RRRCData {
+  public:
+    /// @brief Returns the index of the entry matching R and C, creating it if there is none.
+    NodeRCIndex find_create(float R, float C);
+
+    /// @brief Returns the (R, C) pair at the given index.
+    const t_rr_rc_data& operator[](NodeRCIndex index) const {
+        VTR_ASSERT_SAFE(size_t(index) < values_.size());
+        return values_[index];
+    }
+
+    /// @brief Returns the number of distinct (R, C) pairs.
+    size_t size() const {
+        return values_.size();
+    }
+
+  private:
+    /// Distinct (R, C) pairs in creation order
+    vtr::vector<NodeRCIndex, t_rr_rc_data> values_;
+    /// Index into values_ keyed on the bit patterns of R and C
+    std::unordered_map<uint64_t, NodeRCIndex> index_;
+};
