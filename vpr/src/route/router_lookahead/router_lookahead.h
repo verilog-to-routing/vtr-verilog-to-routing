@@ -115,6 +115,17 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
                                                    bool device_model_warnings,
                                                    float interposer_base_cut_multiplier);
 
+
+/**
+ * @brief RouterLookahead implementation. This lookahead predicts the cost of a routing by calculation and does not use a table.
+ *
+ * To predict routing cost, it will take into account what type of wire the route is starting from, for example an L4 wire.
+ * Then, it will calculate how many L4 wires it must use to reach the destination. Predicted cost is the average delay/congestion
+ * cost of an L4 wire * the predicted number of L4 wires needed to reach the destination.
+ *
+ * In modern FPGA architectures with many different wire types, this lookahead will result in subpar quality of results.
+ * Prefer using the map lookahead instead.
+ */
 class ClassicLookahead final : public RouterLookahead {
   public:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
@@ -151,6 +162,12 @@ class ClassicLookahead final : public RouterLookahead {
     float classic_wire_lookahead_cost(RRNodeId node, RRNodeId target_node, float criticality, float R_upstream) const;
 };
 
+
+/**
+ * @brief NoOp lookahead that returns zero for any queries.
+ *
+ * This lookahead is used in the router lookahead profiler to do a full dijkstra flood fill without using any hueristics.
+ */
 class NoOpLookahead final : public RouterLookahead {
   protected:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;

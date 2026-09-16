@@ -5,6 +5,14 @@
 #include "router_lookahead.h"
 #include "router_lookahead_map_utils.h"
 
+/**
+ * @brief RouterLookahead implementation. This lookahead uses a table
+ * indexed by (delta_x, delta_y) and other things like wire type.
+
+ * It is similar to MapLookahead, except it utilizes sparse sampling of
+ * the chip to reduce the run-time to build the router lookahead and also
+ * its memory footprint.
+ */
 class CompressedMapLookahead final : public RouterLookahead {
   public:
     explicit CompressedMapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings);

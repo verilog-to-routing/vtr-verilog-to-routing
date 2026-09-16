@@ -8,7 +8,14 @@
 #include "router_lookahead_interposer.h"
 
 /**
- * @brief Current VPR RouterLookahead implementation.
+ * @brief Current VPR RouterLookahead implementation. This lookahead uses a table
+ * indexed by (delta_x, delta_y) and other things like wire type.
+ *
+ * The lookahead table/map is constructed using data reduction of sample routes.
+ * It first picks sample points near the bottom left corner of the device and then
+ * finds the shortest paths to the entire RR Graph starting from these sample points.
+ * For all sample routes with a specific (delta_x, delta_y), the minimum path cost
+ * is inserted in the table.
  */
 class MapLookahead final : public RouterLookahead {
   public:
