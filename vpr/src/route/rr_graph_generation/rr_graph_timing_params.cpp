@@ -46,7 +46,7 @@ void add_rr_graph_C_from_switches() {
 
     std::vector<float> rr_node_C(rr_graph.num_nodes(), 0.); //Stores the final C
 
-    for (const RRNodeId& rr_id : rr_graph.nodes()) {
+    for (RRNodeId rr_id : rr_graph.nodes()) {
         size_t inode = (size_t)rr_id;
         //The C may have already been partly initialized (e.g. with metal capacitance)
         rr_node_C[inode] += rr_graph.node_C(rr_id);

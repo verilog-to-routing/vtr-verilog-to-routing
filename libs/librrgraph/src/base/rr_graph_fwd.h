@@ -4,16 +4,14 @@
 
 #include "vtr_strong_id.h"
 
-/***************************************************************
- * This file includes a light declaration for the class RRGraph
- * For a detailed description and how to use the class RRGraph,
- * please refer to rr_graph_obj.h
- ***************************************************************/
+/**
+ * @file
+ * @brief Light declarations for the routing resource graph: the node storage
+ * class and the strong ID types that index its nodes, edges, switches and segments.
+ */
 
 //Forward declaration
 class t_rr_graph_storage;
-
-class RRGraph;
 
 typedef vtr::StrongId<struct rr_node_id_tag, uint32_t> RRNodeId;
 typedef vtr::StrongId<struct rr_edge_id_tag, uint32_t> RREdgeId;
