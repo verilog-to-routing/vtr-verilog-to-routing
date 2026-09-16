@@ -107,6 +107,15 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
 
     void update_setup() override {
         //Update the arrival and required times and re-calculate slacks
+
+        //Keep generated clock source latencies in sync with the current routing delays.
+        {
+            auto& timing_ctx = g_vpr_ctx.timing();
+            update_generated_clock_source_latencies(*timing_ctx.constraints,
+                                                    *timing_ctx.graph,
+                                                    *delay_calc_);
+        }
+
         double sta_wallclock_time = 0.;
         {
             auto start_time = Clock::now();
@@ -225,6 +234,13 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
     }
 
     void update_hold() override {
+        {
+            auto& timing_ctx = g_vpr_ctx.timing();
+            update_generated_clock_source_latencies(*timing_ctx.constraints,
+                                                    *timing_ctx.graph,
+                                                    *delay_calc_);
+        }
+
         double sta_wallclock_time = 0.;
         {
             auto start_time = Clock::now();
@@ -333,6 +349,13 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
     //  it performs a single combined STA to update both setup and hold (instead of calling it
     //  twice).
     void update() override {
+        {
+            auto& timing_ctx = g_vpr_ctx.timing();
+            update_generated_clock_source_latencies(*timing_ctx.constraints,
+                                                    *timing_ctx.graph,
+                                                    *setup_timing_.delay_calculator());
+        }
+
         double sta_wallclock_time = 0.;
         {
             auto start_time = Clock::now();
