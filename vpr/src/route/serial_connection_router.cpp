@@ -450,7 +450,15 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
             //       path if the lookahead is inaccurate. May need to investigate if more quality
             //       is needed.
             float best_total_cost_to_target = this->rr_node_route_inf_[target_node].path_cost;
-            add_to_heap = !rcv_post_target_prune_node(next.total_cost, best_total_cost_to_target, cost_params);
+            if (std::isinf(best_total_cost_to_target)) {
+                // The target hasn't been reached yet, only add strictly better paths to the
+                // queue. This prevents potential infinite loops.
+                add_to_heap = next.total_cost < best_total_cost;
+            } else {
+                // Once the target has been reached, we can allow some worse paths in hope of
+                // finding a better RCV path to the target.
+                add_to_heap = !rcv_post_target_prune_node(next.total_cost, best_total_cost_to_target, cost_params);
+            }
         } else {
             // No specific target (e.g. timing_driven_find_all_shortest_paths_from_route_tree);
             // RCV shouldn't reach here in practice, but fall back to a plain decrease-key check.
