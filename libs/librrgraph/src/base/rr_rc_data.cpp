@@ -20,6 +20,7 @@ NodeRCIndex RRRCData::find_create(float R, float C) {
 }
 
 static uint32_t float_key(float value) {
+    // This is taken for -0.0f too and rewrites it as +0.0f.
     if (value == 0.0f) {
         value = 0.0f;
     }
