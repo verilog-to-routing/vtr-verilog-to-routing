@@ -166,7 +166,7 @@ class ClassicLookahead final : public RouterLookahead {
 /**
  * @brief NoOp lookahead that returns zero for any queries.
  *
- * This lookahead is used in the router lookahead profiler to do a full dijkstra flood fill without using any hueristics.
+ * This lookahead is used in the router lookahead profiler to do a full dijkstra flood fill without using any heuristics.
  */
 class NoOpLookahead final : public RouterLookahead {
   protected:
