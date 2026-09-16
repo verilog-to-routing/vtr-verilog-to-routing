@@ -11,6 +11,20 @@ inline void update_serial_router_stats(RouterStats* router_stats,
                                        RRNodeId rr_node_id,
                                        const RRGraphView* rr_graph);
 
+/**
+ * @brief After the target is found for RCV, the queue is continued to be explored
+ *        until we are reasonably sure that no better path exists to the target.
+ *
+ * This method is used to decide of the given node is worth exploring any further.
+ * If the total cost to the given node is sufficiently higher than the best total
+ * cost to the target it, it can be ignored (pruned).
+ */
+static inline bool rcv_post_target_prune_node(float new_total_cost,
+                                              float best_total_cost_to_target,
+                                              const t_conn_cost_params& params) {
+    return (new_total_cost * params.post_target_prune_fac) - params.post_target_prune_offset > best_total_cost_to_target;
+}
+
 template<typename Heap>
 void SerialConnectionRouter<Heap>::timing_driven_find_single_shortest_path_from_heap(RRNodeId sink_node,
                                                                                      const t_conn_cost_params& cost_params,
@@ -18,6 +32,9 @@ void SerialConnectionRouter<Heap>::timing_driven_find_single_shortest_path_from_
                                                                                      const t_bb& target_bb) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     RoutingContext& route_ctx = g_vpr_ctx.mutable_routing();
+
+    const bool rcv_enabled = this->rcv_path_manager.is_enabled();
+    bool found_sink = false;
 
     HeapNode cheapest;
     while (this->heap_.try_pop(cheapest)) {
@@ -31,19 +48,32 @@ void SerialConnectionRouter<Heap>::timing_driven_find_single_shortest_path_from_
         VTR_LOGV_DEBUG(this->router_debug_, "  Popping node %d (cost: %g)\n",
                        inode, new_total_cost);
 
+        if (rcv_enabled && found_sink) {
+            // If RCV is enabled and the sink was found, if we pop a node from the queue with a
+            // sufficiently bad total cost (meaning all nodes in the queue have a worse total cost),
+            // we stop exploring and break out of routing. We assume that it is not worth exploring
+            // any further.
+            float new_back_cost = this->rr_node_route_inf_[inode].backward_path_cost;
+            float best_total_cost_to_target = this->rr_node_route_inf_[sink_node].path_cost;
+            if (rcv_post_target_prune_node(new_total_cost, best_total_cost_to_target, cost_params)) {
+                VTR_LOGV_DEBUG(this->router_debug_, "  Stopping: popped node %d fails post-target prune (total cost %g, back cost %g, best total cost to target %g)\n", inode, new_total_cost, new_back_cost, best_total_cost_to_target);
+                break;
+            }
+        }
+
         // Have we found the target?
         if (inode == sink_node) {
-            // If we're running RCV, the path will be stored in the path_data->path_rr vector
-            // This is then placed into the traceback so that the correct path is returned
-            // TODO: This can be eliminated by modifying the actual traceback function in route_timing
-            if (this->rcv_path_manager.is_enabled()) {
-                this->rcv_path_manager.insert_backwards_path_into_traceback(this->rcv_path_data[inode],
-                                                                            this->rr_node_route_inf_[inode].path_cost,
-                                                                            this->rr_node_route_inf_[inode].backward_path_cost,
-                                                                            route_ctx);
-            }
             VTR_LOGV_DEBUG(this->router_debug_, "  Found target %8d (%s)\n", inode, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, this->is_flat_).c_str());
-            break;
+
+            found_sink = true;
+
+            if (!rcv_enabled) {
+                break;
+            }
+
+            // If RCV is enabled, keep draining. It is possible that a better path to the target
+            // can be found if the lookahead was not perfect.
+            continue;
         }
 
         // If not, keep searching
@@ -53,6 +83,16 @@ void SerialConnectionRouter<Heap>::timing_driven_find_single_shortest_path_from_
                                       cost_params,
                                       bounding_box,
                                       target_bb);
+    }
+
+    // If we're running RCV, the path will be stored in the path_data->path_rr vector
+    // This is then placed into the traceback so that the correct path is returned
+    // TODO: This can be eliminated by modifying the actual traceback function in route_timing
+    if (rcv_enabled && found_sink) {
+        this->rcv_path_manager.insert_backwards_path_into_traceback(this->rcv_path_data[sink_node],
+                                                                     this->rr_node_route_inf_[sink_node].path_cost,
+                                                                     this->rr_node_route_inf_[sink_node].backward_path_cost,
+                                                                     route_ctx);
     }
 }
 
@@ -381,7 +421,26 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
         }
     } else {
         this->evaluate_timing_driven_total_cost(&next, cost_params, target_node, Tdel);
-        add_to_heap = best_total_cost > next.total_cost;
+
+        if (target_node != RRNodeId::INVALID() && to_node == target_node) {
+            // We only want to add the target to the heap (i.e. update its best path) if the total
+            // cost is better than the best total cost we have seen before.
+            add_to_heap = next.total_cost < best_total_cost;
+        } else if (target_node != RRNodeId::INVALID()) {
+            // If this is not the target, we want to always push to the queue; however, if the
+            // target has been found, we can save time by avoiding pushing obviously bad nodes
+            // to the queue (which will be ignored when popped anyways).
+            // TODO: RCV has a bit of a bug here. Every time a node is added to the heap, it
+            //       overwrites the current path to the target. This may overwrite a better
+            //       path if the lookahead is inaccurate. May need to investigate if more quality
+            //       is needed.
+            float best_total_cost_to_target = this->rr_node_route_inf_[target_node].path_cost;
+            add_to_heap = !rcv_post_target_prune_node(next.total_cost, best_total_cost_to_target, cost_params);
+        } else {
+            // No specific target (e.g. timing_driven_find_all_shortest_paths_from_route_tree);
+            // RCV shouldn't reach here in practice, but fall back to a plain decrease-key check.
+            add_to_heap = next.total_cost < best_total_cost;
+        }
     }
 
     float new_total_cost = next.total_cost;
