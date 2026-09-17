@@ -60,7 +60,7 @@
  *       otherwise.                                                          */
 struct alignas(16) t_rr_node_data {
     int16_t cost_index_ = LIBRRGRAPH_UNDEFINED_VAL;
-    int16_t rc_index_ = LIBRRGRAPH_UNDEFINED_VAL;
+    NodeRCIndex rc_index_ = NodeRCIndex::INVALID();
 
     int16_t xlow_ = LIBRRGRAPH_UNDEFINED_VAL;
     int16_t ylow_ = LIBRRGRAPH_UNDEFINED_VAL;
@@ -173,7 +173,7 @@ class t_rr_graph_storage {
     }
     const char* node_type_string(RRNodeId id) const;
 
-    int16_t node_rc_index(RRNodeId id) const {
+    NodeRCIndex node_rc_index(RRNodeId id) const {
         return node_storage_[id].rc_index_;
     }
 
@@ -1183,7 +1183,7 @@ class t_rr_graph_view {
     }
     const char* node_type_string(RRNodeId id) const;
 
-    int16_t node_rc_index(RRNodeId id) const {
+    NodeRCIndex node_rc_index(RRNodeId id) const {
         return node_storage_[id].rc_index_;
     }
 
