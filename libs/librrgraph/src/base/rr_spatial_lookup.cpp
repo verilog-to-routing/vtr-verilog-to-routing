@@ -263,7 +263,7 @@ void RRSpatialLookup::add_node(RRNodeId node,
         rr_node_indices_[type][layer][x][y][side].resize(ptc + 1, RRNodeId::INVALID());
     }
 
-    /* Register the node */
+    // Register the node
     rr_node_indices_[type][layer][x][y][side][ptc] = node;
 }
 

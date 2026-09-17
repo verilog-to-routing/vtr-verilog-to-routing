@@ -288,7 +288,8 @@ class RRSpatialLookup {
                                      e_rr_type type,
                                      e_side side = TOTAL_2D_SIDES[0]) const;
 
-    /* Returns true if (layer, x, y, side) is inside the allocated dimensions of the lookup for the given type */
+    /// @brief Returns true if (layer, x, y, side) is inside the allocated
+    /// dimensions of the lookup for the given type
     bool is_in_range(int layer,
                      int x,
                      int y,
