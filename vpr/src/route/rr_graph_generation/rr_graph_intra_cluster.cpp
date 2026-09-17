@@ -1134,10 +1134,6 @@ void build_intra_cluster_rr_graph(e_graph_type graph_type,
                    device_model_warnings);
 }
 
-/* -----------------------------------------------------------------------------------------
- * Bus-based muxes
- * --------------------------------------------------------------------------------------- */
-
 /**
  * @brief Records the bus-mux edges of one cluster that are present in the rr graph.
  *

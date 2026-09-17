@@ -1,31 +1,18 @@
 #pragma once
 /**
  * @file
- * @brief Bus-based muxes (<mux bus="true">) in the routing resource graph and
- *        their state during routing.
+ * @brief Bus-based muxes (<mux bus="true">) and their routing state.
  *
- * All bits of a bus-based mux share one select, so every bit routed through the
- * mux must be driven from the same input set (data line). The pb graph lowers
- * such a mux to one single-pin edge per (input set, bit), and the flat router
- * sees them as ordinary rr edges. The router keeps the bits together the way
- * pathfinder resolves node congestion: a bit driven from an input set that the
- * other routed bits of the mux do not use is "control congested", and its
- * present cost grows with the number of bits it would force onto another set.
+ * All bits of a bus mux share one select, so they must all use the same input
+ * set. The pb graph lowers the mux into independent single-pin edges, so the
+ * flat router needs extra state to preserve this constraint.
  *
- * Negotiating a shared mux select as a second kind of congestion comes from
- * Friedman et al., "SPR: An Architecture-Adaptive CGRA Mapping Tool", FPGA 2009,
- * section 7.1. Their setting is time-multiplexed, so virtual per-phase copies of
- * one mux contend for a single output wire and they need two congestion types on
- * that one resource. Here every mux is static and the bits are distinct wires
- * with their own capacity, so ordinary node congestion already covers everything
- * except agreement on the select.
+ * Similar to Pathfinder congestion, a bit using a different input set from the
+ * other routed bits is treated as "control congested". Its present cost grows
+ * with the number of bits it would move onto another input set.
  *
- * There is no history term. SPR needs one because their present control cost is a
- * mux-level scalar, identical for every input, so nothing tells a signal which
- * input to prefer and the symmetry has to be broken by history. The cost here is
- * per input set and already makes the minority set the expensive one to sit on.
- * A history term added later would have to penalize the set in use as well as the
- * alternatives, or it becomes a ratchet that locks in whichever set leads early.
+ * No history term is needed because the cost is tracked per input set, which
+ * already makes the minority choice more expensive.
  */
 #include <unordered_map>
 #include <vector>

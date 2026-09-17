@@ -31,11 +31,9 @@ void build_intra_cluster_rr_graph(e_graph_type graph_type,
 
 /**
  * @brief Records the bus-based muxes (<mux bus="true">) of the intra-cluster RR
- *        graph in RoutingContext::rr_bus_muxes and rr_bus_mux_out_nodes, so the
- *        router can keep every bit of a mux on one input set.
+ *        graph in RoutingContext::rr_bus_muxes and rr_bus_mux_out_nodes.
  *
  * Must be called once the intra-cluster RR graph is complete and its nodes are
- * in their final order, and again whenever that graph is rebuilt. Clears both
- * tables and returns immediately when the graph is not flat.
+ * in their final order.
  */
 void load_rr_bus_muxes(const RRSpatialLookup& node_lookup);

@@ -2,11 +2,6 @@
 /**
  * @file
  * @brief Helpers for bus-based muxes (<mux bus="true">).
- *
- * A bus-based mux has one select shared by every bit of its output bus, so all
- * of its bits must be driven from the same input set (data line). The pb graph
- * lowers such a mux to one single-pin edge per (input set, bit); the helpers
- * here identify those edges and the mux instance they belong to.
  */
 #include <unordered_map>
 #include <vector>
@@ -23,9 +18,6 @@ bool is_bus_mux_output_pin(const t_pb_graph_pin* pin);
 /**
  * @brief The pb_graph_node instance that owns the mux of a bus-mux edge, i.e.
  *        the node whose mode contains the mux's <interconnect>.
- *
- * Together with the interconnect this identifies one physical mux instance
- * (a pb_type instantiated num_pb times yields num_pb instances of its muxes).
  */
 const t_pb_graph_node* get_bus_mux_owner(const t_pb_graph_edge* edge);
 

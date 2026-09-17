@@ -591,12 +591,6 @@ struct RoutingContext : public Context {
     /**
      * @brief Bus-based mux instances of the intra-cluster rr graph. Empty unless flat
      *        routing is enabled and the architecture has <mux bus="true">.
-     *
-     * Rebuilt by load_rr_bus_muxes from alloc_and_load_rr_node_route_structs, like
-     * non_configurable_bitset below, so it is valid for the rr graph currently in place
-     * and is replaced whenever the graph is. Under flat routing the graph it annotates is
-     * circuit dependent, having nodes only for the pins of the pbs each cluster uses,
-     * which is why a mux instance names its cluster.
      */
     std::vector<t_rr_bus_mux> rr_bus_muxes;
 
