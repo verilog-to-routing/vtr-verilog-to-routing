@@ -16,7 +16,7 @@ static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const Device
 
 static void check_unbuffered_edges(const RRGraphView& rr_graph, int from_node);
 
-static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& grid, const t_rr_node& node);
+static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& grid, RRNodeId node);
 
 static void check_rr_edge(const RRGraphView& rr_graph,
                           const DeviceGrid& grid,
@@ -263,8 +263,6 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     }
                 }
 
-                const t_rr_node& node = rr_graph.rr_nodes()[inode];
-
                 bool is_fringe = ((rr_graph.node_xlow(rr_node) == 1)
                                   || (rr_graph.node_ylow(rr_node) == 1)
                                   || (rr_graph.node_xhigh(rr_node) == int(grid.width()) - 2)
@@ -275,7 +273,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
 
                 if (!is_chain && !is_fringe && !is_wire) {
                     if (rr_graph.node_type(rr_node) == e_rr_type::IPIN || rr_graph.node_type(rr_node) == e_rr_type::OPIN) {
-                        if (has_adjacent_channel(rr_graph, grid, node)) {
+                        if (has_adjacent_channel(rr_graph, grid, rr_node)) {
                             auto block_type = grid.get_physical_type({rr_graph.node_xlow(rr_node),
                                                                       rr_graph.node_ylow(rr_node),
                                                                       rr_graph.node_layer_low(rr_node)});
@@ -615,16 +613,13 @@ static void check_unbuffered_edges(const RRGraphView& rr_graph, int from_node) {
     } /* End for all from_node edges */
 }
 
-static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& grid, const t_rr_node& node) {
-    /* TODO: this function should be reworked later to adapt RRGraphView interface 
-     *       once xlow(), ylow(), side() APIs are implemented
-     */
-    VTR_ASSERT(rr_graph.node_type(node.id()) == e_rr_type::IPIN || rr_graph.node_type(node.id()) == e_rr_type::OPIN);
+static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& grid, RRNodeId node) {
+    VTR_ASSERT(rr_graph.node_type(node) == e_rr_type::IPIN || rr_graph.node_type(node) == e_rr_type::OPIN);
 
-    if ((rr_graph.node_xlow(node.id()) == 0 && !rr_graph.is_node_on_specific_side(node.id(), RIGHT))                          //left device edge connects only along block's right side
-        || (rr_graph.node_ylow(node.id()) == int(grid.height() - 1) && !rr_graph.is_node_on_specific_side(node.id(), BOTTOM)) //top device edge connects only along block's bottom side
-        || (rr_graph.node_xlow(node.id()) == int(grid.width() - 1) && !rr_graph.is_node_on_specific_side(node.id(), LEFT))    //right device edge connects only along block's left side
-        || (rr_graph.node_ylow(node.id()) == 0 && !rr_graph.is_node_on_specific_side(node.id(), TOP))                         //bottom device edge connects only along block's top side
+    if ((rr_graph.node_xlow(node) == 0 && !rr_graph.is_node_on_specific_side(node, RIGHT))                          //left device edge connects only along block's right side
+        || (rr_graph.node_ylow(node) == int(grid.height() - 1) && !rr_graph.is_node_on_specific_side(node, BOTTOM)) //top device edge connects only along block's bottom side
+        || (rr_graph.node_xlow(node) == int(grid.width() - 1) && !rr_graph.is_node_on_specific_side(node, LEFT))    //right device edge connects only along block's left side
+        || (rr_graph.node_ylow(node) == 0 && !rr_graph.is_node_on_specific_side(node, TOP))                         //bottom device edge connects only along block's top side
     ) {
         return false;
     }
