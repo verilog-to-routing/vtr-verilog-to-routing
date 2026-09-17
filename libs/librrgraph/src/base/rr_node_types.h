@@ -149,7 +149,7 @@ typedef std::vector<std::map<int, RRSwitchId>> t_arch_switch_fanin;
  * @brief Resistance/Capacitance data for an RR Node.
  *
  * In practice many RR nodes have the same values, so they are fly-weighted
- * to keep t_rr_node small. Each RR node holds an rc_index which allows
+ * to keep per-node storage small. Each RR node holds an rc_index which allows
  * retrieval of it's RC data.
  *
  * R:  Resistance to go through an RR node.  This is only metal
