@@ -7,7 +7,7 @@
 #include "router_lookahead_cost_map.h"
 
 // Implementation of RouterLookahead based on source segment and destination connection box types
-class ExtendedMapLookahead : public RouterLookahead {
+class ExtendedMapLookahead final : public RouterLookahead {
   public:
     ExtendedMapLookahead(bool is_flat, int route_verbosity, bool device_model_warnings)
         : is_flat_(is_flat)
@@ -107,6 +107,6 @@ class ExtendedMapLookahead : public RouterLookahead {
     }
 
     float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
-        return -1.;
+        VPR_THROW(VPR_ERROR_ROUTE, "ExtendedMapLookahead::get_opin_distance_min_delay unimplemented");
     }
 };
