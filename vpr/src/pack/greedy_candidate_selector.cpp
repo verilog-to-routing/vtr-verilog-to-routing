@@ -1037,9 +1037,9 @@ static void add_molecule_to_pb_stats_candidates(PackMoleculeId molecule_id,
         const t_flat_pl_loc mol_loc = get_molecule_pos(molecule_id,
                                                        prepacker,
                                                        appack_ctx);
-        float dist = appack_ctx.max_distance_threshold_manager.get_distance_between_points(mol_loc,
-                                                                                           cluster_gain_stats.flat_cluster_position,
-                                                                                           cluster_type);
+        float dist = appack_ctx.max_distance_threshold_manager.get_compatible_distance_between_points(mol_loc,
+                                                                                                      cluster_gain_stats.flat_cluster_position,
+                                                                                                      cluster_type);
         if (dist > max_dist)
             return;
     }
@@ -1379,9 +1379,9 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
         t_flat_pl_loc node_f_loc({.x = static_cast<float>(node_loc.x),
                                   .y = static_cast<float>(node_loc.y),
                                   .layer = static_cast<float>(node_loc.layer_num)});
-        float dist = appack_ctx_.max_distance_threshold_manager.get_distance_between_points(node_f_loc,
-                                                                                            cluster_gain_stats.flat_cluster_position,
-                                                                                            cluster_type);
+        float dist = appack_ctx_.max_distance_threshold_manager.get_compatible_distance_between_points(node_f_loc,
+                                                                                                       cluster_gain_stats.flat_cluster_position,
+                                                                                                       cluster_type);
 
         // If this position is too far from the source, skip it.
         if (dist > max_dist) {

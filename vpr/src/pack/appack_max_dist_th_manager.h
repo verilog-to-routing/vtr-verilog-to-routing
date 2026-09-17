@@ -140,9 +140,9 @@ class APPackMaxDistThManager {
      *
      * loc1 and loc2 are assumed to lie within the device grid.
      */
-    float get_distance_between_points(const t_flat_pl_loc& loc1,
-                                      const t_flat_pl_loc& loc2,
-                                      t_logical_block_type_ptr lb_type) const;
+    float get_compatible_distance_between_points(const t_flat_pl_loc& loc1,
+                                                 const t_flat_pl_loc& loc2,
+                                                 t_logical_block_type_ptr lb_type) const;
 
   private:
     /**

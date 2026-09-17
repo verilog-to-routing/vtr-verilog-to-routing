@@ -61,7 +61,7 @@ void APPackMaxDistThManager::init(const std::vector<std::string>& max_dist_ths,
         for (size_t layer_num = 0; layer_num < device_grid.get_num_layers(); layer_num++) {
             logical_block_dist_lookups_[lb_type.index][layer_num] = vtr::PrefixSum2D<unsigned>(
                 device_grid.width(), device_grid.height(), [&](size_t x, size_t y) {
-                    // Check if the tile at the given x, y location can accomodate the given logical block.
+                    // Check if the tile at the given x, y location can accommodate the given logical block.
                     t_physical_tile_loc loc(x, y, layer_num);
                     t_physical_tile_type_ptr tile_type = device_grid.get_physical_type(loc);
                     bool is_compatible_tile = equivalent_tile_indices.contains(tile_type->index);
@@ -193,9 +193,9 @@ void APPackMaxDistThManager::set_max_distance_thresholds_from_strings(
  *
  * The loc1 and loc2 coordinates are assumed to lie within the device grid.
  */
-static unsigned get_num_tiles_between(const vtr::PrefixSum2D<unsigned>& lookup,
-                                      const t_flat_pl_loc& loc1,
-                                      const t_flat_pl_loc& loc2) {
+static unsigned get_num_compatible_tiles_between(const vtr::PrefixSum2D<unsigned>& lookup,
+                                                 const t_flat_pl_loc& loc1,
+                                                 const t_flat_pl_loc& loc2) {
     size_t x1 = static_cast<size_t>(loc1.x);
     size_t y1 = static_cast<size_t>(loc1.y);
     size_t x2 = static_cast<size_t>(loc2.x);
@@ -235,9 +235,9 @@ static unsigned get_num_tiles_between(const vtr::PrefixSum2D<unsigned>& lookup,
     return std::min(x_then_y, y_then_x);
 }
 
-float APPackMaxDistThManager::get_distance_between_points(const t_flat_pl_loc& loc1,
-                                                          const t_flat_pl_loc& loc2,
-                                                          t_logical_block_type_ptr lb_type) const {
+float APPackMaxDistThManager::get_compatible_distance_between_points(const t_flat_pl_loc& loc1,
+                                                                     const t_flat_pl_loc& loc2,
+                                                                     t_logical_block_type_ptr lb_type) const {
     // NOTE: It is assumed that loc1 and loc2 are on the device. This is currently
     //       guaranteed by how flat placements are currently constructed. The code
     //       that looks up into the prefix sums has asserts within it. It is
@@ -245,7 +245,7 @@ float APPackMaxDistThManager::get_distance_between_points(const t_flat_pl_loc& l
     //       can change during placement.
 
     // This returns the manhattan distance between loc1 and loc2 in valid tile
-    // locations. Tiles that cannot accomodate the given logical block type count
+    // locations. Tiles that cannot accommodate the given logical block type count
     // 0 towards the distance; this makes blocks separated by "holes" (such as
     // different DSP columns) appear as far apart as they actually are.
     VTR_ASSERT_SAFE(lb_type != nullptr);
@@ -268,10 +268,10 @@ float APPackMaxDistThManager::get_distance_between_points(const t_flat_pl_loc& l
     // each endpoint's layer, take the cheaper of the two, and add the z hops
     // separately. This under-counts some 3D paths that would turn on a third
     // layer, but that is acceptable for max distance thresholding.
-    unsigned tiles_between = get_num_tiles_between(lb_dist_lookup[layer1], loc1, loc2);
+    unsigned tiles_between = get_num_compatible_tiles_between(lb_dist_lookup[layer1], loc1, loc2);
     if (layer1 != layer2) {
         tiles_between = std::min(tiles_between,
-                                 get_num_tiles_between(lb_dist_lookup[layer2], loc1, loc2));
+                                 get_num_compatible_tiles_between(lb_dist_lookup[layer2], loc1, loc2));
     }
 
     // Add 1 for the cost of leaving loc1's tile. Without this, two compatible
