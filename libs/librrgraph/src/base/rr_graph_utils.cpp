@@ -255,14 +255,14 @@ bool chanx_chany_nodes_are_adjacent(const RRGraphView& rr_graph, RRNodeId node1,
     }
 
     // Check vertical (Y) adjacency
-    if (rr_graph.node_ylow(chany_node) > rr_graph.node_ylow(chanx_node) + 1 ||
-        rr_graph.node_yhigh(chany_node) < rr_graph.node_ylow(chanx_node)) {
+    if (rr_graph.node_ylow(chany_node) > rr_graph.node_ylow(chanx_node) + 1
+        || rr_graph.node_yhigh(chany_node) < rr_graph.node_ylow(chanx_node)) {
         return false;
     }
 
     // Check horizontal (X) adjacency
-    if (rr_graph.node_xlow(chanx_node) > rr_graph.node_xlow(chany_node) + 1 ||
-        rr_graph.node_xhigh(chanx_node) < rr_graph.node_xlow(chany_node)) {
+    if (rr_graph.node_xlow(chanx_node) > rr_graph.node_xlow(chany_node) + 1
+        || rr_graph.node_xhigh(chanx_node) < rr_graph.node_xlow(chany_node)) {
         return false;
     }
 

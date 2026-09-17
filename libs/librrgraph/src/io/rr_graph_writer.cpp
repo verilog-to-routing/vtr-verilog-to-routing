@@ -13,9 +13,9 @@
 #include "rr_graph_uxsdcxx_serializer.h"
 #include "rr_graph_uxsdcxx.h"
 #ifdef VTR_ENABLE_CAPNPROTO
-#    include <capnp/schema.h>
-#    include "serdes_utils.h"
-#    include "rr_graph_uxsdcxx_capnp.h"
+#include <capnp/schema.h>
+#include "serdes_utils.h"
+#include "rr_graph_uxsdcxx_capnp.h"
 #endif
 
 /************************ Subroutine definitions ****************************/
