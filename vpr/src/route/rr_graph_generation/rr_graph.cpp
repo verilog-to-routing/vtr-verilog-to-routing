@@ -1198,6 +1198,14 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                          const int delayless_switch) {
     std::map<int, t_arch_switch_inf> sw_map = g_vpr_ctx.device().all_sw_inf;
 
+    // The lookup only needs to cover the tile at tile_loc
+    for (e_rr_type rr_type : RR_TYPES) {
+        rr_graph_builder.node_lookup().resize_nodes(tile_loc.layer_num + 1,
+                                                    tile_loc.x + physical_tile->width,
+                                                    tile_loc.y + physical_tile->height,
+                                                    rr_type);
+    }
+
     int num_rr_nodes = 0;
     alloc_and_load_tile_rr_node_indices(rr_graph_builder,
                                         physical_tile,
