@@ -6,6 +6,7 @@
 
 class RRGraphBuilder;
 class RRGraphView;
+class RRSpatialLookup;
 class DeviceGrid;
 struct t_physical_tile_type;
 
@@ -27,3 +28,14 @@ void build_intra_cluster_rr_graph(e_graph_type graph_type,
                                   bool is_flat,
                                   bool load_rr_graph,
                                   bool device_model_warnings);
+
+/**
+ * @brief Records the bus-based muxes (<mux bus="true">) of the intra-cluster RR
+ *        graph in RoutingContext::rr_bus_muxes and rr_bus_mux_out_nodes, so the
+ *        router can keep every bit of a mux on one input set.
+ *
+ * Must be called once the intra-cluster RR graph is complete and its nodes are
+ * in their final order, and again whenever that graph is rebuilt. Clears both
+ * tables and returns immediately when the graph is not flat.
+ */
+void load_rr_bus_muxes(const RRSpatialLookup& node_lookup);

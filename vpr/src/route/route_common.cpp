@@ -9,6 +9,7 @@
 #include "physical_types.h"
 #include "physical_types_util.h"
 #include "route_export.h"
+#include "rr_graph_intra_cluster.h"
 #include "rr_graph_fwd.h"
 #include "rr_switch.h"
 #include "vpr_utils.h"
@@ -439,6 +440,9 @@ void alloc_and_load_rr_node_route_structs(const t_router_opts& router_opts) {
     route_ctx.rr_node_route_inf.resize(device_ctx.rr_graph.num_nodes());
     route_ctx.non_configurable_bitset.resize(device_ctx.rr_graph.num_nodes());
     route_ctx.non_configurable_bitset.fill(false);
+
+    // Record the bus-based muxes of the intra-cluster graph now in place
+    load_rr_bus_muxes(device_ctx.rr_graph.node_lookup());
 
     reset_rr_node_route_structs(router_opts);
 
