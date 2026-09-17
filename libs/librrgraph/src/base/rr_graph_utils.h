@@ -10,6 +10,7 @@
 #include "rr_graph_builder.h"
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
+#include "vtr_range.h"
 #include "device_grid.h"
 
 class RRGraphView;
@@ -42,24 +43,30 @@ struct t_cluster_pin_chain {
 };
 
 /**
- * @brief Get switches in a RRGraph starting at from_node and ending at to_node.
+ * @brief Fan-in edges of every RR node, stored in compressed sparse row form.
  *
- * @details
- * Uses RRGraphView::find_edges(), then converts these edges to switch IDs.
- *
- * @return A vector of switch IDs
+ * All fan-in edges live in one flat array grouped by sink node.
+ * Building it costs O(V + E) time.
  */
-std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
-                                               RRNodeId from_node,
-                                               RRNodeId to_node);
+class RRFanInList {
+  public:
+    /// @brief Builds the fan-in list of every node in rr_graph.
+    explicit RRFanInList(const RRGraphView& rr_graph);
 
-/**
- * @brief This function generates and returns a vector indexed by RRNodeId containing a vector of fan-in edges for each node.
- *
- * @note
- * This function is CPU expensive; complexity O(E) where E is the number of edges in rr_graph
- */
-vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& rr_graph);
+    /// @brief Returns the fan-in edges of node in ascending edge id order.
+    vtr::Range<const RREdgeId*> edges(RRNodeId node) const {
+        const RREdgeId* first = fan_in_edges_.data() + first_edge_[node];
+        const RREdgeId* last = fan_in_edges_.data() + first_edge_[RRNodeId(size_t(node) + 1)];
+        return vtr::make_range(first, last);
+    }
+
+  private:
+    /// Offset into fan_in_edges_ of the first fan-in edge of each node,
+    // with one trailing entry holding the total edge count
+    vtr::vector<RRNodeId, uint32_t> first_edge_;
+    /// Fan-in edges of all nodes, grouped by sink node
+    std::vector<RREdgeId> fan_in_edges_;
+};
 
 /**
  * @brief This function sets better locations for SINK nodes.
@@ -86,16 +93,6 @@ int seg_index_of_cblock(const RRGraphView& rr_graph, e_rr_type from_rr_type, int
  * device_ctx.grid.width()-1 (if from_node is a CHANX) or 0 to device_ctx.grid.height()-1 (if from_node is a CHANY).
  */
 int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node);
-
-/**
- * @brief This function checks whether all inter-die connections are form OPINs. Return "true"
- * if that is the case. Can be used for multiple purposes. For example, to determine which type of bounding
- * box to be used to estimate the wire-length of a net.
- *
- * @param rr_graph The routing resource graph
- * @return True if inter-die 3D connections are driven only by OPIN nodes; otherwise, false.
- */
-bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph);
 
 /**
  * @brief Check if a CHANX and a CHANY node are adjacent, regardless of their order.

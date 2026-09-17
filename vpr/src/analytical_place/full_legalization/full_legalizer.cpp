@@ -164,7 +164,7 @@ class APClusterPlacer {
                     const char* constraints_file)
         : place_macros_(place_macros) {
         // Initialize the block loc registry.
-        auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         blk_loc_registry.init();
 
         // Place the fixed blocks and mark them as fixed.
@@ -192,7 +192,7 @@ class APClusterPlacer {
         const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
         const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
         const auto& block_locs = g_vpr_ctx.placement().block_locs();
-        auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         // If this block has already been placed, just return true.
         // TODO: This should be investigated further. What I think is happening
         //       is that a macro is being placed which contains another cluster.
@@ -236,7 +236,7 @@ class APClusterPlacer {
     //       centroid, then random, then exhaustive.
     bool exhaustively_place_cluster(ClusterBlockId clb_blk_id) {
         const auto& block_locs = g_vpr_ctx.placement().block_locs();
-        auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         // If this block has already been placed, just return true.
         // TODO: See similar comment above.
         if (is_block_placed(clb_blk_id, block_locs))
@@ -347,7 +347,7 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     for (APBlockId blk_id : ap_netlist_.blocks()) {
         t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(blk_id);
         for (PackMoleculeId mol_id : ap_netlist_.block_molecules(blk_id)) {
-            const auto& mol = prepacker_.get_molecule(mol_id);
+            const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
 
             int num_ext_inputs = prepacker_.calc_molecule_stats(mol_id, atom_netlist_, arch_.models).num_used_ext_inputs;
             bool long_chain = mol.is_chain() && prepacker_.get_molecule_chain_info(mol.chain_id).is_long_chain;
@@ -378,7 +378,7 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     // Group the molecules by root tile. Any non-zero offset gets
     // pulled back to its root.
     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> tile_blocks;
-    mol_desired_physical_tile_loc.reserve(prepacker_.molecules().size());
+    mol_desired_physical_tile_loc.resize(prepacker_.molecules().size());
     for (const auto& [mol_id, ext_pins, is_long_chain, tile_loc] : sorted_blocks) {
         int width_offset = device_grid_.get_width_offset(tile_loc);
         int height_offset = device_grid_.get_height_offset(tile_loc);
@@ -926,7 +926,7 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
 
 void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
     // Setup the global variables for placement.
-    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
+    g_vpr_ctx.mutable_placement().init_placement_context(arch_.directs);
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
 
     // The placement will be stored in the global block loc registry.
@@ -1002,6 +1002,12 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
     // Start a scoped timer for the Full Legalizer stage.
     vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
 
+    // Snapshot the device grid size before clustering runs below.
+    const DeviceGrid& pre_pack_grid = g_vpr_ctx.device().grid;
+    size_t prev_grid_width = pre_pack_grid.width();
+    size_t prev_grid_height = pre_pack_grid.height();
+    size_t prev_grid_num_layers = pre_pack_grid.get_num_layers();
+
     // The target external pin utilization is set to 1.0 to avoid over-restricting
     // reconstruction due to conservative pin feasibility. The SKIP_INTRA_LB_ROUTE
     // strategy speeds up reconstruction by skipping intra-LB routing checks.
@@ -1035,7 +1041,7 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
-    recreate_device_if_needed();
+    recreate_device_if_needed(prev_grid_width, prev_grid_height, prev_grid_num_layers);
 
     // Perform the initial placement on created clusters.
     place_clusters(p_placement);
@@ -1209,6 +1215,12 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
     // Create a scoped timer for the full legalizer
     vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
 
+    // Snapshot the device grid size before clustering runs below.
+    const DeviceGrid& pre_pack_grid = g_vpr_ctx.device().grid;
+    size_t prev_grid_width = pre_pack_grid.width();
+    size_t prev_grid_height = pre_pack_grid.height();
+    size_t prev_grid_num_layers = pre_pack_grid.get_num_layers();
+
     // Pack the atoms into clusters based on the partial placement.
     create_clusters(p_placement);
     // Verify that the clustering created by the full legalizer is valid.
@@ -1222,15 +1234,14 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
-    recreate_device_if_needed();
+    recreate_device_if_needed(prev_grid_width, prev_grid_height, prev_grid_num_layers);
 
     // Get the clustering from the global context.
     // TODO: Eventually should be returned from the create_clusters method.
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // Initialize the placement context.
-    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts,
-                                                         arch_.directs);
+    g_vpr_ctx.mutable_placement().init_placement_context(arch_.directs);
 
     const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
 
@@ -1261,6 +1272,12 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
 void APPack::legalize(const PartialPlacement& p_placement) {
     // Create a scoped timer for the full legalizer
     vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
+
+    // Snapshot the device grid size before clustering runs below.
+    const DeviceGrid& pre_pack_grid = g_vpr_ctx.device().grid;
+    size_t prev_grid_width = pre_pack_grid.width();
+    size_t prev_grid_height = pre_pack_grid.height();
+    size_t prev_grid_num_layers = pre_pack_grid.get_num_layers();
 
     // Convert the Partial Placement (APNetlist) to a flat placement (AtomNetlist).
     FlatPlacementInfo flat_placement_info(atom_netlist_);
@@ -1302,7 +1319,7 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // FIXME: This should be removed. Reading from a file is strange.
     vpr_load_packing(vpr_setup_, arch_);
 
-    recreate_device_if_needed();
+    recreate_device_if_needed(prev_grid_width, prev_grid_height, prev_grid_num_layers);
 
     // Setup NoCs
     // TODO: We have some flow divergence. When the device grid is created the
@@ -1310,7 +1327,7 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     vpr_setup_noc(vpr_setup_, arch_);
 
     // Setup the global variables for placement.
-    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
+    g_vpr_ctx.mutable_placement().init_placement_context(arch_.directs);
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
 
     // The placement will be stored in the global block loc registry.
@@ -1371,8 +1388,8 @@ void FullLegalizer::update_drawing_data_structures() {
 #endif
 }
 
-void FullLegalizer::recreate_device_if_needed() {
-    const auto& device_ctx = g_vpr_ctx.device();
+void FullLegalizer::recreate_device_if_needed(size_t prev_grid_width, size_t prev_grid_height, size_t prev_grid_num_layers) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     // Capture before grid recreation: vpr_create_device_grid only writes
     // device_ctx.grid and does not touch the RR graph, so this flag remains
     // valid after the call.
@@ -1398,28 +1415,22 @@ void FullLegalizer::recreate_device_if_needed() {
         return;
     }
 
-    size_t old_width = device_ctx.grid.width();
-    size_t old_height = device_ctx.grid.height();
-
     vpr_create_device_grid(vpr_setup_, arch_);
 
-    bool device_size_changed = (device_ctx.grid.width() != old_width
-                                || device_ctx.grid.height() != old_height);
+    // Detect if the device size has changed.
+    bool device_size_changed = (prev_grid_width != device_ctx.grid.width()
+                                || prev_grid_height != device_ctx.grid.height()
+                                || prev_grid_num_layers != device_ctx.grid.get_num_layers());
 
-    // If the device grid was resized, the dedicated clock network geometry
-    // (computed from grid width/height when it was first set up, earlier in
-    // run_analytical_placement_flow()) is now stale. Regenerate it before any
-    // RR graph is (re)built below, since the RR graph embeds the clock
-    // network as a subgraph. This is a no-op unless dedicated clock networks
-    // are in use.
     if (device_size_changed) {
+        // The dedicated clock network geometry is computed from the grid width/height,
+        // so it must be rebuilt to match the final device size before the RR graph
+        // (which embeds the clock network as a subgraph) is (re)built below.
         // TODO: Cleanup these const casts. See comment below.
         vpr_setup_clock_networks(const_cast<t_vpr_setup&>(vpr_setup_), arch_);
     }
 
     // Build or rebuild the RR graph if needed. It must exist before placement.
-    // Rebuild only when the device size changed (to avoid the high cost of
-    // rebuilding unnecessarily on large architectures).
     if (vpr_setup_.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
         if (!rr_graph_exists || device_size_changed) {
             // vpr_create_rr_graph takes t_vpr_setup& even though it only reads from it.

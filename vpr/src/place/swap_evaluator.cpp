@@ -100,7 +100,7 @@ void SwapEvaluator::commit(t_pl_blocks_to_be_moved& blocks_affected,
         placer_state_.mutable_timing().commit_td_cost(blocks_affected);
     }
 
-    // Update net cost functions and reset flags.
+    // Commit the proposed net costs and release the scratch state of the move.
     net_cost_handler_.update_move_nets();
     if (update_interposer_costs) {
         interposer_cost_handler_->commit_costs(net_cost_handler_.affected_nets());
@@ -111,7 +111,7 @@ void SwapEvaluator::commit(t_pl_blocks_to_be_moved& blocks_affected,
 }
 
 void SwapEvaluator::revert(t_pl_blocks_to_be_moved& blocks_affected, bool revert_td) {
-    // Reset the net cost function flags first.
+    // Discard the proposed net state first.
     net_cost_handler_.reset_move_nets();
 
     // Restore the blk_loc_registry.block_locs data structures to their state before the move.

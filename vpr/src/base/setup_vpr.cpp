@@ -171,6 +171,7 @@ void SetupVPR(const t_options* options,
     fileNameOpts->read_flat_place_file = options->read_flat_place_file;
     fileNameOpts->write_flat_place_file = options->write_flat_place_file;
     fileNameOpts->write_legalized_flat_place_file = options->write_legalized_flat_place_file;
+    fileNameOpts->flat_place_verbosity = options->flat_place_verbosity;
     fileNameOpts->write_block_usage = options->write_block_usage;
 
     fileNameOpts->verify_file_digests = options->verify_file_digests;
@@ -727,7 +728,6 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
     PlacerOpts->place_static_move_prob = vtr::vector<e_move_type, float>(Options.place_static_move_prob.value().begin(),
                                                                          Options.place_static_move_prob.value().end());
     PlacerOpts->place_high_fanout_net = Options.place_high_fanout_net;
-    PlacerOpts->place_bounding_box_mode = Options.place_bounding_box_mode;
     PlacerOpts->RL_agent_placement = Options.RL_agent_placement;
     PlacerOpts->place_agent_multistate = Options.place_agent_multistate;
     PlacerOpts->place_checkpointing = Options.place_checkpointing;

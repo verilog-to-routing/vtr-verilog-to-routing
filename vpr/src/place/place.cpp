@@ -50,7 +50,7 @@ void try_place(const Netlist<>& net_list,
     FloorplanningContext& mutable_floorplanning = g_vpr_ctx.mutable_floorplanning();
 
     // Initialize the variables in the placement context.
-    mutable_placement.init_placement_context(placer_opts, directs);
+    mutable_placement.init_placement_context(directs);
 
     // Re-initialize cluster constraints if erased by a previous placement run.
     // This ensures constraints are available when iterating to find the minimum channel width.
@@ -61,10 +61,6 @@ void try_place(const Netlist<>& net_list,
     // Update the floorplanning constraints with the macro information from the
     // placement context.
     mutable_floorplanning.update_floorplanning_context_pre_place(*mutable_placement.place_macros);
-
-    VTR_LOG("\n");
-    VTR_LOG("Bounding box mode is %s\n", (mutable_placement.cube_bb ? "Cube" : "Per-layer"));
-    VTR_LOG("\n");
 
     // To make sure the importance of NoC-related cost terms compared to
     // BB and timing cost is determine only through NoC placement weighting factor,
@@ -117,7 +113,7 @@ void try_place(const Netlist<>& net_list,
 
     Placer placer(net_list, {}, placer_opts, analysis_opts, noc_opts, netlist_pin_lookup,
                   flat_placement_info, place_delay_model, placer_opts.place_auto_init_t_scale,
-                  mutable_placement.cube_bb, is_flat, /*quiet=*/false);
+                  is_flat, /*quiet=*/false);
 
     placer.place();
 
