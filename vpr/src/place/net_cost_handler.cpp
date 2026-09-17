@@ -222,13 +222,14 @@ void NetCostHandler::update_net_bb_(const ClusterNetId net,
     }
 }
 
-void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
+bool NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
                                             const PlacerCriticalities& criticalities,
                                             const ClusterNetId net,
                                             const ClusterPinId pin,
                                             std::vector<ClusterPinId>& affected_pins,
                                             double& delta_timing_cost,
-                                            bool is_src_moving) {
+                                            bool is_src_moving,
+                                            t_swap_cancel_token cancel_token) {
     /**
      * Assumes that the blocks have been moved to the proposed new locations.
      * Otherwise, the routine comp_td_single_connection_delay() will not be
@@ -254,6 +255,11 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
      * This is also done to minimize the number of timing node/edge invalidations
      * for incremental static timing analysis (incremental STA).
      */
+#ifndef VPR_USE_TBB
+    // The only use of the token is the poll below, which a serial build omits.
+    (void)cancel_token;
+#endif
+
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = placer_state_.block_locs();
 
@@ -266,6 +272,17 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
         /* This pin is a net driver on a moved block. */
         /* Recompute all point to point connection delays for the net sinks. */
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size(); ipin++) {
+            // A moved driver re-evaluates every sink of its net, which can be
+            // arbitrarily expensive for high-fanout nets, so poll between sinks.
+            // The sinks staged so far are recorded in affected_pins, so a
+            // revert restores them.
+            // Guarded like the poll in find_affected_nets_and_update_costs().
+#ifdef VPR_USE_TBB
+            if (cancel_token.cancelled()) {
+                return false;
+            }
+#endif
+
             float temp_delay = comp_td_single_connection_delay(delay_model, block_locs, net, ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
             if (temp_delay == connection_delay[net][ipin]) {
@@ -294,7 +311,7 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
             float temp_delay = comp_td_single_connection_delay(delay_model, block_locs, net, ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
             if (temp_delay == connection_delay[net][ipin]) {
-                return;
+                return true;
             }
 
             /* Calculate proposed delay and cost values */
@@ -307,6 +324,8 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
             affected_pins.push_back(pin);
         }
     }
+
+    return true;
 }
 
 void NetCostHandler::record_affected_net_(const ClusterNetId net) {
@@ -327,13 +346,14 @@ bool NetCostHandler::move_in_flight_() const {
     return std::ranges::any_of(ts_nets_to_update_, [this](ClusterNetId net_id) { return net_ts_slot_[net_id] != NO_TS_SLOT; });
 }
 
-void NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_model,
+bool NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_model,
                                                   const PlacerCriticalities* criticalities,
                                                   const ClusterPinId pin_id,
                                                   const t_pl_moved_block& moving_blk_inf,
                                                   std::vector<ClusterPinId>& affected_pins,
                                                   double& timing_delta_c,
-                                                  bool is_src_moving) {
+                                                  bool is_src_moving,
+                                                  t_swap_cancel_token cancel_token) {
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     const ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
@@ -343,7 +363,7 @@ void NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_m
     if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
         //TODO: Do we require anything special here for global nets?
         //"Global nets are assumed to span the whole chip, and do not effect costs."
-        return;
+        return true;
     }
 
     // Record effected nets
@@ -355,14 +375,17 @@ void NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_m
 
     if (place_algorithm_.is_timing_driven()) {
         // Determine the change in connection delay and timing cost.
-        update_td_delta_costs_(delay_model,
-                               *criticalities,
-                               net_id,
-                               pin_id,
-                               affected_pins,
-                               timing_delta_c,
-                               is_src_moving);
+        return update_td_delta_costs_(delay_model,
+                                      *criticalities,
+                                      net_id,
+                                      pin_id,
+                                      affected_pins,
+                                      timing_delta_c,
+                                      is_src_moving,
+                                      cancel_token);
     }
+
+    return true;
 }
 
 void NetCostHandler::get_non_updatable_bb_(ClusterNetId net_id, bool use_ts) {
@@ -896,11 +919,12 @@ void NetCostHandler::set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta) {
     }
 }
 
-void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
+bool NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
                                                          const PlacerCriticalities* criticalities,
                                                          t_pl_blocks_to_be_moved& blocks_affected,
                                                          t_net_cost_terms& cost_terms_delta,
-                                                         double& timing_delta_c) {
+                                                         double& timing_delta_c,
+                                                         t_swap_cancel_token cancel_token) {
     VTR_ASSERT_DEBUG(cost_terms_delta.bb_cost == 0.);
     VTR_ASSERT_DEBUG(cost_terms_delta.cong_cost == 0.);
     VTR_ASSERT_DEBUG(cost_terms_delta.interposer_cost == 0.);
@@ -918,24 +942,39 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
 
         // Go through all the pins in the moved block.
         for (ClusterPinId blk_pin : clb_nlist.block_pins(blk_id)) {
+            // Abandon the update if the caller no longer needs this evaluation.
+            // A subsequent revert restores everything.
+            // Only a parallel build cancels, and cancelling only skips work whose
+            // result is discarded, so a serial build omits the poll.
+#ifdef VPR_USE_TBB
+            if (cancel_token.cancelled()) {
+                return false;
+            }
+#endif
+
             bool is_src_moving = false;
             if (clb_nlist.pin_type(blk_pin) == PinType::SINK) {
                 ClusterNetId net_id = clb_nlist.pin_net(blk_pin);
                 is_src_moving = blocks_affected.driven_by_moved_block(net_id);
             }
-            update_net_info_on_pin_move_(delay_model,
-                                         criticalities,
-                                         blk_pin,
-                                         moving_block,
-                                         affected_pins,
-                                         timing_delta_c,
-                                         is_src_moving);
+            if (!update_net_info_on_pin_move_(delay_model,
+                                              criticalities,
+                                              blk_pin,
+                                              moving_block,
+                                              affected_pins,
+                                              timing_delta_c,
+                                              is_src_moving,
+                                              cancel_token)) {
+                return false;
+            }
         }
     }
 
     // Now update the bounding box costs (since the net bounding
     // boxes are up-to-date). The cost is only updated once per net.
     set_bb_delta_cost_(cost_terms_delta);
+
+    return true;
 }
 
 void NetCostHandler::update_move_nets() {
