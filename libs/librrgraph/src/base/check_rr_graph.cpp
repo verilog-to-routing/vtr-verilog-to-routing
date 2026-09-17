@@ -5,7 +5,7 @@
 #include "vpr_error.h"
 #include "check_rr_graph.h"
 
-#include "rr_node.h"
+#include "rr_graph_cost.h"
 #include "physical_types_util.h"
 
 #include "describe_rr_node.h"

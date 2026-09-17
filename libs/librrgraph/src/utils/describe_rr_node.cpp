@@ -1,6 +1,6 @@
 #include "describe_rr_node.h"
 
-#include "rr_node.h"
+#include "rr_graph_cost.h"
 #include "physical_types_util.h"
 #include "vtr_util.h"
 

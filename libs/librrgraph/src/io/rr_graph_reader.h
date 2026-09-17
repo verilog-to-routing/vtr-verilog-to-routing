@@ -7,10 +7,8 @@
 #include "rr_graph_view.h"
 #include "rr_rc_data.h"
 #include "rr_graph_fwd.h"
-#include "rr_node.h"
 #include "device_grid.h"
 #include "physical_types.h"
-
 
 void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   RRGraphView* rr_graph,

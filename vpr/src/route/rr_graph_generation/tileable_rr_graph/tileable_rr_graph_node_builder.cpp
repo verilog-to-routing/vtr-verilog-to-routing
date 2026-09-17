@@ -7,8 +7,6 @@
 #include "vpr_types.h"
 #include "vpr_utils.h"
 
-#include "rr_node.h"
-
 #include "rr_graph_builder_utils.h"
 #include "rr_graph_builder.h"
 #include "tileable_chan_details_builder.h"

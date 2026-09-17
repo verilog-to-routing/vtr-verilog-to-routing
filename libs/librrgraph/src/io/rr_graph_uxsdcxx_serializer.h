@@ -7,7 +7,6 @@
 #include "physical_types.h"
 #include "rr_graph_uxsdcxx_interface.h"
 
-#include "rr_node.h"
 #include "rr_graph_type.h"
 #include "rr_graph_cost.h"
 #include "rr_graph_view.h"
@@ -1702,7 +1701,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void set_grid_loc_layer(int layer_num, void*& /*ctx*/) final {
         curr_tmp_layer = layer_num;
     }
-
 
     /** Generated for complex type "rr_graph":
      * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
