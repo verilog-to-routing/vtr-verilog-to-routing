@@ -8,7 +8,7 @@
 /**
  * @brief RouterLookahead implementation. This lookahead uses a table
  * indexed by (delta_x, delta_y) and other things like wire type.
-
+ *
  * It is similar to MapLookahead, except it utilizes sparse sampling of
  * the chip to reduce the run-time to build the router lookahead and also
  * its memory footprint.

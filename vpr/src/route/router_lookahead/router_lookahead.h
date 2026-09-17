@@ -115,7 +115,6 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
                                                    bool device_model_warnings,
                                                    float interposer_base_cut_multiplier);
 
-
 /**
  * @brief RouterLookahead implementation. This lookahead predicts the cost of a routing by calculation and does not use a table.
  *
@@ -161,7 +160,6 @@ class ClassicLookahead final : public RouterLookahead {
   private:
     float classic_wire_lookahead_cost(RRNodeId node, RRNodeId target_node, float criticality, float R_upstream) const;
 };
-
 
 /**
  * @brief NoOp lookahead that returns zero for any queries.
