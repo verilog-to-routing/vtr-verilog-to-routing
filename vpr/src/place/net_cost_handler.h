@@ -45,6 +45,27 @@ struct t_net_cost_terms {
     double cong_cost = 0.;
 };
 
+/**
+ * @brief The committed values an evaluated move writes for one affected net,
+ * i.e. what update_move_nets() would copy out of the proposed state.
+ *
+ * A commit record is a vector of these entries, one per affected net. It is
+ * captured with NetCostHandler::extract_commit_record() and replayed on another
+ * handler with apply_commit_record(), so an accepted move can be committed
+ * there without re-evaluating it.
+ */
+struct t_net_commit_entry {
+    ClusterNetId net_id;
+    /// New bounding box.
+    t_bb bb_coords;
+    /// New number of blocks on each edge of the bounding box. Valid only when update_edges is true.
+    t_bb bb_num_on_edges;
+    /// New wirelength (bounding box) cost of the net.
+    double net_cost = 0.;
+    /// True for nets with at least SMALL_NET sinks, whose edge counts are maintained incrementally.
+    bool update_edges = false;
+};
+
 class NetCostHandler {
   public:
     NetCostHandler() = delete;
@@ -173,6 +194,31 @@ class NetCostHandler {
      *        The channel usage estimates are computed in estimate_routing_chan_util().
      */
     const ChannelMetric<vtr::NdMatrix<double, 3>>& get_chan_util() const;
+
+    /// @brief Returns the routing congestion channel utilization threshold this handler was built with.
+    double congestion_chan_util_threshold() const { return congestion_chan_util_threshold_; }
+
+    /**
+     * @brief Copies the committed net state from `other`, which must have been
+     * constructed with identical parameters.
+     * @note Neither handler may have a move in flight.
+     * @note Not supported while congestion modeling is enabled.
+     */
+    void copy_committed_state_from(const NetCostHandler& other);
+
+    /**
+     * @brief Records the values update_move_nets() would commit for the move under evaluation.
+     * @note Must be called after find_affected_nets_and_update_costs() and before the move is committed or reverted.
+     * @note Not supported while congestion modeling is enabled.
+     */
+    void extract_commit_record(std::vector<t_net_commit_entry>& record) const;
+
+    /**
+     * @brief Writes an extracted commit record into this handler's committed state.
+     * @note This handler must have no move in flight.
+     * @note Not supported while congestion modeling is enabled.
+     */
+    void apply_commit_record(const std::vector<t_net_commit_entry>& record);
 
   private:
     /// Indicates whether congestion cost modeling is enabled.
@@ -446,6 +492,12 @@ class NetCostHandler {
      * @param net ID of a net affected by a move
      */
     void record_affected_net_(const ClusterNetId net);
+
+    /**
+     * @brief Returns true if a move has been evaluated by find_affected_nets_and_update_costs()
+     * and not yet committed by update_move_nets() or reverted by reset_move_nets().
+     */
+    bool move_in_flight_() const;
 
     /**
      * @brief To mitigate round-off errors, every once in a while, the costs of nets are summed up from scratch.

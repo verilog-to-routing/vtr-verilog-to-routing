@@ -414,6 +414,8 @@ struct RouteBudgetsAlgorithm {
             conv_value.set_value(YOYO);
         else if (str == "scale_delay")
             conv_value.set_value(SCALE_DELAY);
+        else if (str == "low_skew_clock")
+            conv_value.set_value(LOW_SKEW_CLOCK);
         else if (str == "disable")
             conv_value.set_value(DISABLE);
         else {
@@ -433,6 +435,8 @@ struct RouteBudgetsAlgorithm {
             conv_value.set_value("yoyo");
         else if (val == DISABLE)
             conv_value.set_value("disable");
+        else if (val == LOW_SKEW_CLOCK)
+            conv_value.set_value("low_skew_clock");
         else {
             VTR_ASSERT(val == SCALE_DELAY);
             conv_value.set_value("scale_delay");
@@ -441,7 +445,7 @@ struct RouteBudgetsAlgorithm {
     }
 
     std::vector<std::string> default_choices() {
-        return {"minimax", "yoyo", "scale_delay", "disable"};
+        return {"minimax", "yoyo", "scale_delay", "low_skew_clock", "disable"};
     }
 };
 
@@ -3253,9 +3257,10 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " * yoyo: Allocates budgets using minimax algorithm, and enables hold slack resolution in the router using the RCV algorithm. [EXPERIMENTAL]\n"
             " * minimax: Sets the budgets depending on the amount slack between connections and the current delay values. [EXPERIMENTAL]\n"
             " * scale_delay: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality) [EXPERIMENTAL]\n"
+            " * low_skew_clock: Sets the target delay of all clock connections to the maximum observed clock delay to reduce clock skew, and enables the RCV algorithm. Non-clock connections are left unconstrained. [EXPERIMENTAL]\n"
             " * disable: Removes the routing budgets, use the default VPR and ignore hold time constraints\n")
         .default_value("disable")
-        .choices({"minimax", "scale_delay", "yoyo", "disable"})
+        .choices({"minimax", "scale_delay", "yoyo", "low_skew_clock", "disable"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.save_routing_per_iteration, "--save_routing_per_iteration")

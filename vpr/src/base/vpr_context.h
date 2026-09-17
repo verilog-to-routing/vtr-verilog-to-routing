@@ -10,6 +10,7 @@
 #include "physical_types.h"
 #include "place_macro.h"
 #include "user_place_constraints.h"
+#include "user_relative_macros.h"
 #include "user_route_constraints.h"
 #include "vpr_types.h"
 #include "vtr_cache.h"
@@ -19,6 +20,7 @@
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "rr_graph_view.h"
+#include "rr_rc_data.h"
 #include "rr_graph_builder.h"
 #include "rr_node.h"
 #include "tatum/TimingGraph.hpp"
@@ -214,6 +216,14 @@ struct DeviceContext : public Context {
     ///@brief chan_width is for x|y-directed channels; i.e. between rows
     t_chan_width chan_width;
 
+    /**
+     * @brief The channel width that was requested the last time the RR graph was (re)built.
+     *
+     * May be different than chan_width above since some architectures add to the requested
+     * channel width (for example, dedicated clock networks).
+     */
+    t_chan_width requested_chan_width;
+
     /*
      * Structures to define the routing architecture of the FPGA.
      */
@@ -221,7 +231,7 @@ struct DeviceContext : public Context {
     vtr::vector<RRIndexedDataId, t_rr_indexed_data> rr_indexed_data; // [0 .. num_rr_indexed_data-1]
 
     ///@brief Fly-weighted Resistance/Capacitance data for RR Nodes
-    std::vector<t_rr_rc_data> rr_rc_data;
+    RRRCData rr_rc_data;
 
     ///@brief Sets of non-configurably connected nodes
     std::vector<std::vector<RRNodeId>> rr_non_config_node_sets;
@@ -680,6 +690,13 @@ struct FloorplanningContext : public Context {
      * The constraints are input into vpr and do not change.
      */
     UserPlaceConstraints constraints;
+
+    /**
+     * @brief Stores user-defined relative placement macros.
+     *
+     * The relative macros are input into vpr and do not change.
+     */
+    UserRelativeMacros relative_macros;
 
     /**
      * @brief Constraints for each cluster

@@ -321,6 +321,12 @@ void NetCostHandler::record_affected_net_(const ClusterNetId net) {
     }
 }
 
+bool NetCostHandler::move_in_flight_() const {
+    // update_move_nets() and reset_move_nets() release the slots but leave ts_nets_to_update_ as is,
+    // so a move is in flight iff some recorded net still holds a slot.
+    return std::ranges::any_of(ts_nets_to_update_, [this](ClusterNetId net_id) { return net_ts_slot_[net_id] != NO_TS_SLOT; });
+}
+
 void NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_model,
                                                   const PlacerCriticalities* criticalities,
                                                   const ClusterPinId pin_id,
@@ -902,7 +908,7 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // update_move_nets() or reset_move_nets() must have released the slots of the previous move.
-    VTR_ASSERT_SAFE(std::ranges::all_of(ts_nets_to_update_, [this](ClusterNetId net_id) { return net_ts_slot_[net_id] == NO_TS_SLOT; }));
+    VTR_ASSERT_SAFE(!move_in_flight_());
     ts_nets_to_update_.clear();
 
     // Go through all the blocks moved.
@@ -934,6 +940,7 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
 
 void NetCostHandler::update_move_nets() {
     // Copy the proposed state of every affected net into the committed state and release its slot.
+    // extract_commit_record() and apply_commit_record() must be kept consistent with the values committed here.
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     for (size_t slot = 0; slot < ts_nets_to_update_.size(); slot++) {
@@ -956,6 +963,59 @@ void NetCostHandler::update_move_nets() {
 
         net_ts_slot_[net_id] = NO_TS_SLOT;
     }
+}
+
+void NetCostHandler::extract_commit_record(std::vector<t_net_commit_entry>& record) const {
+    VTR_ASSERT_SAFE_MSG(!congestion_modeling_started_,
+                        "Commit records do not support congestion modeling.");
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+
+    const size_t num_affected_nets = ts_nets_to_update_.size();
+    record.resize(num_affected_nets);
+
+    for (size_t slot = 0; slot < num_affected_nets; slot++) {
+        const ClusterNetId net_id = ts_nets_to_update_[slot];
+        // The move must still be in flight, otherwise the proposed state is stale.
+        VTR_ASSERT_SAFE_MSG(net_ts_slot_[net_id] == slot,
+                            "A commit record can only be extracted while the move is in flight.");
+        const t_ts_net_info& ts_net = ts_net_info_[slot];
+        t_net_commit_entry& entry = record[slot];
+
+        entry.net_id = net_id;
+        entry.bb_coords = ts_net.coords;
+        entry.update_edges = cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET;
+        if (entry.update_edges) {
+            entry.bb_num_on_edges = ts_net.num_on_edges;
+        }
+        entry.net_cost = ts_net.proposed_cost;
+    }
+}
+
+void NetCostHandler::apply_commit_record(const std::vector<t_net_commit_entry>& record) {
+    VTR_ASSERT_SAFE_MSG(!congestion_modeling_started_,
+                        "Commit records do not support congestion modeling.");
+    VTR_ASSERT_SAFE_MSG(!move_in_flight_(),
+                        "A commit record cannot be applied while a move is in flight.");
+
+    for (const t_net_commit_entry& entry : record) {
+        t_net_bb_info& net_bb = net_bb_[entry.net_id];
+
+        net_bb.coords = entry.bb_coords;
+        if (entry.update_edges) {
+            net_bb.num_on_edges = entry.bb_num_on_edges;
+        }
+        net_bb.cost = entry.net_cost;
+    }
+}
+
+void NetCostHandler::copy_committed_state_from(const NetCostHandler& other) {
+    VTR_ASSERT_MSG(!congestion_modeling_started_ && !other.congestion_modeling_started_,
+                   "Copying committed state does not support congestion modeling.");
+    VTR_ASSERT(net_bb_.size() == other.net_bb_.size());
+    VTR_ASSERT_SAFE_MSG(!move_in_flight_() && !other.move_in_flight_(),
+                        "Committed state cannot be copied while a move is in flight.");
+
+    net_bb_ = other.net_bb_;
 }
 
 void NetCostHandler::reset_move_nets() {
