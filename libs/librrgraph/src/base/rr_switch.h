@@ -5,13 +5,11 @@
 
 #include "physical_types.h"
 
-/**
- * @brief Lists all the important information about an RR switch type.
- *
- * The t_rr_switch_inf describes a switch derived from a switch described
- * by t_arch_switch_inf. This indirection allows us to vary properties of a
- * given switch, such as varying delay with switch fan-in.
-  */
+/// @brief Lists all the important information about an RR switch type.
+///
+/// The t_rr_switch_inf describes a switch derived from a switch described
+/// by t_arch_switch_inf. This indirection allows us to vary properties of a
+/// given switch, such as varying delay with switch fan-in.
 struct t_rr_switch_inf {
     /// Equivalent resistance of the buffer/switch.
     float R = 0.;

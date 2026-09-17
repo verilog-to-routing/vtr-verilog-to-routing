@@ -7,6 +7,7 @@
 #include "route_net.h"
 
 #include <algorithm>
+#include <limits>
 #include <tuple>
 
 #include "connection_based_routing.h"
@@ -94,7 +95,8 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
             net_list,
             connections_inf,
             router_opts,
-            worst_negative_slack);
+            worst_negative_slack,
+            budgeting_inf);
     }
 
     VTR_ASSERT(route_ctx.route_trees[net_id]);
@@ -215,7 +217,11 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
     /* Update base costs according to fanout and criticality rules */
     update_rr_base_costs(num_sinks);
 
-    t_conn_delay_budget conn_delay_budget;
+    t_conn_delay_budget conn_delay_budget{.short_path_criticality = 0.f,
+                                          .min_delay = 0.f,
+                                          .target_delay = 0.f,
+                                          .max_delay = std::numeric_limits<float>::infinity(),
+                                          .routing_budgets_algorithm = router_opts.routing_budgets_algorithm};
     t_conn_cost_params cost_params;
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.astar_offset = router_opts.astar_offset;
@@ -261,24 +267,32 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Cannot route net \"%s\" through given clock network. Unknown clock network name \"%s\"", net_name.c_str(), clock_network_name.c_str());
             }
 
-            flags = pre_route_to_clock_root(router,
-                                            net_id,
-                                            net_list,
-                                            sink_node,
-                                            cost_params,
-                                            router_opts.high_fanout_threshold,
-                                            tree,
-                                            spatial_route_tree_lookup,
-                                            router_stats,
-                                            is_flat);
+            /* Stage 1 (SOURCE -> clock-network drive point) only needs to run when no clock
+             * sink is routed yet. If setup_net()'s prune kept any sink, its retained path
+             * already carries the SOURCE -> drive-point spine and stage 2 (the loop below)
+             * extends from it. */
+            bool any_clock_sink_routed = !tree.get_reached_isinks().empty();
+            if (!any_clock_sink_routed) {
+                flags = pre_route_to_clock_root(router,
+                                                net_id,
+                                                net_list,
+                                                sink_node,
+                                                cost_params,
+                                                router_opts.high_fanout_threshold,
+                                                tree,
+                                                spatial_route_tree_lookup,
+                                                router_stats,
+                                                is_flat);
 
-            if (flags.success == false)
-                return flags;
+                if (flags.success == false)
+                    return flags;
+            }
         }
     }
 
     if (budgeting_inf.if_set()) {
         budgeting_inf.set_should_reroute(net_id, false);
+        budgeting_inf.set_should_reroute_for_skew(net_id, false);
     }
 
     // explore in order of decreasing criticality (no longer need sink_order array)

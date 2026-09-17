@@ -96,6 +96,7 @@ def build_switch_grid(n: int, denom: int) -> Any:
         chan_w="4",
         switch_name="drive_buff",
         switch_block_type="subset",
+        directionality="bidir",
     )
 
     grid.append(comment("Put a drive in the middle of the device"))

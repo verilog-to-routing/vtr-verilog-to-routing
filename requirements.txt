@@ -7,7 +7,7 @@ scipy
 # Python linter and formatter
 click==8.5.0
 black==26.5.1
-pylint==4.0.7
+pylint==4.0.8
 
 # Surelog
 orderedmultidict

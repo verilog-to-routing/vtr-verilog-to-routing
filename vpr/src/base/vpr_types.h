@@ -59,14 +59,6 @@
 
 //#define VERBOSE //Prints additional intermediate data
 
-/*
- * We need to define the maximum number of layers to address a specific issue.
- * For certain data structures, such as `num_sink_pin_layer` in the placer context, dynamically allocating
- * memory based on the number of layers can lead to a performance hit due to additional pointer chasing and
- * cache locality concerns. Defining a constant variable helps optimize the memory allocation process.
- */
-constexpr int MAX_NUM_LAYERS = 2;
-
 /**
  * @brief For update_screen. Denotes importance of update.
  *
@@ -450,30 +442,6 @@ struct t_bb {
 };
 
 /**
- * @brief Stores a 2D bounding box in terms of the minimum and maximum x and y
- * @note layer_num indicates the layer that the bounding box is on.
- */
-struct t_2D_bb {
-    t_2D_bb() = default;
-    t_2D_bb(int xmin_, int xmax_, int ymin_, int ymax_, int layer_num_)
-        : xmin(xmin_)
-        , xmax(xmax_)
-        , ymin(ymin_)
-        , ymax(ymax_)
-        , layer_num(layer_num_) {
-        VTR_ASSERT(xmax_ >= xmin_);
-        VTR_ASSERT(ymax_ >= ymin_);
-        VTR_ASSERT(layer_num_ >= 0);
-    }
-
-    int xmin = UNDEFINED;
-    int xmax = UNDEFINED;
-    int ymin = UNDEFINED;
-    int ymax = UNDEFINED;
-    int layer_num = UNDEFINED;
-};
-
-/**
  * @brief An offset between placement locations (t_pl_loc)
  * @note In the case of comparing the offset, the layer offset should be equal
  * x: x-offset
@@ -687,6 +655,8 @@ struct t_file_name_opts {
     std::string write_legalized_flat_place_file;
     std::string write_block_usage;
     bool verify_file_digests;
+    ///@brief How much annotation to write into flat placement files.
+    int flat_place_verbosity;
 };
 
 ///@brief Options for netlist loading
@@ -856,12 +826,6 @@ enum class e_place_algorithm {
     BOUNDING_BOX_PLACE,
     CRITICALITY_TIMING_PLACE,
     SLACK_TIMING_PLACE
-};
-
-enum class e_place_bounding_box_mode {
-    AUTO_BB,
-    CUBE_BB,
-    PER_LAYER_BB
 };
 
 /**
@@ -1133,8 +1097,6 @@ struct t_placer_opts {
 
     int place_high_fanout_net;
 
-    e_place_bounding_box_mode place_bounding_box_mode;
-
     e_agent_algorithm place_agent_algorithm;
 
     float place_agent_epsilon;
@@ -1252,7 +1214,8 @@ enum e_routing_budgets_algorithm {
     MINIMAX, // Use MINIMAX-PERT algorithm to allocate budgets
     YOYO,    // Use MINIMAX as above, and enable RCV algorithm to resolve negative hold slack
     SCALE_DELAY,
-    DISABLE // Do not allocate budgets and run default router
+    LOW_SKEW_CLOCK, // Sets budgets on clock connections to the max clock delay to reduce clock skew, and enables RCV. Non-clock connections are left unconstrained (shortest path).
+    DISABLE         // Do not allocate budgets and run default router
 };
 
 enum class e_timing_report_detail {

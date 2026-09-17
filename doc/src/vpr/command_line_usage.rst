@@ -567,6 +567,24 @@ Use the options below to override this default naming behaviour.
 
     * The x, y, and sub_tile location of the cluster that contains this atom.
 
+.. option:: --flat_place_verbosity <int>
+
+    Controls how much annotation is written into flat placement files
+    (see :ref:`flat placement file format <vpr_flat_place_file>`). Annotations are
+    written as a ``#`` comment after the ``<atom_sub_tile>`` column and are
+    informational only: :option:`vpr --read_flat_place` does not parse them. Each
+    level includes what the levels below it print.
+
+    * ``0``: No annotation and no header comments, i.e. only the columns the reader
+      parses. The output is then exactly the input format documented above, and
+      carries no build timestamp, so it is reproducible across runs.
+    * ``1``: Header comments, plus the cluster block number and the primitive type
+      of each atom.
+    * ``2``: Additionally each atom's ``site_path``, the hierarchical path of the
+      primitive it was placed on within its cluster.
+
+    **Default:** ``1``
+
 .. _netlist_options:
 
 Netlist Options
@@ -1019,19 +1037,6 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     The algorithm options have identical functionality as the ones used by the option ``--place_algorithm``. If specified, it overrides the option ``--place_algorithm`` during placement quench.
 
     **Default:**  ``criticality_timing``
-
-.. option:: --place_bounding_box_mode {auto_bb | cube_bb | per_layer_bb}
-
-    Specifies the type of the wirelength estimator used during placement. For single layer architectures, cube_bb (a 3D bounding box) is always used (and is the same as per_layer_bb).
-    For 3D architectures, cube_bb is appropriate if you can cross between layers at switch blocks, while if you can only cross between layers at output pins per_layer_bb (one bounding box per layer) is more accurate and appropriate.
-
-    ``auto_bb``: The bounding box type is determined automatically based on the cross-layer connections.
-
-    ``cube_bb``: ``cube_bb`` bounding box is used to estimate the wirelength.
-
-    ``per_layer_bb``: ``per_layer_bb`` bounding box is used to estimate the wirelength
-
-    **Default:** ``auto_bb``
 
 .. option:: --place_frequency {once | always}
 

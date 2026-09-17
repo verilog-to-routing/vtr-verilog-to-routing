@@ -414,6 +414,8 @@ struct RouteBudgetsAlgorithm {
             conv_value.set_value(YOYO);
         else if (str == "scale_delay")
             conv_value.set_value(SCALE_DELAY);
+        else if (str == "low_skew_clock")
+            conv_value.set_value(LOW_SKEW_CLOCK);
         else if (str == "disable")
             conv_value.set_value(DISABLE);
         else {
@@ -433,6 +435,8 @@ struct RouteBudgetsAlgorithm {
             conv_value.set_value("yoyo");
         else if (val == DISABLE)
             conv_value.set_value("disable");
+        else if (val == LOW_SKEW_CLOCK)
+            conv_value.set_value("low_skew_clock");
         else {
             VTR_ASSERT(val == SCALE_DELAY);
             conv_value.set_value("scale_delay");
@@ -441,7 +445,7 @@ struct RouteBudgetsAlgorithm {
     }
 
     std::vector<std::string> default_choices() {
-        return {"minimax", "yoyo", "scale_delay", "disable"};
+        return {"minimax", "yoyo", "scale_delay", "low_skew_clock", "disable"};
     }
 };
 
@@ -663,41 +667,6 @@ struct ParseInterposerStageNetCostType {
 
     std::vector<std::string> default_choices() {
         return {"minimize_interposer_crossing_bb", "interposer_wire_aware_crossing_bb"};
-    }
-};
-
-struct ParsePlaceBoundingBox {
-    ConvertedValue<e_place_bounding_box_mode> from_str(const std::string& str) {
-        ConvertedValue<e_place_bounding_box_mode> conv_value;
-        if (str == "auto_bb") {
-            conv_value.set_value(e_place_bounding_box_mode::AUTO_BB);
-        } else if (str == "cube_bb") {
-            conv_value.set_value(e_place_bounding_box_mode::CUBE_BB);
-        } else if (str == "per_layer_bb") {
-            conv_value.set_value(e_place_bounding_box_mode::PER_LAYER_BB);
-        } else {
-            std::stringstream msg;
-            msg << "Invalid conversion from '" << str << "' to e_place_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
-            conv_value.set_error(msg.str());
-        }
-        return conv_value;
-    }
-
-    ConvertedValue<std::string> to_str(e_place_bounding_box_mode val) {
-        ConvertedValue<std::string> conv_value;
-        if (val == e_place_bounding_box_mode::AUTO_BB) {
-            conv_value.set_value("auto_bb");
-        } else if (val == e_place_bounding_box_mode::CUBE_BB) {
-            conv_value.set_value("cube_bb");
-        } else {
-            VTR_ASSERT(val == e_place_bounding_box_mode::PER_LAYER_BB);
-            conv_value.set_value("per_layer_bb");
-        }
-        return conv_value;
-    }
-
-    std::vector<std::string> default_choices() {
-        return {"auto_bb", "cube_bb", "per_layer_bb"};
     }
 };
 
@@ -2066,6 +2035,19 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "VPR's (or reconstructed external) placement solution after legalization and before anneal in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument<int>(args.flat_place_verbosity, "--flat_place_verbosity")
+        .help(
+            "Controls how much annotation is written into flat placement files."
+            " Annotations are informational only; the flat placement reader ignores"
+            " everything past the sub-tile column."
+            " 0: no annotations and no header comments, i.e. only the columns the reader parses."
+            " 1: header comments, plus the cluster block id and primitive type of each atom."
+            " 2: additionally the site_path of each atom, the hierarchical path of the"
+            " primitive it was placed on within its cluster."
+            " Larger values produce more detail.")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")
         .help(
             "Reads the lookahead data from the specified file instead of computing it.")
@@ -2665,20 +2647,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Sets the assumed high fanout net during placement. "
             "Any net with higher fanout would be ignored while calculating some of the directed moves: Median and WeightedMedian")
         .default_value("10")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_grp.add_argument<e_place_bounding_box_mode, ParsePlaceBoundingBox>(args.place_bounding_box_mode, "--place_bounding_box_mode")
-        .help(
-            "Specifies the type of bounding box to be used in 3D architectures.\n"
-            "\n"
-            "MODE options:\n"
-            "  auto_bb      : Automatically determine the appropriate bounding box based on the connections between layers.\n"
-            "  cube_bb      : Use 3D bounding boxes.\n"
-            "  per_layer_bb : Use per-layer bounding boxes.\n"
-            "\n"
-            "Choose one of the available modes to define the behavior of bounding boxes in your 3D architecture. The default mode is 'automatic'.")
-        .default_value("auto_bb")
-        .choices({"auto_bb", "cube_bb", "per_layer_bb"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_freq, ParsePlacementFreq>(args.place_placement_freq, "--place_frequency")
@@ -3289,9 +3257,10 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " * yoyo: Allocates budgets using minimax algorithm, and enables hold slack resolution in the router using the RCV algorithm. [EXPERIMENTAL]\n"
             " * minimax: Sets the budgets depending on the amount slack between connections and the current delay values. [EXPERIMENTAL]\n"
             " * scale_delay: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality) [EXPERIMENTAL]\n"
+            " * low_skew_clock: Sets the target delay of all clock connections to the maximum observed clock delay to reduce clock skew, and enables the RCV algorithm. Non-clock connections are left unconstrained. [EXPERIMENTAL]\n"
             " * disable: Removes the routing budgets, use the default VPR and ignore hold time constraints\n")
         .default_value("disable")
-        .choices({"minimax", "scale_delay", "yoyo", "disable"})
+        .choices({"minimax", "scale_delay", "yoyo", "low_skew_clock", "disable"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.save_routing_per_iteration, "--save_routing_per_iteration")

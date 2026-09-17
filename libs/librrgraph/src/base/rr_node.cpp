@@ -7,5 +7,3 @@ short t_rr_node::length() const {
                      storage_->node_xhigh(id_) - storage_->node_xlow(id_),
                      storage_->node_layer_high(id_) - storage_->node_layer_low(id_)});
 }
-
-
