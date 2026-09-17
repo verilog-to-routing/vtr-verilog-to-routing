@@ -11,7 +11,6 @@
 #include "device_grid.h"
 #include "physical_types.h"
 
-
 void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   RRGraphView* rr_graph,
                   const std::vector<t_physical_tile_type>& physical_tile_types,

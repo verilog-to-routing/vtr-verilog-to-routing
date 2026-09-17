@@ -26,9 +26,9 @@
 #include "pugixml_util.hpp"
 
 #ifdef VTR_ENABLE_CAPNPROTO
-#    include <capnp/schema.h>
-#    include "rr_graph_uxsdcxx_capnp.h"
-#    include "mmap_file.h"
+#include <capnp/schema.h>
+#include "rr_graph_uxsdcxx_capnp.h"
+#include "mmap_file.h"
 #endif
 
 /**
@@ -53,7 +53,6 @@ static std::pair<RREdgeId, float> process_rr_edge_override(const std::string& li
 /**FIXME: To make rr_graph_reader independent of vpr_context, the below
  * parameters are a workaround to passing the data structures of DeviceContext. 
  * Needs a solution to reduce the number of parameters passed in.*/
-
 
 void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   RRGraphView* rr_graph,
@@ -205,7 +204,7 @@ void load_rr_edge_delay_overrides(std::string_view filename,
 
     while (std::getline(file, line)) {
         if (line[0] == '#') {
-            continue;  // Ignore lines starting with '#'
+            continue; // Ignore lines starting with '#'
         }
 
         if (!line.empty()) {
