@@ -26,7 +26,6 @@ MetadataStorage<std::tuple<int, int, short>>& RRGraphBuilder::rr_edge_metadata()
     return rr_edge_metadata_;
 }
 
-
 void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     e_rr_type node_type = node_storage_.node_type(node);
     short node_ptc_num = node_storage_.node_ptc_num(node);
@@ -47,7 +46,7 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
                     case e_rr_type::IPIN:
                         for (const e_side side : TOTAL_2D_SIDES) {
                             if (node_storage_.is_node_on_specific_side(node, side)) {
-                                node_lookup_.add_node(node,iz, ix, iy, node_type, node_ptc_num, side);
+                                node_lookup_.add_node(node, iz, ix, iy, node_type, node_ptc_num, side);
                             }
                         }
                         break;
@@ -189,10 +188,9 @@ void RRGraphBuilder::build_edges(const bool& uniquify) {
         edges_to_build_.erase(std::unique(edges_to_build_.begin(), edges_to_build_.end()), edges_to_build_.end());
     }
     alloc_and_load_edges(&edges_to_build_);
-    edges_to_build_.clear(); 
+    edges_to_build_.clear();
     is_edge_dirty_ = false;
 }
-
 
 void RRGraphBuilder::set_node_ptc_nums(RRNodeId node, const std::vector<int>& ptc_numbers) {
     node_storage_.set_node_ptc_nums(node, ptc_numbers);
@@ -216,10 +214,10 @@ void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
     size_t y_start = std::min(node_storage_.node_ylow(node), node_storage_.node_yhigh(node));
     std::vector<size_t> node_x(std::abs(node_storage_.node_xlow(node) - node_storage_.node_xhigh(node)) + 1);
     std::vector<size_t> node_y(std::abs(node_storage_.node_ylow(node) - node_storage_.node_yhigh(node)) + 1);
-    
+
     std::iota(node_x.begin(), node_x.end(), x_start);
     std::iota(node_y.begin(), node_y.end(), y_start);
-    
+
     VTR_ASSERT(size_t(std::max(node_storage_.node_xlow(node), node_storage_.node_xhigh(node))) == node_x.back());
     VTR_ASSERT(size_t(std::max(node_storage_.node_ylow(node), node_storage_.node_yhigh(node))) == node_y.back());
 
@@ -227,8 +225,8 @@ void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
         for (const size_t y : node_y) {
             size_t ptc = node_storage_.node_ptc_num(node);
             e_rr_type node_type = node_storage_.node_type(node);
-            // Routing channel nodes may have different ptc num 
-            // Find the track ids using the x/y offset  
+            // Routing channel nodes may have different ptc num
+            // Find the track ids using the x/y offset
             if (e_rr_type::CHANX == node_type || e_rr_type::CHANY == node_type) {
                 const std::vector<short>& track_nums = node_storage_.node_tilable_track_nums(node);
                 if (node_type == e_rr_type::CHANX) {
