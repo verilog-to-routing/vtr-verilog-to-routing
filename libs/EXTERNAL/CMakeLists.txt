@@ -3,6 +3,14 @@ include(ProcessorCount)
 
 find_package(Git REQUIRED)
 
+# Eigen is header-only. Expose the pinned submodule without configuring its
+# standalone project, which would add Eigen's own tests and install rules.
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/eigen/Eigen/Core")
+    message(FATAL_ERROR "Eigen submodule is missing. Run: git submodule update")
+endif()
+add_library(Eigen3::Eigen INTERFACE IMPORTED GLOBAL)
+target_include_directories(Eigen3::Eigen SYSTEM INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/eigen")
+
 #Manually synchronized external libraries
 add_subdirectory(libpugixml)
 
