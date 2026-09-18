@@ -4,6 +4,7 @@
 #include "move_transactions.h"
 #include "globals.h"
 
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "place_macro.h"
 #include "vpr_types.h"
@@ -718,6 +719,11 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                                                                           from,
                                                                           num_layers);
 
+    // the 'from' grid location on 'to_layer_num' is not compatible with the current block type, return false
+    if (!compressed_locs[to_layer_num].is_valid()) {
+        return false;
+    }
+
     //Determine the valid compressed grid location ranges
     t_bb search_range = get_compressed_grid_target_search_range(compressed_block_grid,
                                                                 compressed_locs[to_layer_num],
@@ -791,6 +797,8 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     std::vector<t_physical_tile_loc> from_compressed_locs = get_compressed_loc(compressed_block_grid,
                                                                                from_loc,
                                                                                g_vpr_ctx.device().grid.get_num_layers());
+
+    VTR_ASSERT_SAFE(from_compressed_locs[to_layer_num].is_valid());
 
     VTR_ASSERT(limit_coords->xmin <= limit_coords->xmax);
     VTR_ASSERT(limit_coords->ymin <= limit_coords->ymax);
@@ -898,7 +906,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     if (compressed_loc_on_layer.x == UNDEFINED || compressed_loc_on_layer.y == UNDEFINED) {
         VTR_ASSERT_MSG(compressed_loc_on_layer.x == UNDEFINED && compressed_loc_on_layer.y == UNDEFINED,
                        "When searching for a compressed location, and a location cannot be found "
-                       "both x and y should be OPEN.");
+                       "both x and y should be UNDEFINED.");
         return false;
     }
 
@@ -1133,8 +1141,8 @@ std::vector<t_physical_tile_loc> get_compressed_loc(const t_compressed_block_gri
     const auto& compatible_layers = compressed_block_grid.get_layer_nums();
 
     for (const int layer_num : compatible_layers) {
-        // This would cause a problem if two blocks of the same types are on different x/y locations of different layers
-        compressed_locs[layer_num] = compressed_block_grid.grid_loc_to_compressed_loc({grid_loc.x, grid_loc.y, layer_num});
+        t_physical_tile_loc compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc({grid_loc.x, grid_loc.y, layer_num});
+        compressed_locs[layer_num] = compressed_loc;
     }
 
     return compressed_locs;
