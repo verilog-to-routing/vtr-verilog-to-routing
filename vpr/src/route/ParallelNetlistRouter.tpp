@@ -119,13 +119,6 @@ void ParallelNetlistRouter<HeapType>::handle_bb_updated_nets(const std::vector<P
 }
 
 template<typename HeapType>
-void ParallelNetlistRouter<HeapType>::set_rcv_enabled(bool x) {
-    for (auto& router : _routers_th) {
-        router.set_rcv_enabled(x);
-    }
-}
-
-template<typename HeapType>
 void ParallelNetlistRouter<HeapType>::set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info) {
     _timing_info = timing_info;
 }
