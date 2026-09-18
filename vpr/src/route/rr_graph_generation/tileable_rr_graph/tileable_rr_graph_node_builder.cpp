@@ -1263,11 +1263,9 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
     // index of an rr_node.  rr_node_indices is a matrix containing the index
     // of the *first* rr_node at a given (i,j) location.
 
-    // Alloc the lookup table
-    // .. warning: It is mandatory. There are bugs in resize() when called incrementally in RRSpatialLookup.
-    //             When comment the following block out, you will see errors
+    // Alloc the lookup table. The lookup must be sized before any node is added to it.
     for (e_rr_type rr_type : RR_TYPES) {
-        rr_graph_builder.node_lookup().resize_nodes(layer, grids.width(), grids.height(), rr_type, NUM_2D_SIDES);
+        rr_graph_builder.node_lookup().resize_nodes(grids.get_num_layers(), grids.width(), grids.height(), rr_type);
     }
 
     load_grid_nodes_basic_info(rr_graph_builder,
