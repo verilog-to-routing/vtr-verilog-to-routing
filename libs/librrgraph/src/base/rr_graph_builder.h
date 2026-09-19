@@ -37,18 +37,17 @@ class RRGraphBuilder {
   public:
     /** @brief Return a writable object for rr_nodes */
     t_rr_graph_storage& rr_nodes();
-    
+
     /** @brief Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
-    
+
     /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
      *  e.g., node_lookup! */
     /** @brief Return a writable object for the meta data on the nodes */
     MetadataStorage<int>& rr_node_metadata();
-    
+
     /** @brief Return a writable object for the meta data on the edge */
     MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata();
-    
 
     /** @brief Return the size for rr_node_metadata */
     inline size_t rr_node_metadata_size() const {
@@ -132,7 +131,7 @@ class RRGraphBuilder {
      * Return a valid node id if succeed. Otherwise, return an invalid id. This function is
      * currently only used when building the tileable rr_graph.
      */
-    RRNodeId create_node(int layer, int x, int y, e_rr_type type, int ptc, e_side side = NUM_2D_SIDES); 
+    RRNodeId create_node(int layer, int x, int y, e_rr_type type, int ptc, e_side side = NUM_2D_SIDES);
 
     /** @brief Set the node name with a given valid id */
     inline void set_node_name(RRNodeId id, std::string name) {
@@ -210,7 +209,7 @@ class RRGraphBuilder {
     inline void set_node_bend_start(RRNodeId id, size_t bend_start) {
         node_storage_.set_node_bend_start(id, bend_start);
     }
-    
+
     /**
      * @brief Set the bend end of a node
      * @param id The node id
@@ -235,7 +234,7 @@ class RRGraphBuilder {
     }
 
     /// @brief Set the layer range where the given node spans.
-    inline void set_node_layer(RRNodeId id, char layer_low, char layer_high){
+    inline void set_node_layer(RRNodeId id, char layer_low, char layer_high) {
         node_storage_.set_node_layer(id, layer_low, layer_high);
     }
 
@@ -339,7 +338,7 @@ class RRGraphBuilder {
     inline void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create) {
         node_storage_.alloc_and_load_edges(rr_edges_to_create);
     }
-    
+
     /** @brief Removes a given list of RREdgeIds from the RR Graph.
      * This method does not preserve the order of edges. If you're
      * calling it after partition_edges has been called, you will
@@ -518,14 +517,13 @@ class RRGraphBuilder {
      */
     vtr::vector<RRSwitchId, t_rr_switch_inf> rr_switch_inf_;
 
-
     /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
      *  e.g., node_lookup! */
     /* Metadata is an extra data on rr-nodes and edges, respectively, that is not used by vpr
      * but simply passed through the flow so that it can be used by downstream tools.
      * The main (perhaps only) current use of this metadata is the fasm tool of symbiflow,
      * which needs extra metadata on which programming bits control which switch in order to produce a bitstream.*/
-    
+
     /**
      * @brief Attributes for each rr_node.
      *
@@ -550,5 +548,4 @@ class RRGraphBuilder {
      * To add all edges in cache to the main rr-graph edge storage, call build_edges().
      */
     bool is_edge_dirty_;
-
 };

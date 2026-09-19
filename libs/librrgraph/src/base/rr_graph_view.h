@@ -39,7 +39,7 @@
  * - TODO: Node fan-in storage
  * - RR node indices
  * \endinternal
-
+ *
  *
  * @note The RRGraphView does not own the storage. It provides a virtual 
  * read-only protocol for:
@@ -120,13 +120,11 @@ class RRGraphView {
         return vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(num_nodes()));
     }
 
-    /** @brief Return number of routing resource nodes. 
-    */
+    /// @brief Return number of routing resource nodes.
     inline size_t num_nodes() const {
         return node_storage_.size();
     }
-    /** @brief check whether the RR graph is currently empty 
-    */
+    /// @brief check whether the RR graph is currently empty
     inline bool empty() const {
         return node_storage_.empty();
     }
@@ -137,8 +135,7 @@ class RRGraphView {
         return vtr::StrongIdRange<RREdgeId>(node_storage_.first_edge(id), node_storage_.last_edge(id));
     }
 
-    /** @brief Return the type of a specified node.
-    */
+    /// @brief Return the type of a specified node.
     inline e_rr_type node_type(RRNodeId node) const {
         return node_storage_.node_type(node);
     }
@@ -151,14 +148,12 @@ class RRGraphView {
         return node_storage_.node_name(node);
     }
 
-    /** @brief Return a string indicating the type of the specified node. 
-    */
+    /// @brief Return a string indicating the type of the specified node.
     inline const char* node_type_string(RRNodeId node) const {
         return node_storage_.node_type_string(node);
     }
 
-    /** @brief Return the capacity of a specified node. 
-    */
+    /// @brief Return the capacity of a specified node.
     inline short node_capacity(RRNodeId node) const {
         return node_storage_.node_capacity(node);
     }
@@ -176,8 +171,7 @@ class RRGraphView {
         return node_storage_.node_direction(node);
     }
 
-    /** @brief Return a string representing the direction of the specified node.
-    */
+    /// @brief Return a string representing the direction of the specified node.
     inline const std::string& node_direction_string(RRNodeId node) const {
         return node_storage_.node_direction_string(node);
     }
@@ -197,32 +191,27 @@ class RRGraphView {
         return node_storage_.node_rc_index(node);
     }
 
-    /** @brief Return the fan in count of a specified node.
-    */
+    /// @brief Return the fan in count of a specified node.
     inline t_edge_size node_fan_in(RRNodeId node) const {
         return node_storage_.fan_in(node);
     }
 
-    /** @brief Return the minimum x-coordinate of a specified node.
-    */
+    /// @brief Return the minimum x-coordinate of a specified node.
     inline short node_xlow(RRNodeId node) const {
         return node_storage_.node_xlow(node);
     }
 
-    /** @brief Return the maximum x-coordinate of a specified node.
-    */
+    /// @brief Return the maximum x-coordinate of a specified node.
     inline short node_xhigh(RRNodeId node) const {
         return node_storage_.node_xhigh(node);
     }
 
-    /** @brief Return the minimum y-coordinate of a specified node.
-    */
+    /// @brief Return the minimum y-coordinate of a specified node.
     inline short node_ylow(RRNodeId node) const {
         return node_storage_.node_ylow(node);
     }
 
-    /** @brief Return the maximum y-coordinate of a specified node.
-    */
+    /// @brief Return the maximum y-coordinate of a specified node.
     inline short node_yhigh(RRNodeId node) const {
         return node_storage_.node_yhigh(node);
     }
@@ -255,14 +244,12 @@ class RRGraphView {
         return node_storage_.node_bend_end(node);
     }
 
-    /** @brief Return the first outgoing edge of a specified node.
-    */
+    /// @brief Return the first outgoing edge of a specified node.
     inline RREdgeId node_first_edge(RRNodeId node) const {
         return node_storage_.first_edge(node);
     }
 
-    /** @brief Return the last outgoing edge of a specified node.
-    */
+    /// @brief Return the last outgoing edge of a specified node.
     inline RREdgeId node_last_edge(RRNodeId node) const {
         return node_storage_.last_edge(node);
     }
@@ -317,9 +304,9 @@ class RRGraphView {
         }
 
         // CHANX/CHANY to CHANZ (in any order)
-        if ((type1 == e_rr_type::CHANZ || type2 == e_rr_type::CHANZ) &&
-            (type1 == e_rr_type::CHANX || type1 == e_rr_type::CHANY ||
-             type2 == e_rr_type::CHANX || type2 == e_rr_type::CHANY)) {
+        if ((type1 == e_rr_type::CHANZ || type2 == e_rr_type::CHANZ)
+            && (type1 == e_rr_type::CHANX || type1 == e_rr_type::CHANY
+                || type2 == e_rr_type::CHANX || type2 == e_rr_type::CHANY)) {
             return chanxy_chanz_adjacent(*this, node1, node2);
         }
 
@@ -347,14 +334,12 @@ class RRGraphView {
                 && node_ylow(node) >= bounding_box.ymin());
     }
 
-    /** @brief Check if x is within x-range spanned by a specified node, inclusive of its endpoints. 
-    */
+    /// @brief Check if x is within x-range spanned by a specified node, inclusive of its endpoints.
     inline bool x_in_node_range(int x, RRNodeId node) const {
         return !(x < node_xlow(node) || x > node_xhigh(node));
     }
 
-    /** @brief Check if y is within y-range spanned by a specified node, inclusive of its endpoints. 
-    */
+    /// @brief Check if y is within y-range spanned by a specified node, inclusive of its endpoints.
     inline bool y_in_node_range(int y, RRNodeId node) const {
         return !(y < node_ylow(node) || y > node_yhigh(node));
     }
@@ -448,8 +433,7 @@ class RRGraphView {
         return node_storage_.node_side_string(node);
     }
 
-    /** @brief Return the node id of the clock network virtual sink 
-    */
+    /// @brief Return the node id of the clock network virtual sink
     inline RRNodeId virtual_clock_network_root_idx(const char* clock_network_name) const {
         return node_storage_.virtual_clock_network_root_idx(clock_network_name);
     }
@@ -461,14 +445,13 @@ class RRGraphView {
         return node_storage_.is_virtual_clock_network_root(id);
     }
 
-    /** @brief Return the switch id that represents the iedge'th outgoing edge from a specific node.
-     * @param id the id of the node.
-     * @param iedge the outgoing edge index of the node.
-     * @return the id of the switch used for the specified edge. 
-     * \internal 
-     * @todo We may need to revisit this API and think about higher level APIs, like ``switch_delay()``.
-     * \endinternal
-    */
+    /// @brief Return the switch id that represents the iedge'th outgoing edge from a specific node.
+    /// @param id the id of the node.
+    /// @param iedge the outgoing edge index of the node.
+    /// @return the id of the switch used for the specified edge.
+    /// \internal
+    /// @todo We may need to revisit this API and think about higher level APIs, like ``switch_delay()``.
+    /// \endinternal
     inline short edge_switch(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_switch(id, iedge);
     }
@@ -478,8 +461,7 @@ class RRGraphView {
         return node_storage_.edge_switch(id);
     }
 
-    /** @brief Return the source node for the specified edge. 
-    */
+    /// @brief Return the source node for the specified edge.
     inline RRNodeId edge_src_node(const RREdgeId edge_id) const {
         return node_storage_.edge_src_node(edge_id);
     }
@@ -512,12 +494,11 @@ class RRGraphView {
         return node_storage_.edge_source_node(id, iedge);
     }
 
-    /** @brief Check if the edge is a configurable edge 
-     * @note A configurable edge represents a programmable switch between routing resources, which could be 
-     *  - a multiplexer
-     *  - a tri-state buffer
-     *  - a pass gate 
-    */
+    /// @brief Check if the edge is a configurable edge
+    /// @note A configurable edge represents a programmable switch between routing resources, which could be
+    ///  - a multiplexer
+    ///  - a tri-state buffer
+    ///  - a pass gate
     inline bool edge_is_configurable(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_is_configurable(id, iedge, rr_switch_inf_);
     }
@@ -531,8 +512,7 @@ class RRGraphView {
         return node_storage_.edge_is_configurable(edge, rr_switch_inf_);
     }
 
-    /** @brief Return the number of configurable edges. 
-    */
+    /// @brief Return the number of configurable edges.
     inline t_edge_size num_configurable_edges(RRNodeId node) const {
         return node_storage_.num_configurable_edges(node, rr_switch_inf_);
     }
@@ -633,9 +613,8 @@ class RRGraphView {
         return node_storage_.node_ptc_num(node);
     }
 
-    /** @brief Return the pin num of a routing resource node.
-     *  @note This function is intended for logic blocks and should only be used with IPIN or OPIN nodes.
-    */
+    /// @brief Return the pin num of a routing resource node.
+    ///  @note This function is intended for logic blocks and should only be used with IPIN or OPIN nodes.
     inline int node_pin_num(RRNodeId node) const {
         return node_storage_.node_pin_num(node);
     }
@@ -647,22 +626,19 @@ class RRGraphView {
         return node_storage_.node_track_num(node);
     }
 
-    /** @brief Return the class num of a routing resource node. 
-     * @note This function should only be used with SOURCE or SINK nodes.
-    */
+    /// @brief Return the class num of a routing resource node.
+    /// @note This function should only be used with SOURCE or SINK nodes.
     inline int node_class_num(RRNodeId node) const {
         return node_storage_.node_class_num(node);
     }
 
-    /** @brief Return the cost index of a routing resource node. 
-    */
+    /// @brief Return the cost index of a routing resource node.
     RRIndexedDataId node_cost_index(RRNodeId node) const {
         return node_storage_.node_cost_index(node);
     }
 
     /** @brief Get the segment id which a routing resource node represents. Only applicable to nodes whose type is CHANX or CHANY */
     RRSegmentId node_segment(RRNodeId node) const;
-
 
     /** @brief Return detailed routing segment information of a specified segment
      * @note The routing segments here may not be exactly same as those defined in architecture file. They have been
@@ -722,8 +698,7 @@ class RRGraphView {
     MetadataStorage<int> rr_node_metadata_data() const {
         return rr_node_metadata_;
     }
-    /** @brief Return the metadata of rr edges 
-    */
+    /// @brief Return the metadata of rr edges
     MetadataStorage<std::tuple<int, int, short>> rr_edge_metadata_data() const {
         return rr_edge_metadata_;
     }
@@ -747,7 +722,6 @@ class RRGraphView {
     inline bool valid_switch(RRSwitchId switch_id) const {
         return (size_t(switch_id) < rr_switch_inf_.size());
     }
-
 
     /* -- Internal data storage -- */
     /* Note: only read-only object or data structures are allowed!!! */

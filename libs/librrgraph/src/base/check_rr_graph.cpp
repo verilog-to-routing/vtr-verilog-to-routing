@@ -222,7 +222,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
 
     // AM: For the time being, if is_flat is enabled, we don't have proper tests to check whether a node should have an incoming
     // edge or not
-    if(is_flat) {
+    if (is_flat) {
         return;
     }
 
@@ -306,12 +306,11 @@ void check_rr_graph(const RRGraphView& rr_graph,
             }
         }
     }
-
 }
 
 static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const DeviceGrid& grid, RRNodeId inode) {
-    /* Returns true if inode refers to a global CLB input pin node.   */
-     t_physical_tile_type_ptr type = grid.get_physical_type({rr_graph.node_xlow(inode),
+    // Returns true if inode refers to a global CLB input pin node.
+    t_physical_tile_type_ptr type = grid.get_physical_type({rr_graph.node_xlow(inode),
                                                             rr_graph.node_ylow(inode),
                                                             rr_graph.node_layer_low(inode)});
 
@@ -461,7 +460,6 @@ void check_rr_node(const RRGraphView& rr_graph,
         mux_max_ptc = (int)vib_type->get_first_stages().size();
     }
 
-
     e_pin_type class_type = e_pin_type::OPEN;
     int class_num_pins = -1;
     std::vector<e_side> rr_graph_sides;
@@ -507,14 +505,14 @@ void check_rr_node(const RRGraphView& rr_graph,
             rr_graph_sides = rr_graph.node_sides(rr_node);
             std::tie(std::ignore, std::ignore, arch_side_vec) = get_pin_coordinates(type, ptc_num, std::vector<e_side>(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end()));
             // sides in the architecture are a superset of the sides for a pin in RR Graph. We iterate over the sides stored
-            // in the RR Graph to ensure that all of them also exist in the architecture.   
+            // in the RR Graph to ensure that all of them also exist in the architecture.
             for (size_t i = 0; i < rr_graph_sides.size(); i++) {
                 if (std::find(arch_side_vec.begin(), arch_side_vec.end(), rr_graph_sides[i]) == arch_side_vec.end()) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: inode %d (type %d) has a different side '%s' in the RR graph and the architecture.\n", 
-                                inode, 
-                                rr_type, 
-                                TOTAL_2D_SIDE_STRINGS[rr_graph_sides[i]]);
+                                    "in check_rr_node: inode %d (type %d) has a different side '%s' in the RR graph and the architecture.\n",
+                                    inode,
+                                    rr_type,
+                                    TOTAL_2D_SIDE_STRINGS[rr_graph_sides[i]]);
                 }
             }
             break;
@@ -626,7 +624,6 @@ static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& 
     return true; //All other blocks will be surrounded on all sides by channels
 }
 
-
 static void check_rr_edge(const RRGraphView& rr_graph,
                           const DeviceGrid& grid,
                           const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
@@ -655,7 +652,7 @@ static void check_rr_edge(const RRGraphView& rr_graph,
         case e_switch_type::MUX:       //Fallthrough
         case e_switch_type::PASS_GATE: //Fallthrough
         case e_switch_type::SHORT:     //Fallthrough
-            break;                  //pass
+            break;                     //pass
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid switch type %d", switch_type);
     }

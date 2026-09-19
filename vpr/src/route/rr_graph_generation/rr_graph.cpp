@@ -167,7 +167,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
  * nets are routed to the pins with less delay.
  */
 static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
-                                          std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
+                                          const std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
                                           const std::vector<int>& class_num_vec,
                                           const t_physical_tile_loc& root_loc,
                                           t_rr_edge_info_set& rr_edges_to_create,
@@ -175,7 +175,7 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                           t_physical_tile_type_ptr physical_type_ptr);
 
 static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
-                                         std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
+                                         const std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
                                          t_physical_tile_type_ptr physical_tile,
                                          const t_physical_tile_loc& root_loc,
                                          const int delayless_switch);
@@ -1196,7 +1196,15 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                          t_physical_tile_type_ptr physical_tile,
                          const t_physical_tile_loc& tile_loc,
                          const int delayless_switch) {
-    std::map<int, t_arch_switch_inf> sw_map = g_vpr_ctx.device().all_sw_inf;
+    const std::map<int, t_arch_switch_inf>& sw_map = g_vpr_ctx.device().all_sw_inf;
+
+    // The lookup only needs to cover the tile at tile_loc
+    for (e_rr_type rr_type : RR_TYPES) {
+        rr_graph_builder.node_lookup().resize_nodes(tile_loc.layer_num + 1,
+                                                    tile_loc.x + physical_tile->width,
+                                                    tile_loc.y + physical_tile->height,
+                                                    rr_type);
+    }
 
     int num_rr_nodes = 0;
     alloc_and_load_tile_rr_node_indices(rr_graph_builder,
@@ -1590,7 +1598,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 }
 
 static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
-                                          std::map<int, t_arch_switch_inf>& /*arch_sw_inf_map*/,
+                                          const std::map<int, t_arch_switch_inf>& /*arch_sw_inf_map*/,
                                           const std::vector<int>& class_num_vec,
                                           const t_physical_tile_loc& root_loc,
                                           t_rr_edge_info_set& rr_edges_to_create,
@@ -1626,7 +1634,7 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
 }
 
 static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
-                                         std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
+                                         const std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
                                          t_physical_tile_type_ptr physical_tile,
                                          const t_physical_tile_loc& root_loc,
                                          const int delayless_switch) {

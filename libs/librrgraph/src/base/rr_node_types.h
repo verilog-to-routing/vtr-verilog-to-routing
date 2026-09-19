@@ -52,7 +52,7 @@ constexpr std::array<e_rr_type, (size_t)e_rr_type::NUM_RR_TYPES> RR_TYPES = {{e_
  * @brief Lookup for the string representation of the given node type. This is useful
  *        for logging the type of an RR node.
  */
-constexpr vtr::array<e_rr_type, const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr_node_typename {"SOURCE", "SINK",
+constexpr vtr::array<e_rr_type, const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr_node_typename{"SOURCE", "SINK",
                                                                                                "IPIN", "OPIN",
                                                                                                "CHANX", "CHANY", "CHANZ",
                                                                                                "MUX"};
@@ -85,13 +85,12 @@ inline e_rr_type get_rr_type(const std::string& type_name) {
  * @brief Represents the wire direction for a routing resource node.
  */
 enum class Direction : unsigned char {
-    INC = 0,     ///< wire driver is positioned at the low-coordinate end of the wire.
-    DEC = 1,     ///< wire_driver is positioned at the high-coordinate end of the wire.
-    BIDIR = 2,   ///< wire has multiple drivers, so signals can travel either way along the wire
-    NONE = 3,    ///< node does not have a direction, such as IPIN/OPIN
+    INC = 0,   ///< wire driver is positioned at the low-coordinate end of the wire.
+    DEC = 1,   ///< wire_driver is positioned at the high-coordinate end of the wire.
+    BIDIR = 2, ///< wire has multiple drivers, so signals can travel either way along the wire
+    NONE = 3,  ///< node does not have a direction, such as IPIN/OPIN
     NUM_DIRECTIONS
 };
-
 
 constexpr std::array<const char*, static_cast<int>(Direction::NUM_DIRECTIONS)> DIRECTION_STRING = {{"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NONE"}};
 
@@ -163,8 +162,8 @@ typedef std::vector<std::map<int, RRSwitchId>> t_arch_switch_fanin;
 struct t_rr_rc_data {
     t_rr_rc_data(float Rval, float Cval) noexcept;
 
-    float R;    ///< Resistance to go through an RR node
-    float C;    ///<  Total capacitance of an RR node.
+    float R; ///< Resistance to go through an RR node
+    float C; ///<  Total capacitance of an RR node.
 };
 
 // This is the data type of fast lookups of an rr-node given an (rr_type, layer, x, y, and the side)
