@@ -31,6 +31,7 @@
 #include "clock_network_builders.h"
 #include "clock_connection_builders.h"
 #include "route_tree.h"
+#include "bus_mux_route_types.h"
 #include "router_lookahead.h"
 #include "compressed_grid.h"
 #include "noc_storage.h"
@@ -588,6 +589,15 @@ struct RoutingContext : public Context {
     vtr::vector<ParentBlockId, std::vector<RRNodeId>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
 
     vtr::vector<RRNodeId, t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
+
+    /**
+     * @brief Bus-based mux instances of the intra-cluster rr graph. Empty unless flat
+     *        routing is enabled and the architecture has <mux bus="true">.
+     */
+    std::vector<t_rr_bus_mux> rr_bus_muxes;
+
+    ///@brief Look-up from the output bit of a bus-based mux to the mux and the edges driving the bit
+    std::unordered_map<RRNodeId, t_rr_bus_mux_out_node> rr_bus_mux_out_nodes;
 
     vtr::vector<ParentNetId, std::vector<std::vector<int>>> net_terminal_groups;
 
