@@ -97,10 +97,16 @@ constexpr std::array<const char*, static_cast<int>(Direction::NUM_DIRECTIONS)> D
 //this array is used in rr_graph_storage.cpp so that node_direction_string() can return a const std::string&
 const std::array<std::string, static_cast<int>(Direction::NUM_DIRECTIONS)> CONST_DIRECTION_STRING = {{"INC_DIR", "DEC_DIR", "BI_DIR", "NONE"}};
 
-// Node reordering algorithms for rr_nodes
-enum e_rr_node_reorder_algorithm {
+/**
+ * @enum e_rr_node_reorder_algorithm
+ * @brief Node reordering algorithms for rr_nodes.
+ */
+enum class e_rr_node_reorder_algorithm {
+    /// Keep the node order as built or loaded.
     DONT_REORDER,
+    /// Order by degree first, then by BFS traversal order.
     DEGREE_BFS,
+    /// Shuffle with a seeded random number generator.
     RANDOM_SHUFFLE,
 };
 
