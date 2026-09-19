@@ -13,7 +13,6 @@
 #include <cmath>
 
 #include "rr_graph_fwd.h"
-#include "rr_node.h"
 
 #include "ezgl/graphics.hpp"
 
@@ -69,7 +68,7 @@ void draw_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* 
 
 void draw_rr_src_sink(RRNodeId inode, ezgl::color color, ezgl::renderer* g);
 
-void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen);
+void draw_get_rr_src_sink_coords(RRNodeId inode, float* xcen, float* ycen);
 
 /* Draws a buffer (triangle) or pass transistor (circle) on the edge
  * connecting from to to, depending on the status of buffered.  The drawing
@@ -98,11 +97,6 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
  * inode gives the node number, and iside gives the side of the clb or pad  *
  * the physical pin is on.                                                  */
 void draw_get_rr_pin_coords(RRNodeId inode, float* xcen, float* ycen, const e_side& pin_side);
-
-/* Returns the coordinates at which the center of this pin should be drawn. *
- * node gives the node object, and iside gives the side of the clb or pad  *
- * the physical pin is on.                                                  */
-void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, const e_side& pin_side);
 
 /**
  * @brief returns transparency, given rr node
