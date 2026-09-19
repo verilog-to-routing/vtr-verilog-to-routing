@@ -83,6 +83,11 @@ struct t_appack_options {
 
 /**
  * @brief Result of APPackContext::adjust_for_device_size_estimate.
+ *
+ * When adjusting the parameters of APPack according to the device size, we
+ * sometimes want to change the overall packing algorithm. This cannot be done
+ * by a method in this class, so we need to return the actions the packer needs
+ * to take.
  */
 struct t_appack_device_size_adjustment {
     /// @brief Whether unrelated clustering should be enabled globally (for all

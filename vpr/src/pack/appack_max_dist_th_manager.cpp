@@ -203,6 +203,9 @@ static unsigned get_num_compatible_tiles_between(const vtr::PrefixSum2D<unsigned
     // Path 1: walk along X at row y1, then along Y at column x2. The corner
     // tile is at (x2, y1). The X-leg and Y-leg interiors exclude the endpoints
     // and the corner; the corner is added back separately when the path turns.
+    // NOTE: We check for greater than or equal to 2 here since the start and
+    //       end points are not counted. This is because we want the number of
+    //       tiles strictly between loc1 and loc2.
     unsigned x_then_y = 0;
     if (x_hi - x_lo >= 2)
         x_then_y += lookup.get_sum(x_lo + 1, y1, x_hi - 1, y1);
@@ -266,6 +269,10 @@ float APPackMaxDistThManager::get_compatible_distance_between_points(const t_fla
     // Add 1 for the cost of leaving loc1's tile. Without this, two compatible
     // tiles right next to each other would appear as a distance of 0. loc1 and
     // loc2 are known to be different tiles here.
+    // NOTE: We do this instead of counting loc1/loc2 in the distance calculations
+    //       above since it gets complicated if loc1/loc2 are not valid tile locations.
+    //       It is simpler to ignore the start and end points and just add one here
+    //       to account for them being in separate tiles.
     float manh_dist = static_cast<float>(z_dist + tiles_between + 1);
 
     // TODO: We are ignoring the intra-tile distances. The code above assumes that the locations are integer-aligned,

@@ -113,8 +113,8 @@ class FullLegalizer {
 
     /// @brief Estimated number of instances required for each logical block
     ///        type, computed before Global Placement (see DeviceSizeEstimator).
-    ///        Forwarded into the Packer during legalization so it can react
-    ///        to block types that look like they will not fit densely.
+    ///        Forwarded into the Packer during legalization so it can predict
+    ///        how densely it needs to pack for each type of block.
     const std::map<t_logical_block_type_ptr, size_t>& estimated_type_instance_counts_;
 };
 

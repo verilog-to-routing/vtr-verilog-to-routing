@@ -144,6 +144,10 @@ class APPackMaxDistThManager {
                                                  const t_flat_pl_loc& loc2,
                                                  t_logical_block_type_ptr lb_type) const;
 
+    /**
+     * @brief Logs a summary of the max distance thresholds currently selected
+     *        for the given logical block types.
+     */
     void print_max_dist_thresholds(const std::vector<t_logical_block_type>& logical_block_types) const;
 
   private:
