@@ -53,7 +53,7 @@ struct t_rr_bus_mux_in_edge {
 
 /// @brief The bus-mux edges ending at one output bit of a bus-based mux.
 struct t_rr_bus_mux_out_node {
-    /// @brief Index into RoutingContext::rr_bus_muxes.
+    /// @brief Index into DeviceContext::rr_bus_muxes.
     int mux_idx = -1;
     /// @brief The edges driving this output bit, one per input set present in the rr graph.
     std::vector<t_rr_bus_mux_in_edge> in_edges;

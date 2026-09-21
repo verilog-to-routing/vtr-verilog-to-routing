@@ -1139,7 +1139,7 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
                                       const RRSpatialLookup& node_lookup) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = g_vpr_ctx.placement().block_locs();
-    RoutingContext& route_ctx = g_vpr_ctx.mutable_routing();
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
     auto [physical_type, sub_tile, rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_blk_id);
     if (!logical_block->pb_type->has_bus_mux()) {
@@ -1184,16 +1184,16 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
                 return entry.first == key;
             });
             if (found == mux_indices.end()) {
-                mux_indices.emplace_back(key, (int)route_ctx.rr_bus_muxes.size());
+                mux_indices.emplace_back(key, (int)device_ctx.rr_bus_muxes.size());
                 found = mux_indices.end() - 1;
-                route_ctx.rr_bus_muxes.push_back({cluster_blk_id, key.interconnect, key.owner, 0});
+                device_ctx.rr_bus_muxes.push_back({cluster_blk_id, key.interconnect, key.owner, 0});
             }
             const int mux_idx = found->second;
 
-            t_rr_bus_mux& mux = route_ctx.rr_bus_muxes[mux_idx];
+            t_rr_bus_mux& mux = device_ctx.rr_bus_muxes[mux_idx];
             mux.num_sets = std::max(mux.num_sets, edge->driver_set + 1);
 
-            t_rr_bus_mux_out_node& out = route_ctx.rr_bus_mux_out_nodes[out_node];
+            t_rr_bus_mux_out_node& out = device_ctx.rr_bus_mux_out_nodes[out_node];
             out.mux_idx = mux_idx;
             out.in_edges.push_back({in_node, edge->driver_set});
         }
@@ -1224,13 +1224,13 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
 
 void load_rr_bus_muxes(const RRSpatialLookup& node_lookup) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    RoutingContext& route_ctx = g_vpr_ctx.mutable_routing();
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
-    route_ctx.rr_bus_muxes.clear();
-    route_ctx.rr_bus_mux_out_nodes.clear();
+    device_ctx.rr_bus_muxes.clear();
+    device_ctx.rr_bus_mux_out_nodes.clear();
 
     // Bus-mux edges only exist in the intra-cluster graph, which is only built for flat routing
-    if (!g_vpr_ctx.device().rr_graph_is_flat) {
+    if (!device_ctx.rr_graph_is_flat) {
         return;
     }
 
@@ -1238,8 +1238,8 @@ void load_rr_bus_muxes(const RRSpatialLookup& node_lookup) {
         load_cluster_rr_bus_muxes(cluster_blk_id, node_lookup);
     }
 
-    if (!route_ctx.rr_bus_muxes.empty()) {
+    if (!device_ctx.rr_bus_muxes.empty()) {
         VTR_LOG("Bus-based muxes in the intra-cluster RR graph: %zu (%zu output bits)\n",
-                route_ctx.rr_bus_muxes.size(), route_ctx.rr_bus_mux_out_nodes.size());
+                device_ctx.rr_bus_muxes.size(), device_ctx.rr_bus_mux_out_nodes.size());
     }
 }

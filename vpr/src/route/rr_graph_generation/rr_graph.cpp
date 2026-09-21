@@ -1694,6 +1694,9 @@ void free_rr_graph() {
 
     device_ctx.rr_graph_is_flat = false;
 
+    device_ctx.rr_bus_muxes.clear();
+    device_ctx.rr_bus_mux_out_nodes.clear();
+
     device_ctx.rr_chan_segment_width.x.clear();
     device_ctx.rr_chan_segment_width.y.clear();
     device_ctx.rr_chan_segment_width.z.clear();
