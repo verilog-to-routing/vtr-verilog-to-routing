@@ -900,11 +900,19 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                                                                                          centroid,
                                                                                          num_layers);
 
-    // If no compressed location can be found on this layer, return false.
+    // If no compressed location can be found on 'to' layer, return false.
     // TODO: Maybe search in the layers above or below.
     const t_physical_tile_loc& compressed_loc_on_layer = centroid_compressed_loc[to_layer_num];
     if (compressed_loc_on_layer.x == UNDEFINED || compressed_loc_on_layer.y == UNDEFINED) {
         VTR_ASSERT_MSG(compressed_loc_on_layer.x == UNDEFINED && compressed_loc_on_layer.y == UNDEFINED,
+                       "When searching for a compressed location, and a location cannot be found "
+                       "both x and y should be UNDEFINED.");
+        return false;
+    }
+
+    // We checked centroid_compressed_loc[to_layer_num] above, should also check from_compressed_loc[to_layer_num]
+    if (from_compressed_loc[to_layer_num].x == UNDEFINED || from_compressed_loc[to_layer_num].y == UNDEFINED) {
+        VTR_ASSERT_MSG(from_compressed_loc[to_layer_num].x == UNDEFINED && from_compressed_loc[to_layer_num].y == UNDEFINED,
                        "When searching for a compressed location, and a location cannot be found "
                        "both x and y should be UNDEFINED.");
         return false;
@@ -1141,8 +1149,8 @@ std::vector<t_physical_tile_loc> get_compressed_loc(const t_compressed_block_gri
     const auto& compatible_layers = compressed_block_grid.get_layer_nums();
 
     for (const int layer_num : compatible_layers) {
-        t_physical_tile_loc compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc({grid_loc.x, grid_loc.y, layer_num});
-        compressed_locs[layer_num] = compressed_loc;
+        compressed_locs[layer_num] = compressed_block_grid.grid_loc_to_compressed_loc({grid_loc.x, grid_loc.y, layer_num});
+        ;
     }
 
     return compressed_locs;

@@ -779,12 +779,16 @@ struct t_physical_tile_loc {
         , y(y_val)
         , layer_num(layer_num_val) {}
 
-    // Returns true if this type location layer_num/x/y is not equal to ARCH_FPGA_UNDEFINED_VAL
+    /**
+     * @brief Returns true if this type location layer_num/x/y is not equal to ARCH_FPGA_UNDEFINED_VAL
+     */
     inline bool is_valid() const {
         return !(x == ARCH_FPGA_UNDEFINED_VAL || y == ARCH_FPGA_UNDEFINED_VAL || layer_num == ARCH_FPGA_UNDEFINED_VAL);
     }
 
-    // Returns true if this type location layer_num/x/y is not equal to ARCH_FPGA_UNDEFINED_VAL
+    /**
+     * @brief Returns true if this type location layer_num/x/y is not equal to ARCH_FPGA_UNDEFINED_VAL
+     */
     operator bool() const {
         return is_valid();
     }
