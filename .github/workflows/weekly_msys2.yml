@@ -1,0 +1,78 @@
+name: Weekly MSYS2 Compatibility
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 5 * * 0'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  Msys2Compatibility:
+    name: "Build Compatibility (GCC, Windows MSYS2-UCRT64)"
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: msys2 {0}
+    env:
+      CC: gcc
+      CXX: g++
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'true'
+
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v3
+        id: cpu-cores
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            wget
+            git
+
+      # In MSYS2, flex is an MSYS-native package and installs its headers under
+      # /usr/include. Copy FlexLexer.h into the UCRT64 toolchain include path.
+      - name: Install dependencies
+        run: |
+          ./install_win_msys2_ucrt64_packages.sh
+          cp /usr/include/FlexLexer.h /ucrt64/include/
+
+      - name: Dump tool versions
+        run: |
+          which cmake
+          cmake --version
+          which ${CC}
+          ${CC} --version
+          which ${CXX}
+          ${CXX} --version
+          which ld
+          ld --version
+          which python3
+          python3 --version
+          echo "==== Checking yosys packages ===="
+          which yosys.exe
+          echo "==== Checking libgnat.a ===="
+          ls /ucrt64/lib/gcc/x86_64-w64-mingw32/*/adalib/libgnat.a
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          key: ${{ runner.os }}-msys2-${{ github.job }}-${{ hashFiles('**/CMakeLists.txt', '**/Makefile') }}
+          restore-keys: |
+            ${{ runner.os }}-msys2-${{ github.job }}-
+            ${{ runner.os }}-msys2-
+
+      - name: Build
+        env:
+          CMAKE_PARAMS: "-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+          BUILD_TYPE: release
+          CCACHE_DIR: ${{ github.workspace }}/.ccache
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count}}
