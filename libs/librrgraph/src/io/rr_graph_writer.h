@@ -4,7 +4,7 @@
  * Information included in the file includes rr nodes, rr switches, the grid, block info, node indices
  */
 
-#include "rr_node.h"
+#include "rr_graph_cost.h"
 #include "rr_graph_type.h"
 #include "rr_graph_builder.h"
 #include "rr_graph_view.h"

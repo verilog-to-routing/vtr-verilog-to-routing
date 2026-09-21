@@ -9,7 +9,6 @@
 #include "rr_graph_storage_utils.h"
 #include "rr_node_types.h"
 #include "rr_graph_fwd.h"
-#include "rr_node_fwd.h"
 #include "rr_edge.h"
 #include "rr_switch.h"
 #include "vtr_log.h"
@@ -497,41 +496,6 @@ class t_rr_graph_storage {
     short edge_switch(const RRNodeId id, t_edge_size iedge) const {
         return edge_switch(edge_id(id, iedge));
     }
-
-    /** 
-     * @brief
-     * Node proxy methods
-     *
-     * The following methods implement an interface that appears to be
-     * equivalent to the interface exposed by std::vector<t_rr_node>.
-     * This was done for backwards compatibility. See t_rr_node for more details.
-     *
-     * Proxy methods:
-     *
-     * - begin()
-     * - end()
-     * - operator[]
-     * - at()
-     * - front
-     * - back
-     *
-     * These methods should not be used by new VPR code, and instead access
-     * methods that use RRNodeId and RREdgeId should be used.
-     *
-     */
-    node_idx_iterator begin() const;
-
-    node_idx_iterator end() const;
-
-    const t_rr_node operator[](size_t idx) const;
-    t_rr_node operator[](size_t idx);
-    const t_rr_node at(size_t idx) const;
-    t_rr_node at(size_t idx);
-
-    const t_rr_node front() const;
-    t_rr_node front();
-    const t_rr_node back() const;
-    t_rr_node back();
 
     /***************************
      * Node allocation methods *

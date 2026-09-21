@@ -1,7 +1,6 @@
 #pragma once
 
 #include "rr_graph_view.h"
-#include "rr_node.h"
 #include "rr_graph_cost.h"
 #include "device_grid.h"
 

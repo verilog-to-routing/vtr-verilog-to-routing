@@ -550,8 +550,8 @@ void print_rr_graph_stats() {
     const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
 
     size_t num_rr_edges = 0;
-    for (const t_rr_node& rr_node : rr_graph.rr_nodes()) {
-        num_rr_edges += rr_graph.edges(rr_node.id()).size();
+    for (RRNodeId rr_node : rr_graph.nodes()) {
+        num_rr_edges += rr_graph.edges(rr_node).size();
     }
 
     VTR_LOG("  RR Graph Nodes: %zu\n", rr_graph.num_nodes());
