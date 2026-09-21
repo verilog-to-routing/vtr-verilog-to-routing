@@ -1134,15 +1134,9 @@ void build_intra_cluster_rr_graph(e_graph_type graph_type,
                    device_model_warnings);
 }
 
-/**
- * @brief Records the bus-mux edges of one cluster that are present in the rr graph.
- *
- *  @param mux_indices  Look-up from mux instance to its index in RoutingContext::rr_bus_muxes,
- *                      filled as instances of this cluster are found.
- */
+/// @brief Records the bus-mux edges of one cluster that are present in the rr graph.
 static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
-                                      const RRSpatialLookup& node_lookup,
-                                      std::unordered_map<t_bus_mux_key, int, t_bus_mux_key_hash>& mux_indices) {
+                                      const RRSpatialLookup& node_lookup) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = g_vpr_ctx.placement().block_locs();
     RoutingContext& route_ctx = g_vpr_ctx.mutable_routing();
@@ -1151,6 +1145,11 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
     if (!pb_type_has_bus_mux(logical_block->pb_type)) {
         return;
     }
+
+    // Mux instances belong to one cluster, so this only spans the muxes of this cluster.
+    // A vector rather than a hash map: the entries are few, and its order does not depend
+    // on pointer values, so the indices assigned to muxes are the same on every run.
+    std::vector<std::pair<t_bus_mux_key, int>> mux_indices;
 
     const t_pl_loc& block_loc = block_locs[cluster_blk_id].loc;
     const t_physical_tile_loc root_loc(block_loc.x, block_loc.y, block_loc.layer);
@@ -1180,16 +1179,22 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
                 continue;
             }
 
-            t_bus_mux_key key{edge->interconnect, get_bus_mux_owner(edge)};
-            auto [it, inserted] = mux_indices.emplace(key, (int)route_ctx.rr_bus_muxes.size());
-            if (inserted) {
+            const t_bus_mux_key key{edge->interconnect, get_bus_mux_owner(edge)};
+            auto found = std::ranges::find_if(mux_indices, [&key](const auto& entry) {
+                return entry.first == key;
+            });
+            if (found == mux_indices.end()) {
+                mux_indices.emplace_back(key, (int)route_ctx.rr_bus_muxes.size());
+                found = mux_indices.end() - 1;
                 route_ctx.rr_bus_muxes.push_back({cluster_blk_id, key.interconnect, key.owner, 0});
             }
-            t_rr_bus_mux& mux = route_ctx.rr_bus_muxes[it->second];
+            const int mux_idx = found->second;
+
+            t_rr_bus_mux& mux = route_ctx.rr_bus_muxes[mux_idx];
             mux.num_sets = std::max(mux.num_sets, edge->driver_set + 1);
 
             t_rr_bus_mux_out_node& out = route_ctx.rr_bus_mux_out_nodes[out_node];
-            out.mux_idx = it->second;
+            out.mux_idx = mux_idx;
             out.in_edges.push_back({in_node, edge->driver_set});
         }
     };
@@ -1230,9 +1235,7 @@ void load_rr_bus_muxes(const RRSpatialLookup& node_lookup) {
     }
 
     for (ClusterBlockId cluster_blk_id : clb_nlist.blocks()) {
-        // Mux instances belong to one cluster, so the look-up is per cluster
-        std::unordered_map<t_bus_mux_key, int, t_bus_mux_key_hash> mux_indices;
-        load_cluster_rr_bus_muxes(cluster_blk_id, node_lookup, mux_indices);
+        load_cluster_rr_bus_muxes(cluster_blk_id, node_lookup);
     }
 
     if (!route_ctx.rr_bus_muxes.empty()) {

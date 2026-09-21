@@ -34,10 +34,3 @@ struct t_bus_mux_key {
     }
 };
 
-struct t_bus_mux_key_hash {
-    size_t operator()(const t_bus_mux_key& key) const noexcept {
-        size_t h1 = std::hash<const void*>()(key.interconnect);
-        size_t h2 = std::hash<const void*>()(key.owner);
-        return h1 ^ (h2 << 1);
-    }
-};
