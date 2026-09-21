@@ -320,6 +320,81 @@ static std::map<MoleculeChainId, t_relative_group> validate_relative_group_molec
     return chain_groups;
 }
 
+/**
+ * @brief Find relative placement groups split across clusters.
+ *
+ * Each group must occupy one cluster to become one placement macro member.
+ */
+static std::vector<t_relative_group> find_split_relative_groups(const ClusterLegalizer& cluster_legalizer,
+                                                                const UserRelativeMacros& relative_macros) {
+    std::vector<t_relative_group> split_groups;
+
+    for (UserRelativeMacroId macro_id : relative_macros.macros()) {
+        const t_user_relative_macro& macro = relative_macros.get_macro(macro_id);
+
+        for (size_t igroup = 0; igroup < macro.groups.size(); igroup++) {
+            LegalizationClusterId group_cluster_id;
+            for (AtomBlockId blk_id : macro.groups[igroup].atoms) {
+                LegalizationClusterId cluster_id = cluster_legalizer.get_atom_cluster(blk_id);
+                // Skip unclustered atoms; final verification checks for them.
+                if (!cluster_id.is_valid())
+                    continue;
+                if (!group_cluster_id.is_valid()) {
+                    group_cluster_id = cluster_id;
+                } else if (cluster_id != group_cluster_id) {
+                    split_groups.push_back({macro_id, (int)igroup});
+                    break;
+                }
+            }
+        }
+    }
+
+    return split_groups;
+}
+
+/**
+ * @brief Report relative placement groups that were split across clusters.
+ *
+ * A split group cannot become a placement macro member, so an otherwise
+ * successful clustering is rejected. When packing already failed, the split is
+ * a symptom of that failure and only warrants a warning before the real error.
+ */
+static void report_split_relative_groups(const std::vector<t_relative_group>& split_groups,
+                                         const ClusterLegalizer& cluster_legalizer,
+                                         const AtomNetlist& atom_netlist,
+                                         const UserRelativeMacros& relative_macros,
+                                         bool clustering_succeeded) {
+    std::string report;
+    for (const t_relative_group& group : split_groups) {
+        const t_user_relative_macro& macro = relative_macros.get_macro(group.macro_id);
+        report += "  Relative macro '" + macro.name + "', group " + std::to_string(group.group_idx) + ":";
+        for (AtomBlockId blk_id : macro.groups[group.group_idx].atoms) {
+            LegalizationClusterId cluster_id = cluster_legalizer.get_atom_cluster(blk_id);
+            report += " '" + atom_netlist.block_name(blk_id) + "' ("
+                      + (cluster_id.is_valid() ? "cluster " + std::to_string((size_t)cluster_id)
+                                               : std::string("unclustered"))
+                      + ")";
+        }
+        report += "\n";
+    }
+
+    if (clustering_succeeded) {
+        VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                        "Failed to pack each relative placement group into a single cluster "
+                        "(%zu group(s) split):\n%s"
+                        "The group(s) may be too large to fit into one cluster or may conflict "
+                        "with pack patterns. Consider making the group(s) smaller.\n",
+                        split_groups.size(),
+                        report.c_str());
+    } else {
+        VTR_LOG_WARN("%zu relative placement group(s) are split across clusters:\n%s"
+                     "This is likely a symptom of the clustering not fitting the device "
+                     "(see the following error).\n",
+                     split_groups.size(),
+                     report.c_str());
+    }
+}
+
 bool try_pack(const t_packer_opts& packer_opts,
               const t_analysis_opts& analysis_opts,
               const t_ap_opts& ap_opts,
@@ -481,6 +556,10 @@ bool try_pack(const t_packer_opts& packer_opts,
                                                                                  cluster_legalizer,
                                                                                  device_ctx.logical_block_types);
 
+        // Each group must fit in one cluster to form one placement macro member.
+        std::vector<t_relative_group> split_relative_groups = find_split_relative_groups(cluster_legalizer,
+                                                                                         g_vpr_ctx.floorplanning().relative_macros);
+
         // Next packer state logic
         e_packer_state next_packer_state = get_next_packer_state(current_packer_state,
                                                                  fits_on_device,
@@ -491,6 +570,16 @@ bool try_pack(const t_packer_opts& packer_opts,
                                                                  cluster_legalizer.get_target_external_pin_util(),
                                                                  packer_opts,
                                                                  appack_ctx);
+
+        // Report split groups on the final pass: reject success or warn on failure.
+        if (!split_relative_groups.empty()
+            && (next_packer_state == e_packer_state::SUCCESS || next_packer_state == e_packer_state::FAILURE)) {
+            report_split_relative_groups(split_relative_groups,
+                                         cluster_legalizer,
+                                         atom_ctx.netlist(),
+                                         g_vpr_ctx.floorplanning().relative_macros,
+                                         next_packer_state == e_packer_state::SUCCESS);
+        }
 
         // Set up for the options used for the next packer state.
         // NOTE: This must be done here (and not at the start of the next packer
