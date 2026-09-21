@@ -23,6 +23,16 @@
 struct t_interconnect;
 class t_pb_graph_node;
 
+/// @brief Identity of one bus-based mux instance: its <mux> tag and the pb instance that owns it.
+struct t_bus_mux_key {
+    const t_interconnect* interconnect = nullptr;
+    const t_pb_graph_node* owner = nullptr;
+
+    bool operator==(const t_bus_mux_key& other) const {
+        return interconnect == other.interconnect && owner == other.owner;
+    }
+};
+
 /// @brief One bus-based mux instance in the routing resource graph (one per mux per cluster).
 struct t_rr_bus_mux {
     /// @brief Cluster the mux belongs to (for messages).

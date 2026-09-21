@@ -5,7 +5,7 @@
 #include <list>
 #include <unordered_map>
 
-#include "bus_mux_utils.h"
+#include "bus_mux_route_types.h"
 #include "globals.h"
 #include "vtr_time.h"
 #include "vpr_utils.h"
@@ -875,7 +875,7 @@ static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr ph
     // The output bits of a bus-based mux keep their own rr nodes, so that each bit's
     // choice of input set stays an explicit rr edge the router can negotiate
     // (see load_rr_bus_muxes). Never start a chain at such a pin, nor collapse into one.
-    if (is_bus_mux_output_pin(get_pb_pin_from_pin_physical_num(physical_type, logical_block, pin_physical_num))) {
+    if (get_pb_pin_from_pin_physical_num(physical_type, logical_block, pin_physical_num)->is_bus_mux_output()) {
         return {pin_physical_num};
     }
     std::vector<int> conn_node_chain;
@@ -892,7 +892,7 @@ static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr ph
             if (is_primitive_pin(physical_type, last_pin_num) || pin_type != get_pin_type_from_pin_physical_num(physical_type, last_pin_num)) {
                 break;
             }
-            if (is_bus_mux_output_pin(get_pb_pin_from_pin_physical_num(physical_type, logical_block, last_pin_num))) {
+            if (get_pb_pin_from_pin_physical_num(physical_type, logical_block, last_pin_num)->is_bus_mux_output()) {
                 break;
             }
 
@@ -1142,7 +1142,7 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
     RoutingContext& route_ctx = g_vpr_ctx.mutable_routing();
 
     auto [physical_type, sub_tile, rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_blk_id);
-    if (!pb_type_has_bus_mux(logical_block->pb_type)) {
+    if (!logical_block->pb_type->has_bus_mux()) {
         return;
     }
 
@@ -1161,7 +1161,7 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
     };
 
     auto record_output_bit = [&](const t_pb_graph_pin* out_pin) {
-        if (!is_bus_mux_output_pin(out_pin)) {
+        if (!out_pin->is_bus_mux_output()) {
             return;
         }
         RRNodeId out_node = rr_node_of(out_pin);
@@ -1170,7 +1170,7 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
         }
         for (int iedge = 0; iedge < out_pin->num_input_edges; iedge++) {
             const t_pb_graph_edge* edge = out_pin->input_edges[iedge];
-            if (!is_bus_mux_edge(edge)) {
+            if (!edge->is_bus_mux()) {
                 continue;
             }
             RRNodeId in_node = rr_node_of(edge->input_pins[0]);
@@ -1179,7 +1179,7 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
                 continue;
             }
 
-            const t_bus_mux_key key{edge->interconnect, get_bus_mux_owner(edge)};
+            const t_bus_mux_key key{edge->interconnect, edge->bus_mux_owner()};
             auto found = std::ranges::find_if(mux_indices, [&key](const auto& entry) {
                 return entry.first == key;
             });

@@ -344,6 +344,51 @@ std::string t_pb_graph_pin::to_string(const bool full_description) const {
  * t_pb_graph_edge
  */
 
+bool t_pb_graph_edge::is_bus_mux() const {
+    return interconnect->type == MUX_INTERC && interconnect->bus;
+}
+
+const t_pb_graph_node* t_pb_graph_edge::bus_mux_owner() const {
+    VTR_ASSERT(num_output_pins == 1);
+    const t_pb_graph_node* out_node = output_pins[0]->parent_node;
+    const t_pb_type* owner_type = interconnect->parent_mode->parent_pb_type;
+
+    // The mux output is either an output port of the owner itself or an input
+    // port of one of the owner's children.
+    if (out_node->pb_type == owner_type) {
+        return out_node;
+    }
+    VTR_ASSERT(out_node->parent_pb_graph_node != nullptr
+               && out_node->parent_pb_graph_node->pb_type == owner_type);
+    return out_node->parent_pb_graph_node;
+}
+
+bool t_pb_graph_pin::is_bus_mux_output() const {
+    for (int iedge = 0; iedge < num_input_edges; iedge++) {
+        if (input_edges[iedge]->is_bus_mux()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool t_pb_type::has_bus_mux() const {
+    for (int imode = 0; imode < num_modes; imode++) {
+        const t_mode& mode = modes[imode];
+        for (int iinterc = 0; iinterc < mode.num_interconnect; iinterc++) {
+            if (mode.interconnect[iinterc].type == MUX_INTERC && mode.interconnect[iinterc].bus) {
+                return true;
+            }
+        }
+        for (int ichild = 0; ichild < mode.num_pb_type_children; ichild++) {
+            if (mode.pb_type_children[ichild].has_bus_mux()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool t_pb_graph_edge::annotated_with_pattern(int pattern_index) const {
     for (int ipattern = 0; ipattern < this->num_pack_patterns; ipattern++) {
         if (this->pack_pattern_indices[ipattern] == pattern_index) {
