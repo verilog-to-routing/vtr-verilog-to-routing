@@ -60,7 +60,7 @@
  *       otherwise.                                                          */
 struct alignas(16) t_rr_node_data {
     int16_t cost_index_ = LIBRRGRAPH_UNDEFINED_VAL;
-    int16_t rc_index_ = LIBRRGRAPH_UNDEFINED_VAL;
+    NodeRCIndex rc_index_ = NodeRCIndex::INVALID();
 
     int16_t xlow_ = LIBRRGRAPH_UNDEFINED_VAL;
     int16_t ylow_ = LIBRRGRAPH_UNDEFINED_VAL;
@@ -84,7 +84,6 @@ struct alignas(16) t_rr_node_data {
     } dir_side_;
 
     uint16_t capacity_ = 0;
-
 };
 
 // t_rr_node_data is a key data structure, so fail at compile time if the
@@ -174,7 +173,7 @@ class t_rr_graph_storage {
     }
     const char* node_type_string(RRNodeId id) const;
 
-    int16_t node_rc_index(RRNodeId id) const {
+    NodeRCIndex node_rc_index(RRNodeId id) const {
         return node_storage_[id].rc_index_;
     }
 
@@ -198,7 +197,7 @@ class t_rr_graph_storage {
     short node_bend_start(RRNodeId id) const {
         return node_bend_start_[id];
     }
-    
+
     short node_bend_end(RRNodeId id) const {
         return node_bend_end_[id];
     }
@@ -259,7 +258,7 @@ class t_rr_graph_storage {
     short node_layer_high(RRNodeId id) const {
         return node_layer_[id].second;
     }
-    
+
     /**
      * @brief Retrieve the name assigned to a given node ID.
      *
@@ -269,12 +268,12 @@ class t_rr_graph_storage {
      * @return An optional pointer to the string representing the name if found,
      *         otherwise an empty optional.
      */
-    std::optional<const std::string*> node_name(RRNodeId id) const{
+    std::optional<const std::string*> node_name(RRNodeId id) const {
         auto it = node_name_.find(id);
         if (it != node_name_.end()) {
-            return &it->second;  // Return the value if key is found
+            return &it->second; // Return the value if key is found
         }
-        return std::nullopt;  // Return an empty optional if key is not found
+        return std::nullopt; // Return an empty optional if key is not found
     }
 
     /**
@@ -289,7 +288,7 @@ class t_rr_graph_storage {
     RRNodeId virtual_clock_network_root_idx(const char* clock_network_name) const {
         // Check if the clock network name exists in the list of virtual sink entries
         auto it = virtual_clock_network_root_idx_.find(clock_network_name);
-        
+
         if (it != virtual_clock_network_root_idx_.end()) {
             // Return the node ID for the virtual sink of the given clock network name
             return it->second;
@@ -310,7 +309,7 @@ class t_rr_graph_storage {
      * @param id The ID of an RRNode.
      * @return True if the node with the given ID is a virtual sink for a clock network, false otherwise.
      */
-    bool is_virtual_clock_network_root(RRNodeId id) const{
+    bool is_virtual_clock_network_root(RRNodeId id) const {
         for (const auto& pair : virtual_clock_network_root_idx_) {
             if (pair.second == id) {
                 return true;
@@ -324,9 +323,9 @@ class t_rr_graph_storage {
      * Note: This is optional, but may lower time spent on memory stalls in
      * some circumstances.
      */
-     inline void prefetch_node(RRNodeId id) const {
+    inline void prefetch_node(RRNodeId id) const {
         VTR_PREFETCH(&node_storage_[id], 0, 0);
-     }
+    }
 
     /** @brief Edge accessors
      *
@@ -377,7 +376,7 @@ class t_rr_graph_storage {
      *
      * If first_edge == last_edge, then a RRNodeId has no edges.
      */
-     RREdgeId first_edge(const RRNodeId id) const {
+    RREdgeId first_edge(const RRNodeId id) const {
         return node_first_edge_[id];
     }
 
@@ -547,8 +546,8 @@ class t_rr_graph_storage {
     void make_room_for_node(RRNodeId elem_position) {
         make_room_in_vector(&node_storage_, size_t(elem_position));
 
-        // Reserve the capacity based on node_storage_. The capacity is determined in 
-        // make_room_in_vector(), which uses a power-of-two growth pattern to avoid 
+        // Reserve the capacity based on node_storage_. The capacity is determined in
+        // make_room_in_vector(), which uses a power-of-two growth pattern to avoid
         // growing the vector one element at a time.
         node_ptc_.reserve(node_storage_.capacity());
         node_ptc_.resize(node_storage_.size());
@@ -690,7 +689,7 @@ class t_rr_graph_storage {
     void set_node_pin_num(RRNodeId id, int);   //Same as set_ptc_num() by checks type() is consistent
     void set_node_track_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
     void set_node_class_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
-    void set_node_mux_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
+    void set_node_mux_num(RRNodeId id, int);   //Same as set_ptc_num() by checks type() is consistent
 
     void set_node_type(RRNodeId id, e_rr_type new_type);
     void set_node_name(RRNodeId id, const std::string& new_name);
@@ -849,8 +848,8 @@ class t_rr_graph_storage {
      *
      * init_fan_in does not need to be invoked before this method.
      */
-     size_t count_rr_switches(const std::vector<t_arch_switch_inf>& arch_switch_inf,
-                              t_arch_switch_fanin& arch_switch_fanins);
+    size_t count_rr_switches(const std::vector<t_arch_switch_inf>& arch_switch_inf,
+                             t_arch_switch_fanin& arch_switch_fanins);
 
     /** @brief Maps arch_switch_inf indices to rr_switch_inf indices.
      *
@@ -912,7 +911,7 @@ class t_rr_graph_storage {
      *              to the least significant. Each is built with vtr::sort_key(num_keys, key_of),
      *              where key_of maps an RREdgeId to a value smaller than num_keys.
      */
-    template <typename... KeyFns>
+    template<typename... KeyFns>
     void sort_edges_by_keys(const vtr::sort_key<KeyFns>&... keys) {
         size_t num_edges = edge_src_node_.size();
         vtr::StrongIdRange<RREdgeId> edge_range(RREdgeId(0), RREdgeId(num_edges));
@@ -1076,22 +1075,20 @@ class t_rr_graph_storage {
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
     vtr::vector<RREdgeId, short> edge_switch_;
 
-    /** @brief
-     * The delay of certain switches specified in the architecture file depends on the number of inputs of the edge's sink node (pins or tracks).
-     * For example, in the case of a MUX switch, the delay increases as the number of inputs increases.
-     * During the construction of the RR Graph, switch IDs are assigned to the edges according to the order specified in the architecture file.
-     * These switch IDs are later used to retrieve information such as delay for each edge.
-     * This allows for effective fly-weighting of edge information.
-     *
-     * After building the RR Graph, we iterate over the nodes once more to store their fan-in.
-     * If a switch's characteristics depend on the fan-in of a node, a new switch ID is generated and assigned to the corresponding edge.
-     * This process is known as remapping.
-     * In this vector, we store information about which edges have undergone remapping.
-     * It is necessary to store this information, especially when flat-router is enabled.
-     * Remapping occurs when constructing global resources after placement and when adding intra-cluster resources after placement.
-     * Without storing this information, during subsequent remappings, it would be unclear whether the stored switch ID
-     * corresponds to the architecture ID or the RR Graph switch ID for an edge.
-    */
+    /// @brief The delay of certain switches specified in the architecture file depends on the number of inputs of the edge's sink node (pins or tracks).
+    /// For example, in the case of a MUX switch, the delay increases as the number of inputs increases.
+    /// During the construction of the RR Graph, switch IDs are assigned to the edges according to the order specified in the architecture file.
+    /// These switch IDs are later used to retrieve information such as delay for each edge.
+    /// This allows for effective fly-weighting of edge information.
+    ///
+    /// After building the RR Graph, we iterate over the nodes once more to store their fan-in.
+    /// If a switch's characteristics depend on the fan-in of a node, a new switch ID is generated and assigned to the corresponding edge.
+    /// This process is known as remapping.
+    /// In this vector, we store information about which edges have undergone remapping.
+    /// It is necessary to store this information, especially when flat-router is enabled.
+    /// Remapping occurs when constructing global resources after placement and when adding intra-cluster resources after placement.
+    /// Without storing this information, during subsequent remappings, it would be unclear whether the stored switch ID
+    /// corresponds to the architecture ID or the RR Graph switch ID for an edge.
     vtr::vector<RREdgeId, bool> edge_remapped_;
 
     /** @brief
@@ -1109,7 +1106,6 @@ class t_rr_graph_storage {
      * State flags *
      ***************/
   public: /* Since rr_node_storage is an internal data of RRGraphView and RRGraphBuilder, expose these flags as public */
-
     /** @brief Has any edges been read?
      *
      * Any method that mutates edge storage will be locked out after this
@@ -1187,7 +1183,7 @@ class t_rr_graph_view {
     }
     const char* node_type_string(RRNodeId id) const;
 
-    int16_t node_rc_index(RRNodeId id) const {
+    NodeRCIndex node_rc_index(RRNodeId id) const {
         return node_storage_[id].rc_index_;
     }
 
@@ -1222,12 +1218,10 @@ class t_rr_graph_view {
     int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     int node_mux_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
 
-    /**
-    * @brief Retrieve the fan-in for a given RRNodeId.
-    *
-    * @param id The RRNodeId for which to retrieve the fan-in.
-    * @return The fan-in value.
-    */
+    /// @brief Retrieve the fan-in for a given RRNodeId.
+    ///
+    /// @param id The RRNodeId for which to retrieve the fan-in.
+    /// @return The fan-in value.
     t_edge_size fan_in(RRNodeId id) const {
         return node_fan_in_[id];
     }
@@ -1251,12 +1245,12 @@ class t_rr_graph_view {
      * @return An optional pointer to the string representing the name if found,
      *         otherwise an empty optional.
      */
-    std::optional<const std::string*> node_name(RRNodeId id) const{
+    std::optional<const std::string*> node_name(RRNodeId id) const {
         auto it = node_name_.find(id);
         if (it != node_name_.end()) {
-            return &it->second;  // Return the value if key is found
+            return &it->second; // Return the value if key is found
         }
-        return std::nullopt;  // Return an empty optional if key is not found
+        return std::nullopt; // Return an empty optional if key is not found
     }
 
     /**
@@ -1283,20 +1277,19 @@ class t_rr_graph_view {
     RRNodeId virtual_clock_network_root_idx(const char* clock_network_name) const {
         // Convert the input char* to a C++ string
         std::string clock_network_name_str(clock_network_name);
-        
+
         // Check if the clock network name exists in the list of virtual sink entries
         auto it = virtual_clock_network_root_idx_.find(clock_network_name_str);
-        
+
         if (it != virtual_clock_network_root_idx_.end()) {
             // Return the node ID for the virtual sink of the given clock network name
             return it->second;
         }
-        
+
         // Return INVALID RRNodeID if the clock network name is not found
         return RRNodeId::INVALID();
     }
 
-    
     /**
      * @brief Checks if the specified RRNode ID is a virtual sink for a clock network.
      *
@@ -1380,5 +1373,4 @@ class t_rr_graph_view {
 
     vtr::array_view_id<RRNodeId, const int16_t> node_bend_start_;
     vtr::array_view_id<RRNodeId, const int16_t> node_bend_end_;
-
 };

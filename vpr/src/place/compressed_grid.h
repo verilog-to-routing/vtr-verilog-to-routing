@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include "arch_types.h"
 #include "physical_types.h"
 
 #include "vtr_assert.h"
@@ -40,17 +41,28 @@ struct t_compressed_block_grid {
         return compressed_to_grid_y[layer_num].size();
     }
 
+    /**
+     * @brief Converts an uncompressed grid location to compressed grid location.
+     * Returns an invalid location if grid_loc is not compatible with the compressed grid type.
+     * This can be checked using t_physical_tile_loc::is_valid()
+     * 
+     * @param grid_loc uncompressed grid location
+     * @return t_physical_tile_loc compressed grid location.
+     */
     inline t_physical_tile_loc grid_loc_to_compressed_loc(t_physical_tile_loc grid_loc) const {
         int cx = UNDEFINED;
         int cy = UNDEFINED;
         int layer_num = grid_loc.layer_num;
 
         auto itr_x = std::ranges::lower_bound(compressed_to_grid_x[layer_num], grid_loc.x);
-        VTR_ASSERT(*itr_x == grid_loc.x);
-        cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x);
-
         auto itr_y = std::ranges::lower_bound(compressed_to_grid_y[layer_num], grid_loc.y);
-        VTR_ASSERT(*itr_y == grid_loc.y);
+
+        if (*itr_x != grid_loc.x || *itr_y != grid_loc.y) {
+            // grid_loc is not compatible with the type of the compressed grid, returning undefined.
+            return t_physical_tile_loc{ARCH_FPGA_UNDEFINED_VAL, ARCH_FPGA_UNDEFINED_VAL, ARCH_FPGA_UNDEFINED_VAL};
+        }
+
+        cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x);
         cy = std::distance(compressed_to_grid_y[layer_num].begin(), itr_y);
 
         return {cx, cy, layer_num};
