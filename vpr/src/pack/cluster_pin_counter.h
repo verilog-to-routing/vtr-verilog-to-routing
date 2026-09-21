@@ -31,7 +31,7 @@
 
 class AtomPBBimap;
 class t_pb;
-struct t_pb_graph_pin;
+class t_pb_graph_pin;
 
 /**
  * @brief Tracks pin usage inside one LegalizationCluster during packing,

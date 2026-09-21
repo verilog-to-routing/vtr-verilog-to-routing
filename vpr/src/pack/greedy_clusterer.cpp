@@ -74,7 +74,6 @@ struct t_cluster_progress_stats {
 } // namespace
 
 GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
-                                 const t_analysis_opts& analysis_opts,
                                  const AtomNetlist& atom_netlist,
                                  const t_arch& arch,
                                  const t_pack_high_fanout_thresholds& high_fanout_thresholds,
@@ -85,7 +84,6 @@ GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
                                  const t_vpr_setup& vpr_setup)
     : packer_opts_(packer_opts)
     , vpr_setup_(vpr_setup)
-    , analysis_opts_(analysis_opts)
     , atom_netlist_(atom_netlist)
     , arch_(arch)
     , high_fanout_thresholds_(high_fanout_thresholds)

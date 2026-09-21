@@ -475,6 +475,7 @@ static void show_router_opts(const t_router_opts& router_opts) {
             VTR_LOG("router_opts.routing_failure_predictor = AGGRESSIVE\n");
         else if (router_opts.routing_failure_predictor == OFF)
             VTR_LOG("router_opts.routing_failure_predictor = OFF\n");
+        VTR_LOG("router_opts.routing_predictor_min_history: %d\n", router_opts.routing_predictor_min_history);
 
         if (router_opts.routing_budgets_algorithm == DISABLE) {
             VTR_LOG("router_opts.routing_budgets_algorithm = DISABLE\n");
