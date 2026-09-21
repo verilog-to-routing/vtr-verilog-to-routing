@@ -769,7 +769,8 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                has_fixed_device_size(vpr_setup) /*is_fixed_device*/);
     }
 
-    return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts, vpr_setup.APOpts,
+    return try_pack(vpr_setup.PackerOpts,
+                    vpr_setup.APOpts,
                     arch,
                     vpr_setup.PackerRRGraph,
                     prepacker,
