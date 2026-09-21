@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include "globals.h"
+#include "route_common.h"
 #include "physical_types.h"
 #include "physical_types_util.h"
 #include "vpr_utils.h"
@@ -512,5 +513,35 @@ static void print_block_pins_nets(std::ostream& os,
             os << "  -1";
         }
         os << "\n";
+    }
+}
+
+void log_control_congested_bus_muxes_status() {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    size_t num_congested = count_control_congested_bus_muxes();
+    if (num_congested == 0) {
+        return;
+    }
+
+    VTR_LOG("\nBus-based muxes driven from more than one input set: %zu\n", num_congested);
+    for (size_t imux = 0; imux < device_ctx.rr_bus_muxes.size(); imux++) {
+        const t_bus_mux_route_inf& mux_inf = route_ctx.bus_mux_route_inf[imux];
+        if (!mux_inf.is_control_congested()) {
+            continue;
+        }
+        const t_rr_bus_mux& mux = device_ctx.rr_bus_muxes[imux];
+        std::string sets;
+        for (size_t set = 0; set < mux_inf.set_occ.size(); set++) {
+            if (mux_inf.set_occ[set] > 0) {
+                sets += vtr::string_fmt(" input set %zu: %d bit(s);", set, mux_inf.set_occ[set]);
+            }
+        }
+        VTR_LOG("  Bus-based mux %s of cluster '%s':%s\n",
+                mux.describe().c_str(),
+                clb_nlist.block_name(mux.cluster).c_str(),
+                sets.c_str());
     }
 }

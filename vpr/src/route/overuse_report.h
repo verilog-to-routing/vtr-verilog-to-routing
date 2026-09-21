@@ -26,6 +26,11 @@
  */
 void log_overused_nodes_status(int max_logged_overused_rr_nodes);
 
+/**
+ * @brief Log bus muxes using multiple input sets; print nothing if there are none.
+ */
+void log_control_congested_bus_muxes_status();
+
 ///@brief Print out RR node overuse info in a post-VPR report file.
 void report_overused_nodes(const Netlist<>& net_list,
                            const RRGraphView& rr_graph,
