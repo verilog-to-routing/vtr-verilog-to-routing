@@ -229,7 +229,6 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
 }
 
 bool try_pack(const t_packer_opts& packer_opts,
-              const t_analysis_opts& analysis_opts,
               const t_ap_opts& ap_opts,
               const t_arch& arch,
               const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
@@ -342,7 +341,6 @@ bool try_pack(const t_packer_opts& packer_opts,
 
     // Initialize the greedy clusterer.
     GreedyClusterer clusterer(packer_opts,
-                              analysis_opts,
                               atom_ctx.netlist(),
                               arch,
                               high_fanout_thresholds,

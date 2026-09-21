@@ -1303,7 +1303,6 @@ void APPack::legalize(const PartialPlacement& p_placement) {
         //       non-AP flow, but it will be close.
         vtr::ScopedStartFinishTimer timer("Packing");
         try_pack(vpr_setup_.PackerOpts,
-                 vpr_setup_.AnalysisOpts,
                  vpr_setup_.APOpts,
                  arch_,
                  vpr_setup_.PackerRRGraph,

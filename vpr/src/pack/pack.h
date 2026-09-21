@@ -26,9 +26,6 @@ using t_logical_block_type_ptr = const t_logical_block_type*;
  *
  *  @param packer_opts
  *              Options passed by the user to configure the packing algorithm.
- *  @param analysis_opts
- *              Options passed by the user to configure how analysis is
- *              performed in the packer.
  *  @param arch
  *              The architecture to create clusters for.
  *  @param lb_type_rr_graphs
@@ -54,7 +51,6 @@ using t_logical_block_type_ptr = const t_logical_block_type*;
  *              is left off on the first packing attempt.
  */
 bool try_pack(const t_packer_opts& packer_opts,
-              const t_analysis_opts& analysis_opts,
               const t_ap_opts& ap_opts,
               const t_arch& arch,
               const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
