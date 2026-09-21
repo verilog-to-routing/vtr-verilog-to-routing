@@ -81,7 +81,6 @@ target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
 # Use the bundled Eigen headers for the analytical placement solvers.
 target_link_libraries(libvpr Eigen3::Eigen)
 target_compile_definitions(libvpr PUBLIC -DEIGEN_INSTALLED)
-message(STATUS "Eigen3: Found")
 
 if (${VPR_ENABLE_NOC_SAT_ROUTING})
     message(STATUS "VPR NoC SAT Routing: Requested")
