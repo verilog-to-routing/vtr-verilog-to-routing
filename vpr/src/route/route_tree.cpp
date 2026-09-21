@@ -674,6 +674,11 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
     auto& route_ctx = g_vpr_ctx.routing();
     bool congested = (route_ctx.rr_node_route_inf[rt_node.inode].occ() > rr_graph.node_capacity(rt_node.inode));
 
+    // Rip up bits of a mux with conflicting selects so routing can choose one input set.
+    if (!congested && rt_node.parent() && is_bus_mux_edge_control_congested(rt_node.parent()->inode, rt_node.inode)) {
+        congested = true;
+    }
+
     int node_set = -1;
     auto itr = device_ctx.rr_node_to_non_config_node_set.find(rt_node.inode);
     if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {

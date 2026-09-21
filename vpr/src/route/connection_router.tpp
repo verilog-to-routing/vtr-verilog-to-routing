@@ -318,6 +318,10 @@ float ConnectionRouter<Heap>::evaluate_timing_driven_backward_costs(RTExploredNo
     float cong_cost = 0.;
     if (reached_configurably) {
         cong_cost = get_rr_cong_cost(to->index, cost_params.pres_fac);
+        if (is_flat_) {
+            // Penalize bus mux edges when routed bits use other input sets.
+            cong_cost *= get_bus_mux_cong_cost_factor(from_node, to->index, cost_params.pres_fac);
+        }
     } else {
         // Reached by a non-configurable edge.
         // Therefore the from_node and to_node are part of the same non-configurable node set.

@@ -98,6 +98,31 @@ void reset_path_costs(const std::vector<RRNodeId>& visited_rr_nodes);
 
 float get_rr_cong_cost(RRNodeId inode, float pres_fac);
 
+/**
+ * @brief Return the mux and input set for from_node -> to_node, or nullopt for other edges.
+ */
+std::optional<t_bus_mux_edge> find_bus_mux_edge(RRNodeId from_node, RRNodeId to_node);
+
+/**
+ * @brief Return the bus mux cost multiplier for from_node -> to_node.
+ *
+ * Each bit using another input set adds pres_fac to a base multiplier of 1.
+ * Returns 1 for edges outside a bus mux.
+ */
+float get_bus_mux_cong_cost_factor(RRNodeId from_node, RRNodeId to_node, float pres_fac);
+
+/**
+ * @brief Add add_or_sub (+1 or -1) to the bit count for this edge's input set.
+ * No effect for edges outside a bus mux.
+ */
+void pathfinder_update_bus_mux_occupancy(RRNodeId from_node, RRNodeId to_node, int add_or_sub);
+
+/** @brief Whether this edge belongs to a bus mux using multiple input sets. */
+bool is_bus_mux_edge_control_congested(RRNodeId from_node, RRNodeId to_node);
+
+/** @brief Count bus muxes using more than one input set. */
+size_t count_control_congested_bus_muxes();
+
 /* Returns the base cost of using this rr_node */
 inline float get_single_rr_cong_base_cost(RRNodeId inode) {
     auto& device_ctx = g_vpr_ctx.device();
