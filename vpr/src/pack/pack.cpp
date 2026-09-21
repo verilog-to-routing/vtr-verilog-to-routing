@@ -1,6 +1,7 @@
 
 #include "pack.h"
 
+#include <map>
 #include <unordered_set>
 #include "PreClusterTimingManager.h"
 #include "device_grid.h"
@@ -17,6 +18,8 @@
 #include "partition_region.h"
 #include "prepack.h"
 #include "stats.h"
+#include "relative_macro_packing.h"
+#include "user_relative_macros.h"
 #include "verify_flat_placement.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
@@ -228,6 +231,95 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
     return e_packer_state::FAILURE;
 }
 
+/**
+ * @brief Reject molecules or chains spanning multiple groups and return chain ownership.
+ *
+ * Prepacking prevents non-chain molecules from spanning groups, so only chains
+ * can fail this check.
+ *
+ * Unconstrained chain atoms may share the group's cluster or extend into nearby
+ * clusters. PlaceMacros merges those clusters with the group's placement macro.
+ *
+ * @return The owning group of each chain with constrained atoms.
+ */
+static std::map<MoleculeChainId, t_relative_group> validate_relative_group_molecules(const Prepacker& prepacker,
+                                                                                     const AtomNetlist& atom_netlist,
+                                                                                     const UserRelativeMacros& relative_macros) {
+    if (relative_macros.get_num_macros() == 0)
+        return {};
+
+    // Track the group found so far for each chain.
+    std::map<MoleculeChainId, t_relative_group> chain_groups;
+
+    // Check each molecule against its atoms' groups and any known chain owner.
+    for (PackMoleculeId mol_id : prepacker.molecules()) {
+        const t_pack_molecule& molecule = prepacker.get_molecule(mol_id);
+
+        t_relative_group mol_group;
+        AtomBlockId mol_group_atom;
+        // True if the group came from an earlier molecule in this chain.
+        bool mol_group_from_chain = false;
+
+        if (molecule.chain_id.is_valid()) {
+            auto chain_it = chain_groups.find(molecule.chain_id);
+            if (chain_it != chain_groups.end()) {
+                mol_group = chain_it->second;
+                mol_group_from_chain = true;
+            }
+        }
+
+        for (AtomBlockId blk_id : molecule.atom_block_ids) {
+            if (!blk_id.is_valid())
+                continue;
+
+            std::pair<UserRelativeMacroId, int> atom_pair = relative_macros.get_atom_group(blk_id);
+            if (!atom_pair.first.is_valid())
+                continue;
+            t_relative_group atom_group{atom_pair.first, atom_pair.second};
+
+            if (!mol_group.is_valid()) {
+                mol_group = atom_group;
+                mol_group_atom = blk_id;
+                continue;
+            }
+
+            if (mol_group != atom_group) {
+                // Find an atom from the chain's earlier group for the error message.
+                if (mol_group_from_chain) {
+                    for (AtomBlockId group_blk_id : relative_macros.get_macro(mol_group.macro_id).groups[mol_group.group_idx].atoms) {
+                        PackMoleculeId group_mol_id = prepacker.get_atom_molecule(group_blk_id);
+                        if (prepacker.get_molecule(group_mol_id).chain_id == molecule.chain_id) {
+                            mol_group_atom = group_blk_id;
+                            break;
+                        }
+                    }
+                    VTR_ASSERT(mol_group_atom.is_valid());
+                }
+                VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                "Atoms '%s' (relative macro '%s', group %d) and '%s' (relative macro '%s', group %d) "
+                                "belong to the same prepacked %s (typically a carry chain, whose atoms are connected "
+                                "through dedicated routing and cannot be separated); however, atoms of different "
+                                "relative placement groups must be packed into different clusters. Adjust the "
+                                "constraints so the chain's atoms are in at most one group (the rest of the chain "
+                                "may be left unconstrained).\n",
+                                atom_netlist.block_name(mol_group_atom).c_str(),
+                                relative_macros.get_macro(mol_group.macro_id).name.c_str(),
+                                mol_group.group_idx,
+                                atom_netlist.block_name(blk_id).c_str(),
+                                relative_macros.get_macro(atom_group.macro_id).name.c_str(),
+                                atom_group.group_idx,
+                                mol_group_from_chain ? "chain" : "molecule");
+            }
+        }
+
+        if (molecule.chain_id.is_valid() && mol_group.is_valid()) {
+            chain_groups.emplace(molecule.chain_id, mol_group);
+        }
+    }
+
+    return chain_groups;
+}
+
 bool try_pack(const t_packer_opts& packer_opts,
               const t_analysis_opts& analysis_opts,
               const t_ap_opts& ap_opts,
@@ -270,6 +362,11 @@ bool try_pack(const t_packer_opts& packer_opts,
      * only turn on in later iterations if some floorplan regions turn out to be overfull.
      */
     AttractionInfo attraction_groups(false);
+
+    // Validate group compatibility and record each chain's owner.
+    std::map<MoleculeChainId, t_relative_group> relative_chain_owners = validate_relative_group_molecules(prepacker,
+                                                                                                          atom_ctx.netlist(),
+                                                                                                          g_vpr_ctx.floorplanning().relative_macros);
 
     // We keep track of the overfilled partition regions from all pack iterations in
     // this vector. This is so that if the first iteration fails due to overfilled
@@ -328,6 +425,7 @@ bool try_pack(const t_packer_opts& packer_opts,
                                        packer_opts.cluster_router_hot_start,
                                        arch.models,
                                        packer_opts.pack_verbosity);
+    cluster_legalizer.mutable_relative_macro_packer().set_chain_owners(std::move(relative_chain_owners));
     // Construct the APPack Context.
     APPackContext appack_ctx(flat_placement_info,
                              ap_opts,
