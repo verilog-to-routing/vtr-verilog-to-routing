@@ -15,8 +15,9 @@
 #include <vector>
 #include <utility>
 #include <optional>
+#include <memory>
 
-#include <QTimer>
+class QTimer;
 
 namespace server {
 
@@ -223,7 +224,9 @@ class GateIO {
 
     TLogger m_logger;
 
-    QTimer m_updateTimer;
+    // Held by pointer so this header - reached from globals.h via vpr_context.h -
+    // does not pull Qt into every TU that includes it.
+    std::unique_ptr<QTimer> m_updateTimer;
 
     void start_listening(); // thread worker function
 };
