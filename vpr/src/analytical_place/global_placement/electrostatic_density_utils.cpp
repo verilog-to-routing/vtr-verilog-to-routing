@@ -165,24 +165,6 @@ void deposit_bilinear_density(std::vector<double>& grid,
     }
 }
 
-double interpolate_bilinear_density(const std::vector<double>& grid,
-                                    size_t layer,
-                                    size_t width,
-                                    size_t height,
-                                    const BilinearDensityStencil& stencil) {
-    VTR_ASSERT(width > 0);
-    VTR_ASSERT(height > 0);
-    VTR_ASSERT(grid.size() >= (layer + 1) * width * height);
-    double value = 0.;
-    for (size_t xi = 0; xi < 2; xi++) {
-        for (size_t yi = 0; yi < 2; yi++) {
-            size_t idx = density_site_index(layer, stencil.xs[xi], stencil.ys[yi], width, height);
-            value += stencil.wx[xi] * stencil.wy[yi] * grid[idx];
-        }
-    }
-    return value;
-}
-
 std::pair<double, double> gradient_bilinear_density(const std::vector<double>& grid,
                                                     size_t layer,
                                                     size_t width,

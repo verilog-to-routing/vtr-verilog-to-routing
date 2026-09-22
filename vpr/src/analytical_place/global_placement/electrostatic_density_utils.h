@@ -47,15 +47,6 @@ void deposit_bilinear_density(std::vector<double>& grid,
                               double mass);
 
 /**
- * @brief Interpolate a flattened grid through a bilinear stencil.
- */
-double interpolate_bilinear_density(const std::vector<double>& grid,
-                                    size_t layer,
-                                    size_t width,
-                                    size_t height,
-                                    const BilinearDensityStencil& stencil);
-
-/**
  * @brief Differentiate the bilinear interpolant selected by a density stencil.
  */
 std::pair<double, double> gradient_bilinear_density(const std::vector<double>& grid,

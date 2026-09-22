@@ -252,64 +252,6 @@ constexpr size_t kWarmStartMaxIters = 24;
  * more cycles automatically.
  */
 constexpr double kWarmStartTol = 0.01;
-
-/**
- * @brief Seed-overflow gate below which the warm start is deepened.
- *
- * If the warm-start seed's physical overflow ratio is below this, the design is
- * electrostatic-inert (the field has no overfill to spread), so B2B compaction
- * must carry packability; the warm start is extended to @ref kSparseWarmStartIters
- * cycles. Above the gate the field does real work and the short warm start stands.
- */
-constexpr double kSparseGateOverflow = 0.0007;
-
-/**
- * @brief Deep warm-start cycle count used when the sparse-overflow gate trips.
- */
-constexpr size_t kSparseWarmStartIters = 24;
-
-/**
- * @brief Epoch cap for the electrostatic phase on sparse seeds.
- *
- * Sparse seeds need only a cheap filler-free wirelength-refinement epoch because
- * their density field has little remaining work.
- */
-constexpr size_t kSparseSeedMaxEpochs = 1;
-
-/**
- * @brief Inner-iteration cap for the sparse-seed probe epoch.
- *
- * The probe refines wirelength near an already density-feasible seed, so it does
- * not need the full inner budget; each iteration still pays the per-resource
- * Poisson solves, which dominate sparse-seed epoch cost once fillers are gone.
- *
- * The probe is also a checkpoint-selection candidate.
- */
-constexpr size_t kSparseSeedProbeIterations = 12;
-
-/**
- * @brief Minimum AP block count for high-pin designs that need one more B2B seed
- *        cycle before electrostatic refinement.
- */
-constexpr size_t kHighPinWarmStartBlockThreshold = 9000;
-
-/**
- * @brief Pin-per-block threshold for high-pin seed compaction.
- */
-constexpr double kHighPinWarmStartPinsPerBlock = 8.0;
-
-/**
- * @brief AP block count at which convergence-based warm start is forced to keep
- *        at least the high-pin floor even if HPWL plateaus early.
- */
-constexpr size_t kHugeWarmStartBlockThreshold = 200000;
-
-/**
- * @brief Adaptive warm-start floor used by the high-pin and huge-design gates.
- */
-constexpr size_t kAdaptiveWarmStartIters = 6;
-
-// --------------------------------------------------------------------------
 // Dynamic fillers
 // --------------------------------------------------------------------------
 
@@ -473,17 +415,11 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
         }
     }
 
-    bool high_pin_seed = moveable_blocks_.size() >= kHighPinWarmStartBlockThreshold
-                         && pins_per_moveable_block >= kHighPinWarmStartPinsPerBlock;
-    bool huge_seed = moveable_blocks_.size() >= kHugeWarmStartBlockThreshold;
-    if (high_pin_seed || huge_seed)
-        warmstart_iters_ = std::max(kWarmStartIters, kAdaptiveWarmStartIters);
-    else
-        warmstart_iters_ = kWarmStartIters;
-    warmstart_max_iters_ = std::max(kWarmStartMaxIters, warmstart_iters_);
+    warmstart_iters_ = kWarmStartIters;
+    warmstart_max_iters_ = kWarmStartMaxIters;
 
     if (log_verbosity_ >= 1) {
-        VTR_LOG("Nonlinear Nesterov adaptive policy: blocks=%zu pins/block=%.2f warm-start-floor=%zu timing=%g.\n",
+        VTR_LOG("Nonlinear Nesterov configuration: blocks=%zu pins/block=%.2f warm-start-floor=%zu timing=%g.\n",
                 moveable_blocks_.size(),
                 pins_per_moveable_block,
                 warmstart_iters_,
@@ -544,10 +480,7 @@ PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
     size_t solver_iteration = 0;
     size_t min_cycles = warmstart_iters_;
     size_t max_cycles = warmstart_max_iters_;
-    bool sparse_checked = false;
-    bool reached_sparse_deepening = false;
     bool stopped_by_convergence = false;
-    double sparse_seed_overflow = 0.;
 
     while (solver_iteration < max_cycles) {
         warmstart_solver_->solve(solver_iteration, p_placement);
@@ -569,48 +502,16 @@ PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
             continue;
         }
 
-        // Sparsity-gated deep warm start. When the seed is so sparse that physical
-        // mass barely exceeds tile capacity (overflow below the gate), the
-        // electrostatic field has nothing to spread, so the Nesterov epoch loop no-ops and
-        // the placement is left at this loose seed -- APPack then cannot pack distant
-        // molecules into shared logic blocks, inflating routed wirelength. The
-        // cure is to keep compacting with
-        // more B2B solve+legalize cycles (what SimPL does
-        // implicitly), which the HPWL-plateau convergence stops too early. Dense
-        // designs, where the field does real work, keep the short warm start so the
-        // electrostatic stage is not handed an over-compacted seed.
-        if (!sparse_checked && kSparseGateOverflow > 0. && solver_iteration < kSparseWarmStartIters) {
-            project_placement_(p_placement);
-            std::vector<PrimitiveVectorDim> dims = density_manager_->get_used_dims_mask().get_non_zero_dims();
-            sparse_seed_overflow = compute_physical_overflow_ratio_(p_placement, dims);
-            sparse_checked = true;
-            if (sparse_seed_overflow < kSparseGateOverflow) {
-                sparse_seed_ = true;
-                min_cycles = kSparseWarmStartIters;
-                max_cycles = std::max(max_cycles, kSparseWarmStartIters);
-                reached_sparse_deepening = true;
-                continue;
-            }
-        }
-
         stopped_by_convergence = converged;
         break;
     }
     project_placement_(p_placement);
 
     if (log_verbosity_ >= 1) {
-        if (reached_sparse_deepening) {
-            VTR_LOG("Nonlinear Nesterov warm start: sparse seed (overflow %.4f < %.4f); deepened to %zu cycles, HPWL %g.\n",
-                    sparse_seed_overflow,
-                    kSparseGateOverflow,
-                    kSparseWarmStartIters,
-                    p_placement.get_hpwl(ap_netlist_));
-        } else {
-            VTR_LOG("Nonlinear Nesterov warm start: %zu B2B solve+legalize cycles (%s), seed HPWL %g.\n",
-                    std::min(solver_iteration + 1, warmstart_max_iters_),
-                    stopped_by_convergence ? "converged" : "max iterations",
-                    p_placement.get_hpwl(ap_netlist_));
-        }
+        VTR_LOG("Nonlinear Nesterov warm start: %zu B2B solve+legalize cycles (%s), seed HPWL %g.\n",
+                std::min(solver_iteration + 1, warmstart_max_iters_),
+                stopped_by_convergence ? "converged" : "max iterations",
+                p_placement.get_hpwl(ap_netlist_));
     }
     return p_placement;
 }
@@ -670,36 +571,12 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     vtr::Timer epoch_phase_timer;
     double legalizer_time_sec = 0.;
 
-    // Sparse-seed guard: the seed already satisfies the density stop target, so
-    // the full filler/epoch schedule can only waste runtime (its result loses the
-    // HPWL selection to the seed on these designs). Run a short filler-free
-    // wirelength-refinement probe instead; the seed-vs-epoch selection below
-    // still protects quality either way.
-    //
-    // Under the closed loop the epoch count is a *ceiling* the overflow stop cuts
-    // short, and each epoch gets a fixed iteration slice rather than a share of a
-    // fixed total -- dividing a fixed budget is what pinned lambda's total growth
-    // to kFinalDensityWeightMultiplier regardless of the placement's actual legality.
-    size_t num_epochs = sparse_seed_ ? kSparseSeedMaxEpochs : kNesterovEpochs;
-    size_t iterations_per_epoch = sparse_seed_
-                                      ? kSparseSeedProbeIterations
-                                      : (kMaxNesterovIterations + num_epochs - 1) / num_epochs;
-    // Equivalent to the previous `num_epochs == kNesterovEpochs` test (that was
-    // exactly "not sparse-seed capped"), but stated directly so it keeps holding
-    // now that a non-sparse run can have an epoch count other than kNesterovEpochs.
-    const size_t min_epochs_before_overflow_stop = sparse_seed_
-                                                       ? num_epochs
-                                                       : kMinEpochsBeforeOverflowStop;
-    if (sparse_seed_ && log_verbosity_ >= 1) {
-        VTR_LOG("Nonlinear Nesterov sparse-seed guard: capping electrostatic phase to %zu filler-free epoch(s) of %zu iterations.\n",
-                num_epochs, iterations_per_epoch);
-    }
+    const size_t num_epochs = kNesterovEpochs;
+    const size_t iterations_per_epoch = (kMaxNesterovIterations + num_epochs - 1) / num_epochs;
+    const size_t min_epochs_before_overflow_stop = kMinEpochsBeforeOverflowStop;
 
     FillerState current_fillers;
-    initialize_dynamic_fillers_(seed,
-                                density_dimensions,
-                                sparse_seed_ ? 0. : kDynamicFillerWhitespaceFraction,
-                                current_fillers);
+    initialize_dynamic_fillers_(seed, density_dimensions, kDynamicFillerWhitespaceFraction, current_fillers);
     // The initial density weight is derived from the seed's smooth wirelength, which
     // is net-weighted, so start from unit weights before the epoch loop refreshes
     // timing at epoch 0.
@@ -819,10 +696,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         // Anneal the wirelength smoothing fraction geometrically from coarse
         // (smooth global gradient) to sharp (near true HPWL) across epochs, so
         // early epochs spread on an easy landscape and later epochs recover real
-        // wirelength. The sparse-seed probe refines wirelength near an already
-        // spread seed, so it goes straight to the sharp end of the schedule.
-        if (sparse_seed_)
-            current_gamma_fraction_ = kGammaEndFraction;
+        // wirelength.
         // Checkpoint timing is evaluated for the seed and after every partial
         // legalization, so the timing manager already describes `current` here.
         update_timing_net_weights_();
@@ -830,16 +704,10 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         // (post-legalization from the prior epoch). The weighted-average wirelength
         // gradient below is evaluated directly each iteration, so nothing is
         // relinearized here -- B2B is used only for the warm-start seed.
-        if (sparse_seed_) {
-            for (size_t dim_idx = 0; dim_idx < density_multipliers.size(); dim_idx++) {
-                density_multipliers[dim_idx] = initial_density_weight;
-            }
-        } else {
-            double schedule = num_epochs > 1
-                                  ? static_cast<double>(epoch) / static_cast<double>(num_epochs - 1)
-                                  : 0.;
-            apply_continuation_schedule(schedule);
-        }
+        double schedule = num_epochs > 1
+                              ? static_cast<double>(epoch) / static_cast<double>(num_epochs - 1)
+                              : 0.;
+        apply_continuation_schedule(schedule);
         for (size_t dim_idx = 0; dim_idx < density_multipliers.size(); dim_idx++)
             density_multipliers[dim_idx] *= adaptive_density_boosts[dim_idx];
         compute_preconditioner_(density_dimensions, density_multipliers);
@@ -1913,8 +1781,8 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
  * @brief Per-dimension (overflow mass, target capacity) from nearest-tile deposition.
  *
  * Single source of the physical-overflow measurement. Both the aggregate ratio
- * (which drives the epoch overflow stop and the sparse-seed gate) and the
- * per-dimension ratios (which drive the adaptive density boosts) are derived
+ * (which drives the epoch overflow stop) and the per-dimension ratios
+ * (which drive the adaptive density boosts) are derived
  * from this, so the two can never disagree about what "overflow" means.
  */
 std::vector<std::pair<double, double>> NonlinearNesterovPlacer::compute_physical_overflow_totals_(

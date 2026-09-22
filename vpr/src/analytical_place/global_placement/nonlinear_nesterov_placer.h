@@ -144,12 +144,8 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
                                          const std::vector<PrimitiveVectorDim>& density_dimensions,
                                          double device_span,
                                          double convergence_displacement);
-
     /**
      * @brief Initialize all block locations before first-order optimization.
-     *
-     * Sets @ref sparse_seed_ when the warm-start seed's physical overflow is
-     * already below the sparse gate (electrostatic-inert design).
      */
     PartialPlacement initialize_placement_();
 
@@ -384,11 +380,4 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     ///        the fixed default, then annealed coarse->sharp per epoch by
     ///        run_global_optimization_ (gamma continuation).
     double current_gamma_fraction_ = 0.02;
-
-    /// @brief True when the warm-start seed's physical overflow is already below
-    ///        the sparse gate. The electrostatic field then has nothing to spread,
-    ///        so the epoch loop is capped to a cheap filler-free probe instead
-    ///        of the full schedule, whose result the checkpoint selection below
-    ///        discards in favor of the seed on these designs anyway.
-    bool sparse_seed_ = false;
 };
