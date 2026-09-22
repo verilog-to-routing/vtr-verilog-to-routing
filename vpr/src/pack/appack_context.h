@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <map>
 #include <vector>
+#include "appack_gain_attenuation_manager.h"
 #include "appack_max_dist_th_manager.h"
 #include "appack_unrelated_clustering_manager.h"
 #include "device_grid.h"
@@ -28,9 +29,7 @@
  */
 struct t_appack_options {
     // Constructor for the appack options.
-    t_appack_options(const FlatPlacementInfo& flat_placement_info,
-                     const t_ap_opts& ap_opts)
-        : inter_die_gain_multiplier(ap_opts.appack_inter_die_gain_multiplier) {
+    explicit t_appack_options(const FlatPlacementInfo& flat_placement_info) {
         // If the flat placement info is valid, we want to use APPack.
         // TODO: Should probably check that all the information is valid here.
         use_appack = flat_placement_info.valid;
@@ -49,34 +48,6 @@ struct t_appack_options {
         SEED      /**< The location of the cluster is the location of the first molecule packed into it. */
     };
     static constexpr e_cl_loc_ty cluster_location_ty = e_cl_loc_ty::CENTROID;
-
-    // =========== Candidate gain attenuation ============================== //
-    // These terms are used to update the gain of a given candidate based on
-    // its distance (d) relative to the location of the cluster being constructed.
-    //      gain_new = attenuation * gain_original
-    // We use the following gain attenuation function:
-    //      attenuation = { 1 - (quad_fac * d)^2    if d < dist_th
-    //                    { 1 / sqrt(d - sqrt_offset)  if d >= dist_th
-    // The numbers below were empirically found to work well.
-
-    // Distance threshold which decides when to use quadratic decay or inverted
-    // sqrt decay. If the distance is less than this threshold, quadratic decay
-    // is used. Inverted sqrt is used otherwise.
-    static constexpr float dist_th = 2.0f;
-    // Attenuation value at the threshold.
-    static constexpr float attenuation_th = 0.25f;
-
-    // Using the distance threshold and the attenuation value at that point, we
-    // can compute the other two terms. This is to keep the attenuation function
-    // smooth.
-    // Horizontal offset to the inverted sqrt decay.
-    static constexpr float sqrt_offset = dist_th - ((1.0f / attenuation_th) * (1.0f / attenuation_th));
-    // Squared scaling factor for the quadratic decay term.
-    static constexpr float quad_fac_sqr = (1.0f - attenuation_th) / (dist_th * dist_th);
-
-    // Gain multiplier used when a candidate's flat placement location is on a
-    // different die than the cluster location.
-    float inter_die_gain_multiplier = 0.1f;
 
     // TODO: Investigate adding flat placement info to seed selection.
 };
@@ -109,8 +80,10 @@ struct APPackContext : public Context {
                   const t_ap_opts& ap_opts,
                   const std::vector<t_logical_block_type>& logical_block_types,
                   const DeviceGrid& device_grid)
-        : appack_options(fplace_info, ap_opts)
-        , flat_placement_info(fplace_info) {
+        : appack_options(fplace_info)
+        , flat_placement_info(fplace_info)
+        , gain_attenuation_manager(ap_opts.appack_gain_attenuation_fn,
+                                    ap_opts.appack_inter_die_gain_multiplier) {
 
         // If the flat placement info has been provided, calculate max distance
         // thresholds for all logical block types and the unrelated clustering
@@ -135,6 +108,12 @@ struct APPackContext : public Context {
      * @brief The flat placement information passed into APPack.
      */
     const FlatPlacementInfo& flat_placement_info;
+
+    // When calculating the gain of candidate primitives to pack into the wip
+    // cluster, primitives which are farther from the centroid of the cluster
+    // are penalized. This manager class computes how much those primitives
+    // should be penalized as a function of their distance.
+    APPackGainAttenuationManager gain_attenuation_manager;
 
     // When selecting candidates, what distance from the cluster will we
     // consider? Any candidate beyond this distance will not be proposed.

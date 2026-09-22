@@ -112,6 +112,7 @@ struct t_options {
     argparse::ArgValue<std::vector<std::string>> appack_max_dist_th;
     argparse::ArgValue<std::vector<std::string>> appack_unrelated_clustering_args;
     argparse::ArgValue<float> appack_inter_die_gain_multiplier;
+    argparse::ArgValue<e_appack_gain_attenuation_fn_type> appack_gain_attenuation_fn;
     argparse::ArgValue<int> ap_verbosity;
     argparse::ArgValue<float> ap_timing_tradeoff;
     argparse::ArgValue<int> ap_high_fanout_threshold;

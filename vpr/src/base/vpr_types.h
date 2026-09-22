@@ -27,6 +27,7 @@
 #include <string>
 #include <string_view>
 #include "ap_flow_enums.h"
+#include "appack_gain_attenuation_fn_type.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
 #include "constant_nets.h"
@@ -1180,6 +1181,9 @@ struct t_ap_opts {
     /// Multiplier applied to APPack candidate gains when the candidate is on a
     /// different die than the cluster in an interposer-based architecture.
     float appack_inter_die_gain_multiplier;
+
+    /// The candidate gain attenuation function used by APPack.
+    e_appack_gain_attenuation_fn_type appack_gain_attenuation_fn;
 
     /// The number of threads the AP flow can use.
     unsigned num_threads;

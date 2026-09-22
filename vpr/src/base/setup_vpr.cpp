@@ -609,6 +609,7 @@ static void setup_ap_opts(const t_options& options,
     apOpts.appack_max_dist_th = options.appack_max_dist_th.value();
     apOpts.appack_unrelated_clustering_args = options.appack_unrelated_clustering_args.value();
     apOpts.appack_inter_die_gain_multiplier = options.appack_inter_die_gain_multiplier.value();
+    apOpts.appack_gain_attenuation_fn = options.appack_gain_attenuation_fn.value();
     apOpts.num_threads = options.num_workers.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
     apOpts.generate_mass_report = options.ap_generate_mass_report.value();
