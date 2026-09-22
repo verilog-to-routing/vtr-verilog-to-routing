@@ -57,6 +57,5 @@ pacman -S --noconfirm --needed \
     zlib-devel \
     openssl-devel \
     mingw-w64-ucrt-x86_64-zlib \
-    mingw-w64-ucrt-x86_64-eigen3 \
     mingw-w64-ucrt-x86_64-graphviz \
     mingw-w64-ucrt-x86_64-openssl
