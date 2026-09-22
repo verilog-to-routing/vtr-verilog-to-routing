@@ -14,6 +14,7 @@ circuit_list_add=ch_intrinsics.v
 # Add architectures to list to sweep
 arch_list_add=hecate_3d_sb_10um_bidir_fanin_16_fanout_16_with_esd_7nm.xml
 arch_list_add=test_archs/hecate_3d_l1dsp_l2bram.xml
+arch_list_add=test_archs/hecate_3d_l1leftdsp_l2rightbram.xml
 
 
 # Parse info and how to parse
@@ -26,6 +27,6 @@ qor_parse_file=qor_fixed_chan_width.txt
 pass_requirements_file=pass_requirements_strict_rr_graph.txt
 
 # Script parameters
-script_params_common = -track_memory_usage --route_chan_width 66 --target_utilization 0.1
+script_params_common = -track_memory_usage --route_chan_width 66 --target_utilization 0.1 --device_width 30
 script_params_list_add = --pack --place --route --analysis
 script_params_list_add = --analytical_place --route --analysis
