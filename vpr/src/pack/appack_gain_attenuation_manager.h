@@ -33,7 +33,7 @@ class APPackGainAttenuationManager {
      *      is on a different die than the cluster location.
      */
     APPackGainAttenuationManager(e_appack_gain_attenuation_fn_type fn_type,
-                                  float inter_die_gain_multiplier)
+                                 float inter_die_gain_multiplier)
         : fn_type_(fn_type)
         , inter_die_gain_multiplier_(inter_die_gain_multiplier) {}
 

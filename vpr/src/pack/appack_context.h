@@ -83,7 +83,7 @@ struct APPackContext : public Context {
         : appack_options(fplace_info)
         , flat_placement_info(fplace_info)
         , gain_attenuation_manager(ap_opts.appack_gain_attenuation_fn,
-                                    ap_opts.appack_inter_die_gain_multiplier) {
+                                   ap_opts.appack_inter_die_gain_multiplier) {
 
         // If the flat placement info has been provided, calculate max distance
         // thresholds for all logical block types and the unrelated clustering
