@@ -148,9 +148,15 @@ Graphics Options
 
 .. option:: --auto <int>
 
-    Can be 0, 1, or 2.
+    Can be 0, 1, 2, or 3.
     This sets how often you must click Proceed to continue execution after viewing the graphics.
     The higher the number, the more infrequently the program will pause.
+
+    * ``0``: pause at every step (e.g. each temperature or router iteration).
+    * ``1``: pause at major checkpoints, such as the end of each stage.
+    * ``2``: skip graphics at intermediate stages and pause once the last requested stage completes: routing if it is run or loaded (e.g. with :option:`--route` or :option:`--analysis`), otherwise placement.
+      This applies to the interactive window, :option:`--save_graphics` and :option:`--graphics_commands` alike, and a ``wait_for_stage`` command for any other stage is an error.
+    * ``3``: never pause.
 
     **Default:** ``1``
 

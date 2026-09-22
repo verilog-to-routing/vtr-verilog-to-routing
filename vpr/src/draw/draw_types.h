@@ -321,7 +321,7 @@ struct t_draw_state {
     ///@brief Whether graphics are enabled
     bool show_graphics = false;
 
-    ///@brief How often is user input required. (0: each t, 1: each place, 2: never)
+    ///@brief How often is user input required. (0: each t, 1: each place, 2: only at the last requested stage, 3: never)
     int gr_automode = 0;
 
     ///@brief Should we automatically finish drawing (instead of waiting in the event loop for user interaction?

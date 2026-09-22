@@ -1678,9 +1678,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help(
             "Controls how often VPR pauses for interactive"
             " graphics (requiring Proceed to be clicked)."
-            " Higher values pause less frequently")
+            " Higher values pause less frequently."
+            " 2 skips graphics (window, --save_graphics and --graphics_commands)"
+            " until the last requested stage completes, then pauses once;"
+            " 3 never pauses.")
         .default_value("1")
-        .choices({"0", "1", "2"})
+        .choices({"0", "1", "2", "3"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     gfx_grp.add_argument<bool, ParseOnOff>(args.save_graphics, "--save_graphics")
