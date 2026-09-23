@@ -418,18 +418,14 @@ class NetCostHandler {
      * @param affected_pins Netlist pins which are affected, in terms placement cost, by the proposed move.
      * @param timing_delta_c Timing cost change based on the proposed move
      * @param is_src_moving Is the moving pin the source of a net.
-     * @param cancel_token Polled during the timing-cost update. On cancellation
-     * the update is abandoned and false is returned.
-     * @return True when the update completed. False when it was cancelled.
      */
-    bool update_net_info_on_pin_move_(const PlaceDelayModel* delay_model,
+    void update_net_info_on_pin_move_(const PlaceDelayModel* delay_model,
                                       const PlacerCriticalities* criticalities,
                                       const ClusterPinId pin_id,
                                       const t_pl_moved_block& moving_blk_inf,
                                       std::vector<ClusterPinId>& affected_pins,
                                       double& timing_delta_c,
-                                      bool is_src_moving,
-                                      t_swap_cancel_token cancel_token);
+                                      bool is_src_moving);
 
     /**
      * @brief Accumulates the placement cost deltas for all nets affected by the proposed move.
@@ -460,17 +456,14 @@ class NetCostHandler {
      * @param affected_pins Updated by this routine to store the sink pins whose delays are changed due to moving the block
      * @param delta_timing_cost Computed by this routine and returned by reference.
      * @param is_src_moving True if "pin" is a sink pin and its driver is among the moving blocks
-     * @param cancel_token Polled between sinks of a moved driver.
-     * @return True when the update completed. False when it was cancelled.
      */
-    bool update_td_delta_costs_(const PlaceDelayModel* delay_model,
+    void update_td_delta_costs_(const PlaceDelayModel* delay_model,
                                 const PlacerCriticalities& criticalities,
                                 const ClusterNetId net,
                                 const ClusterPinId pin,
                                 std::vector<ClusterPinId>& affected_pins,
                                 double& delta_timing_cost,
-                                bool is_src_moving,
-                                t_swap_cancel_token cancel_token);
+                                bool is_src_moving);
 
     /**
      * @brief Returns the proposed state of a net that has already been recorded
