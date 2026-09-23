@@ -68,7 +68,7 @@ void notify_stage_complete(e_pic_type stage);
  * and --graphics_commands until that stage has been marked complete via
  * notify_stage_complete(), then pauses once. Flows whose last stage is not
  * routing or placement keep the old never-pause behaviour. A `wait_for_stage`
- * on any other stage is a fatal error.
+ * on any other stage is a fatal error. Call after init_graphics_state().
  */
 void init_final_graphics_stage(const t_vpr_setup& vpr_setup);
 
