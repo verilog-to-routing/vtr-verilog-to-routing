@@ -7,33 +7,25 @@ The Custom RR Graph (CRR) generator lets you specify routing connections using
 CSV matrices. It uses the routing wires and block pins created by VPR's tileable
 routing resource (RR) graph generator, then connects those resources according to
 your templates. A YAML map selects the template to apply at each grid location.
-This separates the routing topology from the algorithms that normally generate
-switch block and connection block edges.
 
 A CRR description consists of:
 
-* An architecture XML file defining the device layout, physical pins, routing
-  segments, and architecture switches.
-* A **switch block map** (YAML) assigning grid locations to templates.
+* An architecture XML file
+* A **switch block map** (YAML) assigning templates to grid locations
 * **Switch block templates** (CSV), each describing connections and, optionally,
-  switch delays at one location.
+  switch delays at one location
 
 CRR currently supports single-layer, two-dimensional architectures with
 unidirectional routing and requires ``tileable="true"`` on the architecture's
 ``<layout>`` element. See :ref:`openfpga_arch_syntax` for the tileable architecture
-settings. The CSV channel descriptions below address straight, fixed-length
-segments through their length, lane, and tap.
+settings.
 
 What CRR Controls
 -----------------
 
 A generalized switch block (GSB) groups routing connections associated with a
 grid location. In CRR, its template describes both wire-to-wire connections and
-connections involving physical block pins:
-
-* ``CHANX`` and ``CHANY`` are horizontal and vertical routing wires.
-* ``OPIN`` is a physical block output pin that drives routing.
-* ``IPIN`` is a physical block input pin driven by routing.
+connections involving physical block pins
 
 VPR first creates the RR nodes from the architecture and channel width. CRR then
 selects a template at each location, resolves its headers to those nodes, and
@@ -45,12 +37,10 @@ are parsed and compiled once and reused at every matching location.
    CRR templates supply all GSB connections, including output-pin-to-wire and
    wire-to-input-pin connections. The normal GSB edge generation based on
    ``Fc`` and switch block connectivity does not fill gaps in a template.
-   Include the required pin connections as well as wire-to-wire connections.
 
 The ordinary ``SOURCE``-to-``OPIN`` and ``IPIN``-to-``SINK`` edges are still
 created separately. Architecture-defined direct connections are also handled
-separately. A template does not create new wires or pins, or change their physical
-locations.
+separately.
 
 Running VPR with CRR
 --------------------
@@ -62,8 +52,7 @@ When creating a new template, follow `Preparing Your Own Templates`_ to determin
 the wire and pin headers before filling in connections.
 
 Supply both the map file and the template directory. Fix the channel width to
-match the templates' lane counts; a channel-width search can produce a different
-set of wires from the one the templates describe.
+match the templates' lane counts.
 
 For example, with a tileable architecture and templates prepared for channel
 width 160:
@@ -259,22 +248,27 @@ block. In the GSB version 1 convention used in the examples, source taps run fro
 They also let a wire drive connections at successive switch blocks along its
 length.
 
-.. figure:: lane_and_tap.png
-   :alt: Four successive taps on a length-four wire, with lanes separated by dashed lines.
+.. figure:: lane_and_tap.svg
+   :alt: One L4 wire has four successive taps; at a fixed switch block, four tap rows select different wires in lane 2.
    :align: center
 
-   A conceptual view of lanes and taps. Track rotation is omitted.
-   Green rectangles are switch blocks, blue blocks are logic tiles, and dashed
-   horizontal lines separate lanes. The red wire illustrates four taps.
+   Two views of taps in GSB version 1. Panel A follows one L4 wire driven by
+   ``SB(7,10)`` through taps 1--4 at successive switch blocks. Panel B fixes
+   ``SB(10,10)`` and shows the four different wires selected by its source tap
+   rows. The blue wire is the same in both views: it spans x = 8--11 and is
+   selected by ``LEFT,L4,2,3`` at this switch block. Track rotation is omitted.
 
-.. figure:: lane_and_tap_realistic.png
-   :alt: Two lanes showing interleaved opposite-direction tracks and rotation between tiles.
+.. figure:: lane_and_tap_realistic.svg
+   :alt: Two L4 lanes occupy PTCs 0--7 and 8--15. The blue wire follows PTCs 8, 10, 12, 14 as x increases; an orange wire travels in the opposite direction.
    :align: center
 
-   Track positions rotate within each lane. Even PTCs carry increasing-direction
-   wires (gray arrows), and odd PTCs carry decreasing-direction wires (red arrows).
-   Dots mark wire starts, the outlined horizontal groups are lanes, and dashed
-   vertical lines separate tile positions. The numbers identify PTCs.
+   Track rotation within two L4 lanes. Each numbered point gives a wire's PTC at
+   that x coordinate. The blue wire from the first figure follows PTCs
+   ``8, 10, 12, 14`` while staying in lane 2. The orange wire travels toward
+   decreasing x on odd PTCs; a gray wire illustrates the same rotation rule in
+   lane 1. Arrows show travel direction. Dotted lines mark track positions, and
+   crossing paths do not create connections. This is a view of track indexing,
+   not physical wire geometry.
 
 A source wire may drive connections at its taps, but a destination wire is driven
 at its starting point. A channel column therefore normally uses tap 1, which is
