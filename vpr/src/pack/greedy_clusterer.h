@@ -56,9 +56,6 @@ class GreedyClusterer {
      *  @param packer_opts
      *              Options passed by the user to configure the packing and
      *              clustering algorithms.
-     *  @param analysis_opts
-     *              Options passed by the user to configure timing analysis in
-     *              the clusterer.
      *  @param atom_netlist
      *              The atom netlist to cluster over.
      *  @param arch
@@ -89,7 +86,6 @@ class GreedyClusterer {
      *              configure APPack and the flat placement.
      */
     GreedyClusterer(const t_packer_opts& packer_opts,
-                    const t_analysis_opts& analysis_opts,
                     const AtomNetlist& atom_netlist,
                     const t_arch& arch,
                     const t_pack_high_fanout_thresholds& high_fanout_thresholds,
@@ -227,10 +223,6 @@ class GreedyClusterer {
 
     /// @brief The VPR setup options (device layout/width for grid resizing).
     const t_vpr_setup& vpr_setup_;
-
-    /// @brief The analysis options used to configure timing analysis within the
-    ///        clusterer.
-    const t_analysis_opts& analysis_opts_;
 
     /// @brief The atom netlist to cluster over.
     const AtomNetlist& atom_netlist_;

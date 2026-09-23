@@ -353,8 +353,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
 
 /**
  * @brief Get the the compressed loc from the uncompressed loc (grid_loc)
- * @note This assumes the grid_loc corresponds to a location of the block type that compressed_block_grid stores its
- * compressed location. Otherwise, it would raise an assertion error.
+ * @note grid_loc might not be a compatible type on all layers. For example, while location (2, 5, 0) might be a DSP block, (2, 5, 1) might be a CLB.
+ * In that case, the return vector would contain an invalid t_physical_tile_loc. Callers should check for this.
  * @param compressed_block_grid The class that stores the compressed block grid of the block
  * @param grid_loc The actual location of the block
  * @param num_layers The number of layers (dice) of the FPGA

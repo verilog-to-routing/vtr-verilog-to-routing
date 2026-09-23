@@ -1129,32 +1129,16 @@ jobs:
 
   Msys2Compatibility:
     needs: [BuildVTR]
-    name: ${{ matrix.config.name }}
+    name: "Build Compatibility (GCC, Windows Msys2-UCRT64)"
     runs-on: windows-2025
-    # Branch on different OS and settings
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-# UCRT64 is another environment supported by Msys2. It has a different set of package names than the MINGW64 but the same as foundational libraries. If MINGW64 can pass, UCRT64 can pass mostly. It is commented out just to avoid CI runtime increase for now.
-#          - name: "Build Compatibility (GCC, Windows Msys2-UCRT64)"
-#            cc: gcc
-#            cxx: g++
-#            os: UCRT64
-#            prefix: ucrt64
-          - name: "Build Compatibility (GCC, Windows Msys2-MINGW64)"
-            cc: gcc
-            cxx: g++
-            os: MINGW64
-            prefix: mingw64
     defaults:
       run:
         # This ensures all 'run' steps use the MSYS2 bash shell by default
         shell: msys2 {0}
     # Define the steps to run the build job
     env:
-      CC: ${{ matrix.config.cc }}
-      CXX: ${{ matrix.config.cxx }}
+      CC: gcc
+      CXX: g++
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1167,19 +1151,20 @@ jobs:
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
-          msystem: ${{ matrix.config.os }}
+          msystem: UCRT64
           update: true
           # Optional: Pre-install core tools needed to run your script
           install: >-
             wget
             git
 
-      #In MSYS2, the flex package is an MSYS-native tool, meaning it installs its headers to /usr/include/FlexLexer.h. However, if you are using a MinGW-w64 environment (e.g., UCRT64, MINGW64), the compiler only looks for headers in /mingw64/include or similar toolchain-specific paths. The most common workaround is to copy or link the header from the MSYS directory to your active MinGW-w64 include directory. 
+      # In MSYS2, flex is an MSYS-native package and installs its headers under
+      # /usr/include. Copy FlexLexer.h into the UCRT64 toolchain include path.
       # For python build from sources
       - name: Install dependencies
         run: |
-          ./install_win_msys2_${{ matrix.config.prefix}}_packages.sh
-          cp /usr/include/FlexLexer.h /${{ matrix.config.prefix}}/include/
+          ./install_win_msys2_ucrt64_packages.sh
+          cp /usr/include/FlexLexer.h /ucrt64/include/
 
       - name: Dump tool versions
         run: |
@@ -1196,7 +1181,7 @@ jobs:
           echo "==== Checking yosys packages ===="
           which yosys.exe
           echo "==== Checking libgnat.a ===="
-          ls /${{ matrix.config.prefix }}/lib/gcc/x86_64-w64-mingw32/*/adalib/libgnat.a
+          ls /ucrt64/lib/gcc/x86_64-w64-mingw32/*/adalib/libgnat.a
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2.24
