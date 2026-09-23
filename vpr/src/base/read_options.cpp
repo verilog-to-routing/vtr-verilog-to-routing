@@ -295,6 +295,46 @@ struct ParseAPDetailedPlacer {
     }
 };
 
+struct ParseAPPackGainAttenuationFn {
+    ConvertedValue<e_appack_gain_attenuation_fn_type> from_str(const std::string& str) {
+        ConvertedValue<e_appack_gain_attenuation_fn_type> conv_value;
+        if (str == "none")
+            conv_value.set_value(e_appack_gain_attenuation_fn_type::NONE);
+        else if (str == "quad_sqrt_knee")
+            conv_value.set_value(e_appack_gain_attenuation_fn_type::QUAD_SQRT_KNEE);
+        else if (str == "gaussian")
+            conv_value.set_value(e_appack_gain_attenuation_fn_type::GAUSSIAN);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_appack_gain_attenuation_fn_type (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_appack_gain_attenuation_fn_type val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_appack_gain_attenuation_fn_type::NONE:
+                conv_value.set_value("none");
+                break;
+            case e_appack_gain_attenuation_fn_type::QUAD_SQRT_KNEE:
+                conv_value.set_value("quad_sqrt_knee");
+                break;
+            case e_appack_gain_attenuation_fn_type::GAUSSIAN:
+                conv_value.set_value("gaussian");
+                break;
+            default:
+                VTR_ASSERT(false);
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"none", "quad_sqrt_knee", "gaussian"};
+    }
+};
+
 struct ParseRoutePredictor {
     ConvertedValue<e_routing_failure_predictor> from_str(const std::string& str) {
         ConvertedValue<e_routing_failure_predictor> conv_value;
@@ -2260,6 +2300,19 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument<e_appack_gain_attenuation_fn_type, ParseAPPackGainAttenuationFn>(args.appack_gain_attenuation_fn, "--appack_gain_attenuation_fn")
+        .help(
+            "Controls the function APPack uses to attenuate a candidate molecule's "
+            "gain based on its distance from the cluster being formed.\n"
+            " * none: No attenuation is applied (multiplier is always 1.0). Useful "
+            "as a baseline to measure the contribution of gain attenuation.\n"
+            " * quad_sqrt_knee: Piecewise function which decays quadratically near "
+            "the cluster and transitions to an inverted sqrt decay farther away.\n"
+            " * gaussian: Smooth Gaussian decay.\n"
+            "More functions may be added here over time.")
+        .default_value("quad_sqrt_knee")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<int>(args.ap_verbosity, "--ap_verbosity")
         .help(
             "Controls how verbose the AP flow's log messages will be. Higher "
@@ -3249,6 +3302,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " * off: Only abort when the maximum number of iterations is reached\n")
         .default_value("safe")
         .choices({"safe", "aggressive", "off"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.routing_predictor_min_history, "--routing_predictor_min_history")
+        .help(
+            "Number of routing iterations of overuse history the routing failure predictor"
+            " must accumulate before it starts estimating the iteration a successful route"
+            " will be found.")
+        .default_value("8")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<e_routing_budgets_algorithm, RouteBudgetsAlgorithm>(args.routing_budgets_algorithm, "--routing_budgets_algorithm")

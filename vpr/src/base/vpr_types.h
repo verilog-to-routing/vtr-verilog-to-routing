@@ -15,7 +15,7 @@
  * An understanding of libarchfpga/physical_types.h is crucial to understanding this file.  physical_types.h contains information about the architecture described in the architecture description language
  *
  * Key data structures:
- * t_rr_node - The basic building block of the interconnect in the FPGA architecture
+ * RRGraphView (librrgraph) - The routing resource graph, the basic building block of the interconnect in the FPGA architecture
  *
  * Cluster-specific main data structure:
  * t_pb: Stores the mapping between the user netlist and the logic blocks on the FPGA architecture.  For example, if a user design has 10 clusters of 5 LUTs each, you will have 10 t_pb instances of type cluster and within each of those clusters another 5 t_pb instances of type LUT.
@@ -27,6 +27,7 @@
 #include <string>
 #include <string_view>
 #include "ap_flow_enums.h"
+#include "appack_gain_attenuation_fn_type.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
 #include "constant_nets.h"
@@ -227,7 +228,6 @@ class t_pack_high_fanout_thresholds {
 };
 
 /* these are defined later, but need to declare here because it is used */
-class t_rr_node;
 struct t_pb_stats;
 struct t_pb_route;
 
@@ -1182,6 +1182,9 @@ struct t_ap_opts {
     /// different die than the cluster in an interposer-based architecture.
     float appack_inter_die_gain_multiplier;
 
+    /// The candidate gain attenuation function used by APPack.
+    e_appack_gain_attenuation_fn_type appack_gain_attenuation_fn;
+
     /// The number of threads the AP flow can use.
     unsigned num_threads;
 
@@ -1328,6 +1331,7 @@ struct t_router_opts {
     /// the configuration to be used by the routing failure predictor,
     /// how aggressive the threshold used to judge and abort routings deemed unroutable
     e_routing_failure_predictor routing_failure_predictor;
+    int routing_predictor_min_history;
     e_routing_budgets_algorithm routing_budgets_algorithm;
     bool save_routing_per_iteration;
     float congested_routing_iteration_threshold_frac;

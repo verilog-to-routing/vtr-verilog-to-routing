@@ -25,10 +25,10 @@ For Fedora or RHEL-based systems:
 To build with GCC on Windows
 
 - Please ensure the [MSYS2](https://www.msys2.org/) has been properly installed
-- Install dependencies in MINGW64 shell by
+- Install dependencies in a UCRT64 shell by
 
 ```
-./install_win_msys2_mingw64_packages.sh
+./install_win_msys2_ucrt64_packages.sh
 ```
 
 ### Windows (MSVC)
@@ -134,4 +134,3 @@ The expected output is::
     k6_N10_mem32K_40nm/diffeq1              OK
     k6_N10_mem32K_40nm/ch_intrinsics                OK
     k6_N10_mem32K_40nm/ch_intrinsics                OK
-
