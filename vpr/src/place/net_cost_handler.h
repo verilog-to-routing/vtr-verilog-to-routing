@@ -61,7 +61,9 @@ struct t_swap_cancel_token {
 
     /// @brief Returns true once this evaluation should be abandoned.
     inline bool cancelled() const {
-        // Relaxed ordering suffices. A stale read only delays a cancellation.
+        // Relaxed ordering suffices. A store made by another thread may take a
+        // moment to reach this core, so this load can return the previous id.
+        // The id only decreases, so a stale read can delay a cancellation.
         return first_accepted_id != nullptr
                && slot_index > first_accepted_id->load(std::memory_order_relaxed);
     }
