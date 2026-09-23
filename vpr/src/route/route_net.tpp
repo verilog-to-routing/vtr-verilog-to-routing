@@ -229,7 +229,7 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
     cost_params.post_target_prune_offset = router_opts.post_target_prune_offset;
     cost_params.bend_cost = router_opts.bend_cost;
     cost_params.pres_fac = pres_fac;
-    cost_params.delay_budget = &conn_delay_budget;
+    cost_params.delay_budget = nullptr;
 
     // Pre-route to clock source for clock nets (marked as global nets)
     if (net_list.net_is_global(net_id) && router_opts.two_stage_clock_routing) {
@@ -315,6 +315,9 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
             conn_delay_budget.min_delay = budgeting_inf.get_min_delay_budget(net_id, target_pin);
             conn_delay_budget.short_path_criticality = budgeting_inf.get_crit_short_path(net_id, target_pin);
             conn_delay_budget.routing_budgets_algorithm = router_opts.routing_budgets_algorithm;
+            cost_params.delay_budget = &conn_delay_budget;
+        } else {
+            cost_params.delay_budget = nullptr;
         }
         router.set_rcv_enabled(use_rcv);
 
