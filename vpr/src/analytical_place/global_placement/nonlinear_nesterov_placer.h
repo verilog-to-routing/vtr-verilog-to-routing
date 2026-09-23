@@ -122,7 +122,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     };
 
     /**
-     * @brief Density-only gradients for dynamic fillers.
+     * @brief Density-only gradients for fillers.
      */
     struct FillerGradient {
         std::vector<std::vector<double>> dx; ///< [dim][filler] derivative wrt x.
@@ -186,6 +186,15 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     GridPosition clamp_to_grid_(double x, double y, double layer) const;
 
     /**
+     * @brief Return a block's mass in the smooth density objective.
+     *
+     * This is the legal primitive mass scaled by the common pin-demand model.
+     * Physical-overflow accounting and filler seeding deliberately use legal
+     * mass instead, because they model discrete placement capacity.
+     */
+    PrimitiveVector density_mass_(APBlockId blk_id) const;
+
+    /**
      * @brief Add the electrostatic density energy and gradient.
      *
      * Fills every density-derived field of @p value (energy, per-dimension
@@ -203,20 +212,18 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     void initialize_density_target_cache_(const std::vector<PrimitiveVectorDim>& dimensions) const;
 
     /**
-     * @brief Build dynamic filler particles from seed whitespace.
+     * @brief Build filler particles from seed whitespace.
      *
      * Fillers approximate movable whitespace in the electrostatic system: each
-     * resource dimension receives particles carrying @p whitespace_fraction of
-     * target_capacity - movable_mass, initialized into capacity-bearing seed
-     * whitespace. A non-positive fraction disables fillers (empty state).
+     * resource dimension receives particles carrying the residual
+     * target_capacity - movable_mass, seeded into capacity-bearing whitespace.
      */
     void initialize_dynamic_fillers_(const PartialPlacement& seed,
                                      const std::vector<PrimitiveVectorDim>& dimensions,
-                                     double whitespace_fraction,
                                      FillerState& fillers);
 
     /**
-     * @brief Project dynamic filler locations into device bounds.
+     * @brief Project filler locations into device bounds.
      */
     void project_fillers_(FillerState& fillers) const;
 
@@ -225,7 +232,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      *
      * Bins physical block mass onto the tile grid and returns
      * sum(max(0, utilization - target)) / sum(target) across dimensions.
-     * Used as the WL-favoring penalty stop signal; cheap (no Poisson solve).
+     * Used for per-resource density scaling and diagnostics.
      */
     double compute_physical_overflow_ratio_(const PartialPlacement& p_placement,
                                             const std::vector<PrimitiveVectorDim>& dimensions) const;
@@ -325,7 +332,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     vtr::vector<APNetId, double> net_weights_;                     ///< Per-net weight applied to the weighted-average (WA) wirelength term computed in add_wirelength_gradient_.
     vtr::vector<APBlockId, double> block_precond_;                 ///< Per-block diagonal preconditioner (objective curvature estimate).
     vtr::vector<APBlockId, float> pin_density_inflation_;          ///< Per-block density-term mass inflation from pin count (routability cell inflation); 1.0 for blocks at or below the reference pin count.
-    std::vector<double> filler_unit_mass_;                         ///< [dim] density mass per dynamic filler.
+    std::vector<double> filler_unit_mass_;                         ///< [dim] density mass per filler.
     std::vector<double> filler_precond_;                           ///< [dim] density-only filler preconditioner.
     // Placement-invariant density-grid constants, cached once (device grid,
     // bin capacity, and target density are fixed across the optimization) and
@@ -373,11 +380,9 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     ///        QP initialization) instead of a block-ID grid spread. Always built in
     ///        the constructor.
     std::unique_ptr<AnalyticalSolver> warmstart_solver_;
-    size_t warmstart_iters_ = 0;     ///< Minimum solve+legalize cycles (warm-start floor).
-    size_t warmstart_max_iters_ = 0; ///< Cap on the convergence-based warm-start loop.
 
     /// @brief Active wirelength-smoothing fraction (gamma / device span). Seeded at
     ///        the fixed default, then annealed coarse->sharp per epoch by
     ///        run_global_optimization_ (gamma continuation).
-    double current_gamma_fraction_ = 0.02;
+    double current_gamma_fraction_ = 0.04;
 };

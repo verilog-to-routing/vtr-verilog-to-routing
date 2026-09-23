@@ -65,11 +65,6 @@ constexpr size_t kMaxNesterovIterations = 400;
  */
 constexpr size_t kNesterovEpochs = 5;
 
-/**
- * @brief Minimum inner iterations before displacement-based convergence may stop an epoch.
- */
-constexpr size_t kMinNesterovIterationsPerEpoch = 5;
-
 // --------------------------------------------------------------------------
 // Step control and convergence
 // --------------------------------------------------------------------------
@@ -101,11 +96,6 @@ constexpr double kBarzilaiBorweinGrowthCap = 2.0;
 // --------------------------------------------------------------------------
 // Wirelength smoothing (gamma)
 // --------------------------------------------------------------------------
-
-/**
- * @brief Smooth wirelength gamma as a fraction of the larger device dimension.
- */
-constexpr double kWirelengthGammaFraction = 0.02;
 
 /**
  * @brief Coarse (epoch 0) and sharp (final epoch) gamma fractions for continuation.
@@ -169,51 +159,13 @@ constexpr double kInitialDensityToWirelengthRatio = 0.05;
 constexpr double kFinalDensityWeightMultiplier = 4.0;
 
 /**
- * @brief Target physical-overflow ratio for the WL-favoring penalty stop.
+ * @brief Target physical-overflow ratio used to scale per-resource density correction.
  *
- * Once the *physical* placement is already spread enough -- the mass exceeding
- * tile capacity falls below this fraction of total capacity -- further density
- * continuation only adds wirelength, so the outer loop stops.
+ * Per-resource density weight is the continuation schedule times
+ * max(1, measured_overflow / target). No separate boost cap or ratchet: the
+ * correction is a pure function of the current overflow measurement.
  */
 constexpr double kTargetOverflow = 0.1;
-
-/**
- * @brief Minimum epochs before the overflow stop may trigger.
- *
- * The warm-start seed is already roughly legal, so allow at least a couple of
- * refinement epochs before the physical-overflow stop can end the loop.
- */
-constexpr size_t kMinEpochsBeforeOverflowStop = 2;
-
-/**
- * @brief Max per-dimension adaptive density boost relative to the schedule weight.
- *
- * Used when adaptive density is enabled: scarce overflowing dimensions may be
- * strengthened up to this factor without globally inflating all density weights.
- */
-constexpr double kMaxAdaptiveDensityBoost = 4.0;
-
-/**
- * @brief True if a density dimension should receive adaptive overflow boosts.
- *
- * Abundant logic dimensions stay on the uniform schedule; scarce hard-block
- * and I/O dimensions are the ones telemetry showed staying overfilled.
- */
-bool dim_allows_adaptive_density_boost(const std::string& dim_name) {
-    return dim_name != ".names" && dim_name != ".latch";
-}
-
-/**
- * @brief Pin count, as a multiple of the design's average pins-per-block,
- *        above which a block's density-term mass starts being inflated.
- *
- * Standard ePlace/RePlAce-style cell inflation for routability: a block with
- * more pins than its share of the design's average needs more room around it
- * for the extra wires, so its mass in the smooth density term (not its real
- * legalized footprint) is scaled up, pushing the spreader to leave it more
- * whitespace. Blocks at or below the reference keep their true mass.
- */
-constexpr double kPinDensityInflationPinsPerBlockRatio = 1.0;
 
 /**
  * @brief Maximum per-block density-term mass inflation factor from pin count.
@@ -225,20 +177,6 @@ constexpr double kMaxPinDensityInflation = 2.0;
 // --------------------------------------------------------------------------
 
 /**
- * @brief Minimum B2B solve+legalize cycles used to build the warm-start seed.
- *
- * The nonlinear Nesterov placer seeds itself from a wirelength-aware B2B/QP solve
- * (a short SimPL run) rather than a block-ID grid spread. The warm start runs a
- * *convergence-based* number of cycles (see @ref kWarmStartMaxIters /
- * @ref kWarmStartTol): it iterates until the seed HPWL stops improving, so large /
- * under-converged designs get enough cycles to produce a tight, clusterable
- * placement -- the post-APPack BB inflation that drove the wirelength gap on
- * those designs -- while small designs that converge quickly stop early. This is
- * the floor.
- */
-constexpr size_t kWarmStartIters = 4;
-
-/**
  * @brief Maximum B2B warm-start cycles (cap on the convergence loop).
  */
 constexpr size_t kWarmStartMaxIters = 24;
@@ -247,33 +185,20 @@ constexpr size_t kWarmStartMaxIters = 24;
  * @brief Relative HPWL-improvement threshold below which the warm start stops.
  *
  * Once a B2B cycle improves the seed HPWL by less than this fraction, further
- * cycles are not worth their runtime, so the warm start ends (at or above the
- * @ref kWarmStartIters floor). Larger designs keep improving longer and so run
- * more cycles automatically.
+ * cycles are not worth their runtime, so the warm start ends. Larger designs
+ * keep improving longer and so run more cycles automatically, up to
+ * @ref kWarmStartMaxIters.
  */
 constexpr double kWarmStartTol = 0.01;
-// Dynamic fillers
+
+// --------------------------------------------------------------------------
+// Fillers
 // --------------------------------------------------------------------------
 
 /**
- * @brief Fraction of per-resource whitespace represented by dynamic fillers.
- *
- * elfPlace uses movable filler instances to let the density system balance real
- * cells against whitespace. Full whitespace was too aggressive in the VTR flow
- * because APPack/annealing already perform downstream spreading, so this default
- * keeps the filler mechanism active while limiting CPD-damaging over-spread.
+ * @brief Cap filler particles per resource dimension (computational bound only).
  */
-constexpr double kDynamicFillerWhitespaceFraction = 0.35;
-
-/**
- * @brief Target dynamic filler mass in units of average per-site target capacity.
- */
-constexpr double kDynamicFillerUnitFraction = 1.0;
-
-/**
- * @brief Cap dynamic filler particles per resource dimension.
- */
-constexpr size_t kMaxDynamicFillersPerDim = 60000;
+constexpr size_t kMaxFillersPerDim = 60000;
 
 // --------------------------------------------------------------------------
 // Numerics
@@ -284,12 +209,22 @@ constexpr size_t kMaxDynamicFillersPerDim = 60000;
  */
 constexpr double kEpsilon = 1e-9;
 
-/**
- * @brief Device-bound epsilon to keep floor-based bin lookup inside the grid.
- */
-constexpr double kDeviceBoundaryEpsilon = kDensityDeviceBoundaryEpsilon;
-
 using OptionalWeightVectorRef = std::optional<std::reference_wrapper<std::vector<double>>>;
+
+/**
+ * @brief Per-resource density scale from measured physical overflow.
+ *
+ * scale = max(1, overflow / kTargetOverflow). Under-target resources stay on the
+ * uniform continuation schedule; over-target resources strengthen proportionally
+ * with no hard cap and no monotonic ratchet across epochs.
+ */
+void density_scales_from_overflow(const std::vector<double>& physical_overflows,
+                                  std::vector<double>& density_scales) {
+    VTR_ASSERT(physical_overflows.size() == density_scales.size());
+    for (size_t dim_idx = 0; dim_idx < physical_overflows.size(); ++dim_idx) {
+        density_scales[dim_idx] = std::max(1.0, physical_overflows[dim_idx] / kTargetOverflow);
+    }
+}
 
 /**
  * @brief Evaluate the weighted-average approximation of a coordinate extremum.
@@ -404,7 +339,7 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
                                          : static_cast<double>(moveable_pins) / moveable_blocks_.size();
 
     pin_density_inflation_.resize(ap_netlist_.blocks().size(), 1.0f);
-    double pin_density_inflation_reference = pins_per_moveable_block * kPinDensityInflationPinsPerBlockRatio;
+    double pin_density_inflation_reference = pins_per_moveable_block;
     double max_pin_density_inflation = 1.0;
     if (pin_density_inflation_reference > 0.) {
         for (APBlockId blk_id : moveable_blocks_) {
@@ -415,14 +350,11 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
         }
     }
 
-    warmstart_iters_ = kWarmStartIters;
-    warmstart_max_iters_ = kWarmStartMaxIters;
-
     if (log_verbosity_ >= 1) {
-        VTR_LOG("Nonlinear Nesterov configuration: blocks=%zu pins/block=%.2f warm-start-floor=%zu timing=%g.\n",
+        VTR_LOG("Nonlinear Nesterov configuration: blocks=%zu pins/block=%.2f warm-start-max=%zu timing=%g.\n",
                 moveable_blocks_.size(),
                 pins_per_moveable_block,
-                warmstart_iters_,
+                kWarmStartMaxIters,
                 ap_timing_tradeoff_);
         VTR_LOG("Nonlinear Nesterov pin-density inflation: reference=%.2f pins/block max_inflation=%.3g.\n",
                 pin_density_inflation_reference,
@@ -470,46 +402,34 @@ PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
     }
 
     // Warm start from a B2B/QP analytical solve. Iterate solve+legalize until the
-    // seed HPWL stops improving (convergence-based), so large/under-converged
-    // designs run enough cycles to produce a tight, clusterable seed -- the post-
-    // APPack clustering inflation that drove the wirelength gap on large designs --
-    // while small designs that converge fast stop at the floor. The legalizer
-    // places every block (including solver-disconnected ones), so all moveable
-    // blocks have a valid location afterward.
+    // seed HPWL stops improving (one convergence rule + a hard max), so large /
+    // under-converged designs keep cycling while designs that converge early stop
+    // without a separate floor. The legalizer places every block (including
+    // solver-disconnected ones), so all moveable blocks have a valid location
+    // afterward.
     double previous_hpwl = std::numeric_limits<double>::infinity();
     size_t solver_iteration = 0;
-    size_t min_cycles = warmstart_iters_;
-    size_t max_cycles = warmstart_max_iters_;
     bool stopped_by_convergence = false;
 
-    while (solver_iteration < max_cycles) {
+    while (solver_iteration < kWarmStartMaxIters) {
         warmstart_solver_->solve(solver_iteration, p_placement);
         partial_legalizer_->legalize(p_placement);
-        size_t cycles_done = solver_iteration + 1;
 
         double hpwl = p_placement.get_hpwl(ap_netlist_);
         bool converged = hpwl > previous_hpwl * (1.0 - kWarmStartTol);
         previous_hpwl = hpwl;
+        solver_iteration++;
 
-        if (cycles_done < min_cycles) {
-            solver_iteration++;
-            continue;
+        if (converged) {
+            stopped_by_convergence = true;
+            break;
         }
-
-        bool reached_max_cycles = cycles_done >= max_cycles;
-        if (!converged && !reached_max_cycles) {
-            solver_iteration++;
-            continue;
-        }
-
-        stopped_by_convergence = converged;
-        break;
     }
     project_placement_(p_placement);
 
     if (log_verbosity_ >= 1) {
         VTR_LOG("Nonlinear Nesterov warm start: %zu B2B solve+legalize cycles (%s), seed HPWL %g.\n",
-                std::min(solver_iteration + 1, warmstart_max_iters_),
+                solver_iteration,
                 stopped_by_convergence ? "converged" : "max iterations",
                 p_placement.get_hpwl(ap_netlist_));
     }
@@ -573,81 +493,45 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
 
     const size_t num_epochs = kNesterovEpochs;
     const size_t iterations_per_epoch = (kMaxNesterovIterations + num_epochs - 1) / num_epochs;
-    const size_t min_epochs_before_overflow_stop = kMinEpochsBeforeOverflowStop;
 
     FillerState current_fillers;
-    initialize_dynamic_fillers_(seed, density_dimensions, kDynamicFillerWhitespaceFraction, current_fillers);
+    initialize_dynamic_fillers_(seed, density_dimensions, current_fillers);
     // The initial density weight is derived from the seed's smooth wirelength, which
     // is net-weighted, so start from unit weights before the epoch loop refreshes
     // timing at epoch 0.
     std::fill(net_weights_.begin(), net_weights_.end(), 1.0);
-    // Gamma continuation seeds the fixed fraction; the epoch loop overrides it
-    // with the annealed coarse->sharp schedule below.
-    current_gamma_fraction_ = kWirelengthGammaFraction;
+    // Use the same coarse gamma for normalization and epoch 0. This keeps the
+    // initial density-energy scale consistent with the first optimization step.
+    current_gamma_fraction_ = kGammaStartFraction;
     std::vector<double> density_multipliers(density_dimensions.size(), 1.);
     // Seed the density multiplier so the density term starts at a small fixed
     // fraction of the initial wirelength.
-    double initial_density_weight = 1e-3;
-    auto reset_density_weights = [&](const PartialPlacement& placement) {
-        std::fill(density_multipliers.begin(), density_multipliers.end(), 1.);
-        // lambda_0 is set from the *energy* ratio,
-        // `ratio * WA_wirelength_value / density_energy`, and deliberately not
-        // from ePlace/elfPlace's gradient-norm ratio ||grad W||_1 / ||grad D||_1.
-        //
-        // The energy form is in principle a feedback trap: as a placement
-        // concentrates, WA wirelength collapses toward zero (coincident pins
-        // have no span) while density energy blows up (all mass in few bins), so
-        // lambda_0 -> 0 exactly when the spreading force is most needed. That is
-        // why the run always starts from a spread seed rather than a cold one.
-        //
-        // The gradient form was implemented and is not adopted: switching the
-        // units while holding kInitialDensityToWirelengthRatio at its
-        // energy-tuned value moves lambda_0 by up to an order of magnitude
-        // either way depending on the circuit, which is an uncontrolled level
-        // change rather than a normalization fix. Any future attempt must first
-        // recalibrate the ratio so the geomean lambda_0 is unchanged; only then
-        // does a measurement attribute to the *shape* of the normalization.
-        initial_density_weight = 1e-3;
-        {
-            ObjectiveValue components = evaluate_objective_(placement,
+    // lambda_0 is set from the energy ratio, not a gradient-norm ratio, so
+    // density starts in the same units as smooth wirelength.
+    ObjectiveValue initial_components = evaluate_objective_(current,
                                                             density_multipliers,
                                                             std::nullopt,
                                                             current_fillers,
                                                             std::nullopt);
-            if (components.density > kEpsilon)
-                initial_density_weight = kInitialDensityToWirelengthRatio * std::max(components.wirelength, 1.0) / components.density;
-        }
-
-        initial_density_weight = std::clamp(initial_density_weight, 1e-5, 1e3);
-        for (size_t dim_idx = 0; dim_idx < density_dimensions.size(); dim_idx++) {
-            density_multipliers[dim_idx] = initial_density_weight;
-        }
-    };
+    double initial_density_weight = initial_components.density > kEpsilon
+                                        ? kInitialDensityToWirelengthRatio * std::max(initial_components.wirelength, 1.0) / initial_components.density
+                                        : 1e-3;
+    initial_density_weight = std::clamp(initial_density_weight, 1e-5, 1e3);
+    std::fill(density_multipliers.begin(), density_multipliers.end(), initial_density_weight);
     // The B2B wirelength model must exist before the initial density-weight
     // normalization evaluates the objective (an empty model would read
     // wirelength = 0 and mis-normalize lambda_0). The epoch loop relinearizes
     // it at each epoch start.
-    reset_density_weights(current);
 
     /// Count of FISTA adaptive restarts, reported at the end of the run.
     size_t num_objective_restarts = 0;
 
-    // Adaptive per-resource density multipliers: scarce dimensions still overfilled
-    // relative to the seed's own physical overflow get a boosted density weight, on
-    // top of the schedule's uniform ramp, so they don't lag the abundant dimensions
-    // in reaching legality.
+    // Per-resource density multipliers are scaled from each resource's measured
+    // physical overflow, on top of the schedule's uniform ramp.
     const PrimitiveDimManager& dim_manager = density_manager_->mass_calculator().get_dim_manager();
-    std::vector<double> adaptive_density_boosts(density_dimensions.size(), 1.);
+    std::vector<double> density_overflow_scales(density_dimensions.size(), 1.);
     std::vector<double> seed_phys_oflows = compute_physical_overflow_ratios_per_dim_(current, density_dimensions);
-    for (size_t dim_idx = 0; dim_idx < density_dimensions.size(); dim_idx++) {
-        const std::string& dim_name = dim_manager.get_dim_name(density_dimensions[dim_idx]);
-        if (!dim_allows_adaptive_density_boost(dim_name))
-            continue;
-        if (seed_phys_oflows[dim_idx] > kTargetOverflow) {
-            double ratio = seed_phys_oflows[dim_idx] / kTargetOverflow;
-            adaptive_density_boosts[dim_idx] = std::clamp(ratio, 1.0, kMaxAdaptiveDensityBoost);
-        }
-    }
+    density_scales_from_overflow(seed_phys_oflows, density_overflow_scales);
 
     if (log_verbosity_ >= 1) {
         VTR_LOG("Epoch  Pre HPWL  Post HPWL  Pre Oflow  Post Oflow  Pre Max  Post Max  Mean Move  Max Move  Density Wt\n");
@@ -709,7 +593,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                               : 0.;
         apply_continuation_schedule(schedule);
         for (size_t dim_idx = 0; dim_idx < density_multipliers.size(); dim_idx++)
-            density_multipliers[dim_idx] *= adaptive_density_boosts[dim_idx];
+            density_multipliers[dim_idx] *= density_overflow_scales[dim_idx];
         compute_preconditioner_(density_dimensions, density_multipliers);
 
         y_placement = current;
@@ -921,7 +805,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             // The secant estimate sets the next step directly.
             step_size = accepted_step;
 
-            if (iter + 1 >= kMinNesterovIterationsPerEpoch
+            if (num_bb_secant_updates != 0
                 && max_step_displacement <= convergence_displacement) {
                 convergence_stop_reason = "displacement";
                 break;
@@ -1003,7 +887,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         VTR_LOG("  Nesterov density dims (epoch %zu): pre_overfilled_bins=%zu mean_pl_disp=%.4f pre_leg_overflow=%.4f\n",
                 epoch, pre_leg_overfilled_bins, mean_displacement, pre_leg_overflow);
         for (size_t dim_idx = 0; dim_idx < density_dimensions.size(); dim_idx++) {
-            VTR_LOG("    dim=%-20s mult=%.4g densE=%.4g oflow=%.4f mass=%.4g max=%.4f phys=%.4f boost=%.3g\n",
+            VTR_LOG("    dim=%-20s mult=%.4g densE=%.4g oflow=%.4f mass=%.4g max=%.4f phys=%.4f scale=%.3g\n",
                     dim_manager.get_dim_name(density_dimensions[dim_idx]).c_str(),
                     density_multipliers[dim_idx],
                     pre_legalization.density_energies[dim_idx],
@@ -1011,40 +895,9 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                     pre_legalization.dim_overflow_mass[dim_idx],
                     pre_legalization.dim_max_overflow[dim_idx],
                     phys_oflows[dim_idx],
-                    adaptive_density_boosts[dim_idx]);
+                    density_overflow_scales[dim_idx]);
         }
-        for (size_t dim_idx = 0; dim_idx < density_dimensions.size(); dim_idx++) {
-            const std::string& dim_name = dim_manager.get_dim_name(density_dimensions[dim_idx]);
-            if (!dim_allows_adaptive_density_boost(dim_name))
-                continue;
-            double phys_oflow = phys_oflows[dim_idx];
-            if (phys_oflow > kTargetOverflow) {
-                double ratio = phys_oflow / kTargetOverflow;
-                double boost = std::clamp(ratio, 1.0, kMaxAdaptiveDensityBoost);
-                adaptive_density_boosts[dim_idx] = std::max(adaptive_density_boosts[dim_idx], boost);
-            }
-        }
-
-        // #2 overflow-target stop: once the smooth (pre-legalization) placement is
-        // already spread enough that physical mass barely exceeds tile capacity,
-        // further density tightening only costs wirelength, so skip the remaining
-        // intermediate epochs. Jump straight to the final epoch (schedule=1: the
-        // sharp gamma / full density weight the continuation schedule was built to
-        // reach) instead of just breaking, so an early stop still lands the smooth
-        // optimizer at the continuation endpoint rather than stranding it mid-ramp.
-        //
-        if (kTargetOverflow > 0.
-            && epoch + 1 >= min_epochs_before_overflow_stop
-            && epoch + 1 < num_epochs) {
-            if (pre_leg_overflow <= kTargetOverflow) {
-                if (log_verbosity_ >= 1) {
-                    VTR_LOG("Nonlinear Nesterov: physical overflow %.4f <= target %.4f after epoch %zu; skipping to final continuation step.\n",
-                            pre_leg_overflow, kTargetOverflow, epoch);
-                }
-                epoch = num_epochs - 2; // Loop increment advances this to num_epochs - 1, the final epoch.
-                continue;
-            }
-        }
+        density_scales_from_overflow(phys_oflows, density_overflow_scales);
     }
 
     // Checkpoint selection is pure minimum-HPWL.
@@ -1286,9 +1139,15 @@ void NonlinearNesterovPlacer::initialize_density_target_cache_(const std::vector
 }
 
 NonlinearNesterovPlacer::GridPosition NonlinearNesterovPlacer::clamp_to_grid_(double x, double y, double layer) const {
-    return {std::clamp(x, 0., device_grid_width_ - kDeviceBoundaryEpsilon),
-            std::clamp(y, 0., device_grid_height_ - kDeviceBoundaryEpsilon),
+    return {std::clamp(x, 0., device_grid_width_ - kDensityDeviceBoundaryEpsilon),
+            std::clamp(y, 0., device_grid_height_ - kDensityDeviceBoundaryEpsilon),
             static_cast<size_t>(std::clamp(std::round(layer), 0., static_cast<double>(device_grid_num_layers_ - 1)))};
+}
+
+PrimitiveVector NonlinearNesterovPlacer::density_mass_(APBlockId blk_id) const {
+    PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
+    block_mass *= pin_density_inflation_[blk_id];
+    return block_mass;
 }
 
 void NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_placement,
@@ -1381,14 +1240,9 @@ void NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_pl
 
     // Deposit each primitive-vector mass bilinearly onto the tile grid.
     for (APBlockId blk_id : ap_netlist_.blocks()) {
-        PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
+        PrimitiveVector block_mass = density_mass_(blk_id);
         if (block_mass.is_zero())
             continue;
-        // Pin-density cell inflation (routability): scale up the SMOOTH density
-        // term's mass for high-pin blocks, not the real legalized footprint the
-        // partial legalizer and full legalizer see, so the electrostatic field
-        // leaves them more spreading room.
-        block_mass *= pin_density_inflation_[blk_id];
 
         auto [x, y, layer] = clamp_to_grid_(p_placement.block_x_locs[blk_id], p_placement.block_y_locs[blk_id], p_placement.block_layer_nums[blk_id]);
         BilinearDensityStencil stencil = make_bilinear_density_stencil(x, y, width, height);
@@ -1555,12 +1409,9 @@ void NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_pl
 
     // Turn the grid field into a block gradient
     for (APBlockId blk_id : moveable_blocks_) {
-        PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
+        PrimitiveVector block_mass = density_mass_(blk_id);
         if (block_mass.is_zero())
             continue;
-        // Same pin-density inflation as the deposition pass above, so the force
-        // extracted here matches the (inflated) mass that shaped the field.
-        block_mass *= pin_density_inflation_[blk_id];
 
         auto [x, y, layer] = clamp_to_grid_(p_placement.block_x_locs[blk_id], p_placement.block_y_locs[blk_id], p_placement.block_layer_nums[blk_id]);
         // Accumulate density-only force so along-rim damping does not touch WL.
@@ -1570,8 +1421,6 @@ void NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_pl
             double mass = block_mass.get_dim_val(dimensions[dim_idx]);
             if (mass == 0.)
                 continue;
-            // Same packing-aware deflation as the deposition pass, so the
-            // force extracted matches the mass that shaped the field.
 
             BilinearDensityStencil stencil = make_bilinear_density_stencil(x, y, width, height);
             double local_field_x = 0.;
@@ -1625,20 +1474,15 @@ void NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_pl
 
 void NonlinearNesterovPlacer::initialize_dynamic_fillers_(const PartialPlacement& seed,
                                                           const std::vector<PrimitiveVectorDim>& dimensions,
-                                                          double whitespace_fraction,
                                                           FillerState& fillers) {
     fillers.x.assign(dimensions.size(), {});
     fillers.y.assign(dimensions.size(), {});
     fillers.layer.assign(dimensions.size(), {});
     filler_unit_mass_.assign(dimensions.size(), 0.);
     filler_precond_.assign(dimensions.size(), kPreconditionFloor);
-    if (!dimensions.empty())
-        initialize_density_target_cache_(dimensions);
-    if (dimensions.empty() || whitespace_fraction <= 0.) {
-        if (log_verbosity_ >= 1)
-            VTR_LOG("Nonlinear Nesterov dynamic fillers: disabled (whitespace fraction %g).\n", whitespace_fraction);
+    if (dimensions.empty())
         return;
-    }
+    initialize_density_target_cache_(dimensions);
 
     size_t width = device_grid_width_;
     size_t height = device_grid_height_;
@@ -1683,14 +1527,14 @@ void NonlinearNesterovPlacer::initialize_dynamic_fillers_(const PartialPlacement
             whitespace[idx] = std::max(0., target - utilization[dim_idx][idx]);
         }
 
-        double filler_total = whitespace_fraction * std::max(0., target_total - movable_total);
+        double filler_total = std::max(0., target_total - movable_total);
         if (filler_total <= kEpsilon || target_sites <= 0.)
             continue;
 
         double average_target = std::max(kEpsilon, target_total / target_sites);
-        double unit_mass = average_target * kDynamicFillerUnitFraction;
-        if (filler_total / std::max(unit_mass, kEpsilon) > static_cast<double>(kMaxDynamicFillersPerDim))
-            unit_mass = filler_total / static_cast<double>(kMaxDynamicFillersPerDim);
+        double unit_mass = average_target;
+        if (filler_total / std::max(unit_mass, kEpsilon) > static_cast<double>(kMaxFillersPerDim))
+            unit_mass = filler_total / static_cast<double>(kMaxFillersPerDim);
         size_t num_fillers = std::max<size_t>(1, static_cast<size_t>(std::llround(filler_total / unit_mass)));
         filler_unit_mass_[dim_idx] = filler_total / static_cast<double>(num_fillers);
 
@@ -1722,10 +1566,9 @@ void NonlinearNesterovPlacer::initialize_dynamic_fillers_(const PartialPlacement
     project_fillers_(fillers);
 
     if (log_verbosity_ >= 1) {
-        VTR_LOG("Nonlinear Nesterov dynamic fillers: %zu particles across %zu resource dims (fraction=%g).\n",
+        VTR_LOG("Nonlinear Nesterov fillers: %zu particles across %zu resource dims (full residual whitespace).\n",
                 total_fillers,
-                dimensions.size(),
-                whitespace_fraction);
+                dimensions.size());
     }
 }
 
@@ -1751,15 +1594,11 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
     // mass it deposits into that resource's field. Heavier blocks under a
     // stronger density push have larger curvature and so take proportionally
     // smaller steps.
-    const auto& mass_calculator = density_manager_->mass_calculator();
     for (APBlockId blk_id : ap_netlist_.blocks()) {
-        const PrimitiveVector& block_mass = mass_calculator.get_block_mass(blk_id);
-        // Match the pin-density-inflated mass add_density_gradient_ actually uses,
-        // so the curvature estimate agrees with the objective it is preconditioning.
-        double inflation = pin_density_inflation_[blk_id];
+        PrimitiveVector block_mass = density_mass_(blk_id);
         double density_curvature = 0.;
         for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-            double mass = block_mass.get_dim_val(dimensions[dim_idx]) * inflation;
+            double mass = block_mass.get_dim_val(dimensions[dim_idx]);
             density_curvature += density_multipliers[dim_idx] * mass;
         }
         block_precond_[blk_id] = jacobi_precond_diagonal(block_precond_[blk_id] + density_curvature,
@@ -1780,10 +1619,9 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
 /**
  * @brief Per-dimension (overflow mass, target capacity) from nearest-tile deposition.
  *
- * Single source of the physical-overflow measurement. Both the aggregate ratio
- * (which drives the epoch overflow stop) and the per-dimension ratios
- * (which drive the adaptive density boosts) are derived
- * from this, so the two can never disagree about what "overflow" means.
+ * Single source of the physical-overflow measurement. Aggregate and per-dimension
+ * ratios (used for adaptive density correction) are derived from this, so they
+ * can never disagree about what "overflow" means.
  */
 std::vector<std::pair<double, double>> NonlinearNesterovPlacer::compute_physical_overflow_totals_(
     const PartialPlacement& p_placement,
@@ -1856,8 +1694,8 @@ std::vector<double> NonlinearNesterovPlacer::compute_physical_overflow_ratios_pe
 }
 
 void NonlinearNesterovPlacer::project_placement_(PartialPlacement& p_placement) const {
-    double max_x = std::max(0.0, static_cast<double>(device_grid_width_) - kDeviceBoundaryEpsilon);
-    double max_y = std::max(0.0, static_cast<double>(device_grid_height_) - kDeviceBoundaryEpsilon);
+    double max_x = std::max(0.0, static_cast<double>(device_grid_width_) - kDensityDeviceBoundaryEpsilon);
+    double max_y = std::max(0.0, static_cast<double>(device_grid_height_) - kDensityDeviceBoundaryEpsilon);
     double max_layer = std::max(0.0, static_cast<double>(device_grid_num_layers_ - 1));
 
     for (APBlockId blk_id : ap_netlist_.blocks()) {
@@ -1881,8 +1719,8 @@ void NonlinearNesterovPlacer::project_placement_(PartialPlacement& p_placement) 
 }
 
 void NonlinearNesterovPlacer::project_fillers_(FillerState& fillers) const {
-    double max_x = std::max(0.0, static_cast<double>(device_grid_width_) - kDeviceBoundaryEpsilon);
-    double max_y = std::max(0.0, static_cast<double>(device_grid_height_) - kDeviceBoundaryEpsilon);
+    double max_x = std::max(0.0, static_cast<double>(device_grid_width_) - kDensityDeviceBoundaryEpsilon);
+    double max_y = std::max(0.0, static_cast<double>(device_grid_height_) - kDensityDeviceBoundaryEpsilon);
     int max_layer = std::max(0, static_cast<int>(device_grid_num_layers_) - 1);
     for (std::vector<double>& dim_x : fillers.x) {
         for (double& x : dim_x)
