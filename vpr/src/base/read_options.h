@@ -112,6 +112,7 @@ struct t_options {
     argparse::ArgValue<std::vector<std::string>> appack_max_dist_th;
     argparse::ArgValue<std::vector<std::string>> appack_unrelated_clustering_args;
     argparse::ArgValue<float> appack_inter_die_gain_multiplier;
+    argparse::ArgValue<e_appack_gain_attenuation_fn_type> appack_gain_attenuation_fn;
     argparse::ArgValue<int> ap_verbosity;
     argparse::ArgValue<float> ap_timing_tradeoff;
     argparse::ArgValue<int> ap_high_fanout_threshold;
@@ -271,6 +272,7 @@ struct t_options {
     argparse::ArgValue<float> router_init_wirelength_abort_threshold;
     argparse::ArgValue<e_incr_reroute_delay_ripup> incr_reroute_delay_ripup;
     argparse::ArgValue<e_routing_failure_predictor> routing_failure_predictor;
+    argparse::ArgValue<int> routing_predictor_min_history;
     argparse::ArgValue<e_routing_budgets_algorithm> routing_budgets_algorithm;
     argparse::ArgValue<bool> save_routing_per_iteration;
     argparse::ArgValue<float> congested_routing_iteration_threshold_frac;

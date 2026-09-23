@@ -295,6 +295,46 @@ struct ParseAPDetailedPlacer {
     }
 };
 
+struct ParseAPPackGainAttenuationFn {
+    ConvertedValue<e_appack_gain_attenuation_fn_type> from_str(const std::string& str) {
+        ConvertedValue<e_appack_gain_attenuation_fn_type> conv_value;
+        if (str == "none")
+            conv_value.set_value(e_appack_gain_attenuation_fn_type::NONE);
+        else if (str == "quad_sqrt_knee")
+            conv_value.set_value(e_appack_gain_attenuation_fn_type::QUAD_SQRT_KNEE);
+        else if (str == "gaussian")
+            conv_value.set_value(e_appack_gain_attenuation_fn_type::GAUSSIAN);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_appack_gain_attenuation_fn_type (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_appack_gain_attenuation_fn_type val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_appack_gain_attenuation_fn_type::NONE:
+                conv_value.set_value("none");
+                break;
+            case e_appack_gain_attenuation_fn_type::QUAD_SQRT_KNEE:
+                conv_value.set_value("quad_sqrt_knee");
+                break;
+            case e_appack_gain_attenuation_fn_type::GAUSSIAN:
+                conv_value.set_value("gaussian");
+                break;
+            default:
+                VTR_ASSERT(false);
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"none", "quad_sqrt_knee", "gaussian"};
+    }
+};
+
 struct ParseRoutePredictor {
     ConvertedValue<e_routing_failure_predictor> from_str(const std::string& str) {
         ConvertedValue<e_routing_failure_predictor> conv_value;
@@ -414,6 +454,8 @@ struct RouteBudgetsAlgorithm {
             conv_value.set_value(YOYO);
         else if (str == "scale_delay")
             conv_value.set_value(SCALE_DELAY);
+        else if (str == "low_skew_clock")
+            conv_value.set_value(LOW_SKEW_CLOCK);
         else if (str == "disable")
             conv_value.set_value(DISABLE);
         else {
@@ -433,6 +475,8 @@ struct RouteBudgetsAlgorithm {
             conv_value.set_value("yoyo");
         else if (val == DISABLE)
             conv_value.set_value("disable");
+        else if (val == LOW_SKEW_CLOCK)
+            conv_value.set_value("low_skew_clock");
         else {
             VTR_ASSERT(val == SCALE_DELAY);
             conv_value.set_value("scale_delay");
@@ -441,7 +485,7 @@ struct RouteBudgetsAlgorithm {
     }
 
     std::vector<std::string> default_choices() {
-        return {"minimax", "yoyo", "scale_delay", "disable"};
+        return {"minimax", "yoyo", "scale_delay", "low_skew_clock", "disable"};
     }
 };
 
@@ -2256,6 +2300,19 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument<e_appack_gain_attenuation_fn_type, ParseAPPackGainAttenuationFn>(args.appack_gain_attenuation_fn, "--appack_gain_attenuation_fn")
+        .help(
+            "Controls the function APPack uses to attenuate a candidate molecule's "
+            "gain based on its distance from the cluster being formed.\n"
+            " * none: No attenuation is applied (multiplier is always 1.0). Useful "
+            "as a baseline to measure the contribution of gain attenuation.\n"
+            " * quad_sqrt_knee: Piecewise function which decays quadratically near "
+            "the cluster and transitions to an inverted sqrt decay farther away.\n"
+            " * gaussian: Smooth Gaussian decay.\n"
+            "More functions may be added here over time.")
+        .default_value("quad_sqrt_knee")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<int>(args.ap_verbosity, "--ap_verbosity")
         .help(
             "Controls how verbose the AP flow's log messages will be. Higher "
@@ -3247,15 +3304,24 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .choices({"safe", "aggressive", "off"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument(args.routing_predictor_min_history, "--routing_predictor_min_history")
+        .help(
+            "Number of routing iterations of overuse history the routing failure predictor"
+            " must accumulate before it starts estimating the iteration a successful route"
+            " will be found.")
+        .default_value("8")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument<e_routing_budgets_algorithm, RouteBudgetsAlgorithm>(args.routing_budgets_algorithm, "--routing_budgets_algorithm")
         .help(
             "Controls how the routing budgets are created and applied.\n"
             " * yoyo: Allocates budgets using minimax algorithm, and enables hold slack resolution in the router using the RCV algorithm. [EXPERIMENTAL]\n"
             " * minimax: Sets the budgets depending on the amount slack between connections and the current delay values. [EXPERIMENTAL]\n"
             " * scale_delay: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality) [EXPERIMENTAL]\n"
+            " * low_skew_clock: Sets the target delay of all clock connections to the maximum observed clock delay to reduce clock skew, and enables the RCV algorithm. Non-clock connections are left unconstrained. [EXPERIMENTAL]\n"
             " * disable: Removes the routing budgets, use the default VPR and ignore hold time constraints\n")
         .default_value("disable")
-        .choices({"minimax", "scale_delay", "yoyo", "disable"})
+        .choices({"minimax", "scale_delay", "yoyo", "low_skew_clock", "disable"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.save_routing_per_iteration, "--save_routing_per_iteration")

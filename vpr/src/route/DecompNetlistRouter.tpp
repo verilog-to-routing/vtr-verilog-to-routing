@@ -170,7 +170,8 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
                 _net_list,
                 _connections_inf,
                 _router_opts,
-                _worst_neg_slack);
+                _worst_neg_slack,
+                _budgeting_inf);
             /* Try decomposing the net. */
             if (should_decompose_net(net_id, node)) {
                 VirtualNet left_vnet, right_vnet;

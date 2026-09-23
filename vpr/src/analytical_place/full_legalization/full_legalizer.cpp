@@ -72,7 +72,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                    const RamMapper& ram_mapper,
                                                    const t_vpr_setup& vpr_setup,
                                                    const t_arch& arch,
-                                                   const DeviceGrid& device_grid) {
+                                                   const DeviceGrid& device_grid,
+                                                   const std::map<t_logical_block_type_ptr, size_t>& estimated_type_instance_counts) {
     switch (full_legalizer_type) {
         case e_ap_full_legalizer::Naive:
             return std::make_unique<NaiveFullLegalizer>(ap_netlist,
@@ -82,7 +83,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                         ram_mapper,
                                                         vpr_setup,
                                                         arch,
-                                                        device_grid);
+                                                        device_grid,
+                                                        estimated_type_instance_counts);
         case e_ap_full_legalizer::APPack:
             return std::make_unique<APPack>(ap_netlist,
                                             atom_netlist,
@@ -91,7 +93,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                             ram_mapper,
                                             vpr_setup,
                                             arch,
-                                            device_grid);
+                                            device_grid,
+                                            estimated_type_instance_counts);
         case e_ap_full_legalizer::FlatRecon:
             return std::make_unique<FlatRecon>(ap_netlist,
                                                atom_netlist,
@@ -100,7 +103,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                ram_mapper,
                                                vpr_setup,
                                                arch,
-                                               device_grid);
+                                               device_grid,
+                                               estimated_type_instance_counts);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized full legalizer type");
@@ -998,6 +1002,12 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
     // Start a scoped timer for the Full Legalizer stage.
     vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
 
+    // Snapshot the device grid size before clustering runs below.
+    const DeviceGrid& pre_pack_grid = g_vpr_ctx.device().grid;
+    size_t prev_grid_width = pre_pack_grid.width();
+    size_t prev_grid_height = pre_pack_grid.height();
+    size_t prev_grid_num_layers = pre_pack_grid.get_num_layers();
+
     // The target external pin utilization is set to 1.0 to avoid over-restricting
     // reconstruction due to conservative pin feasibility. The SKIP_INTRA_LB_ROUTE
     // strategy speeds up reconstruction by skipping intra-LB routing checks.
@@ -1031,7 +1041,7 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
-    recreate_device_if_needed();
+    recreate_device_if_needed(prev_grid_width, prev_grid_height, prev_grid_num_layers);
 
     // Perform the initial placement on created clusters.
     place_clusters(p_placement);
@@ -1205,6 +1215,12 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
     // Create a scoped timer for the full legalizer
     vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
 
+    // Snapshot the device grid size before clustering runs below.
+    const DeviceGrid& pre_pack_grid = g_vpr_ctx.device().grid;
+    size_t prev_grid_width = pre_pack_grid.width();
+    size_t prev_grid_height = pre_pack_grid.height();
+    size_t prev_grid_num_layers = pre_pack_grid.get_num_layers();
+
     // Pack the atoms into clusters based on the partial placement.
     create_clusters(p_placement);
     // Verify that the clustering created by the full legalizer is valid.
@@ -1218,7 +1234,7 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
-    recreate_device_if_needed();
+    recreate_device_if_needed(prev_grid_width, prev_grid_height, prev_grid_num_layers);
 
     // Get the clustering from the global context.
     // TODO: Eventually should be returned from the create_clusters method.
@@ -1257,6 +1273,12 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // Create a scoped timer for the full legalizer
     vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
 
+    // Snapshot the device grid size before clustering runs below.
+    const DeviceGrid& pre_pack_grid = g_vpr_ctx.device().grid;
+    size_t prev_grid_width = pre_pack_grid.width();
+    size_t prev_grid_height = pre_pack_grid.height();
+    size_t prev_grid_num_layers = pre_pack_grid.get_num_layers();
+
     // Convert the Partial Placement (APNetlist) to a flat placement (AtomNetlist).
     FlatPlacementInfo flat_placement_info(atom_netlist_);
     for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
@@ -1281,7 +1303,6 @@ void APPack::legalize(const PartialPlacement& p_placement) {
         //       non-AP flow, but it will be close.
         vtr::ScopedStartFinishTimer timer("Packing");
         try_pack(vpr_setup_.PackerOpts,
-                 vpr_setup_.AnalysisOpts,
                  vpr_setup_.APOpts,
                  arch_,
                  vpr_setup_.PackerRRGraph,
@@ -1289,14 +1310,15 @@ void APPack::legalize(const PartialPlacement& p_placement) {
                  pre_cluster_timing_manager_,
                  flat_placement_info,
                  vpr_setup_,
-                 ram_mapper_);
+                 ram_mapper_,
+                 estimated_type_instance_counts_);
     }
 
     // The Packer stores the clusters into a .net file. Load the packing file.
     // FIXME: This should be removed. Reading from a file is strange.
     vpr_load_packing(vpr_setup_, arch_);
 
-    recreate_device_if_needed();
+    recreate_device_if_needed(prev_grid_width, prev_grid_height, prev_grid_num_layers);
 
     // Setup NoCs
     // TODO: We have some flow divergence. When the device grid is created the
@@ -1365,7 +1387,7 @@ void FullLegalizer::update_drawing_data_structures() {
 #endif
 }
 
-void FullLegalizer::recreate_device_if_needed() {
+void FullLegalizer::recreate_device_if_needed(size_t prev_grid_width, size_t prev_grid_height, size_t prev_grid_num_layers) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     // Capture before grid recreation: vpr_create_device_grid only writes
     // device_ctx.grid and does not touch the RR graph, so this flag remains
@@ -1392,28 +1414,22 @@ void FullLegalizer::recreate_device_if_needed() {
         return;
     }
 
-    size_t old_width = device_ctx.grid.width();
-    size_t old_height = device_ctx.grid.height();
-
     vpr_create_device_grid(vpr_setup_, arch_);
 
-    bool device_size_changed = (device_ctx.grid.width() != old_width
-                                || device_ctx.grid.height() != old_height);
+    // Detect if the device size has changed.
+    bool device_size_changed = (prev_grid_width != device_ctx.grid.width()
+                                || prev_grid_height != device_ctx.grid.height()
+                                || prev_grid_num_layers != device_ctx.grid.get_num_layers());
 
-    // If the device grid was resized, the dedicated clock network geometry
-    // (computed from grid width/height when it was first set up, earlier in
-    // run_analytical_placement_flow()) is now stale. Regenerate it before any
-    // RR graph is (re)built below, since the RR graph embeds the clock
-    // network as a subgraph. This is a no-op unless dedicated clock networks
-    // are in use.
     if (device_size_changed) {
+        // The dedicated clock network geometry is computed from the grid width/height,
+        // so it must be rebuilt to match the final device size before the RR graph
+        // (which embeds the clock network as a subgraph) is (re)built below.
         // TODO: Cleanup these const casts. See comment below.
         vpr_setup_clock_networks(const_cast<t_vpr_setup&>(vpr_setup_), arch_);
     }
 
     // Build or rebuild the RR graph if needed. It must exist before placement.
-    // Rebuild only when the device size changed (to avoid the high cost of
-    // rebuilding unnecessarily on large architectures).
     if (vpr_setup_.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
         if (!rr_graph_exists || device_size_changed) {
             // vpr_create_rr_graph takes t_vpr_setup& even though it only reads from it.

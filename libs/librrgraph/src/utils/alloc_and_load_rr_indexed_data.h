@@ -1,7 +1,6 @@
 #pragma once
 
 #include "rr_graph_view.h"
-#include "rr_node.h"
 #include "rr_graph_cost.h"
 #include "device_grid.h"
 
@@ -21,4 +20,4 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
 std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
                                        const std::vector<t_segment_inf>& segment_inf_x,
                                        const std::vector<t_segment_inf>& segment_inf_y,
-                                       e_parallel_axis parallel_axis); 
+                                       e_parallel_axis parallel_axis);
