@@ -716,16 +716,24 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                     }
                     if (dy_norm_sq > kEpsilon && dg_norm_sq > kEpsilon) {
                         double bb_step = std::sqrt(dy_norm_sq / dg_norm_sq);
-                        if (!std::isfinite(bb_step))
+                        if (!std::isfinite(bb_step)) {
+                            // A finite gradient can still overflow either
+                            // accumulated squared norm, producing inf/inf
+                            // here. std::clamp() does not sanitize NaN, so
+                            // keep the previous finite step rather than
+                            // propagating a non-finite candidate into the
+                            // projected placement.
                             num_nonfinite_observations++;
-                        num_bb_secant_updates++;
-                        min_raw_bb_step = std::min(min_raw_bb_step, bb_step);
-                        max_raw_bb_step = std::max(max_raw_bb_step, bb_step);
-                        // Growth clamp: bounds how fast the secant estimate can
-                        // expand between iterations.
-                        accepted_step = std::clamp(std::min(bb_step, step_size * kBarzilaiBorweinGrowthCap),
-                                                   kMinStepSize,
-                                                   device_span);
+                        } else {
+                            num_bb_secant_updates++;
+                            min_raw_bb_step = std::min(min_raw_bb_step, bb_step);
+                            max_raw_bb_step = std::max(max_raw_bb_step, bb_step);
+                            // Growth clamp: bounds how fast the secant estimate can
+                            // expand between iterations.
+                            accepted_step = std::clamp(std::min(bb_step, step_size * kBarzilaiBorweinGrowthCap),
+                                                       kMinStepSize,
+                                                       device_span);
+                        }
                     }
                 }
 
