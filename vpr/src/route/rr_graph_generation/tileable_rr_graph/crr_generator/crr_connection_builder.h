@@ -2,19 +2,21 @@
 
 /**
  * @file crr_connection_builder.h
- * @brief Implements functions used to retrieve source and sink Node IDs
- * which should be connected together based on switch block templates.
+ * @brief Produces the connections (edges) of each switch-block tile from the
+ *        compiled switch templates.
  */
 
+#include <memory>
 #include <unordered_map>
+#include <vector>
 
 #include "rr_graph_view.h"
 #include "physical_types.h"
 #include "vpr_types.h"
 
 #include "crr_common.h"
+#include "crr_compiled_template.h"
 #include "data_frame_processor.h"
-#include "node_lookup_manager.h"
 #include "crr_switch_block_manager.h"
 
 namespace crrgenerator {
@@ -26,16 +28,16 @@ namespace crrgenerator {
 class CRRConnectionBuilder {
   public:
     CRRConnectionBuilder(const RRGraphView& rr_graph,
-                         const NodeLookupManager& node_lookup,
                          const SwitchBlockManager& sb_manager,
                          const int verbosity,
                          e_gsb_version gsb_version);
 
     /**
-     * @brief Initialize the connection builder
-     * @param node_lookup Node lookup manager
-     * @param sb_manager Switch block manager
-     * @param original_switches Original switches from the input graph
+     * @brief Initialize the connection builder and compile all switch
+     *        templates into their numeric form.
+     * @param fpga_grid_x  Device grid width
+     * @param fpga_grid_y  Device grid height
+     * @param is_annotated True when template cells carry integer delays
      */
     void initialize(int fpga_grid_x,
                     int fpga_grid_y,
@@ -57,110 +59,69 @@ class CRRConnectionBuilder {
 
     // Dependencies
     const RRGraphView& rr_graph_;
-    const NodeLookupManager& node_lookup_;
     const SwitchBlockManager& sb_manager_;
     int verbosity_;
     e_gsb_version gsb_version_;
 
-    // Connection building methods
-    std::vector<Connection> build_connections_for_location(size_t x,
-                                                           size_t y) const;
+    /**
+     * @brief Resolve every spec of one template axis to a node at tile (x, y).
+     * @param specs       Compiled specs of the axis
+     * @param x, y        Tile coordinate
+     * @param tile_type   Physical tile type at (x, y), used to resolve pin names
+     * @param is_vertical True for the source (row) axis
+     * @param nodes       Receives one RRNodeId per spec (INVALID when the spec
+     *                    does not resolve at this tile)
+     */
+    void resolve_axis_nodes(const std::vector<CompiledSegSpec>& specs,
+                            int x,
+                            int y,
+                            t_physical_tile_type_ptr tile_type,
+                            bool is_vertical,
+                            std::vector<RRNodeId>& nodes) const;
 
     /**
-     * @brief Iterates over the switch block dataframe cells and creates connections
-     *        between matched source and sink routing nodes.
-     *
-     * For each non-empty cell in the dataframe, looks up the corresponding source
-     * and sink nodes, computes the connection delay, and emits a Connection with the
-     * appropriate direction and switch template ID.
+     * @brief Resolve an IPIN/OPIN spec to a node (fatal when the pin does not
+     *        exist in the RR graph).
+     * @param name_to_ptc Pin name -> PTC map of the tile's physical type
      */
-    std::vector<Connection> build_connections_from_dataframe(
-        const DataFrame& df,
-        const std::unordered_map<size_t, RRNodeId>& source_nodes,
-        const std::unordered_map<size_t, RRNodeId>& sink_nodes,
-        const std::string& sw_block_file_name) const;
+    RRNodeId resolve_pin_spec(const CompiledSegSpec& spec,
+                              int x,
+                              int y,
+                              const std::unordered_map<std::string, int>& name_to_ptc) const;
 
-    // Node processing methods
-    std::unordered_map<size_t, RRNodeId> get_tile_source_nodes(int x,
-                                                               int y,
-                                                               const DataFrame& df,
-                                                               const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
-                                                               const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const;
-
-    std::unordered_map<size_t, RRNodeId> get_tile_sink_nodes(int x,
-                                                             int y,
-                                                             const DataFrame& df,
-                                                             const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
-                                                             const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const;
-
-    // PTC sequence calculation
-    std::string get_ptc_sequence(int seg_index,
-                                 int seg_length,
-                                 int physical_length,
-                                 Direction direction,
-                                 int truncated) const;
-
-    // Segment processing helpers
-    struct SegmentInfo {
-        e_sw_template_dir side;
-        std::string seg_type;
-        int seg_index;
-        int tap;
-        // Used for IPIN/OPIN when the CSV specifies a pin by name rather
-        // than by numeric PTC index. resolve_pin_ptc() uses it to look up the PTC.
-        std::string pin_name;
-
-        SegmentInfo()
-            : side(e_sw_template_dir::NUM_SIDES)
-            , seg_index(-1)
-            , tap(-1) {}
-        SegmentInfo(e_sw_template_dir s, const std::string& type, int index, int t = 1)
-            : side(s)
-            , seg_type(type)
-            , seg_index(index)
-            , tap(t) {}
-        bool is_valid() const {
-            return side != e_sw_template_dir::NUM_SIDES;
-        }
-    };
-
-    SegmentInfo parse_segment_info(const DataFrame& df, size_t row_or_col, bool is_vertical) const;
-
-    RRNodeId process_opin_ipin_node(const SegmentInfo& info,
-                                    int x,
-                                    int y,
-                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
-                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const;
+    /// Resolve a routing segment spec to a node (INVALID when absent)
+    RRNodeId resolve_channel_spec(const CompiledSegSpec& spec, int x, int y, bool is_vertical) const;
 
     /**
-     * @brief Resolves the PTC (Pin/Track/Channel) number for an IPIN or OPIN.
-     *
-     * Looks up the physical tile at (x, y) and searches its pins by name to find
-     * the PTC number corresponding to info.pin_name. Falls back to info.seg_index
-     * if no matching pin name is found.
-     *
-     * @param info Segment info containing the pin name and fallback segment index.
-     * @param x    X coordinate of the tile.
-     * @param y    Y coordinate of the tile.
-     * @return The resolved PTC number for the pin.
+     * @brief Find the routing segment node of the given type whose bounding box
+     *        is exactly (x_low, y_low) -> (x_high, y_high) and whose PTC
+     *        sequence is exactly (first_ptc, first_ptc + ptc_step, ...,
+     *        length terms), using the RR graph's spatial node lookup.
+     * @return The node, or RRNodeId::INVALID() when no node matches exactly
      */
-    int resolve_pin_ptc(const SegmentInfo& info,
-                        int x,
-                        int y) const;
+    RRNodeId find_channel_node(e_rr_type type,
+                               int x_low,
+                               int x_high,
+                               int y_low,
+                               int y_high,
+                               int first_ptc,
+                               int ptc_step,
+                               int length) const;
 
-    RRNodeId process_channel_node(const SegmentInfo& info,
-                                  int x,
-                                  int y,
-                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
-                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes,
-                                  int& prev_seg_index,
-                                  e_sw_template_dir& prev_side,
-                                  std::string& prev_seg_type,
-                                  int& prev_ptc_number,
-                                  bool is_vertical) const;
+    /**
+     * @brief Find the pin node (IPIN/OPIN) located exactly at (x, y) with the
+     *        given pin PTC, using the RR graph's spatial node lookup.
+     * @return The node, or RRNodeId::INVALID() when not found
+     */
+    RRNodeId find_pin_node(e_rr_type type, int x, int y, int pin_ptc) const;
 
-    // Coordinate and direction calculations
-    void calculate_segment_coordinates(const SegmentInfo& info,
+    /**
+     * @brief Compute the clamped bounding box of a segment spec at tile (x, y).
+     * @param physical_length Receives the number of grid locations spanned
+     * @param truncated       Receives the number of locations clipped away by
+     *                        the device boundary (used to shift the start PTC)
+     */
+    void calculate_segment_coordinates(const CompiledSegSpec& spec,
                                        int x,
                                        int y,
                                        int& x_low,
@@ -171,15 +132,12 @@ class CRRConnectionBuilder {
                                        int& truncated,
                                        bool is_vertical) const;
 
-    Direction get_direction_for_side(e_sw_template_dir side, bool is_vertical) const;
-    std::string get_segment_type_label(e_sw_template_dir side) const;
+    /// Compiled templates, one per unique dataframe
+    std::unordered_map<const DataFrame*, std::unique_ptr<CompiledTemplate>> compiled_templates_;
 
-    // Return the switch id of an edge between two nodes
-    int get_connection_delay_ps(const std::string& cell_value,
-                                const std::string& sink_node_type,
-                                RRNodeId source_node,
-                                RRNodeId sink_node,
-                                int segment_length = -1) const;
+    /// Compiled template per SB_MAPS pattern index (nullptr when the pattern
+    /// has no template file, i.e. no connections)
+    std::vector<const CompiledTemplate*> template_by_pattern_;
 
     // Per-tile-type reverse map: pin_name -> pin_ptc.
     // Built once at construction for all physical tile types and indexed by

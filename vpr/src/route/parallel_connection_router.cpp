@@ -363,7 +363,10 @@ void ParallelConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost
                                                                const RREdgeId from_edge,
                                                                RRNodeId target_node,
                                                                size_t thread_idx) {
-    const RRNodeId& from_node = current.index;
+    const RRNodeId from_node = current.index;
+
+    // TODO: Port the pre-evaluation prune from SerialConnectionRouter::timing_driven_add_to_heap.
+    // Split evaluate_timing_driven_node_costs() into its backward-costs and total-cost halves.
 
     // Initialize the neighbor RTExploredNode
     RTExploredNode next;
@@ -451,7 +454,7 @@ std::unique_ptr<ConnectionRouterInterface> make_parallel_connection_router(e_hea
                                                                            const RouterLookahead& router_lookahead,
                                                                            const t_rr_graph_storage& rr_nodes,
                                                                            const RRGraphView* rr_graph,
-                                                                           const std::vector<t_rr_rc_data>& rr_rc_data,
+                                                                           const RRRCData& rr_rc_data,
                                                                            const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
                                                                            vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
                                                                            bool is_flat,

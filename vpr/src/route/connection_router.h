@@ -17,7 +17,6 @@
  * When the ConnectionRouter is used, it mutates the provided rr_node_route_inf.
  * The routed path can be found by tracing from the sink node (which is returned)
  * through the rr_node_route_inf. See update_traceback as an example of this tracing.
- *
  */
 
 #include "connection_router_interface.h"
@@ -42,7 +41,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const RouterLookahead& router_lookahead,
         const t_rr_graph_storage& rr_nodes,
         const RRGraphView* rr_graph,
-        const std::vector<t_rr_rc_data>& rr_rc_data,
+        const RRRCData& rr_rc_data,
         const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
         vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
         bool is_flat,
@@ -51,7 +50,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , router_lookahead_(router_lookahead)
         , rr_nodes_(rr_nodes.view())
         , rr_graph_(rr_graph)
-        , rr_rc_data_(rr_rc_data.data(), rr_rc_data.size())
+        , rr_rc_data_(rr_rc_data)
         , rr_switch_inf_(rr_switch_inf.data(), rr_switch_inf.size())
         , net_terminal_groups(g_vpr_ctx.routing().net_terminal_groups)
         , net_terminal_group_num(g_vpr_ctx.routing().net_terminal_group_num)
@@ -248,6 +247,11 @@ class ConnectionRouter : public ConnectionRouterInterface {
 
     /**
      * @brief Calculates the cost of reaching to_node
+     * @note Equivalent to evaluate_timing_driven_backward_costs() followed by
+     * evaluate_timing_driven_total_cost(). Callers that prune on the backward
+     * cost alone (e.g. the serial router's pre-push prune when RCV is disabled)
+     * can call the two helpers separately and skip the (expensive) lookahead
+     * evaluation for pruned edges.
      * @param to Neighbor node to calculate costs before being expanded
      * @param cost_params Cost function parameters
      * @param from_node Current node ID being explored
@@ -258,6 +262,33 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_conn_cost_params& cost_params,
         RRNodeId from_node,
         RRNodeId target_node);
+
+    /**
+     * @brief Calculates the backward path cost, R_upstream and delay of
+     * reaching to_node (everything except the lookahead-based total cost)
+     * @param to Neighbor node to calculate costs before being expanded
+     * @param cost_params Cost function parameters
+     * @param from_node Current node ID being explored
+     * @return Tdel of to_node, needed by evaluate_timing_driven_total_cost()
+     */
+    float evaluate_timing_driven_backward_costs(RTExploredNode* to,
+                                                const t_conn_cost_params& cost_params,
+                                                RRNodeId from_node);
+
+    /**
+     * @brief Calculates the total cost of to_node (backward cost + expected
+     * cost to the target, or the RCV cost when RCV is enabled)
+     * @note Must be called after evaluate_timing_driven_backward_costs() has
+     * filled in to's backward_path_cost and R_upstream.
+     * @param to Neighbor node to calculate costs before being expanded
+     * @param cost_params Cost function parameters
+     * @param target_node Target node ID to route to
+     * @param Tdel Delay of to_node, returned by evaluate_timing_driven_backward_costs()
+     */
+    void evaluate_timing_driven_total_cost(RTExploredNode* to,
+                                           const t_conn_cost_params& cost_params,
+                                           RRNodeId target_node,
+                                           float Tdel);
 
     /**
      * @brief Evaluate node costs using the RCV algorithm
@@ -317,7 +348,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     const RRGraphView* rr_graph_;
 
     /** RR node resistance/capacitance data */
-    vtr::array_view<const t_rr_rc_data> rr_rc_data_;
+    const RRRCData& rr_rc_data_;
 
     /** RR switch data */
     vtr::array_view<const t_rr_switch_inf> rr_switch_inf_;

@@ -118,7 +118,7 @@ class InterposerCostHandler {
 
     e_interposer_net_cost_type interposer_cost_type_ = e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB;
 
-    /// Current stage of interposet net cost when using two-stage cost mode
+    /// Current stage of interposer net cost when using two-stage cost mode
     e_interposer_cost_stage interposer_cost_stage_ = e_interposer_cost_stage::FIRST;
     /// Concrete interposer net cost type used during the first stage of two-stage mode.
     const e_interposer_net_cost_type two_stage_interposer_net_cost_first_stage_type_;

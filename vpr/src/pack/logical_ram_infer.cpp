@@ -48,7 +48,7 @@ group_ram_atoms(const AtomNetlist& atom_nlist, const Prepacker& prepacker) {
             continue;
 
         LogicalModelId root_model_id = atom_nlist.block_model(atom_blk_id);
-        std::vector<t_logical_block_type_ptr> candidate_types =
+        const std::vector<t_logical_block_type_ptr>& candidate_types =
             primitive_candidate_block_types[root_model_id];
 
         // Try to add this atom to an existing sibling-feasible group.
@@ -79,7 +79,7 @@ group_ram_atoms(const AtomNetlist& atom_nlist, const Prepacker& prepacker) {
                 new_group.is_output_registered =
                     blif_model.find("output_type{reg}") != std::string::npos;
             }
-            groups.push_back(new_group);
+            groups.push_back(std::move(new_group));
         }
     }
 
@@ -113,30 +113,30 @@ void assign_ram_groups_by_min_area(vtr::vector<LogicalRamGroupId, LogicalRamGrou
                             * cand->equivalent_tiles[0]->width;
             ram_group.candidate_area_cost[cand] = num_tiles * tile_area;
         }
-        std::sort(ram_group.candidate_types.begin(), ram_group.candidate_types.end(),
-                  [&](t_logical_block_type_ptr type_a, t_logical_block_type_ptr type_b) {
-                      int area_a = ram_group.candidate_area_cost.at(type_a);
-                      int area_b = ram_group.candidate_area_cost.at(type_b);
-                      if (area_a != area_b) return area_a < area_b;
-                      // Tie-break: prefer higher capacity, then by name.
-                      int cap_a = ram_group.candidate_capacity.at(type_a);
-                      int cap_b = ram_group.candidate_capacity.at(type_b);
-                      if (cap_a != cap_b) return cap_a > cap_b;
-                      return std::string(type_a->name) < std::string(type_b->name);
-                  });
+        std::ranges::sort(ram_group.candidate_types,
+                          [&](t_logical_block_type_ptr type_a, t_logical_block_type_ptr type_b) {
+                              int area_a = ram_group.candidate_area_cost.at(type_a);
+                              int area_b = ram_group.candidate_area_cost.at(type_b);
+                              if (area_a != area_b) return area_a < area_b;
+                              // Tie-break: prefer higher capacity, then by name.
+                              int cap_a = ram_group.candidate_capacity.at(type_a);
+                              int cap_b = ram_group.candidate_capacity.at(type_b);
+                              if (cap_a != cap_b) return cap_a > cap_b;
+                              return std::string(type_a->name) < std::string(type_b->name);
+                          });
     }
 
     // Process groups most constrained first (fewest candidate types), then
     // largest (most atoms) first.
     std::vector<LogicalRamGroupId> order(groups.keys().begin(), groups.keys().end());
-    std::stable_sort(order.begin(), order.end(),
-                     [&](LogicalRamGroupId id_a, LogicalRamGroupId id_b) {
-                         const LogicalRamGroup& group_a = groups[id_a];
-                         const LogicalRamGroup& group_b = groups[id_b];
-                         if (group_a.candidate_types.size() != group_b.candidate_types.size())
-                             return group_a.candidate_types.size() < group_b.candidate_types.size();
-                         return group_a.total_memory_slices > group_b.total_memory_slices;
-                     });
+    std::ranges::stable_sort(order,
+                             [&](LogicalRamGroupId id_a, LogicalRamGroupId id_b) {
+                                 const LogicalRamGroup& group_a = groups[id_a];
+                                 const LogicalRamGroup& group_b = groups[id_b];
+                                 if (group_a.candidate_types.size() != group_b.candidate_types.size())
+                                     return group_a.candidate_types.size() < group_b.candidate_types.size();
+                                 return group_a.total_memory_slices > group_b.total_memory_slices;
+                             });
 
     // For fixed devices, pre-compute available capacity per type so that
     // assignment can respect hard capacity limits.
@@ -319,7 +319,7 @@ vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> RamMapper::create_physical_ram
             }
 
             if (!current_group.atoms.empty())
-                physical_groups.push_back(current_group);
+                physical_groups.push_back(std::move(current_group));
             unmapped_atoms = std::move(remaining_atoms);
         }
     }

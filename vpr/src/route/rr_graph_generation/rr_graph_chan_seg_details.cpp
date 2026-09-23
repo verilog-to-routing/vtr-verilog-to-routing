@@ -190,10 +190,19 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
 std::vector<int> get_seg_track_counts(int num_sets,
                                       const std::vector<t_segment_inf>& segment_inf,
                                       bool use_full_seg_groups) {
+    // Clock segments (SegResType::GCLK) are placeholders: their RR nodes and
+    // edges are built directly by the dedicated clock rr graph code (see
+    // clock_network_builders.cpp), which assigns its own track numbers and
+    // never goes through the seg_details/cb/sb/arch_wire_switch machinery
+    // this function feeds. They must not compete for or receive tracks here.
+
     // Scale factor so we can divide by any length and still use integers
     double scale = 1;
     int freq_sum = 0;
     for (const t_segment_inf& seg_inf : segment_inf) {
+        if (seg_inf.res_type == SegResType::GCLK) {
+            continue;
+        }
         scale *= seg_inf.length;
         freq_sum += seg_inf.frequency;
     }
@@ -201,8 +210,11 @@ std::vector<int> get_seg_track_counts(int num_sets,
 
     // Init assignments to 0 and set the demand values
     std::vector<int> result(segment_inf.size(), 0);
-    std::vector<double> demand(segment_inf.size());
+    std::vector<double> demand(segment_inf.size(), 0.);
     for (size_t i = 0; i < segment_inf.size(); ++i) {
+        if (segment_inf[i].res_type == SegResType::GCLK) {
+            continue;
+        }
         demand[i] = scale * num_sets * segment_inf[i].frequency;
         if (use_full_seg_groups) {
             demand[i] /= segment_inf[i].length;

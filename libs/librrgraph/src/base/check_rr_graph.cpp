@@ -5,7 +5,7 @@
 #include "vpr_error.h"
 #include "check_rr_graph.h"
 
-#include "rr_node.h"
+#include "rr_graph_cost.h"
 #include "physical_types_util.h"
 
 #include "describe_rr_node.h"
@@ -16,7 +16,7 @@ static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const Device
 
 static void check_unbuffered_edges(const RRGraphView& rr_graph, int from_node);
 
-static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& grid, const t_rr_node& node);
+static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& grid, RRNodeId node);
 
 static void check_rr_edge(const RRGraphView& rr_graph,
                           const DeviceGrid& grid,
@@ -222,7 +222,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
 
     // AM: For the time being, if is_flat is enabled, we don't have proper tests to check whether a node should have an incoming
     // edge or not
-    if(is_flat) {
+    if (is_flat) {
         return;
     }
 
@@ -263,8 +263,6 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     }
                 }
 
-                const t_rr_node& node = rr_graph.rr_nodes()[inode];
-
                 bool is_fringe = ((rr_graph.node_xlow(rr_node) == 1)
                                   || (rr_graph.node_ylow(rr_node) == 1)
                                   || (rr_graph.node_xhigh(rr_node) == int(grid.width()) - 2)
@@ -275,7 +273,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
 
                 if (!is_chain && !is_fringe && !is_wire) {
                     if (rr_graph.node_type(rr_node) == e_rr_type::IPIN || rr_graph.node_type(rr_node) == e_rr_type::OPIN) {
-                        if (has_adjacent_channel(rr_graph, grid, node)) {
+                        if (has_adjacent_channel(rr_graph, grid, rr_node)) {
                             auto block_type = grid.get_physical_type({rr_graph.node_xlow(rr_node),
                                                                       rr_graph.node_ylow(rr_node),
                                                                       rr_graph.node_layer_low(rr_node)});
@@ -308,12 +306,11 @@ void check_rr_graph(const RRGraphView& rr_graph,
             }
         }
     }
-
 }
 
 static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const DeviceGrid& grid, RRNodeId inode) {
-    /* Returns true if inode refers to a global CLB input pin node.   */
-     t_physical_tile_type_ptr type = grid.get_physical_type({rr_graph.node_xlow(inode),
+    // Returns true if inode refers to a global CLB input pin node.
+    t_physical_tile_type_ptr type = grid.get_physical_type({rr_graph.node_xlow(inode),
                                                             rr_graph.node_ylow(inode),
                                                             rr_graph.node_layer_low(inode)});
 
@@ -463,7 +460,6 @@ void check_rr_node(const RRGraphView& rr_graph,
         mux_max_ptc = (int)vib_type->get_first_stages().size();
     }
 
-
     e_pin_type class_type = e_pin_type::OPEN;
     int class_num_pins = -1;
     std::vector<e_side> rr_graph_sides;
@@ -509,14 +505,14 @@ void check_rr_node(const RRGraphView& rr_graph,
             rr_graph_sides = rr_graph.node_sides(rr_node);
             std::tie(std::ignore, std::ignore, arch_side_vec) = get_pin_coordinates(type, ptc_num, std::vector<e_side>(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end()));
             // sides in the architecture are a superset of the sides for a pin in RR Graph. We iterate over the sides stored
-            // in the RR Graph to ensure that all of them also exist in the architecture.   
+            // in the RR Graph to ensure that all of them also exist in the architecture.
             for (size_t i = 0; i < rr_graph_sides.size(); i++) {
                 if (std::find(arch_side_vec.begin(), arch_side_vec.end(), rr_graph_sides[i]) == arch_side_vec.end()) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: inode %d (type %d) has a different side '%s' in the RR graph and the architecture.\n", 
-                                inode, 
-                                rr_type, 
-                                TOTAL_2D_SIDE_STRINGS[rr_graph_sides[i]]);
+                                    "in check_rr_node: inode %d (type %d) has a different side '%s' in the RR graph and the architecture.\n",
+                                    inode,
+                                    rr_type,
+                                    TOTAL_2D_SIDE_STRINGS[rr_graph_sides[i]]);
                 }
             }
             break;
@@ -615,22 +611,18 @@ static void check_unbuffered_edges(const RRGraphView& rr_graph, int from_node) {
     } /* End for all from_node edges */
 }
 
-static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& grid, const t_rr_node& node) {
-    /* TODO: this function should be reworked later to adapt RRGraphView interface 
-     *       once xlow(), ylow(), side() APIs are implemented
-     */
-    VTR_ASSERT(rr_graph.node_type(node.id()) == e_rr_type::IPIN || rr_graph.node_type(node.id()) == e_rr_type::OPIN);
+static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& grid, RRNodeId node) {
+    VTR_ASSERT(rr_graph.node_type(node) == e_rr_type::IPIN || rr_graph.node_type(node) == e_rr_type::OPIN);
 
-    if ((rr_graph.node_xlow(node.id()) == 0 && !rr_graph.is_node_on_specific_side(node.id(), RIGHT))                          //left device edge connects only along block's right side
-        || (rr_graph.node_ylow(node.id()) == int(grid.height() - 1) && !rr_graph.is_node_on_specific_side(node.id(), BOTTOM)) //top device edge connects only along block's bottom side
-        || (rr_graph.node_xlow(node.id()) == int(grid.width() - 1) && !rr_graph.is_node_on_specific_side(node.id(), LEFT))    //right device edge connects only along block's left side
-        || (rr_graph.node_ylow(node.id()) == 0 && !rr_graph.is_node_on_specific_side(node.id(), TOP))                         //bottom device edge connects only along block's top side
+    if ((rr_graph.node_xlow(node) == 0 && !rr_graph.is_node_on_specific_side(node, RIGHT))                          //left device edge connects only along block's right side
+        || (rr_graph.node_ylow(node) == int(grid.height() - 1) && !rr_graph.is_node_on_specific_side(node, BOTTOM)) //top device edge connects only along block's bottom side
+        || (rr_graph.node_xlow(node) == int(grid.width() - 1) && !rr_graph.is_node_on_specific_side(node, LEFT))    //right device edge connects only along block's left side
+        || (rr_graph.node_ylow(node) == 0 && !rr_graph.is_node_on_specific_side(node, TOP))                         //bottom device edge connects only along block's top side
     ) {
         return false;
     }
     return true; //All other blocks will be surrounded on all sides by channels
 }
-
 
 static void check_rr_edge(const RRGraphView& rr_graph,
                           const DeviceGrid& grid,
@@ -660,7 +652,7 @@ static void check_rr_edge(const RRGraphView& rr_graph,
         case e_switch_type::MUX:       //Fallthrough
         case e_switch_type::PASS_GATE: //Fallthrough
         case e_switch_type::SHORT:     //Fallthrough
-            break;                  //pass
+            break;                     //pass
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid switch type %d", switch_type);
     }

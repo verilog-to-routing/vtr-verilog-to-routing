@@ -1266,7 +1266,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             //Strip off the starting 'out:' that vpr adds to uniqify outputs
             //this makes the port names match the input blif file
-            io_name = atom->name + 4;
+            io_name = atom->name.substr(4);
         }
 
         const auto& top_pb_route = find_top_pb_route(atom);
@@ -1545,7 +1545,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     port_name = "we2";
                 } else {
                     VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
-                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
+                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name.c_str(), pb_type->name);
                 }
 
                 input_port_conns[port_name].push_back(net);
@@ -1587,7 +1587,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     port_name = "out2";
                 } else {
                     VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
-                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
+                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name.c_str(), pb_type->name);
                 }
                 output_port_conns[port_name].push_back(net);
                 DelayTriple delay_triple = get_pin_tco_delay_triple(*pin);
@@ -1621,7 +1621,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     input_port_conns[port->name].push_back(net);
                 } else {
                     VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
-                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
+                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name.c_str(), pb_type->name);
                 }
             }
         }
@@ -2594,7 +2594,7 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
             //this makes the port names match the input blif file
 
             io_name = "";
-            indexed_io_name = atom->name + 4;
+            indexed_io_name = atom->name.substr(4);
 
             if (std::regex_search(name, matches, regex)) {
                 if (std::find(outputs_.begin(), outputs_.end(), matches[2]) == outputs_.end()) { //Skip already existing multi-bit port names

@@ -3,6 +3,7 @@
 
 #include "arch_util.h"
 #include "globals.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "vtr_time.h"
 
@@ -59,8 +60,8 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids() {
     // each logical block type has its own compressed grid
     std::vector<t_compressed_block_grid> compressed_type_grids(device_ctx.logical_block_types.size());
 
-    for (const auto& logical_block : device_ctx.logical_block_types) {
-        auto compressed_block_grid = create_compressed_block_grid(block_locations[logical_block.index], num_layers);
+    for (const t_logical_block_type& logical_block : device_ctx.logical_block_types) {
+        t_compressed_block_grid compressed_block_grid = create_compressed_block_grid(block_locations[logical_block.index], num_layers);
 
         for (const auto& physical_tile : logical_block.equivalent_tiles) {
             std::vector<int> compatible_sub_tiles;
@@ -82,7 +83,7 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids() {
             compressed_block_grid.compatible_sub_tiles_for_tile.insert({physical_tile->index, compatible_sub_tiles});
         }
 
-        compressed_type_grids[logical_block.index] = compressed_block_grid;
+        compressed_type_grids[logical_block.index] = std::move(compressed_block_grid);
     }
 
     return compressed_type_grids;

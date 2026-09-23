@@ -74,7 +74,6 @@ struct t_cluster_progress_stats {
 } // namespace
 
 GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
-                                 const t_analysis_opts& analysis_opts,
                                  const AtomNetlist& atom_netlist,
                                  const t_arch& arch,
                                  const t_pack_high_fanout_thresholds& high_fanout_thresholds,
@@ -85,7 +84,6 @@ GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
                                  const t_vpr_setup& vpr_setup)
     : packer_opts_(packer_opts)
     , vpr_setup_(vpr_setup)
-    , analysis_opts_(analysis_opts)
     , atom_netlist_(atom_netlist)
     , arch_(arch)
     , high_fanout_thresholds_(high_fanout_thresholds)
@@ -452,7 +450,7 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
     if (log_verbosity_ > 2) {
         VTR_LOG("\tSeed: '%s' (%s)", root_atom_name.c_str(), arch_.models.get_model(root_model_id).name.c_str());
         VTR_LOGV(seed_mol.pack_pattern, " molecule_type %s molecule_size %zu",
-                 seed_mol.pack_pattern->name, seed_mol.atom_block_ids.size());
+                 seed_mol.pack_pattern->name.c_str(), seed_mol.atom_block_ids.size());
         VTR_LOG("\n");
     }
 
@@ -484,7 +482,7 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "Can not find any logic block that can implement molecule.\n"
                             "\tPattern %s %s\n",
-                            seed_mol.pack_pattern->name,
+                            seed_mol.pack_pattern->name.c_str(),
                             root_atom_name.c_str());
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
@@ -571,7 +569,7 @@ bool GreedyClusterer::try_add_candidate_mol_to_cluster(PackMoleculeId candidate_
         std::string blk_model_name = arch_.models.model_name(blk_model_id);
         VTR_LOG("'%s' (%s)", blk_name.c_str(), blk_model_name.c_str());
         VTR_LOGV(candidate_mol.pack_pattern, " molecule %s molecule_size %zu",
-                 candidate_mol.pack_pattern->name,
+                 candidate_mol.pack_pattern->name.c_str(),
                  candidate_mol.atom_block_ids.size());
         VTR_LOG("\n");
         fflush(stdout);

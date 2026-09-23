@@ -7,6 +7,7 @@
  */
 
 #include "analytical_solver.h"
+#include <algorithm>
 #include <cstddef>
 #include <cstdio>
 #include <limits>
@@ -579,6 +580,33 @@ void QPHybridSolver::print_statistics() {
     VTR_LOG("\tTotal number of CG iterations: %u\n", total_num_cg_iters_);
 }
 
+B2BSolver::B2BSolver(const APNetlist& ap_netlist,
+                     const DeviceGrid& device_grid,
+                     const AtomNetlist& atom_netlist,
+                     const PreClusterTimingManager& pre_cluster_timing_manager,
+                     std::shared_ptr<PlaceDelayModel> place_delay_model,
+                     float ap_timing_tradeoff,
+                     int log_verbosity)
+    : AnalyticalSolver(ap_netlist,
+                       atom_netlist,
+                       device_grid,
+                       ap_timing_tradeoff,
+                       log_verbosity)
+    , pre_cluster_timing_manager_(pre_cluster_timing_manager)
+    , place_delay_model_(place_delay_model) {
+
+    // Reserve space for the triplet lists once here, since their buffers are
+    // reused for every linear system built by this solver.
+    // Roughly 4 triplets are emitted per pin; reserving less than that was
+    // measured to cause several reallocations per build.
+    size_t triplet_reserve = (9 * ap_netlist.pins().size()) / 2;
+    triplet_list_x_.reserve(triplet_reserve);
+    triplet_list_y_.reserve(triplet_reserve);
+    if (is_multi_die()) {
+        triplet_list_z_.reserve(triplet_reserve);
+    }
+}
+
 void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     // Store an initial placement into the p_placement object as a starting point
     // for the B2B solver.
@@ -600,9 +628,7 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
             block_x_locs_solved = p_placement.block_x_locs;
             block_y_locs_solved = p_placement.block_y_locs;
             if (is_multi_die()) {
-                std::fill(p_placement.block_layer_nums.begin(),
-                          p_placement.block_layer_nums.end(),
-                          (device_grid_num_layers_ - 1) / 2.0);
+                std::ranges::fill(p_placement.block_layer_nums, (device_grid_num_layers_ - 1) / 2.0);
                 block_z_locs_solved = p_placement.block_layer_nums;
             }
             return;
@@ -634,6 +660,12 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
         if (is_multi_die()) {
             p_placement.block_layer_nums = block_z_locs_solved;
         }
+    }
+
+    // Pre-compute the timing connection weights. They are constant for the whole
+    // B2B loop below, so this avoids recomputing them on every bound update.
+    if (pre_cluster_timing_manager_.is_valid() && iteration != 0) {
+        compute_timing_conn_weights();
     }
 
     // Run the B2B solver using p_placement as a starting point.
@@ -716,19 +748,17 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
     //         the bounds are likely to have changed after step 2.
     // We stop when it looks like the placement is converging (the change in
     // HPWL is sufficiently small for a few iterations).
-    double prev_hpwl = std::numeric_limits<double>::max();
+    // Seeding the convergence check with the HPWL of the incoming placement.
+    double prev_hpwl = p_placement.get_hpwl(netlist_);
     double curr_hpwl = prev_hpwl;
     unsigned num_convergence = 0;
     for (unsigned counter = 0; counter < max_num_bound_updates_; counter++) {
-        VTR_LOGV(log_verbosity_ >= 10,
-                 "\tPlacement HPWL in b2b loop: %f\n",
-                 p_placement.get_hpwl(netlist_));
+        // prev_hpwl is the HPWL of the placement currently in p_placement.
+        VTR_LOGV(log_verbosity_ >= 10, "\tPlacement HPWL in b2b loop: %f\n", prev_hpwl);
 
         // Set up the linear system, including anchor points.
         float build_linear_system_start_time = runtime_timer.elapsed_sec();
         init_linear_system(p_placement, iteration);
-        if (iteration != 0)
-            update_linear_system_with_anchors(iteration);
         total_time_spent_building_linear_system_ += runtime_timer.elapsed_sec() - build_linear_system_start_time;
         VTR_ASSERT_SAFE_MSG(!b_x.hasNaN(), "b_x has NaN!");
         VTR_ASSERT_SAFE_MSG(!b_y.hasNaN(), "b_y has NaN!");
@@ -814,11 +844,12 @@ Eigen::VectorXd B2BSolver::solve_linear_system(Eigen::SparseMatrix<double>& A,
 
     // Solve.
     cg.setMaxIterations(max_cg_iterations_);
+    cg.setTolerance(cg_convergence_tolerance_);
     Eigen::VectorXd solution = cg.solveWithGuess(b, guess);
 
     // Collect some metrics.
     total_num_cg_iters_ += cg.iterations();
-    VTR_LOGV(log_verbosity_ >= 20, "\t\tNum CG iter: %zu\n", cg.iterations());
+    VTR_LOGV(log_verbosity_ >= 20, "\t\tNum CG iter: %zu (rel. residual: %g)\n", cg.iterations(), cg.error());
 
     return solution;
 }
@@ -932,6 +963,7 @@ void B2BSolver::add_connection_to_system(APBlockId first_blk_id,
                                          double net_w,
                                          const vtr::vector<APBlockId, double>& blk_locs,
                                          std::vector<Eigen::Triplet<double>>& triplet_list,
+                                         std::vector<double>& matrix_diagonal,
                                          Eigen::VectorXd& b) {
     // To make the code below simpler, we assume that the first block is always
     // moveable.
@@ -956,15 +988,18 @@ void B2BSolver::add_connection_to_system(APBlockId first_blk_id,
 
     // Update the connectivity matrix and the constant vector.
     // This is similar to how connections are added for the quadratic formulation.
+    // Diagonal contributions are accumulated in a dense vector instead of being
+    // emitted as triplets. This roughly halves the number of triplets that
+    // setFromTriplets must sort and merge when the matrix is assembled.
     size_t first_row_id = (size_t)blk_id_to_row_id_[first_blk_id];
     if (netlist_.block_mobility(second_blk_id) == APBlockMobility::MOVEABLE) {
         size_t second_row_id = (size_t)blk_id_to_row_id_[second_blk_id];
-        triplet_list.emplace_back(first_row_id, first_row_id, w);
-        triplet_list.emplace_back(second_row_id, second_row_id, w);
+        matrix_diagonal[first_row_id] += w;
+        matrix_diagonal[second_row_id] += w;
         triplet_list.emplace_back(first_row_id, second_row_id, -w);
         triplet_list.emplace_back(second_row_id, first_row_id, -w);
     } else {
-        triplet_list.emplace_back(first_row_id, first_row_id, w);
+        matrix_diagonal[first_row_id] += w;
         b(first_row_id) += w * blk_locs[second_blk_id];
     }
 }
@@ -1206,6 +1241,66 @@ std::tuple<double, double, double> B2BSolver::get_delay_normalization_facs(APBlo
     return std::make_tuple(1.0 / norm_fac_inv_x, 1.0 / norm_fac_inv_y, 1.0 / norm_fac_inv_z);
 }
 
+void B2BSolver::compute_timing_conn_weights() {
+    timing_conn_weights_.resize(netlist_.pins().size());
+
+    for (APNetId net_id : netlist_.nets()) {
+        if (netlist_.net_is_ignored(net_id))
+            continue;
+
+        APPinId driver_pin = netlist_.net_driver(net_id);
+        APBlockId driver_blk = netlist_.pin_block(driver_pin);
+
+        // The normalization factors depend only on the driver block, so they
+        // are computed once for the whole net rather than once per sink.
+        auto [delay_x_norm, delay_y_norm, delay_z_norm] = get_delay_normalization_facs(driver_blk);
+
+        for (APPinId sink_pin : netlist_.net_sinks(net_id)) {
+            APBlockId sink_blk = netlist_.pin_block(sink_pin);
+
+            // Get the instantaneous derivative of delay at the given distance
+            // from driver to sink. This will provide a value which is higher
+            // if the tradeoff between delay and wirelength is better, and
+            // lower when the tradeoff between delay and wirelength is worse.
+            auto [d_delay_x, d_delay_y, d_delay_z] = get_delay_derivative(driver_blk,
+                                                                          sink_blk);
+
+            // Since the delay between two blocks may not monotonically increase
+            // (it may go down with distance due to different length wires), it
+            // is possible for the derivative of delay to be negative. The weight
+            // terms in this formulation should not be negative to prevent infinite
+            // answers. To prevent this, clamp the derivative to 0.
+            // TODO: If this is negative, it means that the sink should try to move
+            //       away from the driver. Perhaps add an anchor point to pull the
+            //       sink away.
+            d_delay_x = std::max(d_delay_x, 0.0);
+            d_delay_y = std::max(d_delay_y, 0.0);
+            d_delay_z = std::max(d_delay_z, 0.0);
+
+            // Get the criticality of this timing edge from driver to sink.
+            double crit = pre_cluster_timing_manager_.get_timing_info().setup_pin_criticality(netlist_.pin_atom_pin(sink_pin));
+
+            // Set the weight of the connection from driver to sink equal to:
+            //      weight_tradeoff_terms * (1 + crit) * d_delay * delay_norm
+            // The intuition is that we want the solver to shrink the distance
+            // from drivers to sinks (which would improve timing) for edges
+            // with the best tradeoff between delay and wire, with a focus
+            // on the more critical edges.
+            // The ap_timing_tradeoff serves to trade-off between the wirelength
+            // and timing net weights. The net weights are the general net weights
+            // based on prior knowledge about the nets.
+            double timing_net_w = ap_timing_tradeoff_ * net_weights_[net_id] * timing_slope_fac_ * (1.0 + crit);
+
+            // The units for delay are in seconds; however the units for
+            // the wirelength term are in tiles. To ensure the units match,
+            // the normalization factors above remove the time units.
+            timing_conn_weights_[sink_pin] = std::make_tuple(timing_net_w * d_delay_x * delay_x_norm,
+                                                             timing_net_w * d_delay_y * delay_y_norm,
+                                                             timing_net_w * d_delay_z * delay_z_norm);
+        }
+    }
+}
+
 void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned iteration) {
     // Reset the linear system
     A_sparse_x = Eigen::SparseMatrix<double>(num_moveable_blocks_, num_moveable_blocks_);
@@ -1217,16 +1312,20 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         b_z = Eigen::VectorXd::Zero(num_moveable_blocks_);
     }
 
-    // Create triplet lists to store the sparse positions to update and reserve
-    // space for them.
-    size_t total_num_pins_in_netlist = netlist_.pins().size();
-    std::vector<Eigen::Triplet<double>> triplet_list_x;
-    triplet_list_x.reserve(total_num_pins_in_netlist);
-    std::vector<Eigen::Triplet<double>> triplet_list_y;
-    triplet_list_y.reserve(total_num_pins_in_netlist);
-    std::vector<Eigen::Triplet<double>> triplet_list_z;
+    // The triplet lists hold the off-diagonal entries of the matrices. The
+    // diagonal entries are accumulated in dense vectors and appended later.
+    // NOTE: These are daata members, so their memory is reused between calls
+    //       (they are reserved in the constructor).
+    //       They must be cleared before any triplets are added below.
+    triplet_list_x_.clear();
+    triplet_list_y_.clear();
+    triplet_list_z_.clear();
+
+    std::vector<double> matrix_diagonal_x(num_moveable_blocks_, 0.0);
+    std::vector<double> matrix_diagonal_y(num_moveable_blocks_, 0.0);
+    std::vector<double> matrix_diagonal_z;
     if (is_multi_die()) {
-        triplet_list_z.reserve(total_num_pins_in_netlist);
+        matrix_diagonal_z.assign(num_moveable_blocks_, 0.0);
     }
 
     for (APNetId net_id : netlist_.nets()) {
@@ -1256,25 +1355,25 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         for (APPinId pin_id : netlist_.net_pins(net_id)) {
             APBlockId blk_id = netlist_.pin_block(pin_id);
             if (blk_id != net_bounds.max_x_blk && blk_id != net_bounds.min_x_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
-                add_connection_to_system(blk_id, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
+                add_connection_to_system(blk_id, net_bounds.max_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x_, matrix_diagonal_x, b_x);
+                add_connection_to_system(blk_id, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x_, matrix_diagonal_x, b_x);
             }
             if (blk_id != net_bounds.max_y_blk && blk_id != net_bounds.min_y_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
-                add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
+                add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y_, matrix_diagonal_y, b_y);
+                add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y_, matrix_diagonal_y, b_y);
             }
             if (is_multi_die() && blk_id != net_bounds.max_z_blk && blk_id != net_bounds.min_z_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z, b_z);
-                add_connection_to_system(blk_id, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z, b_z);
+                add_connection_to_system(blk_id, net_bounds.max_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z_, matrix_diagonal_z, b_z);
+                add_connection_to_system(blk_id, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z_, matrix_diagonal_z, b_z);
             }
         }
 
         // Connect the bounds to each other. Its just easier to put these here
         // instead of in the for loop above.
-        add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
-        add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
+        add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x_, matrix_diagonal_x, b_x);
+        add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y_, matrix_diagonal_y, b_y);
         if (is_multi_die()) {
-            add_connection_to_system(net_bounds.max_z_blk, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z, b_z);
+            add_connection_to_system(net_bounds.max_z_blk, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z_, matrix_diagonal_z, b_z);
         }
 
         // ====================================================================
@@ -1293,73 +1392,56 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
             for (APPinId sink_pin : netlist_.net_sinks(net_id)) {
                 APBlockId sink_blk = netlist_.pin_block(sink_pin);
 
-                // Get the instantaneous derivative of delay at the given distance
-                // from driver to sink. This will provide a value which is higher
-                // if the tradeoff between delay and wirelength is better, and
-                // lower when the tradeoff between delay and wirelength is worse.
-                auto [d_delay_x, d_delay_y, d_delay_z] = get_delay_derivative(driver_blk,
-                                                                              sink_blk);
-
-                // Since the delay between two blocks may not monotonically increase
-                // (it may go down with distance due to different length wires), it
-                // is possible for the derivative of delay to be negative. The weight
-                // terms in this formulation should not be negative to prevent infinite
-                // answers. To prevent this, clamp the derivative to 0.
-                // TODO: If this is negative, it means that the sink should try to move
-                //       away from the driver. Perhaps add an anchor point to pull the
-                //       sink away.
-                d_delay_x = std::max(d_delay_x, 0.0);
-                d_delay_y = std::max(d_delay_y, 0.0);
-                d_delay_z = std::max(d_delay_z, 0.0);
-
-                // The units for delay are in seconds; however the units for
-                // the wirelength term are in tiles. To ensure the units match,
-                // we need to normalize away the time units. Get normalization
-                // factors to remove the time units.
-                auto [delay_x_norm, delay_y_norm, delay_z_norm] = get_delay_normalization_facs(driver_blk);
-
-                // Get the criticality of this timing edge from driver to sink.
-                double crit = pre_cluster_timing_manager_.get_timing_info().setup_pin_criticality(netlist_.pin_atom_pin(sink_pin));
-
-                // Set the weight of the connection from driver to sink equal to:
-                //      weight_tradeoff_terms * (1 + crit) * d_delay * delay_norm
-                // The intuition is that we want the solver to shrink the distance
-                // from drivers to sinks (which would improve timing) for edges
-                // with the best tradeoff between delay and wire, with a focus
-                // on the more critical edges.
-                // The ap_timing_tradeoff serves to trade-off between the wirelength
-                // and timing net weights. The net weights are the general net weights
-                // based on prior knowledge about the nets.
-                double timing_net_w = ap_timing_tradeoff_ * net_weights_[net_id] * timing_slope_fac_ * (1.0 + crit);
+                const auto& [timing_conn_w_x, timing_conn_w_y, timing_conn_w_z] = timing_conn_weights_[sink_pin];
 
                 add_connection_to_system(driver_blk, sink_blk,
-                                         2 /*num_pins*/, timing_net_w * d_delay_x * delay_x_norm,
-                                         p_placement.block_x_locs, triplet_list_x, b_x);
+                                         2 /*num_pins*/, timing_conn_w_x,
+                                         p_placement.block_x_locs, triplet_list_x_, matrix_diagonal_x, b_x);
 
                 add_connection_to_system(driver_blk, sink_blk,
-                                         2 /*num_pins*/, timing_net_w * d_delay_y * delay_y_norm,
-                                         p_placement.block_y_locs, triplet_list_y, b_y);
+                                         2 /*num_pins*/, timing_conn_w_y,
+                                         p_placement.block_y_locs, triplet_list_y_, matrix_diagonal_y, b_y);
 
                 if (is_multi_die()) {
                     add_connection_to_system(driver_blk, sink_blk,
-                                             2 /*num_pins*/, timing_net_w * d_delay_z * delay_z_norm,
-                                             p_placement.block_layer_nums, triplet_list_z, b_z);
+                                             2 /*num_pins*/, timing_conn_w_z,
+                                             p_placement.block_layer_nums, triplet_list_z_, matrix_diagonal_z, b_z);
                 }
             }
         }
     }
 
+    if (iteration != 0) {
+        update_linear_system_with_anchors(iteration, matrix_diagonal_x, matrix_diagonal_y, matrix_diagonal_z);
+    }
+
+    // Append the accumulated diagonal entries as one triplet per row.
+    for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
+        if (matrix_diagonal_x[row_id_idx] != 0.0) {
+            triplet_list_x_.emplace_back(row_id_idx, row_id_idx, matrix_diagonal_x[row_id_idx]);
+        }
+        if (matrix_diagonal_y[row_id_idx] != 0.0) {
+            triplet_list_y_.emplace_back(row_id_idx, row_id_idx, matrix_diagonal_y[row_id_idx]);
+        }
+        if (is_multi_die() && matrix_diagonal_z[row_id_idx] != 0.0) {
+            triplet_list_z_.emplace_back(row_id_idx, row_id_idx, matrix_diagonal_z[row_id_idx]);
+        }
+    }
+
     // Build the sparse connectivity matrices from the triplets.
-    A_sparse_x.setFromTriplets(triplet_list_x.begin(), triplet_list_x.end());
-    A_sparse_y.setFromTriplets(triplet_list_y.begin(), triplet_list_y.end());
+    A_sparse_x.setFromTriplets(triplet_list_x_.begin(), triplet_list_x_.end());
+    A_sparse_y.setFromTriplets(triplet_list_y_.begin(), triplet_list_y_.end());
     if (is_multi_die()) {
-        A_sparse_z.setFromTriplets(triplet_list_z.begin(), triplet_list_z.end());
+        A_sparse_z.setFromTriplets(triplet_list_z_.begin(), triplet_list_z_.end());
     }
 }
 
 // This function adds anchors for legalized solution. Anchors are treated as fixed node,
 // each connecting to a movable node. Number of nodes in a anchor net is always 2.
-void B2BSolver::update_linear_system_with_anchors(unsigned iteration) {
+void B2BSolver::update_linear_system_with_anchors(unsigned iteration,
+                                                  std::vector<double>& matrix_diagonal_x,
+                                                  std::vector<double>& matrix_diagonal_y,
+                                                  std::vector<double>& matrix_diagonal_z) {
     VTR_ASSERT_SAFE_MSG(iteration != 0,
                         "no fixed solution to anchor to in the first iteration");
     // Get the anchor weight based on the iteration number. We want the anchor
@@ -1373,14 +1455,14 @@ void B2BSolver::update_linear_system_with_anchors(unsigned iteration) {
         APBlockId blk_id = row_id_to_blk_id_[row_id];
         double pseudo_w_x = coeff_pseudo_anchor * 2.0;
         double pseudo_w_y = coeff_pseudo_anchor * 2.0;
-        A_sparse_x.coeffRef(row_id_idx, row_id_idx) += pseudo_w_x;
-        A_sparse_y.coeffRef(row_id_idx, row_id_idx) += pseudo_w_y;
+        matrix_diagonal_x[row_id_idx] += pseudo_w_x;
+        matrix_diagonal_y[row_id_idx] += pseudo_w_y;
         b_x(row_id_idx) += pseudo_w_x * block_x_locs_legalized[blk_id];
         b_y(row_id_idx) += pseudo_w_y * block_y_locs_legalized[blk_id];
 
         if (is_multi_die()) {
             double pseudo_w_z = coeff_pseudo_anchor * 2.0;
-            A_sparse_z.coeffRef(row_id_idx, row_id_idx) += pseudo_w_z;
+            matrix_diagonal_z[row_id_idx] += pseudo_w_z;
             b_z(row_id_idx) += pseudo_w_z * block_z_locs_legalized[blk_id];
         }
     }

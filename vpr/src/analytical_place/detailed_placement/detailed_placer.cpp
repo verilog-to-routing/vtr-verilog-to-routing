@@ -86,12 +86,10 @@ AnnealerDetailedPlacer::AnnealerDetailedPlacer(const BlkLocRegistry& curr_cluste
                                        vpr_setup.PlacerOpts,
                                        vpr_setup.AnalysisOpts,
                                        vpr_setup.NocOpts,
-                                       pb_gpin_lookup_,
                                        netlist_pin_lookup_,
                                        FlatPlacementInfo(),
                                        place_delay_model,
                                        vpr_setup.PlacerOpts.place_auto_init_t_scale,
-                                       g_vpr_ctx.placement().cube_bb,
                                        false /*is_flat*/,
                                        false /*quiet*/);
 }

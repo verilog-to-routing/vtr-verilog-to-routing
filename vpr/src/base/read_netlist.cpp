@@ -92,8 +92,10 @@ static void sync_clustered_and_atom_netlists(ClusteredNetlist& clb_nlist,
 /**
  * @brief This function updates the nets list and the connections between
  *        that list and the complex block
+ *
+ * A net that reaches both global and non-global pins is flagged with a warning.
  */
-static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist, const AtomNetlist& atom_netlist);
+static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist, const AtomNetlist& atom_netlist, int verbosity);
 
 static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type, t_pb_routes& pb_route);
 
@@ -270,7 +272,7 @@ ClusteredNetlist read_netlist(const char* net_file,
 
         mark_constant_generators(clb_nlist, verbosity);
 
-        load_external_nets_and_cb(clb_nlist, mutable_atom_netlist);
+        load_external_nets_and_cb(clb_nlist, mutable_atom_netlist, verbosity);
 
         sync_clustered_and_atom_netlists(clb_nlist, mutable_atom_netlist, mutable_atom_lookup);
 
@@ -355,7 +357,7 @@ static void process_complex_block(pugi::xml_node clb_block,
 
     // Use the logical block type to create the physical block.
     t_pb* pb = new t_pb;
-    pb->name = vtr::strdup(block_name.value());
+    pb->name = block_name.value();
     pb->pb_graph_node = complex_block_type.pb_graph_head;
 
     // Set the mode of the physical block.
@@ -484,7 +486,7 @@ static void process_pb(pugi::xml_node Parent,
         if (!blk_id) {
             VPR_FATAL_ERROR(VPR_ERROR_NET_F,
                             ".net file and .blif file do not match, encountered unknown primitive %s in .net file.\n",
-                            pb->name);
+                            pb->name.c_str());
         }
 
         // Update atom netlist mapping
@@ -552,7 +554,7 @@ static void process_pb(pugi::xml_node Parent,
                 vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
                           "node is used by two different blocks %s and %s.\n",
                           instance_type.value(),
-                          pb->child_pbs[i][pb_index].name);
+                          pb->child_pbs[i][pb_index].name.c_str());
             }
             new_child_pb = &pb->child_pbs[i][pb_index];
             new_child_pb->pb_graph_node = &pb->pb_graph_node->child_pb_graph_nodes[pb->mode][i][pb_index];
@@ -570,11 +572,11 @@ static void process_pb(pugi::xml_node Parent,
         pugi::xml_attribute mode;
         pugi::xml_attribute name = pugiutil::get_attribute(child, "name", loc_data);
         if (0 != strcmp(name.value(), "open")) {
-            new_child_pb->name = vtr::strdup(name.value());
+            new_child_pb->name = name.value();
             mode = child.attribute("mode");
         } else {
             // hysical block has no used primitives but it may have used routing.
-            new_child_pb->name = nullptr;
+            new_child_pb->name.clear();
             pugi::xml_node lookahead1 = pugiutil::get_first_child(child, "outputs", loc_data, pugiutil::OPTIONAL);
             if (!lookahead1) {
                 // If not used for routing, skip recursing into the pb.
@@ -599,7 +601,7 @@ static void process_pb(pugi::xml_node Parent,
         if (!found && !new_child_pb->is_primitive()) {
             vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
                       "Unknown mode %s for cb %s #%d.\n", mode.value(),
-                      new_child_pb->name, pb_index);
+                      new_child_pb->name.c_str(), pb_index);
         }
 
         process_pb(child, index, new_child_pb, pb_route, num_primitives, loc_data);
@@ -889,7 +891,8 @@ static void process_ports(pugi::xml_node Parent,
 }
 
 static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist,
-                                      const AtomNetlist& atom_netlist) {
+                                      const AtomNetlist& atom_netlist,
+                                      int verbosity) {
     // Create a set of all unique net names that we can see. We want to ignore
     // any nets with the name "open", so we insert that into the map and later
     // we just ignore it if it was seen,
@@ -1035,21 +1038,33 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist,
     // set, minus the "open" nets.
     int num_unique_net_names = seen_net_names.size() - 1;
     VTR_ASSERT(static_cast<int>(clb_nlist.nets().size()) == num_unique_net_names);
+    int num_mixed_global_nets = 0;
     for (ClusterNetId net_id : clb_nlist.nets()) {
+        bool is_ignored_net = clb_nlist.net_is_ignored(net_id);
         for (ClusterPinId pin_id : clb_nlist.net_sinks(net_id)) {
-            bool is_ignored_net = clb_nlist.net_is_ignored(net_id);
             t_logical_block_type_ptr block_type = clb_nlist.block_type(clb_nlist.pin_block(pin_id));
             t_physical_tile_type_ptr tile_type = pick_physical_type(block_type);
             int logical_pin = clb_nlist.pin_logical_index(pin_id);
             int physical_pin = get_physical_pin(tile_type, block_type, logical_pin);
 
             if (tile_type->is_ignored_pin[physical_pin] != is_ignored_net) {
-                VTR_LOG_WARN(
-                    "Netlist connects net %s to both global and non-global pins.\n",
-                    clb_nlist.net_name(net_id).c_str());
+                ++num_mixed_global_nets;
+                // The net reaches an ignored (global) pin, so the whole net is
+                // treated as global and left unrouted; its non-global sinks get
+                // ideal (zero) delay instead of a routed connection.
+                VTR_LOGV_WARN(verbosity > 2,
+                              "Net '%s' connects both routed pins and ignored (global) pins; it will be treated as global and left unrouted, with ideal delay on its non-global sinks.\n",
+                              clb_nlist.net_name(net_id).c_str());
+                break;
             }
         }
     }
+
+    VTR_LOGV_WARN(num_mixed_global_nets > 0,
+                  "Found %d net(s) mixing routed and ignored pins; these are left unrouted with ideal delay. "
+                  "This is expected for clock nets under --clock_modeling ideal; use --clock_modeling route or dedicated_network to route them.%s\n",
+                  num_mixed_global_nets,
+                  verbosity > 2 ? "" : " (run with --pack_verbosity 3 to list the nets)");
 }
 
 static void mark_constant_generators(const ClusteredNetlist& clb_nlist, int verbosity) {
@@ -1072,7 +1087,7 @@ static size_t mark_constant_generators_rec(const t_pb* pb, const t_pb_routes& pb
         for (int i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
             const t_pb_type* child_pb_type = &(pb_type->modes[pb->mode].pb_type_children[i]);
             for (int j = 0; j < child_pb_type->num_pb; j++) {
-                if (pb->child_pbs[i][j].name != nullptr) {
+                if (!pb->child_pbs[i][j].name.empty()) {
                     const_gen_count += mark_constant_generators_rec(&(pb->child_pbs[i][j]), pb_route, verbosity);
                 }
             }
@@ -1098,7 +1113,7 @@ static size_t mark_constant_generators_rec(const t_pb* pb, const t_pb_routes& pb
             }
         }
         if (const_gen == true) {
-            VTR_LOGV(verbosity > 2, "%s is a constant generator.\n", pb->name);
+            VTR_LOGV(verbosity > 2, "%s is a constant generator.\n", pb->name.c_str());
             const_gen_count++;
             for (int i = 0; i < pb->pb_graph_node->num_output_ports; i++) {
                 for (int j = 0; j < pb->pb_graph_node->num_output_pins[i]; j++) {

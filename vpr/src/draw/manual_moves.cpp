@@ -162,7 +162,7 @@ void calculate_cost_callback(QWidget* /*widget*/, QWidget* grid) {
 
         //Continues to move costs window.
         QWidget* proceed = find_button("ProceedButton");
-        ezgl::press_proceed(proceed, &application);
+        ezgl::press_proceed(application, proceed);
 
     } else {
         draw_state->manual_moves_state.manual_move_info.valid_input = false;

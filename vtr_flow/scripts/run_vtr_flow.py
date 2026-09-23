@@ -21,7 +21,7 @@ import vtr
 
 BASIC_VERBOSITY = 1
 
-VTR_STAGES = ["odin", "parmys", "abc", "ace", "vpr"]
+VTR_STAGES = ["odin", "parmys", "mosaic", "abc", "ace", "vpr"]
 
 
 # pylint: disable=too-few-public-methods
@@ -35,6 +35,8 @@ class VtrStageArgparseAction(argparse.Action):
             setattr(namespace, self.dest, vtr.VtrStage.ODIN)
         elif value == "parmys":
             setattr(namespace, self.dest, vtr.VtrStage.PARMYS)
+        elif value == "mosaic":
+            setattr(namespace, self.dest, vtr.VtrStage.MOSAIC)
         elif value == "abc":
             setattr(namespace, self.dest, vtr.VtrStage.ABC)
         elif value == "vpr":
@@ -383,6 +385,35 @@ def vtr_command_argparser(prog=None):
         + " in a custom Yosys script.",
     )
     #
+    # MOSAIC arguments
+    #
+    mosaic = parser.add_argument_group("Mosaic", description="Arguments to be passed to Mosaic")
+    mosaic.add_argument(
+        "-mosaic_script",
+        default=None,
+        dest="mosaic_script",
+        help="Supplies Mosaic with a custom yosys template script"
+        + " (default: vtr_flow/misc/mosaic/template/synthesis.tcl).",
+    )
+    mosaic.add_argument(
+        "-verilator_check",
+        default=False,
+        action="store_true",
+        help="After synth(+abc), run mosaic verilator random-check of rtl vs post-synth blif",
+    )
+    mosaic.add_argument(
+        "-verilator_check_vectors",
+        type=int,
+        default=50000,
+        help="Number of random vectors for -verilator_check (default 50000)",
+    )
+    mosaic.add_argument(
+        "-verilator_check_seed",
+        type=int,
+        default=1,
+        help="Seed for -verilator_check (default 1)",
+    )
+    #
     # VPR arguments
     #
     vpr = parser.add_argument_group(
@@ -486,16 +517,20 @@ def get_max_memory_usage(temp_dir):
     output_files = {
         "parmys": Path(temp_dir / "parmys.out"),
         "odin": Path(temp_dir / "odin.out"),
+        "mosaic": Path(temp_dir / "mosaic.out"),
         "abc": Path(temp_dir / "abc{}.out".format(cnt)),
         "vpr": Path(temp_dir / "vpr.out"),
     }
-    memory_usages = {"parmys": -1, "odin": -1, "abc": -1, "vpr": -1}
+    memory_usages = {"parmys": -1, "odin": -1, "mosaic": -1, "abc": -1, "vpr": -1}
 
     if output_files["parmys"].is_file():
         memory_usages["parmys"] = get_memory_usage(output_files["parmys"])
 
     if output_files["odin"].is_file():
         memory_usages["odin"] = get_memory_usage(output_files["odin"])
+
+    if output_files["mosaic"].is_file():
+        memory_usages["mosaic"] = get_memory_usage(output_files["mosaic"])
 
     while output_files["abc"].is_file():
         new_abc_mem_usage = get_memory_usage(output_files["abc"])
@@ -583,12 +618,14 @@ def vtr_command_main(arg_list, prog=None):
             abc_args=process_abc_args(args),
             odin_args=process_odin_args(args),
             parmys_args=process_parmys_args(args),
+            mosaic_args=process_mosaic_args(args),
             keep_intermediate_files=args.keep_intermediate_files,
             keep_result_files=args.keep_result_files,
             min_hard_mult_size=args.min_hard_mult_size,
             min_hard_adder_size=args.min_hard_adder_size,
             odin_config=args.odin_config,
             yosys_script=args.yosys_script,
+            mosaic_script=args.mosaic_script,
             check_equivalent=args.check_equivalent,
             check_incremental_sta_consistency=args.check_incremental_sta_consistency,
             use_old_abc_script=args.use_old_abc_script,
@@ -596,6 +633,9 @@ def vtr_command_main(arg_list, prog=None):
             check_route=args.check_route,
             check_place=args.check_place,
             no_second_run=args.no_second_run,
+            verilator_check=args.verilator_check,
+            verilator_check_vectors=args.verilator_check_vectors,
+            verilator_check_seed=args.verilator_check_seed,
         )
         error_status = "OK"
     except vtr.VtrError as error:
@@ -749,6 +789,17 @@ def process_parmys_args(args):
     parmys_args["synthesis_params"] = args.synthesis_params or ""
 
     return parmys_args
+
+
+def process_mosaic_args(args):
+    """
+    Finds arguments needed in the MOSAIC stage of the flow
+    """
+    mosaic_args = OrderedDict()
+    # shares the -top_module flag with odin; empty means -auto-top
+    mosaic_args["top_module"] = args.top_module or ""
+
+    return mosaic_args
 
 
 def process_vpr_args(args, prog, temp_dir, vpr_args):

@@ -168,6 +168,7 @@ static unsigned check_block_placement_consistency(const BlkLocRegistry& blk_loc_
  *
  *  @param blk_loc_registry     A registry containing the block locations and
  *                              the blocks at each grid location.
+ *  @param pl_macros            The placement macros whose placement is checked.
  *
  *  @return The number of errors in the macro placement.
  */

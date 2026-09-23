@@ -37,11 +37,6 @@
 static constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 static constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 
-// This value is used to help determine when decluttering should be on. Every channel node is drawn 1 pixel wide always and
-// placed parallel to each other. If we allocate exactly 1 pixel for each channel node, they will be blended into a solid color.
-// Therefore, 1.5 is a more relaxed bar, where the extra serves as spacing between the channel nodes.
-static constexpr double min_pixels_per_chan_node = 1.5;
-
 /* Draws the routing resources that exist in the FPGA, if the user wants
  * them drawn.
  */
@@ -54,14 +49,14 @@ void draw_rr(ezgl::renderer* g) {
         return;
     }
 
-    // The ratio between pixels and world units spanning the screen width. Used to determine when decluttering should occur.
-    double pixels_per_world_unit = get_pixels_per_world_unit(g);
-    if (draw_state->enable_decluttering) {
-        // If pixels_per_world_unit is lower than the threshold, need to stop drawing RR nodes.
-        draw_state->declutter_rr = pixels_per_world_unit < min_pixels_per_chan_node;
+    // The ratio between world units and pixels spanning the screen width. Used to determine when decluttering should occur.
+    double world_units_per_pixel = g->world_units_per_pixel();
+    if (draw_state->enable_rr_decluttering) {
+        // If world_units_per_pixel is higher than the threshold, we need to stop drawing RR nodes.
+        draw_state->rr_decluttered = world_units_per_pixel > DRAW_RR_MAX_WORLD_UNITS_PER_PIXEL;
     } else {
-        // Currently this branch will never be called, since enable_decluttering hasn't been wired to a UI button.
-        draw_state->declutter_rr = false;
+        // Currently this branch will never be called, since enable_rr_decluttering hasn't been wired to any UI button.
+        draw_state->rr_decluttered = false;
     }
 
     g->set_line_dash(ezgl::line_dash::none);
@@ -87,27 +82,27 @@ void draw_rr(ezgl::renderer* g) {
         bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
         bool node_highlighted = draw_state->draw_rr_node[inode].node_highlighted;
 
-        // Highlighted nodes should always be drawn, even when decluttering is on.
+        // Highlighted nodes should always be drawn, even when the normal ones are decluttered.
         if (!node_highlighted) {
             // Apply color to the node
             draw_state->draw_rr_node[inode].color = node_colors.at(node_type);
 
-            // Don't draw if decluttering is on
-            if (draw_state->declutter_rr) {
+            // Don't draw if already decluttered.
+            if (draw_state->rr_decluttered) {
                 continue;
             }
 
-            // Don't Draw channel nodes if disabled
+            // Don't draw channel nodes if disabled.
             else if ((node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) && (!draw_state->draw_channel_nodes)) {
                 continue;
             }
 
-            // Don't Draw inter-cluster pins if disabled
+            // Don't draw inter-cluster pins if disabled.
             else if (inter_cluster_node && !draw_state->draw_inter_cluster_pins && (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN)) {
                 continue;
             }
 
-            // Don't Draw intra-cluster nodes if disabled
+            // Don't draw intra-cluster nodes if disabled.
             else if (!inter_cluster_node && !draw_state->draw_intra_cluster_nodes) {
                 continue;
             }
@@ -294,8 +289,8 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
 
         // Determine whether to draw the edge based on user options
 
-        // If decluttering is on, don't draw any edges.
-        if (draw_state->declutter_rr) {
+        // Don't draw any edges if already decluttered.
+        if (draw_state->rr_decluttered) {
             draw_edge = false;
         }
         // PIN_TO_OPIN and OPIN_TO_OPIN edges are intra-cluster edges, so don't draw if the intra-cluster edges option is disabled.
@@ -456,7 +451,7 @@ void draw_rr_src_sink(RRNodeId inode, ezgl::color color, ezgl::renderer* g) {
     int transparency_factor = get_rr_node_transparency(inode);
 
     float xcen, ycen;
-    draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[size_t(inode)], &xcen, &ycen);
+    draw_get_rr_src_sink_coords(inode, &xcen, &ycen);
 
     g->set_color(color, transparency_factor);
 
@@ -472,12 +467,11 @@ void draw_rr_src_sink(RRNodeId inode, ezgl::color color, ezgl::renderer* g) {
     g->set_color(color, transparency_factor);
 }
 
-void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen) {
+void draw_get_rr_src_sink_coords(RRNodeId rr_node, float* xcen, float* ycen) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
-    RRNodeId rr_node = node.id();
     t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
                                                                             rr_graph.node_ylow(rr_node),
                                                                             rr_graph.node_layer_low(rr_node)});
@@ -627,7 +621,7 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
             case e_rr_type::SOURCE:
             case e_rr_type::SINK: {
                 float xcen, ycen;
-                draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[size_t(inode)], &xcen, &ycen);
+                draw_get_rr_src_sink_coords(inode, &xcen, &ycen);
 
                 // Now check if we clicked on this pin
                 if (click_x >= xcen - draw_coords->pin_size && click_x <= xcen + draw_coords->pin_size && click_y >= ycen - draw_coords->pin_size && click_y <= ycen + draw_coords->pin_size) {
@@ -665,7 +659,7 @@ bool highlight_rr_nodes(float x, float y) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     // The user cannot select any RR nodes if RR drawing is turned off or decluttered. Doing so avoid processing all the RR nodes and saves time.
-    if (!draw_state->show_rr || draw_state->declutter_rr) {
+    if (!draw_state->show_rr || draw_state->rr_decluttered) {
         application->refresh_drawing();
         // After we return false, the caller will check if the mouse clicked on a block.
         // There can be cases where the mouse actually clicked on an RR node, and processing blocks may seem unnecessary.
@@ -764,12 +758,7 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
 /* Returns the coordinates at which the center of this pin should be drawn. *
  * inode gives the node number, and iside gives the side of the clb or pad  *
  * the physical pin is on.                                                  */
-void draw_get_rr_pin_coords(RRNodeId inode, float* xcen, float* ycen, const e_side& pin_side) {
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
-    draw_get_rr_pin_coords(device_ctx.rr_graph.rr_nodes()[size_t(inode)], xcen, ycen, pin_side);
-}
-
-void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, const e_side& pin_side) {
+void draw_get_rr_pin_coords(RRNodeId rr_node, float* xcen, float* ycen, const e_side& pin_side) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     int i, j, k, ipin, pins_per_sub_tile;
@@ -777,7 +766,6 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, con
     t_physical_tile_type_ptr type;
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
-    auto rr_node = node.id();
 
     i = rr_graph.node_xlow(rr_node);
     j = rr_graph.node_ylow(rr_node);

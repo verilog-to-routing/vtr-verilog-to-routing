@@ -211,7 +211,12 @@ class flat_map {
         return iter->second;
     }
 
-    ///@brief Insert value
+    /**
+     * @brief Insert value. Like std::map::insert(), an existing entry with an
+     *        equivalent key is left untouched (callers rely on this; do not
+     *        change it to overwrite). Returns (iterator to the entry, true only
+     *        if newly inserted).
+     */
     std::pair<iterator, bool> insert(const value_type& value) {
         auto iter = lower_bound(value.first);
         if (iter != end() && keys_equivalent(iter->first, value.first)) {
@@ -225,7 +230,7 @@ class flat_map {
         }
     }
 
-    ///@brief Emplace function
+    ///@brief Emplace value. Same no-overwrite semantics as insert().
     std::pair<iterator, bool> emplace(const value_type&& value) {
         auto iter = lower_bound(value.first);
         if (iter != end() && keys_equivalent(iter->first, value.first)) {

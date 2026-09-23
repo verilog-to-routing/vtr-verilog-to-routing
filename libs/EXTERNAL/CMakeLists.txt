@@ -3,6 +3,14 @@ include(ProcessorCount)
 
 find_package(Git REQUIRED)
 
+# Eigen is header-only. Expose the pinned submodule without configuring its
+# standalone project, which would add Eigen's own tests and install rules.
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/eigen/Eigen/Core")
+    message(FATAL_ERROR "Eigen submodule is missing. Run: git submodule update")
+endif()
+add_library(Eigen3::Eigen INTERFACE IMPORTED GLOBAL)
+target_include_directories(Eigen3::Eigen SYSTEM INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/eigen")
+
 #Manually synchronized external libraries
 add_subdirectory(libpugixml)
 
@@ -13,6 +21,8 @@ add_subdirectory(libblifparse)
 add_subdirectory(libtatum)
 add_subdirectory(libcatch2)
 
+# Don't build yaml-cpp command line tools since we don't use them
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 add_subdirectory(yaml-cpp)
 # Treat yaml-cpp headers as system headers to suppress warnings
 if(TARGET yaml-cpp)
@@ -57,8 +67,8 @@ if (VPR_USE_EZGL STREQUAL "on")
     endif()
 endif ()
 
-# The VTR root CMakeFile initializes the WITH_PARMYS
-if (${WITH_PARMYS})
+# The VTR root CMakeFile sets WITH_YOSYS when parmys and/or mosaic is enabled
+if (${WITH_YOSYS})
 
 	cmake_minimum_required(VERSION 3.16)
 
@@ -91,15 +101,18 @@ if (${WITH_PARMYS})
 	)
 
 	# how to build the result of the library
+	# ENABLE_ABC=1 builds yosys's in-yosys abc pass so the mosaic
+	# synthesis template can run `abc` inside yosys. this is yosys's own
+	# bundled abc submodule; vtr's standalone abc binary is unaffected.
 	add_custom_command(OUTPUT ${YOSYS_BUILD_DIR}
 		COMMAND ${MAKE_PROGRAM} -C ${YOSYS_SRC_DIR}
-		    ENABLE_ABC=0
+		    ENABLE_ABC=1
 		    PREFIX=${CMAKE_BINARY_DIR}
             > /dev/null 2>&1
-		 COMMAND ${MAKE_PROGRAM} 
+		 COMMAND ${MAKE_PROGRAM}
 		    -C ${YOSYS_SRC_DIR}
 		    install
-		    ENABLE_ABC=0
+		    ENABLE_ABC=1
 		    PREFIX=${CMAKE_BINARY_DIR}
             > /dev/null 2>&1
 		WORKING_DIRECTORY ${YOSYS_SRC_DIR})

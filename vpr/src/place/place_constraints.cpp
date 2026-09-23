@@ -185,7 +185,7 @@ bool cluster_floorplanning_legal(ClusterBlockId blk_id, const t_pl_loc& loc) {
         //not constrained so will not have floorplanning issues
         floorplanning_good = true;
     } else {
-        PartitionRegion pr = floorplanning_ctx.cluster_constraints[blk_id];
+        const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
         bool in_pr = pr.is_loc_in_part_reg(loc);
 
         //if location is in partitionregion, floorplanning is respected
@@ -244,7 +244,7 @@ void mark_fixed_blocks(BlkLocRegistry& blk_loc_registry) {
         if (!is_cluster_constrained(blk_id)) {
             continue;
         }
-        PartitionRegion pr = floorplanning_ctx.cluster_constraints[blk_id];
+        const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
         auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
         t_pl_loc loc;
 
@@ -400,11 +400,11 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
  * and the routine will return false.
  */
 bool is_pr_size_one(const PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     const int num_layers = device_ctx.grid.get_num_layers();
 
     Region intersect_reg(0, 0,
-                         (int)device_ctx.grid.width() - 1, (int)device_ctx.grid.height(),
+                         (int)device_ctx.grid.width() - 1, (int)device_ctx.grid.height() - 1,
                          0, num_layers - 1);
 
     const std::vector<Region>& regions = pr.get_regions();

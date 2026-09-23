@@ -53,7 +53,7 @@ jobs:
     - name: Install dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}
 
@@ -104,7 +104,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install qtbase5-dev
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}
 
@@ -278,7 +278,7 @@ jobs:
     - name: Install GUI test dependencies
       run: ./dev/install_gui_test_deps.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}
 
@@ -377,7 +377,7 @@ jobs:
     - name: Install GUI test dependencies
       run: ./dev/install_gui_test_deps.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}
 
@@ -475,7 +475,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: 'ccache'
-      uses: hendrikmuhs/ccache-action@v1.2.23
+      uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}
 
@@ -756,6 +756,97 @@ jobs:
           vtr_flow/**/parse_results*.txt
 
 
+  RegressionWithMosaic:
+    runs-on: ubuntu-24.04
+    needs: [BuildVTR]
+    strategy:
+      fail-fast: false
+      matrix:
+        include: [
+          {
+            name: 'Mosaic_regression',
+            suite: 'vtr_reg_basic_mosaic',
+            extra_pkgs: 'verilator'
+          }
+        ]
+    name: 'R: ${{ matrix.name }}'
+    steps:
+
+    - uses: actions/setup-python@v7
+      with:
+        python-version: 3.12.3
+
+    - uses: actions/checkout@v7
+      with:
+        submodules: 'true'
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v3
+      id: cpu-cores
+
+    - name: Install dependencies
+      run: ./install_apt_packages.sh
+
+    - name: Install Extra Dependencies
+      if: ${{ matrix.extra_pkgs != '' }}
+      run: |
+        sudo apt update
+        sudo apt install -y ${{ matrix.extra_pkgs }}
+
+    - name: Install Python Requirements
+      run: |
+        pip install -r requirements.txt
+
+    - name: Download Build Artifact
+      uses: actions/download-artifact@v8
+      with:
+        name: build-release.tar.gz
+
+    - name: Unpack Build
+      shell: bash
+      run: |
+        tar -xvzf build.tar.gz
+
+    - name: Test
+      timeout-minutes: 60
+      run: |
+        ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count}}
+
+    - name: Require mosaic verilator-check pass
+      timeout-minutes: 5
+      run: |
+        python3 mosaic/scripts/verify_regression_vcheck.py --suite ${{ matrix.suite }}
+
+    - name: Compare Parmys and Mosaic hardblock BLIF models
+      timeout-minutes: 20
+      run: |
+        python3 mosaic/scripts/compare_frontend_blif_models.py --run \
+          --circuit vtr_flow/benchmarks/verilog/diffeq1.v \
+          --arch vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml \
+          --work-dir mosaic_blif_model_compare
+
+    - name: Upload regression run files
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{matrix.name}}_run_files
+        path: |
+          vtr_flow/**/*.out
+          # vtr_flow/**/*.blif  # Removed since it was taking too much space and was hardly used.
+          vtr_flow/**/*.p
+          vtr_flow/**/*.net
+          vtr_flow/**/*.r
+
+    - name: Upload regression results
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{matrix.name}}_results
+        path: |
+          vtr_flow/**/*.log
+          vtr_flow/**/parse_results*.txt
+
+
   Sanitized:
     runs-on: ubuntu-24.04
     strategy:
@@ -792,7 +883,7 @@ jobs:
       run: |
         pip install -r requirements.txt
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}-${{ matrix.suite }}
 
@@ -962,7 +1053,7 @@ jobs:
     - name: Install dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}-${{ matrix.CC }}
 
@@ -993,7 +1084,7 @@ jobs:
     - name: Install Dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}-gcc-11
 
@@ -1024,7 +1115,7 @@ jobs:
     - name: Install Dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2.23
+    - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}-gcc-15
 
@@ -1038,32 +1129,16 @@ jobs:
 
   Msys2Compatibility:
     needs: [BuildVTR]
-    name: ${{ matrix.config.name }}
+    name: "Build Compatibility (GCC, Windows Msys2-UCRT64)"
     runs-on: windows-2025
-    # Branch on different OS and settings
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-# UCRT64 is another environment supported by Msys2. It has a different set of package names than the MINGW64 but the same as foundational libraries. If MINGW64 can pass, UCRT64 can pass mostly. It is commented out just to avoid CI runtime increase for now.
-#          - name: "Build Compatibility (GCC, Windows Msys2-UCRT64)"
-#            cc: gcc
-#            cxx: g++
-#            os: UCRT64
-#            prefix: ucrt64
-          - name: "Build Compatibility (GCC, Windows Msys2-MINGW64)"
-            cc: gcc
-            cxx: g++
-            os: MINGW64
-            prefix: mingw64
     defaults:
       run:
         # This ensures all 'run' steps use the MSYS2 bash shell by default
         shell: msys2 {0}
     # Define the steps to run the build job
     env:
-      CC: ${{ matrix.config.cc }}
-      CXX: ${{ matrix.config.cxx }}
+      CC: gcc
+      CXX: g++
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1076,19 +1151,20 @@ jobs:
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
-          msystem: ${{ matrix.config.os }}
+          msystem: UCRT64
           update: true
           # Optional: Pre-install core tools needed to run your script
           install: >-
             wget
             git
 
-      #In MSYS2, the flex package is an MSYS-native tool, meaning it installs its headers to /usr/include/FlexLexer.h. However, if you are using a MinGW-w64 environment (e.g., UCRT64, MINGW64), the compiler only looks for headers in /mingw64/include or similar toolchain-specific paths. The most common workaround is to copy or link the header from the MSYS directory to your active MinGW-w64 include directory. 
+      # In MSYS2, flex is an MSYS-native package and installs its headers under
+      # /usr/include. Copy FlexLexer.h into the UCRT64 toolchain include path.
       # For python build from sources
       - name: Install dependencies
         run: |
-          ./install_win_msys2_${{ matrix.config.prefix}}_packages.sh
-          cp /usr/include/FlexLexer.h /${{ matrix.config.prefix}}/include/
+          ./install_win_msys2_ucrt64_packages.sh
+          cp /usr/include/FlexLexer.h /ucrt64/include/
 
       - name: Dump tool versions
         run: |
@@ -1105,10 +1181,10 @@ jobs:
           echo "==== Checking yosys packages ===="
           which yosys.exe
           echo "==== Checking libgnat.a ===="
-          ls /${{ matrix.config.prefix }}/lib/gcc/x86_64-w64-mingw32/*/adalib/libgnat.a
+          ls /ucrt64/lib/gcc/x86_64-w64-mingw32/*/adalib/libgnat.a
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.23
+        uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: ${{ runner.os }}-msys2-${{ github.job }}-${{ hashFiles('**/CMakeLists.txt', '**/Makefile') }}
           restore-keys: |
@@ -1184,7 +1260,7 @@ jobs:
         run: cl
 
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2.23
+        uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: ${{ runner.os }}-msvc-${{ github.sha }}
           restore-keys: ${{ runner.os }}-msvc-

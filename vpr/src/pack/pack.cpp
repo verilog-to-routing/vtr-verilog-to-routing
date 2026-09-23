@@ -114,7 +114,7 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
     //         max displacement threshold. This should have the smallest affect on
     //         quality, so we want to do this first.
     if (appack_ctx.appack_options.use_appack) {
-        for (const auto& p : block_type_utils) {
+        for (const std::pair<t_logical_block_type_ptr const, float>& p : block_type_utils) {
             if (p.second <= 1.0f)
                 continue;
 
@@ -184,7 +184,7 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
     //         max displacement threshold of any overfilled block types, try to
     //         increase them.
     if (appack_ctx.appack_options.use_appack) {
-        for (const auto& p : block_type_utils) {
+        for (const std::pair<t_logical_block_type_ptr const, float>& p : block_type_utils) {
             if (p.second <= 1.0f)
                 continue;
 
@@ -200,7 +200,7 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
     // Check if we can increase the target density of the overused block types.
     // This is a last resort since increasing the target pin density can have
     // bad affects on quality and routability.
-    for (const auto& p : block_type_utils) {
+    for (const std::pair<t_logical_block_type_ptr const, float>& p : block_type_utils) {
         const t_ext_pin_util& target_pin_util = external_pin_util_targets.get_pin_util(p.first->name);
         if (p.second > 1.0f && (target_pin_util.input_pin_util < 1.0f || target_pin_util.output_pin_util < 1.0f))
             return e_packer_state::INCREASE_OVERUSED_TARGET_PIN_UTILIZATION;
@@ -210,7 +210,7 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
     //         This will have the worst affect on routability, so we only want
     //         to try this if we have to.
     if (appack_ctx.appack_options.use_appack) {
-        for (const auto& p : block_type_utils) {
+        for (const std::pair<t_logical_block_type_ptr const, float>& p : block_type_utils) {
             if (p.second <= 1.0f)
                 continue;
 
@@ -229,15 +229,15 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
 }
 
 bool try_pack(const t_packer_opts& packer_opts,
-              const t_analysis_opts& analysis_opts,
               const t_ap_opts& ap_opts,
               const t_arch& arch,
-              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+              const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
               const Prepacker& prepacker,
               const PreClusterTimingManager& pre_cluster_timing_manager,
               const FlatPlacementInfo& flat_placement_info,
               const t_vpr_setup& vpr_setup,
-              const RamMapper& ram_mapper) {
+              const RamMapper& ram_mapper,
+              const std::map<t_logical_block_type_ptr, size_t>& estimated_type_instance_counts) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     // The clusterer modifies the device context by increasing the size of the
@@ -252,8 +252,8 @@ bool try_pack(const t_packer_opts& packer_opts,
 
     size_t num_p_inputs = 0;
     size_t num_p_outputs = 0;
-    for (auto blk_id : atom_ctx.netlist().blocks()) {
-        auto type = atom_ctx.netlist().block_type(blk_id);
+    for (AtomBlockId blk_id : atom_ctx.netlist().blocks()) {
+        AtomBlockType type = atom_ctx.netlist().block_type(blk_id);
         if (type == AtomBlockType::INPAD) {
             ++num_p_inputs;
         } else if (type == AtomBlockType::OUTPAD) {
@@ -334,9 +334,13 @@ bool try_pack(const t_packer_opts& packer_opts,
                              device_ctx.logical_block_types,
                              device_ctx.grid);
 
+    // Adjust the APPack parameters according to the estimated device density.
+    appack_ctx.adjust_for_device_size_estimate(estimated_type_instance_counts,
+                                               device_ctx.logical_block_types,
+                                               device_ctx.grid);
+
     // Initialize the greedy clusterer.
     GreedyClusterer clusterer(packer_opts,
-                              analysis_opts,
                               atom_ctx.netlist(),
                               arch,
                               high_fanout_thresholds,
@@ -352,6 +356,8 @@ bool try_pack(const t_packer_opts& packer_opts,
     e_packer_state current_packer_state = e_packer_state::DEFAULT;
 
     while (current_packer_state != e_packer_state::SUCCESS && current_packer_state != e_packer_state::FAILURE) {
+        if (appack_ctx.appack_options.use_appack)
+            appack_ctx.max_distance_threshold_manager.print_max_dist_thresholds(device_ctx.logical_block_types);
         VTR_LOG("Packing with pin utilization targets: %s\n", cluster_legalizer.get_target_external_pin_util().to_string().c_str());
         VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds.to_string().c_str());
         //Cluster the netlist
@@ -402,18 +408,21 @@ bool try_pack(const t_packer_opts& packer_opts,
             case e_packer_state::SET_UNRELATED_AND_BALANCED: {
                 // 1st pack attempt was unsuccessful (i.e. not dense enough) and we have control of unrelated clustering
                 //
-                // Turn it on to increase packing density
+                // Turn it on to increase packing density.
+                // NOTE: allow_unrelated_clustering may already be true here (e.g. APPack
+                //       may have pre-enabled it for specific block types before the first
+                //       attempt based on the pre-packing density estimate) if this state was
+                //       reached only because balance_block_type_utilization needed enabling;
+                //       setting it again is a harmless no-op in that case.
                 if (packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
-                    VTR_ASSERT(allow_unrelated_clustering == false);
                     allow_unrelated_clustering = true;
                 }
                 if (packer_opts.balance_block_type_utilization == e_balance_block_type_util::AUTO) {
-                    VTR_ASSERT(balance_block_type_util == false);
                     balance_block_type_util = true;
                 }
                 if (appack_ctx.appack_options.use_appack) {
                     // Only do unrelated clustering on the overused type instances.
-                    for (const auto& p : block_type_utils) {
+                    for (const std::pair<t_logical_block_type_ptr const, float>& p : block_type_utils) {
                         // Any overutilized block types will use the default options.
                         if (p.second > 1.0f)
                             continue;
@@ -432,7 +441,7 @@ bool try_pack(const t_packer_opts& packer_opts,
             case e_packer_state::INCREASE_OVERUSED_TARGET_PIN_UTILIZATION: {
                 // Get the names of the block types to increase the pin utilization of.
                 std::vector<std::string> block_types_to_increase;
-                for (const auto& p : block_type_utils) {
+                for (const std::pair<t_logical_block_type_ptr const, float>& p : block_type_utils) {
                     t_ext_pin_util current_util = cluster_legalizer.get_target_external_pin_util().get_pin_util(p.first->name);
                     if (p.second > 1.0f && (current_util.input_pin_util < 1.0f || current_util.output_pin_util < 1.0f)) {
                         block_types_to_increase.push_back(p.first->name);
@@ -487,7 +496,7 @@ bool try_pack(const t_packer_opts& packer_opts,
                 VTR_ASSERT(appack_ctx.appack_options.use_appack);
                 VTR_LOG("Packing failed to fit on device. Using high-effort unrelated clustering.\n");
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
-                for (const auto& p : block_type_utils) {
+                for (const std::pair<t_logical_block_type_ptr const, float>& p : block_type_utils) {
                     if (p.second <= 1.0f)
                         continue;
 
@@ -501,7 +510,7 @@ bool try_pack(const t_packer_opts& packer_opts,
             case e_packer_state::AP_INCREASE_MAX_DISPLACEMENT: {
                 VTR_ASSERT(appack_ctx.appack_options.use_appack);
                 std::vector<t_logical_block_type_ptr> block_types_to_increase;
-                for (const auto& p : block_type_utils) {
+                for (const std::pair<t_logical_block_type_ptr const, float>& p : block_type_utils) {
                     if (p.second <= 1.0f)
                         continue;
 
@@ -614,9 +623,7 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock() {
     for (AtomBlockId blk_id : atom_ctx.netlist().blocks()) {
         for (AtomPinId pin_id : atom_ctx.netlist().block_clock_pins(blk_id)) {
             AtomNetId net_id = atom_ctx.netlist().pin_net(pin_id);
-            if (!is_clock.count(net_id)) {
-                is_clock.insert(net_id);
-            }
+            is_clock.insert(net_id);
         }
     }
 

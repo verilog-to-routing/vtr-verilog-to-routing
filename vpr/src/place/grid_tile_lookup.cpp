@@ -1,21 +1,26 @@
 #include "grid_tile_lookup.h"
+
+#include <utility>
+
 #include "globals.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
+#include "vpr_context.h"
 
 GridTileLookup::GridTileLookup()
     : max_placement_locations(g_vpr_ctx.device().logical_block_types.size()) {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     const int num_layers = device_ctx.grid.get_num_layers();
 
-    for (const auto& type : device_ctx.logical_block_types) {
+    for (const t_logical_block_type& type : device_ctx.logical_block_types) {
         vtr::NdMatrix<int, 3> type_count({static_cast<unsigned long>(num_layers), device_ctx.grid.width(), device_ctx.grid.height()});
         fill_type_matrix(&type, type_count);
-        block_type_matrices.push_back(type_count);
+        block_type_matrices.push_back(std::move(type_count));
     }
 }
 
 void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, vtr::NdMatrix<int, 3>& type_count) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     int num_layers = device_ctx.grid.get_num_layers();
     int width = (int)device_ctx.grid.width();

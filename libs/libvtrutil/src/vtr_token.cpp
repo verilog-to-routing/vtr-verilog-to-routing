@@ -87,7 +87,7 @@ static e_token_type get_token_type_from_char(e_token_type cur_token_type, char c
     }
 }
 
-void my_atof_2D(float** matrix, const int max_i, const int max_j, std::string_view instring) {
+void my_atof_2D(vtr::Matrix<float>& matrix, const int max_i, const int max_j, std::string_view instring) {
     int i, j;
     char *cur, *cur2, *copy, *final;
 

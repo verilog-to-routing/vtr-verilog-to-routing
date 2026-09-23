@@ -38,6 +38,7 @@ struct t_options {
     argparse::ArgValue<std::string> read_flat_place_file;
     argparse::ArgValue<std::string> write_flat_place_file;
     argparse::ArgValue<std::string> write_legalized_flat_place_file;
+    argparse::ArgValue<int> flat_place_verbosity;
 
     argparse::ArgValue<std::string> write_placement_delay_lookup;
     argparse::ArgValue<std::string> read_placement_delay_lookup;
@@ -158,7 +159,6 @@ struct t_options {
     argparse::ArgValue<e_place_delta_delay_algorithm> place_delta_delay_matrix_calculation_method;
     argparse::ArgValue<std::vector<float>> place_static_move_prob;
     argparse::ArgValue<int> place_high_fanout_net;
-    argparse::ArgValue<e_place_bounding_box_mode> place_bounding_box_mode;
     argparse::ArgValue<e_place_freq> place_placement_freq;
 
     argparse::ArgValue<bool> RL_agent_placement;
@@ -272,6 +272,7 @@ struct t_options {
     argparse::ArgValue<float> router_init_wirelength_abort_threshold;
     argparse::ArgValue<e_incr_reroute_delay_ripup> incr_reroute_delay_ripup;
     argparse::ArgValue<e_routing_failure_predictor> routing_failure_predictor;
+    argparse::ArgValue<int> routing_predictor_min_history;
     argparse::ArgValue<e_routing_budgets_algorithm> routing_budgets_algorithm;
     argparse::ArgValue<bool> save_routing_per_iteration;
     argparse::ArgValue<float> congested_routing_iteration_threshold_frac;
@@ -314,7 +315,6 @@ struct t_options {
     argparse::ArgValue<std::string> sb_templates;
     argparse::ArgValue<bool> annotated_rr_graph;
     argparse::ArgValue<bool> remove_dangling_nodes;
-    argparse::ArgValue<std::string> sb_count_dir;
     argparse::ArgValue<e_gsb_version> gsb_version;
 };
 
