@@ -404,6 +404,9 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
      * (except for those parts marked as not to be expanded) by calling itself   *
      * recursively.                                                              */
 
+    // Register every node already in the route tree for RCV.
+    rcv_path_manager.mark_node_visited(rt_node.inode);
+
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node.re_expand) {
