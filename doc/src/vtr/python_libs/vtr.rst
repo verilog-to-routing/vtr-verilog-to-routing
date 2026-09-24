@@ -15,6 +15,12 @@ Parmys
 .. automodule:: vtr.parmys.parmys
     :members:
 
+Mosaic
+======
+
+.. automodule:: vtr.mosaic.mosaic
+    :members:
+
 ODIN II
 =======
 

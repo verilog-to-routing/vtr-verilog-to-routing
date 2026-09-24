@@ -8,9 +8,7 @@
 RoutingChanUtilEstimator::RoutingChanUtilEstimator(const BlkLocRegistry& blk_loc_registry) {
     placer_state_ = std::make_unique<PlacerState>(/*placement_is_timing_driven=*/false);
     placer_state_->mutable_blk_loc_registry() = blk_loc_registry;
-    // RoutingChanUtilEstimator uses cube bounding box
     net_cost_handler_ = std::make_unique<NetCostHandler>(*placer_state_,
-                                                         /*cube_bb=*/true,
                                                          e_place_algorithm::BOUNDING_BOX_PLACE,
                                                          /*congestion_chan_util_threshold=*/0.);
 }
@@ -116,7 +114,7 @@ vtr::Matrix<float> calculate_routing_avail(e_rr_type rr_type) {
     const auto& rr_graph = device_ctx.rr_graph;
 
     vtr::Matrix<float> avail({{device_ctx.grid.width(), device_ctx.grid.height()}}, 0.);
-    for (const RRNodeId& rr_node : rr_graph.nodes()) {
+    for (RRNodeId rr_node : rr_graph.nodes()) {
         const short& rr_node_capacity = rr_graph.node_capacity(rr_node);
 
         if (rr_graph.node_type(rr_node) == e_rr_type::CHANX && rr_type == e_rr_type::CHANX) {

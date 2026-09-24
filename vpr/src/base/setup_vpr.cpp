@@ -171,6 +171,7 @@ void SetupVPR(const t_options* options,
     fileNameOpts->read_flat_place_file = options->read_flat_place_file;
     fileNameOpts->write_flat_place_file = options->write_flat_place_file;
     fileNameOpts->write_legalized_flat_place_file = options->write_legalized_flat_place_file;
+    fileNameOpts->flat_place_verbosity = options->flat_place_verbosity;
     fileNameOpts->write_block_usage = options->write_block_usage;
 
     fileNameOpts->verify_file_digests = options->verify_file_digests;
@@ -520,6 +521,7 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
         RouterOpts->doRouting = e_stage_action::DO;
     }
     RouterOpts->routing_failure_predictor = Options.routing_failure_predictor;
+    RouterOpts->routing_predictor_min_history = Options.routing_predictor_min_history;
     RouterOpts->routing_budgets_algorithm = Options.routing_budgets_algorithm;
     RouterOpts->save_routing_per_iteration = Options.save_routing_per_iteration;
     RouterOpts->congested_routing_iteration_threshold_frac = Options.congested_routing_iteration_threshold_frac;
@@ -727,7 +729,6 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
     PlacerOpts->place_static_move_prob = vtr::vector<e_move_type, float>(Options.place_static_move_prob.value().begin(),
                                                                          Options.place_static_move_prob.value().end());
     PlacerOpts->place_high_fanout_net = Options.place_high_fanout_net;
-    PlacerOpts->place_bounding_box_mode = Options.place_bounding_box_mode;
     PlacerOpts->RL_agent_placement = Options.RL_agent_placement;
     PlacerOpts->place_agent_multistate = Options.place_agent_multistate;
     PlacerOpts->place_checkpointing = Options.place_checkpointing;
@@ -782,7 +783,6 @@ static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts, Devic
     crr_opts.sb_templates = Options.sb_templates;
     crr_opts.annotated_rr_graph = Options.annotated_rr_graph;
     crr_opts.remove_dangling_nodes = Options.remove_dangling_nodes;
-    crr_opts.sb_count_dir = Options.sb_count_dir;
 
     // If the user did not explicitly set a GSB version, infer the default:
     // use GSB_V1 when sb_maps is provided (CRR flow), otherwise NOT_CRR.

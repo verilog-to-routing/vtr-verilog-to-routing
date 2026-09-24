@@ -295,7 +295,7 @@ General Options
 
     * Timing Analysis
     * Routing (If routing algorithm is set to parallel or parallel_decomp; See :option:`--router_algorithm`)
-    * Portions of analytical placement (If using the analytical placement flow and compiled VPR with Eigen enabled; See :option:`--analytical_place`)
+    * Portions of analytical placement (If using the analytical placement flow; See :option:`--analytical_place`)
 
     .. note:: To compile VPR to allow the usage of parallel workers, ``libtbb-dev`` must be installed in the system.
 
@@ -493,7 +493,7 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --write_placement_delay_lookup <file>
 
-    Writes the placement delay lookup to the specified file. Expects a file extension of either ``.capnp`` or ``.bin``.
+    Writes the placement delay lookup to the specified file. Expects a file extension of either ``.capnp`` or ``.bin``. Not supported for the simple place delay model.
 
 .. option:: --read_initial_place_file <file>
 
@@ -567,6 +567,24 @@ Use the options below to override this default naming behaviour.
 
     * The x, y, and sub_tile location of the cluster that contains this atom.
 
+.. option:: --flat_place_verbosity <int>
+
+    Controls how much annotation is written into flat placement files
+    (see :ref:`flat placement file format <vpr_flat_place_file>`). Annotations are
+    written as a ``#`` comment after the ``<atom_sub_tile>`` column and are
+    informational only: :option:`vpr --read_flat_place` does not parse them. Each
+    level includes what the levels below it print.
+
+    * ``0``: No annotation and no header comments, i.e. only the columns the reader
+      parses. The output is then exactly the input format documented above, and
+      carries no build timestamp, so it is reproducible across runs.
+    * ``1``: Header comments, plus the cluster block number and the primitive type
+      of each atom.
+    * ``2``: Additionally each atom's ``site_path``, the hierarchical path of the
+      primitive it was placed on within its cluster.
+
+    **Default:** ``1``
+
 .. _netlist_options:
 
 Netlist Options
@@ -634,6 +652,9 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
     Controls the verbosity of netlist processing (constant generator detection, swept netlist components).
     High values produce more detailed output.
+
+    At ``1`` (the default) only summary counts are printed.
+    At ``2`` or higher the individual netlist components are also listed by name (e.g. every constant generator found while loading the circuit).
 
     **Default**: ``1``
 
@@ -853,12 +874,14 @@ For people not working on CAD, you can probably leave all the options to their d
     This can reduce router runtime when many candidate molecules are tried and rejected: after a failed molecule is removed, the cluster returns to a known-good state without re-routing nets that did not change.
     Enabling this option should not significantly affect circuit quality metrics like routed wirelength or critical path delay, though minor variations are possible.
 
-    **Default:** ``off``
+    **Default:** ``on``
 
 .. option:: --pack_verbosity <int>
 
     Controls the verbosity of clustering output.
     Larger values produce more detailed output, which may be useful for debugging architecture packing problems.
+    At ``2`` (the default) the clustered-netlist check prints only aggregate counts of unusual blocks (e.g. single-output blocks that may be constant generators).
+    At ``3`` or higher these blocks are also listed individually.
 
     **Default:** ``2``
 
@@ -1014,19 +1037,6 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     The algorithm options have identical functionality as the ones used by the option ``--place_algorithm``. If specified, it overrides the option ``--place_algorithm`` during placement quench.
 
     **Default:**  ``criticality_timing``
-
-.. option:: --place_bounding_box_mode {auto_bb | cube_bb | per_layer_bb}
-
-    Specifies the type of the wirelength estimator used during placement. For single layer architectures, cube_bb (a 3D bounding box) is always used (and is the same as per_layer_bb).
-    For 3D architectures, cube_bb is appropriate if you can cross between layers at switch blocks, while if you can only cross between layers at output pins per_layer_bb (one bounding box per layer) is more accurate and appropriate.
-
-    ``auto_bb``: The bounding box type is determined automatically based on the cross-layer connections.
-
-    ``cube_bb``: ``cube_bb`` bounding box is used to estimate the wirelength.
-
-    ``per_layer_bb``: ``per_layer_bb`` bounding box is used to estimate the wirelength
-
-    **Default:** ``auto_bb``
 
 .. option:: --place_frequency {once | always}
 
@@ -1413,7 +1423,7 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
 
     .. note::
 
-        When VPR is compiled with Eigen and :option:`--num_workers` is set to more than one,
+        When :option:`--num_workers` is set to more than one,
         the solver step of the analytical solver can be parallelized across multiple threads.
         This reduces solver runtime while producing the identical placement result.
 
@@ -2034,6 +2044,14 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``safe``
 
+.. option:: --routing_predictor_min_history <int>
+
+    Number of routing iterations of overuse history the routing failure predictor must accumulate before it starts estimating the iteration at which a successful route will be found.
+
+    .. seealso:: :option:`--routing_failure_predictor`
+
+    **Default:** ``8``
+
 .. option:: --routing_budgets_algorithm { disable | minimax | yoyo | scale_delay }
 
     .. warning:: Experimental
@@ -2181,7 +2199,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
 .. option:: --router_lookahead_interposer_base_cut_multiplier
     .. note:: This option only works affects the map router lookahead and devices that have interposer cuts
-    
+
     A multiplier that's applied to the base cost of interposer wires for the router lookahead.
 
     **Default:** ``2``

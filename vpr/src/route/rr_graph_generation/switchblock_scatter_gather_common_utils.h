@@ -1,12 +1,16 @@
 
 #pragma once
 
+#include <string>
 #include <string_view>
+#include <unordered_map>
+#include <utility>
 
 #include "device_grid.h"
 #include "rr_types.h"
 #include "rr_graph_type.h"
 #include "vtr_expr_eval.h"
+#include "vtr_hash.h"
 
 #include <vector>
 
@@ -123,3 +127,36 @@ int evaluate_num_conns_formula(vtr::FormulaParser& formula_parser,
                                const std::string& num_conns_formula,
                                size_t from_wire_count,
                                size_t to_wire_count);
+
+/**
+ * @brief Memoizes switch block permutation formula results.
+ *
+ * A permutation formula's result depends only on the formula string and the values
+ * of its variables W and t. These repeat across connections and switch block locations,
+ * so results are cached to avoid re-parsing the formula for every connection.
+ */
+class SbFormulaCache {
+  public:
+    /**
+     * @brief Evaluates a permutation formula for the given W and t.
+     *
+     * Returns the raw (unadjusted) formula result. Parses the formula only on the
+     * first call for a given (formula, W, t) and returns the cached result afterwards.
+     *
+     * @param formula Permutation formula string from the architecture file.
+     * @param W       Size of the destination wire set.
+     * @param t       Index of the source wire within the source set.
+     */
+    int evaluate(const std::string& formula, int W, int t);
+
+  private:
+    /// Parser used on cache misses
+    vtr::FormulaParser formula_parser_;
+
+    /// Variable values passed to the parser
+    vtr::t_formula_data formula_data_;
+
+    /// Cached raw formula results, indexed by the formula string as written in the
+    /// architecture file, then by the (W, t) pair the formula was evaluated with
+    std::unordered_map<std::string, std::unordered_map<std::pair<int, int>, int, vtr::hash_pair>> results_;
+};

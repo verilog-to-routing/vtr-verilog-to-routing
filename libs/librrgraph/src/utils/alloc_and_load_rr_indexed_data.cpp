@@ -21,8 +21,7 @@
 /******************* Subroutines local to this module ************************/
 
 static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
-                                            vtr::vector<RRIndexedDataId,
-                                            t_rr_indexed_data>& rr_indexed_data,
+                                            vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                                             e_base_cost_type base_cost_type,
                                             const bool echo_enabled,
                                             const char* echo_file_name,
@@ -30,10 +29,10 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
 
 static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, const bool echo_enabled, const char* echo_file_name, bool device_model_warnings);
 
-static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
-                                          vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                                          int route_verbosity,
-                                          bool device_model_warnings);
+static vtr::vector<RRIndexedDataId, int> load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
+                                                                       vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
+                                                                       int route_verbosity,
+                                                                       bool device_model_warnings);
 
 /**
  * @brief Computes average R, Tdel, and Cinternal of fan-in switches for a given node.
@@ -54,9 +53,12 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
                                      int& num_switches,
                                      int& num_shorts,
                                      short& buffered,
-                                     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list);
+                                     const RRFanInList& fan_in_list);
 
-static void fixup_rr_indexed_data_T_values(vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, size_t num_segment);
+static void fixup_rr_indexed_data_T_values(vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
+                                           const vtr::vector<RRIndexedDataId, int>& num_nodes_of_index,
+                                           const std::vector<t_segment_inf>& segment_inf,
+                                           size_t num_segment);
 
 static std::vector<size_t> count_rr_segment_types(const RRGraphView& rr_graph,
                                                   const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data);
@@ -108,7 +110,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
     for (int i = SOURCE_COST_INDEX; i <= IPIN_COST_INDEX; i++) {
         rr_indexed_data[RRIndexedDataId(i)].ortho_cost_index = LIBRRGRAPH_UNDEFINED_VAL;
         rr_indexed_data[RRIndexedDataId(i)].seg_index = LIBRRGRAPH_UNDEFINED_VAL;
-        rr_indexed_data[RRIndexedDataId(i)].inv_length = std::numeric_limits<float>::quiet_NaN();;
+        rr_indexed_data[RRIndexedDataId(i)].inv_length = std::numeric_limits<float>::quiet_NaN();
         rr_indexed_data[RRIndexedDataId(i)].T_linear = 0.;
         rr_indexed_data[RRIndexedDataId(i)].T_quadratic = 0.;
         rr_indexed_data[RRIndexedDataId(i)].C_load = 0.;
@@ -161,9 +163,9 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
         rr_indexed_data[index].seg_index = seg_ptr->seg_index;
     }
 
-    load_rr_indexed_data_T_values(rr_graph, rr_indexed_data, route_verbosity, device_model_warnings);
+    vtr::vector<RRIndexedDataId, int> num_nodes_of_index = load_rr_indexed_data_T_values(rr_graph, rr_indexed_data, route_verbosity, device_model_warnings);
 
-    fixup_rr_indexed_data_T_values(rr_indexed_data, total_num_segment);
+    fixup_rr_indexed_data_T_values(rr_indexed_data, num_nodes_of_index, segment_inf, total_num_segment);
 
     load_rr_indexed_data_base_costs(rr_graph, rr_indexed_data, base_cost_type, echo_enabled, echo_file_name, device_model_warnings);
 
@@ -289,7 +291,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
     }
 
     /*Perturb indices to make sure all perp seg types have a corresponding perp segment.*/
-#    ifdef PERTURB_ORTHO_COST_indices
+#ifdef PERTURB_ORTHO_COST_indices
     std::vector<int> perp_segments;
     std::unordered_multimap<int, int> indices_map;
     auto cmp_greater = [](std::pair<int, int> a, std::pair<int, int> b) {
@@ -339,7 +341,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
         indices_q_greater.push(g_index_pair);
         indices_q_less.push(l_index_pair);
     }
-#    endif
+#endif
 
     return ortho_costs_indices;
 
@@ -516,17 +518,19 @@ static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr
  *      - Base cost calculation for each cost_index
  *      - Lookahead map computation
  *      - Placement Delay Matrix computation
+ *
+ * Returns the number of RR nodes found for each cost index. A count of zero means the
+ * cost index's T-values were left at their default of zero.
  */
-static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
-                                          vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                                          int route_verbosity,
-                                          bool device_model_warnings) {
-    vtr::vector<RRNodeId, std::vector<RREdgeId>> fan_in_list = get_fan_in_list(rr_graph);
+static vtr::vector<RRIndexedDataId, int> load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
+                                                                       vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
+                                                                       int route_verbosity,
+                                                                       bool device_model_warnings) {
+    const RRFanInList fan_in_list(rr_graph);
 
     vtr::vector<RRIndexedDataId, int> num_nodes_of_index(rr_indexed_data.size(), 0);
     vtr::vector<RRIndexedDataId, std::vector<float>> C_total(rr_indexed_data.size());
     vtr::vector<RRIndexedDataId, std::vector<float>> R_total(rr_indexed_data.size());
-
 
     // Not all wire-to-wire switches connecting from some wire segment will necessarily have the same delay.
     // i.e. a mux with less inputs will have smaller delay than a mux with a greater number of inputs.
@@ -549,7 +553,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         e_rr_type rr_type = rr_graph.node_type(rr_id);
 
         if (rr_type == e_rr_type::IPIN) {
-            for (const RREdgeId edge : fan_in_list[rr_id]) {
+            for (const RREdgeId edge : fan_in_list.edges(rr_id)) {
                 RRSwitchId rr_switch_id = RRSwitchId(rr_graph.edge_switch(edge));
                 float switch_T_del = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
                 ipin_switch_T_total += switch_T_del;
@@ -682,6 +686,8 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
     VTR_LOGV_WARN(device_model_warnings && route_verbosity <= 1 && num_nodes_without_outgoing_switches > 0,
                   "Found %zu nodes with no out-going switches. Run VTR with route_verbosity > 1 to see details.\n",
                   num_nodes_without_outgoing_switches);
+
+    return num_nodes_of_index;
 }
 
 static void calculate_average_switch(const RRGraphView& rr_graph,
@@ -692,7 +698,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
                                      int& num_switches,
                                      int& num_shorts,
                                      short& buffered,
-                                     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list) {
+                                     const RRFanInList& fan_in_list) {
 
     avg_switch_R = 0;
     avg_switch_T = 0;
@@ -700,8 +706,8 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
     num_switches = 0;
     num_shorts = 0;
     buffered = LIBRRGRAPH_UNDEFINED_VAL;
-    
-    for (const RREdgeId edge : fan_in_list[inode]) {
+
+    for (const RREdgeId edge : fan_in_list.edges(inode)) {
         // Want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments
         e_rr_type node_type = rr_graph.node_type(inode);
 
@@ -750,6 +756,8 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
 }
 
 static void fixup_rr_indexed_data_T_values(vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
+                                           const vtr::vector<RRIndexedDataId, int>& num_nodes_of_index,
+                                           const std::vector<t_segment_inf>& segment_inf,
                                            size_t total_num_segments) {
     // Scan CHANX/CHANY indexed data and search for uninitialized costs.
     //
@@ -769,12 +777,21 @@ static void fixup_rr_indexed_data_T_values(vtr::vector<RRIndexedDataId, t_rr_ind
 
         auto& indexed_data = rr_indexed_data[RRIndexedDataId(cost_index)];
         auto& ortho_indexed_data = rr_indexed_data[RRIndexedDataId(ortho_cost_index)];
-        // Check if this data is uninitialized, but the orthogonal data is
-        // initialized.
-        // Uninitialized data is set to zero by default.
-        bool needs_fixup = indexed_data.T_linear == 0 && indexed_data.T_quadratic == 0 && indexed_data.C_load == 0;
+
+        // Only fix up cost indices whose T-values were never computed because no RR
+        // nodes of that cost index exist (a segment used as CHANX or CHANY but not
+        // both).
+        bool needs_fixup = num_nodes_of_index[RRIndexedDataId(cost_index)] == 0;
         bool ortho_data_valid = ortho_indexed_data.T_linear != 0 || ortho_indexed_data.T_quadratic != 0 || ortho_indexed_data.C_load != 0;
-        if (needs_fixup && ortho_data_valid) {
+
+        // Never copy timing across a segment resource-type boundary (e.g. general
+        // routing <-> clock network). We assume that their delays are not correlated.
+        int seg_index = indexed_data.seg_index;
+        int ortho_seg_index = ortho_indexed_data.seg_index;
+        bool same_res_type = seg_index >= 0 && ortho_seg_index >= 0
+                             && segment_inf[seg_index].res_type == segment_inf[ortho_seg_index].res_type;
+
+        if (needs_fixup && ortho_data_valid && same_res_type) {
             // Copy orthogonal data over.
             indexed_data.T_linear = ortho_indexed_data.T_linear;
             indexed_data.T_quadratic = ortho_indexed_data.T_quadratic;
@@ -816,7 +833,7 @@ static void print_rr_index_info(const vtr::vector<RRIndexedDataId, t_rr_indexed_
             string_stream << cost_index << " IPIN";
         } else if (cost_index <= IPIN_COST_INDEX + y_chan_cost_offset) {
             string_stream << cost_index << " CHANX " << segment_inf[index_data.seg_index].name;
-        } else if (cost_index <= IPIN_COST_INDEX + z_chan_cost_offset){
+        } else if (cost_index <= IPIN_COST_INDEX + z_chan_cost_offset) {
             string_stream << cost_index << " CHANY " << segment_inf[index_data.seg_index].name;
         } else {
             string_stream << cost_index << " CHANZ " << segment_inf[index_data.seg_index].name;

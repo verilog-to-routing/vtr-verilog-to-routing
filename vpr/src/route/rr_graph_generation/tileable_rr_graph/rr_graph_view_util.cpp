@@ -76,7 +76,7 @@ std::vector<RRNodeId> find_rr_graph_chan_nodes(const RRGraphView& rr_graph,
 
     VTR_ASSERT(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
 
-    for (const RRNodeId& rr_node_index : rr_graph.node_lookup().find_channel_nodes(layer, x, y, rr_type)) {
+    for (RRNodeId rr_node_index : rr_graph.node_lookup().find_channel_nodes(layer, x, y, rr_type)) {
         if (rr_node_index != RRNodeId::INVALID()) {
             indices.push_back(rr_node_index);
         }

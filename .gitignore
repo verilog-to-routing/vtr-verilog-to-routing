@@ -175,3 +175,8 @@ compile_commands.json
 
 vpr/test/gui/golden/tmp/*
 
+#
+# Mosaic QoR compare output
+#
+/compare_output_*/
+mosaic/scripts/compare_output_*/

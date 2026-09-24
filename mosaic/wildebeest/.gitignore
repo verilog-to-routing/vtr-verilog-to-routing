@@ -1,0 +1,4 @@
+.d
+.o
+build/
+netlist_synth_fpga.verilog

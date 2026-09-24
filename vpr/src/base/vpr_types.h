@@ -15,7 +15,7 @@
  * An understanding of libarchfpga/physical_types.h is crucial to understanding this file.  physical_types.h contains information about the architecture described in the architecture description language
  *
  * Key data structures:
- * t_rr_node - The basic building block of the interconnect in the FPGA architecture
+ * RRGraphView (librrgraph) - The routing resource graph, the basic building block of the interconnect in the FPGA architecture
  *
  * Cluster-specific main data structure:
  * t_pb: Stores the mapping between the user netlist and the logic blocks on the FPGA architecture.  For example, if a user design has 10 clusters of 5 LUTs each, you will have 10 t_pb instances of type cluster and within each of those clusters another 5 t_pb instances of type LUT.
@@ -58,14 +58,6 @@
 #define TOKENS " \t\n" /* Input file parsing. */
 
 //#define VERBOSE //Prints additional intermediate data
-
-/*
- * We need to define the maximum number of layers to address a specific issue.
- * For certain data structures, such as `num_sink_pin_layer` in the placer context, dynamically allocating
- * memory based on the number of layers can lead to a performance hit due to additional pointer chasing and
- * cache locality concerns. Defining a constant variable helps optimize the memory allocation process.
- */
-constexpr int MAX_NUM_LAYERS = 2;
 
 /**
  * @brief For update_screen. Denotes importance of update.
@@ -235,7 +227,6 @@ class t_pack_high_fanout_thresholds {
 };
 
 /* these are defined later, but need to declare here because it is used */
-class t_rr_node;
 struct t_pb_stats;
 struct t_pb_route;
 
@@ -447,30 +438,6 @@ struct t_bb {
     int ymax = UNDEFINED;
     int layer_min = UNDEFINED;
     int layer_max = UNDEFINED;
-};
-
-/**
- * @brief Stores a 2D bounding box in terms of the minimum and maximum x and y
- * @note layer_num indicates the layer that the bounding box is on.
- */
-struct t_2D_bb {
-    t_2D_bb() = default;
-    t_2D_bb(int xmin_, int xmax_, int ymin_, int ymax_, int layer_num_)
-        : xmin(xmin_)
-        , xmax(xmax_)
-        , ymin(ymin_)
-        , ymax(ymax_)
-        , layer_num(layer_num_) {
-        VTR_ASSERT(xmax_ >= xmin_);
-        VTR_ASSERT(ymax_ >= ymin_);
-        VTR_ASSERT(layer_num_ >= 0);
-    }
-
-    int xmin = UNDEFINED;
-    int xmax = UNDEFINED;
-    int ymin = UNDEFINED;
-    int ymax = UNDEFINED;
-    int layer_num = UNDEFINED;
 };
 
 /**
@@ -687,6 +654,8 @@ struct t_file_name_opts {
     std::string write_legalized_flat_place_file;
     std::string write_block_usage;
     bool verify_file_digests;
+    ///@brief How much annotation to write into flat placement files.
+    int flat_place_verbosity;
 };
 
 ///@brief Options for netlist loading
@@ -856,12 +825,6 @@ enum class e_place_algorithm {
     BOUNDING_BOX_PLACE,
     CRITICALITY_TIMING_PLACE,
     SLACK_TIMING_PLACE
-};
-
-enum class e_place_bounding_box_mode {
-    AUTO_BB,
-    CUBE_BB,
-    PER_LAYER_BB
 };
 
 /**
@@ -1133,8 +1096,6 @@ struct t_placer_opts {
 
     int place_high_fanout_net;
 
-    e_place_bounding_box_mode place_bounding_box_mode;
-
     e_agent_algorithm place_agent_algorithm;
 
     float place_agent_epsilon;
@@ -1252,7 +1213,8 @@ enum e_routing_budgets_algorithm {
     MINIMAX, // Use MINIMAX-PERT algorithm to allocate budgets
     YOYO,    // Use MINIMAX as above, and enable RCV algorithm to resolve negative hold slack
     SCALE_DELAY,
-    DISABLE // Do not allocate budgets and run default router
+    LOW_SKEW_CLOCK, // Sets budgets on clock connections to the max clock delay to reduce clock skew, and enables RCV. Non-clock connections are left unconstrained (shortest path).
+    DISABLE         // Do not allocate budgets and run default router
 };
 
 enum class e_timing_report_detail {
@@ -1365,6 +1327,7 @@ struct t_router_opts {
     /// the configuration to be used by the routing failure predictor,
     /// how aggressive the threshold used to judge and abort routings deemed unroutable
     e_routing_failure_predictor routing_failure_predictor;
+    int routing_predictor_min_history;
     e_routing_budgets_algorithm routing_budgets_algorithm;
     bool save_routing_per_iteration;
     float congested_routing_iteration_threshold_frac;
@@ -1462,7 +1425,6 @@ struct t_crr_opts {
     std::string sb_templates;
     bool annotated_rr_graph;
     bool remove_dangling_nodes;
-    std::string sb_count_dir;
     e_gsb_version gsb_version;
 };
 

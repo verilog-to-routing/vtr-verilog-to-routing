@@ -174,8 +174,8 @@ class RouteTreeNode {
             ++(*this);
             return tmp;
         }
-        constexpr bool operator==(const RTIterator& rhs) { return _p == rhs._p; }
-        constexpr bool operator!=(const RTIterator& rhs) { return _p != rhs._p; }
+        constexpr bool operator==(const RTIterator& rhs) const { return _p == rhs._p; }
+        constexpr bool operator!=(const RTIterator& rhs) const { return _p != rhs._p; }
 
       private:
         /** My current node */
@@ -211,8 +211,8 @@ class RouteTreeNode {
             ++(*this);
             return tmp;
         }
-        constexpr bool operator==(const RTRecIterator& rhs) { return _p == rhs._p; }
-        constexpr bool operator!=(const RTRecIterator& rhs) { return _p != rhs._p; }
+        constexpr bool operator==(const RTRecIterator& rhs) const { return _p == rhs._p; }
+        constexpr bool operator!=(const RTRecIterator& rhs) const { return _p != rhs._p; }
 
       private:
         /** My current node */
@@ -488,8 +488,8 @@ class RouteTree {
             ++(*this);
             return tmp;
         }
-        constexpr bool operator==(const IsinkIterator& rhs) { return _x == rhs._x; }
-        constexpr bool operator!=(const IsinkIterator& rhs) { return _x != rhs._x; }
+        constexpr bool operator==(const IsinkIterator& rhs) const { return _x == rhs._x; }
+        constexpr bool operator!=(const IsinkIterator& rhs) const { return _x != rhs._x; }
 
       private:
         /** Ref to the bitset */

@@ -87,6 +87,7 @@ void PackingSignatureTree::add_lcn(const t_pb_graph_node* primitive_pb_graph_nod
     // This is a new diverging path, so add the LCN to the tree.
     cursor_->child_lcn.push_back(new_lcn);
     cursor_ = new_lcn;
+    this->num_lcn_++;
 }
 
 LocationAndConnectivityNode* PackingSignatureTree::create_lcn(const t_pb_graph_node* primitive_pb_graph_node, const AtomBlockId atom_block_id) {
@@ -202,6 +203,8 @@ LocationAndConnectivityNode* PackingSignatureTree::create_lcn(const t_pb_graph_n
 }
 
 void PackingSignatureTree::add_ecn(e_ecn_legality legality) {
+    if (ecn_threshold_limit_reached()) return;
+
     ExternalConnectivityNode* ecn = new ExternalConnectivityNode(legality);
     this->populate_ecn(ecn);
 
@@ -214,6 +217,7 @@ void PackingSignatureTree::add_ecn(e_ecn_legality legality) {
         }
     }
     cursor_->child_ecn.push_back(ecn);
+    this->num_ecn_++;
 }
 
 void PackingSignatureTree::populate_ecn(ExternalConnectivityNode* ecn) {

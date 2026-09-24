@@ -576,7 +576,7 @@ void draw_star_fixed_px(ezgl::point2d star_coords, double size_in_pixels, ezgl::
     double y = star_coords.y;
 
     // The star size is defined in pixels, but drawing is performed in world coordinates.
-    double size_in_world = size_in_pixels / get_pixels_per_world_unit(g);
+    double size_in_world = size_in_pixels * g->world_units_per_pixel();
 
     // The square we use to fill the star center has a width of size_in_world / 2.
     double half_sqr_width = size_in_world / 4.0;

@@ -258,13 +258,13 @@ static std::size_t get_num_edges_of_multi_paths(const std::vector<tatum::TimingP
  * Calculated results are stored in a vector and returned by the function.
  *
  * @param paths Timing paths whose consecutive node pairs define the timing edges to place delay labels.
- * @param pixels_per_world_unit Ratio between pixels and world units spanning the screen width.
+ * @param world_units_per_pixel Ratio between world units and pixels spanning the screen width.
  * Used to perform screen-to-world conversions for label bounding boxes that primarily use pixels.
  * @param g Pointer to the ezgl::renderer object. Used to get the dimension of the delay label string in pixels.
  * @return Per-edge delay label drawing information that does not yet tell where each label will be eventually drawn.
  */
 static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(const std::vector<tatum::TimingPath>& paths,
-                                                                            double pixels_per_world_unit,
+                                                                            double world_units_per_pixel,
                                                                             ezgl::renderer* g);
 
 /**
@@ -276,12 +276,12 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
  * Chosen bounding box positions are updated to basic_label_drawing_info.
  * 
  * @param basic_label_drawing_info Basic per-edge label drawing information needed to perform the decluttering algorithm.
- * @param pixels_per_world_unit Ratio between pixels and world units spanning the screen width.
+ * @param world_units_per_pixel Ratio between world units and pixels spanning the screen width.
  * Passed to helper calculate_label_bbox_from_relative_pos() which uses values in pixels to offset label bounding boxes.
  * @return Per-edge delay label drawing information that has each label's updated position.
  */
 static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std::vector<t_label_drawing_info> basic_label_drawing_info,
-                                                                             double pixels_per_world_unit);
+                                                                             double world_units_per_pixel);
 
 /**
  * @brief Hides labels that still overlap with others after calculate_least_cluttered_label_pos() has tried all candidates.
@@ -300,11 +300,11 @@ static std::vector<t_label_drawing_info> hide_still_cluttered_labels(std::vector
  *
  * @param label_to_update Single Label drawing information whose bounding box is to be updated.
  * @param label_relative_pos Candidate position to apply, relative to the timing-edge flyline.
- * @param pixels_per_world_unit Ratio between pixels and world units spanning the screen width.
+ * @param world_units_per_pixel Ratio between world units and pixels spanning the screen width.
  * Used to convert values specified in pixels that determine the offset of the label bounding box.
  * @return The rectangle associated with label_to_update. Used to replace the current bounding box .
  */
-static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_info& label_to_update, e_label_relative_pos label_relative_pos, double pixels_per_world_unit);
+static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_info& label_to_update, e_label_relative_pos label_relative_pos, double world_units_per_pixel);
 
 /**
  * @brief Returns true if two label bounding boxes overlap.
@@ -635,17 +635,17 @@ static void draw_connections_from_cluster_netlist(AtomPinId atom_src_pin, AtomPi
 }
 
 static void calculate_and_draw_delay_labels(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g) {
-    // The ratio between pixels and world units spanning the screen width.
+    // The ratio between world units and pixels spanning the screen width.
     // Used to perform screen-to-world conversions for label bounding boxes that primarily use pixels.
-    double pixels_per_world_unit = get_pixels_per_world_unit(g);
+    double world_units_per_pixel = g->world_units_per_pixel();
 
     // Calculate basic information needed for resolving overlap and drawing.
     std::vector<t_label_drawing_info> basic_label_drawing_info =
-        calculate_basic_label_drawing_info(paths, pixels_per_world_unit, g);
+        calculate_basic_label_drawing_info(paths, world_units_per_pixel, g);
 
     // Update the drawing info vector by trying to resolve all overlaps first.
     std::vector<t_label_drawing_info> post_decluttering_label_drawing_info =
-        calculate_least_cluttered_label_pos(std::move(basic_label_drawing_info), pixels_per_world_unit);
+        calculate_least_cluttered_label_pos(std::move(basic_label_drawing_info), world_units_per_pixel);
 
     // Get the final drawing info vector by hiding labels with inevitable overlaps;
     std::vector<t_label_drawing_info> final_label_drawing_info =
@@ -667,7 +667,7 @@ static std::size_t get_num_edges_of_multi_paths(const std::vector<tatum::TimingP
 }
 
 static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(const std::vector<tatum::TimingPath>& paths,
-                                                                            double pixels_per_world_unit,
+                                                                            double world_units_per_pixel,
                                                                             ezgl::renderer* g) {
     // Set font size to correctly calculate text (label) dimension later.
     g->set_font_size(16);
@@ -771,20 +771,20 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
                 // Note: This illustration is for reference only; the tilted rectangle should have square corners.
 
                 // This specifies the dimension of the "tilted rectangle" in pixels.
-                ezgl::t_text_dimension delay_label_dimension = g->get_text_dimension(delay_label_str);
-                // The bbox is defined in world coordinates, and we need to perform a conversion to pixels at the end.
+                ezgl::text_dimension_t delay_label_dimension = g->get_text_dimension(delay_label_str);
+                // The bbox is defined in world coordinates, so convert the text dimension from pixels to world units.
                 double label_bbox_width = (delay_label_dimension.width * cos(rotation_angle * (std::numbers::pi / 180))
                                            + delay_label_dimension.height * std::abs(sin(rotation_angle * (std::numbers::pi / 180))))
-                                          / pixels_per_world_unit;
+                                          * world_units_per_pixel;
                 double label_bbox_height = (delay_label_dimension.width * std::abs(sin(rotation_angle * (std::numbers::pi / 180)))
                                             + delay_label_dimension.height * cos(rotation_angle * (std::numbers::pi / 180)))
-                                           / pixels_per_world_unit;
+                                           * world_units_per_pixel;
 
                 ezgl::point2d bbox_bottom_left = edge_bbox.center() - ezgl::point2d(label_bbox_width / 2, label_bbox_height / 2);
                 // Calculates a virtual bounding box centered on the timing edge before offsets are applied.
                 drawing_info.virtual_centered_label_bbox = ezgl::rectangle(bbox_bottom_left, label_bbox_width, label_bbox_height);
                 // Apply CENTER_ABOVE to get the default label bounding box.
-                drawing_info.label_bbox = calculate_label_bbox_from_relative_pos(drawing_info, e_label_relative_pos::CENTER_ABOVE, pixels_per_world_unit);
+                drawing_info.label_bbox = calculate_label_bbox_from_relative_pos(drawing_info, e_label_relative_pos::CENTER_ABOVE, world_units_per_pixel);
             }
             prev_node = node;
             prev_arr_time = arr_time;
@@ -794,7 +794,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
 }
 
 static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std::vector<t_label_drawing_info> basic_label_drawing_info,
-                                                                             double pixels_per_world_unit) {
+                                                                             double world_units_per_pixel) {
 
     // The label position candidates are ordered in an implied priority which the decluttering algorithm will follow.
     constexpr std::array<e_label_relative_pos, 10> label_pos_candidates = {e_label_relative_pos::CENTER_ABOVE,
@@ -819,7 +819,7 @@ static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std
         // Try all possible position candidates unless finding one with zero overlap.
         for (const e_label_relative_pos& pos_candidate : label_pos_candidates) {
             // Update the label bounding box stored in drawing_info, which is tied to the current label being processed.
-            drawing_info.label_bbox = calculate_label_bbox_from_relative_pos(drawing_info, pos_candidate, pixels_per_world_unit);
+            drawing_info.label_bbox = calculate_label_bbox_from_relative_pos(drawing_info, pos_candidate, world_units_per_pixel);
 
             int curr_num_overlaps = 0;
 
@@ -849,7 +849,7 @@ static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std
             }
         }
         // Update the label bounding box using the chosen position candidate.
-        drawing_info.label_bbox = calculate_label_bbox_from_relative_pos(drawing_info, candidate_with_least_overlaps, pixels_per_world_unit);
+        drawing_info.label_bbox = calculate_label_bbox_from_relative_pos(drawing_info, candidate_with_least_overlaps, world_units_per_pixel);
     }
     return basic_label_drawing_info;
 }
@@ -885,7 +885,7 @@ static std::vector<t_label_drawing_info> hide_still_cluttered_labels(std::vector
 
 static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_info& label_to_update,
                                                               e_label_relative_pos label_relative_pos,
-                                                              double pixels_per_world_unit) {
+                                                              double world_units_per_pixel) {
     double edge_length = label_to_update.edge_length;
     // The unit length in world coordinates that can be doubled or directly used as the edgewise offset.
     double edge_offset_unit = edge_length * EDGE_OFFSET_FRACTION;
@@ -893,8 +893,8 @@ static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_in
     // For ultra long timing edges, using a fraction of the total edge length may result in labels jumping drastically
     // at different zoom levels. Therefore, we want to cap the edge offset unit at a certain threshold.
     // Convert MAX_EDGE_OFFSET_UNIT (defined in pixels) to world coordinates.
-    if (edge_offset_unit > MAX_EDGE_OFFSET_UNIT / pixels_per_world_unit) {
-        edge_offset_unit = MAX_EDGE_OFFSET_UNIT / pixels_per_world_unit;
+    if (edge_offset_unit > MAX_EDGE_OFFSET_UNIT * world_units_per_pixel) {
+        edge_offset_unit = MAX_EDGE_OFFSET_UNIT * world_units_per_pixel;
     }
 
     double perpendicular_offset = 0;
@@ -908,20 +908,20 @@ static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_in
         case e_label_relative_pos::FAR_LEFT_ABOVE:
         case e_label_relative_pos::FAR_RIGHT_ABOVE:
             // Convert PERPENDICULAR_OFFSET (defined in pixels) to world coordinates.
-            perpendicular_offset = PERPENDICULAR_OFFSET / pixels_per_world_unit;
+            perpendicular_offset = PERPENDICULAR_OFFSET * world_units_per_pixel;
             break;
         case e_label_relative_pos::CENTER_BELOW:
         case e_label_relative_pos::LEFT_BELOW:
         case e_label_relative_pos::RIGHT_BELOW:
         case e_label_relative_pos::FAR_LEFT_BELOW:
         case e_label_relative_pos::FAR_RIGHT_BELOW:
-            perpendicular_offset = -PERPENDICULAR_OFFSET / pixels_per_world_unit;
+            perpendicular_offset = -PERPENDICULAR_OFFSET * world_units_per_pixel;
             break;
         default:
             // Unidentified e_label_relative_pos provided (could be due to modifying the original enum
             // while forgetting to update this function). Output a failure.
             VTR_ASSERT(false);
-            perpendicular_offset = PERPENDICULAR_OFFSET / pixels_per_world_unit;
+            perpendicular_offset = PERPENDICULAR_OFFSET * world_units_per_pixel;
     }
 
     // Apply edge offset associated with the specified relative position.
@@ -1024,7 +1024,7 @@ static void draw_total_delay_messages(const std::vector<tatum::TimingPath>& path
         total_delay_messages.push_back(total_delay_msg);
 
         // Message dimension in pixels.
-        ezgl::t_text_dimension msg_dimension = g->get_text_dimension(total_delay_msg);
+        ezgl::text_dimension_t msg_dimension = g->get_text_dimension(total_delay_msg);
 
         // Only need to update this once, because the message height is always the same under the same font size.
         if (path_idx == 0) {
