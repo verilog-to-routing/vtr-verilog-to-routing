@@ -22,7 +22,8 @@ SwapEvaluator::SwapEvaluator(const t_placer_opts& placer_opts,
     , criticalities_(criticalities) {}
 
 t_swap_cost_deltas SwapEvaluator::apply_and_evaluate(t_pl_blocks_to_be_moved& blocks_affected,
-                                                     const t_place_algorithm& place_algorithm) {
+                                                     const t_place_algorithm& place_algorithm,
+                                                     t_swap_cancel_token cancel_token) {
     t_swap_cost_deltas deltas;
 
     // To make evaluating the move simpler (e.g. calculating changed bounding box),
@@ -41,9 +42,18 @@ t_swap_cost_deltas SwapEvaluator::apply_and_evaluate(t_pl_blocks_to_be_moved& bl
     // Find all the nets affected by this swap and update their costs.
     // Also finds all the pins affected by the swap, and calculates new connection
     // delays and timing costs.
-    net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected,
-                                                          deltas.cost_terms_delta,
-                                                          deltas.timing_delta_c);
+    bool completed = net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected,
+                                                                           deltas.cost_terms_delta,
+                                                                           deltas.timing_delta_c,
+                                                                           cancel_token);
+    if (!completed) {
+        // The caller asked to abandon this evaluation through cancel_token.
+        // The deltas computed so far are meaningless and the move must be
+        // reverted. The partially staged scratch state is consistent, so
+        // revert() restores the placement state.
+        deltas.cancelled = true;
+        return deltas;
+    }
 
     deltas.update_interposer_costs = interposer_cost_handler_.has_value() && interposer_cost_handler_->has_active_cost_terms();
     if (deltas.update_interposer_costs) {

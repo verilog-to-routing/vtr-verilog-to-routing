@@ -26,6 +26,9 @@ struct t_swap_cost_deltas {
     t_net_cost_terms cost_terms_delta;
     /// True when interposer cost terms were evaluated and must be committed.
     bool update_interposer_costs = false;
+    /// True when evaluation was cancelled partway. The deltas are then
+    /// meaningless and the move must be reverted.
+    bool cancelled = false;
 };
 
 /**
@@ -66,10 +69,11 @@ class SwapEvaluator {
      * resulting cost deltas.
      *
      * commit() or revert() must be called before the next evaluation on this
-     * state.
+     * state. A cancelled evaluation can only be reverted.
      */
     t_swap_cost_deltas apply_and_evaluate(t_pl_blocks_to_be_moved& blocks_affected,
-                                          const t_place_algorithm& place_algorithm);
+                                          const t_place_algorithm& place_algorithm,
+                                          t_swap_cancel_token cancel_token = {});
 
     /**
      * @brief Makes an applied move permanent: writes the committed net bounding
