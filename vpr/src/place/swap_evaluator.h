@@ -32,6 +32,23 @@ struct t_swap_cost_deltas {
 };
 
 /**
+ * @brief Everything an accepted move writes into committed placement state, in
+ * replayable form.
+ *
+ * Several swaps are evaluated in parallel, each on its own state copy, but only
+ * one of them wins. Recording what the winner wrote lets every other copy apply
+ * it directly instead of re-evaluating it.
+ */
+struct t_swap_commit_record {
+    /// Pins whose connection timing cost changed.
+    std::vector<ClusterPinId> affected_pins;
+    /// Per affected net: committed bounding box and net cost.
+    std::vector<t_net_commit_entry> net_record;
+    /// Per affected connection: committed delay and timing cost.
+    std::vector<t_connection_commit_entry> connection_entries;
+};
+
+/**
  * @class SwapEvaluator
  * @brief Applies a proposed move to a placement state, computes the resulting
  * cost deltas, and either commits or reverts the move.
@@ -90,6 +107,32 @@ class SwapEvaluator {
      * delay/timing cost entries are also invalidated.
      */
     void revert(t_pl_blocks_to_be_moved& blocks_affected, bool revert_td);
+
+    /**
+     * @brief Captures the committed values the currently evaluated move would
+     * write, so the move can later be committed on any identical state copy with
+     * apply_commit_record() instead of being re-evaluated.
+     *
+     * Must be called between apply_and_evaluate() and commit()/revert() on this state.
+     *
+     * @param blocks_affected The evaluated move's record (source of affected pins).
+     * @param record Filled with the replayable committed values.
+     */
+    void extract_commit_record(const t_pl_blocks_to_be_moved& blocks_affected,
+                               t_swap_commit_record& record) const;
+
+    /**
+     * @brief Commits a move on this state from its recorded values, without
+     * re-evaluating it: applies the block moves, writes the recorded committed
+     * net and timing values, and commits grid_blocks.
+     *
+     * @param blocks_affected Holds the same block moves the record was captured
+     * from. Cleared before returning.
+     * @param record The committed values captured on the state copy that
+     * evaluated the move.
+     */
+    void apply_commit_record(t_pl_blocks_to_be_moved& blocks_affected,
+                             const t_swap_commit_record& record);
 
   private:
     /// Placement algorithm options (timing tradeoff, cost factors).

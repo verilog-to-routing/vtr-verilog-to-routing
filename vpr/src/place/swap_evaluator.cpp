@@ -120,6 +120,37 @@ void SwapEvaluator::commit(t_pl_blocks_to_be_moved& blocks_affected,
     placer_state_.mutable_blk_loc_registry().commit_move_blocks(blocks_affected);
 }
 
+void SwapEvaluator::extract_commit_record(const t_pl_blocks_to_be_moved& blocks_affected,
+                                          t_swap_commit_record& record) const {
+    net_cost_handler_.extract_commit_record(record.net_record);
+
+    if (placer_opts_.place_algorithm.is_timing_driven()) {
+        record.affected_pins = blocks_affected.affected_pins;
+        placer_state_.timing().extract_connection_commit_record(blocks_affected.affected_pins,
+                                                                record.connection_entries);
+    } else {
+        record.affected_pins.clear();
+        record.connection_entries.clear();
+    }
+}
+
+void SwapEvaluator::apply_commit_record(t_pl_blocks_to_be_moved& blocks_affected,
+                                        const t_swap_commit_record& record) {
+    VTR_ASSERT_SAFE(!blocks_affected.moved_blocks.empty());
+
+    BlkLocRegistry& blk_loc_registry = placer_state_.mutable_blk_loc_registry();
+    blk_loc_registry.apply_move_blocks(blocks_affected);
+
+    net_cost_handler_.apply_commit_record(record.net_record);
+
+    if (!record.connection_entries.empty()) {
+        placer_state_.mutable_timing().apply_connection_commit_record(record.connection_entries);
+    }
+
+    blk_loc_registry.commit_move_blocks(blocks_affected);
+    blocks_affected.clear_move_blocks();
+}
+
 void SwapEvaluator::revert(t_pl_blocks_to_be_moved& blocks_affected, bool revert_td) {
     // Discard the proposed net state first.
     net_cost_handler_.reset_move_nets();
