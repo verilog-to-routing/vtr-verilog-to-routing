@@ -53,7 +53,7 @@ TEST_CASE("DrawState: default-constructed values match documented defaults",
     CHECK(ds.draw_block_text == true);
     CHECK(ds.draw_partitions == false);
     CHECK(ds.show_graphics == false);
-    CHECK(ds.gr_automode == 0);
+    CHECK(ds.gr_automode == e_graphics_pause::EVERY_UPDATE);
     CHECK(ds.auto_proceed == false);
     CHECK(ds.draw_route_type == e_route_type::GLOBAL);
     CHECK(ds.save_graphics == false);
@@ -100,8 +100,8 @@ TEST_CASE("DrawState: every plain field round-trips through assignment",
     CHECK(ds.show_routing_bb == 7);
     ds.draw_net_max_fanout = 100;
     CHECK(ds.draw_net_max_fanout == 100);
-    ds.gr_automode = 2;
-    CHECK(ds.gr_automode == 2);
+    ds.gr_automode = e_graphics_pause::FINAL_STAGE;
+    CHECK(ds.gr_automode == e_graphics_pause::FINAL_STAGE);
     ds.net_alpha = 128;
     CHECK(ds.net_alpha == 128);
     ds.pres_fac = 2.5f;
@@ -158,15 +158,15 @@ TEST_CASE("DrawState: assignment overwrites all plain state",
           "[layer3][vpr_gui][drawstate]") {
     t_draw_state src;
     src.show_nets = true;
-    src.gr_automode = 1;
+    src.gr_automode = e_graphics_pause::MAJOR_UPDATES;
 
     t_draw_state dst;
     REQUIRE_FALSE(dst.show_nets);
-    REQUIRE(dst.gr_automode == 0);
+    REQUIRE(dst.gr_automode == e_graphics_pause::EVERY_UPDATE);
 
     dst = src;
     CHECK(dst.show_nets);
-    CHECK(dst.gr_automode == 1);
+    CHECK(dst.gr_automode == e_graphics_pause::MAJOR_UPDATES);
 }
 
 TEST_CASE("DrawCoords: default tile geometry",

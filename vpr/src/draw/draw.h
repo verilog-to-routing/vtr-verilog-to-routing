@@ -60,6 +60,18 @@ void update_screen(ScreenUpdatePriority priority,
  */
 void notify_stage_complete(e_pic_type stage);
 
+/**
+ * @brief Records the last drawn stage of the requested flow, derived from the
+ * stage actions (--pack, --place, --route, --analysis, ...).
+ *
+ * With --auto 2, update_screen() skips the interactive window, --save_graphics
+ * and --graphics_commands until that stage has been marked complete via
+ * notify_stage_complete(), then pauses once. Flows whose last stage is not
+ * routing or placement keep the old never-pause behaviour. A `wait_for_stage`
+ * on any other stage is a fatal error. Call after init_graphics_state().
+ */
+void init_final_graphics_stage(const t_vpr_setup& vpr_setup);
+
 //FIXME: Currently broken if no rr-graph is loaded
 /**
  * @brief Load the arrays containing the left and bottom coordinates of the clbs.

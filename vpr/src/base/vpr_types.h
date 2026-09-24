@@ -71,6 +71,20 @@ enum class ScreenUpdatePriority {
     MAJOR = 1
 };
 
+/**
+ * @brief How often interactive graphics pause for the user (--auto).
+ *
+ * The values match the --auto command-line values and are ordered against
+ * ScreenUpdatePriority: an update pauses when int(priority) >= int(mode),
+ * except for FINAL_STAGE, which has its own rule.
+ */
+enum class e_graphics_pause {
+    EVERY_UPDATE = 0,  ///<Pause on every update, including MINOR ones (e.g. each temperature)
+    MAJOR_UPDATES = 1, ///<Pause on MAJOR updates only
+    FINAL_STAGE = 2,   ///<Skip graphics until the last requested stage completes, then pause once
+    NEVER = 3          ///<Never pause
+};
+
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = true;
 #else

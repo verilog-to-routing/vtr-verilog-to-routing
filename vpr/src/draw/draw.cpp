@@ -121,6 +121,9 @@ static void set_block_text(bool checked);
 static void set_draw_partitions(bool checked);
 static void clip_routing_util(bool checked);
 static void run_graphics_commands(const std::string& commands);
+static void parse_wait_for_stage_arg(const std::string& arg,
+                                     e_pic_type& want,
+                                     bool& wait_for_done);
 
 /************************** File Scope Variables ****************************/
 
@@ -178,6 +181,9 @@ std::string rr_highlight_message;
 std::set<e_pic_type> initial_stages;
 std::set<e_pic_type> completed_stages;
 
+// Last stage of the requested flow that is drawn; see init_final_graphics_stage().
+static e_pic_type final_stage = e_pic_type::NO_PICTURE;
+
 // Used for scripted graphics (rendered to files via --graphics_commands).
 // `exit N` from --graphics_commands is processed deferredly: the
 // interpreter sets these flags and breaks, then update_screen() honors
@@ -209,7 +215,7 @@ void init_graphics_state(bool show_graphics_val,
      * how often the user is prompted for input.                         */
 
     draw_state->show_graphics = show_graphics_val;
-    draw_state->gr_automode = gr_automode_val;
+    draw_state->gr_automode = static_cast<e_graphics_pause>(gr_automode_val);
     draw_state->draw_route_type = route_type;
     draw_state->save_graphics = save_graphics;
     draw_state->graphics_commands = graphics_commands;
@@ -246,6 +252,39 @@ void notify_stage_complete(e_pic_type stage) {
     completed_stages.insert(stage);
 #else
     (void)stage;
+#endif
+}
+
+void init_final_graphics_stage(const t_vpr_setup& vpr_setup) {
+#ifndef NO_GRAPHICS
+    if (vpr_setup.RouterOpts.doRouting != e_stage_action::SKIP) {
+        final_stage = e_pic_type::ROUTING;
+    } else if (vpr_setup.PlacerOpts.do_placement != e_stage_action::SKIP) {
+        final_stage = e_pic_type::PLACEMENT;
+    } else {
+        final_stage = e_pic_type::NO_PICTURE;
+    }
+
+    // Only the final stage is ever reached, so a barrier on any other stage
+    // would silently stop the script there.
+    if (get_draw_state_vars()->gr_automode == e_graphics_pause::FINAL_STAGE && final_stage != e_pic_type::NO_PICTURE) {
+        for (const std::string& raw_cmd : vtr::StringToken(vpr_setup.GraphicsCommands).split(";")) {
+            std::vector<std::string> cmd = vtr::StringToken(raw_cmd).split(" \t\n");
+            if (cmd.size() != 2 || cmd[0] != "wait_for_stage")
+                continue;
+            e_pic_type want = e_pic_type::NO_PICTURE;
+            bool wait_for_done = false;
+            parse_wait_for_stage_arg(cmd[1], want, wait_for_done);
+            if (want != final_stage) {
+                VPR_FATAL_ERROR(VPR_ERROR_DRAW,
+                                "--graphics_commands 'wait_for_stage %s' can never be reached with "
+                                "--auto 2: only the final stage of this flow is drawn.\n",
+                                cmd[1].c_str());
+            }
+        }
+    }
+#else
+    (void)vpr_setup;
 #endif
 }
 
@@ -564,7 +603,15 @@ void update_screen(ScreenUpdatePriority priority,
     // When the priority associated with this screen update is higher than the level set in draw_state,
     // we need to pause at the current graphics view. This does not necessarily happen only at a state change.
     // Check the definition of gr_automode in draw_state for more information.
-    bool pause_for_priority = int(priority) >= draw_state->gr_automode;
+    bool pause_for_priority = int(priority) >= int(draw_state->gr_automode);
+
+    // --auto 2: graphics act, and pause, only once the last requested stage completes.
+    const bool final_stage_only = draw_state->gr_automode == e_graphics_pause::FINAL_STAGE && final_stage != e_pic_type::NO_PICTURE;
+    const bool at_final_stage = pic_on_screen_val == final_stage && completed_stages.count(final_stage) != 0;
+    const bool hide_intermediate = final_stage_only && !at_final_stage;
+    if (final_stage_only) {
+        pause_for_priority = at_final_stage;
+    }
 
     // If there was a state change, we must call ezgl::application::run() to update the buttons.
     // However, by default this causes graphics to pause for user interaction.
@@ -584,9 +631,10 @@ void update_screen(ScreenUpdatePriority priority,
     t_proceed_by_step& proceed_by_step = draw_state->proceed_by_step;
     bool steps_reached = proceed_by_step.enabled && (proceed_by_step.step_counter == proceed_by_step.steps_to_proceed);
 
-    if (state_change          // Must update buttons.
-        || pause_for_priority // The priority means graphics should pause at the current view for user interaction.
-        || steps_reached) {   // The number of steps set by the user is reached.
+    if (!hide_intermediate
+        && (state_change          // Must update buttons.
+            || pause_for_priority // The priority means graphics should pause at the current view for user interaction.
+            || steps_reached)) {  // The number of steps set by the user is reached.
 
         // Reset the step counter if Proceed by Step is on.
         // Note that, other causes that pause the graphics (e.g. a state change)
@@ -625,13 +673,13 @@ void update_screen(ScreenUpdatePriority priority,
         }
     }
 
-    if (draw_state->show_graphics) {
+    if (draw_state->show_graphics && !hide_intermediate) {
         application->update_message(msg);
         application->refresh_drawing();
         application->flush_drawing();
     }
 
-    if (draw_state->save_graphics) {
+    if (draw_state->save_graphics && !hide_intermediate) {
         std::string extension = "pdf";
         save_graphics(extension, draw_state->save_graphics_file_base);
     }

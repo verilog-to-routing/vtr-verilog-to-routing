@@ -218,8 +218,12 @@ bool is_manual_move_legal(ClusterBlockId block_id, t_pl_loc to) {
 
 bool manual_move_is_selected() {
     t_draw_state* draw_state = get_draw_state_vars();
-    QCheckBox* manual_moves = application->find_check_box("manualMove");
-    draw_state->manual_moves_state.manual_move_enabled = manual_moves->isChecked();
+    // The UI is loaded on the first application::run(), which --auto 2 defers to
+    // the final stage; until then there is no checkbox and manual moves are off.
+    QCheckBox* manual_moves = qobject_cast<QCheckBox*>(application->find_widget("manualMove", /*skip_notfound_report=*/true));
+    if (manual_moves) {
+        draw_state->manual_moves_state.manual_move_enabled = manual_moves->isChecked();
+    }
     return draw_state->manual_moves_state.manual_move_enabled;
 }
 
