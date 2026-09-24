@@ -29,6 +29,7 @@ void init_ap_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
         init_draw_coords(vpr_setup.PlacerOpts.place_chan_width,
                          g_vpr_ctx.placement().blk_loc_registry());
     }
+    init_graphics_ui();
 #else
     (void)vpr_setup;
     (void)arch;

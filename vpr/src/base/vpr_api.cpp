@@ -533,6 +533,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         init_draw_coords(vpr_setup.PlacerOpts.place_chan_width,
                          g_vpr_ctx.placement().blk_loc_registry());
     }
+    init_graphics_ui();
 
     vpr_init_server(vpr_setup);
 
