@@ -1,0 +1,36 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=tasks/regression_tests/vtr_reg_strong/strong_yoyo_flat_router/config
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+circuit_list_add=basic.blif
+circuit_list_add=matmul.blif
+
+# Add the SDC constraints per circuit
+circuit_constraint_list_add=(basic.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_yoyo_flat_router/config/basic.sdc)
+circuit_constraint_list_add=(matmul.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_yoyo_flat_router/config/matmul.sdc)
+
+# Constrain the channel width per circuit
+circuit_constraint_list_add=(basic.blif, route_chan_width=34)
+circuit_constraint_list_add=(matmul.blif, route_chan_width=60)
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_fixed_chan_width.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_hold_optimization.txt
+
+script_params=-starting_stage vpr --flat_routing on --routing_budgets_algorithm yoyo
