@@ -122,6 +122,10 @@ void SwapEvaluator::commit(t_pl_blocks_to_be_moved& blocks_affected,
 
 void SwapEvaluator::extract_commit_record(const t_pl_blocks_to_be_moved& blocks_affected,
                                           t_swap_commit_record& record) const {
+    // Interposer costs are not recorded.
+    VTR_ASSERT_SAFE_MSG(!interposer_cost_handler_.has_value(),
+                        "Swap commit records do not support interposer architectures");
+
     net_cost_handler_.extract_commit_record(record.net_record);
 
     if (placer_opts_.place_algorithm.is_timing_driven()) {
@@ -137,6 +141,9 @@ void SwapEvaluator::extract_commit_record(const t_pl_blocks_to_be_moved& blocks_
 void SwapEvaluator::apply_commit_record(t_pl_blocks_to_be_moved& blocks_affected,
                                         const t_swap_commit_record& record) {
     VTR_ASSERT_SAFE(!blocks_affected.moved_blocks.empty());
+    // Interposer costs are not recorded.
+    VTR_ASSERT_SAFE_MSG(!interposer_cost_handler_.has_value(),
+                        "Swap commit records do not support interposer architectures");
 
     BlkLocRegistry& blk_loc_registry = placer_state_.mutable_blk_loc_registry();
     blk_loc_registry.apply_move_blocks(blocks_affected);
