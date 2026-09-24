@@ -370,7 +370,6 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timi
             // if ((size_t)net_id == 10) {
             //     VTR_LOG("NET 10 TOTAL PATH DELAY IS %e\n", total_path_delay);
             // }
-            
 
             if (total_path_delay == -1) {
                 /*Delay node is not valid, leave the budgets as is*/
