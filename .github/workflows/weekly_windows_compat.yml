@@ -187,3 +187,30 @@ jobs:
           path: |
             vtr_flow/tasks/regression_tests/vtr_reg_nightly_test1/vpr_reg_mcnc/**/*.out
             vtr_flow/tasks/regression_tests/vtr_reg_nightly_test1/vpr_reg_mcnc/**/parse_results*.txt
+
+  ReportFailure:
+    name: Open issue for Windows compatibility failure
+    needs: [Msys2Compatibility, MsvcCompatibility]
+    if: ${{ always() && (needs.Msys2Compatibility.result == 'failure' || needs.MsvcCompatibility.result == 'failure') }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Create issue
+        uses: actions/github-script@v8
+        env:
+          MSYS2_RESULT: ${{ needs.Msys2Compatibility.result }}
+          MSVC_RESULT: ${{ needs.MsvcCompatibility.result }}
+        with:
+          script: |
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            await github.rest.issues.create({
+              ...context.repo,
+              title: `Weekly Windows compatibility failed (run #${process.env.GITHUB_RUN_NUMBER})`,
+              body: [
+                `The [Windows compatibility workflow run](${runUrl}) failed.`,
+                '',
+                `- MSYS2 UCRT64: ${process.env.MSYS2_RESULT}`,
+                `- MSVC: ${process.env.MSVC_RESULT}`,
+              ].join('\n'),
+            });
