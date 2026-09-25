@@ -22,7 +22,8 @@ SwapEvaluator::SwapEvaluator(const t_placer_opts& placer_opts,
     , criticalities_(criticalities) {}
 
 t_swap_cost_deltas SwapEvaluator::apply_and_evaluate(t_pl_blocks_to_be_moved& blocks_affected,
-                                                     const t_place_algorithm& place_algorithm) {
+                                                     const t_place_algorithm& place_algorithm,
+                                                     t_swap_cancel_token cancel_token) {
     t_swap_cost_deltas deltas;
 
     // To make evaluating the move simpler (e.g. calculating changed bounding box),
@@ -41,9 +42,18 @@ t_swap_cost_deltas SwapEvaluator::apply_and_evaluate(t_pl_blocks_to_be_moved& bl
     // Find all the nets affected by this swap and update their costs.
     // Also finds all the pins affected by the swap, and calculates new connection
     // delays and timing costs.
-    net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected,
-                                                          deltas.cost_terms_delta,
-                                                          deltas.timing_delta_c);
+    bool completed = net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected,
+                                                                           deltas.cost_terms_delta,
+                                                                           deltas.timing_delta_c,
+                                                                           cancel_token);
+    if (!completed) {
+        // The caller asked to abandon this evaluation through cancel_token.
+        // The deltas computed so far are meaningless and the move must be
+        // reverted. The partially staged scratch state is consistent, so
+        // revert() restores the placement state.
+        deltas.cancelled = true;
+        return deltas;
+    }
 
     deltas.update_interposer_costs = interposer_cost_handler_.has_value() && interposer_cost_handler_->has_active_cost_terms();
     if (deltas.update_interposer_costs) {
@@ -108,6 +118,54 @@ void SwapEvaluator::commit(t_pl_blocks_to_be_moved& blocks_affected,
 
     // Update the grid_blocks inverse look-up now that the move is kept.
     placer_state_.mutable_blk_loc_registry().commit_move_blocks(blocks_affected);
+}
+
+void SwapEvaluator::extract_commit_record(const t_pl_blocks_to_be_moved& blocks_affected,
+                                          t_swap_commit_record& record) const {
+    // Interposer, congestion and NoC costs are not recorded.
+    // TODO: add support for interposer, congestion and NoC costs in commit records.
+    VTR_ASSERT_SAFE_MSG(!interposer_cost_handler_.has_value(),
+                        "Swap commit records do not support interposer architectures");
+    VTR_ASSERT_SAFE_MSG(placer_opts_.congestion_factor == 0.,
+                        "Swap commit records do not support congestion modeling");
+    VTR_ASSERT_SAFE_MSG(g_vpr_ctx.noc().noc_model.get_number_of_noc_routers() == 0,
+                        "Swap commit records do not support NoC modeling");
+
+    net_cost_handler_.extract_commit_record(record.net_record);
+
+    if (placer_opts_.place_algorithm.is_timing_driven()) {
+        record.affected_pins = blocks_affected.affected_pins;
+        placer_state_.timing().extract_connection_commit_record(blocks_affected.affected_pins,
+                                                                record.connection_entries);
+    } else {
+        record.affected_pins.clear();
+        record.connection_entries.clear();
+    }
+}
+
+void SwapEvaluator::apply_commit_record(t_pl_blocks_to_be_moved& blocks_affected,
+                                        const t_swap_commit_record& record) {
+    VTR_ASSERT_SAFE(!blocks_affected.moved_blocks.empty());
+    // Interposer, congestion and NoC costs are not recorded.
+    // TODO: add support for interposer, congestion and NoC costs in commit records.
+    VTR_ASSERT_SAFE_MSG(!interposer_cost_handler_.has_value(),
+                        "Swap commit records do not support interposer architectures");
+    VTR_ASSERT_SAFE_MSG(placer_opts_.congestion_factor == 0.,
+                        "Swap commit records do not support congestion modeling");
+    VTR_ASSERT_SAFE_MSG(g_vpr_ctx.noc().noc_model.get_number_of_noc_routers() == 0,
+                        "Swap commit records do not support NoC modeling");
+
+    BlkLocRegistry& blk_loc_registry = placer_state_.mutable_blk_loc_registry();
+    blk_loc_registry.apply_move_blocks(blocks_affected);
+
+    net_cost_handler_.apply_commit_record(record.net_record);
+
+    if (!record.connection_entries.empty()) {
+        placer_state_.mutable_timing().apply_connection_commit_record(record.connection_entries);
+    }
+
+    blk_loc_registry.commit_move_blocks(blocks_affected);
+    blocks_affected.clear_move_blocks();
 }
 
 void SwapEvaluator::revert(t_pl_blocks_to_be_moved& blocks_affected, bool revert_td) {
