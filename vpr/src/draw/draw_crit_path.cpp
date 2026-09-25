@@ -1231,8 +1231,8 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
 
 static void draw_server_mode_flylines_and_labels(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays /*=false*/) {
     g->draw_line(start, end);
-    draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
-    draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
+    // Match draw_timing_edge_flylines(): one centered, screen-pixel-sized arrow.
+    draw_triangle_along_line_fixed_px(g, start, end, EDGE_CENTER, TIMING_EDGE_ARROW_SCALE * DEFAULT_ARROW_SIZE);
 
     bool draw_delays = get_draw_state_vars()->show_crit_path_delays && !skip_draw_delays;
 
@@ -1256,8 +1256,6 @@ static void draw_server_mode_flylines_and_labels(ezgl::point2d start, ezgl::poin
         }
 
         // TODO: draw the delays nicer
-        //   * rotate to match edge
-        //   * offset from line
         //   * track visible in window
         ezgl::rectangle text_bbox({min_x, min_y}, {max_x, max_y});
 
@@ -1270,30 +1268,38 @@ static void draw_server_mode_flylines_and_labels(ezgl::point2d start, ezgl::poin
         float text_angle = (180 / std::numbers::pi)
                            * atan((end.y - start.y) / (end.x - start.x));
 
-        // Get the screen coordinates for text drawing
-        ezgl::rectangle screen_coords = g->world_to_screen(text_bbox);
+        // Keep the label anchored in WORLD coords so it pans/zooms with the flyline.
+        // A SCREEN-coord anchor is baked in at record time and is not re-projected by
+        // the camera-only redraw path, which leaves the label stranded on zoom/pan.
+        //
+        // The perpendicular offset that keeps the line from bisecting the text is
+        // applied in SCREEN pixels, after the world->screen transform, so its visible
+        // distance is constant at every zoom level. Screen Y is down (Qt), hence the
+        // negated cos relative to world-Y-up.
+        // PERPENDICULAR_OFFSET is the same distance the non-server path applies for
+        // CENTER_ABOVE, so both modes land the label in the same place.
+        const float angle_rad = text_angle * (std::numbers::pi / 180.0f);
+        const ezgl::point2d screen_offset{
+            -PERPENDICULAR_OFFSET * std::sin(angle_rad),
+            -PERPENDICULAR_OFFSET * std::cos(angle_rad)};
+
         g->set_text_rotation(text_angle);
 
         // Set the text colour to black to differentiate it from the line
         g->set_font_size(16);
         g->set_color(ezgl::color(0, 0, 0));
+        g->set_text_screen_offset(screen_offset);
 
-        g->set_coordinate_system(ezgl::SCREEN);
-
-        // Find an offset so it is sitting on top/below of the line
-        float x_offset = screen_coords.center().x
-                         - 8 * sin(text_angle * (std::numbers::pi / 180));
-        float y_offset = screen_coords.center().y
-                         - 8 * cos(text_angle * (std::numbers::pi / 180));
-
-        ezgl::point2d offset_text_bbox(x_offset, y_offset);
-        g->draw_text(offset_text_bbox, incr_delay_str,
+        g->draw_text(text_bbox.center(), incr_delay_str,
                      text_bbox.width(), text_bbox.height());
+        // draw_text only consumes the one-shot offset once it commits to
+        // painting; on either of its cull paths the offset would survive into
+        // the next unrelated label.
+        g->set_text_screen_offset({0.0, 0.0});
 
         g->set_font_size(14);
 
         g->set_text_rotation(0);
-        g->set_coordinate_system(ezgl::WORLD);
     }
 }
 
