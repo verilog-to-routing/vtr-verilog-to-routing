@@ -21,6 +21,7 @@
 #include "noc_data_types.h"
 #include "partition_region.h"
 #include "prepack.h"
+#include "relative_macro_packing.h"
 #include "vpr_types.h"
 #include "vtr_range.h"
 #include "vtr_strong_id.h"
@@ -73,12 +74,13 @@ enum class ClusterLegalizationStrategy {
 
 /// @brief The status of the cluster legalization.
 enum class e_block_pack_status {
-    BLK_PASSED,               // Passed legalization.
-    BLK_FAILED_FEASIBLE,      // Failed due to block not feasibly being able to go in the cluster.
-    BLK_FAILED_ROUTE,         // Failed due to intra-lb routing failure.
-    BLK_FAILED_FLOORPLANNING, // Failed due to not being compatible with the cluster's current PartitionRegion.
-    BLK_FAILED_NOC_GROUP,     // Failed due to not being compatible with the cluster's NoC group.
-    BLK_STATUS_UNDEFINED      // Undefined status. Something went wrong.
+    BLK_PASSED,                // Passed legalization.
+    BLK_FAILED_FEASIBLE,       // Block cannot fit in the cluster.
+    BLK_FAILED_ROUTE,          // Routing within the cluster failed.
+    BLK_FAILED_FLOORPLANNING,  // Conflicts with the cluster's PartitionRegion.
+    BLK_FAILED_NOC_GROUP,      // Conflicts with the cluster's NoC group.
+    BLK_FAILED_RELATIVE_GROUP, // Conflicts with relative placement group or chain ownership rules.
+    BLK_STATUS_UNDEFINED       // No result has been set.
 };
 
 /*
@@ -146,6 +148,8 @@ struct LegalizationCluster {
     ///        that have already been added to the primitive. This can be helpful
     ///        for optimization.
     NocGroupId noc_grp_id;
+
+    t_cluster_relative_state rel_macro_state; ///< Relative placement group and long chain ownership.
 
     /// @brief The intra lb router used for this cluster.
     ///        Contains information about the atoms in the cluster and how they
@@ -578,6 +582,11 @@ class ClusterLegalizer {
         cluster_legalization_strategy_ = strategy;
     }
 
+    /**
+     * @brief Access relative macro packing state to set chain owners before clustering.
+     */
+    inline RelativeMacroPacker& mutable_relative_macro_packer() { return relative_macro_packer_; }
+
     /*
      * @brief Set how verbose the log messages should be for the cluster legalizer.
      *
@@ -655,6 +664,8 @@ class ClusterLegalizer {
 
     /// @brief The current legalization strategy of the cluster legalizer.
     ClusterLegalizationStrategy cluster_legalization_strategy_;
+
+    RelativeMacroPacker relative_macro_packer_; ///< Relative macro checks; skipped when no macros are defined.
 
     /// @brief Controls whether the pin counting feasibility filter is used
     ///        during clustering. When enabled the clustering engine counts the

@@ -1,6 +1,7 @@
 
 #include "pack.h"
 
+#include <map>
 #include <unordered_set>
 #include "PreClusterTimingManager.h"
 #include "device_grid.h"
@@ -17,6 +18,8 @@
 #include "partition_region.h"
 #include "prepack.h"
 #include "stats.h"
+#include "relative_macro_packing.h"
+#include "user_relative_macros.h"
 #include "verify_flat_placement.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
@@ -228,6 +231,170 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
     return e_packer_state::FAILURE;
 }
 
+/**
+ * @brief Reject molecules or chains spanning multiple groups and return chain ownership.
+ *
+ * Prepacking prevents non-chain molecules from spanning groups, so only chains
+ * can fail this check.
+ *
+ * Unconstrained chain atoms may share the group's cluster or extend into nearby
+ * clusters. PlaceMacros merges those clusters with the group's placement macro.
+ *
+ * @return The owning group of each chain with constrained atoms.
+ */
+static std::map<MoleculeChainId, t_relative_group> validate_relative_group_molecules(const Prepacker& prepacker,
+                                                                                     const AtomNetlist& atom_netlist,
+                                                                                     const UserRelativeMacros& relative_macros) {
+    if (relative_macros.get_num_macros() == 0)
+        return {};
+
+    // Track the group found so far for each chain.
+    std::map<MoleculeChainId, t_relative_group> chain_groups;
+
+    // Check each molecule against its atoms' groups and any known chain owner.
+    for (PackMoleculeId mol_id : prepacker.molecules()) {
+        const t_pack_molecule& molecule = prepacker.get_molecule(mol_id);
+
+        t_relative_group mol_group;
+        AtomBlockId mol_group_atom;
+        // True if the group came from an earlier molecule in this chain.
+        bool mol_group_from_chain = false;
+
+        if (molecule.chain_id.is_valid()) {
+            auto chain_it = chain_groups.find(molecule.chain_id);
+            if (chain_it != chain_groups.end()) {
+                mol_group = chain_it->second;
+                mol_group_from_chain = true;
+            }
+        }
+
+        for (AtomBlockId blk_id : molecule.atom_block_ids) {
+            if (!blk_id.is_valid())
+                continue;
+
+            std::pair<UserRelativeMacroId, int> atom_pair = relative_macros.get_atom_group(blk_id);
+            if (!atom_pair.first.is_valid())
+                continue;
+            t_relative_group atom_group{atom_pair.first, atom_pair.second};
+
+            if (!mol_group.is_valid()) {
+                mol_group = atom_group;
+                mol_group_atom = blk_id;
+                continue;
+            }
+
+            if (mol_group != atom_group) {
+                // Find an atom from the chain's earlier group for the error message.
+                if (mol_group_from_chain) {
+                    for (AtomBlockId group_blk_id : relative_macros.get_macro(mol_group.macro_id).groups[mol_group.group_idx].atoms) {
+                        PackMoleculeId group_mol_id = prepacker.get_atom_molecule(group_blk_id);
+                        if (prepacker.get_molecule(group_mol_id).chain_id == molecule.chain_id) {
+                            mol_group_atom = group_blk_id;
+                            break;
+                        }
+                    }
+                    VTR_ASSERT(mol_group_atom.is_valid());
+                }
+                VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                "Atoms '%s' (relative macro '%s', group %d) and '%s' (relative macro '%s', group %d) "
+                                "belong to the same prepacked %s (typically a carry chain, whose atoms are connected "
+                                "through dedicated routing and cannot be separated); however, atoms of different "
+                                "relative placement groups must be packed into different clusters. Adjust the "
+                                "constraints so the chain's atoms are in at most one group (the rest of the chain "
+                                "may be left unconstrained).\n",
+                                atom_netlist.block_name(mol_group_atom).c_str(),
+                                relative_macros.get_macro(mol_group.macro_id).name.c_str(),
+                                mol_group.group_idx,
+                                atom_netlist.block_name(blk_id).c_str(),
+                                relative_macros.get_macro(atom_group.macro_id).name.c_str(),
+                                atom_group.group_idx,
+                                mol_group_from_chain ? "chain" : "molecule");
+            }
+        }
+
+        if (molecule.chain_id.is_valid() && mol_group.is_valid()) {
+            chain_groups.emplace(molecule.chain_id, mol_group);
+        }
+    }
+
+    return chain_groups;
+}
+
+/**
+ * @brief Find relative placement groups split across clusters.
+ *
+ * Each group must occupy one cluster to become one placement macro member.
+ */
+static std::vector<t_relative_group> find_split_relative_groups(const ClusterLegalizer& cluster_legalizer,
+                                                                const UserRelativeMacros& relative_macros) {
+    std::vector<t_relative_group> split_groups;
+
+    for (UserRelativeMacroId macro_id : relative_macros.macros()) {
+        const t_user_relative_macro& macro = relative_macros.get_macro(macro_id);
+
+        for (size_t igroup = 0; igroup < macro.groups.size(); igroup++) {
+            LegalizationClusterId group_cluster_id;
+            for (AtomBlockId blk_id : macro.groups[igroup].atoms) {
+                LegalizationClusterId cluster_id = cluster_legalizer.get_atom_cluster(blk_id);
+                // Skip unclustered atoms; final verification checks for them.
+                if (!cluster_id.is_valid())
+                    continue;
+                if (!group_cluster_id.is_valid()) {
+                    group_cluster_id = cluster_id;
+                } else if (cluster_id != group_cluster_id) {
+                    split_groups.push_back({macro_id, (int)igroup});
+                    break;
+                }
+            }
+        }
+    }
+
+    return split_groups;
+}
+
+/**
+ * @brief Report relative placement groups that were split across clusters.
+ *
+ * A split group cannot become a placement macro member, so an otherwise
+ * successful clustering is rejected. When packing already failed, the split is
+ * a symptom of that failure and only warrants a warning before the real error.
+ */
+static void report_split_relative_groups(const std::vector<t_relative_group>& split_groups,
+                                         const ClusterLegalizer& cluster_legalizer,
+                                         const AtomNetlist& atom_netlist,
+                                         const UserRelativeMacros& relative_macros,
+                                         bool clustering_succeeded) {
+    std::string report;
+    for (const t_relative_group& group : split_groups) {
+        const t_user_relative_macro& macro = relative_macros.get_macro(group.macro_id);
+        report += "  Relative macro '" + macro.name + "', group " + std::to_string(group.group_idx) + ":";
+        for (AtomBlockId blk_id : macro.groups[group.group_idx].atoms) {
+            LegalizationClusterId cluster_id = cluster_legalizer.get_atom_cluster(blk_id);
+            report += " '" + atom_netlist.block_name(blk_id) + "' ("
+                      + (cluster_id.is_valid() ? "cluster " + std::to_string((size_t)cluster_id)
+                                               : std::string("unclustered"))
+                      + ")";
+        }
+        report += "\n";
+    }
+
+    if (clustering_succeeded) {
+        VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                        "Failed to pack each relative placement group into a single cluster "
+                        "(%zu group(s) split):\n%s"
+                        "The group(s) may be too large to fit into one cluster or may conflict "
+                        "with pack patterns. Consider making the group(s) smaller.\n",
+                        split_groups.size(),
+                        report.c_str());
+    } else {
+        VTR_LOG_WARN("%zu relative placement group(s) are split across clusters:\n%s"
+                     "This is likely a symptom of the clustering not fitting the device "
+                     "(see the following error).\n",
+                     split_groups.size(),
+                     report.c_str());
+    }
+}
+
 bool try_pack(const t_packer_opts& packer_opts,
               const t_ap_opts& ap_opts,
               const t_arch& arch,
@@ -270,6 +437,11 @@ bool try_pack(const t_packer_opts& packer_opts,
      * only turn on in later iterations if some floorplan regions turn out to be overfull.
      */
     AttractionInfo attraction_groups(false);
+
+    // Validate group compatibility and record each chain's owner.
+    std::map<MoleculeChainId, t_relative_group> relative_chain_owners = validate_relative_group_molecules(prepacker,
+                                                                                                          atom_ctx.netlist(),
+                                                                                                          g_vpr_ctx.floorplanning().relative_macros);
 
     // We keep track of the overfilled partition regions from all pack iterations in
     // this vector. This is so that if the first iteration fails due to overfilled
@@ -328,6 +500,7 @@ bool try_pack(const t_packer_opts& packer_opts,
                                        packer_opts.cluster_router_hot_start,
                                        arch.models,
                                        packer_opts.pack_verbosity);
+    cluster_legalizer.mutable_relative_macro_packer().set_chain_owners(std::move(relative_chain_owners));
     // Construct the APPack Context.
     APPackContext appack_ctx(flat_placement_info,
                              ap_opts,
@@ -389,6 +562,10 @@ bool try_pack(const t_packer_opts& packer_opts,
                                                                                  cluster_legalizer,
                                                                                  device_ctx.logical_block_types);
 
+        // Each group must fit in one cluster to form one placement macro member.
+        std::vector<t_relative_group> split_relative_groups = find_split_relative_groups(cluster_legalizer,
+                                                                                         g_vpr_ctx.floorplanning().relative_macros);
+
         // Next packer state logic
         e_packer_state next_packer_state = get_next_packer_state(current_packer_state,
                                                                  fits_on_device,
@@ -399,6 +576,16 @@ bool try_pack(const t_packer_opts& packer_opts,
                                                                  cluster_legalizer.get_target_external_pin_util(),
                                                                  packer_opts,
                                                                  appack_ctx);
+
+        // Report split groups on the final pass: reject success or warn on failure.
+        if (!split_relative_groups.empty()
+            && (next_packer_state == e_packer_state::SUCCESS || next_packer_state == e_packer_state::FAILURE)) {
+            report_split_relative_groups(split_relative_groups,
+                                         cluster_legalizer,
+                                         atom_ctx.netlist(),
+                                         g_vpr_ctx.floorplanning().relative_macros,
+                                         next_packer_state == e_packer_state::SUCCESS);
+        }
 
         // Set up for the options used for the next packer state.
         // NOTE: This must be done here (and not at the start of the next packer
