@@ -6,6 +6,7 @@
 #include <limits>
 
 #include "globals.h"
+#include "parallel_anneal_engine.h"
 #include "place_macro.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
@@ -312,6 +313,9 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     VTR_ASSERT_SAFE_MSG(auto_init_t_scale >= 0, "Initial temperature scale cannot be negative.");
     annealing_state_.t = estimate_starting_temperature_() * auto_init_t_scale;
 }
+
+// Defined here, not in the header: ParallelAnnealEngine is only forward-declared there.
+PlacementAnnealer::~PlacementAnnealer() = default;
 
 float PlacementAnnealer::estimate_starting_temperature_() {
 
@@ -836,7 +840,202 @@ void PlacementAnnealer::outer_loop_update_timing_info_and_cost_terms() {
     costs_.cost = costs_.get_total_cost(placer_opts_, noc_opts_);
 }
 
+bool PlacementAnnealer::should_use_parallel_inner_loop_() {
+    if (placer_opts_.swap_eval_num_workers <= 1) {
+        return false;
+    }
+
+    // Collect the reasons the parallel engine cannot run this configuration so
+    // the fallback is visible to the user (once).
+    const char* fallback_reason = nullptr;
+
+    if (placer_opts_.place_algorithm != e_place_algorithm::CRITICALITY_TIMING_PLACE
+        && placer_opts_.place_algorithm != e_place_algorithm::BOUNDING_BOX_PLACE) {
+        fallback_reason = "the placement algorithm is not criticality-timing or bounding-box";
+    } else if (placer_opts_.congestion_factor > 0.) {
+        fallback_reason = "congestion modeling is enabled";
+    } else if (interposer_cost_handler_.has_value()
+               && (interposer_cost_handler_->has_active_cost_terms()
+                   || placer_opts_.interposer_cost_params.cong_cost_factor > 0.)) {
+        fallback_reason = "interposer cost terms are enabled";
+    } else if (noc_opts_.noc) {
+        fallback_reason = "NoC optimization is enabled";
+    } else if (placer_opts_.placement_saves_per_temperature >= 1) {
+        fallback_reason = "per-temperature placement saving is enabled";
+    } else if (move_stats_file_) {
+        fallback_reason = "per-move statistics logging is enabled";
+    }
+#ifndef NO_GRAPHICS
+    if (fallback_reason == nullptr && get_draw_state_vars()->show_graphics) {
+        fallback_reason = "graphics are enabled";
+    }
+#endif
+
+    if (fallback_reason != nullptr) {
+        if (!parallel_fallback_warned_) {
+            VTR_LOG_WARN("Parallel swap evaluation disabled because %s; using the sequential annealer.\n",
+                         fallback_reason);
+            parallel_fallback_warned_ = true;
+        }
+        return false;
+    }
+
+    return true;
+}
+
+void PlacementAnnealer::placement_inner_loop_parallel_() {
+    // Create the engine and its worker replicas on the first inner loop iteration.
+    if (!parallel_engine_) {
+        const int num_workers = placer_opts_.swap_eval_num_workers;
+        VTR_LOG("Parallel swap evaluation enabled: %d workers\n", num_workers);
+
+        parallel_engine_ = std::make_unique<ParallelAnnealEngine>(num_workers,
+                                                                  placer_opts_,
+                                                                  place_macros_,
+                                                                  costs_,
+                                                                  placer_state_,
+                                                                  net_cost_handler_,
+                                                                  annealing_state_.move_lim,
+                                                                  noc_opts_.noc_centroid_weight,
+                                                                  delay_model_,
+                                                                  criticalities_,
+                                                                  pin_timing_invalidator_,
+                                                                  swap_evaluator_,
+                                                                  blocks_affected_);
+    }
+
+    placer_stats_.reset();
+
+    MoveGenerator& move_generator = select_move_generator(move_generator_1_, move_generator_2_, agent_state_,
+                                                          placer_opts_, quench_started_);
+    // Replicas mirror the annealer's generator pair; tell the engine which one
+    // this loop iteration uses.
+    const bool use_second_generator = (&move_generator == move_generator_2_.get());
+
+    // Bring every replica up to date with the timing updates made by the outer loop.
+    parallel_engine_->sync_replicas();
+
+    const int recompute_limit = quench_started_ ? quench_recompute_limit_ : inner_recompute_limit_;
+    const bool timing_driven = placer_opts_.place_algorithm.is_timing_driven();
+
+    int inner_iter = 0;
+    // Retired attempts since the last timing update. Timing info is recomputed
+    // every `recompute_limit` retired attempts, mirroring the sequential loop.
+    int inner_crit_iter_count = 0;
+
+    while (inner_iter < annealing_state_.move_lim) {
+        // Every batch issues one attempt per worker. The last batch can overshoot
+        // move_lim, and the timing/cost recomputes below can lag their limits, by up
+        // to one batch.
+        t_batch_outcome batch_outcome = parallel_engine_->run_batch(placer_opts_.swap_eval_num_workers,
+                                                                    move_generator, use_second_generator,
+                                                                    annealing_state_.t, annealing_state_.rlim);
+
+        // Bookkeeping for the attempts that retired, in attempt order.
+        // This matches what the sequential loop does after each try_swap_() call.
+        const std::vector<t_speculative_swap>& attempts = parallel_engine_->attempts();
+        for (int k = 0; k < batch_outcome.num_retired_attempts; ++k) {
+            const t_speculative_swap& attempt = attempts[k];
+
+            swap_stats_.num_ts_called++;
+            move_type_stats_.incr_blk_type_moves(attempt.proposed_action);
+
+            MoveOutcomeStats move_outcome_stats;
+            if (attempt.create_outcome == e_create_move::ABORT) {
+                swap_stats_.num_swap_aborted++;
+                move_outcome_stats.outcome = e_move_result::ABORTED;
+            } else {
+                move_outcome_stats.outcome = attempt.move_result;
+                move_type_stats_.incr_accept_reject(attempt.proposed_action, attempt.move_result);
+                if (attempt.move_result == e_move_result::ACCEPTED) {
+                    swap_stats_.num_swap_accepted++;
+                } else {
+                    swap_stats_.num_swap_rejected++;
+                }
+            }
+
+            move_outcome_stats.delta_cost_norm = attempt.deltas.delta_c;
+            move_outcome_stats.delta_bb_cost_norm = attempt.deltas.cost_terms_delta.bb_cost * costs_.bb_cost_norm;
+            move_outcome_stats.delta_timing_cost_norm = attempt.deltas.timing_delta_c * costs_.timing_cost_norm;
+            move_outcome_stats.delta_bb_cost_abs = attempt.deltas.cost_terms_delta.bb_cost;
+            move_outcome_stats.delta_timing_cost_abs = attempt.deltas.timing_delta_c;
+
+            // Restore the action captured at proposal time so the reward credits
+            // the arm that actually proposed this attempt.
+            move_generator.restore_proposal_state(attempt.agent_action);
+            move_generator.calculate_reward_and_process_outcome(move_outcome_stats, attempt.deltas.delta_c,
+                                                                REWARD_BB_TIMING_RELATIVE_WEIGHT);
+        }
+
+        if (batch_outcome.committed) {
+            // A move was accepted. Update statistics that are useful for the annealing schedule.
+            placer_stats_.single_swap_update(costs_);
+        }
+
+        inner_iter += batch_outcome.num_retired_attempts;
+        inner_crit_iter_count += batch_outcome.num_retired_attempts;
+        moves_since_cost_recompute_ += batch_outcome.num_retired_attempts;
+
+        // Periodic timing update, aligned to retired attempt counts.
+        if (timing_driven && inner_crit_iter_count >= recompute_limit
+            && inner_iter < annealing_state_.move_lim) {
+            inner_crit_iter_count = 0;
+
+            PlaceCritParams crit_params{annealing_state_.crit_exponent,
+                                        placer_opts_.place_crit_limit};
+
+            perform_full_timing_update(crit_params, delay_model_, criticalities_,
+                                       setup_slacks_, pin_timing_invalidator_,
+                                       timing_info_, &costs_, placer_state_);
+
+            // The timing update rewrote committed connection delays/timing costs.
+            parallel_engine_->sync_replicas_timing();
+        }
+
+        // Recompute periodically so round-off from the incremental updates does not
+        // accumulate enough to fail the cost error checks.
+        if (moves_since_cost_recompute_ > MAX_MOVES_BEFORE_RECOMPUTE) {
+            net_cost_handler_.recompute_costs_from_scratch(delay_model_, criticalities_, costs_);
+
+            if (interposer_cost_handler_.has_value()) {
+                const auto [interposer_cost, interposer_cong_cost] = interposer_cost_handler_->total_committed_cost();
+                costs_.interposer_cost = interposer_cost;
+                costs_.interposer_cong_cost = interposer_cong_cost;
+            }
+
+            moves_since_cost_recompute_ = 0;
+
+            // comp_td_costs() (called inside the recompute) rewrites the committed
+            // timing cost data, so replica timing data must be refreshed.
+            if (timing_driven) {
+                parallel_engine_->sync_replicas_timing();
+            }
+        }
+    }
+
+    // Calculate the success_rate and std_dev of the costs.
+    placer_stats_.calc_iteration_stats(costs_, annealing_state_.move_lim);
+
+    // update the RL agent's state
+    if (!quench_started_) {
+        if (placer_opts_.place_algorithm.is_timing_driven() && placer_opts_.place_agent_multistate && agent_state_ == e_agent_state::EARLY_IN_THE_ANNEAL) {
+            if (annealing_state_.alpha < 0.85 && annealing_state_.alpha > 0.6) {
+                agent_state_ = e_agent_state::LATE_IN_THE_ANNEAL;
+                VTR_LOG("Agent's 2nd state: \n");
+            }
+        }
+    }
+
+    tot_iter_ += annealing_state_.move_lim;
+    ++annealing_state_.num_temps;
+}
+
 void PlacementAnnealer::placement_inner_loop() {
+    if (should_use_parallel_inner_loop_()) {
+        placement_inner_loop_parallel_();
+        return;
+    }
+
     // How many times have we dumped placement to a file this temperature?
     int inner_placement_save_count = 0;
 
