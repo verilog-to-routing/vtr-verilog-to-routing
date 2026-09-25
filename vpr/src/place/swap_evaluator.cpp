@@ -123,6 +123,7 @@ void SwapEvaluator::commit(t_pl_blocks_to_be_moved& blocks_affected,
 void SwapEvaluator::extract_commit_record(const t_pl_blocks_to_be_moved& blocks_affected,
                                           t_swap_commit_record& record) const {
     // Interposer, congestion and NoC costs are not recorded.
+    // TODO: add support for interposer, congestion and NoC costs in commit records.
     VTR_ASSERT_SAFE_MSG(!interposer_cost_handler_.has_value(),
                         "Swap commit records do not support interposer architectures");
     VTR_ASSERT_SAFE_MSG(placer_opts_.congestion_factor == 0.,
@@ -146,6 +147,7 @@ void SwapEvaluator::apply_commit_record(t_pl_blocks_to_be_moved& blocks_affected
                                         const t_swap_commit_record& record) {
     VTR_ASSERT_SAFE(!blocks_affected.moved_blocks.empty());
     // Interposer, congestion and NoC costs are not recorded.
+    // TODO: add support for interposer, congestion and NoC costs in commit records.
     VTR_ASSERT_SAFE_MSG(!interposer_cost_handler_.has_value(),
                         "Swap commit records do not support interposer architectures");
     VTR_ASSERT_SAFE_MSG(placer_opts_.congestion_factor == 0.,
