@@ -122,9 +122,13 @@ void SwapEvaluator::commit(t_pl_blocks_to_be_moved& blocks_affected,
 
 void SwapEvaluator::extract_commit_record(const t_pl_blocks_to_be_moved& blocks_affected,
                                           t_swap_commit_record& record) const {
-    // Interposer costs are not recorded.
+    // Interposer, congestion and NoC costs are not recorded.
     VTR_ASSERT_SAFE_MSG(!interposer_cost_handler_.has_value(),
                         "Swap commit records do not support interposer architectures");
+    VTR_ASSERT_SAFE_MSG(placer_opts_.congestion_factor == 0.,
+                        "Swap commit records do not support congestion modeling");
+    VTR_ASSERT_SAFE_MSG(g_vpr_ctx.noc().noc_model.get_number_of_noc_routers() == 0,
+                        "Swap commit records do not support NoC modeling");
 
     net_cost_handler_.extract_commit_record(record.net_record);
 
@@ -141,9 +145,13 @@ void SwapEvaluator::extract_commit_record(const t_pl_blocks_to_be_moved& blocks_
 void SwapEvaluator::apply_commit_record(t_pl_blocks_to_be_moved& blocks_affected,
                                         const t_swap_commit_record& record) {
     VTR_ASSERT_SAFE(!blocks_affected.moved_blocks.empty());
-    // Interposer costs are not recorded.
+    // Interposer, congestion and NoC costs are not recorded.
     VTR_ASSERT_SAFE_MSG(!interposer_cost_handler_.has_value(),
                         "Swap commit records do not support interposer architectures");
+    VTR_ASSERT_SAFE_MSG(placer_opts_.congestion_factor == 0.,
+                        "Swap commit records do not support congestion modeling");
+    VTR_ASSERT_SAFE_MSG(g_vpr_ctx.noc().noc_model.get_number_of_noc_routers() == 0,
+                        "Swap commit records do not support NoC modeling");
 
     BlkLocRegistry& blk_loc_registry = placer_state_.mutable_blk_loc_registry();
     blk_loc_registry.apply_move_blocks(blocks_affected);
