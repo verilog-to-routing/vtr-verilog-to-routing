@@ -141,6 +141,10 @@ bool is_block_placed(ClusterBlockId blk_id,
  *   where pl_macro is placed.
  *   @param rng A random number generator used for random placement and simulated annealing of
  *   NoC routers.
+ *   @param cluster_criticalities Optional per-cluster timing criticality in [0, 1]. When
+ *   provided (AP flow), higher-criticality clusters are placed earlier to give them better
+ *   access to their preferred locations. Pass nullptr to skip criticality-based sorting
+ *   (e.g. the standard pack-place-route flow).
  */
 void initial_placement(const t_placer_opts& placer_opts,
                        const char* constraints_file,
@@ -149,7 +153,8 @@ void initial_placement(const t_placer_opts& placer_opts,
                        const PlaceMacros& place_macros,
                        std::optional<NocCostHandler>& noc_cost_handler,
                        const FlatPlacementInfo& flat_placement_info,
-                       vtr::RngContainer& rng);
+                       vtr::RngContainer& rng,
+                       const std::optional<vtr::vector<ClusterBlockId, float>>& cluster_criticalities = std::nullopt);
 
 /**
  * @brief Looks for a valid placement location for block.

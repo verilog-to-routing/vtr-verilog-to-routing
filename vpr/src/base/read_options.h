@@ -115,6 +115,7 @@ struct t_options {
     argparse::ArgValue<e_appack_gain_attenuation_fn_type> appack_gain_attenuation_fn;
     argparse::ArgValue<int> ap_verbosity;
     argparse::ArgValue<float> ap_timing_tradeoff;
+    argparse::ArgValue<float> ap_pl_crit_tradeoff;
     argparse::ArgValue<int> ap_high_fanout_threshold;
     argparse::ArgValue<bool> ap_generate_mass_report;
 
