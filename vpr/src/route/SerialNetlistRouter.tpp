@@ -75,11 +75,6 @@ void SerialNetlistRouter<HeapType>::handle_bb_updated_nets(const std::vector<Par
 }
 
 template<typename HeapType>
-void SerialNetlistRouter<HeapType>::set_rcv_enabled(bool x) {
-    _router->set_rcv_enabled(x);
-}
-
-template<typename HeapType>
 void SerialNetlistRouter<HeapType>::set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info) {
     _timing_info = timing_info;
 }

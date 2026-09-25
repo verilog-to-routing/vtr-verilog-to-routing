@@ -566,6 +566,10 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
     RouterOpts->verify_route_file_switch_id = Options.verify_route_file_switch_id;
 
     RouterOpts->generate_router_lookahead_report = Options.generate_router_lookahead_report.value();
+
+    if (RouterOpts->routing_budgets_algorithm != DISABLE && RouterOpts->router_algorithm == e_router_algorithm::PARALLEL_DECOMP) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "--routing_budgets_algorithm is not supported with --router_algorithm parallel_decomp (net decomposition with RCV is not implemented).\n");
+    }
 }
 
 static void setup_anneal_sched(const t_options& Options,
