@@ -414,11 +414,11 @@ struct ParseNodeReorderAlgorithm {
     ConvertedValue<e_rr_node_reorder_algorithm> from_str(const std::string& str) {
         ConvertedValue<e_rr_node_reorder_algorithm> conv_value;
         if (str == "none")
-            conv_value.set_value(DONT_REORDER);
+            conv_value.set_value(e_rr_node_reorder_algorithm::DONT_REORDER);
         else if (str == "degree_bfs")
-            conv_value.set_value(DEGREE_BFS);
+            conv_value.set_value(e_rr_node_reorder_algorithm::DEGREE_BFS);
         else if (str == "random_shuffle")
-            conv_value.set_value(RANDOM_SHUFFLE);
+            conv_value.set_value(e_rr_node_reorder_algorithm::RANDOM_SHUFFLE);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_rr_node_reorder_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -429,12 +429,12 @@ struct ParseNodeReorderAlgorithm {
 
     ConvertedValue<std::string> to_str(e_rr_node_reorder_algorithm val) {
         ConvertedValue<std::string> conv_value;
-        if (val == DONT_REORDER)
+        if (val == e_rr_node_reorder_algorithm::DONT_REORDER)
             conv_value.set_value("none");
-        else if (val == DEGREE_BFS)
+        else if (val == e_rr_node_reorder_algorithm::DEGREE_BFS)
             conv_value.set_value("degree_bfs");
         else {
-            VTR_ASSERT(val == RANDOM_SHUFFLE);
+            VTR_ASSERT(val == e_rr_node_reorder_algorithm::RANDOM_SHUFFLE);
             conv_value.set_value("random_shuffle");
         }
         return conv_value;

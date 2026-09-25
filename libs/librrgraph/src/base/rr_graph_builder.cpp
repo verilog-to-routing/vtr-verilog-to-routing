@@ -114,7 +114,7 @@ void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_
     // This method works well. The intution is that highly connected nodes are enumerated first (together),
     // and since there will be a lot of nodes with the same degree, they are then ordered based on some
     // distance from the starting node.
-    if (reorder_rr_graph_nodes_algorithm == DEGREE_BFS) {
+    if (reorder_rr_graph_nodes_algorithm == e_rr_node_reorder_algorithm::DEGREE_BFS) {
         vtr::vector<RRNodeId, size_t> bfs_idx(v_num);
         vtr::vector<RRNodeId, size_t> degree(v_num);
         std::queue<RRNodeId> que;
@@ -146,7 +146,7 @@ void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_
                  auto deg_b = degree[b];
                  return deg_a > deg_b || (deg_a == deg_b && bfs_idx[a] < bfs_idx[b]);
              });
-    } else if (reorder_rr_graph_nodes_algorithm == RANDOM_SHUFFLE) {
+    } else if (reorder_rr_graph_nodes_algorithm == e_rr_node_reorder_algorithm::RANDOM_SHUFFLE) {
         std::mt19937 g(reorder_rr_graph_nodes_seed);
         std::shuffle(src_order.begin(), src_order.end(), g);
     }
