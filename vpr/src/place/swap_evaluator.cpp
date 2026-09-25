@@ -47,10 +47,13 @@ t_swap_cost_deltas SwapEvaluator::apply_and_evaluate(t_pl_blocks_to_be_moved& bl
                                                                            deltas.timing_delta_c,
                                                                            cancel_token);
     if (!completed) {
-        // The caller asked to abandon this evaluation through cancel_token.
-        // The deltas computed so far are meaningless and the move must be
-        // reverted. The partially staged scratch state is consistent, so
-        // revert() restores the placement state.
+        // Cancellation may be requested by the parallel engine, when
+        // another worker has already accepted a lower-id attempt. This
+        // one is then past the batch winner, so its result would be
+        // discarded anyway. Abandoning it early cannot change the trajectory.
+        //
+        // The partially staged scratch is consistent, so revert()
+        // restores the state; the deltas computed so far are meaningless.
         deltas.cancelled = true;
         return deltas;
     }
