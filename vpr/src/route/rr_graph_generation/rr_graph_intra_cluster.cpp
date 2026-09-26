@@ -1,8 +1,11 @@
 
 #include "rr_graph_intra_cluster.h"
 
+#include <algorithm>
 #include <list>
+#include <unordered_map>
 
+#include "bus_mux_route_types.h"
 #include "globals.h"
 #include "vtr_time.h"
 #include "vpr_utils.h"
@@ -869,6 +872,12 @@ static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr ph
     if (is_primitive_pin(physical_type, pin_physical_num)) {
         return {pin_physical_num};
     }
+    // The output bits of a bus-based mux keep their own rr nodes, so that each bit's
+    // choice of input set stays an explicit rr edge the router can negotiate
+    // (see load_rr_bus_muxes). Never start a chain at such a pin, nor collapse into one.
+    if (get_pb_pin_from_pin_physical_num(physical_type, logical_block, pin_physical_num)->is_bus_mux_output()) {
+        return {pin_physical_num};
+    }
     std::vector<int> conn_node_chain;
     e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_type, pin_physical_num);
 
@@ -881,6 +890,9 @@ static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr ph
             last_pin_num = sink_pins[0];
 
             if (is_primitive_pin(physical_type, last_pin_num) || pin_type != get_pin_type_from_pin_physical_num(physical_type, last_pin_num)) {
+                break;
+            }
+            if (get_pb_pin_from_pin_physical_num(physical_type, logical_block, last_pin_num)->is_bus_mux_output()) {
                 break;
             }
 
@@ -1120,4 +1132,114 @@ void build_intra_cluster_rr_graph(e_graph_type graph_type,
                    graph_type,
                    is_flat,
                    device_model_warnings);
+}
+
+/// @brief Records the bus-mux edges of one cluster that are present in the rr graph.
+static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
+                                      const RRSpatialLookup& node_lookup) {
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = g_vpr_ctx.placement().block_locs();
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
+
+    auto [physical_type, sub_tile, rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_blk_id);
+    if (!logical_block->pb_type->has_bus_mux()) {
+        return;
+    }
+
+    // Mux instances belong to one cluster, so this only spans the muxes of this cluster.
+    // A vector rather than a hash map: the entries are few, and its order does not depend
+    // on pointer values, so the indices assigned to muxes are the same on every run.
+    std::vector<std::pair<t_bus_mux_key, int>> mux_indices;
+
+    const t_pl_loc& block_loc = block_locs[cluster_blk_id].loc;
+    const t_physical_tile_loc root_loc(block_loc.x, block_loc.y, block_loc.layer);
+
+    // The rr node of a pb graph pin; INVALID if the pin's pb is not used by this cluster.
+    auto rr_node_of = [&](const t_pb_graph_pin* pin) {
+        int pin_physical_num = get_pb_pin_physical_num(physical_type, sub_tile, logical_block, rel_cap, pin);
+        return get_pin_rr_node_id(node_lookup, physical_type, root_loc, pin_physical_num);
+    };
+
+    auto record_output_bit = [&](const t_pb_graph_pin* out_pin) {
+        if (!out_pin->is_bus_mux_output()) {
+            return;
+        }
+        RRNodeId out_node = rr_node_of(out_pin);
+        if (!out_node.is_valid()) {
+            return;
+        }
+        for (int iedge = 0; iedge < out_pin->num_input_edges; iedge++) {
+            const t_pb_graph_edge* edge = out_pin->input_edges[iedge];
+            if (!edge->is_bus_mux()) {
+                continue;
+            }
+            RRNodeId in_node = rr_node_of(edge->input_pins[0]);
+            if (!in_node.is_valid()) {
+                // The pb owning this input set is unused, so the edge is not in the rr graph
+                continue;
+            }
+
+            const t_bus_mux_key key{edge->interconnect, edge->bus_mux_owner()};
+            auto found = std::ranges::find_if(mux_indices, [&key](const auto& entry) {
+                return entry.first == key;
+            });
+            if (found == mux_indices.end()) {
+                mux_indices.emplace_back(key, (int)device_ctx.rr_bus_muxes.size());
+                found = mux_indices.end() - 1;
+                device_ctx.rr_bus_muxes.push_back({cluster_blk_id, key.interconnect, key.owner, 0});
+            }
+            const int mux_idx = found->second;
+
+            t_rr_bus_mux& mux = device_ctx.rr_bus_muxes[mux_idx];
+            mux.num_sets = std::max(mux.num_sets, edge->driver_set + 1);
+
+            t_rr_bus_mux_out_node& out = device_ctx.rr_bus_mux_out_nodes[out_node];
+            out.mux_idx = mux_idx;
+            out.in_edges.push_back({in_node, edge->driver_set});
+        }
+    };
+
+    // A bus-mux output bit is either an input pin of a child pb or an output pin of the owner
+    std::list<const t_pb*> pb_q;
+    pb_q.push_back(clb_nlist.block_pb(cluster_blk_id));
+    while (!pb_q.empty()) {
+        const t_pb* pb = pb_q.front();
+        pb_q.pop_front();
+
+        const t_pb_graph_node* pb_graph_node = pb->pb_graph_node;
+        for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
+            for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
+                record_output_bit(&pb_graph_node->input_pins[iport][ipin]);
+            }
+        }
+        for (int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
+            for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
+                record_output_bit(&pb_graph_node->output_pins[iport][ipin]);
+            }
+        }
+
+        add_pb_child_to_list(pb_q, pb);
+    }
+}
+
+void load_rr_bus_muxes(const RRSpatialLookup& node_lookup) {
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
+
+    device_ctx.rr_bus_muxes.clear();
+    device_ctx.rr_bus_mux_out_nodes.clear();
+
+    // Bus-mux edges only exist in the intra-cluster graph, which is only built for flat routing
+    if (!device_ctx.rr_graph_is_flat) {
+        return;
+    }
+
+    for (ClusterBlockId cluster_blk_id : clb_nlist.blocks()) {
+        load_cluster_rr_bus_muxes(cluster_blk_id, node_lookup);
+    }
+
+    if (!device_ctx.rr_bus_muxes.empty()) {
+        VTR_LOG("Bus-based muxes in the intra-cluster RR graph: %zu (%zu output bits)\n",
+                device_ctx.rr_bus_muxes.size(), device_ctx.rr_bus_mux_out_nodes.size());
+    }
 }

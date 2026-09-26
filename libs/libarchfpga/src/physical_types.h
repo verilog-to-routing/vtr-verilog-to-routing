@@ -1027,6 +1027,9 @@ struct t_pb_type {
      *
      * @return if t_pb_type is primitive/leaf or not
      */
+    /// @brief True if this pb_type or any of its descendants contains a bus-based mux
+    bool has_bus_mux() const;
+
     inline bool is_primitive() const {
         return num_modes == 0;
     }
@@ -1451,6 +1454,9 @@ class t_pb_graph_pin {
     bool is_primitive_pin() const {
         return this->parent_node->is_primitive();
     }
+    // Returns true if this pin is an output bit of a bus-based mux, i.e. one of
+    // its incoming edges implements a bit of such a mux.
+    bool is_bus_mux_output() const;
     // Returns true if this pin belongs to a root pb_block which is a pb_block
     // that has no parent block. For example, pins of a CLB, IO, DSP, etc.
     bool is_root_block_pin() const {
@@ -1513,6 +1519,15 @@ class t_pb_graph_edge {
 
     // class member functions
   public:
+    // Returns true if this edge implements one bit of a bus-based mux
+    // (<mux bus="true">), whose single select drives every bit of its output bus.
+    bool is_bus_mux() const;
+
+    // Returns the pb_graph_node instance whose mode contains this edge's
+    // bus-based mux, i.e. the node that owns the one shared select.
+    // Only valid when is_bus_mux() is true.
+    const t_pb_graph_node* bus_mux_owner() const;
+
     // Returns true is this edge is annotated with the given pattern_index
     //  pattern_index : index of the packing pattern
     bool annotated_with_pattern(int pattern_index) const;

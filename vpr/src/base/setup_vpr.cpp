@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <vector>
 #include <list>
 
@@ -355,6 +356,16 @@ void SetupVPR(const t_options* options,
         // and t_pb_graph_edge are initialized
         alloc_and_load_intra_cluster_resources(routerOpts->has_choke_point);
         add_intra_tile_switches();
+    } else {
+        // Bus-based muxes are only tracked while building the intra-cluster rr graph, so
+        // without flat routing nothing checks that their bits share one input data line.
+        const DeviceContext& device_ctx = g_vpr_ctx.device();
+        bool arch_has_bus_mux = std::ranges::any_of(device_ctx.logical_block_types, [](const t_logical_block_type& lb_type) {
+            return lb_type.pb_type != nullptr && lb_type.pb_type->has_bus_mux();
+        });
+        VTR_LOGV_WARN(arch_has_bus_mux,
+                      "Architecture has bus-based mux(es) (<mux bus=\"true\">), whose bits must all be driven from one "
+                      "input data line. That is only tracked with --flat_routing on, so the packed netlist may violate it.\n");
     }
 
     if ((options->clock_modeling == ROUTED_CLOCK) || (options->clock_modeling == DEDICATED_NETWORK)) {

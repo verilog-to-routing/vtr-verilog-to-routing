@@ -31,6 +31,7 @@
 #include "clock_network_builders.h"
 #include "clock_connection_builders.h"
 #include "route_tree.h"
+#include "bus_mux_route_types.h"
 #include "router_lookahead.h"
 #include "compressed_grid.h"
 #include "noc_storage.h"
@@ -238,6 +239,13 @@ struct DeviceContext : public Context {
 
     ///@brief Reverse look-up from RR node to non-configurably connected node set (index into rr_non_config_node_sets)
     std::unordered_map<RRNodeId, int> rr_node_to_non_config_node_set;
+
+    /// @brief Bus-based mux instances of the intra-cluster rr graph. Empty unless flat
+    ///        routing is enabled and the architecture has <mux bus="true">.
+    std::vector<t_rr_bus_mux> rr_bus_muxes;
+
+    ///@brief Look-up from the output bit of a bus-based mux to the mux and the edges driving the bit
+    std::unordered_map<RRNodeId, t_rr_bus_mux_out_node> rr_bus_mux_out_nodes;
 
     /* A writeable view of routing resource graph to be the ONLY database
      * for routing resource graph builder functions.
