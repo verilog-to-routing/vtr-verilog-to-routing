@@ -582,11 +582,6 @@ class ClusterLegalizer {
         cluster_legalization_strategy_ = strategy;
     }
 
-    /**
-     * @brief Access relative macro packing state to set chain owners before clustering.
-     */
-    inline RelativeMacroPacker& mutable_relative_macro_packer() { return relative_macro_packer_; }
-
     /*
      * @brief Set how verbose the log messages should be for the cluster legalizer.
      *
