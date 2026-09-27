@@ -155,15 +155,15 @@ class RelativeMacroPacker {
     /**
      * @brief Return the chain's owning group, or an invalid group if unconstrained.
      */
-    t_relative_group chain_owner(MoleculeChainId chain_id) const;
+    t_relative_group chain_owner_(MoleculeChainId chain_id) const;
 
     /**
      * @brief Check long chain ownership and log any conflict.
      */
-    bool check_long_chain_ownership(PackMoleculeId molecule_id,
-                                    const t_relative_group& group,
-                                    const t_cluster_relative_state& cluster_state,
-                                    int log_verbosity) const;
+    bool check_long_chain_ownership_(PackMoleculeId molecule_id,
+                                     const t_relative_group& group,
+                                     const t_cluster_relative_state& cluster_state,
+                                     int log_verbosity) const;
 
     const UserRelativeMacros& relative_macros_; ///< User-defined relative placement macros.
 
