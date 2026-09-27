@@ -4,7 +4,7 @@
 
 #include "rr_graph_view.h"
 #include "rr_graph_fwd.h"
-#include "rr_node.h"
+#include "rr_graph_cost.h"
 #include "physical_types.h"
 #include "rr_node_types.h"
 

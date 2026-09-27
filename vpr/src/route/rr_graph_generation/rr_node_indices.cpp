@@ -1,6 +1,8 @@
 
 #include "rr_node_indices.h"
 
+#include <algorithm>
+
 #include "build_scatter_gathers.h"
 #include "describe_rr_node.h"
 #include "globals.h"
@@ -632,7 +634,6 @@ static void check_rr_node_counts(const std::unordered_map<RRNodeId, int>& rr_nod
     }
 
     for (const auto& [inode, count] : rr_node_counts) {
-        const t_rr_node& rr_node = rr_nodes[size_t(inode)];
         e_rr_type node_type = rr_graph.node_type(inode);
 
         if (node_type == e_rr_type::SOURCE || node_type == e_rr_type::SINK) {
@@ -648,9 +649,13 @@ static void check_rr_node_counts(const std::unordered_map<RRNodeId, int>& rr_nod
             }
 
         } else if (node_type != e_rr_type::OPIN && node_type != e_rr_type::IPIN) {
-            if (count != rr_node.length() + 1) {
+            // Longest span of the node over the x, y and layer directions
+            int rr_length = std::max({rr_graph.node_xhigh(inode) - rr_graph.node_xlow(inode),
+                                      rr_graph.node_yhigh(inode) - rr_graph.node_ylow(inode),
+                                      rr_graph.node_layer_high(inode) - rr_graph.node_layer_low(inode)});
+            if (count != rr_length + 1) {
                 VPR_ERROR(VPR_ERROR_ROUTE, "Mismatch between RR node length (%d) and count within rr_node_indices (%d, should be length + 1): %s",
-                          rr_node.length(),
+                          rr_length,
                           count,
                           describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
             }
