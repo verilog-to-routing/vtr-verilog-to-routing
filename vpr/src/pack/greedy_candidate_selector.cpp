@@ -7,7 +7,6 @@
 
 #include "greedy_candidate_selector.h"
 #include <algorithm>
-#include <cmath>
 #include <limits>
 #include <queue>
 #include <vector>
@@ -1189,13 +1188,7 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
         float dist = get_manhattan_distance_to_tile(target_loc,
                                                     cluster_tile_loc,
                                                     grid);
-        float gain_mult = 1.0f;
-        if (dist < appack_options.dist_th) {
-            gain_mult = 1.0f - (appack_options.quad_fac_sqr * dist * dist);
-        } else {
-            gain_mult = 1.0f / std::sqrt(dist - appack_options.sqrt_offset);
-        }
-        VTR_ASSERT_SAFE(gain_mult >= 0.0f && gain_mult <= 1.0f);
+        float gain_mult = appack_ctx.gain_attenuation_manager.get_gain_attenuation(dist);
 
         // Update the gain.
         gain *= gain_mult;
@@ -1206,7 +1199,7 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
         if (grid.has_interposer_cuts()) {
             t_physical_tile_loc target_physical_loc = {(int)target_loc.x, (int)target_loc.y, (int)target_loc.layer};
             if (!grid.are_locs_on_same_die(target_physical_loc, cluster_tile_loc)) {
-                gain *= appack_options.inter_die_gain_multiplier;
+                gain *= appack_ctx.gain_attenuation_manager.get_inter_die_gain_multiplier();
             }
         }
     }

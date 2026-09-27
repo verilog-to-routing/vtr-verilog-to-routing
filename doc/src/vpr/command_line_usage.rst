@@ -295,7 +295,7 @@ General Options
 
     * Timing Analysis
     * Routing (If routing algorithm is set to parallel or parallel_decomp; See :option:`--router_algorithm`)
-    * Portions of analytical placement (If using the analytical placement flow and compiled VPR with Eigen enabled; See :option:`--analytical_place`)
+    * Portions of analytical placement (If using the analytical placement flow; See :option:`--analytical_place`)
 
     .. note:: To compile VPR to allow the usage of parallel workers, ``libtbb-dev`` must be installed in the system.
 
@@ -1423,7 +1423,7 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
 
     .. note::
 
-        When VPR is compiled with Eigen and :option:`--num_workers` is set to more than one,
+        When :option:`--num_workers` is set to more than one,
         the solver step of the analytical solver can be parallelized across multiple threads.
         This reduces solver runtime while producing the identical placement result.
 
@@ -1615,6 +1615,21 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
    different layer in a 3D architecture without interposer cuts.
 
     **Default:** ``0.1``
+
+.. option:: --appack_gain_attenuation_fn {none | quad_sqrt_knee | gaussian}
+
+    Controls the function APPack uses to attenuate a candidate molecule's gain
+    based on its distance from the cluster being formed.
+
+    * ``none`` No attenuation is applied (the multiplier is always 1.0). Useful
+      as a baseline to measure the contribution of gain attenuation.
+
+    * ``quad_sqrt_knee`` Piecewise function which decays quadratically near the
+      cluster and transitions to an inverted sqrt decay farther away.
+
+    * ``gaussian`` Smooth Gaussian decay.
+
+    **Default:** ``quad_sqrt_knee``
 
 .. option:: --ap_high_fanout_threshold <int>
 
