@@ -7,8 +7,9 @@
  *  - All atoms in a group must share one cluster.
  *  - Each cluster may contain atoms from at most one group.
  *
- * RelativeMacroPacker checks these rules during cluster legalization.
- * Callers skip the checks when is_active() is false.
+ * RelativeMacroPacker validates chain ownership at construction and checks
+ * these rules during cluster legalization. Callers skip the checks when
+ * is_active() is false.
  */
 
 #include <map>
@@ -92,7 +93,13 @@ struct t_relative_macro_verdict {
  */
 class RelativeMacroPacker {
   public:
-    /** @brief Initialize packing checks for the given relative macros and netlist. */
+    /**
+     * @brief Initialize packing checks for the given relative macros and netlist.
+     *
+     * Rejects molecules and chains spanning multiple groups with a fatal error
+     * and records each chain's owning group. Does nothing when no relative
+     * macros are defined.
+     */
     RelativeMacroPacker(const UserRelativeMacros& relative_macros,
                         const Prepacker& prepacker,
                         const AtomNetlist& atom_netlist);
@@ -103,17 +110,10 @@ class RelativeMacroPacker {
     inline bool is_active() const { return active_; }
 
     /**
-     * @brief Record which group owns each prepacked chain.
-     *
-     * validate_relative_group_molecules() computes ownership and rejects chains
-     * spanning multiple groups before clustering.
-     */
-    void set_chain_owners(std::map<MoleculeChainId, t_relative_group> chain_owners);
-
-    /**
      * @brief Return the molecule's group, or an invalid group if unconstrained.
      *
-     * Prepacking and validation ensure its constrained atoms share one group.
+     * Prepacking and construction-time validation ensure its constrained atoms
+     * share one group.
      */
     t_relative_group molecule_group(PackMoleculeId molecule_id) const;
 
@@ -141,6 +141,17 @@ class RelativeMacroPacker {
                          t_cluster_relative_state& cluster_state) const;
 
   private:
+    /**
+     * @brief Reject molecules or chains spanning multiple groups and record chain ownership.
+     *
+     * Prepacking prevents non-chain molecules from spanning groups, so only chains
+     * can fail this check.
+     *
+     * Unconstrained chain atoms may share the group's cluster or extend into nearby
+     * clusters. PlaceMacros merges those clusters with the group's placement macro.
+     */
+    void validate_molecule_groups_();
+
     /**
      * @brief Return the chain's owning group, or an invalid group if unconstrained.
      */

@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "atom_netlist.h"
+#include "vpr_error.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 
@@ -17,10 +18,80 @@ RelativeMacroPacker::RelativeMacroPacker(const UserRelativeMacros& relative_macr
     : relative_macros_(relative_macros)
     , prepacker_(prepacker)
     , atom_netlist_(atom_netlist)
-    , active_(relative_macros.get_num_macros() != 0) {}
+    , active_(relative_macros.get_num_macros() != 0) {
+    if (active_)
+        validate_molecule_groups_();
+}
 
-void RelativeMacroPacker::set_chain_owners(std::map<MoleculeChainId, t_relative_group> chain_owners) {
-    chain_owners_ = std::move(chain_owners);
+void RelativeMacroPacker::validate_molecule_groups_() {
+    VTR_ASSERT(active_);
+    VTR_ASSERT(chain_owners_.empty());
+
+    // Check each molecule against its atoms' groups and any known chain owner.
+    for (PackMoleculeId mol_id : prepacker_.molecules()) {
+        const t_pack_molecule& molecule = prepacker_.get_molecule(mol_id);
+
+        t_relative_group mol_group;
+        AtomBlockId mol_group_atom;
+        // True if the group came from an earlier molecule in this chain.
+        bool mol_group_from_chain = false;
+
+        if (molecule.chain_id.is_valid()) {
+            auto chain_it = chain_owners_.find(molecule.chain_id);
+            if (chain_it != chain_owners_.end()) {
+                mol_group = chain_it->second;
+                mol_group_from_chain = true;
+            }
+        }
+
+        for (AtomBlockId blk_id : molecule.atom_block_ids) {
+            if (!blk_id.is_valid())
+                continue;
+
+            std::pair<UserRelativeMacroId, int> atom_pair = relative_macros_.get_atom_group(blk_id);
+            if (!atom_pair.first.is_valid())
+                continue;
+            t_relative_group atom_group{atom_pair.first, atom_pair.second};
+
+            if (!mol_group.is_valid()) {
+                mol_group = atom_group;
+                mol_group_atom = blk_id;
+                continue;
+            }
+
+            if (mol_group != atom_group) {
+                // Find an atom from the chain's earlier group for the error message.
+                if (mol_group_from_chain) {
+                    for (AtomBlockId group_blk_id : relative_macros_.get_macro(mol_group.macro_id).groups[mol_group.group_idx].atoms) {
+                        PackMoleculeId group_mol_id = prepacker_.get_atom_molecule(group_blk_id);
+                        if (prepacker_.get_molecule(group_mol_id).chain_id == molecule.chain_id) {
+                            mol_group_atom = group_blk_id;
+                            break;
+                        }
+                    }
+                    VTR_ASSERT(mol_group_atom.is_valid());
+                }
+                VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                "Atoms '%s' (relative macro '%s', group %d) and '%s' (relative macro '%s', group %d) "
+                                "belong to the same prepacked %s (typically a carry chain, whose atoms are connected "
+                                "through dedicated routing and cannot be separated); however, atoms of different "
+                                "relative placement groups must be packed into different clusters. Adjust the "
+                                "constraints so the chain's atoms are in at most one group (the rest of the chain "
+                                "may be left unconstrained).\n",
+                                atom_netlist_.block_name(mol_group_atom).c_str(),
+                                relative_macros_.get_macro(mol_group.macro_id).name.c_str(),
+                                mol_group.group_idx,
+                                atom_netlist_.block_name(blk_id).c_str(),
+                                relative_macros_.get_macro(atom_group.macro_id).name.c_str(),
+                                atom_group.group_idx,
+                                mol_group_from_chain ? "chain" : "molecule");
+            }
+        }
+
+        if (molecule.chain_id.is_valid() && mol_group.is_valid()) {
+            chain_owners_.emplace(molecule.chain_id, mol_group);
+        }
+    }
 }
 
 t_relative_group RelativeMacroPacker::molecule_group(PackMoleculeId molecule_id) const {
