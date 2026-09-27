@@ -1488,8 +1488,8 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    bool enable_cluster_router_hot_start,
                                    const LogicalModels& models,
                                    int log_verbosity)
-    : prepacker_(prepacker)
-    , relative_macro_packer_(g_vpr_ctx.floorplanning().relative_macros, prepacker, atom_netlist) {
+    : relative_macro_packer_(g_vpr_ctx.floorplanning().relative_macros, prepacker, atom_netlist)
+    , prepacker_(prepacker) {
     // Get the target external pin utilization
     // NOTE: Be careful with this constructor, it may throw a VPR_FATAL_ERROR.
     target_external_pin_util_ = t_ext_pin_util_targets(target_external_pin_util_str);
