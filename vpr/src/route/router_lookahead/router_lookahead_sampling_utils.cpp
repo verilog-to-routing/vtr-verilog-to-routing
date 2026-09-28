@@ -72,6 +72,7 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
     const auto& rr_graph = device_ctx.rr_graph;
 
     RRNodeId parent = parent_entry.rr_node;
+    RRSegmentId parent_segment_id = rr_graph.node_segment(parent);
 
     for (t_edge_size edge : rr_graph.edges(parent)) {
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
@@ -79,6 +80,21 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         // is computed separately.
         if (!is_inter_cluster_node(rr_graph, child_node)) {
             continue;
+        }
+
+        // If the edge connects between a general segment and clock segment, do not expand.
+        // This dijkstra expansion is used to populate cost maps, which assume that the routes
+        // stay within the general or clock networks.
+        // NOTE: IPINs/OPINs/SOURCEs/SINKs do not have valid segments. This check only cuts
+        //       muxes that connect a GENERAL segment to a GCLK segment or vice versa.
+        RRSegmentId child_segment_id = rr_graph.node_segment(child_node);
+        if (parent_segment_id.is_valid() && child_segment_id.is_valid()) {
+            SegResType parent_res_type = rr_graph.rr_segments(parent_segment_id).res_type;
+            SegResType child_res_type = rr_graph.rr_segments(child_segment_id).res_type;
+            VTR_ASSERT_SAFE(parent_res_type == SegResType::GENERAL || parent_res_type == SegResType::GCLK);
+            VTR_ASSERT_SAFE(child_res_type == SegResType::GENERAL || child_res_type == SegResType::GCLK);
+            if ((parent_res_type == SegResType::GCLK) ^ (child_res_type == SegResType::GCLK))
+                continue;
         }
 
         // Don't expand nodes whose adjusted position falls outside of the bounding box.
