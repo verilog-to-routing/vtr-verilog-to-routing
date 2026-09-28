@@ -30,6 +30,8 @@ static std::unique_ptr<PlaceDelayModel> make_simple_delay_model(const RouterLook
             return std::make_unique<SimpleDelayModel<ClassicLookahead>>(static_cast<const ClassicLookahead&>(router_lookahead));
         case e_router_lookahead::MAP:
             return std::make_unique<SimpleDelayModel<MapLookahead>>(static_cast<const MapLookahead&>(router_lookahead));
+        case e_router_lookahead::SEPARABLE:
+            return std::make_unique<SimpleDelayModel<MapLookahead>>(static_cast<const MapLookahead&>(router_lookahead));
         case e_router_lookahead::COMPRESSED_MAP:
             return std::make_unique<SimpleDelayModel<CompressedMapLookahead>>(static_cast<const CompressedMapLookahead&>(router_lookahead));
         case e_router_lookahead::EXTENDED_MAP:
