@@ -1275,9 +1275,7 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
     // device_ctx should not be used to access rr_graph, since the graph get from device_ctx is not the intra-tile graph
     const auto& device_ctx = g_vpr_ctx.device();
 
-    vtr::vector<RRNodeId, bool> node_expanded;
-    node_expanded.resize(rr_graph.num_nodes());
-    std::fill(node_expanded.begin(), node_expanded.end(), false);
+    vtr::vector<RRNodeId, bool> node_expanded(rr_graph.num_nodes(), false);
 
     vtr::vector<RRNodeId, float> node_seen_cost(rr_graph.num_nodes(), -1.f);
 
