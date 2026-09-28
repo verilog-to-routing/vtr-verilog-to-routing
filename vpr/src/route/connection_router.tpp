@@ -232,8 +232,6 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
                                                           float backwards_cong,
                                                           float R_upstream) {
     const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
-    // TODO: This function is not tested for is_flat == true
-    VTR_ASSERT(is_flat_ != true);
     const auto [expected_delay, expected_cong] = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, cost_params, R_upstream);
 
     float expected_total_cong = expected_cong + backwards_cong;
@@ -249,7 +247,12 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
 
     float expected_total_delay_cost = expected_total_delay;
     expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - expected_total_delay);
-    // expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / NORMALIZATION_CONSTANT;
+    if (delay_budget->routing_budgets_algorithm == LOW_SKEW_CLOCK) {
+        // Unlike the other budgeting algorithms, low-skew clock budgets set min == target == max for
+        // every clock connection, so this term is needed to symmetrically discourage overshooting the
+        // target delay (otherwise nothing stops the router from drifting arbitrarily far above it).
+        expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / NORMALIZATION_CONSTANT;
+    }
     expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / NORMALIZATION_CONSTANT;
     float expected_total_cong_cost = expected_total_cong;
 
@@ -277,7 +280,7 @@ float ConnectionRouter<Heap>::evaluate_timing_driven_backward_costs(RTExploredNo
     float switch_Cinternal = rr_switch_inf_[iswitch].Cinternal;
 
     // To node info
-    int16_t rc_index = rr_graph_->node_rc_index(to->index);
+    NodeRCIndex rc_index = rr_graph_->node_rc_index(to->index);
     float node_R = rr_rc_data_[rc_index].R;
 
     // From node info

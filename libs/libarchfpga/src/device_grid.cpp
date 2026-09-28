@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 #include "physical_types.h"
+#include "vtr_assert.h"
 #include "vtr_expr_eval.h"
 #include "vtr_ndmatrix.h"
 #include "grid_util.h"
@@ -160,6 +161,40 @@ bool DeviceGrid::are_locs_on_same_die(t_physical_tile_loc loc_a, t_physical_tile
     const DeviceDieId second_id = die_id_matrix_[loc_b.layer_num][loc_b.x][loc_b.y];
 
     return first_id == second_id;
+}
+
+bool DeviceGrid::do_locs_cross_vertical_cut(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const {
+    VTR_ASSERT_SAFE_MSG(loc_a.layer_num == loc_b.layer_num,
+                        "This method currently always returns true if loc_a and "
+                        "loc_b are on different layers. This method takes shortcuts "
+                        "to quickly find cuts on 2D devices; it needs to be updated "
+                        "to also handle 3D devices.");
+
+    // Dice are guaranteed to be axis-aligned rectangles, so checking the die at loc_a's row
+    // is sufficient to tell whether a vertical cut separates the two locations' x coordinates;
+    // this is well-defined even when loc_a.y != loc_b.y.
+    int y = loc_a.y;
+    const DeviceDieId first_id = die_id_matrix_[loc_a.layer_num][loc_a.x][y];
+    const DeviceDieId second_id = die_id_matrix_[loc_b.layer_num][loc_b.x][y];
+
+    return first_id != second_id;
+}
+
+bool DeviceGrid::do_locs_cross_horizontal_cut(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const {
+    VTR_ASSERT_SAFE_MSG(loc_a.layer_num == loc_b.layer_num,
+                        "This method currently always returns true if loc_a and "
+                        "loc_b are on different layers. This method takes shortcuts "
+                        "to quickly find cuts on 2D devices; it needs to be updated "
+                        "to also handle 3D devices.");
+
+    // Dice are guaranteed to be axis-aligned rectangles, so checking the die at loc_a's column
+    // is sufficient to tell whether a horizontal cut separates the two locations' y coordinates;
+    // this is well-defined even when loc_a.x != loc_b.x.
+    int x = loc_a.x;
+    const DeviceDieId first_id = die_id_matrix_[loc_a.layer_num][x][loc_a.y];
+    const DeviceDieId second_id = die_id_matrix_[loc_b.layer_num][x][loc_b.y];
+
+    return first_id != second_id;
 }
 
 DeviceDieId DeviceGrid::get_loc_die_id(t_physical_tile_loc loc) const {

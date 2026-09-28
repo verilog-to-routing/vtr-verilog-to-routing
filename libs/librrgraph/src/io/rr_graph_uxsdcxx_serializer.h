@@ -7,7 +7,6 @@
 #include "physical_types.h"
 #include "rr_graph_uxsdcxx_interface.h"
 
-#include "rr_node.h"
 #include "rr_graph_type.h"
 #include "rr_graph_cost.h"
 #include "rr_graph_view.h"
@@ -31,8 +30,10 @@
 
 class MetadataBind {
   public:
-    MetadataBind(MetadataStorage<int>* rr_node_metadata, MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata,
-                vtr::string_internment* strings, vtr::interned_string empty)
+    MetadataBind(MetadataStorage<int>* rr_node_metadata,
+                 MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata,
+                 vtr::string_internment* strings,
+                 vtr::interned_string empty)
         : is_node_(false)
         , is_edge_(false)
         , ignore_(false)
@@ -87,7 +88,7 @@ class MetadataBind {
         if (is_node_) {
             vpr::add_rr_node_metadata(*rr_node_metadata_, inode_, name_, value_);
         } else if (is_edge_) {
-            vpr::add_rr_edge_metadata(*rr_edge_metadata_,inode_, sink_node_, switch_id_,
+            vpr::add_rr_edge_metadata(*rr_edge_metadata_, inode_, sink_node_, switch_id_,
                                       name_,
                                       value_);
         } else if (ignore_) {
@@ -171,8 +172,8 @@ class EdgeWalker {
         current_idx_ = 0;
 
         // TODO: Once rr_graph_storage is fully shadowed by RRGraphView, the cached nodes_ will be removed.
-        for (const auto& node : *nodes) {
-            num_edges_ += rr_graph_->num_edges(node.id());
+        for (RRNodeId node_id : rr_graph_->nodes()) {
+            num_edges_ += rr_graph_->num_edges(node_id);
         }
     }
 
@@ -242,12 +243,12 @@ struct RrGraphContextTypes : public uxsd::DefaultRrGraphContextTypes {
     using PinClassReadContext = const std::pair<const t_physical_tile_type*, const t_class*>;
     using BlockTypeReadContext = const t_physical_tile_type*;
     using GridLocReadContext = const t_grid_tile*;
-    using NodeLocReadContext = const t_rr_node;
-    using NodeTimingReadContext = const t_rr_node;
-    using NodeSegmentReadContext = const t_rr_node;
+    using NodeLocReadContext = const RRNodeId;
+    using NodeTimingReadContext = const RRNodeId;
+    using NodeSegmentReadContext = const RRNodeId;
     using MetaReadContext = const t_metadata_dict::value_type*;
     using MetadataReadContext = t_metadata_dict_iterator;
-    using NodeReadContext = const t_rr_node;
+    using NodeReadContext = const RRNodeId;
     using EdgeReadContext = const EdgeWalker*;
     using RrEdgesReadContext = EdgeWalker;
     using TimingWriteContext = t_rr_switch_inf*;
@@ -284,7 +285,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         RRGraphView* rr_graph,
         vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf,
         vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
-        std::vector<t_rr_rc_data>* rr_rc_data,
+        RRRCData& rr_rc_data,
         const std::vector<t_arch_switch_inf>& arch_switch_inf,
         const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
         const std::vector<t_physical_tile_type>& physical_tile_types,
@@ -309,8 +310,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , do_check_rr_graph_(do_check_rr_graph)
         , read_rr_graph_name_(read_rr_graph_name)
         , read_edge_metadata_(read_edge_metadata)
-        , echo_enabled_ (echo_enabled)
-        , echo_file_name_ (echo_file_name)
+        , echo_enabled_(echo_enabled)
+        , echo_file_name_(echo_file_name)
         , arch_switch_inf_(arch_switch_inf)
         , segment_inf_(segment_inf)
         , physical_tile_types_(physical_tile_types)
@@ -393,7 +394,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * @brief This function separates the segments in segment_inf_ based on whether their parallel axis 
      *        is X or Y or Z, and it stores them in segment_inf_x_ and segment_inf_y_ and segment_inf_z_.
      */
-    void init_segment_inf_xyz(){
+    void init_segment_inf_xyz() {
 
         /* Create a temp copy to convert from vtr::vector to std::vector
          * This is required because the ``alloc_and_load_rr_indexed_data()`` function supports only std::vector data
@@ -431,7 +432,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             segment_inf_vec_ptr = &segment_inf_z_;
         }
 
-        for (size_t i = 0; i < segment_inf_vec_ptr->size(); i++){
+        for (size_t i = 0; i < segment_inf_vec_ptr->size(); i++) {
             if ((*segment_inf_vec_ptr)[i].seg_index == segment_id)
                 return static_cast<int>(i);
         }
@@ -440,7 +441,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             VTR_LOG_ERROR("Segment ID %d not found in the list of segments along X axis.\n", segment_id);
         else
             VTR_LOG_ERROR("Segment ID %d not found in the list of segments along Y axis.\n", segment_id);
-        
+
         return -1;
     }
 
@@ -532,7 +533,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         std::string string_name = std::string(name);
         // The string name has the format of "Internal Switch/delay". So, I have to use compare to specify the portion I want to be compared.
         bool is_internal_sw = string_name.compare(0, strlen(VPR_INTERNAL_SWITCH_NAME), VPR_INTERNAL_SWITCH_NAME) == 0;
-        for (const auto& arch_sw_inf: arch_switch_inf_) {
+        for (const auto& arch_sw_inf : arch_switch_inf_) {
             if (string_name == arch_sw_inf.name || is_internal_sw) {
                 found_arch_name = true;
                 break;
@@ -546,13 +547,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline const char* get_switch_name(const t_rr_switch_inf*& sw) final {
         return sw->name.c_str();
-    }
-
-    inline void set_switch_template_id(const char* template_id, t_rr_switch_inf*& sw) final {
-        sw->template_id = template_id;
-    }
-    inline const char* get_switch_template_id(const t_rr_switch_inf*& sw) final {
-        return sw->template_id.c_str();
     }
 
     inline void set_switch_type(uxsd::enum_switch_type type, t_rr_switch_inf*& sw) final {
@@ -704,52 +698,49 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      */
 
     inline int init_node_loc(int& inode, int xhigh, int xlow, int yhigh, int ylow) final {
-        auto node = (*rr_nodes_)[inode];
-        RRNodeId node_id = node.id();
+        RRNodeId node_id(inode);
 
         rr_graph_builder_->set_node_coordinates(node_id, xlow, ylow, xhigh, yhigh);
         // We set the layer num 0 - If it is specified in the XML, it will be overwritten
         rr_graph_builder_->set_node_layer(node_id, 0, 0);
-       
+
         return inode;
     }
     inline void finish_node_loc(int& /*inode*/) final {}
-    inline const t_rr_node get_node_loc(const t_rr_node& node) final {
-        return node;
+    inline const RRNodeId get_node_loc(const RRNodeId& node_id) final {
+        return node_id;
     }
     inline void set_node_loc_ptc(const char* ptc, int& inode) final {
-        t_rr_node node = (*rr_nodes_)[inode];
-        RRNodeId node_id = node.id();
+        RRNodeId node_id(inode);
         std::vector<int> ptc_numbers = parse_ptc_numbers(ptc);
         return rr_graph_builder_->set_node_ptc_nums(node_id, ptc_numbers);
     }
 
-    inline const char* get_node_loc_ptc(const t_rr_node& node) final {
-        temp_string_ = node_ptc_number_to_string(*rr_graph_, node.id());
+    inline const char* get_node_loc_ptc(const RRNodeId& node_id) final {
+        temp_string_ = node_ptc_number_to_string(*rr_graph_, node_id);
         return temp_string_.c_str();
     }
-    inline int get_node_loc_layer_low(const t_rr_node& node) final {
-        return rr_graph_->node_layer_low(node.id());
+    inline int get_node_loc_layer_low(const RRNodeId& node_id) final {
+        return rr_graph_->node_layer_low(node_id);
     }
-    inline int get_node_loc_layer_high(const t_rr_node& node) final {
-        return rr_graph_->node_layer_high(node.id());
+    inline int get_node_loc_layer_high(const RRNodeId& node_id) final {
+        return rr_graph_->node_layer_high(node_id);
     }
-    inline int get_node_loc_xhigh(const t_rr_node& node) final {
-        return rr_graph_->node_xhigh(node.id());
+    inline int get_node_loc_xhigh(const RRNodeId& node_id) final {
+        return rr_graph_->node_xhigh(node_id);
     }
-    inline int get_node_loc_xlow(const t_rr_node& node) final {
-        return rr_graph_->node_xlow(node.id());
+    inline int get_node_loc_xlow(const RRNodeId& node_id) final {
+        return rr_graph_->node_xlow(node_id);
     }
-    inline int get_node_loc_yhigh(const t_rr_node& node) final {
-        return rr_graph_->node_yhigh(node.id());
+    inline int get_node_loc_yhigh(const RRNodeId& node_id) final {
+        return rr_graph_->node_yhigh(node_id);
     }
-    inline int get_node_loc_ylow(const t_rr_node& node) final {
-        return rr_graph_->node_ylow(node.id());
+    inline int get_node_loc_ylow(const RRNodeId& node_id) final {
+        return rr_graph_->node_ylow(node_id);
     }
 
     inline void set_node_loc_layer_low(int layer_num, int& inode) final {
-        const t_rr_node& node = (*rr_nodes_)[inode];
-        RRNodeId node_id = node.id();
+        RRNodeId node_id(inode);
 
         // Currently, we only support two layers
         VTR_ASSERT(layer_num >= 0 && layer_num <= 1);
@@ -759,8 +750,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     inline void set_node_loc_layer_high(int layer_num, int& inode) final {
-        const t_rr_node& node = (*rr_nodes_)[inode];
-        RRNodeId node_id = node.id();
+        RRNodeId node_id(inode);
 
         // Currently, we only support two layers
         VTR_ASSERT(layer_num >= 0 && layer_num <= 1);
@@ -769,16 +759,15 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     inline void set_node_loc_side(uxsd::enum_loc_side side, int& inode) final {
-        auto node = (*rr_nodes_)[inode];
-        RRNodeId node_id = node.id();
+        RRNodeId node_id(inode);
         const auto& rr_graph = (*rr_graph_);
 
         if (uxsd::enum_loc_side::UXSD_INVALID == side) {
             // node_loc.side is only expected on IPIN/OPIN.
-            if (rr_graph.node_type(node.id()) == e_rr_type::IPIN || rr_graph.node_type(node.id()) == e_rr_type::OPIN) {
+            if (rr_graph.node_type(node_id) == e_rr_type::IPIN || rr_graph.node_type(node_id) == e_rr_type::OPIN) {
                 report_error(
                     "inode %d is type %d, which requires a side, but no side was supplied.",
-                    inode, rr_graph.node_type(node.id()));
+                    inode, rr_graph.node_type(node_id));
             }
         } else {
             std::bitset<NUM_2D_SIDES> sides_to_add = from_uxsd_loc_side(side);
@@ -790,12 +779,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
     }
 
-    inline uxsd::enum_loc_side get_node_loc_side(const t_rr_node& node) final {
+    inline uxsd::enum_loc_side get_node_loc_side(const RRNodeId& node_id) final {
         const auto& rr_graph = (*rr_graph_);
-        if (rr_graph.node_type(node.id()) == e_rr_type::IPIN || rr_graph.node_type(node.id()) == e_rr_type::OPIN) {
+        if (rr_graph.node_type(node_id) == e_rr_type::IPIN || rr_graph.node_type(node_id) == e_rr_type::OPIN) {
             std::bitset<NUM_2D_SIDES> sides_bitset;
             for (const e_side& side : TOTAL_2D_SIDES) {
-                if (rr_graph.is_node_on_specific_side(node.id(), side)) {
+                if (rr_graph.is_node_on_specific_side(node_id, side)) {
                     sides_bitset.set(side);
                 }
             }
@@ -812,25 +801,24 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
     inline int init_node_timing(int& inode, float C, float R) final {
-        auto node = (*rr_nodes_)[inode];
-        RRNodeId node_id = node.id();
-        const NodeRCIndex rc_index = find_create_rr_rc_data(R, C, *rr_rc_data_);
+        RRNodeId node_id(inode);
+        const NodeRCIndex rc_index = rr_rc_data_.find_create(R, C);
         rr_graph_builder_->set_node_rc_index(node_id, rc_index);
         return inode;
     }
     inline void finish_node_timing(int& /*inode*/) final {}
-    inline const t_rr_node get_node_timing(const t_rr_node& node) final {
-        return node;
+    inline const RRNodeId get_node_timing(const RRNodeId& node_id) final {
+        return node_id;
     }
-    inline bool has_node_timing(const t_rr_node& /*node*/) final {
+    inline bool has_node_timing(const RRNodeId& /*node_id*/) final {
         return true;
     }
 
-    inline float get_node_timing_C(const t_rr_node& node) final {
-        return rr_graph_->node_C(node.id());
+    inline float get_node_timing_C(const RRNodeId& node_id) final {
+        return rr_graph_->node_C(node_id);
     }
-    inline float get_node_timing_R(const t_rr_node& node) final {
-        return rr_graph_->node_R(node.id());
+    inline float get_node_timing_R(const RRNodeId& node_id) final {
+        return rr_graph_->node_R(node_id);
     }
 
     /** Generated for complex type "node_segment":
@@ -846,36 +834,35 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 segment_inf_.size());
         }
 
-        auto node = (*rr_nodes_)[inode];
-        RRNodeId node_id = node.id();
+        RRNodeId node_id(inode);
 
         if (e_graph_type::GLOBAL == graph_type_) {
             rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(0));
-        } else if (rr_graph.node_type(node.id()) == e_rr_type::CHANX) {
+        } else if (rr_graph.node_type(node_id) == e_rr_type::CHANX) {
             int seg_ind_x = find_segment_index_along_axis(segment_id, e_parallel_axis::X_AXIS);
             rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + seg_ind_x));
-            seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
-        } else if (rr_graph.node_type(node.id()) == e_rr_type::CHANY) {
+            seg_index_[rr_graph.node_cost_index(node_id)] = segment_id;
+        } else if (rr_graph.node_type(node_id) == e_rr_type::CHANY) {
             int seg_ind_y = find_segment_index_along_axis(segment_id, e_parallel_axis::Y_AXIS);
             rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + segment_inf_x_.size() + seg_ind_y));
-            seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
-        } else if (rr_graph.node_type(node.id()) == e_rr_type::CHANZ) {
+            seg_index_[rr_graph.node_cost_index(node_id)] = segment_id;
+        } else if (rr_graph.node_type(node_id) == e_rr_type::CHANZ) {
             int seg_ind_z = find_segment_index_along_axis(segment_id, e_parallel_axis::Z_AXIS);
             rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + segment_inf_x_.size() + segment_inf_y_.size() + seg_ind_z));
-            seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
+            seg_index_[rr_graph.node_cost_index(node_id)] = segment_id;
         }
         return inode;
     }
     inline void finish_node_segment(int& /*inode*/) final {}
-    inline int get_node_segment_segment_id(const t_rr_node& node) final {
-        return (*rr_indexed_data_)[(*rr_graph_).node_cost_index(node.id())].seg_index;
+    inline int get_node_segment_segment_id(const RRNodeId& node_id) final {
+        return (*rr_indexed_data_)[(*rr_graph_).node_cost_index(node_id)].seg_index;
     }
 
-    inline const t_rr_node get_node_segment(const t_rr_node& node) final {
-        return node;
+    inline const RRNodeId get_node_segment(const RRNodeId& node_id) final {
+        return node_id;
     }
-    inline bool has_node_segment(const t_rr_node& node) final {
-        return (*rr_indexed_data_)[(*rr_graph_).node_cost_index(node.id())].seg_index != -1;
+    inline bool has_node_segment(const RRNodeId& node_id) final {
+        return (*rr_indexed_data_)[(*rr_graph_).node_cost_index(node_id)].seg_index != -1;
     }
 
     inline MetadataBind init_node_metadata(int& inode) final {
@@ -886,12 +873,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void finish_node_metadata(MetadataBind& bind) final {
         bind.finish();
     }
-    inline t_metadata_dict_iterator get_node_metadata(const t_rr_node& node) final {
-        const auto itr = rr_node_metadata_->find(get_node_id(node));
+    inline t_metadata_dict_iterator get_node_metadata(const RRNodeId& node_id) final {
+        const auto itr = rr_node_metadata_->find(get_node_id(node_id));
         return t_metadata_dict_iterator(&itr->second, report_error_);
     }
-    inline bool has_node_metadata(const t_rr_node& node) final {
-        const auto itr = rr_node_metadata_->find(get_node_id(node));
+    inline bool has_node_metadata(const RRNodeId& node_id) final {
+        const auto itr = rr_node_metadata_->find(get_node_id(node_id));
         return itr != rr_node_metadata_->end();
     }
 
@@ -912,13 +899,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // amoritized O(1).
         const auto& rr_graph = (*rr_graph_);
         rr_nodes_->make_room_for_node(RRNodeId(id));
-        auto node = (*rr_nodes_)[id];
-        RRNodeId node_id = node.id();
+        RRNodeId node_id(id);
 
         rr_graph_builder_->set_node_type(node_id, from_uxsd_node_type(type));
         rr_graph_builder_->set_node_capacity(node_id, capacity);
 
-        switch (rr_graph.node_type(node.id())) {
+        switch (rr_graph.node_type(node_id)) {
             case e_rr_type::CHANX:
             case e_rr_type::CHANY:
             case e_rr_type::CHANZ:
@@ -942,15 +928,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     type);
         }
 
-        rr_graph_builder_->set_node_rc_index(node_id, find_create_rr_rc_data(0, 0, *rr_rc_data_));
+        rr_graph_builder_->set_node_rc_index(node_id, rr_rc_data_.find_create(0, 0));
 
         return id;
     }
     inline void finish_rr_nodes_node(int& inode) final {
-        auto node = (*rr_nodes_)[inode];
-        RRNodeId node_id = node.id();
+        RRNodeId node_id(inode);
 
-        // At this point, all attributes for the node are loaded. Check whether the current node is included in the temporary list of 
+        // At this point, all attributes for the node are loaded. Check whether the current node is included in the temporary list of
         // clock network virtual sinks. If it is, permanently add it to the unordered map in rr_graph_storage, using the attribute
         // name as the key.
         if (clock_net_virtual_sinks.find(inode) != clock_net_virtual_sinks.end()) {
@@ -962,41 +947,40 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         return rr_nodes_->size();
     }
-    inline const t_rr_node get_rr_nodes_node(int n, void*& /*ctx*/) final {
-        return (*rr_nodes_)[n];
+    inline const RRNodeId get_rr_nodes_node(int n, void*& /*ctx*/) final {
+        return RRNodeId(n);
     }
 
-    inline unsigned int get_node_capacity(const t_rr_node& node) final {
+    inline unsigned int get_node_capacity(const RRNodeId& node_id) final {
         const auto& rr_graph = (*rr_graph_);
-        return rr_graph.node_capacity(node.id());
+        return rr_graph.node_capacity(node_id);
     }
 
-    inline unsigned int get_node_id(const t_rr_node& node) final {
-        return size_t(node.id());
+    inline unsigned int get_node_id(const RRNodeId& node_id) final {
+        return size_t(node_id);
     }
-    inline uxsd::enum_node_type get_node_type(const t_rr_node& node) final {
+    inline uxsd::enum_node_type get_node_type(const RRNodeId& node_id) final {
         const auto& rr_graph = (*rr_graph_);
-        return to_uxsd_node_type(rr_graph.node_type(node.id()));
+        return to_uxsd_node_type(rr_graph.node_type(node_id));
     }
 
-    inline const char* get_node_name(const t_rr_node& node) final {
+    inline const char* get_node_name(const RRNodeId& node_id) final {
         const auto& rr_graph = (*rr_graph_);
-        auto node_name = rr_graph.node_name(node.id());
-        if(node_name)
+        auto node_name = rr_graph.node_name(node_id);
+        if (node_name)
             return node_name.value()->c_str();
         return nullptr;
     }
 
     inline void set_node_direction(uxsd::enum_node_direction direction, int& inode) final {
         const auto& rr_graph = (*rr_graph_);
-        const t_rr_node& node = (*rr_nodes_)[inode];
-        RRNodeId node_id = node.id();
+        RRNodeId node_id(inode);
 
         if (direction == uxsd::enum_node_direction::UXSD_INVALID) {
-            if (rr_graph.node_type(node.id()) == e_rr_type::CHANX || rr_graph.node_type(node.id()) == e_rr_type::CHANY) {
+            if (rr_graph.node_type(node_id) == e_rr_type::CHANX || rr_graph.node_type(node_id) == e_rr_type::CHANY) {
                 report_error(
                     "inode %d is type %d, which requires a direction, but no direction was supplied.",
-                    inode, rr_graph.node_type(node.id()));
+                    inode, rr_graph.node_type(node_id));
             }
 
             // TODO: when CHANZ nodes have a direction, we should handle them
@@ -1005,45 +989,40 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             rr_graph_builder_->set_node_direction(node_id, from_uxsd_node_direction(direction));
         }
     }
-    inline uxsd::enum_node_direction get_node_direction(const t_rr_node& node) final {
+    inline uxsd::enum_node_direction get_node_direction(const RRNodeId& node_id) final {
         const auto& rr_graph = (*rr_graph_);
-        if (rr_graph.node_type(node.id()) == e_rr_type::CHANX
-            || rr_graph.node_type(node.id()) == e_rr_type::CHANY
-            || rr_graph.node_type(node.id()) == e_rr_type::CHANZ) {
-            return to_uxsd_node_direction(rr_graph.node_direction(node.id()));
+        if (rr_graph.node_type(node_id) == e_rr_type::CHANX
+            || rr_graph.node_type(node_id) == e_rr_type::CHANY
+            || rr_graph.node_type(node_id) == e_rr_type::CHANZ) {
+            return to_uxsd_node_direction(rr_graph.node_direction(node_id));
         } else {
             return uxsd::enum_node_direction::UXSD_INVALID;
         }
     }
 
-    inline void set_node_name(const char * name, int& inode) final {
-        if(name[0] != '\0')
-        {
+    inline void set_node_name(const char* name, int& inode) final {
+        if (name[0] != '\0') {
             // Do not store the attribute name if the string is empty
-            auto node = (*rr_nodes_)[inode];
-            RRNodeId node_id = node.id();
+            RRNodeId node_id(inode);
             std::string name_str(name);
             rr_graph_builder_->set_node_name(node_id, name_str);
         }
-
     }
     // Currently, this function only processes cases where clk_res_type=VIRTUAL_SINK
-    // It temporarily stores the node ID of the virtual sink in a temporary set. Eventually, 
+    // It temporarily stores the node ID of the virtual sink in a temporary set. Eventually,
     //the node ID will be stored in an unordered map within rr_graph_storage, using the attribute "name"
-    // as the key. Since, at this point in the code, the "name" attribute might not have been processed yet, 
+    // as the key. Since, at this point in the code, the "name" attribute might not have been processed yet,
     //the final storage will occur in the finish_rr_nodes_node function.
     inline void set_node_clk_res_type(uxsd::enum_node_clk_res_type clk_res_type, int& inode) final {
-        if(clk_res_type == uxsd::enum_node_clk_res_type::VIRTUAL_SINK)
-        {
+        if (clk_res_type == uxsd::enum_node_clk_res_type::VIRTUAL_SINK) {
             clock_net_virtual_sinks.insert(inode);
         }
     }
-    inline uxsd::enum_node_clk_res_type get_node_clk_res_type(const t_rr_node& node) final {
+    inline uxsd::enum_node_clk_res_type get_node_clk_res_type(const RRNodeId& node_id) final {
         // Currently only VIRTUAL_SINK is supported as the clk_res_type
         // If the node id doesn't match the node id of the clock virtual sink
         // the function returns UXSD_INVALID
         const auto& rr_graph = (*rr_graph_);
-        RRNodeId node_id = node.id();
         if (rr_graph.is_virtual_clock_network_root(node_id)) {
             return uxsd::enum_node_clk_res_type::VIRTUAL_SINK;
         }
@@ -1154,31 +1133,31 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return nullptr;
     }
     inline void finish_rr_graph_rr_edges(void*& /*ctx*/) final {
+        // The sink node and the switch id of every edge must be checked before the edges are
+        // partitioned. partition_edges() sorts the edges by those two values, so an out of range
+        // value read from the file would index outside the node and switch arrays.
+        // Only the source node is checked as the edges are read, in add_rr_edges_edge().
+        for (RREdgeId edge_id : rr_nodes_->all_edges()) {
+            size_t sink_node = size_t(rr_nodes_->edge_sink_node(edge_id));
+            size_t switch_id = size_t(rr_nodes_->edge_switch(edge_id));
+            if (sink_node >= rr_nodes_->size()) {
+                report_error(
+                    "sink_node %zu is larger than rr_nodes.size() %zu",
+                    sink_node, rr_nodes_->size());
+            }
+
+            if (switch_id >= rr_switch_inf_->size()) {
+                report_error(
+                    "switch_id %zu is larger than num_rr_switches %zu",
+                    switch_id, rr_switch_inf_->size());
+            }
+        }
+
         // Partition the rr graph edges for efficient access to
         // configurable/non-configurable edge subsets. Must be done after RR
         // switches have been allocated.
         rr_graph_builder_->mark_edges_as_rr_switch_ids();
         rr_graph_builder_->partition_edges();
-
-        for (size_t source_node = 0; source_node < rr_nodes_->size(); ++source_node) {
-            int num_edges = rr_nodes_->num_edges(RRNodeId(source_node));
-            for (int iconn = 0; iconn < num_edges; ++iconn) {
-                size_t sink_node = size_t(rr_nodes_->edge_sink_node(RRNodeId(source_node), iconn));
-                size_t switch_id = rr_nodes_->edge_switch(RRNodeId(source_node), iconn);
-                if (sink_node >= rr_nodes_->size()) {
-                    report_error(
-                        "sink_node %zu is larger than rr_nodes.size() %zu",
-                        sink_node, rr_nodes_->size());
-                }
-
-                if (switch_id >= rr_switch_inf_->size()) {
-                    report_error(
-                        "switch_id %zu is larger than num_rr_switches %zu",
-                        switch_id, rr_switch_inf_->size());
-                }
-
-            }
-        }
     }
 
     inline EdgeWalker get_rr_graph_rr_edges(void*& /*ctx*/) final {
@@ -1365,10 +1344,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         if (segment->res_type != from_uxsd_segment_res_type(seg_res_type)) {
             const auto arch_index = static_cast<size_t>(segment->res_type);
             const auto rrgraph_index = static_cast<size_t>(from_uxsd_segment_res_type(seg_res_type));
-            
+
             report_error(
                 "Architecture file does not match RR graph's segment res_type: arch uses %s, RR graph uses %s",
-               RES_TYPE_STRING[arch_index], RES_TYPE_STRING[rrgraph_index]);
+                RES_TYPE_STRING[arch_index], RES_TYPE_STRING[rrgraph_index]);
         }
     }
 
@@ -1707,7 +1686,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return grid_.get_grid_loc_y(grid_loc);
     }
 
-    inline int get_grid_loc_layer(const t_grid_tile*& grid_loc) final{
+    inline int get_grid_loc_layer(const t_grid_tile*& grid_loc) final {
         return grid_.get_grid_loc_layer(grid_loc);
     }
 
@@ -1721,7 +1700,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void set_grid_loc_layer(int layer_num, void*& /*ctx*/) final {
         curr_tmp_layer = layer_num;
     }
-
 
     /** Generated for complex type "rr_graph":
      * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -1813,7 +1791,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         process_rr_node_indices();
 
         rr_graph_builder_->init_fan_in();
-        
+
         std::vector<t_segment_inf> temp_rr_segs;
         temp_rr_segs.reserve(segment_inf_.size());
         for (auto& rr_seg : segment_inf_) {
@@ -1865,18 +1843,18 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         // Alloc the lookup table
         for (e_rr_type rr_type : RR_TYPES) {
-            rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.width(), grid_.height(), rr_type, NUM_2D_SIDES);
+            rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.width(), grid_.height(), rr_type);
         }
 
         // Add the correct node into the vector
-        for (const t_rr_node& node : *rr_nodes_) {
+        for (RRNodeId node_id : rr_graph_->nodes()) {
             // Set track numbers as a node may have multiple ptc
-            if (rr_graph_builder.node_contain_multiple_ptc(node.id())) {
-                if (rr_graph_->node_type(node.id()) == e_rr_type::CHANX || rr_graph_->node_type(node.id()) == e_rr_type::CHANY) {
-                    rr_graph_builder.add_track_node_to_lookup(node.id());
+            if (rr_graph_builder.node_contain_multiple_ptc(node_id)) {
+                if (rr_graph_->node_type(node_id) == e_rr_type::CHANX || rr_graph_->node_type(node_id) == e_rr_type::CHANY) {
+                    rr_graph_builder.add_track_node_to_lookup(node_id);
                 }
             } else {
-                rr_graph_builder.add_node_to_all_locs(node.id());
+                rr_graph_builder.add_node_to_all_locs(node_id);
             }
         }
     }
@@ -2187,7 +2165,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf_;
     vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data_;
     std::string* loaded_rr_graph_filename_;
-    std::vector<t_rr_rc_data>* rr_rc_data_;
+    RRRCData& rr_rc_data_;
 
     // Constant data for loads and writes.
     const e_graph_type graph_type_;

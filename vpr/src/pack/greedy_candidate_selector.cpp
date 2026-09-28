@@ -7,7 +7,6 @@
 
 #include "greedy_candidate_selector.h"
 #include <algorithm>
-#include <cmath>
 #include <limits>
 #include <queue>
 #include <vector>
@@ -1037,7 +1036,9 @@ static void add_molecule_to_pb_stats_candidates(PackMoleculeId molecule_id,
         const t_flat_pl_loc mol_loc = get_molecule_pos(molecule_id,
                                                        prepacker,
                                                        appack_ctx);
-        float dist = get_manhattan_distance(mol_loc, cluster_gain_stats.flat_cluster_position);
+        float dist = appack_ctx.max_distance_threshold_manager.get_compatible_distance_between_points(mol_loc,
+                                                                                                      cluster_gain_stats.flat_cluster_position,
+                                                                                                      cluster_type);
         if (dist > max_dist)
             return;
     }
@@ -1187,13 +1188,7 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
         float dist = get_manhattan_distance_to_tile(target_loc,
                                                     cluster_tile_loc,
                                                     grid);
-        float gain_mult = 1.0f;
-        if (dist < appack_options.dist_th) {
-            gain_mult = 1.0f - (appack_options.quad_fac_sqr * dist * dist);
-        } else {
-            gain_mult = 1.0f / std::sqrt(dist - appack_options.sqrt_offset);
-        }
-        VTR_ASSERT_SAFE(gain_mult >= 0.0f && gain_mult <= 1.0f);
+        float gain_mult = appack_ctx.gain_attenuation_manager.get_gain_attenuation(dist);
 
         // Update the gain.
         gain *= gain_mult;
@@ -1204,7 +1199,7 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
         if (grid.has_interposer_cuts()) {
             t_physical_tile_loc target_physical_loc = {(int)target_loc.x, (int)target_loc.y, (int)target_loc.layer};
             if (!grid.are_locs_on_same_die(target_physical_loc, cluster_tile_loc)) {
-                gain *= appack_options.inter_die_gain_multiplier;
+                gain *= appack_ctx.gain_attenuation_manager.get_inter_die_gain_multiplier();
             }
         }
     }
@@ -1373,11 +1368,13 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
         // Pop a position to search from the queue.
         const t_physical_tile_loc& node_loc = search_queue.front();
 
-        // Get the distance from the cluster to the current tile in tiles.
-        float node_dx = std::abs(node_loc.x - cluster_tile_loc.x);
-        float node_dy = std::abs(node_loc.y - cluster_tile_loc.y);
-        float node_dlayer = std::abs(node_loc.layer_num - cluster_tile_loc.layer_num);
-        float dist = node_dx + node_dy + node_dlayer;
+        // Get the distance from the cluster to the current tile.
+        t_flat_pl_loc node_f_loc({.x = static_cast<float>(node_loc.x),
+                                  .y = static_cast<float>(node_loc.y),
+                                  .layer = static_cast<float>(node_loc.layer_num)});
+        float dist = appack_ctx_.max_distance_threshold_manager.get_compatible_distance_between_points(node_f_loc,
+                                                                                                       cluster_gain_stats.flat_cluster_position,
+                                                                                                       cluster_type);
 
         // If this position is too far from the source, skip it.
         if (dist > max_dist) {

@@ -3,7 +3,7 @@
 #include "place_delay_model.h"
 #include "delta_delay_model.h"
 
-class OverrideDelayModel : public PlaceDelayModel {
+class OverrideDelayModel final : public PlaceDelayModel {
   public:
     OverrideDelayModel(bool is_flat)
         : is_flat_(is_flat) {}

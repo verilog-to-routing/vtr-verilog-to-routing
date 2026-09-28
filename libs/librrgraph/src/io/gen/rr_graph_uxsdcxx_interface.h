@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py C:/Users/OscarPC/source/repos/OpenFPGA/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: C:\Users\OscarPC\source\repos\OpenFPGA\vtr-verilog-to-routing\libs\librrgraph\src\io\rr_graph.xsd
- * md5sum of input file: f991ca82094c66d88dc58873b07cadda
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: 4b2ef78f43cba03933974d33ee053c65
  */
 
 #include <functional>
@@ -200,14 +200,11 @@ public:
 	 *   <xs:attribute name="name" type="xs:string" use="required" />
 	 *   
 	 *   <xs:attribute name="type" type="switch_type" />
-	 *   <xs:attribute name="template_id" type="xs:string" />
 	 * </xs:complexType>
 	*/
 	virtual inline int get_switch_id(typename ContextTypes::SwitchReadContext &ctx) = 0;
 	virtual inline const char * get_switch_name(typename ContextTypes::SwitchReadContext &ctx) = 0;
 	virtual inline void set_switch_name(const char * name, typename ContextTypes::SwitchWriteContext &ctx) = 0;
-	virtual inline const char * get_switch_template_id(typename ContextTypes::SwitchReadContext &ctx) = 0;
-	virtual inline void set_switch_template_id(const char * template_id, typename ContextTypes::SwitchWriteContext &ctx) = 0;
 	virtual inline enum_switch_type get_switch_type(typename ContextTypes::SwitchReadContext &ctx) = 0;
 	virtual inline void set_switch_type(enum_switch_type type, typename ContextTypes::SwitchWriteContext &ctx) = 0;
 	virtual inline typename ContextTypes::TimingWriteContext init_switch_timing(typename ContextTypes::SwitchWriteContext &ctx) = 0;

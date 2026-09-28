@@ -6,10 +6,42 @@
 #include "simple_delay_model.h"
 #include "delta_delay_model.h"
 #include "override_delay_model.h"
+#include "router_lookahead.h"
+#include "router_lookahead_map.h"
+#include "router_lookahead_compressed_map.h"
+#include "router_lookahead_extended_map.h"
+#include "router_lookahead_simple.h"
 
 #include "vtr_time.h"
 #include "physical_types.h"
 #include "place_and_route.h"
+
+/**
+ * @brief Constructs a SimpleDelayModel instantiated on the concrete type of the given lookahead,
+ *        so that lookahead queries in the delay model bind statically and avoid virtual dispatch.
+ *
+ * Lookaheads that don't implement get_opin_distance_min_delay throw an unimplemented
+ * error when the delay model queries them.
+ */
+static std::unique_ptr<PlaceDelayModel> make_simple_delay_model(const RouterLookahead& router_lookahead,
+                                                                e_router_lookahead lookahead_type) {
+    switch (lookahead_type) {
+        case e_router_lookahead::CLASSIC:
+            return std::make_unique<SimpleDelayModel<ClassicLookahead>>(static_cast<const ClassicLookahead&>(router_lookahead));
+        case e_router_lookahead::MAP:
+            return std::make_unique<SimpleDelayModel<MapLookahead>>(static_cast<const MapLookahead&>(router_lookahead));
+        case e_router_lookahead::COMPRESSED_MAP:
+            return std::make_unique<SimpleDelayModel<CompressedMapLookahead>>(static_cast<const CompressedMapLookahead&>(router_lookahead));
+        case e_router_lookahead::EXTENDED_MAP:
+            return std::make_unique<SimpleDelayModel<ExtendedMapLookahead>>(static_cast<const ExtendedMapLookahead&>(router_lookahead));
+        case e_router_lookahead::SIMPLE:
+            return std::make_unique<SimpleDelayModel<SimpleLookahead>>(static_cast<const SimpleLookahead&>(router_lookahead));
+        case e_router_lookahead::NO_OP:
+            return std::make_unique<SimpleDelayModel<NoOpLookahead>>(static_cast<const NoOpLookahead&>(router_lookahead));
+        default:
+            VPR_THROW(VPR_ERROR_PLACE, "Unrecognized router lookahead type");
+    }
+}
 
 static int get_longest_segment_length(const std::vector<t_segment_inf>& segment_inf) {
     int length = 0;
@@ -63,7 +95,7 @@ PlacementDelayModelCreator::create_delay_model(const t_placer_opts& placer_opts,
     std::unique_ptr<PlaceDelayModel> place_delay_model;
 
     if (placer_opts.delay_model_type == PlaceDelayModelType::SIMPLE) {
-        place_delay_model = std::make_unique<SimpleDelayModel>();
+        place_delay_model = make_simple_delay_model(*router_lookahead, router_opts.lookahead_type);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
         place_delay_model = std::make_unique<DeltaDelayModel>(is_flat);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {

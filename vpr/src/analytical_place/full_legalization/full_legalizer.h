@@ -8,6 +8,7 @@
  *          routed by VTR.
  */
 
+#include <map>
 #include <memory>
 #include <unordered_set>
 #include "ap_flow_enums.h"
@@ -24,7 +25,9 @@ class PreClusterTimingManager;
 class Prepacker;
 class RamMapper;
 struct t_arch;
+struct t_logical_block_type;
 struct t_vpr_setup;
+using t_logical_block_type_ptr = const t_logical_block_type*;
 
 /**
  * @brief The full legalizer in an AP flow
@@ -44,7 +47,8 @@ class FullLegalizer {
                   const RamMapper& ram_mapper,
                   const t_vpr_setup& vpr_setup,
                   const t_arch& arch,
-                  const DeviceGrid& device_grid)
+                  const DeviceGrid& device_grid,
+                  const std::map<t_logical_block_type_ptr, size_t>& estimated_type_instance_counts)
         : ap_netlist_(ap_netlist)
         , atom_netlist_(atom_netlist)
         , prepacker_(prepacker)
@@ -52,7 +56,8 @@ class FullLegalizer {
         , ram_mapper_(ram_mapper)
         , vpr_setup_(vpr_setup)
         , arch_(arch)
-        , device_grid_(device_grid) {}
+        , device_grid_(device_grid)
+        , estimated_type_instance_counts_(estimated_type_instance_counts) {}
 
     /**
      * @brief Perform legalization on the given partial placement solution
@@ -74,8 +79,12 @@ class FullLegalizer {
      * The device grid estimated before packing may differ from the one needed
      * after final clustering. This method finalizes the device size and ensures
      * the RR graph matches it before placement begins.
+     *
+     * @param prev_grid_width   The device grid width before packing.
+     * @param prev_grid_height  The device grid height before packing.
+     * @param prev_grid_num_layers  The device grid's number of layers before packing.
      */
-    void recreate_device_if_needed();
+    void recreate_device_if_needed(size_t prev_grid_width, size_t prev_grid_height, size_t prev_grid_num_layers);
 
     /// @brief The AP Netlist to fully legalize the flat placement of.
     const APNetlist& ap_netlist_;
@@ -101,6 +110,12 @@ class FullLegalizer {
 
     /// @brief The device grid which records where clusters can be placed.
     const DeviceGrid& device_grid_;
+
+    /// @brief Estimated number of instances required for each logical block
+    ///        type, computed before Global Placement (see DeviceSizeEstimator).
+    ///        Forwarded into the Packer during legalization so it can predict
+    ///        how densely it needs to pack for each type of block.
+    const std::map<t_logical_block_type_ptr, size_t>& estimated_type_instance_counts_;
 };
 
 /**
@@ -114,7 +129,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                    const RamMapper& ram_mapper,
                                                    const t_vpr_setup& vpr_setup,
                                                    const t_arch& arch,
-                                                   const DeviceGrid& device_grid);
+                                                   const DeviceGrid& device_grid,
+                                                   const std::map<t_logical_block_type_ptr, size_t>& estimated_type_instance_counts);
 
 /**
  * @brief FlatRecon: The Flat Placement Reconstruction Full Legalizer.

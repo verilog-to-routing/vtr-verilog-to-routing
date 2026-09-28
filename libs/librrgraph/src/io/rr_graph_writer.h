@@ -4,10 +4,11 @@
  * Information included in the file includes rr nodes, rr switches, the grid, block info, node indices
  */
 
-#include "rr_node.h"
+#include "rr_graph_cost.h"
 #include "rr_graph_type.h"
 #include "rr_graph_builder.h"
 #include "rr_graph_view.h"
+#include "rr_rc_data.h"
 #include "device_grid.h"
 #include "physical_types.h"
 
@@ -15,7 +16,7 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     RRGraphView* rr_graph,
                     const std::vector<t_physical_tile_type>& physical_tile_types,
                     vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
-                    std::vector<t_rr_rc_data>* rr_rc_data,
+                    RRRCData& rr_rc_data,
                     const DeviceGrid& grid,
                     const std::vector<t_arch_switch_inf>& arch_switch_inf,
                     const t_arch* arch,

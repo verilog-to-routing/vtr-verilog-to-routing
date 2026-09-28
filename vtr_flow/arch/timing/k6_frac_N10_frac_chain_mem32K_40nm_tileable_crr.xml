@@ -5,6 +5,17 @@
   The difference is that it only has the layout used for the CRR test, and it has
   empty blocks on the perimeter so that there is a routing channel around the device.
 
+  In addition, each fle carry-out (cout) can also escape onto the CLB's general data
+  outputs (clb.O), modeled on the Stratix IV LAB carry-chain mid-point exit (see
+  alm4_midpoint_exit_carry in vtr_flow/arch/titan/stratixiv_arch.timing.xml). The
+  cluster-level cin/cout pins keep Fc = 0, so the chain itself still hops between CLBs
+  only over the dedicated <direct> connection; the escape paths only let mid-chain cout
+  nets with extra (look-ahead) fanout reach general routing. See the "carry_exit"
+  interconnect in the clb pb_type below. Because the block absorbs that fanout
+  internally, the chain's cout pack_pattern annotation is marked
+  allow_multi_fanout="true" so the prepacker keeps the chain molecule together even
+  when a cout net drives more than one sink.
+
   - 40 nm technology
   - General purpose logic block: 
     K = 6, N = 10, fracturable 6 LUTs (can operate as one 6-LUT or two 5-LUTs with all 5 inputs shared) 
@@ -541,7 +552,10 @@
                       <pack_pattern name="chain" in_port="arithmetic.cin" out_port="adder.cin"/>
                     </direct>
                     <direct name="carry_out" input="adder.cout" output="arithmetic.cout">
-                      <pack_pattern name="chain" in_port="adder.cout" out_port="arithmetic.cout"/>
+                      <!-- Every adder-to-adder chain link starts on this edge, so marking this one
+                           annotation allow_multi_fanout covers all mid-chain cout links: a cout net
+                           may drive the next cin plus look-ahead logic (see carry_exit in the clb). -->
+                      <pack_pattern name="chain" in_port="adder.cout" out_port="arithmetic.cout" allow_multi_fanout="true"/>
                     </direct>
                     <mux name="sumout" input="ff.Q adder.sumout" output="arithmetic.out">
                       <delay_constant max="25e-12" min="24e-12" in_port="adder.sumout" out_port="arithmetic.out"/>
@@ -683,6 +697,25 @@
           -->
         <direct name="clbouts1" input="fle[9:0].out[0:0]" output="clb.O[9:0]"/>
         <direct name="clbouts2" input="fle[9:0].out[1:1]" output="clb.O[19:10]"/>
+        <!-- Carry-chain exits onto the general CLB outputs.
+             Modeled on the Stratix IV LAB carry-chain mid-point exit (the commented-out
+             alm4_midpoint_exit_carry interconnect in the titan stratixiv_arch.timing.xml):
+             a cout part-way along the chain can leave the cluster through the regular
+             data outputs. Here every fle's cout can reach the clb.O pins so a mid-chain
+             cout net that also drives look-ahead logic (registered or combinational) is
+             routable, while the cluster-level cin/cout pins keep Fc = 0 and the chain
+             itself still crosses between CLBs only over the dedicated <direct>.
+             Because the fanout is absorbed by these internal escape routes, the chain's
+             cout pack_pattern annotation (on the adder.cout -> arithmetic.cout edge) is
+             marked allow_multi_fanout="true", telling the prepacker to keep chain
+             molecules together across cout links with extra fanout. These paths are
+             escape routes, not chain links, so they deliberately carry no pack_pattern
+             annotation. The delay models the extra
+             carry-exit mux stage in front of the CLB output, taken from the equivalent
+             BLE output-select mux stage elsewhere in this file. -->
+        <complete name="carry_exit" input="fle[9:0].cout" output="clb.O">
+          <delay_constant max="25e-12" min="24e-12" in_port="fle[9:0].cout" out_port="clb.O"/>
+        </complete>
         <!-- Carry chain links -->
         <direct name="carry_in" input="clb.cin" output="fle[0:0].cin">
           <!-- Put all inter-block carry chain delay on this one edge -->

@@ -1,0 +1,13 @@
+%include "vpr_fixed_chan_width.txt"
+
+# TODO: Combine this parse script with the other clock modeling one
+#       using a common/ file for the clock modeling parsing.
+
+#General Routing Metrics
+num_global_nets;vpr.out;Number of global nets: (.*)
+num_routed_nets;vpr.out;Number of routed nets \(nonglobal\): (.*)
+
+# Clock Skew Metrics
+critical_path_skew;vpr.out;Final critical path skew: (.*) ns
+worst_setup_skew;vpr.out;Final setup Worst Skew \(sWS\): (.*) ns
+worst_hold_skew;vpr.out;Final hold Worst Skew \(hWS\): (.*) ns

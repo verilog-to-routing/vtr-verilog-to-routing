@@ -147,6 +147,26 @@ class MoveGenerator {
     virtual void process_outcome(double /*reward*/, e_reward_function /*reward_fun*/) {}
 
     /**
+     * @brief Returns a token describing the generator's state after the most
+     * recent propose_move(). Only needed when outcomes are not reported right
+     * after each proposal. A caller can record the token and reward of each
+     * proposal and apply them later in a batch. Stateless generators return 0.
+     */
+    virtual size_t save_proposal_state() const { return 0; }
+
+    /**
+     * @brief Restores a token from save_proposal_state() so the next
+     * process_outcome() is credited to that proposal.
+     */
+    virtual void restore_proposal_state(size_t /*state*/) {}
+
+    /**
+     * @brief Copies the state from `other`, which must be of the same
+     * concrete type, so this generator proposes what `other` would.
+     */
+    virtual void copy_state_from(const MoveGenerator& /*other*/) {}
+
+    /**
      * @brief Calculates the agent's reward and the total process outcome
      *
      * @param move_outcome_stats Contains information about how much each cost term

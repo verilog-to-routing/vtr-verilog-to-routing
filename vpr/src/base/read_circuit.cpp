@@ -54,10 +54,10 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setu
         switch (circuit_format) {
             case e_circuit_format::BLIF:
             case e_circuit_format::EBLIF:
-                netlist = read_blif(circuit_format, circuit_file, arch.models);
+                netlist = read_blif(circuit_format, circuit_file, arch.models, verbosity);
                 break;
             case e_circuit_format::FPGA_INTERCHANGE:
-                netlist = read_interchange_netlist(circuit_file, arch);
+                netlist = read_interchange_netlist(circuit_file, arch, verbosity);
                 break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_ATOM_NETLIST,

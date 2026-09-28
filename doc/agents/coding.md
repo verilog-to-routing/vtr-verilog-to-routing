@@ -14,7 +14,7 @@ make format-py
 ./dev/pylint_check.py path/to/file.py   # Check specific file
 ```
 
-C/C++ formatting applies to: `vpr/`, `libs/libarchfpga`, `libs/libvtrutil`, `libs/libpugiutil`, `libs/liblog`, `libs/librtlnumber`, `odin_ii/`.
+C/C++ formatting applies to: `vpr/`, `libs/libarchfpga`, `libs/libvtrutil`, `libs/libpugiutil`, `libs/liblog`, `libs/librrgraph` (except `src/io/gen/`), `libs/librtlnumber`, `odin_ii/`.
 
 ## Naming
 

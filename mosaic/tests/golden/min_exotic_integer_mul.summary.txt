@@ -1,0 +1,13 @@
+archName: min_exotic_integer_mul
+vtrRamAbits: 8
+dspMaxWidth: 0
+dspMinWidth: 0
+multiplyPresent: 0
+adderPresent: 0
+adderCarryChain: 0
+multiplyModes: 
+lutK: 0
+lutK1: 0
+bramModeCount: 2
+clockedModelCount: 2
+hardblockModelCount: 3

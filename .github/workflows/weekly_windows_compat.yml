@@ -1,0 +1,216 @@
+name: Weekly Windows Compatibility
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 5 * * 0'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  Msys2Compatibility:
+    name: "Build Compatibility (GCC, Windows MSYS2-UCRT64)"
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: msys2 {0}
+    env:
+      CC: gcc
+      CXX: g++
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'true'
+
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v3
+        id: cpu-cores
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            wget
+            git
+
+      # In MSYS2, flex is an MSYS-native package and installs its headers under
+      # /usr/include. Copy FlexLexer.h into the UCRT64 toolchain include path.
+      - name: Install dependencies
+        run: |
+          ./install_win_msys2_ucrt64_packages.sh
+          cp /usr/include/FlexLexer.h /ucrt64/include/
+
+      - name: Dump tool versions
+        run: |
+          which cmake
+          cmake --version
+          which ${CC}
+          ${CC} --version
+          which ${CXX}
+          ${CXX} --version
+          which ld
+          ld --version
+          which python3
+          python3 --version
+          echo "==== Checking yosys packages ===="
+          which yosys.exe
+          echo "==== Checking libgnat.a ===="
+          ls /ucrt64/lib/gcc/x86_64-w64-mingw32/*/adalib/libgnat.a
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          key: ${{ runner.os }}-msys2-${{ github.job }}-${{ hashFiles('**/CMakeLists.txt', '**/Makefile') }}
+          restore-keys: |
+            ${{ runner.os }}-msys2-${{ github.job }}-
+            ${{ runner.os }}-msys2-
+
+      - name: Build
+        env:
+          CMAKE_PARAMS: "-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+          BUILD_TYPE: release
+          CCACHE_DIR: ${{ github.workspace }}/.ccache
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count}}
+
+  # Test the compilation compatibility on Windows MSVC compiler
+  MsvcCompatibility:
+    name: ${{ matrix.config.name }}
+    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - name: "Build Compatibility (MSVC, Windows 2025)"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'true'
+
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v3
+        id: cpu-cores
+
+      - name: vcpkg build
+        uses: johnwason/vcpkg-action@v8
+        id: vcpkg
+        with:
+          # vcpkg will automatically find and use the vcpkg.json in your repo root
+          token: ${{ secrets.GITHUB_TOKEN }}
+          manifest-dir: ${{ github.workspace }} # Set to the directory containing your vcpkg.json file
+          triplet: x64-windows-release # This must be set with a valid vcpkg triplet
+
+      - name: Install WinFlexBison and Tcl
+        shell: powershell
+        run: |
+          choco install winflexbison3 wget
+          choco install magicsplat-tcl-tk --version=1.16.0
+
+      - name: Dump tool versions
+        shell: powershell
+        run: |
+          cmake --version
+          where curl
+          win_flex --version
+          win_bison --version
+          tclsh --version
+
+      - name: Ensure curl is available
+        shell: powershell
+        run: |
+          $curlPath = (Get-Command curl.exe -ErrorAction SilentlyContinue).Source
+          if (-not $curlPath) {
+            choco install curl
+            $curlPath = (Get-Command curl.exe).Source
+          }
+          echo "CURL_PATH=$curlPath" >> $env:GITHUB_ENV
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1.13.0
+
+      - name: Check MSVC Version
+        run: cl
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          key: ${{ runner.os }}-msvc-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-msvc-
+
+      - name: Configure and build with CMake
+        env:
+          CMAKE_PARAMS: "-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+          CCACHE_DIR: ${{ github.workspace }}/.ccache
+        run: |
+          make VCPKG_PATH="${{ github.workspace }}/vcpkg" -j${{ steps.cpu-cores.outputs.count}}
+
+      - name: Create Python virtual environment
+        shell: powershell
+        run: |
+          python -m venv myenv
+
+      - name: MCNC Regression Test
+        shell: powershell
+        run: |
+          echo "==== Activate python virtual environment ===="
+          .\myenv\Scripts\Activate.ps1
+
+          echo "==== Add runtime DLL directories to PATH ===="
+          $dllPaths = @(
+            "${{ github.workspace }}\vcpkg_installed\x64-windows-release\bin",
+            "C:\Program Files\Tcl\bin"
+          ) | Where-Object { $_ -and (Test-Path $_) }
+
+          $env:PATH = ($dllPaths -join ";") + ";" + $env:PATH
+
+          echo "==== Install python dependencies ===="
+          python -m pip install -r requirements.txt
+
+          echo "==== Run MCNC reg test ===="
+          python vtr_flow\scripts\run_vtr_task.py `
+            regression_tests/vtr_reg_nightly_test1/vpr_reg_mcnc `
+            -j 1 `
+            -script run_vtr_flow.py `
+            -show_failures `
+            -short_task_names `
+            -s -start vpr
+
+      - name: Upload MCNC regression logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-msvc-vpr-reg-mcnc-logs
+          path: |
+            vtr_flow/tasks/regression_tests/vtr_reg_nightly_test1/vpr_reg_mcnc/**/*.out
+            vtr_flow/tasks/regression_tests/vtr_reg_nightly_test1/vpr_reg_mcnc/**/parse_results*.txt
+
+  ReportFailure:
+    name: Open issue for Windows compatibility failure
+    needs: [Msys2Compatibility, MsvcCompatibility]
+    if: ${{ always() && (needs.Msys2Compatibility.result == 'failure' || needs.MsvcCompatibility.result == 'failure') }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Create issue
+        uses: actions/github-script@v8
+        env:
+          MSYS2_RESULT: ${{ needs.Msys2Compatibility.result }}
+          MSVC_RESULT: ${{ needs.MsvcCompatibility.result }}
+        with:
+          script: |
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            await github.rest.issues.create({
+              ...context.repo,
+              title: `Weekly Windows compatibility failed (run #${process.env.GITHUB_RUN_NUMBER})`,
+              body: [
+                `The [Windows compatibility workflow run](${runUrl}) failed.`,
+                '',
+                `- MSYS2 UCRT64: ${process.env.MSYS2_RESULT}`,
+                `- MSVC: ${process.env.MSVC_RESULT}`,
+              ].join('\n'),
+            });

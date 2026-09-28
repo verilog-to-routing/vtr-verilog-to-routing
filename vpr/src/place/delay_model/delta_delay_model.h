@@ -7,7 +7,7 @@
  *
  * @brief A simple delay model based on the distance (delta) between block locations.
  */
-class DeltaDelayModel : public PlaceDelayModel {
+class DeltaDelayModel final : public PlaceDelayModel {
   public:
     DeltaDelayModel(bool is_flat)
         : is_flat_(is_flat) {}

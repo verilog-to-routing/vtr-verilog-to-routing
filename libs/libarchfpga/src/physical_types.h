@@ -779,9 +779,18 @@ struct t_physical_tile_loc {
         , y(y_val)
         , layer_num(layer_num_val) {}
 
-    // Returns true if this type location layer_num/x/y is not equal to ARCH_FPGA_UNDEFINED_VAL
-    operator bool() const {
+    /**
+     * @brief Returns true if this type location layer_num/x/y is not equal to ARCH_FPGA_UNDEFINED_VAL
+     */
+    inline bool is_valid() const {
         return !(x == ARCH_FPGA_UNDEFINED_VAL || y == ARCH_FPGA_UNDEFINED_VAL || layer_num == ARCH_FPGA_UNDEFINED_VAL);
+    }
+
+    /**
+     * @brief Returns true if this type location layer_num/x/y is not equal to ARCH_FPGA_UNDEFINED_VAL
+     */
+    operator bool() const {
+        return is_valid();
     }
 
     /**
@@ -1088,12 +1097,17 @@ struct t_pin_to_pin_annotation {
     std::string output_pins;
     std::string clock;
 
+    /* pack_pattern annotations only: nets on this pattern connection may drive
+     * multiple sinks, so the prepacker's single-fanout assumptions are lifted for it */
+    bool pack_pattern_allow_multi_fanout;
+
     int line_num; /* used to report what line number this annotation is found in architecture file */
 
     t_pin_to_pin_annotation() noexcept {
         line_num = 0;
         type = (e_pin_to_pin_annotation_type)0;
         format = (e_pin_to_pin_annotation_format)0;
+        pack_pattern_allow_multi_fanout = false;
     }
 };
 
@@ -1490,6 +1504,9 @@ class t_pb_graph_edge {
     int num_pack_patterns;
     std::vector<const char*> pack_pattern_names;
     int* pack_pattern_indices;
+    /* [0..num_pack_patterns-1] parallel to pack_pattern_names: true if the
+     * pattern annotation on this edge is marked allow_multi_fanout */
+    std::vector<bool> pack_pattern_allow_multi_fanout;
     bool infer_pattern;
 
     int switch_type_idx = ARCH_FPGA_UNDEFINED_VAL; /* architecture switch id of the edge - used when flat_routing is enabled */
@@ -1796,12 +1813,6 @@ struct t_arch_switch_inf {
     float buf_size = 0.;
     e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_AUTO;
     float power_buffer_size = 0.;
-
-    // The template ID of the switch. This is metadata stored for each switch to
-    // simplify certain analyses. For example, when generating the CRR graph, the
-    // template ID is used to determine which switch in the template is used most
-    // or least frequently.
-    std::string template_id = "";
 
     bool intra_tile = false;
 

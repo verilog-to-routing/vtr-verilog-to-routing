@@ -23,3 +23,6 @@
 [submodule "libs/EXTERNAL/libsdcparse"]
 	path = libs/EXTERNAL/libsdcparse
 	url = https://github.com/verilog-to-routing/libsdcparse.git
+[submodule "libs/EXTERNAL/eigen"]
+	path = libs/EXTERNAL/eigen
+	url = https://gitlab.com/libeigen/eigen.git

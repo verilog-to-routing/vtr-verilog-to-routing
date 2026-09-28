@@ -2,10 +2,6 @@ cmake_minimum_required(VERSION 3.16)
 
 project("blifexplorer")
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 find_package(Qt5Widgets)
 find_package(Qt5Gui)
 find_package(Qt5Core)

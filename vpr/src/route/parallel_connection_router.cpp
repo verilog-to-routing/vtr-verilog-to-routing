@@ -454,7 +454,7 @@ std::unique_ptr<ConnectionRouterInterface> make_parallel_connection_router(e_hea
                                                                            const RouterLookahead& router_lookahead,
                                                                            const t_rr_graph_storage& rr_nodes,
                                                                            const RRGraphView* rr_graph,
-                                                                           const std::vector<t_rr_rc_data>& rr_rc_data,
+                                                                           const RRRCData& rr_rc_data,
                                                                            const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
                                                                            vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
                                                                            bool is_flat,

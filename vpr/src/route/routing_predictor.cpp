@@ -3,8 +3,30 @@
 #include <cmath>
 
 #include "vtr_assert.h"
+#include "vtr_log.h"
 
 #include "routing_predictor.h"
+#include "vpr_types.h"
+
+namespace {
+
+// When the estimated number of routing iterations exceeds these factors
+// (for SAFE or AGGRESSIVE mode respectively) times the max router iterations
+// specified by the router aborts early
+constexpr float ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_SAFE = 3;
+constexpr float ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_AGGRESSIVE = 1.5;
+
+// If the number of overused resources is below this threshold do not abort.
+// This avoids giving up when solutions are nearly legal, but converging slowly
+constexpr size_t ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD = 100;
+
+// If overuse is flat or increasing, the predictor cannot extrapolate and returns infinity.
+// In SAFE mode, tolerate up to this many such estimates in the predictor's initial run only
+// (before its first finite estimate). Later infinities are acted on immediately.
+constexpr size_t ROUTING_PREDICTOR_MAX_DEGENERATE_ITERATIONS = 10;
+
+// Fraction of the recorded overuse history used when fitting the success-iteration model
+constexpr float ROUTING_PREDICTOR_HISTORY_FACTOR = 0.5;
 
 class LinearModel {
   public:
@@ -35,13 +57,6 @@ class LinearModel {
 };
 
 template<typename T>
-float variance(std::vector<float> values, float avg);
-
-float covariance(const std::vector<size_t>& x_values, const std::vector<float>& y_values, float x_avg, float y_avg);
-LinearModel simple_linear_regression(std::vector<size_t> x_values, std::vector<float> y_values);
-LinearModel fit_model(const std::vector<size_t>& iterations, const std::vector<size_t>& overuse, float history_factor);
-
-template<typename T>
 float variance(const std::vector<T>& values, float avg) {
     float var = 0;
     for (float val : values) {
@@ -62,12 +77,13 @@ float covariance(const std::vector<size_t>& x_values, const std::vector<float>& 
     return cov;
 }
 
-float RoutingPredictor::get_slope() const {
-    //Return cached slope, computed in add_iteration_overuse()
-    return slope_;
-}
-
-LinearModel simple_linear_regression(std::vector<size_t> x_values, std::vector<float> y_values) {
+/**
+ * @brief Fits a straight line, y = slope * x + intercept, to the given data using ordinary least squares.
+ *
+ * x_values and y_values must have the same number of elements.
+ * The slope cannot be computed if all x_values are identical.
+ */
+LinearModel simple_linear_regression(const std::vector<size_t>& x_values, const std::vector<float>& y_values) {
     float y_avg = std::accumulate(y_values.begin(), y_values.end(), 0.) / y_values.size();
     float x_avg = std::accumulate(x_values.begin(), x_values.end(), 0.) / x_values.size();
 
@@ -80,7 +96,14 @@ LinearModel simple_linear_regression(std::vector<size_t> x_values, std::vector<f
     return LinearModel(beta, alpha);
 }
 
-LinearModel fit_model(const std::vector<size_t>& iterations, const std::vector<size_t>& overuse, float history_factor) {
+} // namespace
+
+float RoutingPredictor::get_slope() const {
+    //Return cached slope, computed in add_iteration_overuse()
+    return slope_;
+}
+
+t_routing_predictor_fit RoutingPredictor::fit_model_(float history_factor) const {
     //For pathfinder-based routing overuse tends to follow a negative-exponential:
     //
     //    ^
@@ -133,44 +156,91 @@ LinearModel fit_model(const std::vector<size_t>& iterations, const std::vector<s
     //(since the history inspected grows as the number of iterations increases,
     //later iterations use a longer history which helps reduce the noise caused by
     //small numbers of overused nodes)
-    size_t start = overuse.size() - std::round(history_factor * overuse.size());
-    size_t end = overuse.size();
+    size_t start = iterations_.size() - std::round(history_factor * iterations_.size());
+    size_t end = iterations_.size();
 
     //Calculate the log overuse for the history we are interested in
     std::vector<float> hist_log_overuse;
     std::vector<size_t> hist_iters;
     for (size_t i = start; i < end; ++i) {
-        hist_log_overuse.push_back(std::log(overuse[i]));
-        hist_iters.push_back(iterations[i]);
+        hist_log_overuse.push_back(std::log(iteration_overused_rr_node_counts_[i]));
+        hist_iters.push_back(iterations_[i]);
     }
 
     //We fit a linear model to the log of the overuse, this keeps the model simple but
     //captures the (typically) negative-exponential behaviour of overuse
-    return simple_linear_regression(hist_iters, hist_log_overuse);
+    VTR_ASSERT(!hist_iters.empty());
+    LinearModel model = simple_linear_regression(hist_iters, hist_log_overuse);
+
+    //The slope and y-intercept fully describe the fitted model; also record what
+    //the fit was built from, so callers can report and interpret it
+    t_routing_predictor_fit fit;
+    fit.slope = model.get_slope();
+    fit.y_intercept = model.find_y_for_x_value(0.);
+    fit.first_iteration = hist_iters.front();
+    fit.last_iteration = hist_iters.back();
+    fit.num_samples = hist_iters.size();
+
+    return fit;
 }
 
-RoutingPredictor::RoutingPredictor(size_t min_history, float history_factor)
-    : min_history_(min_history)
-    , history_factor_(history_factor)
+RoutingPredictor::RoutingPredictor(const t_router_opts& router_opts)
+    : min_history_(router_opts.routing_predictor_min_history)
+    , safe_mode_(router_opts.routing_failure_predictor == SAFE)
+    , verbosity_(router_opts.route_verbosity)
+    , history_factor_(ROUTING_PREDICTOR_HISTORY_FACTOR)
+    , abort_iteration_threshold_(std::numeric_limits<float>::infinity()) // Default no early abort
     , slope_(-1) {
-    //nop
-}
-
-float RoutingPredictor::estimate_success_iteration() {
-    float success_iteration = std::numeric_limits<float>::quiet_NaN();
-
-    if (iterations_.size() > min_history_) {
-        auto model = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor_);
-        success_iteration = model.find_x_for_y_value(0.);
-
-        if (success_iteration < 0.) {
-            //Iterations less than zero occurs when the slope is positive,
-            //and the intercept is before the y-axis
-            success_iteration = std::numeric_limits<float>::infinity();
-        }
+    if (router_opts.routing_failure_predictor == SAFE) {
+        abort_iteration_threshold_ = ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_SAFE * router_opts.max_router_iterations;
+    } else if (router_opts.routing_failure_predictor == AGGRESSIVE) {
+        abort_iteration_threshold_ = ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_AGGRESSIVE * router_opts.max_router_iterations;
+    } else {
+        VTR_ASSERT_MSG(router_opts.routing_failure_predictor == OFF, "Unrecognized routing failure predictor setting");
     }
 
-    return success_iteration;
+    if (router_opts.routing_budgets_algorithm == YOYO) {
+        // RCV keeps re-routing to resolve hold violations, so never give up early
+        abort_iteration_threshold_ = std::numeric_limits<float>::infinity();
+    }
+}
+
+float RoutingPredictor::estimate_success_iteration() const {
+    return last_estimate_;
+}
+
+bool RoutingPredictor::should_abort_routing() const {
+    if (!prediction_is_valid_() || last_estimate_ <= abort_iteration_threshold_) {
+        return false;
+    }
+
+    VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high"
+            " (abort threshold %.1f, %zu overused nodes, log-overuse slope %+.4g over iterations %zu-%zu).\n",
+            last_estimate_, abort_iteration_threshold_, iteration_overused_rr_node_counts_.back(),
+            last_fit_.slope, last_fit_.first_iteration, last_fit_.last_iteration);
+    return true;
+}
+
+bool RoutingPredictor::prediction_is_valid_() const {
+    if (iteration_overused_rr_node_counts_.empty()
+        || iteration_overused_rr_node_counts_.back() <= ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
+        //Only consider the prediction actionable if there is a significant number of
+        //overused resources; near-legal routings may converge slowly
+        return false;
+    }
+
+    return !std::isnan(last_estimate_) && !awaiting_usable_prediction_();
+}
+
+bool RoutingPredictor::awaiting_usable_prediction_() const {
+    // In safe mode, tolerate an initial run of degenerate fits rather than treating
+    // their infinite estimates as predictions that routing will never converge.
+    // Both exits are permanent: has_extrapolated_ is never cleared and the counter
+    // (advanced in add_iteration_overuse()) never decreases.
+    return safe_mode_
+           && std::isinf(last_estimate_)
+           && !has_extrapolated_
+           && initial_degenerate_predictions_ <= ROUTING_PREDICTOR_MAX_DEGENERATE_ITERATIONS;
 }
 
 float RoutingPredictor::estimate_overuse_slope() {
@@ -184,7 +254,8 @@ float RoutingPredictor::estimate_overuse_slope() {
     float history_factor = FIXED_HISTORY_SIZE / iterations_.size(); //Fixed history size
 
     if (iterations_.size() >= FIXED_HISTORY_SIZE) {
-        auto model = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor);
+        t_routing_predictor_fit fit = fit_model_(history_factor);
+        LinearModel model(fit.slope, fit.y_intercept);
 
         float log_curr_usage = model.find_y_for_x_value(*(--iterations_.end()));
         float log_next_usage = model.find_y_for_x_value(*(--iterations_.end()) + 1);
@@ -199,12 +270,49 @@ float RoutingPredictor::estimate_overuse_slope() {
 }
 
 void RoutingPredictor::add_iteration_overuse(size_t iteration, size_t overused_rr_node_count) {
+    VTR_ASSERT_MSG(iterations_.empty() || iteration > iterations_.back(),
+                   "Routing iterations must be recorded once each, in increasing order");
+
     iterations_.push_back(iteration);
     iteration_overused_rr_node_counts_.push_back(overused_rr_node_count);
 
-    //Update slope
+    //Update the cached fit, slope and success-iteration estimate
+    last_fit_ = t_routing_predictor_fit();
+    last_estimate_ = std::numeric_limits<float>::quiet_NaN();
     if (iterations_.size() > min_history_) {
-        auto model = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor_);
-        slope_ = model.get_slope();
+        last_fit_ = fit_model_(history_factor_);
+        slope_ = last_fit_.slope;
+
+        LinearModel model(last_fit_.slope, last_fit_.y_intercept);
+        last_estimate_ = model.find_x_for_y_value(0.);
+        if (last_estimate_ < 0.) {
+            //Iterations less than zero occurs when the slope is positive,
+            //and the intercept is before the y-axis
+            //
+            // Note that this infinity records that the model could not extrapolate, rather
+            // than a prediction that routing will never converge.
+            last_estimate_ = std::numeric_limits<float>::infinity();
+        }
+    }
+
+    if (overused_rr_node_count > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
+        // Count the predictor's initial run of degenerate (infinite) estimates; safe mode
+        // tolerates that run for a bounded number of iterations (see awaiting_usable_prediction_()).
+        // The grace period ends permanently on the first finite estimate or once the run exceeds
+        // ROUTING_PREDICTOR_MAX_DEGENERATE_ITERATIONS; after that the counter is no longer consulted.
+        if (!has_extrapolated_ && !std::isnan(last_estimate_)) {
+            if (std::isinf(last_estimate_)) {
+                ++initial_degenerate_predictions_;
+            } else {
+                has_extrapolated_ = true;
+            }
+        }
+
+        VTR_LOGV(verbosity_ > 1 && last_fit_.num_samples > 0,
+                 "Routing predictor: fit over iterations %zu-%zu (%zu samples), log-overuse slope %+.4g,"
+                 " estimated success iteration %.1f%s\n",
+                 last_fit_.first_iteration, last_fit_.last_iteration, last_fit_.num_samples,
+                 last_fit_.slope, last_estimate_,
+                 awaiting_usable_prediction_() ? " (waiting for an extrapolable fit)" : "");
     }
 }

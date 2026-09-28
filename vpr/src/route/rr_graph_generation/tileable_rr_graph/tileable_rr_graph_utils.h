@@ -8,8 +8,7 @@
 
 #include "vtr_geometry.h"
 
-/* Headers from vpr library */
-#include "rr_graph_obj.h"
+// Headers from vpr library
 #include "rr_graph_view.h"
 
 /**
@@ -20,7 +19,7 @@
  * (xhigh, yhigh) should be the starting point 
  */
 vtr::Point<size_t> get_track_rr_node_start_coordinate(const RRGraphView& rr_graph,
-                                                      const RRNodeId& track_rr_node);
+                                                      RRNodeId track_rr_node);
 
 /**
  * @brief Get the coordinator of a end point of a routing track 
@@ -30,4 +29,4 @@ vtr::Point<size_t> get_track_rr_node_start_coordinate(const RRGraphView& rr_grap
  * (xlow, ylow) should be the starting point 
  */
 vtr::Point<size_t> get_track_rr_node_end_coordinate(const RRGraphView& rr_graph,
-                                                    const RRNodeId& track_rr_node);
+                                                    RRNodeId track_rr_node);

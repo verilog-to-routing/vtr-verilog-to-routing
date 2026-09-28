@@ -43,7 +43,7 @@ CMAKE_GEN = Unix Makefiles
 ifeq ($(OS),Windows_NT)
 CMAKE_GEN = Ninja
 # Msys2 can still use Linux gcc
-ifeq ($(MSYSTEM),MINGW64)
+ifeq ($(MSYSTEM),UCRT64)
 CMAKE_GEN = Unix Makefiles
 endif
 endif
@@ -57,11 +57,11 @@ ifeq ($(OS),Windows_NT)
 CURL_PATH:=$(shell where curl.exe 2>nul | head -n 1)
 # VCPKG root is a system variable env:VCPKG in power shell. User can override by using VCPKG_PATH when calling the makefile
 VCPKG_CMAKE_PATH:=$(subst \,/,$(VCPKG_PATH))
-override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF
+override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWITH_PARMYS=OFF -DWITH_MOSAIC=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF
 # Msys2 can still use Linux gcc
-ifneq ($(MSYSTEM),MINGW64)
+ifneq ($(MSYSTEM),UCRT64)
 override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWGET="${CURL_PATH}" -DCMAKE_TOOLCHAIN_FILE="${VCPKG_CMAKE_PATH}/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DVCPKG_MANIFEST_MODE=OFF
-#	override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF
+#	override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWITH_PARMYS=OFF -DWITH_MOSAIC=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF
 endif
 endif
 
@@ -91,7 +91,7 @@ endif
 MAKEFLAGS := -s
 
 ifeq ($(OS),Windows_NT)
-ifeq ($(MSYSTEM),MINGW64)
+ifeq ($(MSYSTEM),UCRT64)
 SOURCE_DIR := $(PWD)
 else
 SOURCE_DIR := $(shell powershell -NoProfile -Command "(Get-Location).Path")
@@ -105,7 +105,7 @@ BUILD_DIR ?= build
 #Check for the cmake executable
 CMAKE := $(shell command -v cmake 2> /dev/null)
 ifeq ($(OS),Windows_NT)
-ifneq ($(MSYSTEM),MINGW64)
+ifneq ($(MSYSTEM),UCRT64)
 CMAKE := cmake.exe
 endif
 endif
@@ -176,7 +176,7 @@ endif #BUILD_TYPE
 	#
 ifeq ($(OS),Windows_NT)
 # MSYS2 is based on Makefile
-ifeq ($(MSYSTEM),MINGW64)
+ifeq ($(MSYSTEM),UCRT64)
 	@echo "Building target(s): $(MAKECMDGOALS)"
 	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
 else
@@ -231,4 +231,3 @@ endif
 	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) $(SOURCE_DIR)"
 	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) $(SOURCE_DIR)
 	@+$(MAKE) -C $(BUILD_DIR) clean
-

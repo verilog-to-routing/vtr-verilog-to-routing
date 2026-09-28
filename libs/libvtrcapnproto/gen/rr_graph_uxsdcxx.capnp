@@ -2,11 +2,11 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-# Cmdline: uxsdcxx/uxsdcap.py C:/Users/OscarPC/source/repos/OpenFPGA/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# Input file: C:\Users\OscarPC\source\repos\OpenFPGA\vtr-verilog-to-routing\libs\librrgraph\src\io\rr_graph.xsd
-# md5sum of input file: f991ca82094c66d88dc58873b07cadda
+# Cmdline: uxsdcxx/uxsdcap.py /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# Input file: /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# md5sum of input file: 4b2ef78f43cba03933974d33ee053c65
 
-@0x8aa442e46a3c454f;
+@0xaba05266d604ec5d;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -116,10 +116,9 @@ struct Sizing {
 struct Switch {
 	id @0 :Int32;
 	name @1 :Text;
-	templateId @2 :Text;
-	type @3 :SwitchType;
-	timing @4 :Timing;
-	sizing @5 :Sizing;
+	type @2 :SwitchType;
+	timing @3 :Timing;
+	sizing @4 :Sizing;
 }
 
 struct Switches {

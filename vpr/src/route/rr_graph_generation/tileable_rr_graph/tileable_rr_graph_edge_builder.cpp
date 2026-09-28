@@ -25,10 +25,10 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
                                            RRGraphBuilder& rr_graph_builder,
                                            const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                            const DeviceGrid& grids,
-                                           const size_t& layer,
+                                           size_t layer,
                                            size_t& num_edges_to_create) {
     size_t edge_count = 0;
-    for (const RRNodeId& node : rr_graph.nodes()) {
+    for (RRNodeId node : rr_graph.nodes()) {
         /* Bypass all the non OPIN nodes */
         if (e_rr_type::OPIN != rr_graph.node_type(node)) {
             continue;
@@ -63,10 +63,10 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
                                          RRGraphBuilder& rr_graph_builder,
                                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                          const DeviceGrid& grids,
-                                         const size_t& layer,
+                                         size_t layer,
                                          size_t& num_edges_to_create) {
     size_t edge_count = 0;
-    for (const RRNodeId& node : rr_graph.nodes()) {
+    for (RRNodeId node : rr_graph.nodes()) {
         /* Bypass all the non IPIN nodes */
         if (e_rr_type::IPIN != rr_graph.node_type(node)) {
             continue;
@@ -109,22 +109,22 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           const t_crr_opts& crr_opts,
                           const DeviceGrid& grids,
                           const VibDeviceGrid& vib_grid,
-                          const size_t& layer,
+                          size_t layer,
                           const vtr::Point<size_t>& device_chan_width,
                           const std::vector<t_segment_inf>& segment_inf,
                           const std::vector<t_segment_inf>& segment_inf_x,
                           const std::vector<t_segment_inf>& segment_inf_y,
                           const std::vector<vtr::Matrix<int>>& Fc_in,
                           const std::vector<vtr::Matrix<int>>& Fc_out,
-                          const e_switch_block_type& sb_type,
-                          const int& Fs,
-                          const e_switch_block_type& sb_subtype,
-                          const int& sub_fs,
-                          const bool& perimeter_cb,
-                          const bool& opin2all_sides,
-                          const bool& concat_wire,
-                          const bool& wire_opposite_side,
-                          const RRSwitchId& delayless_switch,
+                          e_switch_block_type sb_type,
+                          int Fs,
+                          e_switch_block_type sb_subtype,
+                          int sub_fs,
+                          bool perimeter_cb,
+                          bool opin2all_sides,
+                          bool concat_wire,
+                          bool wire_opposite_side,
+                          RRSwitchId delayless_switch,
                           const int route_verbosity) {
 
     if (!vib_grid.is_empty()) {
@@ -172,7 +172,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
 void build_rr_graph_direct_connections(const RRGraphView& rr_graph,
                                        RRGraphBuilder& rr_graph_builder,
                                        const DeviceGrid& grids,
-                                       const size_t& layer,
+                                       size_t layer,
                                        const std::vector<t_direct_inf>& directs,
                                        const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs) {
     for (size_t ix = 0; ix < grids.width(); ++ix) {
@@ -202,13 +202,13 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
                               vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                               const DeviceGrid& grids,
                               const VibDeviceGrid& vib_grid,
-                              const size_t& layer,
+                              size_t layer,
                               const vtr::Point<size_t>& device_chan_width,
                               const std::vector<t_segment_inf>& segment_inf,
                               const std::vector<t_segment_inf>& segment_inf_x,
                               const std::vector<t_segment_inf>& segment_inf_y,
-                              const bool& perimeter_cb,
-                              const RRSwitchId& delayless_switch,
+                              bool perimeter_cb,
+                              RRSwitchId delayless_switch,
                               e_gsb_version gsb_version) {
     /* Create map from mux name to index */
 
@@ -305,21 +305,21 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                   const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                   const t_crr_opts& crr_opts,
                                   const DeviceGrid& grids,
-                                  const size_t& layer,
+                                  size_t layer,
                                   const vtr::Point<size_t>& device_chan_width,
                                   const std::vector<t_segment_inf>& segment_inf,
                                   const std::vector<t_segment_inf>& segment_inf_x,
                                   const std::vector<t_segment_inf>& segment_inf_y,
                                   const std::vector<vtr::Matrix<int>>& Fc_in,
                                   const std::vector<vtr::Matrix<int>>& Fc_out,
-                                  const e_switch_block_type& sb_type,
-                                  const int& Fs,
-                                  const e_switch_block_type& sb_subtype,
-                                  const int& sub_fs,
-                                  const bool& perimeter_cb,
-                                  const bool& opin2all_sides,
-                                  const bool& concat_wire,
-                                  const bool& wire_opposite_side,
+                                  e_switch_block_type sb_type,
+                                  int Fs,
+                                  e_switch_block_type sb_subtype,
+                                  int sub_fs,
+                                  bool perimeter_cb,
+                                  bool opin2all_sides,
+                                  bool concat_wire,
+                                  bool wire_opposite_side,
                                   const int route_verbosity) {
     vtr::ScopedStartFinishTimer timer("Build RR Graph Edges");
     bool build_crr_edges = !crr_opts.sb_templates.empty();
@@ -333,17 +333,13 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
     // Building CRR Graph
     std::unique_ptr<crrgenerator::CRRConnectionBuilder> crr_connection_builder;
     std::unique_ptr<crrgenerator::SwitchBlockManager> sb_manager;
-    std::unique_ptr<crrgenerator::NodeLookupManager> node_lookup;
     if (build_crr_edges) {
         sb_manager = std::make_unique<crrgenerator::SwitchBlockManager>(crr_opts.sb_maps,
                                                                         crr_opts.sb_templates,
                                                                         crr_opts.annotated_rr_graph,
                                                                         route_verbosity);
-        node_lookup = std::make_unique<crrgenerator::NodeLookupManager>(rr_graph,
-                                                                        grids.width(),
-                                                                        grids.height());
+
         crr_connection_builder = std::make_unique<crrgenerator::CRRConnectionBuilder>(rr_graph,
-                                                                                      *node_lookup,
                                                                                       *sb_manager,
                                                                                       route_verbosity,
                                                                                       crr_opts.gsb_version);
@@ -367,11 +363,6 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
             VTR_LOGV(route_verbosity > 1, "Building edges for GSB[%lu][%lu]\n", ix, iy);
 
             vtr::Point<size_t> gsb_coord(ix, iy);
-            /* Create a GSB object */
-            const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
-                                                            device_chan_width, segment_inf_x, segment_inf_y,
-                                                            layer, gsb_coord, perimeter_cb,
-                                                            crr_opts.gsb_version);
 
             if (build_crr_edges) {
                 /* When CRR edges are built, all GSB connections (including input
@@ -379,11 +370,17 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                 build_crr_gsb_edges(rr_graph_builder,
                                     num_edges_to_create,
                                     rr_node_driver_switches,
-                                    rr_gsb,
+                                    gsb_coord,
                                     *crr_connection_builder,
                                     delay_to_switch_id,
                                     route_verbosity);
             } else {
+                /* Create a GSB object */
+                const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
+                                                                device_chan_width, segment_inf_x, segment_inf_y,
+                                                                layer, gsb_coord, perimeter_cb,
+                                                                crr_opts.gsb_version);
+
                 /* adapt the track_to_ipin_lookup for the GSB nodes */
                 t_track2pin_map track2ipin_map = build_gsb_track_to_ipin_map(rr_graph, rr_gsb, grids, segment_inf, Fc_in);
 

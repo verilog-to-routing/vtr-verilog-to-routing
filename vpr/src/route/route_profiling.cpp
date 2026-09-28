@@ -152,7 +152,7 @@ void congestion_analysis() {
 	// print out specific node information if congestion for type is low enough
 
 	int total_congestion = 0;
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()){
+    for (RRNodeId rr_id : device_ctx.rr_graph.nodes()){
 		const t_rr_node& node = device_ctx.rr_nodes[(size_t)rr_id];
 		int congestion = node.get_occ() - node.get_capacity();
 
@@ -175,7 +175,7 @@ void congestion_analysis() {
 	// specific print out each congested node
 	if (!congested.empty()) {
 		VTR_LOG("Specific congested nodes\nxlow ylow   type\n");
-        for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()){
+        for (RRNodeId rr_id : device_ctx.rr_graph.nodes()){
 			const t_rr_node& node = device_ctx.rr_nodes[(size_t)rr_id];
 			if (congested.is_congested(node.type) && (node.get_occ() - node.get_capacity()) > 0) {
 				VTR_LOG("(%3d,%3d) %6s\n", node.get_xlow(), node.get_ylow(), node_typename[node.type]);

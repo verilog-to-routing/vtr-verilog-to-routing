@@ -11,7 +11,7 @@
  * This cost map is similar to that of MapLookahead, and it only refers to channel segments. There is no additional
  * cost map for sources/opins or intra-cluster estimates.
  */
-class SimpleLookahead : public RouterLookahead {
+class SimpleLookahead final : public RouterLookahead {
   protected:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
@@ -36,8 +36,11 @@ class SimpleLookahead : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "SimpleLookahead::write_intra_cluster unimplemented");
     }
 
+  public:
+    // Public so SimpleDelayModel can call it through the
+    // concrete type statically, without using dynamic dispatch.
     float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
-        return -1;
+        VPR_THROW(VPR_ERROR_ROUTE, "SimpleLookahead::get_opin_distance_min_delay unimplemented");
     }
 };
 

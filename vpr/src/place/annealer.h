@@ -5,8 +5,10 @@
 #include "move_generator.h" // movestats
 #include "net_cost_handler.h"
 #include "manual_move_generator.h"
+#include "swap_evaluator.h"
 #include "vtr_random.h"
 
+#include <memory>
 #include <optional>
 #include <tuple>
 
@@ -329,6 +331,9 @@ class PlacementAnnealer {
 
     /// Keep record of moved blocks and affected pins in a swap
     t_pl_blocks_to_be_moved blocks_affected_;
+
+    /// Evaluates/commits/reverts swaps
+    SwapEvaluator swap_evaluator_;
 
   private:
     /**

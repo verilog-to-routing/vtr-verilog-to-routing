@@ -8,14 +8,27 @@
 #include "router_lookahead_interposer.h"
 
 /**
- * @brief Current VPR RouterLookahead implementation.
+ * @brief Current VPR RouterLookahead implementation. This lookahead uses a table
+ * indexed by (delta_x, delta_y) and other things like wire type.
+ *
+ * The lookahead table/map is constructed using data reduction of sample routes.
+ * It first picks sample points near the bottom left corner of the device and then
+ * finds the shortest paths to the entire RR Graph starting from these sample points.
+ * For all sample routes with a specific (delta_x, delta_y), the minimum path cost
+ * is inserted in the table.
  */
-class MapLookahead : public RouterLookahead {
+class MapLookahead final : public RouterLookahead {
   public:
     explicit MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings, float interposer_base_cost_multiplier);
 
   private:
     float get_expected_cost_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const;
+    //Same as get_expected_cost_flat_router(), but returns the delay and congestion costs separately
+    //instead of their sum (RCV requires this). It is called by get_expected_delay_and_cong() when is_flat_ is true.
+    std::pair<float, float> get_expected_delay_and_cong_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const;
+    //The original non-flat routing delay/congestion lookup.
+    //Called directly by get_expected_delay_and_cong_flat_router() and by get_expected_delay_and_cong() when !is_flat_.
+    std::pair<float, float> get_expected_delay_and_cong_global(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const;
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
     util::t_src_opin_delays src_opin_delays;
     // Lookup table from a tile pins to the primitive classes inside that tile
@@ -44,7 +57,13 @@ class MapLookahead : public RouterLookahead {
     void read_intra_cluster(const std::string& file) override;
     void write(const std::string& file_name) const override;
     void write_intra_cluster(const std::string& file) const override;
-    float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const override;
+
+  public:
+    // Public so SimpleDelayModel can call it through the
+    // concrete type statically, without using dynamic dispatch.
+    inline float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const override {
+        return opin_distance_based_min_cost[physical_tile_idx][from_layer][to_layer][dx][dy].delay;
+    }
 };
 
 /**

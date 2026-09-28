@@ -85,7 +85,13 @@ double PlacerTimingCosts::total_cost_from_scratch(size_t inode) const {
         return 0.;
     }
 
-    //Recompute recursively
+    // Leaf nodes hold the actual connection costs
+    size_t first_leaf = num_nodes_up_to_level((int)num_levels_ - 2);
+    if (inode >= first_leaf) {
+        return connection_costs_[inode];
+    }
+
+    // Recompute recursively
     double node_cost = total_cost_from_scratch(left_child(inode))
                        + total_cost_from_scratch(right_child(inode));
 

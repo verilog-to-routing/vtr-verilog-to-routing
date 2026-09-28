@@ -142,7 +142,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
         const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
 
-        for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
+        for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
             if ((rr_graph.node_type(inode) == e_rr_type::CHANX || rr_graph.node_type(inode) == e_rr_type::CHANY) && rr_graph.num_edges(inode) > 0) {
                 src_inode = size_t(inode);
                 break;
@@ -160,7 +160,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
                        &mutable_device_ctx.rr_graph,
                        device_ctx.physical_tile_types,
                        &mutable_device_ctx.rr_indexed_data,
-                       &mutable_device_ctx.rr_rc_data,
+                       mutable_device_ctx.rr_rc_data,
                        device_ctx.grid,
                        device_ctx.arch_switch_inf,
                        device_ctx.arch,
@@ -284,7 +284,7 @@ TEST_CASE("read_rr_edge_override", "[vpr]") {
                            &mutable_device_ctx.rr_graph,
                            device_ctx.physical_tile_types,
                            &mutable_device_ctx.rr_indexed_data,
-                           &mutable_device_ctx.rr_rc_data,
+                           mutable_device_ctx.rr_rc_data,
                            device_ctx.grid,
                            device_ctx.arch_switch_inf,
                            device_ctx.arch,
@@ -330,7 +330,7 @@ TEST_CASE("read_rr_edge_override", "[vpr]") {
                            &mutable_device_ctx.rr_graph,
                            device_ctx.physical_tile_types,
                            &mutable_device_ctx.rr_indexed_data,
-                           &mutable_device_ctx.rr_rc_data,
+                           mutable_device_ctx.rr_rc_data,
                            device_ctx.grid,
                            device_ctx.arch_switch_inf,
                            device_ctx.arch,

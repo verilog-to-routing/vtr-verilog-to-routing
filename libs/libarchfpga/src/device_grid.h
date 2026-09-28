@@ -326,6 +326,16 @@ class DeviceGrid {
     bool are_locs_on_same_die(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const;
 
     /**
+     * @brief Returns true if the straight line between loc_a and loc_b crosses a vertical interposer cut.
+     */
+    bool do_locs_cross_vertical_cut(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const;
+
+    /**
+     * @brief Returns true if the straight line between loc_a and loc_b crosses a horizontal interposer cut.
+     */
+    bool do_locs_cross_horizontal_cut(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const;
+
+    /**
      * @brief Get the die identifier of a location. In 2.5D and 3D architectures each die has its own unique identifier.
      * 
      * @param loc (x, y, layer) position that you want the id of.

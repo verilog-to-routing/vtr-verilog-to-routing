@@ -26,9 +26,9 @@
 #include "pugixml_util.hpp"
 
 #ifdef VTR_ENABLE_CAPNPROTO
-#    include <capnp/schema.h>
-#    include "rr_graph_uxsdcxx_capnp.h"
-#    include "mmap_file.h"
+#include <capnp/schema.h>
+#include "rr_graph_uxsdcxx_capnp.h"
+#include "mmap_file.h"
 #endif
 
 /**
@@ -54,13 +54,12 @@ static std::pair<RREdgeId, float> process_rr_edge_override(const std::string& li
  * parameters are a workaround to passing the data structures of DeviceContext. 
  * Needs a solution to reduce the number of parameters passed in.*/
 
-
 void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   RRGraphView* rr_graph,
                   const std::vector<t_physical_tile_type>& physical_tile_types,
                   const std::vector<t_segment_inf>& segment_inf,
                   vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
-                  std::vector<t_rr_rc_data>* rr_rc_data,
+                  RRRCData& rr_rc_data,
                   const DeviceGrid& grid,
                   const std::vector<t_arch_switch_inf>& arch_switch_inf,
                   e_graph_type graph_type,
@@ -205,7 +204,7 @@ void load_rr_edge_delay_overrides(std::string_view filename,
 
     while (std::getline(file, line)) {
         if (line[0] == '#') {
-            continue;  // Ignore lines starting with '#'
+            continue; // Ignore lines starting with '#'
         }
 
         if (!line.empty()) {

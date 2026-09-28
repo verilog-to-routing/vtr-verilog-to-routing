@@ -359,7 +359,7 @@ void draw_pin_to_sink(RRNodeId ipin_node, RRNodeId sink_node, ezgl::renderer* g)
         draw_get_rr_pin_coords(ipin_node, &x1, &y1, pin_side);
 
         float x2 = 0, y2 = 0;
-        draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[size_t(sink_node)], &x2, &y2);
+        draw_get_rr_src_sink_coords(sink_node, &x2, &y2);
 
         g->draw_line({x1, y1}, {x2, y2});
 
@@ -374,7 +374,7 @@ void draw_source_to_pin(RRNodeId source_node, RRNodeId opin_node, ezgl::renderer
     const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     float x1 = 0, y1 = 0;
-    draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[size_t(source_node)], &x1, &y1);
+    draw_get_rr_src_sink_coords(source_node, &x1, &y1);
 
     /* Draw the line for each ipin on different sides */
     for (const e_side pin_side : TOTAL_2D_SIDES) {
