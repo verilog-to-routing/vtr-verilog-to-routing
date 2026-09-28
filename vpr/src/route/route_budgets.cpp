@@ -137,33 +137,29 @@ void route_budgets::load_route_budgets(NetPinsMatrix<float>& net_delay,
 
 void route_budgets::set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay) {
     /*Sets the target delay of every clock connection to the maximum delay currently seen within
-     * its own clock domain (or across all clock domains combined, see
-     * e_low_skew_clock_target_scope), so the router (via RCV) is pushed to equalize clock delays
+     * its own clock net, so the router (via RCV) is pushed to equalize clock delays
      * and reduce skew. Non-clock connections do not have RCV applied to them, so they route using
-     * the default routing algorithm.
-     *
-     * Each clock domain corresponds to one clock net (one source fanning out to all its sinks),
-     * so "per clock domain" and "per clock net" are the same grouping here.*/
+     * the default routing algorithm.*/
     auto& route_ctx = g_vpr_ctx.routing();
 
-    // Maximum observed clock-connection delay within each clock net (domain).
-    std::map<ParentNetId, float> max_clock_delay_by_domain;
+    // Maximum observed clock-connection delay within each clock net.
+    std::map<ParentNetId, float> max_clock_delay_by_net;
 
     for (auto net_id : net_list_.nets()) {
         if (!route_ctx.is_clock_net[net_id]) continue;
 
-        float max_domain_delay = 0.;
+        float max_clock_net_delay = 0.;
         for (auto pin_id : net_list_.net_sinks(net_id)) {
             int ipin = net_list_.pin_net_index(pin_id);
-            max_domain_delay = std::max(max_domain_delay, net_delay[net_id][ipin]);
+            max_clock_net_delay = std::max(max_clock_net_delay, net_delay[net_id][ipin]);
         }
-        max_clock_delay_by_domain[net_id] = max_domain_delay;
+        max_clock_delay_by_net[net_id] = max_clock_net_delay;
     }
 
     for (auto net_id : net_list_.nets()) {
         if (!route_ctx.is_clock_net[net_id]) continue;
 
-        float target_delay = max_clock_delay_by_domain[net_id];
+        float target_delay = max_clock_delay_by_net[net_id];
 
         use_rcv[net_id][0] = true;
         for (auto pin_id : net_list_.net_sinks(net_id)) {

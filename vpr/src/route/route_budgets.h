@@ -139,6 +139,8 @@ class route_budgets {
     NetPinsMatrix<float> short_path_crit;   //[0..num_nets][0..clb_net[inet].pins]
 
     /// Per-connection flag to signify if RCV should be used for that connection.
+    /// Connections are uniquely identified by their sink pins. Driver pins are
+    /// set to reasonable values, but go unused by the RCV code.
     /// NOTE: Used uint8_t since bool does not work with NetPinsMatrix currently.
     NetPinsMatrix<uint8_t> use_rcv; //[0..num_nets][0..clb_net[inet].pins]
 
