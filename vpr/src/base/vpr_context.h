@@ -22,7 +22,7 @@
 #include "rr_graph_view.h"
 #include "rr_rc_data.h"
 #include "rr_graph_builder.h"
-#include "rr_node.h"
+#include "rr_graph_cost.h"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingConstraints.hpp"
 #include "power.h"

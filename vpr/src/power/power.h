@@ -263,7 +263,7 @@ struct t_power_commonly_used {
     float total_cb_buffer_size;
 };
 
-/* 1-to-1 data structure with t_rr_node
+/* One entry per RR node
  */
 struct t_rr_node_power {
     float* in_dens;             /* Switching density of inputs */

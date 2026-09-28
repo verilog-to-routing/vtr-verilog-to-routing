@@ -15,7 +15,7 @@
  * An understanding of libarchfpga/physical_types.h is crucial to understanding this file.  physical_types.h contains information about the architecture described in the architecture description language
  *
  * Key data structures:
- * t_rr_node - The basic building block of the interconnect in the FPGA architecture
+ * RRGraphView (librrgraph) - The routing resource graph, the basic building block of the interconnect in the FPGA architecture
  *
  * Cluster-specific main data structure:
  * t_pb: Stores the mapping between the user netlist and the logic blocks on the FPGA architecture.  For example, if a user design has 10 clusters of 5 LUTs each, you will have 10 t_pb instances of type cluster and within each of those clusters another 5 t_pb instances of type LUT.
@@ -27,6 +27,7 @@
 #include <string>
 #include <string_view>
 #include "ap_flow_enums.h"
+#include "appack_gain_attenuation_fn_type.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
 #include "constant_nets.h"
@@ -227,7 +228,6 @@ class t_pack_high_fanout_thresholds {
 };
 
 /* these are defined later, but need to declare here because it is used */
-class t_rr_node;
 struct t_pb_stats;
 struct t_pb_route;
 
@@ -1182,6 +1182,9 @@ struct t_ap_opts {
     /// different die than the cluster in an interposer-based architecture.
     float appack_inter_die_gain_multiplier;
 
+    /// The candidate gain attenuation function used by APPack.
+    e_appack_gain_attenuation_fn_type appack_gain_attenuation_fn;
+
     /// The number of threads the AP flow can use.
     unsigned num_threads;
 
@@ -1377,7 +1380,7 @@ struct t_router_opts {
     bool verify_route_file_switch_id;
 
     /// Options related to rr_node reordering, for testing and possible cache optimization
-    e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
+    e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = e_rr_node_reorder_algorithm::DONT_REORDER;
     int reorder_rr_graph_nodes_threshold = 0;
     int reorder_rr_graph_nodes_seed = 1;
 
