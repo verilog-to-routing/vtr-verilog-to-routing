@@ -40,13 +40,12 @@ class SeparableLookahead : public RouterLookahead {
      *        "physical_tile_idx" on layer "from_layer", travelling from x-coordinate x1 to an IPIN at
      *        x-coordinate x2 on layer "to_layer".
      *
-     * This is the absolute-coordinate, single-axis analogue of get_opin_distance_min_delay(). The delay
-     * of reaching a wire from the OPIN is charged to the x component only, so that adding this to
-     * get_opin_min_delay_y() counts the OPIN access delay exactly once.
+     * Profiled costs include OPIN-to-wire delay in x only. MapLookahead fallback estimates
+     * include that delay on either axis, so sums involving a y fallback may count it twice.
      */
     float get_opin_min_delay_x(int physical_tile_idx, int from_layer, int to_layer, int x1, int x2) const;
 
-    /// @brief The y counterpart of get_opin_min_delay_x(), excluding the OPIN access delay.
+    /// @brief The y counterpart of get_opin_min_delay_x(); excludes the delay of going from the source/opin node to the wire.
     float get_opin_min_delay_y(int physical_tile_idx, int from_layer, int to_layer, int y1, int y2) const;
 
   private:
@@ -57,7 +56,7 @@ class SeparableLookahead : public RouterLookahead {
 
     // Indexed by tile type, source layer, target layer, source coordinate and target coordinate.
     vtr::NdMatrix<float, 5> opin_x_min_delay_; ///< Minimum x delay, including OPIN access delay.
-    vtr::NdMatrix<float, 5> opin_y_min_delay_; ///< Minimum y delay, excluding OPIN access delay.
+    vtr::NdMatrix<float, 5> opin_y_min_delay_; ///< Minimum y delay.
 
     bool is_flat_;               ///< Whether flat routing is enabled.
     int route_verbosity_;        ///< Verbosity for SOURCE/OPIN profiling.
