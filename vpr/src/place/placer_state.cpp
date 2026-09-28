@@ -4,9 +4,10 @@
 #include "clustered_netlist.h"
 #include "globals.h"
 #include "move_transactions.h"
+#include "vpr_context.h"
 
 PlacerTimingContext::PlacerTimingContext(bool placement_is_timing_driven) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     const size_t num_nets = cluster_ctx.clb_nlist.nets().size();
 
@@ -38,8 +39,8 @@ PlacerTimingContext::PlacerTimingContext(bool placement_is_timing_driven) {
 }
 
 void PlacerTimingContext::commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& clb_nlist = cluster_ctx.clb_nlist;
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteredNetlist& clb_nlist = cluster_ctx.clb_nlist;
 
     // Go through all the sink pins affected
     for (ClusterPinId pin_id : blocks_affected.affected_pins) {

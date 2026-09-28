@@ -21,6 +21,8 @@ add_subdirectory(libblifparse)
 add_subdirectory(libtatum)
 add_subdirectory(libcatch2)
 
+# Don't build yaml-cpp command line tools since we don't use them
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 add_subdirectory(yaml-cpp)
 # Treat yaml-cpp headers as system headers to suppress warnings
 if(TARGET yaml-cpp)

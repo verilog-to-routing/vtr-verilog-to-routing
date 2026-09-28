@@ -1616,6 +1616,21 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
 
     **Default:** ``0.1``
 
+.. option:: --appack_gain_attenuation_fn {none | quad_sqrt_knee | gaussian}
+
+    Controls the function APPack uses to attenuate a candidate molecule's gain
+    based on its distance from the cluster being formed.
+
+    * ``none`` No attenuation is applied (the multiplier is always 1.0). Useful
+      as a baseline to measure the contribution of gain attenuation.
+
+    * ``quad_sqrt_knee`` Piecewise function which decays quadratically near the
+      cluster and transitions to an inverted sqrt decay farther away.
+
+    * ``gaussian`` Smooth Gaussian decay.
+
+    **Default:** ``quad_sqrt_knee``
+
 .. option:: --ap_high_fanout_threshold <int>
 
     Defines the threshold for high fanout nets within AP flow.
