@@ -12,7 +12,6 @@
 #include "rr_node_types.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
-#include "vpr_utils.h"
 #include "vtr_time.h"
 
 /**
@@ -72,16 +71,12 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
     // Size of the profiling-axis dimension: device width when profiling x, height when profiling y.
     const size_t axis_dim_size = profile_x ? grid.width() : grid.height();
 
-    wire_cost_map = vtr::NdMatrix<util::Cost_Entry, 7>({num_layers,
-                                                        num_layers,
-                                                        chan_type_dim_size,
-                                                        segment_infs.size(),
-                                                        direction_dim_size,
-                                                        axis_dim_size,
-                                                        axis_dim_size});
-    wire_cost_map.fill(util::Cost_Entry());
+    wire_cost_map.resize({num_layers, num_layers, chan_type_dim_size, segment_infs.size(),
+                          direction_dim_size, axis_dim_size, axis_dim_size});
 
     const int fixed_coord = profile_x ? (int)(2 * grid.height() / 3) : (int)grid.width() / 2;
+
+    util::t_dijkstra_data dijkstra_data;
 
     for (size_t from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
         // Skip layers without inter-cluster routing resources.
@@ -122,32 +117,23 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
                 for (Direction direction : {Direction::INC, Direction::DEC, Direction::BIDIR}) {
                     const int direction_index = static_cast<int>(direction);
 
-                    // get sample points at each position along the profiling axis on the sample line
-                    std::vector<RRNodeId> sample_nodes;
+                    // Sample each position along the profiling axis.
                     for (int coord = 1; coord < (int)axis_dim_size; coord++) {
                         const int sample_x = profile_x ? coord : fixed_coord;
                         const int sample_y = profile_x ? fixed_coord : coord;
-                        RRNodeId start_node;
+                        RRNodeId sample_node;
                         if (is_chanxy(chan_type)) {
-                            start_node = get_chanxy_start_node_sep(from_layer_num, sample_x, sample_y,
-                                                                   direction, chan_type, segment_inf.seg_index);
+                            sample_node = get_chanxy_start_node_sep(from_layer_num, sample_x, sample_y,
+                                                                    direction, chan_type, segment_inf.seg_index);
                         } else {
                             VTR_ASSERT(is_chanz(chan_type));
-                            start_node = util::get_chanz_start_node(sample_x, sample_y, segment_inf.seg_index, 0, direction);
+                            sample_node = util::get_chanz_start_node(sample_x, sample_y, segment_inf.seg_index, 0, direction);
                         }
 
-                        if (start_node) {
-                            sample_nodes.emplace_back(start_node);
+                        if (!sample_node) {
+                            continue;
                         }
-                    }
 
-                    if (sample_nodes.empty()) {
-                        continue;
-                    }
-
-                    // Reuse the Dijkstra workspace across sample nodes.
-                    util::t_dijkstra_data dijkstra_data;
-                    for (RRNodeId sample_node : sample_nodes) {
                         // Use the driver end of the wire along the profiling axis as the start coordinate.
                         const bool dec = rr_graph.node_direction(sample_node) == Direction::DEC;
                         int start_coord;
@@ -181,7 +167,8 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
  * @brief Minimum OPIN delay between two coordinates along one axis.
  * Reachable wires lack direction information, so minimize over all directions.
  * Include OPIN access delay only for x to count it once when summing the axes.
- * Fall back to MapLookahead for each OPIN without a usable wire cost.
+ * Fall back to MapLookahead for each OPIN without a usable wire cost; that estimate
+ * includes OPIN access delay on either axis.
  */
 static float min_opin_axis_delay(const util::t_src_opin_delays& src_opin_delays,
                                  const vtr::NdMatrix<util::Cost_Entry, 7>& wire_cost_map,
@@ -191,8 +178,7 @@ static float min_opin_axis_delay(const util::t_src_opin_delays& src_opin_delays,
                                  int from_layer,
                                  int to_layer,
                                  int c1,
-                                 int c2,
-                                 bool include_opin_access_delay) {
+                                 int c2) {
     const bool profile_x = (axis == e_profile_axis::X);
     float min_delay = std::numeric_limits<float>::infinity();
 
@@ -225,7 +211,7 @@ static float min_opin_axis_delay(const util::t_src_opin_delays& src_opin_delays,
                     }
                 }
 
-                const float access_delay = include_opin_access_delay ? reachable_wire_inf.delay : 0.f;
+                const float access_delay = profile_x ? reachable_wire_inf.delay : 0.f;
                 expected_delay = std::min(expected_delay, access_delay + wire_delay);
             }
         }
@@ -252,7 +238,6 @@ static void min_opin_axis_delay_map(const util::t_src_opin_delays& src_opin_dela
                                     const vtr::NdMatrix<util::Cost_Entry, 7>& wire_cost_map,
                                     e_profile_axis axis,
                                     const RouterLookahead& map_lookahead,
-                                    bool include_opin_access_delay,
                                     vtr::NdMatrix<float, 5>& axis_min_delay) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const int num_tile_types = (int)device_ctx.physical_tile_types.size();
@@ -271,16 +256,9 @@ static void min_opin_axis_delay_map(const util::t_src_opin_delays& src_opin_dela
             for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
                 for (int c1 = 0; c1 < axis_dim_size; c1++) {
                     for (int c2 = 0; c2 < axis_dim_size; c2++) {
-                        axis_min_delay[tile_type_idx][from_layer_num][to_layer_num][c1][c2] = min_opin_axis_delay(src_opin_delays,
-                                                                                                                  wire_cost_map,
-                                                                                                                  axis,
-                                                                                                                  map_lookahead,
-                                                                                                                  tile_type_idx,
-                                                                                                                  from_layer_num,
-                                                                                                                  to_layer_num,
-                                                                                                                  c1,
-                                                                                                                  c2,
-                                                                                                                  include_opin_access_delay);
+                        axis_min_delay[tile_type_idx][from_layer_num][to_layer_num][c1][c2] =
+                            min_opin_axis_delay(src_opin_delays, wire_cost_map, axis, map_lookahead,
+                                                tile_type_idx, from_layer_num, to_layer_num, c1, c2);
                     }
                 }
             }
@@ -296,77 +274,65 @@ SeparableLookahead::SeparableLookahead(const t_det_routing_arch& det_routing_arc
 }
 
 float SeparableLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-
-    e_rr_type from_rr_type = rr_graph.node_type(current_node);
-
-    VTR_ASSERT_SAFE(rr_graph.node_type(target_node) == e_rr_type::SINK);
+    VTR_ASSERT_SAFE(g_vpr_ctx.device().rr_graph.node_type(target_node) == e_rr_type::SINK);
 
     if (is_flat_) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "SeparableLookahead does not support flat routing");
     }
 
-    if (is_chanxy(from_rr_type) || is_chanz(from_rr_type) || from_rr_type == e_rr_type::SOURCE || from_rr_type == e_rr_type::OPIN) {
-        auto [delay_cost, cong_cost] = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
-        return delay_cost + cong_cost;
-    }
-    if (from_rr_type == e_rr_type::IPIN) {
-        return device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost;
-    }
-    return 0.f;
+    auto [delay_cost, cong_cost] = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
+    return delay_cost + cong_cost;
 }
 
 std::pair<float, float> SeparableLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    int from_layer_num = rr_graph.node_layer_low(from_node);
-    int to_layer_num = rr_graph.node_layer_low(to_node);
-
-    float expected_delay_cost = std::numeric_limits<float>::infinity();
-    float expected_cong_cost = std::numeric_limits<float>::infinity();
-
     e_rr_type from_type = rr_graph.node_type(from_node);
     if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::OPIN) {
         return map_lookahead_->get_expected_delay_and_cong(from_node, to_node, params, R_upstream);
-    } else if (is_chanxy(from_type) || is_chanz(from_type)) {
-        Direction from_dir = rr_graph.node_direction(from_node);
+    }
+    if (from_type == e_rr_type::IPIN) {
+        return {0.f, device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost};
+    }
+    if (!is_chanxy(from_type) && !is_chanz(from_type)) {
+        return {0.f, 0.f};
+    }
 
-        // CHANZ drives from its destination layer; BIDIR can use the target layer.
-        if (from_type == e_rr_type::CHANZ) {
-            if (from_dir == Direction::INC) {
-                from_layer_num = rr_graph.node_layer_high(from_node);
-            } else if (from_dir == Direction::BIDIR) {
-                from_layer_num = to_layer_num;
+    int from_layer_num = rr_graph.node_layer_low(from_node);
+    int to_layer_num = rr_graph.node_layer_low(to_node);
+    Direction from_dir = rr_graph.node_direction(from_node);
+
+    // CHANZ drives from its destination layer; BIDIR uses the endpoint closest to the target.
+    if (from_type == e_rr_type::CHANZ) {
+        if (from_dir == Direction::INC) {
+            from_layer_num = rr_graph.node_layer_high(from_node);
+        } else if (from_dir == Direction::BIDIR) {
+            int high_layer = rr_graph.node_layer_high(from_node);
+            if (std::abs(high_layer - to_layer_num) < std::abs(from_layer_num - to_layer_num)) {
+                from_layer_num = high_layer;
             }
         }
-
-        RRIndexedDataId from_cost_index = rr_graph.node_cost_index(from_node);
-        int from_seg_index = device_ctx.rr_indexed_data[from_cost_index].seg_index;
-        VTR_ASSERT(from_seg_index >= 0);
-
-        const int chan_index = util::chan_type_to_index(from_type);
-        const int dir_index = static_cast<int>(from_dir);
-
-        // Match the driver coordinates used during profiling.
-        const bool dec = (from_dir == Direction::DEC);
-        const int from_x = dec ? rr_graph.node_xhigh(from_node) : rr_graph.node_xlow(from_node);
-        const int from_y = dec ? rr_graph.node_yhigh(from_node) : rr_graph.node_ylow(from_node);
-
-        auto [to_x, to_y] = util::get_adjusted_rr_position(to_node);
-
-        const util::Cost_Entry& x_cost = x_wire_cost_map_[from_layer_num][to_layer_num][chan_index][from_seg_index][dir_index][from_x][to_x];
-        const util::Cost_Entry& y_cost = y_wire_cost_map_[from_layer_num][to_layer_num][chan_index][from_seg_index][dir_index][from_y][to_y];
-
-        expected_delay_cost = x_cost.delay + y_cost.delay;
-        expected_cong_cost = x_cost.congestion + y_cost.congestion;
-
-    } else if (from_type == e_rr_type::IPIN) {
-        return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
-    } else {
-        return std::make_pair(0., 0.);
     }
+
+    RRIndexedDataId from_cost_index = rr_graph.node_cost_index(from_node);
+    int from_seg_index = device_ctx.rr_indexed_data[from_cost_index].seg_index;
+    VTR_ASSERT(from_seg_index >= 0);
+
+    const int chan_index = util::chan_type_to_index(from_type);
+    const int dir_index = static_cast<int>(from_dir);
+
+    const bool dec = (from_dir == Direction::DEC);
+    const int from_x = dec ? rr_graph.node_xhigh(from_node) : rr_graph.node_xlow(from_node);
+    const int from_y = dec ? rr_graph.node_yhigh(from_node) : rr_graph.node_ylow(from_node);
+
+    auto [to_x, to_y] = util::get_adjusted_rr_position(to_node);
+
+    const util::Cost_Entry& x_cost = x_wire_cost_map_[from_layer_num][to_layer_num][chan_index][from_seg_index][dir_index][from_x][to_x];
+    const util::Cost_Entry& y_cost = y_wire_cost_map_[from_layer_num][to_layer_num][chan_index][from_seg_index][dir_index][from_y][to_y];
+
+    float expected_delay_cost = x_cost.delay + y_cost.delay;
+    float expected_cong_cost = x_cost.congestion + y_cost.congestion;
 
     // Use the map lookahead when the combined delay or congestion cost is unusable.
     if (!std::isfinite(expected_delay_cost) || !std::isfinite(expected_cong_cost)
@@ -377,7 +343,7 @@ std::pair<float, float> SeparableLookahead::get_expected_delay_and_cong(RRNodeId
     expected_delay_cost *= params.criticality;
     expected_cong_cost *= (1.0f - params.criticality);
 
-    return std::make_pair(expected_delay_cost, expected_cong_cost);
+    return {expected_delay_cost, expected_cong_cost};
 }
 
 void SeparableLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
@@ -391,10 +357,8 @@ void SeparableLookahead::compute(const std::vector<t_segment_inf>& segment_inf) 
     // OPIN reduction uses the map lookahead when a separable cost is unavailable.
     map_lookahead_->compute(segment_inf);
 
-    min_opin_axis_delay_map(src_opin_delays, x_wire_cost_map_, e_profile_axis::X, *map_lookahead_,
-                            true, opin_x_min_delay_);
-    min_opin_axis_delay_map(src_opin_delays, y_wire_cost_map_, e_profile_axis::Y, *map_lookahead_,
-                            false, opin_y_min_delay_);
+    min_opin_axis_delay_map(src_opin_delays, x_wire_cost_map_, e_profile_axis::X, *map_lookahead_, opin_x_min_delay_);
+    min_opin_axis_delay_map(src_opin_delays, y_wire_cost_map_, e_profile_axis::Y, *map_lookahead_, opin_y_min_delay_);
 }
 
 void SeparableLookahead::compute_intra_tile() {
