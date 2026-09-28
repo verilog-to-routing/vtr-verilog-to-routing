@@ -3377,7 +3377,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "                 exhaustive node sampling method\n"
             " * simple: A purely distance-based lookahead loaded from an external file\n"
             " * separable: A lookahead which treats the x and y components of a route\n"
-            "              as separable (not yet implemented)\n"
+            "              as separable\n"
             "\n"
             " The extended map differs from the map lookahead in the lookahead computation.\n"
             " It is better suited for architectures that have specialized routing for specific\n"
