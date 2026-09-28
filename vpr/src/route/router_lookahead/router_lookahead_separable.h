@@ -1,5 +1,11 @@
 #pragma once
 
+// The separable lookahead is still experimental and there are some deficiencies that should be fixed.
+// Below is a TODO list.
+// TODO: Remove the dependency on the map lookahead for filling in unsampled elements in the table
+// TODO: Clean up the OPIN/SOURCE lookahead code
+// TODO: Use the separable lookahead in the get_opin_distance_min_delay function
+
 #include <optional>
 #include <string>
 #include "vtr_ndmatrix.h"
