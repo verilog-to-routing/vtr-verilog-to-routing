@@ -1292,9 +1292,10 @@ static void draw_server_mode_flylines_and_labels(ezgl::point2d start, ezgl::poin
 
         g->draw_text(text_bbox.center(), incr_delay_str,
                      text_bbox.width(), text_bbox.height());
-        // draw_text only consumes the one-shot offset once it commits to
-        // painting; on either of its cull paths the offset would survive into
-        // the next unrelated label.
+        // The offset is meant for this label only, and draw_text() normally
+        // clears it after drawing. But when a label is skipped (it does not
+        // fit, is too small at this zoom, or is off screen), the offset is not
+        // cleared and would move the next label drawn, so clear it here.
         g->set_text_screen_offset({0.0, 0.0});
 
         g->set_font_size(14);
