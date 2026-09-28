@@ -21,6 +21,7 @@ enum class e_agent_state;
 class NocCostHandler;
 class InterposerCostHandler;
 class NetPinTimingInvalidator;
+class ParallelAnnealEngine;
 class PlacerSetupSlacks;
 
 /**
@@ -200,6 +201,8 @@ class PlacementAnnealer {
                       float auto_init_t_scale,
                       int move_lim);
 
+    ~PlacementAnnealer();
+
     /**
      * @brief Contains the inner loop of the simulated annealing that performs
      * a certain number of swaps with a single temperature
@@ -289,6 +292,18 @@ class PlacementAnnealer {
     ///        results from a set of trial swaps.
     float estimate_starting_temp_using_cost_variance_();
 
+    /// @brief Returns true when the inner loop should run with parallel swap evaluation.
+    ///
+    /// Requires more than one worker and a configuration the parallel engine
+    /// supports. Otherwise the sequential inner loop is used and a warning is
+    /// printed once.
+    bool should_use_parallel_inner_loop_();
+
+    /// @brief Parallel counterpart of placement_inner_loop().
+    ///
+    /// Runs the inner loop as a sequence of batches, each evaluating one swap per worker.
+    void placement_inner_loop_parallel_();
+
   private:
     const t_placer_opts& placer_opts_;
     PlacerState& placer_state_;
@@ -334,6 +349,10 @@ class PlacementAnnealer {
 
     /// Evaluates/commits/reverts swaps
     SwapEvaluator swap_evaluator_;
+    /// Evaluates swaps in parallel. Created on the first parallel inner loop, null otherwise.
+    std::unique_ptr<ParallelAnnealEngine> parallel_engine_;
+    /// Whether the warning about falling back to the sequential inner loop has been printed
+    bool parallel_fallback_warned_ = false;
 
   private:
     /**
