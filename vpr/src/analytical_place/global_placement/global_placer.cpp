@@ -22,6 +22,7 @@
 #include "flat_placement_bins.h"
 #include "flat_placement_density_manager.h"
 #include "globals.h"
+#include "gp_solution_quality_estimation.h"
 #include "logic_types.h"
 #include "partial_legalizer.h"
 #include "partial_placement.h"
@@ -136,7 +137,7 @@ static void print_placement_stats(const PartialPlacement& p_placement,
                                   const PreClusterTimingManager& pre_cluster_timing_manager) {
     // Print the placement HPWL
     VTR_LOG("\tPlacement objective HPWL: %f\n", p_placement.get_hpwl(ap_netlist));
-    VTR_LOG("\tPlacement estimated wirelength: %g\n", p_placement.estimate_post_placement_wirelength(ap_netlist));
+    VTR_LOG("\tPlacement estimated wirelength: %g\n", estimate_post_routing_wire_usage(p_placement, ap_netlist, g_vpr_ctx.device().grid));
 
     // Print the timing information.
     if (pre_cluster_timing_manager.is_valid()) {

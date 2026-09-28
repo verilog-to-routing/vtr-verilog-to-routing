@@ -17,6 +17,7 @@
 #include "detailed_placer.h"
 #include "device_size_estimate.h"
 #include "full_legalizer.h"
+#include "gp_solution_quality_estimation.h"
 #include "setup_grid.h"
 #include "logical_ram_infer.h"
 #include "gen_ap_netlist_from_atoms.h"
@@ -198,6 +199,7 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
                                           ap_netlist,
                                           prepacker,
                                           p_placement);
+        VTR_LOG("\tPlacement estimated wirelength: %g\n", estimate_post_routing_wire_usage(p_placement, ap_netlist, device_ctx.grid));
         return p_placement;
     } else {
         // Run the Global Placer
