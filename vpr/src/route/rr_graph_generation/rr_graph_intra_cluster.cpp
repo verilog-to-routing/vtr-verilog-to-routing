@@ -1180,7 +1180,7 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
             }
 
             const t_bus_mux_key key{edge->interconnect, edge->bus_mux_owner()};
-            auto found = std::ranges::find_if(mux_indices, [&key](const auto& entry) {
+            auto found = std::ranges::find_if(mux_indices, [&key](const auto& entry) noexcept {
                 return entry.first == key;
             });
             if (found == mux_indices.end()) {
