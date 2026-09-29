@@ -57,7 +57,6 @@ class ParallelNetlistRouter : public NetlistRouter {
     RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
     /** Inform the PartitionTree of the nets with updated bounding boxes */
     void handle_bb_updated_nets(const std::vector<ParentNetId>& nets);
-    void set_rcv_enabled(bool x);
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
   private:

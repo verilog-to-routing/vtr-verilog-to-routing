@@ -64,8 +64,6 @@ class NestedNetlistRouter : public NetlistRouter {
     /** Inform the PartitionTree of the nets with updated bounding boxes */
     void handle_bb_updated_nets(const std::vector<ParentNetId>& nets);
 
-    /** Set rcv_enabled for each ConnectionRouter this is managing */
-    void set_rcv_enabled(bool x);
     /** Set timing_info for each ConnectionRouter this is managing */
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
