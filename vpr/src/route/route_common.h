@@ -3,9 +3,12 @@
 /** @file Misc. router utils: some used by the connection router, some by other
  * router files and some used globally. */
 
+#include <optional>
 #include <vector>
+#include "bus_mux_route_types.h"
 #include "router_stats.h"
 #include "globals.h"
+#include "route_tree_fwd.h"
 #include "rr_graph_fwd.h"
 #include "rr_graph_view.h"
 #include "vtr_assert.h"

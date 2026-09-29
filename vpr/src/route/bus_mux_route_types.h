@@ -11,9 +11,7 @@
  *
  * The cost has no history term; sets with fewer routed bits cost more to use.
  */
-#include <optional>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "clustered_netlist_fwd.h"
