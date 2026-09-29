@@ -62,6 +62,45 @@ struct ParseOnOff {
     }
 };
 
+struct ParseGraphicsPause {
+    ConvertedValue<e_graphics_pause> from_str(const std::string& str) {
+        ConvertedValue<e_graphics_pause> conv_value;
+        if (str == "every_update")
+            conv_value.set_value(e_graphics_pause::EVERY_UPDATE);
+        else if (str == "major")
+            conv_value.set_value(e_graphics_pause::MAJOR_UPDATES);
+        else if (str == "final_stage")
+            conv_value.set_value(e_graphics_pause::FINAL_STAGE);
+        else if (str == "never")
+            conv_value.set_value(e_graphics_pause::NEVER);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_graphics_pause (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_graphics_pause val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_graphics_pause::EVERY_UPDATE)
+            conv_value.set_value("every_update");
+        else if (val == e_graphics_pause::MAJOR_UPDATES)
+            conv_value.set_value("major");
+        else if (val == e_graphics_pause::FINAL_STAGE)
+            conv_value.set_value("final_stage");
+        else {
+            VTR_ASSERT(val == e_graphics_pause::NEVER);
+            conv_value.set_value("never");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"every_update", "major", "final_stage", "never"};
+    }
+};
+
 struct ParseArchFormat {
     ConvertedValue<e_arch_format> from_str(const std::string& str) {
         ConvertedValue<e_arch_format> conv_value;
@@ -1674,16 +1713,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " invoking VPR.")
         .default_value("off");
 
-    gfx_grp.add_argument(args.GraphPause, "--auto")
+    gfx_grp.add_argument<e_graphics_pause, ParseGraphicsPause>(args.GraphPause, "--graphics_pause")
         .help(
             "Controls how often VPR pauses for interactive"
-            " graphics (requiring Proceed to be clicked)."
-            " Higher values pause less frequently."
-            " 2 skips graphics (window, --save_graphics and --graphics_commands)"
-            " until the last requested stage completes, then pauses once;"
-            " 3 never pauses.")
-        .default_value("1")
-        .choices({"0", "1", "2", "3"})
+            " graphics (requiring Proceed to be clicked):"
+            " every_update pauses at every minor and major update;"
+            " major pauses at major updates;"
+            " final_stage skips graphics (window, --save_graphics and"
+            " --graphics_commands) until the last requested stage completes,"
+            " then pauses once; never does not pause.")
+        .default_value("major")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     gfx_grp.add_argument<bool, ParseOnOff>(args.save_graphics, "--save_graphics")
@@ -1761,9 +1800,9 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "   Note that drawing state is reset to its previous state after\n"
             "   these commands are invoked.\n"
             "\n"
-            "   Like the interactive graphics --disp option, the --auto\n"
-            "   option controls how often the commands specified with\n"
-            "   this option are invoked.\n")
+            "   Like the interactive graphics --disp option, the\n"
+            "   --graphics_pause option controls how often the commands\n"
+            "   specified with this option are invoked.\n")
         .default_value("");
 
     auto& gen_grp = parser.add_argument_group("general options");

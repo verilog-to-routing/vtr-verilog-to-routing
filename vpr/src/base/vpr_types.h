@@ -71,11 +71,11 @@ enum class ScreenUpdatePriority {
 };
 
 /**
- * @brief How often interactive graphics pause for the user (--auto).
+ * @brief How often interactive graphics pause for the user (--graphics_pause).
  *
- * The values match the --auto command-line values and are ordered against
- * ScreenUpdatePriority: an update pauses when int(priority) >= int(mode),
- * except for FINAL_STAGE, which has its own rule.
+ * Set with --graphics_pause (every_update, major, final_stage, never). The values are
+ * ordered against ScreenUpdatePriority: an update pauses when
+ * int(priority) >= int(mode), except for FINAL_STAGE, which has its own rule.
  */
 enum class e_graphics_pause {
     EVERY_UPDATE = 0,  ///<Pause on every update, including MINOR ones (e.g. each temperature)
@@ -1638,7 +1638,7 @@ struct t_vpr_setup {
     t_timing_inf Timing;                 ///<timing information
     float constant_net_delay;            ///<timing information when place and route not run
     bool ShowGraphics;                   ///<option to show graphics
-    int GraphPause;                      ///<user interactiveness graphics option
+    e_graphics_pause GraphPause;         ///<user interactiveness graphics option
     bool SaveGraphics;                   ///<option to save graphical contents to pdf, png, or svg
     std::string GraphicsCommands;        ///<commands to control graphics settings
     std::string RendererType;            ///<rendering backend: "immediate" (SW QPainter, no batching; most

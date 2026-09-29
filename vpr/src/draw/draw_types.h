@@ -322,7 +322,7 @@ struct t_draw_state {
     bool show_graphics = false;
 
     ///@brief How often is user input required.
-    e_graphics_pause gr_automode = e_graphics_pause::EVERY_UPDATE;
+    e_graphics_pause graphics_pause = e_graphics_pause::EVERY_UPDATE;
 
     ///@brief Should we automatically finish drawing (instead of waiting in the event loop for user interaction?
     bool auto_proceed = false;

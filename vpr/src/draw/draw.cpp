@@ -200,7 +200,7 @@ static int pending_graphics_exit_code = 0;
 /********************** Subroutine definitions ******************************/
 
 void init_graphics_state(bool show_graphics_val,
-                         int gr_automode_val,
+                         e_graphics_pause graphics_pause_val,
                          enum e_route_type route_type,
                          bool save_graphics,
                          std::string graphics_commands,
@@ -210,12 +210,12 @@ void init_graphics_state(bool show_graphics_val,
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
 
-    /* Sets the static show_graphics and gr_automode variables to the    *
+    /* Sets the static show_graphics and graphics_pause variables to the *
      * desired values.  They control if graphics are enabled and, if so, *
      * how often the user is prompted for input.                         */
 
     draw_state->show_graphics = show_graphics_val;
-    draw_state->gr_automode = static_cast<e_graphics_pause>(gr_automode_val);
+    draw_state->graphics_pause = graphics_pause_val;
     draw_state->draw_route_type = route_type;
     draw_state->save_graphics = save_graphics;
     draw_state->graphics_commands = graphics_commands;
@@ -238,7 +238,7 @@ void init_graphics_state(bool show_graphics_val,
 #else
     //Suppress unused parameter warnings
     (void)show_graphics_val;
-    (void)gr_automode_val;
+    (void)graphics_pause_val;
     (void)route_type;
     (void)save_graphics;
     (void)graphics_commands;
@@ -267,7 +267,7 @@ void init_final_graphics_stage(const t_vpr_setup& vpr_setup) {
 
     // Only the final stage is ever reached, so a barrier on any other stage
     // would silently stop the script there.
-    if (get_draw_state_vars()->gr_automode == e_graphics_pause::FINAL_STAGE && final_stage != e_pic_type::NO_PICTURE) {
+    if (get_draw_state_vars()->graphics_pause == e_graphics_pause::FINAL_STAGE && final_stage != e_pic_type::NO_PICTURE) {
         for (const std::string& raw_cmd : vtr::StringToken(vpr_setup.GraphicsCommands).split(";")) {
             std::vector<std::string> cmd = vtr::StringToken(raw_cmd).split(" \t\n");
             if (cmd.size() != 2 || cmd[0] != "wait_for_stage")
@@ -278,7 +278,7 @@ void init_final_graphics_stage(const t_vpr_setup& vpr_setup) {
             if (want != final_stage) {
                 VPR_FATAL_ERROR(VPR_ERROR_DRAW,
                                 "--graphics_commands 'wait_for_stage %s' can never be reached with "
-                                "--auto 2: only the final stage of this flow is drawn.\n",
+                                "--graphics_pause final_stage: only the final stage of this flow is drawn.\n",
                                 cmd[1].c_str());
             }
         }
@@ -602,11 +602,11 @@ void update_screen(ScreenUpdatePriority priority,
 
     // When the priority associated with this screen update is higher than the level set in draw_state,
     // we need to pause at the current graphics view. This does not necessarily happen only at a state change.
-    // Check the definition of gr_automode in draw_state for more information.
-    bool pause_for_priority = int(priority) >= int(draw_state->gr_automode);
+    // Check the definition of graphics_pause in draw_state for more information.
+    bool pause_for_priority = int(priority) >= int(draw_state->graphics_pause);
 
-    // --auto 2: graphics act, and pause, only once the last requested stage completes.
-    const bool final_stage_only = draw_state->gr_automode == e_graphics_pause::FINAL_STAGE && final_stage != e_pic_type::NO_PICTURE;
+    // --graphics_pause final_stage: graphics act, and pause, only once the last requested stage completes.
+    const bool final_stage_only = draw_state->graphics_pause == e_graphics_pause::FINAL_STAGE && final_stage != e_pic_type::NO_PICTURE;
     const bool at_final_stage = pic_on_screen_val == final_stage && completed_stages.count(final_stage) != 0;
     const bool hide_intermediate = final_stage_only && !at_final_stage;
     if (final_stage_only) {
