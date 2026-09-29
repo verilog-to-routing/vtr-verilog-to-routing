@@ -60,6 +60,15 @@ void update_screen(ScreenUpdatePriority priority,
  */
 void notify_stage_complete(e_pic_type stage);
 
+/**
+ * @brief Under --disp on, creates the main canvas and builds the GUI without
+ * showing it, so its widgets exist before the first update_screen() pause.
+ *
+ * Call once draw coordinates are set up (after init_draw_coords()). Does
+ * nothing for headless runs or if the GUI is already built.
+ */
+void init_graphics_ui();
+
 //FIXME: Currently broken if no rr-graph is loaded
 /**
  * @brief Load the arrays containing the left and bottom coordinates of the clbs.

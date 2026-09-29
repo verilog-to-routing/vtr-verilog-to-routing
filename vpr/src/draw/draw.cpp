@@ -111,6 +111,13 @@ static void draw_main_canvas(ezgl::renderer* g);
 static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::renderer* g);
 
 /**
+ * @brief Creates the main canvas over initial_world with the backend selected
+ * by --renderer. Called once per application, from init_graphics_ui() or on the
+ * first update_screen() state change.
+ */
+static void add_main_canvas();
+
+/**
  * @brief Generalized callback function to setup the UI when the stage changes.
  */
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window);
@@ -177,6 +184,9 @@ std::string rr_highlight_message;
 // `wait_for_stage <stage>_initial` / `<stage>_done` script barriers.
 std::set<e_pic_type> initial_stages;
 std::set<e_pic_type> completed_stages;
+
+// Set once add_main_canvas() has created the main canvas of the current application.
+static bool main_canvas_added = false;
 
 // Used for scripted graphics (rendered to files via --graphics_commands).
 // `exit N` from --graphics_commands is processed deferredly: the
@@ -249,10 +259,28 @@ void notify_stage_complete(e_pic_type stage) {
 #endif
 }
 
+void init_graphics_ui() {
+#ifndef NO_GRAPHICS
+    if (application == nullptr || !get_draw_state_vars()->show_graphics)
+        return;
+
+    if (!main_canvas_added) {
+        set_initial_world();
+        add_main_canvas();
+    }
+    application->build_ui();
+#endif
+}
+
 #ifndef NO_GRAPHICS
 
 static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
+
+    // init_graphics_ui() builds the UI before any stage has set up a picture,
+    // and the immediate/deferred backends draw once while initializing the canvas.
+    if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE)
+        return;
 
     g->set_font_size(14);
 
@@ -408,6 +436,50 @@ static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::rende
     return true;
 }
 
+static void add_main_canvas() {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas, initial_world);
+    if (canvas != nullptr) {
+        ezgl::renderer_type rt = ezgl::renderer_type::rhi;
+        if (draw_state->renderer_type == "immediate")
+            rt = ezgl::renderer_type::immediate;
+        else if (draw_state->renderer_type == "deferred")
+            rt = ezgl::renderer_type::deferred;
+
+        // The QRhiWidget path (used only under --disp on) cannot
+        // acquire a QRhi from QPlatformBackingStore::rhi() under the
+        // offscreen QPA — the plugin returns nullptr. Headless
+        // (--disp off) is fine: render_to_image() creates an
+        // offscreen QRhi directly without QRhiWidget. So scope the
+        // fallback to the widget case only.
+        if (rt == ezgl::renderer_type::rhi
+            && draw_state->show_graphics
+            && qEnvironmentVariable("QT_QPA_PLATFORM") == "offscreen") {
+            VTR_LOG_WARN(
+                "QRhiWidget cannot run under QT_QPA_PLATFORM=offscreen "
+                "with --disp on; falling back to the immediate renderer.\n");
+            rt = ezgl::renderer_type::immediate;
+            draw_state->renderer_type = "immediate";
+        }
+
+        // Set the callback that helps rhi_backend::redraw_at_view_change() determine if
+        // the full redraw can be replaced by a camera-only redraw.
+        if (rt == ezgl::renderer_type::rhi) {
+            canvas->set_decide_reuse_geometry_callback(draw_can_reuse_geometry);
+        }
+
+        canvas->set_renderer_type(rt);
+
+        // Surface the renderer that actually got installed (which may
+        // differ from --renderer after the offscreen-QPA fallback
+        // above) so logs/tests can confirm the active backend.
+        VTR_LOG("EZGL: active renderer backend: %s\n",
+                ezgl::renderer_type_name(rt));
+    }
+    main_canvas_added = true;
+}
+
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
     // default setup for new window
     if (is_new_window) {
@@ -497,45 +569,8 @@ void update_screen(ScreenUpdatePriority priority,
             }
         }
 
-        if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
-            auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas, initial_world);
-            if (canvas != nullptr) {
-                ezgl::renderer_type rt = ezgl::renderer_type::rhi;
-                if (draw_state->renderer_type == "immediate")
-                    rt = ezgl::renderer_type::immediate;
-                else if (draw_state->renderer_type == "deferred")
-                    rt = ezgl::renderer_type::deferred;
-
-                // The QRhiWidget path (used only under --disp on) cannot
-                // acquire a QRhi from QPlatformBackingStore::rhi() under the
-                // offscreen QPA — the plugin returns nullptr. Headless
-                // (--disp off) is fine: render_to_image() creates an
-                // offscreen QRhi directly without QRhiWidget. So scope the
-                // fallback to the widget case only.
-                if (rt == ezgl::renderer_type::rhi
-                    && draw_state->show_graphics
-                    && qEnvironmentVariable("QT_QPA_PLATFORM") == "offscreen") {
-                    VTR_LOG_WARN(
-                        "QRhiWidget cannot run under QT_QPA_PLATFORM=offscreen "
-                        "with --disp on; falling back to the immediate renderer.\n");
-                    rt = ezgl::renderer_type::immediate;
-                    draw_state->renderer_type = "immediate";
-                }
-
-                // Set the callback that helps rhi_backend::redraw_at_view_change() determine if
-                // the full redraw can be replaced by a camera-only redraw.
-                if (rt == ezgl::renderer_type::rhi) {
-                    canvas->set_decide_reuse_geometry_callback(draw_can_reuse_geometry);
-                }
-
-                canvas->set_renderer_type(rt);
-
-                // Surface the renderer that actually got installed (which may
-                // differ from --renderer after the offscreen-QPA fallback
-                // above) so logs/tests can confirm the active backend.
-                VTR_LOG("EZGL: active renderer backend: %s\n",
-                        ezgl::renderer_type_name(rt));
-            }
+        if (!main_canvas_added) {
+            add_main_canvas();
         } else {
             // TODO: will this ever be null?
             auto canvas = application->get_canvas(application->get_main_canvas_id());
@@ -728,6 +763,7 @@ void free_draw_structs() {
 
     delete application;
     application = nullptr;
+    main_canvas_added = false;
 
 #else
     ;
