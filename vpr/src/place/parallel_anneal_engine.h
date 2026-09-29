@@ -39,8 +39,9 @@
  *
  * Supported configurations: CRITICALITY_TIMING_PLACE and BOUNDING_BOX_PLACE
  * with cube bounding boxes, without congestion modeling, interposer cost terms,
- * NoC optimization, manual moves, or per-move logging. The annealer falls back
- * to the sequential inner loop otherwise.
+ * NoC optimization, manual moves, or per-move logging. This class does not
+ * check these conditions. PlacementAnnealer only creates the engine when they
+ * are satisfied, and runs its sequential inner loop otherwise.
  */
 
 #include "interposer_cost_handler.h"
