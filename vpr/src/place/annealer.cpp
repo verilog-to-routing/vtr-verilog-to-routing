@@ -252,7 +252,10 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , quench_started_(false)
     , congestion_modeling_started_(false)
     , interposer_cong_modeling_started_(false) {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+
+    VTR_ASSERT_MSG(placer_opts.place_algorithm != e_place_algorithm::SLACK_TIMING_PLACE || setup_slacks_ != nullptr,
+                   "Slack-driven placement requires PlacerSetupSlacks");
 
     float first_crit_exponent;
     if (placer_opts.place_algorithm.is_timing_driven()) {

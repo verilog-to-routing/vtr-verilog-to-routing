@@ -83,6 +83,8 @@ void initialize_timing_info(const PlaceCritParams& crit_params,
  *
  * Updates: SetupTimingInfo, PlacerCriticalities, PlacerSetupSlacks,
  *          timing_cost, connection_setup_slack.
+ *
+ * setup_slacks may be null, in which case setup slacks are not updated or committed.
  */
 void perform_full_timing_update(const PlaceCritParams& crit_params,
                                 const PlaceDelayModel* delay_model,
@@ -94,7 +96,9 @@ void perform_full_timing_update(const PlaceCritParams& crit_params,
                                 PlacerState& placer_state) {
     // Update all timing related classes.
     criticalities->enable_update();
-    setup_slacks->enable_update();
+    if (setup_slacks) {
+        setup_slacks->enable_update();
+    }
     update_timing_classes(crit_params,
                           timing_info,
                           criticalities,
@@ -108,7 +112,9 @@ void perform_full_timing_update(const PlaceCritParams& crit_params,
                        &costs->timing_cost);
 
     // Commit the setup slacks since they are updated.
-    commit_setup_slacks(setup_slacks, placer_state);
+    if (setup_slacks) {
+        commit_setup_slacks(setup_slacks, placer_state);
+    }
 }
 
 /**
@@ -119,6 +125,7 @@ void perform_full_timing_update(const PlaceCritParams& crit_params,
  * Update the values stored in PlacerCriticalities and PlacerSetupSlacks
  * if they are enabled to update. To enable updating, call their respective
  * enable_update() method. See their documentation for more detailed info.
+ * setup_slacks may be null when the placer does not use setup slacks.
  *
  * If criticalities are updated, the timing driven costs should be updated
  * as well by calling update_timing_cost(). Calling this routine to update
@@ -148,7 +155,9 @@ void update_timing_classes(const PlaceCritParams& crit_params,
     criticalities->update_criticalities(crit_params);
 
     // Update the placer's raw setup slacks.
-    setup_slacks->update_setup_slacks();
+    if (setup_slacks) {
+        setup_slacks->update_setup_slacks();
+    }
 
     // Clear invalidation state.
     pin_timing_invalidator->reset();

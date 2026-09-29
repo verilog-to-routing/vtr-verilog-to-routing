@@ -182,10 +182,10 @@ Placer::Placer(const Netlist<>& net_list,
 
 void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
                                             const t_analysis_opts& analysis_opts) {
-    const auto& atom_ctx = g_vpr_ctx.atom();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& timing_ctx = g_vpr_ctx.timing();
-    const auto& p_timing_ctx = placer_state_.timing();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const TimingContext& timing_ctx = g_vpr_ctx.timing();
+    const PlacerTimingContext& p_timing_ctx = placer_state_.timing();
 
     // Update the point-to-point delays from the initial placement
     comp_td_connection_delays(place_delay_model_.get(), placer_state_);
@@ -200,9 +200,13 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
 
     timing_info_ = make_setup_timing_info(placement_delay_calc_, placer_opts_.timing_update_type);
 
-    placer_setup_slacks_ = std::make_unique<PlacerSetupSlacks>(cluster_ctx.clb_nlist,
-                                                               netlist_pin_lookup_,
-                                                               timing_info_);
+    // Setup slacks are only read by the slack-driven placement algorithm.
+    if (placer_opts_.place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE
+        || placer_opts_.place_quench_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
+        placer_setup_slacks_ = std::make_unique<PlacerSetupSlacks>(cluster_ctx.clb_nlist,
+                                                                   netlist_pin_lookup_,
+                                                                   timing_info_);
+    }
 
     placer_criticalities_ = std::make_unique<PlacerCriticalities>(cluster_ctx.clb_nlist,
                                                                   netlist_pin_lookup_,

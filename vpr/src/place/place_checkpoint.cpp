@@ -79,9 +79,11 @@ void restore_best_placement(PlacerState& placer_state,
 
         net_cost_handler.comp_bb_cong_cost(e_cost_methods::NORMAL);
 
-        //recompute timing from scratch
+        // Recompute timing from scratch
         placer_criticalities.get()->set_recompute_required();
-        placer_setup_slacks.get()->set_recompute_required();
+        if (placer_setup_slacks) {
+            placer_setup_slacks->set_recompute_required();
+        }
         comp_td_connection_delays(place_delay_model.get(), placer_state);
         perform_full_timing_update(crit_params,
                                    place_delay_model.get(),
