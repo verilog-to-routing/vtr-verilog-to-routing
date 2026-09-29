@@ -28,6 +28,12 @@
 #include "draw_global.h"
 #endif // NO_GRAPHICS
 
+/// @brief Returns true if the anneal or quench algorithm reads setup slacks.
+static bool placer_uses_setup_slacks(const t_placer_opts& placer_opts) {
+    return placer_opts.place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE
+           || placer_opts.place_quench_algorithm == e_place_algorithm::SLACK_TIMING_PLACE;
+}
+
 Placer::Placer(const Netlist<>& net_list,
                std::optional<std::reference_wrapper<const BlkLocRegistry>> init_place,
                const t_placer_opts& placer_opts,
@@ -44,7 +50,7 @@ Placer::Placer(const Netlist<>& net_list,
     , noc_opts_(noc_opts)
     , netlist_pin_lookup_(netlist_pin_lookup)
     , costs_(placer_opts.place_algorithm, noc_opts.noc)
-    , placer_state_(placer_opts.place_algorithm.is_timing_driven())
+    , placer_state_(placer_opts.place_algorithm.is_timing_driven(), placer_uses_setup_slacks(placer_opts))
     , rng_(placer_opts.seed)
     , net_cost_handler_(placer_state_,
                         placer_opts.place_algorithm,
@@ -201,8 +207,7 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
     timing_info_ = make_setup_timing_info(placement_delay_calc_, placer_opts_.timing_update_type);
 
     // Setup slacks are only read by the slack-driven placement algorithm.
-    if (placer_opts_.place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE
-        || placer_opts_.place_quench_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
+    if (placer_uses_setup_slacks(placer_opts_)) {
         placer_setup_slacks_ = std::make_unique<PlacerSetupSlacks>(cluster_ctx.clb_nlist,
                                                                    netlist_pin_lookup_,
                                                                    timing_info_);
