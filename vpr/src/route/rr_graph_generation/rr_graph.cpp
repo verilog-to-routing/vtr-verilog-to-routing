@@ -471,7 +471,8 @@ void create_rr_graph(e_graph_type graph_type,
     // Reorder nodes if requested.
     // This comes after the edge override file is applied, because that file names edges by the
     // node ids the graph had before reordering.
-    // It comes before process_non_config_sets(), which saves node ids in the device context.
+    // It comes before process_non_config_sets() and load_rr_bus_muxes(), which save node ids in
+    // the device context.
     if (rr_graph_modified && router_opts.reorder_rr_graph_nodes_algorithm != e_rr_node_reorder_algorithm::DONT_REORDER) {
         mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
                                                           router_opts.reorder_rr_graph_nodes_threshold,
@@ -479,6 +480,7 @@ void create_rr_graph(e_graph_type graph_type,
     }
 
     process_non_config_sets();
+    load_rr_bus_muxes(device_ctx.rr_graph.node_lookup());
 
     rr_set_sink_locs(device_ctx.rr_graph, mutable_device_ctx.rr_graph_builder, grid);
 
