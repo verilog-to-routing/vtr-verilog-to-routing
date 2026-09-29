@@ -112,13 +112,13 @@ std::optional<t_bus_mux_edge> find_bus_mux_edge(RRNodeId from_node, RRNodeId to_
 float get_bus_mux_cong_cost_factor(RRNodeId from_node, RRNodeId to_node, float pres_fac);
 
 /**
- * @brief Add add_or_sub (+1 or -1) to the bit count for this edge's input set.
- * No effect for edges outside a bus mux.
+ * @brief Add add_or_sub (+1 or -1) to the bit count of the input set used by the edge into rt_node.
+ * No effect if rt_node has no parent or that edge is outside a bus mux.
  */
-void pathfinder_update_bus_mux_occupancy(RRNodeId from_node, RRNodeId to_node, int add_or_sub);
+void pathfinder_update_bus_mux_occupancy(const RouteTreeNode& rt_node, int add_or_sub);
 
-/** @brief Whether this edge belongs to a bus mux using multiple input sets. */
-bool is_bus_mux_edge_control_congested(RRNodeId from_node, RRNodeId to_node);
+/** @brief Whether the edge into rt_node belongs to a bus mux using multiple input sets. */
+bool is_bus_mux_edge_control_congested(const RouteTreeNode& rt_node);
 
 /** @brief Count bus muxes using more than one input set. */
 size_t count_control_congested_bus_muxes();

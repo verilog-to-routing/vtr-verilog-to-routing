@@ -263,8 +263,12 @@ float get_bus_mux_cong_cost_factor(RRNodeId from_node, RRNodeId to_node, float p
     return (displaced_bits > 0) ? (1.f + pres_fac * displaced_bits) : 1.f;
 }
 
-void pathfinder_update_bus_mux_occupancy(RRNodeId from_node, RRNodeId to_node, int add_or_sub) {
-    std::optional<t_bus_mux_edge> bus_mux_edge = find_bus_mux_edge(from_node, to_node);
+void pathfinder_update_bus_mux_occupancy(const RouteTreeNode& rt_node, int add_or_sub) {
+    // The SOURCE at the root of a route tree has no incoming edge.
+    if (!rt_node.parent()) {
+        return;
+    }
+    std::optional<t_bus_mux_edge> bus_mux_edge = find_bus_mux_edge(rt_node.parent()->inode, rt_node.inode);
     if (!bus_mux_edge) {
         return;
     }
@@ -274,8 +278,12 @@ void pathfinder_update_bus_mux_occupancy(RRNodeId from_node, RRNodeId to_node, i
     VTR_ASSERT(occ >= 0);
 }
 
-bool is_bus_mux_edge_control_congested(RRNodeId from_node, RRNodeId to_node) {
-    std::optional<t_bus_mux_edge> bus_mux_edge = find_bus_mux_edge(from_node, to_node);
+bool is_bus_mux_edge_control_congested(const RouteTreeNode& rt_node) {
+    // The SOURCE at the root of a route tree has no incoming edge.
+    if (!rt_node.parent()) {
+        return false;
+    }
+    std::optional<t_bus_mux_edge> bus_mux_edge = find_bus_mux_edge(rt_node.parent()->inode, rt_node.inode);
     if (!bus_mux_edge) {
         return false;
     }
@@ -353,14 +361,11 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
 /** Update pathfinder cost of all nodes rooted at rt_node, including rt_node itself */
 void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_or_sub) {
     pathfinder_update_single_node_occupancy(root.inode, add_or_sub);
-    // all_nodes() excludes root. Count its incoming edge separately for a new
-    // branch; a SOURCE has no incoming edge.
-    if (root.parent()) {
-        pathfinder_update_bus_mux_occupancy(root.parent()->inode, root.inode, add_or_sub);
-    }
+    // all_nodes() skips root, so count the edge into root here.
+    pathfinder_update_bus_mux_occupancy(root, add_or_sub);
     for (auto& node : root.all_nodes()) {
         pathfinder_update_single_node_occupancy(node.inode, add_or_sub);
-        pathfinder_update_bus_mux_occupancy(node.parent()->inode, node.inode, add_or_sub);
+        pathfinder_update_bus_mux_occupancy(node, add_or_sub);
     }
 }
 

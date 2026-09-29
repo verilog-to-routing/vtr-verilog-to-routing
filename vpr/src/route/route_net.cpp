@@ -161,7 +161,7 @@ bool should_route_net(const Netlist<>& net_list,
             return true; /* overuse detected */
         }
 
-        if (rt_node.parent() && is_bus_mux_edge_control_congested(rt_node.parent()->inode, inode)) {
+        if (is_bus_mux_edge_control_congested(rt_node)) {
             return true; // Reroute bits of a mux with conflicting selects.
         }
 

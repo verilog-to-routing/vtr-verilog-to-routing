@@ -675,7 +675,7 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
     bool congested = (route_ctx.rr_node_route_inf[rt_node.inode].occ() > rr_graph.node_capacity(rt_node.inode));
 
     // Rip up bits of a mux with conflicting selects so routing can choose one input set.
-    if (!congested && rt_node.parent() && is_bus_mux_edge_control_congested(rt_node.parent()->inode, rt_node.inode)) {
+    if (!congested && is_bus_mux_edge_control_congested(rt_node)) {
         congested = true;
     }
 
