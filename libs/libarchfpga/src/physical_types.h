@@ -1027,12 +1027,20 @@ struct t_pb_type {
      *
      * @return if t_pb_type is primitive/leaf or not
      */
-    /// @brief True if this pb_type or any of its descendants contains a bus-based mux
-    bool has_bus_mux() const;
-
     inline bool is_primitive() const {
         return num_modes == 0;
     }
+
+    /**
+     * @brief Check if this pb_type or any of its descendants contains a bus-based mux
+     *        (<mux bus="true">).
+     *
+     * Not O(1): recursively walks the modes and child pb_types below this one until it
+     * finds such a mux.
+     *
+     * @return if the pb_type hierarchy contains a bus-based mux or not
+     */
+    bool has_bus_mux() const;
 
     int get_max_primitives() const;
     int get_max_depth() const;
