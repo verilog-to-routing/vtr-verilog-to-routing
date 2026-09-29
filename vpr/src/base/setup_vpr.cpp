@@ -360,7 +360,7 @@ void SetupVPR(const t_options* options,
         // Bus-based muxes are only tracked while building the intra-cluster rr graph, so
         // without flat routing nothing checks that their bits share one input data line.
         bool arch_has_bus_mux = std::ranges::any_of(device_ctx.logical_block_types, [](const t_logical_block_type& lb_type) {
-            return lb_type.pb_type != nullptr && lb_type.pb_type->has_bus_mux();
+            return lb_type.has_bus_mux();
         });
         VTR_LOGV_WARN(arch_has_bus_mux,
                       "Architecture has bus-based mux(es) (<mux bus=\"true\">), whose bits must all be driven from one "

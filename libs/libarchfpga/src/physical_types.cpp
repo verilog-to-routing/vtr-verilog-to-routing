@@ -178,6 +178,10 @@ bool t_logical_block_type::is_io() const {
     return false;
 }
 
+bool t_logical_block_type::has_bus_mux() const {
+    return pb_type != nullptr && pb_type->has_bus_mux();
+}
+
 const t_port* t_logical_block_type::get_port(std::string_view port_name) const {
     for (int i = 0; i < pb_type->num_ports; i++) {
         const t_port& port = pb_type->ports[i];

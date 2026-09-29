@@ -917,6 +917,13 @@ struct t_logical_block_type {
     // Returns true if this logical block type is an IO block
     bool is_io() const;
 
+    /**
+     * @brief Check if this logical block type contains a bus-based mux (<mux bus="true">).
+     *
+     * Not O(1): walks the pb_type hierarchy, see t_pb_type::has_bus_mux().
+     */
+    bool has_bus_mux() const;
+
   public:
     /**
      * @brief Returns the logical block port given the port name and the corresponding logical block type
