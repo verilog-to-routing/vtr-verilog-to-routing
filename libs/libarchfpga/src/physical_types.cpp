@@ -264,6 +264,23 @@ int t_pb_type::get_max_depth() const {
     return max_depth;
 }
 
+bool t_pb_type::has_bus_mux() const {
+    for (int imode = 0; imode < num_modes; imode++) {
+        const t_mode& mode = modes[imode];
+        for (int iinterc = 0; iinterc < mode.num_interconnect; iinterc++) {
+            if (mode.interconnect[iinterc].type == MUX_INTERC && mode.interconnect[iinterc].bus) {
+                return true;
+            }
+        }
+        for (int ichild = 0; ichild < mode.num_pb_type_children; ichild++) {
+            if (mode.pb_type_children[ichild].has_bus_mux()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 /*
  * t_pb_graph_node
  */
@@ -340,6 +357,15 @@ std::string t_pb_graph_pin::to_string(const bool full_description) const {
     return pin_string;
 }
 
+bool t_pb_graph_pin::is_bus_mux_output() const {
+    for (int iedge = 0; iedge < num_input_edges; iedge++) {
+        if (input_edges[iedge]->is_bus_mux()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /*
  * t_pb_graph_edge
  */
@@ -361,32 +387,6 @@ const t_pb_graph_node* t_pb_graph_edge::bus_mux_owner() const {
     VTR_ASSERT(out_node->parent_pb_graph_node != nullptr
                && out_node->parent_pb_graph_node->pb_type == owner_type);
     return out_node->parent_pb_graph_node;
-}
-
-bool t_pb_graph_pin::is_bus_mux_output() const {
-    for (int iedge = 0; iedge < num_input_edges; iedge++) {
-        if (input_edges[iedge]->is_bus_mux()) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool t_pb_type::has_bus_mux() const {
-    for (int imode = 0; imode < num_modes; imode++) {
-        const t_mode& mode = modes[imode];
-        for (int iinterc = 0; iinterc < mode.num_interconnect; iinterc++) {
-            if (mode.interconnect[iinterc].type == MUX_INTERC && mode.interconnect[iinterc].bus) {
-                return true;
-            }
-        }
-        for (int ichild = 0; ichild < mode.num_pb_type_children; ichild++) {
-            if (mode.pb_type_children[ichild].has_bus_mux()) {
-                return true;
-            }
-        }
-    }
-    return false;
 }
 
 bool t_pb_graph_edge::annotated_with_pattern(int pattern_index) const {
