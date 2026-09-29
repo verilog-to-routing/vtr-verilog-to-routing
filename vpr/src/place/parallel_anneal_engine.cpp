@@ -105,7 +105,7 @@ ParallelAnnealEngine::ParallelAnnealEngine(int num_workers,
 
     // Start in the "all workers done" state so the first job does not wait
     // for a previous one.
-    workers_done_.store(num_workers_ - 1, std::memory_order_relaxed);
+    workers_done_.store(num_workers_ - 1);
 
     // The annealer's thread acts as worker 0, so one fewer thread is spawned.
     workers_.reserve(num_workers_ - 1);
