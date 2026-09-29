@@ -113,6 +113,15 @@ double estimate_post_routing_wire_usage(const PartialPlacement& p_placement,
         if (netlist.net_is_global(net_id))
             continue;
 
+        // Skip constant nets (e.g. gnd / vcc) which will not be routed. The AP netlist
+        // marks these nets as ignored when they will not be routed (see
+        // --constant_net_method).
+        // NOTE: Constant nets may also be ignored for other reasons (e.g. high fanout).
+        //       If constant nets are routed, these nets will be skipped even though
+        //       they are routed.
+        if (netlist.net_is_constant(net_id) && netlist.net_is_ignored(net_id))
+            continue;
+
         // If the net is fully absorbed into the tile, it does not contribute to the wire
         // usage since only the inter-tile wire usage is counted. Since this is operating
         // on a flat placement, this accounts for nets which will be absorbed by clustering.
