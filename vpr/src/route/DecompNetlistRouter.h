@@ -62,9 +62,6 @@ class DecompNetlistRouter : public NetlistRouter {
     RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
     /** Inform the PartitionTree of the nets with updated bounding boxes */
     void handle_bb_updated_nets(const std::vector<ParentNetId>& nets);
-    /** Set RCV enable flag for all routers managed by this netlist router.
-     * Net decomposition does not work with RCV, so calling this fn with x=true is a fatal error. */
-    void set_rcv_enabled(bool x);
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
   private:
