@@ -287,7 +287,9 @@ void print_overused_nodes_status(const t_router_opts& router_opts, const Overuse
     }
 
     log_overused_nodes_status(max_logged_overused_rr_nodes);
-    log_control_congested_bus_muxes_status();
+    log_control_congested_bus_muxes_status(g_vpr_ctx.device().rr_bus_muxes,
+                                           g_vpr_ctx.routing().bus_mux_route_inf,
+                                           g_vpr_ctx.clustering().clb_nlist);
     VTR_LOG("\n");
 }
 

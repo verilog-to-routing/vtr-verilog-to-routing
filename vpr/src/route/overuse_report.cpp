@@ -1,5 +1,6 @@
 #include "overuse_report.h"
 
+#include <algorithm>
 #include <fstream>
 #include "globals.h"
 #include "route_common.h"
@@ -7,7 +8,6 @@
 #include "physical_types_util.h"
 #include "vpr_utils.h"
 #include "vtr_log.h"
-#include "route_common.h"
 
 /**
  * @brief Definitions of global and helper routines related to printing RR node overuse info.
@@ -516,23 +516,25 @@ static void print_block_pins_nets(std::ostream& os,
     }
 }
 
-void log_control_congested_bus_muxes_status() {
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
-    const RoutingContext& route_ctx = g_vpr_ctx.routing();
-    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+void log_control_congested_bus_muxes_status(const std::vector<t_rr_bus_mux>& rr_bus_muxes,
+                                            const std::vector<t_bus_mux_route_inf>& bus_mux_route_inf,
+                                            const ClusteredNetlist& clb_nlist) {
+    VTR_ASSERT(bus_mux_route_inf.size() == rr_bus_muxes.size());
 
-    size_t num_congested = count_control_congested_bus_muxes();
+    size_t num_congested = std::ranges::count_if(bus_mux_route_inf, [](const t_bus_mux_route_inf& mux_inf) noexcept {
+        return mux_inf.is_control_congested();
+    });
     if (num_congested == 0) {
         return;
     }
 
     VTR_LOG("\nBus-based muxes driven from more than one input set: %zu\n", num_congested);
-    for (size_t imux = 0; imux < device_ctx.rr_bus_muxes.size(); imux++) {
-        const t_bus_mux_route_inf& mux_inf = route_ctx.bus_mux_route_inf[imux];
+    for (size_t imux = 0; imux < rr_bus_muxes.size(); imux++) {
+        const t_bus_mux_route_inf& mux_inf = bus_mux_route_inf[imux];
         if (!mux_inf.is_control_congested()) {
             continue;
         }
-        const t_rr_bus_mux& mux = device_ctx.rr_bus_muxes[imux];
+        const t_rr_bus_mux& mux = rr_bus_muxes[imux];
         std::string sets;
         for (size_t set = 0; set < mux_inf.set_occ.size(); set++) {
             if (mux_inf.set_occ[set] > 0) {
