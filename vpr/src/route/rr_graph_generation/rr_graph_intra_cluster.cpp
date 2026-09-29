@@ -1142,9 +1142,6 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
     DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
     auto [physical_type, sub_tile, rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_blk_id);
-    if (!logical_block->pb_type->has_bus_mux()) {
-        return;
-    }
 
     // Mux instances belong to one cluster, so this only spans the muxes of this cluster.
     // A vector rather than a hash map: the entries are few, and its order does not depend
@@ -1234,8 +1231,16 @@ void load_rr_bus_muxes(const RRSpatialLookup& node_lookup) {
         return;
     }
 
+    // has_bus_mux() walks the pb_type hierarchy, so evaluate it once per logical block type
+    std::vector<bool> type_has_bus_mux(device_ctx.logical_block_types.size());
+    for (const t_logical_block_type& lb_type : device_ctx.logical_block_types) {
+        type_has_bus_mux[lb_type.index] = lb_type.has_bus_mux();
+    }
+
     for (ClusterBlockId cluster_blk_id : clb_nlist.blocks()) {
-        load_cluster_rr_bus_muxes(cluster_blk_id, node_lookup);
+        if (type_has_bus_mux[clb_nlist.block_type(cluster_blk_id)->index]) {
+            load_cluster_rr_bus_muxes(cluster_blk_id, node_lookup);
+        }
     }
 
     if (!device_ctx.rr_bus_muxes.empty()) {
