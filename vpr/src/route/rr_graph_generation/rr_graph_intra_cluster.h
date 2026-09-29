@@ -31,7 +31,7 @@ void build_intra_cluster_rr_graph(e_graph_type graph_type,
 
 /**
  * @brief Records the bus-based muxes (<mux bus="true">) of the intra-cluster RR
- *        graph in RoutingContext::rr_bus_muxes and rr_bus_mux_out_nodes.
+ *        graph in DeviceContext::rr_bus_muxes and rr_bus_mux_out_nodes.
  *
  * Must be called once the intra-cluster RR graph is complete and its nodes are
  * in their final order.
