@@ -368,7 +368,12 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_total_cost(RTExploredNode* t
 
     if (rcv_path_manager.is_enabled() && to->path_data != nullptr) {
         to->path_data->backward_delay += cost_params.criticality * Tdel;
-        to->path_data->backward_cong += (1. - cost_params.criticality) * get_rr_cong_cost(to->index, cost_params.pres_fac);
+        float cong_cost = get_rr_cong_cost(to->index, cost_params.pres_fac);
+        if (is_flat_ && to->prev_edge.is_valid()) {
+            // Keep the RCV congestion term consistent with the backward cost: penalize bus mux edges.
+            cong_cost *= get_bus_mux_cong_cost_factor(rr_graph_->edge_src_node(to->prev_edge), to->index, cost_params.pres_fac);
+        }
+        to->path_data->backward_cong += (1. - cost_params.criticality) * cong_cost;
 
         total_cost = compute_node_cost_using_rcv(cost_params, to->index, target_node, to->path_data->backward_delay, to->path_data->backward_cong, to->R_upstream);
     } else {
