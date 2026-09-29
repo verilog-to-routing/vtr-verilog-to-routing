@@ -270,17 +270,6 @@ class PlacementAnnealer {
                             const t_place_algorithm& place_algorithm,
                             bool manual_move_enabled);
 
-    /**
-     * @brief Determines whether a move should be accepted or not.
-     * Moves with negative delta cost are always accepted, but
-     * moves that increase the total cost are accepted with a
-     * probability that diminishes as the temperature decreases.
-     * @param delta_c The cost difference if the move is accepted.
-     * @param t The annealer's temperature.
-     * @return Whether the move is accepted or not.
-     */
-    e_move_result assess_swap_(double delta_c, double t);
-
     /// @brief Find the starting temperature for the annealing loop.
     float estimate_starting_temperature_();
 

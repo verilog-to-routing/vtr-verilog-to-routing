@@ -3,6 +3,7 @@
 #include "NetPinTimingInvalidator.h"
 #include "RL_agent_util.h"
 #include "globals.h"
+#include "move_utils.h"
 #include "place_util.h"
 #include "placer_state.h"
 #include "vpr_types.h"
@@ -10,7 +11,6 @@
 #include "vtr_hash.h"
 
 #include <chrono>
-#include <cmath>
 #include <limits>
 #include <optional>
 
@@ -234,22 +234,6 @@ int ParallelAnnealEngine::attempt_seed_(uint64_t attempt_id) const {
     return static_cast<int>(vtr::mix64(seed_, attempt_id) & 0x7FFFFFFFull);
 }
 
-e_move_result ParallelAnnealEngine::assess_speculative_swap_(double delta_c, float t, float accept_rand) {
-    if (delta_c <= 0) {
-        return e_move_result::ACCEPTED;
-    }
-
-    if (t == 0.) {
-        return e_move_result::REJECTED;
-    }
-
-    float prob_fac = std::exp(-delta_c / t);
-    if (prob_fac > accept_rand) {
-        return e_move_result::ACCEPTED;
-    }
-    return e_move_result::REJECTED;
-}
-
 void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
                                                          MoveGenerator& move_generator,
                                                          int slot_index) {
@@ -299,7 +283,7 @@ void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
         return;
     }
 
-    attempt.move_result = assess_speculative_swap_(attempt.deltas.delta_c, batch_temperature_, accept_rand);
+    attempt.move_result = assess_swap(attempt.deltas.delta_c, batch_temperature_, [accept_rand]() { return accept_rand; });
 
     // Capture the move and its commit record so a win can be committed
     // everywhere without re-evaluating, then publish this id for early

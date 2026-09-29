@@ -305,11 +305,6 @@ class ParallelAnnealEngine {
     /// placement seed and the attempt id.
     int attempt_seed_(uint64_t attempt_id) const;
 
-    /// @brief Same acceptance test as PlacementAnnealer::assess_swap_(), but the
-    /// uniform random number is passed in rather than drawn here, so the
-    /// decision does not depend on evaluation order.
-    static e_move_result assess_speculative_swap_(double delta_c, float t, float accept_rand);
-
   private:
     /// Number of parallel evaluators, including the coordinator.
     const int num_workers_;

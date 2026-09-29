@@ -644,7 +644,9 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         }
 
         // determine whether the move is accepted or rejected
-        move_outcome = assess_swap_(delta_c, annealing_state_.t);
+        move_outcome = assess_swap(delta_c, annealing_state_.t, [this]() { return rng_.frand(); });
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tTemperature is: %e delta_c is %e, move is %s\n",
+                       annealing_state_.t, delta_c, move_outcome == e_move_result::ACCEPTED ? "accepted" : "rejected");
 
         //Updates the manual_move_state members and displays costs to the user to decide whether to ACCEPT/REJECT manual move.
 #ifndef NO_GRAPHICS
@@ -1228,27 +1230,4 @@ void PlacementAnnealer::LOG_MOVE_STATS_OUTCOME(double delta_cost, double delta_b
                 delta_cost, delta_bb_cost, delta_td_cost,
                 outcome, reason);
     }
-}
-
-e_move_result PlacementAnnealer::assess_swap_(double delta_c, double t) {
-    /* Returns: 1 -> move accepted, 0 -> rejected. */
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tTemperature is: %e delta_c is %e\n", t, delta_c);
-    if (delta_c <= 0) {
-        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is accepted(delta_c < 0)\n");
-        return e_move_result::ACCEPTED;
-    }
-
-    if (t == 0.) {
-        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is rejected(t == 0)\n");
-        return e_move_result::REJECTED;
-    }
-
-    float fnum = rng_.frand();
-    float prob_fac = std::exp(-delta_c / t);
-    if (prob_fac > fnum) {
-        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is accepted(hill climbing)\n");
-        return e_move_result::ACCEPTED;
-    }
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is rejected(hill climbing)\n");
-    return e_move_result::REJECTED;
 }
