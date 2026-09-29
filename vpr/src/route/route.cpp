@@ -337,7 +337,7 @@ bool route(const Netlist<>& net_list,
         print_route_status(itry, iter_elapsed_time, pres_fac, num_net_bounding_boxes_updated, iter_results.stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
         // Show mux conflicts only in verbose mode to keep the status table readable.
         // print_overused_nodes_status() lists affected muxes if routing fails.
-        VTR_LOGV(router_opts.route_verbosity > 1 && overuse_info.control_congested_bus_muxes > 0,
+        VTR_LOGV(router_opts.route_verbosity > 2 && overuse_info.control_congested_bus_muxes > 0,
                  "  %zu bus-based mux(es) driven from more than one input set\n",
                  overuse_info.control_congested_bus_muxes);
 
