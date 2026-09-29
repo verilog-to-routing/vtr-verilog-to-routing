@@ -735,13 +735,9 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
                                                        std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                                        float worst_neg_slack,
                                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
-    // This is so we can tell the router to exit early if it's only global nets that are not meeting hold
-    bool all_global_nets = true;
-
-    // This would indicate only intracluster nets are struggling
-    bool changed_any_nets = false;
-
-    int num_nets_with_hold = 0;
+    // RCV made no progress if hold slack didn't improve on the best seen so far
+    bool hold_slack_improved = worst_neg_slack > best_hold_slack;
+    if (hold_slack_improved) best_hold_slack = worst_neg_slack;
 
     // Keep a history of previous neg slacks
     // Instead track number of hold violating nets being resolved in the future?
@@ -790,16 +786,12 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
 
                     // If the hold_slack on this pin is less than zero, decrement by a constant amount
                     if (update_budget) {
-                        num_nets_with_hold++;
                         // Don't do anything to global/ignored nets
-                        if (!net_list_.net_is_ignored(net_id)) {
-                            all_global_nets = false;
-                        } else {
+                        if (net_list_.net_is_ignored(net_id)) {
                             continue;
                         }
 
                         set_should_reroute(net_id, true);
-                        changed_any_nets = true;
 
                         // Increase the minimum and maximum budgets by a delay increment
                         if (delay_min_budget[net_id][ipin] < 0.1 * delay_upper_bound[net_id][ipin]) {
@@ -823,9 +815,9 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
         return false;
     }
 
-    // If it hasn't changed any nets, or all the nets it has touched are global nets, than return true and tell the router it's done
-    // VTR_LOG("Changed any nets %s all global nets %s\n", changed_any_nets ? "true" : "false", all_global_nets ? "true" : "false");
-    return (!changed_any_nets || all_global_nets) && num_nets_with_hold != 0;
+    // Tell the router RCV is done if hold slack didn't improve. The router gives up on hold
+    // after RCV_FINISH_EARLY_COUNTDOWN consecutive iterations without an improvement
+    return !hold_slack_improved;
 }
 
 void route_budgets::increase_short_crit(ParentNetId net_id, float delay_decs) {

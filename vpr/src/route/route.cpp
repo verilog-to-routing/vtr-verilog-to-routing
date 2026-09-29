@@ -241,8 +241,8 @@ bool route(const Netlist<>& net_list,
 
     // When RCV is enabled the router will not stop unless negative hold slack is 0
     // In some cases this isn't doable, due to global nets or intracluster routing issues
-    // In these cases RCV will finish early if it goes RCV_FINISH_EARLY_COUNTDOWN iterations without detecting resolvable negative hold slack
-    // Increasing this will make the router fail occasionally, decreasing will sometimes not let all hold violations be resolved
+    // In these cases RCV will finish early if the hold slack doesn't improve on its best value for RCV_FINISH_EARLY_COUNTDOWN consecutive iterations
+    // Increasing this gives RCV more time to resolve hold violations, decreasing it makes the router give up on hold sooner
     constexpr int RCV_FINISH_EARLY_COUNTDOWN = 15;
 
     int rcv_finished_count = RCV_FINISH_EARLY_COUNTDOWN;

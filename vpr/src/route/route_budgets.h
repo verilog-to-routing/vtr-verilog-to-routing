@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <queue>
+#include <limits>
 #include "RoutingDelayCalculator.h"
 #include "clustered_netlist_utils.h"
 #include "timing_info.h"
@@ -150,6 +151,8 @@ class route_budgets {
     /*used to keep count the number of continuous time this node was congested*/
     vtr::vector<ParentNetId, int> num_times_congested; //[0..num_nets]
     std::queue<float> negative_hold_slacks;
+    /*best (least negative) hold slack seen so far, used to detect when RCV stops making progress*/
+    float best_hold_slack = -std::numeric_limits<float>::infinity();
 
     const Netlist<>& net_list_;
     bool is_flat_;
