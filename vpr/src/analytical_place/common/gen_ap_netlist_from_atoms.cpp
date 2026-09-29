@@ -56,7 +56,8 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                                     const Prepacker& prepacker,
                                     const RamMapper& ram_mapper,
                                     const UserPlaceConstraints& constraints,
-                                    int high_fanout_threshold) {
+                                    int high_fanout_threshold,
+                                    e_constant_net_method constant_net_method) {
     // Create a scoped timer for reading the atom netlist.
     vtr::ScopedStartFinishTimer timer("Read Atom Netlist to AP Netlist");
 
@@ -175,6 +176,7 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
     // Currently undesirable nets are nets that are:
     //  - ignored for placement
     //  - a global net
+    //  - a constant net which will not be routed
     //  - connected to 1 or fewer unique blocks
     //  - connected to only fixed blocks
     //  - having fanout higher than threshold
@@ -184,6 +186,15 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
         AtomNetId atom_net_id = atom_netlist.find_net(net_name);
         VTR_ASSERT(atom_net_id.is_valid());
         if (atom_netlist.net_is_ignored(atom_net_id)) {
+            ap_netlist.set_net_is_ignored(ap_net_id, true);
+            continue;
+        }
+
+        // Is the net a constant net (e.g. gnd / vcc) which will not be routed? If so,
+        // mark as ignored for AP. This matches how the clustered placer handles these
+        // nets (see process_constant_nets). That method is called after packing, so the
+        // atom netlist has not been annotated with these ignored nets at this point.
+        if (constant_net_method == CONSTANT_NET_GLOBAL && atom_netlist.net_is_constant(atom_net_id)) {
             ap_netlist.set_net_is_ignored(ap_net_id, true);
             continue;
         }

@@ -7,6 +7,8 @@
  *          results of the prepacker to generate an APNetlist.
  */
 
+#include "constant_nets.h"
+
 // Forward declarations
 class APNetlist;
 class AtomNetlist;
@@ -29,6 +31,8 @@ class UserPlaceConstraints;
  *                               by the user.
  *  @param high_fanout_threshold The threshold above which nets with higher fanout will
  *                               be ignored.
+ *  @param constant_net_method   How constant nets (e.g. gnd / vcc) will be handled. If
+ *                               these nets will not be routed, they will be ignored.
  *
  *  @return             An APNetlist object, generated from the prepacker results.
  */
@@ -36,4 +40,5 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                                     const Prepacker& prepacker,
                                     const RamMapper& ram_mapper,
                                     const UserPlaceConstraints& constraints,
-                                    int high_fanout_threshold);
+                                    int high_fanout_threshold,
+                                    e_constant_net_method constant_net_method);
