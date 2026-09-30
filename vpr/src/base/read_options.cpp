@@ -2224,7 +2224,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     ap_grp.add_argument<e_ap_solver_threading, ParseAPSolverThreading>(args.ap_solver_threading, "--ap_solver_threading")
         .help(
             "Controls how the analytical solver uses the threads given by --num_workers when solving the x, y, and (on multi-layer devices) z linear systems.\n"
-            " * auto: Solve the systems concurrently when there are at least as many threads as systems, otherwise sequentially.\n"
+            " * auto: Solve the systems concurrently when there are at least two threads per system, otherwise sequentially.\n"
             " * sequential: Solve the systems one after the other, each using every thread.\n"
             " * concurrent: Solve all systems at the same time, splitting the threads evenly between them.")
         .default_value("auto")

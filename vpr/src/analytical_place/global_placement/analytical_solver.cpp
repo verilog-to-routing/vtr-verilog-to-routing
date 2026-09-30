@@ -877,8 +877,8 @@ void B2BSolver::solve_linear_systems(Eigen::VectorXd& x_guess,
             solve_concurrently = true;
             break;
         case e_ap_solver_threading::Auto:
-            // Solve concurrently only when each system can get its own thread.
-            solve_concurrently = num_threads_ >= num_systems;
+            // Solve concurrently only when each system can get at least two threads.
+            solve_concurrently = num_threads_ >= 2 * num_systems;
             break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP, "Unrecognized analytical solver threading mode");

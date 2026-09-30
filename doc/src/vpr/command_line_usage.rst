@@ -1436,8 +1436,9 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
     placement. There is one linear system per dimension: x, y, and z on
     multi-layer devices.
 
-    * ``auto`` Solve the systems concurrently when there are at least as many
-      threads as systems, otherwise sequentially.
+    * ``auto`` Solve the systems concurrently when there are at least two
+      threads per system, otherwise sequentially. That is 4 threads on
+      single-layer devices and 6 threads on multi-layer devices.
 
     * ``sequential`` Solve the systems one after the other, each using every
       thread. Eigen parallelizes the work inside each solve.

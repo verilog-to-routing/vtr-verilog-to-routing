@@ -24,7 +24,7 @@ enum class e_ap_analytical_solver {
  *        dimension linear systems (x, y, and z on multi-layer devices).
  */
 enum class e_ap_solver_threading {
-    Auto,       ///< Solve the systems concurrently when there are at least as many threads as systems, otherwise sequentially.
+    Auto,       ///< Solve the systems concurrently when there are at least two threads per system, otherwise sequentially.
     Sequential, ///< Solve the systems one after the other, each using every thread.
     Concurrent  ///< Solve all systems at the same time, splitting the threads evenly between them.
 };
