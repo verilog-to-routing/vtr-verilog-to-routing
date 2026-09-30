@@ -549,6 +549,7 @@ class B2BSolver : public AnalyticalSolver {
               const PreClusterTimingManager& pre_cluster_timing_manager,
               std::shared_ptr<PlaceDelayModel> place_delay_model,
               float ap_timing_tradeoff,
+              unsigned num_threads,
               int log_verbosity);
 
     /**
@@ -759,10 +760,29 @@ class B2BSolver : public AnalyticalSolver {
     /**
      * @brief Solves the linear system of equations using the connectivity
      *        matrix (A), the constant vector (b), and a guess for the solution.
+     *
+     * The number of CG iterations used is written to num_cg_iters. This method
+     * touches no shared state so it can run on several threads at once.
      */
     Eigen::VectorXd solve_linear_system(Eigen::SparseMatrix<double>& A,
                                         Eigen::VectorXd& b,
-                                        Eigen::VectorXd& guess);
+                                        Eigen::VectorXd& guess,
+                                        unsigned& num_cg_iters);
+
+    /**
+     * @brief Solves the x, y, and (if multi-die) z linear systems, storing the
+     *        results in x, y, and z.
+     *
+     * When there are at least as many threads as systems, the systems are
+     * solved at the same time with the threads divided evenly between them.
+     * Otherwise they are solved one after the other using every thread.
+     */
+    void solve_linear_systems(Eigen::VectorXd& x_guess,
+                              Eigen::VectorXd& y_guess,
+                              Eigen::VectorXd& z_guess,
+                              Eigen::VectorXd& x,
+                              Eigen::VectorXd& y,
+                              Eigen::VectorXd& z);
 
     /**
      * @brief Store the solutions from the linear system into the partial
@@ -866,6 +886,10 @@ class B2BSolver : public AnalyticalSolver {
     /// @brief The place delay model used for calculating the delay between
     ///        two tiles on the FPGA. Used for computing the timing terms.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
+
+    /// @brief The total number of threads this solver may use across all of
+    ///        the linear systems it solves at once.
+    unsigned num_threads_;
 };
 
 #endif // EIGEN_INSTALLED

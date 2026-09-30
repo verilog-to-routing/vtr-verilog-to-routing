@@ -108,6 +108,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                pre_cluster_timing_manager,
                                                place_delay_model,
                                                ap_timing_tradeoff,
+                                               eigen_num_threads,
                                                log_verbosity);
 #else
             VPR_FATAL_ERROR(VPR_ERROR_AP,
@@ -586,6 +587,7 @@ B2BSolver::B2BSolver(const APNetlist& ap_netlist,
                      const PreClusterTimingManager& pre_cluster_timing_manager,
                      std::shared_ptr<PlaceDelayModel> place_delay_model,
                      float ap_timing_tradeoff,
+                     unsigned num_threads,
                      int log_verbosity)
     : AnalyticalSolver(ap_netlist,
                        atom_netlist,
@@ -593,7 +595,8 @@ B2BSolver::B2BSolver(const APNetlist& ap_netlist,
                        ap_timing_tradeoff,
                        log_verbosity)
     , pre_cluster_timing_manager_(pre_cluster_timing_manager)
-    , place_delay_model_(place_delay_model) {
+    , place_delay_model_(place_delay_model)
+    , num_threads_(num_threads) {
 
     // Reserve space for the triplet lists once here, since their buffers are
     // reused for every linear system built by this solver.
@@ -765,16 +768,12 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
         VTR_ASSERT_SAFE_MSG((b_x.array() >= 0).all(), "b_x has NaN!");
         VTR_ASSERT_SAFE_MSG((b_y.array() >= 0).all(), "b_y has NaN!");
 
-        // Build the solvers for each dimension.
-        // Note: Since we have two different connectivity matrices, we need to
-        //       different CG solver objects.
+        // Solve the linear system of each dimension.
         float solve_linear_system_start_time = runtime_timer.elapsed_sec();
-        Eigen::VectorXd x = solve_linear_system(A_sparse_x, b_x, x_guess);
-        Eigen::VectorXd y = solve_linear_system(A_sparse_y, b_y, y_guess);
+        Eigen::VectorXd x;
+        Eigen::VectorXd y;
         Eigen::VectorXd z;
-        if (is_multi_die()) {
-            z = solve_linear_system(A_sparse_z, b_z, z_guess);
-        }
+        solve_linear_systems(x_guess, y_guess, z_guess, x, y, z);
         total_time_spent_solving_linear_system_ += runtime_timer.elapsed_sec() - solve_linear_system_start_time;
 
         // Save the result into the partial placement object.
@@ -836,7 +835,8 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
 
 Eigen::VectorXd B2BSolver::solve_linear_system(Eigen::SparseMatrix<double>& A,
                                                Eigen::VectorXd& b,
-                                               Eigen::VectorXd& guess) {
+                                               Eigen::VectorXd& guess,
+                                               unsigned& num_cg_iters) {
     // Set up the system of equation solver.
     Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg;
     cg.compute(A);
@@ -847,11 +847,59 @@ Eigen::VectorXd B2BSolver::solve_linear_system(Eigen::SparseMatrix<double>& A,
     cg.setTolerance(cg_convergence_tolerance_);
     Eigen::VectorXd solution = cg.solveWithGuess(b, guess);
 
-    // Collect some metrics.
-    total_num_cg_iters_ += cg.iterations();
-    VTR_LOGV(log_verbosity_ >= 20, "\t\tNum CG iter: %zu (rel. residual: %g)\n", cg.iterations(), cg.error());
+    num_cg_iters = cg.iterations();
 
     return solution;
+}
+
+void B2BSolver::solve_linear_systems(Eigen::VectorXd& x_guess,
+                                     Eigen::VectorXd& y_guess,
+                                     Eigen::VectorXd& z_guess,
+                                     Eigen::VectorXd& x,
+                                     Eigen::VectorXd& y,
+                                     Eigen::VectorXd& z) {
+    unsigned num_systems = is_multi_die() ? 3 : 2;
+    unsigned x_cg_iters = 0;
+    unsigned y_cg_iters = 0;
+    unsigned z_cg_iters = 0;
+
+    if (num_threads_ < num_systems) {
+        // Not enough threads to give each system its own. Solve the systems
+        // one after the other, each using every thread.
+        x = solve_linear_system(A_sparse_x, b_x, x_guess, x_cg_iters);
+        y = solve_linear_system(A_sparse_y, b_y, y_guess, y_cg_iters);
+        if (is_multi_die()) {
+            z = solve_linear_system(A_sparse_z, b_z, z_guess, z_cg_iters);
+        }
+    } else {
+        // Split the threads evenly between the systems and solve them at the
+        // same time. Eigen reads its thread count from a global, so it is set
+        // once here and shared by every concurrent solve. Each std::thread
+        // gets its own OpenMP team of that size.
+        Eigen::setNbThreads(num_threads_ / num_systems);
+
+        std::thread y_thread([&]() {
+            y = solve_linear_system(A_sparse_y, b_y, y_guess, y_cg_iters);
+        });
+        std::thread z_thread;
+        if (is_multi_die()) {
+            z_thread = std::thread([&]() {
+                z = solve_linear_system(A_sparse_z, b_z, z_guess, z_cg_iters);
+            });
+        }
+        // The x system is solved on the calling thread.
+        x = solve_linear_system(A_sparse_x, b_x, x_guess, x_cg_iters);
+
+        y_thread.join();
+        if (z_thread.joinable()) {
+            z_thread.join();
+        }
+
+        Eigen::setNbThreads(num_threads_);
+    }
+
+    total_num_cg_iters_ += x_cg_iters + y_cg_iters + z_cg_iters;
+    VTR_LOGV(log_verbosity_ >= 20, "\t\tNum CG iter: x=%u y=%u z=%u\n", x_cg_iters, y_cg_iters, z_cg_iters);
 }
 
 namespace {
