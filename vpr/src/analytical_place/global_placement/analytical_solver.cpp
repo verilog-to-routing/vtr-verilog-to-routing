@@ -603,6 +603,15 @@ B2BSolver::B2BSolver(const APNetlist& ap_netlist,
     , num_threads_(num_threads)
     , solver_threading_(solver_threading) {
 
+    // The concurrent mode needs at least one thread per linear system.
+    unsigned num_systems = has_multiple_layers() ? 3 : 2;
+    if (solver_threading_ == e_ap_solver_threading::Concurrent && num_threads_ < num_systems) {
+        VPR_FATAL_ERROR(VPR_ERROR_AP,
+                        "--ap_solver_threading concurrent needs at least %u threads (one per linear system), but only %u are available.\n"
+                        "Increase --num_workers or use a different --ap_solver_threading mode.\n",
+                        num_systems, num_threads_);
+    }
+
     // Reserve space for the triplet lists once here, since their buffers are
     // reused for every linear system built by this solver.
     // Roughly 4 triplets are emitted per pin; reserving less than that was
@@ -893,11 +902,11 @@ void B2BSolver::solve_linear_systems(Eigen::VectorXd& x_guess,
         }
     } else {
         // Split the threads evenly between the systems and solve them at the
-        // same time. Eigen reads its thread count from a global, so it is set
-        // once here and shared by every concurrent solve. Each std::thread
-        // gets its own OpenMP team of that size. Every system gets at least
-        // one thread even if that oversubscribes the requested thread count.
-        Eigen::setNbThreads(std::max(1u, num_threads_ / num_systems));
+        // same time. Eigen's thread count is a global, so it is set once here
+        // for every solve. The constructor checked that there is at least
+        // one thread per system.
+        VTR_ASSERT_SAFE(num_threads_ >= num_systems);
+        Eigen::setNbThreads(num_threads_ / num_systems);
 
         std::thread y_thread([&]() {
             y = solve_linear_system(A_sparse_y, b_y, y_guess, y_cg_iters);

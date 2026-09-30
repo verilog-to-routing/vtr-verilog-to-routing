@@ -1444,8 +1444,8 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
       thread. Eigen parallelizes the work inside each solve.
 
     * ``concurrent`` Solve all systems at the same time, splitting the threads
-      evenly between them. Each system gets at least one thread, so with fewer
-      threads than systems this oversubscribes the requested thread count.
+      evenly between them. This needs at least one thread per system. VPR
+      errors out when there are fewer threads than systems.
 
     This option only affects the ``lp-b2b`` solver. The placement result is
     identical for every setting; only the run time differs.

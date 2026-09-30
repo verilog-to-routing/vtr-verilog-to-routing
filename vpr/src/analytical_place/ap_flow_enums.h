@@ -26,7 +26,7 @@ enum class e_ap_analytical_solver {
 enum class e_ap_solver_threading {
     Auto,       ///< Solve the systems concurrently when there are at least two threads per system, otherwise sequentially.
     Sequential, ///< Solve the systems one after the other, each using every thread.
-    Concurrent  ///< Solve all systems at the same time, splitting the threads evenly between them.
+    Concurrent  ///< Solve all systems at the same time, splitting the threads evenly between them. Needs at least one thread per system.
 };
 
 /**

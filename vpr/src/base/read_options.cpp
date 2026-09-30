@@ -2226,7 +2226,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls how the analytical solver uses the threads given by --num_workers when solving the x, y, and (on multi-layer devices) z linear systems.\n"
             " * auto: Solve the systems concurrently when there are at least two threads per system, otherwise sequentially.\n"
             " * sequential: Solve the systems one after the other, each using every thread.\n"
-            " * concurrent: Solve all systems at the same time, splitting the threads evenly between them.")
+            " * concurrent: Solve all systems at the same time, splitting the threads evenly between them. It is an error to use this mode with fewer threads than systems.")
         .default_value("auto")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
