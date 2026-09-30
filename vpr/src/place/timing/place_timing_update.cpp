@@ -37,7 +37,7 @@ static constexpr bool INCR_COMP_TD_COSTS = true;
 void initialize_timing_info(const PlaceCritParams& crit_params,
                             const PlaceDelayModel* delay_model,
                             PlacerCriticalities* criticalities,
-                            PlacerSetupSlacks* setup_slacks,
+                            std::optional<PlacerSetupSlacks>& setup_slacks,
                             NetPinTimingInvalidator* pin_timing_invalidator,
                             SetupTimingInfo* timing_info,
                             t_placer_costs* costs,
@@ -84,12 +84,12 @@ void initialize_timing_info(const PlaceCritParams& crit_params,
  * Updates: SetupTimingInfo, PlacerCriticalities, PlacerSetupSlacks,
  *          timing_cost, connection_setup_slack.
  *
- * setup_slacks may be null, in which case setup slacks are not updated or committed.
+ * setup_slacks may be empty, in which case setup slacks are not updated or committed.
  */
 void perform_full_timing_update(const PlaceCritParams& crit_params,
                                 const PlaceDelayModel* delay_model,
                                 PlacerCriticalities* criticalities,
-                                PlacerSetupSlacks* setup_slacks,
+                                std::optional<PlacerSetupSlacks>& setup_slacks,
                                 NetPinTimingInvalidator* pin_timing_invalidator,
                                 SetupTimingInfo* timing_info,
                                 t_placer_costs* costs,
@@ -113,7 +113,7 @@ void perform_full_timing_update(const PlaceCritParams& crit_params,
 
     // Commit the setup slacks since they are updated.
     if (setup_slacks) {
-        commit_setup_slacks(setup_slacks, placer_state);
+        commit_setup_slacks(*setup_slacks, placer_state);
     }
 }
 
@@ -125,7 +125,7 @@ void perform_full_timing_update(const PlaceCritParams& crit_params,
  * Update the values stored in PlacerCriticalities and PlacerSetupSlacks
  * if they are enabled to update. To enable updating, call their respective
  * enable_update() method. See their documentation for more detailed info.
- * setup_slacks may be null when the placer does not use setup slacks.
+ * setup_slacks may be empty when the placer does not use setup slacks.
  *
  * If criticalities are updated, the timing driven costs should be updated
  * as well by calling update_timing_cost(). Calling this routine to update
@@ -146,7 +146,7 @@ void perform_full_timing_update(const PlaceCritParams& crit_params,
 void update_timing_classes(const PlaceCritParams& crit_params,
                            SetupTimingInfo* timing_info,
                            PlacerCriticalities* criticalities,
-                           PlacerSetupSlacks* setup_slacks,
+                           std::optional<PlacerSetupSlacks>& setup_slacks,
                            NetPinTimingInvalidator* pin_timing_invalidator) {
     // Run STA to update slacks and adjusted/relaxed criticalities.
     timing_info->update();
@@ -203,18 +203,18 @@ void update_timing_cost(const PlaceDelayModel* delay_model,
  * rejected, so for efficiency reasons, this routine is not called if the slacks are
  * rejected in the end. For more detailed info, see the try_swap() routine.
  */
-void commit_setup_slacks(const PlacerSetupSlacks* setup_slacks,
+void commit_setup_slacks(const PlacerSetupSlacks& setup_slacks,
                          PlacerState& placer_state) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     ClbNetPinsMatrix<float>& connection_setup_slack = placer_state.mutable_timing().connection_setup_slack;
 
     // Incremental: only go through sink pins with modified setup slack
-    PlacerSetupSlacks::pin_range clb_pins_modified = setup_slacks->pins_with_modified_setup_slack();
+    PlacerSetupSlacks::pin_range clb_pins_modified = setup_slacks.pins_with_modified_setup_slack();
     for (ClusterPinId pin_id : clb_pins_modified) {
         ClusterNetId net_id = clb_nlist.pin_net(pin_id);
         size_t pin_index_in_net = clb_nlist.pin_net_index(pin_id);
 
-        connection_setup_slack[net_id][pin_index_in_net] = setup_slacks->setup_slack(net_id, pin_index_in_net);
+        connection_setup_slack[net_id][pin_index_in_net] = setup_slacks.setup_slack(net_id, pin_index_in_net);
     }
 }
 
@@ -229,7 +229,7 @@ void commit_setup_slacks(const PlacerSetupSlacks* setup_slacks,
  * the same as the values in `connection_setup_slack` without running commit_setup_slacks().
  * For more detailed info, see the try_swap() routine.
  */
-bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks,
+bool verify_connection_setup_slacks(const PlacerSetupSlacks& setup_slacks,
                                     const PlacerState& placer_state) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     const ClbNetPinsMatrix<float>& connection_setup_slack = placer_state.timing().connection_setup_slack;
@@ -237,7 +237,7 @@ bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks,
     // Go through every single sink pin to check that the slack values are the same
     for (ClusterNetId net_id : clb_nlist.nets()) {
         for (size_t ipin = 1; ipin < clb_nlist.net_pins(net_id).size(); ++ipin) {
-            if (connection_setup_slack[net_id][ipin] != setup_slacks->setup_slack(net_id, ipin)) {
+            if (connection_setup_slack[net_id][ipin] != setup_slacks.setup_slack(net_id, ipin)) {
                 return false;
             }
         }

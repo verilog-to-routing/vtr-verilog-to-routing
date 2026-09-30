@@ -113,8 +113,8 @@ class Placer {
     /// Post-clustering delay calculator. Its API allows extraction of delay for each timing edge.
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc_;
     /// Stores setup slack of the clustered netlist connections.
-    /// Null unless the anneal or quench algorithm is slack-driven.
-    std::unique_ptr<PlacerSetupSlacks> placer_setup_slacks_;
+    /// Empty unless the anneal or quench algorithm is slack-driven.
+    std::optional<PlacerSetupSlacks> placer_setup_slacks_;
     /// Stores criticalities of the clustered netlist connections.
     std::unique_ptr<PlacerCriticalities> placer_criticalities_;
     /// Used to invalidate timing edges corresponding to the pins of moved blocks.
