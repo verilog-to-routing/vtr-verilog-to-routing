@@ -1437,7 +1437,7 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
     multi-layer devices.
 
     * ``auto`` Solve the systems concurrently when there are at least two
-      threads per system, otherwise sequentially. That is 4 threads on
+      threads per system, otherwise sequentially. That is, at least 4 threads on
       single-layer devices and 6 threads on multi-layer devices.
 
     * ``sequential`` Solve the systems one after the other, each using every
