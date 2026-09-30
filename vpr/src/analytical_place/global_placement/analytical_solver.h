@@ -772,7 +772,7 @@ class B2BSolver : public AnalyticalSolver {
                                         unsigned& num_cg_iters);
 
     /**
-     * @brief Solves the x, y, and (if multi-die) z linear systems, storing the
+     * @brief Solves the x, y, and (if multi-layer) z linear systems, storing the
      *        results in x, y, and z.
      *
      * Whether the systems are solved at the same time (threads divided evenly
@@ -808,10 +808,10 @@ class B2BSolver : public AnalyticalSolver {
 
     /**
      * @brief Does the FPGA that the AP flow is currently targeting have more
-     *        than one die. Having multiple dies would imply that the solver
-     *        needs to add another dimension to solve for.
+     *        than one layer. Having multiple layers means the solver needs to
+     *        solve for the z dimension as well.
      */
-    inline bool is_multi_die() const {
+    inline bool has_multiple_layers() const {
         return device_grid_num_layers_ > 1;
     }
 

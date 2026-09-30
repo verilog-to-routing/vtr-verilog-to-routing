@@ -1434,7 +1434,7 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
     Controls how the analytical solver uses the threads given by
     :option:`--num_workers` when solving the linear systems of the global
     placement. There is one linear system per dimension: x, y, and z on
-    multi-die devices.
+    multi-layer devices.
 
     * ``auto`` Solve the systems concurrently when there are at least as many
       threads as systems, otherwise sequentially.
