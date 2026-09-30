@@ -57,6 +57,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                          float ap_timing_tradeoff,
                                                          unsigned num_threads,
+                                                         e_ap_solver_threading solver_threading,
                                                          int log_verbosity) {
 #ifdef EIGEN_INSTALLED
     // Set the number of threads that Eigen can use.
@@ -70,6 +71,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
     Eigen::setNbThreads(eigen_num_threads);
 #else
     (void)num_threads;
+    (void)solver_threading;
 #endif // EIGEN_INSTALLED
 
     // Based on the solver type passed in, build the solver.
@@ -109,6 +111,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                place_delay_model,
                                                ap_timing_tradeoff,
                                                eigen_num_threads,
+                                               solver_threading,
                                                log_verbosity);
 #else
             VPR_FATAL_ERROR(VPR_ERROR_AP,
@@ -588,6 +591,7 @@ B2BSolver::B2BSolver(const APNetlist& ap_netlist,
                      std::shared_ptr<PlaceDelayModel> place_delay_model,
                      float ap_timing_tradeoff,
                      unsigned num_threads,
+                     e_ap_solver_threading solver_threading,
                      int log_verbosity)
     : AnalyticalSolver(ap_netlist,
                        atom_netlist,
@@ -596,7 +600,8 @@ B2BSolver::B2BSolver(const APNetlist& ap_netlist,
                        log_verbosity)
     , pre_cluster_timing_manager_(pre_cluster_timing_manager)
     , place_delay_model_(place_delay_model)
-    , num_threads_(num_threads) {
+    , num_threads_(num_threads)
+    , solver_threading_(solver_threading) {
 
     // Reserve space for the triplet lists once here, since their buffers are
     // reused for every linear system built by this solver.
@@ -863,9 +868,24 @@ void B2BSolver::solve_linear_systems(Eigen::VectorXd& x_guess,
     unsigned y_cg_iters = 0;
     unsigned z_cg_iters = 0;
 
-    if (num_threads_ < num_systems) {
-        // Not enough threads to give each system its own. Solve the systems
-        // one after the other, each using every thread.
+    bool solve_concurrently;
+    switch (solver_threading_) {
+        case e_ap_solver_threading::Sequential:
+            solve_concurrently = false;
+            break;
+        case e_ap_solver_threading::Concurrent:
+            solve_concurrently = true;
+            break;
+        case e_ap_solver_threading::Auto:
+            // Solve concurrently only when each system can get its own thread.
+            solve_concurrently = num_threads_ >= num_systems;
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "Unrecognized analytical solver threading mode");
+    }
+
+    if (!solve_concurrently) {
+        // Solve the systems one after the other, each using every thread.
         x = solve_linear_system(A_sparse_x, b_x, x_guess, x_cg_iters);
         y = solve_linear_system(A_sparse_y, b_y, y_guess, y_cg_iters);
         if (is_multi_die()) {
@@ -875,8 +895,9 @@ void B2BSolver::solve_linear_systems(Eigen::VectorXd& x_guess,
         // Split the threads evenly between the systems and solve them at the
         // same time. Eigen reads its thread count from a global, so it is set
         // once here and shared by every concurrent solve. Each std::thread
-        // gets its own OpenMP team of that size.
-        Eigen::setNbThreads(num_threads_ / num_systems);
+        // gets its own OpenMP team of that size. Every system gets at least
+        // one thread even if that oversubscribes the requested thread count.
+        Eigen::setNbThreads(std::max(1u, num_threads_ / num_systems));
 
         std::thread y_thread([&]() {
             y = solve_linear_system(A_sparse_y, b_y, y_guess, y_cg_iters);

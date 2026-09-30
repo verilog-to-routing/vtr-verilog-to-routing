@@ -1154,6 +1154,9 @@ struct t_ap_opts {
     /// The type of analytical solver the Global Placer in the AP flow will use.
     e_ap_analytical_solver analytical_solver_type;
 
+    /// How the analytical solver uses its threads across the per dimension linear systems.
+    e_ap_solver_threading solver_threading;
+
     /// The type of partial legalizer the Global Placer in the AP flow will use.
     e_ap_partial_legalizer partial_legalizer_type;
 

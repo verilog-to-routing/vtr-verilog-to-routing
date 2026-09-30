@@ -177,6 +177,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                          float ap_timing_tradeoff,
                                                          unsigned num_threads,
+                                                         e_ap_solver_threading solver_threading,
                                                          int log_verbosity);
 
 /**
@@ -550,6 +551,7 @@ class B2BSolver : public AnalyticalSolver {
               std::shared_ptr<PlaceDelayModel> place_delay_model,
               float ap_timing_tradeoff,
               unsigned num_threads,
+              e_ap_solver_threading solver_threading,
               int log_verbosity);
 
     /**
@@ -773,9 +775,9 @@ class B2BSolver : public AnalyticalSolver {
      * @brief Solves the x, y, and (if multi-die) z linear systems, storing the
      *        results in x, y, and z.
      *
-     * When there are at least as many threads as systems, the systems are
-     * solved at the same time with the threads divided evenly between them.
-     * Otherwise they are solved one after the other using every thread.
+     * Whether the systems are solved at the same time (threads divided evenly
+     * between them) or one after the other (each using every thread) is
+     * decided by solver_threading_.
      */
     void solve_linear_systems(Eigen::VectorXd& x_guess,
                               Eigen::VectorXd& y_guess,
@@ -890,6 +892,9 @@ class B2BSolver : public AnalyticalSolver {
     /// @brief The total number of threads this solver may use across all of
     ///        the linear systems it solves at once.
     unsigned num_threads_;
+
+    /// @brief How the threads are used across the per dimension linear systems.
+    e_ap_solver_threading solver_threading_;
 };
 
 #endif // EIGEN_INSTALLED

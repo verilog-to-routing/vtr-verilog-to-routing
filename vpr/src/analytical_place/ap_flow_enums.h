@@ -20,6 +20,16 @@ enum class e_ap_analytical_solver {
 };
 
 /**
+ * @brief How the analytical solver uses its threads when solving the per
+ *        dimension linear systems (x, y, and z on multi-die devices).
+ */
+enum class e_ap_solver_threading {
+    Auto,       ///< Solve the systems concurrently when there are at least as many threads as systems, otherwise sequentially.
+    Sequential, ///< Solve the systems one after the other, each using every thread.
+    Concurrent  ///< Solve all systems at the same time, splitting the threads evenly between them.
+};
+
+/**
  * @brief The type of a Partial Legalizer.
  *
  * The Analytical Placement flow may implement different Partial Legalizer as

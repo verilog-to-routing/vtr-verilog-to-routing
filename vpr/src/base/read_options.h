@@ -105,6 +105,7 @@ struct t_options {
 
     // Analytical Placement options
     argparse::ArgValue<e_ap_analytical_solver> ap_analytical_solver;
+    argparse::ArgValue<e_ap_solver_threading> ap_solver_threading;
     argparse::ArgValue<e_ap_partial_legalizer> ap_partial_legalizer;
     argparse::ArgValue<e_ap_full_legalizer> ap_full_legalizer;
     argparse::ArgValue<e_ap_detailed_placer> ap_detailed_placer;
