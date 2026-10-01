@@ -121,6 +121,7 @@ static void set_block_text(bool checked);
 static void set_draw_partitions(bool checked);
 static void clip_routing_util(bool checked);
 static void run_graphics_commands(const std::string& commands);
+static void init_final_graphics_stage(const t_vpr_setup& vpr_setup);
 static void parse_wait_for_stage_arg(const std::string& arg,
                                      e_pic_type& want,
                                      bool& wait_for_done);
@@ -199,13 +200,7 @@ static int pending_graphics_exit_code = 0;
 
 /********************** Subroutine definitions ******************************/
 
-void init_graphics_state(bool show_graphics_val,
-                         e_graphics_pause graphics_pause_val,
-                         enum e_route_type route_type,
-                         bool save_graphics,
-                         std::string graphics_commands,
-                         std::string renderer_type,
-                         bool is_flat) {
+void init_graphics_state(const t_vpr_setup& vpr_setup) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
@@ -214,17 +209,19 @@ void init_graphics_state(bool show_graphics_val,
      * desired values.  They control if graphics are enabled and, if so, *
      * how often the user is prompted for input.                         */
 
-    draw_state->show_graphics = show_graphics_val;
-    draw_state->graphics_pause = graphics_pause_val;
-    draw_state->draw_route_type = route_type;
-    draw_state->save_graphics = save_graphics;
-    draw_state->graphics_commands = graphics_commands;
-    draw_state->renderer_type = renderer_type;
-    draw_state->is_flat = is_flat;
+    draw_state->show_graphics = vpr_setup.ShowGraphics;
+    draw_state->graphics_pause = vpr_setup.GraphPause;
+    draw_state->draw_route_type = vpr_setup.RouterOpts.route_type;
+    draw_state->save_graphics = vpr_setup.SaveGraphics;
+    draw_state->graphics_commands = vpr_setup.GraphicsCommands;
+    draw_state->renderer_type = vpr_setup.RendererType;
+    draw_state->is_flat = vpr_setup.RouterOpts.flat_routing;
+
+    init_final_graphics_stage(vpr_setup);
 
     // When --disp is off, force Qt into offscreen mode before QApplication is
     // created so it doesn't try to connect to an X11/Wayland display.
-    if (!show_graphics_val && !qEnvironmentVariableIsSet("QT_QPA_PLATFORM")) {
+    if (!vpr_setup.ShowGraphics && !qEnvironmentVariableIsSet("QT_QPA_PLATFORM")) {
         qputenv("QT_QPA_PLATFORM", "offscreen");
     }
 
@@ -237,13 +234,7 @@ void init_graphics_state(bool show_graphics_val,
 
 #else
     //Suppress unused parameter warnings
-    (void)show_graphics_val;
-    (void)graphics_pause_val;
-    (void)route_type;
-    (void)save_graphics;
-    (void)graphics_commands;
-    (void)renderer_type;
-    (void)is_flat;
+    (void)vpr_setup;
 #endif // NO_GRAPHICS
 }
 
@@ -255,8 +246,20 @@ void notify_stage_complete(e_pic_type stage) {
 #endif
 }
 
-void init_final_graphics_stage(const t_vpr_setup& vpr_setup) {
 #ifndef NO_GRAPHICS
+
+/**
+ * @brief Records the last drawn stage of the requested flow, derived from the
+ * stage actions (--pack, --place, --route, --analysis, ...).
+ *
+ * With --graphics_pause final_stage, update_screen() skips the interactive
+ * window, --save_graphics and --graphics_commands until that stage has been
+ * marked complete via notify_stage_complete(), then pauses once. Flows whose
+ * last stage is not routing or placement keep the old never-pause behaviour.
+ * A `wait_for_stage` on any other stage is a fatal error. Must run after
+ * graphics_pause is set in draw_state.
+ */
+static void init_final_graphics_stage(const t_vpr_setup& vpr_setup) {
     if (vpr_setup.RouterOpts.doRouting != e_stage_action::SKIP) {
         final_stage = e_pic_type::ROUTING;
     } else if (vpr_setup.PlacerOpts.do_placement != e_stage_action::SKIP) {
@@ -283,12 +286,7 @@ void init_final_graphics_stage(const t_vpr_setup& vpr_setup) {
             }
         }
     }
-#else
-    (void)vpr_setup;
-#endif
 }
-
-#ifndef NO_GRAPHICS
 
 static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();

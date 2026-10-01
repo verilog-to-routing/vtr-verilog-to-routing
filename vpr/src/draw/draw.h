@@ -60,19 +60,6 @@ void update_screen(ScreenUpdatePriority priority,
  */
 void notify_stage_complete(e_pic_type stage);
 
-/**
- * @brief Records the last drawn stage of the requested flow, derived from the
- * stage actions (--pack, --place, --route, --analysis, ...).
- *
- * With --graphics_pause final_stage, update_screen() skips the interactive
- * window, --save_graphics and --graphics_commands until that stage has been
- * marked complete via notify_stage_complete(), then pauses once. Flows whose
- * last stage is not routing or placement keep the old never-pause behaviour.
- * A `wait_for_stage` on any other stage is a fatal error. Call after
- * init_graphics_state().
- */
-void init_final_graphics_stage(const t_vpr_setup& vpr_setup);
-
 //FIXME: Currently broken if no rr-graph is loaded
 /**
  * @brief Load the arrays containing the left and bottom coordinates of the clbs.
@@ -100,13 +87,7 @@ void set_initial_world();
 /* Sets the static show_graphics and graphics_pause variables to the *
  * desired values.  They control if graphics are enabled and, if so, *
  * how often the user is prompted for input.                         */
-void init_graphics_state(bool show_graphics_val,
-                         e_graphics_pause graphics_pause_val,
-                         enum e_route_type route_type,
-                         bool save_graphics,
-                         std::string graphics_commands,
-                         std::string renderer_type,
-                         bool is_flat);
+void init_graphics_state(const t_vpr_setup& vpr_setup);
 
 /* Allocates the structures needed to draw the placement and routing.*/
 void alloc_draw_structs(const t_arch* arch);
