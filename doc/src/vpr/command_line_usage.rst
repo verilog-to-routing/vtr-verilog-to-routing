@@ -1447,9 +1447,6 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
       evenly between them. This needs at least one thread per system. VPR
       errors out when there are fewer threads than systems.
 
-    This option only affects the ``lp-b2b`` solver. The placement result is
-    identical for every setting; only the run time differs.
-
     **Default:** ``auto``
 
 .. option:: --ap_partial_legalizer {none | bipartitioning | flow-based}
