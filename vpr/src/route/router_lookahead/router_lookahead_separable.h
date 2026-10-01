@@ -5,6 +5,9 @@
 // TODO: Clean up the OPIN/SOURCE lookahead code
 // TODO: Use the separable lookahead in the get_opin_distance_min_delay function
 // TODO: Fix the sampling strip logic to not hardcode the position
+// TODO: Add flat router support
+// TODO: Add writing/reading lookahead support
+// TODO: Make it more scalable in Z dimension
 
 #include <memory>
 #include <string>

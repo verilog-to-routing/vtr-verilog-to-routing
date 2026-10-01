@@ -32,7 +32,7 @@ static RRNodeId get_chanxy_start_node_sep(int layer, int start_x, int start_y, D
         int node_seg_ind = device_ctx.rr_indexed_data[node_cost_ind].seg_index;
         auto [driver_x, driver_y] = util::get_adjusted_rr_position(node_id);
         if (node_direction == direction && node_seg_ind == seg_index
-            && (node_direction == Direction::BIDIR || (driver_x == start_x && driver_y == start_y))) {
+            && (driver_x == start_x && driver_y == start_y)) {
             return node_id;
         }
     }
@@ -73,6 +73,8 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
     wire_cost_map.resize({num_layers, num_layers, chan_type_dim_size, segment_infs.size(),
                           direction_dim_size, axis_dim_size, axis_dim_size});
 
+    // TODO: Don't hardcode the fixed coord location, instead take the device edges + interposer cut lines into account
+    // And pick a location far from them.
     const int fixed_coord = profile_x ? (int)(2 * grid.height() / 3) : (int)grid.width() / 2;
 
     util::t_dijkstra_data dijkstra_data;
@@ -86,12 +88,15 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
         // Restrict the Dijkstra flood to a few rows/columns around the sample line (to keep the flood
         // cheap), but the full extent of the profiling axis.
         t_bb bb;
+
+        // We make the boundinb box span 2 rows/columns away (on each side) from the fixed location.
+        constexpr int SAMPLING_SPAN = 2;
         if (profile_x) {
             bb = t_bb(0, grid.width() - 1,
-                      std::max(0, fixed_coord - 2), std::min<int>(grid.height() - 1, fixed_coord + 2),
+                      std::max(0, fixed_coord - SAMPLING_SPAN), std::min<int>(grid.height() - 1, fixed_coord + SAMPLING_SPAN),
                       (int)from_layer_num, (int)from_layer_num);
         } else {
-            bb = t_bb(std::max(0, fixed_coord - 2), std::min<int>(grid.width() - 1, fixed_coord + 2),
+            bb = t_bb(std::max(0, fixed_coord - SAMPLING_SPAN), std::min<int>(grid.width() - 1, fixed_coord + SAMPLING_SPAN),
                       0, grid.height() - 1,
                       (int)from_layer_num, (int)from_layer_num);
         }
@@ -134,12 +139,13 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
                         }
 
                         // Use the driver end of the wire along the profiling axis as the start coordinate.
-                        const bool dec = rr_graph.node_direction(sample_node) == Direction::DEC;
+                        // bidirectional wires would use the midpoint instead
                         int start_coord;
+                        auto [start_x, start_y] = util::get_adjusted_rr_position(sample_node);
                         if (profile_x) {
-                            start_coord = dec ? rr_graph.node_xhigh(sample_node) : rr_graph.node_xlow(sample_node);
+                            start_coord = start_x;
                         } else {
-                            start_coord = dec ? rr_graph.node_yhigh(sample_node) : rr_graph.node_ylow(sample_node);
+                            start_coord = start_y;
                         }
 
                         auto record_cost = [&](util::PQ_Entry current) {
@@ -165,15 +171,13 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
 SeparableLookahead::SeparableLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings, float interposer_base_cost_multiplier)
     : map_lookahead_(std::make_unique<MapLookahead>(det_routing_arch, is_flat, route_verbosity, device_model_warnings, interposer_base_cost_multiplier))
     , is_flat_(is_flat) {
+    if (is_flat_) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "SeparableLookahead does not support flat routing");
+    }
 }
 
 float SeparableLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     VTR_ASSERT_SAFE(g_vpr_ctx.device().rr_graph.node_type(target_node) == e_rr_type::SINK);
-
-    if (is_flat_) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "SeparableLookahead does not support flat routing");
-    }
-
     auto [delay_cost, cong_cost] = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
     return delay_cost + cong_cost;
 }
@@ -184,6 +188,7 @@ std::pair<float, float> SeparableLookahead::get_expected_delay_and_cong(RRNodeId
 
     e_rr_type from_type = rr_graph.node_type(from_node);
     if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::OPIN) {
+        // TODO: remove dependency on map lookahead
         return map_lookahead_->get_expected_delay_and_cong(from_node, to_node, params, R_upstream);
     }
     if (from_type == e_rr_type::IPIN) {
@@ -198,6 +203,7 @@ std::pair<float, float> SeparableLookahead::get_expected_delay_and_cong(RRNodeId
     Direction from_dir = rr_graph.node_direction(from_node);
 
     // CHANZ drives from its destination layer; BIDIR uses the endpoint closest to the target.
+    // We previously set from_layer to layer_low, which is correct for DEC CHANZ nodes. Correct for other caes:
     if (from_type == e_rr_type::CHANZ) {
         if (from_dir == Direction::INC) {
             from_layer_num = rr_graph.node_layer_high(from_node);
@@ -216,10 +222,7 @@ std::pair<float, float> SeparableLookahead::get_expected_delay_and_cong(RRNodeId
     const int chan_index = util::chan_type_to_index(from_type);
     const int dir_index = static_cast<int>(from_dir);
 
-    const bool dec = (from_dir == Direction::DEC);
-    const int from_x = dec ? rr_graph.node_xhigh(from_node) : rr_graph.node_xlow(from_node);
-    const int from_y = dec ? rr_graph.node_yhigh(from_node) : rr_graph.node_ylow(from_node);
-
+    auto [from_x, from_y] = util::get_adjusted_rr_position(from_node);
     auto [to_x, to_y] = util::get_adjusted_rr_position(to_node);
 
     const util::Cost_Entry& x_cost = x_wire_cost_map_[from_layer_num][to_layer_num][chan_index][from_seg_index][dir_index][from_x][to_x];
@@ -232,6 +235,7 @@ std::pair<float, float> SeparableLookahead::get_expected_delay_and_cong(RRNodeId
     if (!std::isfinite(expected_delay_cost) || !std::isfinite(expected_cong_cost)
         || expected_delay_cost == ROUTER_LOOKAHEAD_NO_PATH_SENTINEL
         || expected_cong_cost == ROUTER_LOOKAHEAD_NO_PATH_SENTINEL) {
+        // TODO: remove dependency on map lookahead
         return map_lookahead_->get_expected_delay_and_cong(from_node, to_node, params, R_upstream);
     }
     expected_delay_cost *= params.criticality;
@@ -245,7 +249,7 @@ void SeparableLookahead::compute(const std::vector<t_segment_inf>& segment_inf) 
 
     compute_wire_cost_map_for_axis(segment_inf, e_profile_axis::X, x_wire_cost_map_);
     compute_wire_cost_map_for_axis(segment_inf, e_profile_axis::Y, y_wire_cost_map_);
-
+    // TODO: remove dependency on map lookahead
     map_lookahead_->compute(segment_inf);
 }
 

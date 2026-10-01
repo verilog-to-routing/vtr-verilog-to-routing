@@ -1,8 +1,15 @@
+/**
+ * @file This file contains functions for the dijkstra expansion algorithm
+ * used for generating the lookahead tables in the map and separable lookaheads.
+ */
+
 #include "router_lookahead_sampling_utils.h"
-#include <functional>
 #include "globals.h"
 #include "vpr_context.h"
+#include "vpr_types.h"
 #include "vpr_utils.h"
+
+#include <functional>
 
 static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, float>& node_visited_costs,
@@ -17,6 +24,8 @@ void run_dijkstra(RRNodeId start_node,
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
+    // TODO: Might not need 'rr_graph.num_nodes()' elements for cases with
+    // a smaller bounding box. Investigate possible fixes.
     vtr::vector<RRNodeId, bool>& node_expanded = data.node_expanded;
     node_expanded.resize(rr_graph.num_nodes());
     std::fill(node_expanded.begin(), node_expanded.end(), false);

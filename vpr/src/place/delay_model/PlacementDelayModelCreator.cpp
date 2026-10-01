@@ -3,6 +3,7 @@
 #include "PlacementDelayModelCreator.h"
 
 #include "place_delay_model.h"
+#include "router_lookahead_separable.h"
 #include "simple_delay_model.h"
 #include "delta_delay_model.h"
 #include "override_delay_model.h"
@@ -31,7 +32,7 @@ static std::unique_ptr<PlaceDelayModel> make_simple_delay_model(const RouterLook
         case e_router_lookahead::MAP:
             return std::make_unique<SimpleDelayModel<MapLookahead>>(static_cast<const MapLookahead&>(router_lookahead));
         case e_router_lookahead::SEPARABLE:
-            return std::make_unique<SimpleDelayModel<MapLookahead>>(static_cast<const MapLookahead&>(router_lookahead));
+            return std::make_unique<SimpleDelayModel<SeparableLookahead>>(static_cast<const SeparableLookahead&>(router_lookahead));
         case e_router_lookahead::COMPRESSED_MAP:
             return std::make_unique<SimpleDelayModel<CompressedMapLookahead>>(static_cast<const CompressedMapLookahead&>(router_lookahead));
         case e_router_lookahead::EXTENDED_MAP:

@@ -23,8 +23,6 @@
 #include "rr_graph_view.h"
 #include "router_lookahead_constants.h"
 
-struct t_bb;
-
 namespace util {
 
 class Cost_Entry;
@@ -355,9 +353,6 @@ std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr);
 /**
  * @brief Computes the routing cost map for a given wire segment/channel type by running a Dijkstra flood
  * from a set of representative sample locations.
- * @param bb Optional bounding box restricting the Dijkstra expansion: nodes whose adjusted position
- * (see get_adjusted_rr_position()) falls outside this box are not expanded. If nullptr, the bounding
- * box spans the whole device (0..grid.width()-1, 0..grid.height()-1).
  */
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         unsigned from_layer_num,
