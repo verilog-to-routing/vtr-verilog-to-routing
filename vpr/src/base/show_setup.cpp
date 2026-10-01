@@ -710,6 +710,7 @@ static void show_analytical_placer_opts(const t_ap_opts& ap_opts) {
 
 static void show_netlist_opts(const t_netlist_opts& netlist_opts) {
     VTR_LOG("netlist_opts.absorb_buffer_luts            : %s\n", (netlist_opts.absorb_buffer_luts) ? "true" : "false");
+    VTR_LOG("netlist_opts.merge_constant_generators     : %s\n", (netlist_opts.merge_constant_generators) ? "true" : "false");
     VTR_LOG("netlist_opts.sweep_dangling_primary_ios    : %s\n", (netlist_opts.sweep_dangling_primary_ios) ? "true" : "false");
     VTR_LOG("netlist_opts.sweep_dangling_nets           : %s\n", (netlist_opts.sweep_dangling_nets) ? "true" : "false");
     VTR_LOG("netlist_opts.sweep_dangling_blocks         : %s\n", (netlist_opts.sweep_dangling_blocks) ? "true" : "false");

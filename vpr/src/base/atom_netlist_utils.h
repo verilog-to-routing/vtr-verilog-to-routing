@@ -22,6 +22,24 @@ int mark_constant_generators(AtomNetlist& netlist, e_const_gen_inference const_g
 ///@brief Modifies the netlist by absorbing buffer LUTs
 void absorb_buffer_luts(AtomNetlist& netlist, const LogicalModels& models, int verbosity);
 
+/**
+ * @brief Modifies the netlist by merging all constant generators of the same value
+ *        into a single constant generator.
+ *
+ * Synthesis tools may create a separate constant generator (a LUT with no inputs)
+ * for each signal tied to a constant, for example each constant primary output. Since
+ * these generators are functionally identical, all generators of the same value are
+ * merged into the generator with the highest fanout (e.g. gnd / vcc), and the redundant
+ * generators are removed. The names of the removed nets are kept as aliases of the
+ * merged net.
+ *
+ *  @param netlist    The netlist to modify.
+ *  @param verbosity  The verbosity of the log messages.
+ *
+ *  @return The number of constant generators which were removed.
+ */
+size_t merge_constant_generators(AtomNetlist& netlist, int verbosity);
+
 /*
  * Modify the netlist by sweeping away unused nets/blocks/inputs
  */
@@ -63,6 +81,27 @@ size_t sweep_constant_primary_outputs(AtomNetlist& netlist, int verbosity);
  *        or 'Off' set (returns false)
  */
 bool truth_table_encodes_on_set(const AtomNetlist::TruthTable& truth_table);
+
+/**
+ * @brief Get the constant value encoded by a truth table, if any.
+ *
+ * An empty truth table, or a single entry of '0', encodes a constant zero.
+ * A single entry of '1' encodes a constant one. For example, in BLIF:
+ *
+ *      .names gnd      .names gnd2     .names vcc
+ *                      0               1
+ *
+ * @note An empty truth table encodes a constant zero regardless of the number
+ *       of inputs of the block. It is up to the caller to check the block's
+ *       inputs if required.
+ *
+ *  @param truth_table  The truth table to inspect.
+ *
+ *  @return vtr::LogicValue::FALSE or vtr::LogicValue::TRUE if the truth table
+ *          encodes a constant zero or one respectively, vtr::LogicValue::UNKNOWN
+ *          otherwise.
+ */
+vtr::LogicValue truth_table_constant_value(const AtomNetlist::TruthTable& truth_table);
 
 /**
  * Returns the truth table expanded to use num_inputs inputs.

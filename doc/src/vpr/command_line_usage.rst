@@ -603,6 +603,18 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
     **Default**: ``on``
 
+.. option:: --merge_constant_generators {on | off}
+
+    Controls whether constant generators of the same value are merged into a single constant generator.
+
+    Synthesis tools may create a separate constant generator (a LUT with no inputs) for each signal tied to a constant (e.g. each constant primary output, or each constant input of a hard block).
+    When enabled, all constant-zero generators are merged into a single constant-zero generator, and all constant-one generators are merged into a single constant-one generator.
+    The generator with the highest fanout of each value (e.g. ``gnd`` / ``vcc``) is kept, and the names of the removed nets are kept as aliases of the merged net.
+
+    Disabling merging can improve the matching between the input and post-synthesis netlist.
+
+    **Default**: ``off``
+
 .. option:: --const_gen_inference {none | comb | comb_seq}
 
     Controls how constant generators are inferred/detected in the input circuit.
