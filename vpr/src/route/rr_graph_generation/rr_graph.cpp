@@ -339,6 +339,8 @@ void create_rr_graph(e_graph_type graph_type,
     bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
     const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
     bool load_rr_graph = !det_routing_arch.read_rr_graph_filename.empty();
+    // Set when this call loads, builds or extends the RR graph.
+    bool rr_graph_modified = false;
 
     if (device_ctx.requested_chan_width == nodes_per_chan && !device_ctx.rr_graph.empty()) {
         // The requested channel width is unchanged from the last build, so the existing RR
@@ -377,14 +379,11 @@ void create_rr_graph(e_graph_type graph_type,
                              router_opts.route_verbosity,
                              is_flat,
                              router_opts.device_model_warnings);
-                if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
-                    mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
-                                                                      router_opts.reorder_rr_graph_nodes_threshold,
-                                                                      router_opts.reorder_rr_graph_nodes_seed);
-                }
+                rr_graph_modified = true;
             }
         } else {
             free_rr_graph();
+            rr_graph_modified = true;
             if (e_graph_type::UNIDIR_TILEABLE != graph_type) {
                 build_rr_graph(graph_type,
                                block_types,
@@ -465,17 +464,23 @@ void create_rr_graph(e_graph_type graph_type,
                                      load_rr_graph,
                                      router_opts.device_model_warnings);
 
-        // Reorder nodes upon needs in algorithms and router options
-        if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
-            mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
-                                                              router_opts.reorder_rr_graph_nodes_threshold,
-                                                              router_opts.reorder_rr_graph_nodes_seed);
-        }
-
         mutable_device_ctx.rr_graph_is_flat = true;
+        rr_graph_modified = true;
+    }
+
+    // Reorder nodes if requested.
+    // This comes after the edge override file is applied, because that file names edges by the
+    // node ids the graph had before reordering.
+    // It comes before process_non_config_sets() and load_rr_bus_muxes(), which save node ids in
+    // the device context.
+    if (rr_graph_modified && router_opts.reorder_rr_graph_nodes_algorithm != e_rr_node_reorder_algorithm::DONT_REORDER) {
+        mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
+                                                          router_opts.reorder_rr_graph_nodes_threshold,
+                                                          router_opts.reorder_rr_graph_nodes_seed);
     }
 
     process_non_config_sets();
+    load_rr_bus_muxes(device_ctx.rr_graph.node_lookup());
 
     rr_set_sink_locs(device_ctx.rr_graph, mutable_device_ctx.rr_graph_builder, grid);
 
@@ -1701,6 +1706,9 @@ void free_rr_graph() {
     device_ctx.switch_fanin_remap.clear();
 
     device_ctx.rr_graph_is_flat = false;
+
+    device_ctx.rr_bus_muxes.clear();
+    device_ctx.rr_bus_mux_out_nodes.clear();
 
     device_ctx.rr_chan_segment_width.x.clear();
     device_ctx.rr_chan_segment_width.y.clear();

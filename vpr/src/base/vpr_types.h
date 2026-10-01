@@ -27,6 +27,7 @@
 #include <string>
 #include <string_view>
 #include "ap_flow_enums.h"
+#include "appack_gain_attenuation_fn_type.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
 #include "constant_nets.h"
@@ -1195,6 +1196,9 @@ struct t_ap_opts {
     /// different die than the cluster in an interposer-based architecture.
     float appack_inter_die_gain_multiplier;
 
+    /// The candidate gain attenuation function used by APPack.
+    e_appack_gain_attenuation_fn_type appack_gain_attenuation_fn;
+
     /// The number of threads the AP flow can use.
     unsigned num_threads;
 
@@ -1390,7 +1394,7 @@ struct t_router_opts {
     bool verify_route_file_switch_id;
 
     /// Options related to rr_node reordering, for testing and possible cache optimization
-    e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
+    e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = e_rr_node_reorder_algorithm::DONT_REORDER;
     int reorder_rr_graph_nodes_threshold = 0;
     int reorder_rr_graph_nodes_seed = 1;
 

@@ -334,6 +334,46 @@ struct ParseAPDetailedPlacer {
     }
 };
 
+struct ParseAPPackGainAttenuationFn {
+    ConvertedValue<e_appack_gain_attenuation_fn_type> from_str(const std::string& str) {
+        ConvertedValue<e_appack_gain_attenuation_fn_type> conv_value;
+        if (str == "none")
+            conv_value.set_value(e_appack_gain_attenuation_fn_type::NONE);
+        else if (str == "quad_sqrt_knee")
+            conv_value.set_value(e_appack_gain_attenuation_fn_type::QUAD_SQRT_KNEE);
+        else if (str == "gaussian")
+            conv_value.set_value(e_appack_gain_attenuation_fn_type::GAUSSIAN);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_appack_gain_attenuation_fn_type (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_appack_gain_attenuation_fn_type val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_appack_gain_attenuation_fn_type::NONE:
+                conv_value.set_value("none");
+                break;
+            case e_appack_gain_attenuation_fn_type::QUAD_SQRT_KNEE:
+                conv_value.set_value("quad_sqrt_knee");
+                break;
+            case e_appack_gain_attenuation_fn_type::GAUSSIAN:
+                conv_value.set_value("gaussian");
+                break;
+            default:
+                VTR_ASSERT(false);
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"none", "quad_sqrt_knee", "gaussian"};
+    }
+};
+
 struct ParseRoutePredictor {
     ConvertedValue<e_routing_failure_predictor> from_str(const std::string& str) {
         ConvertedValue<e_routing_failure_predictor> conv_value;
@@ -413,11 +453,11 @@ struct ParseNodeReorderAlgorithm {
     ConvertedValue<e_rr_node_reorder_algorithm> from_str(const std::string& str) {
         ConvertedValue<e_rr_node_reorder_algorithm> conv_value;
         if (str == "none")
-            conv_value.set_value(DONT_REORDER);
+            conv_value.set_value(e_rr_node_reorder_algorithm::DONT_REORDER);
         else if (str == "degree_bfs")
-            conv_value.set_value(DEGREE_BFS);
+            conv_value.set_value(e_rr_node_reorder_algorithm::DEGREE_BFS);
         else if (str == "random_shuffle")
-            conv_value.set_value(RANDOM_SHUFFLE);
+            conv_value.set_value(e_rr_node_reorder_algorithm::RANDOM_SHUFFLE);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_rr_node_reorder_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -428,12 +468,12 @@ struct ParseNodeReorderAlgorithm {
 
     ConvertedValue<std::string> to_str(e_rr_node_reorder_algorithm val) {
         ConvertedValue<std::string> conv_value;
-        if (val == DONT_REORDER)
+        if (val == e_rr_node_reorder_algorithm::DONT_REORDER)
             conv_value.set_value("none");
-        else if (val == DEGREE_BFS)
+        else if (val == e_rr_node_reorder_algorithm::DEGREE_BFS)
             conv_value.set_value("degree_bfs");
         else {
-            VTR_ASSERT(val == RANDOM_SHUFFLE);
+            VTR_ASSERT(val == e_rr_node_reorder_algorithm::RANDOM_SHUFFLE);
             conv_value.set_value("random_shuffle");
         }
         return conv_value;
@@ -2300,6 +2340,19 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "not apply to candidates on a different layer in a 3D architecture "
             "without interposer cuts.")
         .default_value("0.1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument<e_appack_gain_attenuation_fn_type, ParseAPPackGainAttenuationFn>(args.appack_gain_attenuation_fn, "--appack_gain_attenuation_fn")
+        .help(
+            "Controls the function APPack uses to attenuate a candidate molecule's "
+            "gain based on its distance from the cluster being formed.\n"
+            " * none: No attenuation is applied (multiplier is always 1.0). Useful "
+            "as a baseline to measure the contribution of gain attenuation.\n"
+            " * quad_sqrt_knee: Piecewise function which decays quadratically near "
+            "the cluster and transitions to an inverted sqrt decay farther away.\n"
+            " * gaussian: Smooth Gaussian decay.\n"
+            "More functions may be added here over time.")
+        .default_value("quad_sqrt_knee")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     ap_grp.add_argument<int>(args.ap_verbosity, "--ap_verbosity")

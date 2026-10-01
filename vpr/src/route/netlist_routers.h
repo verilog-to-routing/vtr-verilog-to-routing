@@ -57,9 +57,6 @@ class NetlistRouter {
      * No-op for the serial router */
     virtual void handle_bb_updated_nets(const std::vector<ParentNetId>& nets) = 0;
 
-    /** Enable RCV for each of the ConnectionRouters this NetlistRouter manages.*/
-    virtual void set_rcv_enabled(bool x) = 0;
-
     /** Set this NetlistRouter's timing_info ptr. We sometimes change timing_info
      * throughout iterations, but not frequently enough to make it a public member. */
     virtual void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info) = 0;

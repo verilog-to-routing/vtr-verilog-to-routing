@@ -815,17 +815,59 @@ t_rr_graph_view t_rr_graph_storage::view() const {
 //       should generally be called before creating such references.
 void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
                                  const vtr::vector<RRNodeId, RRNodeId>& inverse_order) {
-    VTR_ASSERT(order.size() == inverse_order.size());
-    {
-        vtr::vector<RRNodeId, t_rr_node_data> old_node_storage = node_storage_;
+    const size_t num_nodes = node_storage_.size();
+    VTR_ASSERT(order.size() == num_nodes);
+    VTR_ASSERT(inverse_order.size() == num_nodes);
+    VTR_ASSERT(node_ptc_.size() == num_nodes);
+    VTR_ASSERT(node_layer_.size() == num_nodes);
+    VTR_ASSERT(node_fan_in_.size() == num_nodes);
+    VTR_ASSERT(node_first_edge_.size() == num_nodes + 1);
+    // edge_remapped_ is temporary storage and may already have been freed by clear_temp_storage().
+    const bool has_edge_remapped = !edge_remapped_.empty();
+    VTR_ASSERT(!has_edge_remapped || edge_remapped_.size() == edge_src_node_.size());
 
-        // Reorder nodes
-        for (size_t i = 0; i < node_storage_.size(); i++) {
-            RRNodeId n = RRNodeId(i);
-            VTR_ASSERT(n == inverse_order[order[n]]);
-            node_storage_[order[n]] = old_node_storage[n];
-        }
+    // Check that inverse_order is the inverse of order.
+    for (RRNodeId node_id : node_storage_.keys()) {
+        VTR_ASSERT(node_id == inverse_order[order[node_id]]);
     }
+
+    // Moves the element stored at each old node id to its new node id.
+    // Arrays that were never populated stay empty.
+    auto permute_node_array = [&order, num_nodes](auto& vec) {
+        if (vec.empty()) {
+            return;
+        }
+        VTR_ASSERT(vec.size() == num_nodes);
+
+        // New container with the same type and size as vec.
+        typename std::remove_reference<decltype(vec)>::type new_vec(vec.size());
+        for (RRNodeId old_node : vec.keys()) {
+            new_vec[order[old_node]] = std::move(vec[old_node]);
+        }
+        vec = std::move(new_vec);
+    };
+
+    permute_node_array(node_storage_);
+    permute_node_array(node_ptc_);
+    permute_node_array(node_fan_in_);
+    permute_node_array(node_layer_);
+    permute_node_array(node_bend_start_);
+    permute_node_array(node_bend_end_);
+    permute_node_array(node_tilable_track_nums_);
+
+    // The sparse per-node maps are keyed or valued by node id, so they need remapping as well.
+    {
+        std::unordered_map<RRNodeId, std::string> new_node_name;
+        new_node_name.reserve(node_name_.size());
+        for (auto& [old_node, name] : node_name_) {
+            new_node_name.emplace(order[old_node], std::move(name));
+        }
+        node_name_ = std::move(new_node_name);
+    }
+    for (auto& [clock_network_name, root_node] : virtual_clock_network_root_idx_) {
+        root_node = order[root_node];
+    }
+
     {
         vtr::vector<RRNodeId, RREdgeId> old_node_first_edge = node_first_edge_;
         vtr::vector<RREdgeId, RRNodeId> old_edge_src_node = edge_src_node_;
@@ -844,21 +886,11 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
                 edge_src_node_[cur_edge] = order[old_edge_src_node[e]]; // == n?
                 edge_dest_node_[cur_edge] = order[old_edge_dest_node[e]];
                 edge_switch_[cur_edge] = old_edge_switch[e];
-                edge_remapped_[cur_edge] = old_edge_remapped[e];
+                if (has_edge_remapped) {
+                    edge_remapped_[cur_edge] = old_edge_remapped[e];
+                }
                 cur_edge = RREdgeId(size_t(cur_edge) + 1);
             }
-        }
-    }
-    {
-        vtr::vector<RRNodeId, t_rr_node_ptc_data> old_node_ptc = node_ptc_;
-        for (size_t i = 0; i < node_ptc_.size(); i++) {
-            node_ptc_[order[RRNodeId(i)]] = old_node_ptc[RRNodeId(i)];
-        }
-    }
-    {
-        vtr::vector<RRNodeId, t_edge_size> old_node_fan_in = node_fan_in_;
-        for (size_t i = 0; i < node_fan_in_.size(); i++) {
-            node_fan_in_[order[RRNodeId(i)]] = old_node_fan_in[RRNodeId(i)];
         }
     }
 }

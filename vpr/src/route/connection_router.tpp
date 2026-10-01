@@ -232,8 +232,6 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
                                                           float backwards_cong,
                                                           float R_upstream) {
     const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
-    // TODO: This function is not tested for is_flat == true
-    VTR_ASSERT(is_flat_ != true);
     const auto [expected_delay, expected_cong] = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, cost_params, R_upstream);
 
     float expected_total_cong = expected_cong + backwards_cong;
@@ -403,6 +401,9 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     /* Puts the entire partial routing below and including rt_node onto the heap *
      * (except for those parts marked as not to be expanded) by calling itself   *
      * recursively.                                                              */
+
+    // Register every node already in the route tree for RCV.
+    rcv_path_manager.mark_node_visited(rt_node.inode);
 
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded

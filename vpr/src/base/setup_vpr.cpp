@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <vector>
 #include <list>
 
@@ -355,6 +356,15 @@ void SetupVPR(const t_options* options,
         // and t_pb_graph_edge are initialized
         alloc_and_load_intra_cluster_resources(routerOpts->has_choke_point);
         add_intra_tile_switches();
+    } else {
+        // Bus-based muxes are only tracked while building the intra-cluster rr graph, so
+        // without flat routing nothing checks that their bits share one input data line.
+        bool arch_has_bus_mux = std::ranges::any_of(device_ctx.logical_block_types, [](const t_logical_block_type& lb_type) {
+            return lb_type.has_bus_mux();
+        });
+        VTR_LOGV_WARN(arch_has_bus_mux,
+                      "Architecture has bus-based mux(es) (<mux bus=\"true\">), whose bits must all be driven from one "
+                      "input data line. That is only tracked with --flat_routing on, so the packed netlist may violate it.\n");
     }
 
     if ((options->clock_modeling == ROUTED_CLOCK) || (options->clock_modeling == DEDICATED_NETWORK)) {
@@ -566,6 +576,10 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
     RouterOpts->verify_route_file_switch_id = Options.verify_route_file_switch_id;
 
     RouterOpts->generate_router_lookahead_report = Options.generate_router_lookahead_report.value();
+
+    if (RouterOpts->routing_budgets_algorithm != DISABLE && RouterOpts->router_algorithm == e_router_algorithm::PARALLEL_DECOMP) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "--routing_budgets_algorithm is not supported with --router_algorithm parallel_decomp (net decomposition with RCV is not implemented).\n");
+    }
 }
 
 static void setup_anneal_sched(const t_options& Options,
@@ -609,6 +623,7 @@ static void setup_ap_opts(const t_options& options,
     apOpts.appack_max_dist_th = options.appack_max_dist_th.value();
     apOpts.appack_unrelated_clustering_args = options.appack_unrelated_clustering_args.value();
     apOpts.appack_inter_die_gain_multiplier = options.appack_inter_die_gain_multiplier.value();
+    apOpts.appack_gain_attenuation_fn = options.appack_gain_attenuation_fn.value();
     apOpts.num_threads = options.num_workers.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
     apOpts.generate_mass_report = options.ap_generate_mass_report.value();
