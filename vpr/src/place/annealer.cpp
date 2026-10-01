@@ -50,14 +50,14 @@
  * value suddenly got very good due to the block move, while a good slack value
  * got very bad, perhaps even worse than the original worse slack value.
  */
-static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
+static float analyze_setup_slack_cost(const PlacerSetupSlacks& setup_slacks,
                                       const PlacerState& placer_state);
 
 /*************************************************************************/
 /*************** Static Function Definitions *****************************/
 /*************************************************************************/
 
-static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
+static float analyze_setup_slack_cost(const PlacerSetupSlacks& setup_slacks,
                                       const PlacerState& placer_state) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& clb_nlist = cluster_ctx.clb_nlist;
@@ -68,13 +68,13 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
     //Find the original/proposed setup slacks of pins with modified values
     std::vector<float> original_setup_slacks, proposed_setup_slacks;
 
-    auto clb_pins_modified = setup_slacks->pins_with_modified_setup_slack();
+    auto clb_pins_modified = setup_slacks.pins_with_modified_setup_slack();
     for (ClusterPinId clb_pin : clb_pins_modified) {
         ClusterNetId net_id = clb_nlist.pin_net(clb_pin);
         size_t ipin = clb_nlist.pin_net_index(clb_pin);
 
         original_setup_slacks.push_back(connection_setup_slack[net_id][ipin]);
-        proposed_setup_slacks.push_back(setup_slacks->setup_slack(net_id, ipin));
+        proposed_setup_slacks.push_back(setup_slacks.setup_slack(net_id, ipin));
     }
 
     // Sort in ascending order, from the worse slack value to the best
@@ -222,7 +222,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
                                      std::unique_ptr<MoveGenerator>&& move_generator_2,
                                      const PlaceDelayModel* delay_model,
                                      PlacerCriticalities* criticalities,
-                                     PlacerSetupSlacks* setup_slacks,
+                                     std::optional<PlacerSetupSlacks>& setup_slacks,
                                      SetupTimingInfo* timing_info,
                                      NetPinTimingInvalidator* pin_timing_invalidator,
                                      float auto_init_t_scale,
@@ -252,7 +252,12 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , quench_started_(false)
     , congestion_modeling_started_(false)
     , interposer_cong_modeling_started_(false) {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+
+    VTR_ASSERT_MSG((placer_opts.place_algorithm != e_place_algorithm::SLACK_TIMING_PLACE
+                    && placer_opts.place_quench_algorithm != e_place_algorithm::SLACK_TIMING_PLACE)
+                       || setup_slacks_.has_value(),
+                   "Slack-driven placement requires PlacerSetupSlacks");
 
     float first_crit_exponent;
     if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -593,6 +598,12 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         delta_c = deltas.delta_c;
         const bool update_interposer_costs = deltas.update_interposer_costs;
 
+        // Proposed connection delays and timing costs are computed whenever the anneal is
+        // timing driven, including bounding box moves in the quench. The slack-driven path
+        // commits them itself before its timing analysis.
+        const bool update_td = placer_opts_.place_algorithm.is_timing_driven()
+                               && place_algorithm != e_place_algorithm::SLACK_TIMING_PLACE;
+
         if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest
              * slack values resulted from the proposed block moves. If the move turns out
@@ -626,7 +637,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
             /* Get the setup slack analysis cost */
             //TODO: calculate a weighted average of the slack cost and wiring cost
-            delta_c = analyze_setup_slack_cost(setup_slacks_, placer_state_) * costs_.timing_cost_norm;
+            delta_c = analyze_setup_slack_cost(*setup_slacks_, placer_state_) * costs_.timing_cost_norm;
         }
 
         NocCostTerms noc_delta_c; // change in NoC cost
@@ -657,7 +668,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                 costs_.interposer_cost += cost_terms_delta.interposer_cost;
                 costs_.interposer_cong_cost += cost_terms_delta.interposer_cong_cost;
             }
-            if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
+            if (update_td) {
                 costs_.timing_cost += timing_delta_c;
 
                 /* Invalidates timing of modified connections for incremental
@@ -670,14 +681,12 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
                 // Commit the setup slack information
                 // The timing delay and cost values should be committed already
-                commit_setup_slacks(setup_slacks_, placer_state_);
+                commit_setup_slacks(*setup_slacks_, placer_state_);
             }
 
-            // Make the move permanent. Connection delays and timing costs are committed
-            // only in CRITICALITY_TIMING_PLACE mode; SLACK_TIMING_PLACE already committed
-            // them before its timing analysis.
-            swap_evaluator_.commit(blocks_affected_, update_interposer_costs,
-                                   /*commit_td=*/place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE);
+            // Make the move permanent. SLACK_TIMING_PLACE already committed connection
+            // delays and timing costs before its timing analysis.
+            swap_evaluator_.commit(blocks_affected_, update_interposer_costs, /*commit_td=*/update_td);
 
             if (noc_opts_.noc) {
                 noc_cost_handler_->commit_noc_costs();
@@ -695,8 +704,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             VTR_ASSERT_SAFE(move_outcome == e_move_result::REJECTED);
 
             // Restore block_locs and reset the scratch/proposed state.
-            swap_evaluator_.revert(blocks_affected_,
-                                   /*revert_td=*/place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE);
+            swap_evaluator_.revert(blocks_affected_, /*revert_td=*/update_td);
 
             if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
                 /* Revert the timing delays and costs to pre-update values.
@@ -716,7 +724,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                                       setup_slacks_, pin_timing_invalidator_);
 
                 VTR_ASSERT_SAFE_MSG(
-                    verify_connection_setup_slacks(setup_slacks_, placer_state_),
+                    verify_connection_setup_slacks(*setup_slacks_, placer_state_),
                     "The current setup slacks should be identical to the values before the try swap timing info update.");
             }
 
@@ -847,6 +855,9 @@ void PlacementAnnealer::placement_inner_loop() {
     MoveGenerator& move_generator = select_move_generator(move_generator_1_, move_generator_2_, agent_state_,
                                                           placer_opts_, quench_started_);
 
+    // The quench may use a different algorithm than the anneal.
+    const t_place_algorithm& place_algorithm = quench_started_ ? placer_opts_.place_quench_algorithm : placer_opts_.place_algorithm;
+
     // Inner loop begins
     for (int inner_iter = 0, inner_crit_iter_count = 1; inner_iter < annealing_state_.move_lim; inner_iter++) {
 #ifndef NO_GRAPHICS
@@ -857,7 +868,7 @@ void PlacementAnnealer::placement_inner_loop() {
         }
 #endif /*NO_GRAPHICS*/
 
-        t_swap_result swap_result = try_swap_(move_generator, placer_opts_.place_algorithm, manual_move_enabled);
+        t_swap_result swap_result = try_swap_(move_generator, place_algorithm, manual_move_enabled);
 
         if (swap_result.move_result == e_move_result::ACCEPTED) {
             // Move was accepted.  Update statistics that are useful for the annealing schedule.
@@ -869,7 +880,7 @@ void PlacementAnnealer::placement_inner_loop() {
             swap_stats_.num_swap_rejected++;
         }
 
-        if (placer_opts_.place_algorithm.is_timing_driven()) {
+        if (place_algorithm.is_timing_driven()) {
             /* Do we want to re-timing analyze the circuit to get updated slack and criticality values?
              * We do this only once in a while, since it is expensive.
              */
