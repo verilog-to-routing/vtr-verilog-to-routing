@@ -107,12 +107,11 @@ float get_rr_cong_cost(RRNodeId inode, float pres_fac);
 std::optional<t_bus_mux_edge> find_bus_mux_edge(RRNodeId from_node, RRNodeId to_node);
 
 /**
- * @brief Return the bus mux cost multiplier for from_node -> to_node.
+ * @brief Return the control congestion cost of the edge from_node -> to_node.
  *
- * Each bit using another input set adds pres_fac to a base multiplier of 1.
- * Returns 1 for edges outside a bus mux.
+ * Non-zero only when the edge implements one bit of a bus-based mux.
  */
-float get_bus_mux_cong_cost_factor(RRNodeId from_node, RRNodeId to_node, float pres_fac);
+float get_bus_mux_cong_cost(RRNodeId from_node, RRNodeId to_node, float pres_fac);
 
 /**
  * @brief Add add_or_sub (+1 or -1) to the bit count of the input set used by the edge into rt_node.

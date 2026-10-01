@@ -319,8 +319,8 @@ float ConnectionRouter<Heap>::evaluate_timing_driven_backward_costs(RTExploredNo
     if (reached_configurably) {
         cong_cost = get_rr_cong_cost(to->index, cost_params.pres_fac);
         if (is_flat_) {
-            // Penalize bus mux edges when routed bits use other input sets.
-            cong_cost *= get_bus_mux_cong_cost_factor(from_node, to->index, cost_params.pres_fac);
+            // Control congestion: bits of a bus mux already routed on other input sets.
+            cong_cost += get_bus_mux_cong_cost(from_node, to->index, cost_params.pres_fac);
         }
     } else {
         // Reached by a non-configurable edge.
@@ -371,8 +371,8 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_total_cost(RTExploredNode* t
         to->path_data->backward_delay += cost_params.criticality * Tdel;
         float cong_cost = get_rr_cong_cost(to->index, cost_params.pres_fac);
         if (is_flat_) {
-            // Keep the RCV congestion term consistent with the backward cost: penalize bus mux edges.
-            cong_cost *= get_bus_mux_cong_cost_factor(from_node, to->index, cost_params.pres_fac);
+            // Keep the RCV congestion term consistent with the backward cost: add the control congestion.
+            cong_cost += get_bus_mux_cong_cost(from_node, to->index, cost_params.pres_fac);
         }
         to->path_data->backward_cong += (1. - cost_params.criticality) * cong_cost;
 

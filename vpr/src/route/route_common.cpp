@@ -250,17 +250,21 @@ std::optional<t_bus_mux_edge> find_bus_mux_edge(RRNodeId from_node, RRNodeId to_
     return std::nullopt;
 }
 
-float get_bus_mux_cong_cost_factor(RRNodeId from_node, RRNodeId to_node, float pres_fac) {
+float get_bus_mux_cong_cost(RRNodeId from_node, RRNodeId to_node, float pres_fac) {
     std::optional<t_bus_mux_edge> bus_mux_edge = find_bus_mux_edge(from_node, to_node);
     if (!bus_mux_edge) {
-        return 1.f;
+        return 0.f;
     }
 
     const t_bus_mux_route_inf& mux_inf = g_vpr_ctx.routing().bus_mux_route_inf[bus_mux_edge->mux_idx];
 
-    // Penalize each routed bit that would need to switch to this edge's input set.
+    // Each routed bit that would need to switch to this edge's input set adds one unit
+    // of overuse to to_node's present cost.
     int displaced_bits = mux_inf.bits_on_other_sets(bus_mux_edge->set);
-    return (displaced_bits > 0) ? (1.f + pres_fac * displaced_bits) : 1.f;
+    if (displaced_bits == 0) {
+        return 0.f;
+    }
+    return get_single_rr_cong_base_cost(to_node) * get_single_rr_cong_acc_cost(to_node) * pres_fac * displaced_bits;
 }
 
 void pathfinder_update_bus_mux_occupancy(const RouteTreeNode& rt_node, int add_or_sub) {
