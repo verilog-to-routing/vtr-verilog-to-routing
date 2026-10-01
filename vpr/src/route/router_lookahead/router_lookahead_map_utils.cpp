@@ -860,8 +860,8 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                     }
 
                     routing_cost_map[ipin_layer][delta_x][delta_y].add_cost_entry(util::e_representative_entry_method::SMALLEST,
-                                                                              current.delay,
-                                                                              current.congestion_upstream);
+                                                                                  current.delay,
+                                                                                  current.congestion_upstream);
                 }
             };
 
