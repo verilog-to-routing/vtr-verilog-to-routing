@@ -847,22 +847,21 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                     delta_x = std::abs(delta_x);
                     delta_y = std::abs(delta_y);
 
-                    bool store_this_pin = true;
+                    // CompressedMapLookahead records only the selected sample locations.
+                    // We check if sample_locs contains (delta_x, delta_y) and don't save
+                    // the sample route to the routing cost map table if not.
                     if (!sample_all_locs) {
-                        if (sample_locs.find(delta_x) == sample_locs.end()) {
-                            store_this_pin = false;
-                        } else {
-                            if (sample_locs.at(delta_x).find(delta_y) == sample_locs.at(delta_x).end()) {
-                                store_this_pin = false;
-                            }
+                        auto it = sample_locs.find(delta_x);
+                        if (it == sample_locs.end() || !it->second.contains(delta_y)) {
+                            // This is inside a lambda, returning only means we don't save the sample route
+                            // in the cost table
+                            return;
                         }
                     }
 
-                    if (store_this_pin) {
-                        routing_cost_map[ipin_layer][delta_x][delta_y].add_cost_entry(util::e_representative_entry_method::SMALLEST,
-                                                                                      current.delay,
-                                                                                      current.congestion_upstream);
-                    }
+                    routing_cost_map[ipin_layer][delta_x][delta_y].add_cost_entry(util::e_representative_entry_method::SMALLEST,
+                                                                              current.delay,
+                                                                              current.congestion_upstream);
                 }
             };
 
