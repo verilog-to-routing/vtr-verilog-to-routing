@@ -377,10 +377,10 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
         add_to_heap = best_back_cost > new_back_cost;
         // Only edges surviving the backward-cost prune pay for the lookahead
         if (add_to_heap) {
-            this->evaluate_timing_driven_total_cost(&next, cost_params, target_node, Tdel);
+            this->evaluate_timing_driven_total_cost(&next, cost_params, from_node, target_node, Tdel);
         }
     } else {
-        this->evaluate_timing_driven_total_cost(&next, cost_params, target_node, Tdel);
+        this->evaluate_timing_driven_total_cost(&next, cost_params, from_node, target_node, Tdel);
         add_to_heap = best_total_cost > next.total_cost;
     }
 
