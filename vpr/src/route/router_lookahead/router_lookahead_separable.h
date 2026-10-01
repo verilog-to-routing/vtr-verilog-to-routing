@@ -64,6 +64,8 @@ class SeparableLookahead : public RouterLookahead {
     void write(const std::string& file_name) const override;
     /// @brief Report that intra-cluster serialization is unsupported.
     void write_intra_cluster(const std::string& file) const override;
+
+  public:
     /// @brief Delegate relative-coordinate OPIN delay queries to the map lookahead.
     float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const override;
 };
