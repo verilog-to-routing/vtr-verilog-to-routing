@@ -117,6 +117,15 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
     if (solve_systems_concurrently) {
         VTR_ASSERT(total_num_threads >= num_systems);
         eigen_num_threads = total_num_threads / num_systems;
+
+        // Warn if the threads cannot be split evenly between the systems.
+        if (total_num_threads % num_systems != 0) {
+            VTR_LOG_WARN("The number of threads (%u) is not divisible by the number of "
+                         "linear systems solved concurrently (%u). The analytical solver "
+                         "will use %u threads per system (%u threads in total).\n",
+                         total_num_threads, num_systems,
+                         eigen_num_threads, eigen_num_threads * num_systems);
+        }
     }
     // Set the number of threads globally used by Eigen (if OpenMP is enabled).
     // NOTE: Since this is a global update, all solvers will have this number
