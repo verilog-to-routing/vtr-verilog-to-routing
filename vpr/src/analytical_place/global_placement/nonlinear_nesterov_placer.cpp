@@ -168,6 +168,14 @@ constexpr double kFinalDensityWeightMultiplier = 4.0;
 constexpr double kTargetOverflow = 0.1;
 
 /**
+ * @brief Minimum epochs before the overflow stop may trigger.
+ *
+ * The warm-start seed is already roughly legal, so allow at least a couple of
+ * refinement epochs before the physical-overflow stop can end the loop.
+ */
+constexpr size_t kMinEpochsBeforeOverflowStop = 2;
+
+/**
  * @brief Maximum per-block density-term mass inflation factor from pin count.
  */
 constexpr double kMaxPinDensityInflation = 2.0;
@@ -175,6 +183,11 @@ constexpr double kMaxPinDensityInflation = 2.0;
 // --------------------------------------------------------------------------
 // Warm start and seeding
 // --------------------------------------------------------------------------
+
+/**
+ * @brief Minimum B2B solve+legalize cycles used to build the warm-start seed.
+ */
+constexpr size_t kWarmStartIters = 4;
 
 /**
  * @brief Maximum B2B warm-start cycles (cap on the convergence loop).
@@ -185,11 +198,18 @@ constexpr size_t kWarmStartMaxIters = 24;
  * @brief Relative HPWL-improvement threshold below which the warm start stops.
  *
  * Once a B2B cycle improves the seed HPWL by less than this fraction, further
- * cycles are not worth their runtime, so the warm start ends. Larger designs
- * keep improving longer and so run more cycles automatically, up to
- * @ref kWarmStartMaxIters.
+ * cycles are not worth their runtime, so the warm start ends (at or above the
+ * @ref kWarmStartIters floor). Larger designs keep improving longer and so run
+ * more cycles automatically, up to @ref kWarmStartMaxIters.
  */
 constexpr double kWarmStartTol = 0.01;
+
+/**
+ * @brief Initial gamma fraction before continuation anneals coarse->sharp.
+ *
+ * Kept below @ref kGammaStartFraction so the first epoch is not overly smooth.
+ */
+constexpr double kWirelengthGammaFraction = 0.02;
 
 // --------------------------------------------------------------------------
 // Fillers
@@ -351,10 +371,12 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     }
 
     if (log_verbosity_ >= 1) {
-        VTR_LOG("Nonlinear Nesterov configuration: blocks=%zu pins/block=%.2f warm-start-max=%zu timing=%g.\n",
+        warmstart_iters_ = kWarmStartIters;
+        warmstart_max_iters_ = kWarmStartMaxIters;
+        VTR_LOG("Nonlinear Nesterov configuration: blocks=%zu pins/block=%.2f warm-start-floor=%zu timing=%g.\n",
                 moveable_blocks_.size(),
                 pins_per_moveable_block,
-                kWarmStartMaxIters,
+                warmstart_iters_,
                 ap_timing_tradeoff_);
         VTR_LOG("Nonlinear Nesterov pin-density inflation: reference=%.2f pins/block max_inflation=%.3g.\n",
                 pin_density_inflation_reference,
@@ -370,6 +392,9 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
         if (log_verbosity_ >= 1)
             VTR_LOG("Nonlinear Nesterov field solves: using %u worker threads.\n", num_threads);
     }
+
+    warmstart_iters_ = kWarmStartIters;
+    warmstart_max_iters_ = kWarmStartMaxIters;
 
     // Build the B2B warm-start solver. Constructed here because the DeviceGrid is
     // only in scope during construction. Single-threaded so concurrent VPR runs do
@@ -402,28 +427,40 @@ PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
     }
 
     // Warm start from a B2B/QP analytical solve. Iterate solve+legalize until the
-    // seed HPWL stops improving (one convergence rule + a hard max), so large /
-    // under-converged designs keep cycling while designs that converge early stop
-    // without a separate floor. The legalizer places every block (including
+    // seed HPWL stops improving (convergence-based), with a minimum cycle floor so
+    // small designs that look "converged" after one noisy step still get a few
+    // refinement cycles. The legalizer places every block (including
     // solver-disconnected ones), so all moveable blocks have a valid location
     // afterward.
     double previous_hpwl = std::numeric_limits<double>::infinity();
     size_t solver_iteration = 0;
+    size_t min_cycles = warmstart_iters_;
+    size_t max_cycles = warmstart_max_iters_;
     bool stopped_by_convergence = false;
 
-    while (solver_iteration < kWarmStartMaxIters) {
+    while (solver_iteration < max_cycles) {
         warmstart_solver_->solve(solver_iteration, p_placement);
         partial_legalizer_->legalize(p_placement);
+        size_t cycles_done = solver_iteration + 1;
 
         double hpwl = p_placement.get_hpwl(ap_netlist_);
         bool converged = hpwl > previous_hpwl * (1.0 - kWarmStartTol);
         previous_hpwl = hpwl;
-        solver_iteration++;
 
-        if (converged) {
-            stopped_by_convergence = true;
-            break;
+        if (cycles_done < min_cycles) {
+            solver_iteration++;
+            continue;
         }
+
+        bool reached_max_cycles = cycles_done >= max_cycles;
+        if (!converged && !reached_max_cycles) {
+            solver_iteration++;
+            continue;
+        }
+
+        stopped_by_convergence = converged && !reached_max_cycles;
+        solver_iteration = cycles_done;
+        break;
     }
     project_placement_(p_placement);
 
@@ -502,7 +539,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     std::fill(net_weights_.begin(), net_weights_.end(), 1.0);
     // Use the same coarse gamma for normalization and epoch 0. This keeps the
     // initial density-energy scale consistent with the first optimization step.
-    current_gamma_fraction_ = kGammaStartFraction;
+    current_gamma_fraction_ = kWirelengthGammaFraction;
     std::vector<double> density_multipliers(density_dimensions.size(), 1.);
     // Seed the density multiplier so the density term starts at a small fixed
     // fraction of the initial wirelength.
@@ -906,6 +943,23 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                     density_overflow_scales[dim_idx]);
         }
         density_scales_from_overflow(phys_oflows, density_overflow_scales);
+
+        // Overflow-target stop: once the smooth (pre-legalization) placement is
+        // already spread enough that physical mass barely exceeds tile capacity,
+        // further density tightening only costs wirelength, so skip remaining
+        // intermediate epochs and jump to the final continuation endpoint.
+        if (kTargetOverflow > 0.
+            && epoch + 1 >= kMinEpochsBeforeOverflowStop
+            && epoch + 1 < num_epochs) {
+            if (pre_leg_overflow <= kTargetOverflow) {
+                if (log_verbosity_ >= 1) {
+                    VTR_LOG("Nonlinear Nesterov: physical overflow %.4f <= target %.4f after epoch %zu; skipping to final continuation step.\n",
+                            pre_leg_overflow, kTargetOverflow, epoch);
+                }
+                epoch = num_epochs - 2; // Loop increment advances to final epoch.
+                continue;
+            }
+        }
     }
 
     // Checkpoint selection is pure minimum-HPWL.

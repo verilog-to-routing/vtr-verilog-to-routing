@@ -380,9 +380,11 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     ///        QP initialization) instead of a block-ID grid spread. Always built in
     ///        the constructor.
     std::unique_ptr<AnalyticalSolver> warmstart_solver_;
+    size_t warmstart_iters_ = 0;     ///< Minimum solve+legalize cycles (warm-start floor).
+    size_t warmstart_max_iters_ = 0; ///< Cap on the convergence-based warm-start loop.
 
     /// @brief Active wirelength-smoothing fraction (gamma / device span). Seeded at
     ///        the fixed default, then annealed coarse->sharp per epoch by
     ///        run_global_optimization_ (gamma continuation).
-    double current_gamma_fraction_ = 0.04;
+    double current_gamma_fraction_ = 0.02;
 };
