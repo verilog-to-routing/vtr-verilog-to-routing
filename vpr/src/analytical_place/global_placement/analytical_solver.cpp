@@ -49,6 +49,38 @@
 #pragma GCC diagnostic pop
 #endif // EIGEN_INSTALLED
 
+#ifdef EIGEN_INSTALLED
+/**
+ * @brief Decides if the per dimension linear systems are solved at the same
+ *        time for the given threading mode.
+ *
+ * Errors out if the concurrent mode has fewer threads than linear systems.
+ */
+static bool should_solve_systems_concurrently(e_ap_solver_threading solver_threading,
+                                              unsigned num_threads,
+                                              unsigned num_systems) {
+    switch (solver_threading) {
+        case e_ap_solver_threading::Sequential:
+            return false;
+        case e_ap_solver_threading::Concurrent:
+            // The concurrent mode needs at least one thread per linear system.
+            if (num_threads < num_systems) {
+                VPR_FATAL_ERROR(VPR_ERROR_AP,
+                                "--ap_solver_threading concurrent needs at least %u threads (one per linear system), but only %u are available.\n"
+                                "Increase --num_workers or use a different --ap_solver_threading mode.\n",
+                                num_systems, num_threads);
+            }
+            return true;
+        case e_ap_solver_threading::Auto:
+            // Solve concurrently only when each system can get at least two threads.
+            return num_threads >= 2 * num_systems;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "Unrecognized analytical solver threading mode");
+    }
+    return false;
+}
+#endif // EIGEN_INSTALLED
+
 std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver solver_type,
                                                          const APNetlist& netlist,
                                                          const DeviceGrid& device_grid,
@@ -60,10 +92,31 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          e_ap_solver_threading solver_threading,
                                                          int log_verbosity) {
 #ifdef EIGEN_INSTALLED
-    // Set the number of threads that Eigen can use.
-    unsigned eigen_num_threads = num_threads;
+    // Get the total number of threads that the solver can use.
+    unsigned total_num_threads = num_threads;
     if (num_threads == 0) {
-        eigen_num_threads = std::thread::hardware_concurrency();
+        total_num_threads = std::thread::hardware_concurrency();
+    }
+
+    // Get the number of linear systems the solver solves in each iteration.
+    // There is one system per dimension. The z dimension is only solved on
+    // multi-layer devices.
+    unsigned num_systems = 2;
+    if (device_grid.get_num_layers() > 1) {
+        num_systems = 3;
+    }
+
+    // Decide if the linear systems are solved at the same time.
+    bool solve_systems_concurrently = should_solve_systems_concurrently(solver_threading,
+                                                                        total_num_threads,
+                                                                        num_systems);
+
+    // When the systems are solved concurrently, the threads are split evenly
+    // between them. Otherwise each solve uses every thread.
+    unsigned eigen_num_threads = total_num_threads;
+    if (solve_systems_concurrently) {
+        VTR_ASSERT(total_num_threads >= num_systems);
+        eigen_num_threads = total_num_threads / num_systems;
     }
     // Set the number of threads globally used by Eigen (if OpenMP is enabled).
     // NOTE: Since this is a global update, all solvers will have this number
@@ -89,6 +142,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                     atom_netlist,
                                                     pre_cluster_timing_manager,
                                                     ap_timing_tradeoff,
+                                                    solve_systems_concurrently,
                                                     log_verbosity);
 #else
             (void)netlist;
@@ -110,8 +164,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                pre_cluster_timing_manager,
                                                place_delay_model,
                                                ap_timing_tradeoff,
-                                               eigen_num_threads,
-                                               solver_threading,
+                                               solve_systems_concurrently,
                                                log_verbosity);
 #else
             VPR_FATAL_ERROR(VPR_ERROR_AP,
@@ -472,21 +525,30 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     VTR_ASSERT_SAFE_MSG(!b_x_diff.hasNaN(), "b_x has NaN!");
     VTR_ASSERT_SAFE_MSG(!b_y_diff.hasNaN(), "b_y has NaN!");
 
-    // Set up the ConjugateGradient Solver using the coefficient matrix.
-    // TODO: can change cg.tolerance to increase performance when needed
-    //  - This tolerance may need to be a function of the number of nets.
-    //  - Instead of normalizing the fixed blocks, the tolerance can be scaled
-    //    by the size of the device.
-    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg;
-    cg.compute(A_sparse_diff);
-    VTR_ASSERT(cg.info() == Eigen::Success && "Conjugate Gradient failed at compute!");
-    // Use the solver to solve for x and y using the constant vectors
-    Eigen::VectorXd x = cg.solveWithGuess(b_x_diff, guess_x);
-    total_num_cg_iters_ += cg.iterations();
-    VTR_ASSERT(cg.info() == Eigen::Success && "Conjugate Gradient failed at solving b_x!");
-    Eigen::VectorXd y = cg.solveWithGuess(b_y_diff, guess_y);
-    total_num_cg_iters_ += cg.iterations();
-    VTR_ASSERT(cg.info() == Eigen::Success && "Conjugate Gradient failed at solving b_y!");
+    // Solve for x and y using the constant vectors. Both dimensions share the
+    // same coefficient matrix.
+    Eigen::VectorXd x;
+    Eigen::VectorXd y;
+    unsigned x_cg_iters = 0;
+    unsigned y_cg_iters = 0;
+    bool x_solve_succeeded = false;
+    bool y_solve_succeeded = false;
+    if (!solve_systems_concurrently_) {
+        // Solve the systems one after the other, each using every thread.
+        x_solve_succeeded = solve_linear_system(A_sparse_diff, b_x_diff, guess_x, x, x_cg_iters);
+        y_solve_succeeded = solve_linear_system(A_sparse_diff, b_y_diff, guess_y, y, y_cg_iters);
+    } else {
+        // Solve the systems at the same time.
+        std::thread y_thread([&]() {
+            y_solve_succeeded = solve_linear_system(A_sparse_diff, b_y_diff, guess_y, y, y_cg_iters);
+        });
+        // The x system is solved on the calling thread.
+        x_solve_succeeded = solve_linear_system(A_sparse_diff, b_x_diff, guess_x, x, x_cg_iters);
+        y_thread.join();
+    }
+    VTR_ASSERT_MSG(x_solve_succeeded, "Conjugate Gradient failed at solving b_x!");
+    VTR_ASSERT_MSG(y_solve_succeeded, "Conjugate Gradient failed at solving b_y!");
+    total_num_cg_iters_ += x_cg_iters + y_cg_iters;
 
     // Write the results back into the partial placement object.
     store_solution_into_placement(x, y, p_placement);
@@ -507,6 +569,27 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     // this iteration.
     guess_x = x;
     guess_y = y;
+}
+
+bool QPHybridSolver::solve_linear_system(const Eigen::SparseMatrix<double>& A,
+                                         const Eigen::VectorXd& b,
+                                         const Eigen::VectorXd& guess,
+                                         Eigen::VectorXd& solution,
+                                         unsigned& num_cg_iters) {
+    // Set up the ConjugateGradient Solver using the coefficient matrix.
+    // TODO: can change cg.tolerance to increase performance when needed
+    //  - This tolerance may need to be a function of the number of nets.
+    //  - Instead of normalizing the fixed blocks, the tolerance can be scaled
+    //    by the size of the device.
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg;
+    cg.compute(A);
+    if (cg.info() != Eigen::Success)
+        return false;
+
+    solution = cg.solveWithGuess(b, guess);
+    num_cg_iters = cg.iterations();
+
+    return cg.info() == Eigen::Success;
 }
 
 void QPHybridSolver::store_solution_into_placement(const Eigen::VectorXd& x_soln,
@@ -590,8 +673,7 @@ B2BSolver::B2BSolver(const APNetlist& ap_netlist,
                      const PreClusterTimingManager& pre_cluster_timing_manager,
                      std::shared_ptr<PlaceDelayModel> place_delay_model,
                      float ap_timing_tradeoff,
-                     unsigned num_threads,
-                     e_ap_solver_threading solver_threading,
+                     bool solve_systems_concurrently,
                      int log_verbosity)
     : AnalyticalSolver(ap_netlist,
                        atom_netlist,
@@ -600,17 +682,7 @@ B2BSolver::B2BSolver(const APNetlist& ap_netlist,
                        log_verbosity)
     , pre_cluster_timing_manager_(pre_cluster_timing_manager)
     , place_delay_model_(place_delay_model)
-    , num_threads_(num_threads)
-    , solver_threading_(solver_threading) {
-
-    // The concurrent mode needs at least one thread per linear system.
-    unsigned num_systems = has_multiple_layers() ? 3 : 2;
-    if (solver_threading_ == e_ap_solver_threading::Concurrent && num_threads_ < num_systems) {
-        VPR_FATAL_ERROR(VPR_ERROR_AP,
-                        "--ap_solver_threading concurrent needs at least %u threads (one per linear system), but only %u are available.\n"
-                        "Increase --num_workers or use a different --ap_solver_threading mode.\n",
-                        num_systems, num_threads_);
-    }
+    , solve_systems_concurrently_(solve_systems_concurrently) {
 
     // Reserve space for the triplet lists once here, since their buffers are
     // reused for every linear system built by this solver.
@@ -872,28 +944,11 @@ void B2BSolver::solve_linear_systems(Eigen::VectorXd& x_guess,
                                      Eigen::VectorXd& x,
                                      Eigen::VectorXd& y,
                                      Eigen::VectorXd& z) {
-    unsigned num_systems = has_multiple_layers() ? 3 : 2;
     unsigned x_cg_iters = 0;
     unsigned y_cg_iters = 0;
     unsigned z_cg_iters = 0;
 
-    bool solve_concurrently;
-    switch (solver_threading_) {
-        case e_ap_solver_threading::Sequential:
-            solve_concurrently = false;
-            break;
-        case e_ap_solver_threading::Concurrent:
-            solve_concurrently = true;
-            break;
-        case e_ap_solver_threading::Auto:
-            // Solve concurrently only when each system can get at least two threads.
-            solve_concurrently = num_threads_ >= 2 * num_systems;
-            break;
-        default:
-            VPR_FATAL_ERROR(VPR_ERROR_AP, "Unrecognized analytical solver threading mode");
-    }
-
-    if (!solve_concurrently) {
+    if (!solve_systems_concurrently_) {
         // Solve the systems one after the other, each using every thread.
         x = solve_linear_system(A_sparse_x, b_x, x_guess, x_cg_iters);
         y = solve_linear_system(A_sparse_y, b_y, y_guess, y_cg_iters);
@@ -901,13 +956,7 @@ void B2BSolver::solve_linear_systems(Eigen::VectorXd& x_guess,
             z = solve_linear_system(A_sparse_z, b_z, z_guess, z_cg_iters);
         }
     } else {
-        // Split the threads evenly between the systems and solve them at the
-        // same time. Eigen's thread count is a global, so it is set once here
-        // for every solve. The constructor checked that there is at least
-        // one thread per system.
-        VTR_ASSERT_SAFE(num_threads_ >= num_systems);
-        Eigen::setNbThreads(num_threads_ / num_systems);
-
+        // Solve the systems at the same time.
         std::thread y_thread([&]() {
             y = solve_linear_system(A_sparse_y, b_y, y_guess, y_cg_iters);
         });
@@ -924,8 +973,6 @@ void B2BSolver::solve_linear_systems(Eigen::VectorXd& x_guess,
         if (z_thread.joinable()) {
             z_thread.join();
         }
-
-        Eigen::setNbThreads(num_threads_);
     }
 
     total_num_cg_iters_ += x_cg_iters + y_cg_iters + z_cg_iters;

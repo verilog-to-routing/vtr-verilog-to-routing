@@ -14,6 +14,7 @@
 #include "device_grid.h"
 #include "physical_types.h"
 #include "place_delay_model.h"
+#include "vtr_assert.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 
@@ -335,6 +336,20 @@ class QPHybridSolver : public AnalyticalSolver {
                                            unsigned iteration);
 
     /**
+     * @brief Solves the linear system Ax = b with CG, starting from the guess.
+     *
+     * The number of CG iterations used is written to num_cg_iters. This method
+     * touches no shared state so it can run on several threads at once.
+     *
+     *  @return True if the solver succeeded.
+     */
+    bool solve_linear_system(const Eigen::SparseMatrix<double>& A,
+                             const Eigen::VectorXd& b,
+                             const Eigen::VectorXd& guess,
+                             Eigen::VectorXd& solution,
+                             unsigned& num_cg_iters);
+
+    /**
      * @brief Store the x and y solutions in Eigen's vectors into the partial
      *        placement object.
      */
@@ -370,6 +385,10 @@ class QPHybridSolver : public AnalyticalSolver {
     /// @brief The total number of CG iterations this solver has performed so far.
     unsigned total_num_cg_iters_ = 0;
 
+    /// @brief If true, the x and y linear systems are solved at the same time.
+    ///        Otherwise they are solved one after the other.
+    bool solve_systems_concurrently_;
+
   public:
     /**
      * @brief Constructor of the QPHybridSolver
@@ -381,12 +400,18 @@ class QPHybridSolver : public AnalyticalSolver {
                    const AtomNetlist& atom_netlist,
                    const PreClusterTimingManager& pre_cluster_timing_manager,
                    float ap_timing_tradeoff,
+                   bool solve_systems_concurrently,
                    int log_verbosity)
         : AnalyticalSolver(netlist,
                            atom_netlist,
                            device_grid,
                            ap_timing_tradeoff,
-                           log_verbosity) {
+                           log_verbosity)
+        , solve_systems_concurrently_(solve_systems_concurrently) {
+        // This solver only solves for the x and y dimensions.
+        VTR_ASSERT_MSG(device_grid.get_num_layers() == 1,
+                       "The QP Hybrid solver does not support multi-layer devices");
+
         // Update the net weights. These net weights are used when the linear
         // system is initialized.
         update_net_weights(pre_cluster_timing_manager);
@@ -550,8 +575,7 @@ class B2BSolver : public AnalyticalSolver {
               const PreClusterTimingManager& pre_cluster_timing_manager,
               std::shared_ptr<PlaceDelayModel> place_delay_model,
               float ap_timing_tradeoff,
-              unsigned num_threads,
-              e_ap_solver_threading solver_threading,
+              bool solve_systems_concurrently,
               int log_verbosity);
 
     /**
@@ -777,7 +801,7 @@ class B2BSolver : public AnalyticalSolver {
      *
      * Whether the systems are solved at the same time (threads divided evenly
      * between them) or one after the other (each using every thread) is
-     * decided by solver_threading_.
+     * decided by solve_systems_concurrently_.
      */
     void solve_linear_systems(Eigen::VectorXd& x_guess,
                               Eigen::VectorXd& y_guess,
@@ -889,12 +913,9 @@ class B2BSolver : public AnalyticalSolver {
     ///        two tiles on the FPGA. Used for computing the timing terms.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
 
-    /// @brief The total number of threads this solver may use across all of
-    ///        the linear systems it solves at once.
-    unsigned num_threads_;
-
-    /// @brief How the threads are used across the per dimension linear systems.
-    e_ap_solver_threading solver_threading_;
+    /// @brief If true, the per dimension linear systems are solved at the same
+    ///        time. Otherwise they are solved one after the other.
+    bool solve_systems_concurrently_;
 };
 
 #endif // EIGEN_INSTALLED
