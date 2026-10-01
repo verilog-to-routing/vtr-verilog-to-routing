@@ -150,6 +150,14 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
 
                         auto record_cost = [&](util::PQ_Entry current) {
                             RRNodeId curr_node = current.rr_node;
+
+                            // If we're profiling the y axis, we want to remove the delay of going from a channel node to an IPIN
+                            // to avoid double counting this delay when we sum up the x delay and y delay during routing
+                            if (!profile_x) {
+                                RRIndexedDataId cost_index = rr_graph.node_cost_index(curr_node);
+                                current.delay -= device_ctx.rr_indexed_data[cost_index].T_linear;
+                                current.congestion_upstream -= device_ctx.rr_indexed_data[cost_index].base_cost;
+                            }
                             auto [ipin_x, ipin_y] = util::get_adjusted_rr_position(curr_node);
                             const int ipin_coord = profile_x ? ipin_x : ipin_y;
                             int ipin_layer = rr_graph.node_layer_low(curr_node);
