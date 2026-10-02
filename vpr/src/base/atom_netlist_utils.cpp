@@ -731,61 +731,52 @@ static vtr::LogicValue get_constant_generator_value(const AtomNetlist& netlist, 
 }
 
 /**
- * @brief Get the net driven by the given constant generator.
+ * @brief Merges the nets driven by the given constant generators into the net with
+ *        the highest fanout.
  *
- * The constant generator is expected to have a single output pin.
- */
-static AtomNetId get_constant_generator_net(const AtomNetlist& netlist, AtomBlockId blk_id) {
-    return netlist.pin_net(*netlist.block_output_pins(blk_id).begin());
-}
-
-/**
- * @brief Merges the given constant generators into the generator with the highest
- *        fanout.
+ * All of the given nets must be driven by constant generators of the same value. The
+ * generators of the redundant nets are removed and the sinks of these nets are moved
+ * onto the kept net. The names of the removed nets are kept as aliases.
  *
- * All of the given generators must generate the same constant value and drive a net.
- * The redundant generators are removed and the sinks of their nets are moved onto the
- * net of the kept generator. The names of the removed nets are kept as aliases.
- *
- *  @param netlist      The netlist to modify.
- *  @param const_gens   The constant generators to merge.
- *  @param verbosity    The verbosity of the log messages.
+ *  @param netlist          The netlist to modify.
+ *  @param const_gen_nets   The nets driven by the constant generators to merge.
+ *  @param verbosity        The verbosity of the log messages.
  *
  *  @return The number of constant generators which were removed.
  */
-static size_t merge_constant_generators_of_value(AtomNetlist& netlist,
-                                                 const std::vector<AtomBlockId>& const_gens,
-                                                 int verbosity) {
-    if (const_gens.size() <= 1)
+static size_t merge_constant_generator_nets(AtomNetlist& netlist,
+                                            const std::vector<AtomNetId>& const_gen_nets,
+                                            int verbosity) {
+    if (const_gen_nets.size() <= 1)
         return 0;
 
-    // Choose the generator with the highest fanout to keep. This minimizes the
-    // number of pins which need to be moved and keeps the named constant nets
-    // (e.g. gnd / vcc) without needing to match their names.
-    AtomBlockId kept_gen = *std::max_element(const_gens.begin(), const_gens.end(),
-                                             [&](AtomBlockId lhs, AtomBlockId rhs) {
-                                                 return netlist.net_sinks(get_constant_generator_net(netlist, lhs)).size()
-                                                        < netlist.net_sinks(get_constant_generator_net(netlist, rhs)).size();
-                                             });
-    AtomNetId kept_net = get_constant_generator_net(netlist, kept_gen);
+    // Choose the net with the highest fanout to keep. This minimizes the number
+    // of pins which need to be moved and keeps the named constant nets (e.g.
+    // gnd / vcc) without needing to match their names.
+    AtomNetId kept_net = *std::max_element(const_gen_nets.begin(), const_gen_nets.end(),
+                                           [&](AtomNetId lhs, AtomNetId rhs) {
+                                               return netlist.net_sinks(lhs).size() < netlist.net_sinks(rhs).size();
+                                           });
     const std::string kept_net_name = netlist.net_name(kept_net);
 
     size_t num_removed = 0;
-    for (AtomBlockId blk_id : const_gens) {
-        if (blk_id == kept_gen)
+    for (AtomNetId net_id : const_gen_nets) {
+        if (net_id == kept_net)
             continue;
 
-        AtomNetId net_id = get_constant_generator_net(netlist, blk_id);
         const std::string net_name = netlist.net_name(net_id);
-        VTR_LOGV_WARN(verbosity > 1, "Merging constant generator net '%s' into net '%s'\n",
+        VTR_LOGV_WARN(verbosity > 2, "Merging constant generator net '%s' into net '%s'\n",
                       net_name.c_str(), kept_net_name.c_str());
 
         // Remove the redundant generator. This removes the driver pin of its net,
         // which allows its sinks to be moved onto the kept net.
         // NOTE: Primary outputs are separate blocks (with their own names), so their
         //       names are not affected by moving them to the kept net.
-        netlist.remove_block(blk_id);
+        netlist.remove_block(netlist.net_driver_block(net_id));
         VTR_ASSERT(!netlist.net_driver(net_id));
+
+        // Move the sinks onto the kept net. This removes net_id from the netlist,
+        // but does not affect the kept net or the other nets being merged.
         netlist.merge_nets(kept_net, net_id);
         netlist.add_net_alias(kept_net_name, net_name);
         num_removed++;
@@ -795,32 +786,27 @@ static size_t merge_constant_generators_of_value(AtomNetlist& netlist,
 }
 
 size_t merge_constant_generators(AtomNetlist& netlist, int verbosity) {
-    // Collect the constant generators of each value which drive a net.
-    std::vector<AtomBlockId> const_zero_gens;
-    std::vector<AtomBlockId> const_one_gens;
-    for (AtomBlockId blk_id : netlist.blocks()) {
-        if (!blk_id)
+    // Collect the nets driven by constant generators of each value.
+    std::vector<AtomNetId> const_zero_nets;
+    std::vector<AtomNetId> const_one_nets;
+    for (AtomNetId net_id : netlist.nets()) {
+        if (!net_id)
             continue;
 
-        vtr::LogicValue const_value = get_constant_generator_value(netlist, blk_id);
-        if (const_value == vtr::LogicValue::UNKNOWN)
+        AtomBlockId driver_blk = netlist.net_driver_block(net_id);
+        if (!driver_blk)
             continue;
 
-        // Constant generators which do not drive a net are left to be swept.
-        AtomNetlist::pin_range output_pins = netlist.block_output_pins(blk_id);
-        if (output_pins.size() != 1 || !netlist.pin_net(*output_pins.begin()))
-            continue;
-
+        vtr::LogicValue const_value = get_constant_generator_value(netlist, driver_blk);
         if (const_value == vtr::LogicValue::FALSE) {
-            const_zero_gens.push_back(blk_id);
-        } else {
-            VTR_ASSERT(const_value == vtr::LogicValue::TRUE);
-            const_one_gens.push_back(blk_id);
+            const_zero_nets.push_back(net_id);
+        } else if (const_value == vtr::LogicValue::TRUE) {
+            const_one_nets.push_back(net_id);
         }
     }
 
-    size_t num_removed = merge_constant_generators_of_value(netlist, const_zero_gens, verbosity)
-                         + merge_constant_generators_of_value(netlist, const_one_gens, verbosity);
+    size_t num_removed = merge_constant_generator_nets(netlist, const_zero_nets, verbosity)
+                         + merge_constant_generator_nets(netlist, const_one_nets, verbosity);
     VTR_LOGV(verbosity > 0, "Merged %zu constant generators\n", num_removed);
 
     return num_removed;
