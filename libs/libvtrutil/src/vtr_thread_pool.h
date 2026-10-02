@@ -68,9 +68,11 @@ class thread_pool {
         for (size_t i = 0; i < thread_count; i++) {
             auto thread_data = std::make_unique<ThreadData>();
 
-            thread_data->thread = std::thread([&]() {
-                ThreadData* td = thread_data.get();
+            // Capture the pointer by value. thread_data itself is moved into
+            // the threads vector below, possibly before the new thread starts.
+            ThreadData* td = thread_data.get();
 
+            thread_data->thread = std::thread([td]() {
                 while (true) {
                     std::function<void()> task;
 
