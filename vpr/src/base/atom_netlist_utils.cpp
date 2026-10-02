@@ -777,7 +777,7 @@ static size_t merge_constant_generators_of_value(AtomNetlist& netlist,
 
         AtomNetId net_id = get_constant_generator_net(netlist, blk_id);
         const std::string net_name = netlist.net_name(net_id);
-        VTR_LOGV_WARN(verbosity > 2, "Merging constant generator net '%s' into net '%s'\n",
+        VTR_LOGV_WARN(verbosity > 1, "Merging constant generator net '%s' into net '%s'\n",
                       net_name.c_str(), kept_net_name.c_str());
 
         // Remove the redundant generator. This removes the driver pin of its net,
@@ -807,7 +807,7 @@ size_t merge_constant_generators(AtomNetlist& netlist, int verbosity) {
             continue;
 
         // Constant generators which do not drive a net are left to be swept.
-        auto output_pins = netlist.block_output_pins(blk_id);
+        AtomNetlist::pin_range output_pins = netlist.block_output_pins(blk_id);
         if (output_pins.size() != 1 || !netlist.pin_net(*output_pins.begin()))
             continue;
 

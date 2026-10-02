@@ -106,33 +106,33 @@ static void process_circuit(AtomNetlist& netlist,
     {
         vtr::ScopedStartFinishTimer t("Clean circuit");
 
-        //Clean-up lut buffers
+        // Clean-up lut buffers
         if (should_absorb_buffers) {
             absorb_buffer_luts(netlist, models, verbosity);
         }
 
-        //Remove the special 'unconn' net
+        // Remove the special 'unconn' net
         AtomNetId unconn_net_id = netlist.find_net("unconn");
         if (unconn_net_id) {
             VTR_LOGV_WARN(verbosity > 1, "Removing special net 'unconn' (assumed it represented explicitly unconnected pins)\n");
             netlist.remove_net(unconn_net_id);
         }
 
-        //Also remove the 'unconn' block driver, if it exists
+        // Also remove the 'unconn' block driver, if it exists
         AtomBlockId unconn_blk_id = netlist.find_block("unconn");
         if (unconn_blk_id) {
             VTR_LOGV_WARN(verbosity > 1, "Removing special block 'unconn' (assumed it represented explicitly unconnected pins)\n");
             netlist.remove_block(unconn_blk_id);
         }
 
-        //Merge redundant constant generators
-        // Note that this must occur after the 'unconn' block is removed, since
-        // the 'unconn' block looks like a constant-zero generator.
+        // Merge redundant constant generators
+        //  Note that this must occur after the 'unconn' block is removed, since
+        //  the 'unconn' block looks like a constant-zero generator.
         if (should_merge_constant_generators) {
             merge_constant_generators(netlist, verbosity);
         }
 
-        //Sweep unused logic/nets/inputs/outputs
+        // Sweep unused logic/nets/inputs/outputs
         sweep_iterative(netlist,
                         should_sweep_dangling_primary_ios,
                         should_sweep_dangling_nets,
@@ -146,7 +146,7 @@ static void process_circuit(AtomNetlist& netlist,
     {
         vtr::ScopedStartFinishTimer t("Compress circuit");
 
-        //Compress the netlist to clean-out invalid entries
+        // Compress the netlist to clean-out invalid entries
         netlist.remove_and_compress();
     }
     {
