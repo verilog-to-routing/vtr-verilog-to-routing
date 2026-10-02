@@ -521,7 +521,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     // alloc_draw_structs now that the device context is valid (for both AP and non-AP paths).
     // This call also reinitializes graphics state and re-sizes draw arrays in case the AP flow
     // changed the device dimensions during full legalization.
-    vpr_init_graphics(vpr_setup, arch, is_flat);
+    vpr_init_graphics(vpr_setup, arch);
 
     // Re-run init_draw_coords() now that the graphics state (show_graphics,
     // save_graphics, graphics_commands) is fully configured. The call inside
@@ -1315,11 +1315,9 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
     init_draw_coords(chan_width_fac, g_vpr_ctx.placement().blk_loc_registry());
 }
 
-void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat) {
+void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     /* Startup X graphics */
-    init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
-                        vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics,
-                        vpr_setup.GraphicsCommands, vpr_setup.RendererType, is_flat);
+    init_graphics_state(vpr_setup);
     if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty())
         alloc_draw_structs(&arch);
 }
@@ -1466,7 +1464,7 @@ void vpr_setup_vpr(t_options* Options,
                    std::vector<t_segment_inf>& Segments,
                    t_timing_inf* Timing,
                    bool* ShowGraphics,
-                   int* GraphPause,
+                   e_graphics_pause* GraphPause,
                    bool* SaveGraphics,
                    std::string* GraphicsCommands,
                    std::string* RendererType,
