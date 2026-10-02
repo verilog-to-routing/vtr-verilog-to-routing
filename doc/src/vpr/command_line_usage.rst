@@ -146,13 +146,17 @@ Graphics Options
 
     **Default:** ``off``
 
-.. option:: --auto <int>
+.. option:: --graphics_pause {every_update | major | final_stage | never}
 
-    Can be 0, 1, or 2.
     This sets how often you must click Proceed to continue execution after viewing the graphics.
-    The higher the number, the more infrequently the program will pause.
 
-    **Default:** ``1``
+    * ``every_update``: pause at every step (e.g. each temperature or router iteration).
+    * ``major``: pause at major checkpoints, such as the end of each stage.
+    * ``final_stage``: skip graphics at intermediate stages and pause once the last requested stage completes: routing if it is run or loaded (e.g. with :option:`--route` or :option:`--analysis`), otherwise placement.
+      This applies to the interactive window, :option:`--save_graphics` and :option:`--graphics_commands` alike, and a ``wait_for_stage`` command for any other stage is an error.
+    * ``never``: never pause.
+
+    **Default:** ``major``
 
 .. option:: --save_graphics {on | off}
 
@@ -249,7 +253,7 @@ Graphics Options
 
     Note that drawing state is reset to its previous state after these commands are invoked.
 
-    Like the interactive graphics :option`<--disp>` option, the :option:`--auto` option controls how often the commands specified with this option are invoked.
+    Like the interactive graphics :option`<--disp>` option, the :option:`--graphics_pause` option controls how often the commands specified with this option are invoked.
 
 .. _general_options:
 
