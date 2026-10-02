@@ -125,9 +125,15 @@ class thread_pool {
                 throw;
             }
 
-            size_t remaining = --active_tasks;
-            if (remaining == 0) {
-                completion_cv.notify_all();
+            // Hold completion_mutex while updating the counter so that
+            // wait_for_all cannot miss the notification between checking the
+            // counter and going to sleep.
+            {
+                std::lock_guard<std::mutex> lock(completion_mutex);
+                size_t remaining = --active_tasks;
+                if (remaining == 0) {
+                    completion_cv.notify_all();
+                }
             }
         };
 
