@@ -8,6 +8,7 @@
  */
 
 #include <memory>
+#include <optional>
 #include <tuple>
 #include "ap_flow_enums.h"
 #include "ap_netlist.h"
@@ -16,6 +17,7 @@
 #include "place_delay_model.h"
 #include "vtr_assert.h"
 #include "vtr_strong_id.h"
+#include "vtr_thread_pool.h"
 #include "vtr_vector.h"
 
 #ifdef EIGEN_INSTALLED
@@ -165,6 +167,10 @@ class AnalyticalSolver {
 
     /// @brief The verbosity of log messages in the Analytical Solver.
     int log_verbosity_;
+
+    /// @brief Thread pool that inheriting classes may use to parallelize
+    ///        linear system construction and solving.
+    std::optional<vtr::thread_pool> thread_pool_;
 };
 
 /**
@@ -411,6 +417,12 @@ class QPHybridSolver : public AnalyticalSolver {
         // This solver only solves for the x and y dimensions.
         VTR_ASSERT_MSG(device_grid.get_num_layers() == 1,
                        "The QP Hybrid solver does not support multi-layer devices");
+
+        // The calling thread solves the x system, so the pool only needs one
+        // thread for the y system.
+        if (solve_systems_concurrently_) {
+            thread_pool_.emplace(1);
+        }
 
         // Update the net weights. These net weights are used when the linear
         // system is initialized.

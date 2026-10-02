@@ -548,12 +548,12 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
         y_solve_succeeded = solve_linear_system(A_sparse_diff, b_y_diff, guess_y, y, y_cg_iters);
     } else {
         // Solve the systems at the same time.
-        std::thread y_thread([&]() {
+        thread_pool_->schedule_work([&]() {
             y_solve_succeeded = solve_linear_system(A_sparse_diff, b_y_diff, guess_y, y, y_cg_iters);
         });
         // The x system is solved on the calling thread.
         x_solve_succeeded = solve_linear_system(A_sparse_diff, b_x_diff, guess_x, x, x_cg_iters);
-        y_thread.join();
+        thread_pool_->wait_for_all();
     }
     VTR_ASSERT_MSG(x_solve_succeeded, "Conjugate Gradient failed at solving b_x!");
     VTR_ASSERT_MSG(y_solve_succeeded, "Conjugate Gradient failed at solving b_y!");
@@ -692,6 +692,16 @@ B2BSolver::B2BSolver(const APNetlist& ap_netlist,
     , pre_cluster_timing_manager_(pre_cluster_timing_manager)
     , place_delay_model_(place_delay_model)
     , solve_systems_concurrently_(solve_systems_concurrently) {
+
+    // The calling thread solves the x system, so the pool needs one thread for
+    // each of the other systems.
+    if (solve_systems_concurrently_) {
+        size_t num_pool_threads = 1;
+        if (has_multiple_layers()) {
+            num_pool_threads = 2;
+        }
+        thread_pool_.emplace(num_pool_threads);
+    }
 
     // Reserve space for the triplet lists once here, since their buffers are
     // reused for every linear system built by this solver.
@@ -965,23 +975,21 @@ void B2BSolver::solve_linear_systems(Eigen::VectorXd& x_guess,
             z = solve_linear_system(A_sparse_z, b_z, z_guess, z_cg_iters);
         }
     } else {
-        // Solve the systems at the same time.
-        std::thread y_thread([&]() {
+        // Solve the systems at the same time. The y and z systems are solved
+        // on the thread pool, each on its own thread.
+        VTR_ASSERT(thread_pool_.has_value());
+        thread_pool_->schedule_work([&]() {
             y = solve_linear_system(A_sparse_y, b_y, y_guess, y_cg_iters);
         });
-        std::thread z_thread;
         if (has_multiple_layers()) {
-            z_thread = std::thread([&]() {
+            thread_pool_->schedule_work([&]() {
                 z = solve_linear_system(A_sparse_z, b_z, z_guess, z_cg_iters);
             });
         }
         // The x system is solved on the calling thread.
         x = solve_linear_system(A_sparse_x, b_x, x_guess, x_cg_iters);
 
-        y_thread.join();
-        if (z_thread.joinable()) {
-            z_thread.join();
-        }
+        thread_pool_->wait_for_all();
     }
 
     total_num_cg_iters_ += x_cg_iters + y_cg_iters + z_cg_iters;
