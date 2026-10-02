@@ -764,6 +764,8 @@ static size_t merge_constant_generator_nets(AtomNetlist& netlist,
         if (net_id == kept_net)
             continue;
 
+        // NOTE: We make a string copy here instead of a reference since the following
+        //       lines will modify the netlist and may change the reference.
         const std::string net_name = netlist.net_name(net_id);
         VTR_LOGV_WARN(verbosity > 2, "Merging constant generator net '%s' into net '%s'\n",
                       net_name.c_str(), kept_net_name.c_str());
