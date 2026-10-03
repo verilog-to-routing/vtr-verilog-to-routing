@@ -128,6 +128,22 @@ class FlatPlacementDensityManager {
     void remove_block_from_bin(APBlockId blk_id, FlatPlacementBinId bin_id);
 
     /**
+     * @brief Insert all of the given blocks into the given bin.
+     *
+     * The utilization, overfill, and underfill of the bin are updated once
+     * for the whole batch rather than once per block.
+     */
+    void insert_blocks_into_bin(const std::vector<APBlockId>& blk_ids, FlatPlacementBinId bin_id);
+
+    /**
+     * @brief Remove all of the given blocks from the given bin.
+     *
+     * The utilization, overfill, and underfill of the bin are updated once
+     * for the whole batch rather than once per block.
+     */
+    void remove_blocks_from_bin(const std::vector<APBlockId>& blk_ids, FlatPlacementBinId bin_id);
+
+    /**
      * @brief Returns the current utilization of the given bin.
      *
      * This is the sum of the mass of each atoms in the given bin.

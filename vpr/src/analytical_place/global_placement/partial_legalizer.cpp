@@ -1427,12 +1427,12 @@ void BiPartitioningPartialLegalizer::move_blocks_into_windows(
 
                         moveable_blks.push_back(blk_id);
                     }
-                    // Remove the moveable blocks from their bins and store into
-                    // the windows.
-                    for (APBlockId blk_id : moveable_blks) {
-                        density_manager_->remove_block_from_bin(blk_id, bin_id);
-                        window.contained_blocks.push_back(blk_id);
-                    }
+                    // Remove the moveable blocks from their bin in one batch
+                    // and store them into the window.
+                    density_manager_->remove_blocks_from_bin(moveable_blks, bin_id);
+                    window.contained_blocks.insert(window.contained_blocks.end(),
+                                                   moveable_blks.begin(),
+                                                   moveable_blks.end());
                 }
             }
         }
@@ -2165,12 +2165,10 @@ void BiPartitioningPartialLegalizer::move_blocks_out_of_windows(
         size_t layer = window.layer_low;
         FlatPlacementBinId bin_id = density_manager_->get_bin(center.x(), center.y(), layer);
 
-        // Move all blocks in the window into this bin.
-        for (APBlockId blk_id : window.contained_blocks) {
-            // Note: The blocks should have been removed from their original
-            //       bins when they were put into the windows. There are asserts
-            //       within the density manager class which will verify this.
-            density_manager_->insert_block_into_bin(blk_id, bin_id);
-        }
+        // Move all blocks in the window into this bin in one batch.
+        // Note: The blocks should have been removed from their original
+        //       bins when they were put into the windows. There are asserts
+        //       within the density manager class which will verify this.
+        density_manager_->insert_blocks_into_bin(window.contained_blocks, bin_id);
     }
 }
