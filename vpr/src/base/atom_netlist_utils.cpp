@@ -759,6 +759,17 @@ static size_t merge_constant_generator_nets(AtomNetlist& netlist,
                                            });
     const std::string kept_net_name = netlist.net_name(kept_net);
 
+    // The kept net's aliases are its own name until an alias is explicitly
+    // added, at which point the alias set no longer implicitly contains its own
+    // name. Add the kept net's current aliases explicitly to keep them.
+    // TODO: Net aliases are stored in a strange way. If unset, the name of the
+    //       net is used; if set, the name of the net may or may not be used.
+    //       This loop below keeps the behaviour the same, but we should make this
+    //       cleaner.
+    for (const std::string& alias : netlist.net_aliases(kept_net_name)) {
+        netlist.add_net_alias(kept_net_name, alias);
+    }
+
     size_t num_removed = 0;
     for (AtomNetId net_id : const_gen_nets) {
         if (net_id == kept_net)
@@ -770,6 +781,15 @@ static size_t merge_constant_generator_nets(AtomNetlist& netlist,
         VTR_LOGV_WARN(verbosity > 2, "Merging constant generator net '%s' into net '%s'\n",
                       net_name.c_str(), kept_net_name.c_str());
 
+        // Move the aliases of the merged net onto the kept net. These include
+        // the merged net's own name, and any aliases it may have gained earlier
+        // (e.g. from absorbing buffer LUTs).
+        // NOTE: This must be done before the nets are merged, since the merged
+        //       net (and its name) are removed from the netlist.
+        for (const std::string& alias : netlist.net_aliases(net_name)) {
+            netlist.add_net_alias(kept_net_name, alias);
+        }
+
         // Remove the redundant generator. This removes the driver pin of its net,
         // which allows its sinks to be moved onto the kept net.
         // NOTE: Primary outputs are separate blocks (with their own names), so their
@@ -780,7 +800,6 @@ static size_t merge_constant_generator_nets(AtomNetlist& netlist,
         // Move the sinks onto the kept net. This removes net_id from the netlist,
         // but does not affect the kept net or the other nets being merged.
         netlist.merge_nets(kept_net, net_id);
-        netlist.add_net_alias(kept_net_name, net_name);
         num_removed++;
     }
 
