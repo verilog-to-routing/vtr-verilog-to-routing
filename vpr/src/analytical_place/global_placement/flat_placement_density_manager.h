@@ -282,6 +282,13 @@ class FlatPlacementDensityManager {
     void generate_mass_report() const;
 
   private:
+    /**
+     * @brief Recompute the overfill and underfill of the given bin from its
+     *        current utilization and update its membership in the overfilled
+     *        bin set.
+     */
+    void update_bin_fill_(FlatPlacementBinId bin_id);
+
     /// @brief The AP netlist of blocks which are filling the bins.
     const APNetlist& ap_netlist_;
 
