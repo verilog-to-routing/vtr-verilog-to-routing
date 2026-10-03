@@ -335,13 +335,6 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
 
         **Required:** No
 
-.. note::
-
-    For routed clocks, the timing analysis of a generated clock currently only accounts for
-    routing delay from the generated clock's source pin to the destination flip-flop clock pin.
-    The routing delay from the master clock's source pin to the generated clock's source pin is
-    not yet included.
-
 
 set_clock_groups
 ----------------
