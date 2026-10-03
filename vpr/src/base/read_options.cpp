@@ -294,6 +294,46 @@ struct ParseAPFullLegalizer {
     }
 };
 
+struct ParseAPSolverThreading {
+    ConvertedValue<e_ap_solver_threading> from_str(const std::string& str) {
+        ConvertedValue<e_ap_solver_threading> conv_value;
+        if (str == "auto")
+            conv_value.set_value(e_ap_solver_threading::Auto);
+        else if (str == "sequential")
+            conv_value.set_value(e_ap_solver_threading::Sequential);
+        else if (str == "concurrent")
+            conv_value.set_value(e_ap_solver_threading::Concurrent);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_ap_solver_threading (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_ap_solver_threading val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_ap_solver_threading::Auto:
+                conv_value.set_value("auto");
+                break;
+            case e_ap_solver_threading::Sequential:
+                conv_value.set_value("sequential");
+                break;
+            case e_ap_solver_threading::Concurrent:
+                conv_value.set_value("concurrent");
+                break;
+            default:
+                VTR_ASSERT(false);
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"auto", "sequential", "concurrent"};
+    }
+};
+
 struct ParseAPDetailedPlacer {
     ConvertedValue<e_ap_detailed_placer> from_str(const std::string& str) {
         ConvertedValue<e_ap_detailed_placer> conv_value;
@@ -2227,6 +2267,15 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " * qp-hybrid: Solves for a placement that minimizes the quadratic HPWL of the flat placement using a hybrid clique/star net model.\n"
             " * lp-b2b: Solves for a placement that minimizes the linear HPWL of theflat placement using the Bound2Bound net model.")
         .default_value("lp-b2b")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument<e_ap_solver_threading, ParseAPSolverThreading>(args.ap_solver_threading, "--ap_solver_threading")
+        .help(
+            "Controls how the analytical solver uses the threads given by --num_workers when solving the x, y, and (on multi-layer devices) z linear systems.\n"
+            " * auto: Solve the systems concurrently when there are at least two threads per system, otherwise sequentially.\n"
+            " * sequential: Solve the systems one after the other, each using every thread.\n"
+            " * concurrent: Solve all systems at the same time, splitting the threads evenly between them. It is an error to use this mode with fewer threads than systems.")
+        .default_value("auto")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     ap_grp.add_argument<e_ap_partial_legalizer, ParseAPPartialLegalizer>(args.ap_partial_legalizer, "--ap_partial_legalizer")
