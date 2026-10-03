@@ -15,6 +15,8 @@
 // Abridged for VTR by: Daniel Rauch
 //////////////////////////////////////////////////////////////////////////////
 
+`timescale 1 ns / 1 ps 
+
 module td_fused_top_ap_hmul_3_max_dsp_16 (
    input  wire        aclk,
    input  wire        aclken,
@@ -115,8 +117,6 @@ FPAddSub u_FPAddSub_2 (.clk(), .rst(1'b0), .a(s_axis_a_tdata), .b(b_negative), .
 
    assign m_axis_result_tdata = {7'b0, result[15]};
 endmodule
-
-`timescale 1 ns / 1 ps 
 
 module td_fused_top_Block_entry_proc_proc491 (
         ap_clk,
@@ -63221,7 +63221,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8, sr_9;
 integer i;
@@ -63366,7 +63366,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6;
 integer i;
@@ -63505,7 +63505,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8;
 integer i;
@@ -63648,7 +63648,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8, sr_9, sr_10;
 integer i;
@@ -63795,7 +63795,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7;
 integer i;
@@ -63936,7 +63936,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8;
 integer i;
@@ -64079,7 +64079,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8, sr_9;
 integer i;
@@ -64224,7 +64224,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -64353,7 +64353,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -64482,7 +64482,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -64611,7 +64611,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -64740,7 +64740,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -64869,7 +64869,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -64998,7 +64998,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -65127,7 +65127,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -65256,7 +65256,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -65385,7 +65385,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -65514,7 +65514,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -65643,7 +65643,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -65772,7 +65772,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8, sr_9;
 integer i;
@@ -65917,7 +65917,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8, sr_9, sr_10;
 integer i;
@@ -66064,7 +66064,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8, sr_9, sr_10;
 integer i;
@@ -66211,7 +66211,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8, sr_9, sr_10;
 integer i;
@@ -66358,7 +66358,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8, sr_9, sr_10, sr_11;
 integer i;
@@ -66507,7 +66507,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7;
 integer i;
@@ -66648,7 +66648,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8;
 integer i;
@@ -66791,7 +66791,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8;
 integer i;
@@ -66934,7 +66934,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -67063,7 +67063,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -67192,7 +67192,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8, sr_9;
 integer i;
@@ -67337,7 +67337,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8, sr_9;
 integer i;
@@ -67482,7 +67482,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -67611,7 +67611,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -67740,7 +67740,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6;
 integer i;
@@ -67879,7 +67879,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7;
 integer i;
@@ -68020,7 +68020,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7;
 integer i;
@@ -68161,7 +68161,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7;
 integer i;
@@ -68302,7 +68302,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8;
 integer i;
@@ -68445,7 +68445,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8, sr_9;
 integer i;
@@ -68590,7 +68590,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -68719,7 +68719,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -68848,7 +68848,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -68977,7 +68977,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -69106,7 +69106,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6;
 integer i;
@@ -69245,7 +69245,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7;
 integer i;
@@ -69386,7 +69386,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8;
 integer i;
@@ -69529,7 +69529,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8;
 integer i;
@@ -69672,7 +69672,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8, sr_9, sr_10;
 integer i;
@@ -69819,7 +69819,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -69948,7 +69948,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -70077,7 +70077,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -70206,7 +70206,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6;
 integer i;
@@ -70345,7 +70345,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7;
 integer i;
@@ -70486,7 +70486,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7;
 integer i;
@@ -70627,7 +70627,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8;
 integer i;
@@ -70770,7 +70770,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8, sr_9;
 integer i;
@@ -70915,7 +70915,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -71044,7 +71044,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -71173,7 +71173,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -71302,7 +71302,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7;
 integer i;
@@ -71443,7 +71443,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7;
 integer i;
@@ -71584,7 +71584,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7;
 integer i;
@@ -71725,7 +71725,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8, sr_9;
 integer i;
@@ -71870,7 +71870,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7, sr_8, sr_9;
 integer i;
@@ -72015,7 +72015,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -72144,7 +72144,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6;
 integer i;
@@ -72283,7 +72283,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6;
 integer i;
@@ -72422,7 +72422,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7;
 integer i;
@@ -72563,7 +72563,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7;
 integer i;
@@ -72704,7 +72704,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -72833,7 +72833,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, sr_6, sr_7;
 integer i;
@@ -74478,7 +74478,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -74607,7 +74607,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -74736,7 +74736,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -74865,7 +74865,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -74994,7 +74994,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -75123,7 +75123,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -75252,7 +75252,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -75381,7 +75381,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -75510,7 +75510,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -75639,7 +75639,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -75768,7 +75768,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
@@ -75897,7 +75897,7 @@ input clk;
 input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
-output [DATA_WIDTH-1:0] q;
+output reg [DATA_WIDTH-1:0] q;
 
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
