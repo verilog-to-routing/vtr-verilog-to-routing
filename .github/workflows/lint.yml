@@ -43,3 +43,38 @@ jobs:
 
       - name: Lint Python Files Using Pylint
         run: ./dev/pylint_check.py
+
+  CppLint:
+    name: C/C++ Lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CLANG_TIDY: clang-tidy-19
+      RUN_CLANG_TIDY: run-clang-tidy-19
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v3
+        id: cpu-cores
+
+      - name: Install Requirements
+        run: |
+          ./install_apt_packages.sh
+          sudo apt-get install -y clang-tidy-19
+
+      - name: Configure Build Database
+        run: cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Lint VPR C/C++ Files Using Clang-Tidy
+        run: ./dev/run_linter.py -j${{ steps.cpu-cores.outputs.count }} vpr
+
+      - name: Lint librrgraph C/C++ Files Using Clang-Tidy
+        run: ./dev/run_linter.py -j${{ steps.cpu-cores.outputs.count }} libs/librrgraph
+
+      - name: Lint libarchfpga C/C++ Files Using Clang-Tidy
+        run: ./dev/run_linter.py -j${{ steps.cpu-cores.outputs.count }} libs/libarchfpga

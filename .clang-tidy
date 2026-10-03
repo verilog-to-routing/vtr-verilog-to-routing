@@ -17,18 +17,6 @@ Checks: >
   -bugprone-suspicious-stringview-data-usage,
   -bugprone-return-const-ref-from-parameter,
   -bugprone-unchecked-string-to-number-conversion,
-  # performance-*,
-  # readability-*,
-  #-readability-function-cognitive-complexity,
-  #-readability-identifier-length,
-  #-readability-simplify-boolean-expr,
-  #-readability-redundant-access-specifiers,
-  #-readability-avoid-const-params-in-decls,
-  #-readability-else-after-return,
-  #-readability-uppercase-literal-suffix,
-  #-readability-use-anyofallof,
-  #-readability-redundant-inline-specifier,
-  #-readability-isolate-declaration,
 
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*'
