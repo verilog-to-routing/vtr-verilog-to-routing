@@ -260,6 +260,54 @@ void FlatPlacementDensityManager::remove_block_from_bin(APBlockId blk_id,
         overfilled_bins_.erase(bin_id);
 }
 
+void FlatPlacementDensityManager::insert_blocks_into_bin(const std::vector<APBlockId>& blk_ids,
+                                                         FlatPlacementBinId bin_id) {
+    VTR_ASSERT(bin_id.is_valid());
+    if (blk_ids.empty()) {
+        return;
+    }
+
+    // Add each block to the bin and accumulate its mass into the utilization.
+    for (APBlockId blk_id : blk_ids) {
+        VTR_ASSERT(blk_id.is_valid());
+        bins_.add_block_to_bin(blk_id, bin_id);
+        bin_utilization_[bin_id] += mass_calculator_.get_block_mass(blk_id);
+    }
+
+    // Update the bin overfill and underfill once for the whole batch.
+    bin_overfill_[bin_id] = calc_bin_overfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
+    bin_underfill_[bin_id] = calc_bin_underfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
+
+    // Insert the bin into the overfilled bin set if it is overfilled.
+    if (bin_is_overfilled(bin_id)) {
+        overfilled_bins_.insert(bin_id);
+    }
+}
+
+void FlatPlacementDensityManager::remove_blocks_from_bin(const std::vector<APBlockId>& blk_ids,
+                                                         FlatPlacementBinId bin_id) {
+    VTR_ASSERT(bin_id.is_valid());
+    if (blk_ids.empty()) {
+        return;
+    }
+
+    // Remove each block from the bin and subtract its mass from the utilization.
+    for (APBlockId blk_id : blk_ids) {
+        VTR_ASSERT(blk_id.is_valid());
+        bins_.remove_block_from_bin(blk_id, bin_id);
+        bin_utilization_[bin_id] -= mass_calculator_.get_block_mass(blk_id);
+    }
+
+    // Update the bin overfill and underfill once for the whole batch.
+    bin_overfill_[bin_id] = calc_bin_overfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
+    bin_underfill_[bin_id] = calc_bin_underfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
+
+    // Remove from overfilled bins set if it is not overfilled.
+    if (!bin_is_overfilled(bin_id)) {
+        overfilled_bins_.erase(bin_id);
+    }
+}
+
 void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacement& p_placement) {
     // Empty the bins such that all blocks are no longer within the bins.
     empty_bins();
