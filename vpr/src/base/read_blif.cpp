@@ -24,6 +24,7 @@
 
 #include "blifparse.hpp"
 #include "atom_netlist.h"
+#include "atom_netlist_utils.h"
 
 #include "logic_types.h"
 #include "vtr_assert.h"
@@ -160,32 +161,12 @@ struct BlifAllocCallback : public blifparse::Callback {
 
         //Figure out if the output is a constant generator
         bool output_is_const = false;
-        if (truth_table.empty()
-            || (truth_table.size() == 1 && truth_table[0].size() == 1 && truth_table[0][0] == vtr::LogicValue::FALSE)) {
-            //An empty truth table in BLIF corresponds to a constant-zero
-            //  e.g.
-            //
-            //  #gnd is a constant 0 generator
-            //  .names gnd
-            //
-            //An single entry truth table with value '0' also corresponds to a constant-zero
-            //  e.g.
-            //
-            //  #gnd2 is a constant 0 generator
-            //  .names gnd2
-            //  0
-            //
+        vtr::LogicValue const_value = truth_table_constant_value(truth_table);
+        if (const_value == vtr::LogicValue::FALSE) {
             output_is_const = true;
             ++num_const_zero_gens_;
             VTR_LOGV(verbosity_ > 1, "Found constant-zero generator '%s'\n", nets[nets.size() - 1].c_str());
-        } else if (truth_table.size() == 1 && truth_table[0].size() == 1 && truth_table[0][0] == vtr::LogicValue::TRUE) {
-            //A single-entry truth table with value '1' in BLIF corresponds to a constant-one
-            //  e.g.
-            //
-            //  #vcc is a constant 1 generator
-            //  .names vcc
-            //  1
-            //
+        } else if (const_value == vtr::LogicValue::TRUE) {
             output_is_const = true;
             ++num_const_one_gens_;
             VTR_LOGV(verbosity_ > 1, "Found constant-one generator '%s'\n", nets[nets.size() - 1].c_str());
