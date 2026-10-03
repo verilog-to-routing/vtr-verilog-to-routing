@@ -161,6 +161,10 @@ bool should_route_net(const Netlist<>& net_list,
             return true; /* overuse detected */
         }
 
+        if (is_bus_mux_edge_control_congested(rt_node)) {
+            return true; // Reroute bits of a mux with conflicting selects.
+        }
+
         if (rt_node.is_leaf()) { //End of a branch
             // even if net is fully routed, not complete if parts of it should get ripped up (EXPERIMENTAL)
             if (if_force_reroute) {

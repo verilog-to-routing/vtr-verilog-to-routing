@@ -318,6 +318,10 @@ float ConnectionRouter<Heap>::evaluate_timing_driven_backward_costs(RTExploredNo
     float cong_cost = 0.;
     if (reached_configurably) {
         cong_cost = get_rr_cong_cost(to->index, cost_params.pres_fac);
+        if (is_flat_) {
+            // Control congestion: bits of a bus mux already routed on other input sets.
+            cong_cost += get_bus_mux_cong_cost(from_node, to->index, cost_params.pres_fac);
+        }
     } else {
         // Reached by a non-configurable edge.
         // Therefore the from_node and to_node are part of the same non-configurable node set.
@@ -356,6 +360,7 @@ float ConnectionRouter<Heap>::evaluate_timing_driven_backward_costs(RTExploredNo
 template<typename Heap>
 void ConnectionRouter<Heap>::evaluate_timing_driven_total_cost(RTExploredNode* to,
                                                                const t_conn_cost_params& cost_params,
+                                                               RRNodeId from_node,
                                                                RRNodeId target_node,
                                                                float Tdel) {
     // to->total_cost: is the "known" backward cost + an expected cost to get to the target.
@@ -364,7 +369,12 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_total_cost(RTExploredNode* t
 
     if (rcv_path_manager.is_enabled() && to->path_data != nullptr) {
         to->path_data->backward_delay += cost_params.criticality * Tdel;
-        to->path_data->backward_cong += (1. - cost_params.criticality) * get_rr_cong_cost(to->index, cost_params.pres_fac);
+        float cong_cost = get_rr_cong_cost(to->index, cost_params.pres_fac);
+        if (is_flat_) {
+            // Keep the RCV congestion term consistent with the backward cost: add the control congestion.
+            cong_cost += get_bus_mux_cong_cost(from_node, to->index, cost_params.pres_fac);
+        }
+        to->path_data->backward_cong += (1. - cost_params.criticality) * cong_cost;
 
         total_cost = compute_node_cost_using_rcv(cost_params, to->index, target_node, to->path_data->backward_delay, to->path_data->backward_cong, to->R_upstream);
     } else {
@@ -389,7 +399,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
                                                                RRNodeId from_node,
                                                                RRNodeId target_node) {
     float Tdel = evaluate_timing_driven_backward_costs(to, cost_params, from_node);
-    evaluate_timing_driven_total_cost(to, cost_params, target_node, Tdel);
+    evaluate_timing_driven_total_cost(to, cost_params, from_node, target_node, Tdel);
 }
 
 template<typename Heap>

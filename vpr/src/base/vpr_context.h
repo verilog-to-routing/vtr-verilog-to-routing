@@ -597,6 +597,8 @@ struct RoutingContext : public Context {
 
     vtr::vector<RRNodeId, t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 
+    std::vector<t_bus_mux_route_inf> bus_mux_route_inf; ///< Current routing state, indexed by DeviceContext::rr_bus_muxes.
+
     vtr::vector<ParentNetId, std::vector<std::vector<int>>> net_terminal_groups;
 
     vtr::vector<ParentNetId, std::vector<int>> net_terminal_group_num;

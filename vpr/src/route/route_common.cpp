@@ -168,6 +168,11 @@ bool feasible_routing() {
         }
     }
 
+    // All routed bits of a bus mux must use the same input set.
+    if (count_control_congested_bus_muxes() > 0) {
+        return (false);
+    }
+
     return (true);
 }
 
@@ -217,6 +222,86 @@ void pathfinder_update_single_node_occupancy(RRNodeId inode, int add_or_sub) {
     route_ctx.rr_node_route_inf[inode].set_occ(occ);
     // can't have negative occupancy
     VTR_ASSERT(occ >= 0);
+}
+
+std::optional<t_bus_mux_edge> find_bus_mux_edge(RRNodeId from_node, RRNodeId to_node) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+
+    if (device_ctx.rr_bus_mux_out_nodes.empty()) {
+        return std::nullopt;
+    }
+
+    // Only pin nodes can be bus mux outputs; skip other nodes before the lookup.
+    e_rr_type to_type = device_ctx.rr_graph.node_type(to_node);
+    if (to_type != e_rr_type::IPIN && to_type != e_rr_type::OPIN) {
+        return std::nullopt;
+    }
+
+    auto it = device_ctx.rr_bus_mux_out_nodes.find(to_node);
+    if (it == device_ctx.rr_bus_mux_out_nodes.end()) {
+        return std::nullopt;
+    }
+
+    for (const t_rr_bus_mux_in_edge& in_edge : it->second.in_edges) {
+        if (in_edge.from_node == from_node) {
+            return t_bus_mux_edge{it->second.mux_idx, in_edge.set};
+        }
+    }
+    return std::nullopt;
+}
+
+float get_bus_mux_cong_cost(RRNodeId from_node, RRNodeId to_node, float pres_fac) {
+    std::optional<t_bus_mux_edge> bus_mux_edge = find_bus_mux_edge(from_node, to_node);
+    if (!bus_mux_edge) {
+        return 0.f;
+    }
+
+    const t_bus_mux_route_inf& mux_inf = g_vpr_ctx.routing().bus_mux_route_inf[bus_mux_edge->mux_idx];
+
+    // Each routed bit that would need to switch to this edge's input set adds one unit
+    // of overuse to to_node's present cost.
+    int displaced_bits = mux_inf.bits_on_other_sets(bus_mux_edge->set);
+    if (displaced_bits == 0) {
+        return 0.f;
+    }
+    return get_single_rr_cong_base_cost(to_node) * get_single_rr_cong_acc_cost(to_node) * pres_fac * displaced_bits;
+}
+
+void pathfinder_update_bus_mux_occupancy(const RouteTreeNode& rt_node, int add_or_sub) {
+    // The SOURCE at the root of a route tree has no incoming edge.
+    if (!rt_node.parent()) {
+        return;
+    }
+    std::optional<t_bus_mux_edge> bus_mux_edge = find_bus_mux_edge(rt_node.parent()->inode, rt_node.inode);
+    if (!bus_mux_edge) {
+        return;
+    }
+
+    int& occ = g_vpr_ctx.mutable_routing().bus_mux_route_inf[bus_mux_edge->mux_idx].set_occ[bus_mux_edge->set];
+    occ += add_or_sub;
+    VTR_ASSERT(occ >= 0);
+}
+
+bool is_bus_mux_edge_control_congested(const RouteTreeNode& rt_node) {
+    // The SOURCE at the root of a route tree has no incoming edge.
+    if (!rt_node.parent()) {
+        return false;
+    }
+    std::optional<t_bus_mux_edge> bus_mux_edge = find_bus_mux_edge(rt_node.parent()->inode, rt_node.inode);
+    if (!bus_mux_edge) {
+        return false;
+    }
+    return g_vpr_ctx.routing().bus_mux_route_inf[bus_mux_edge->mux_idx].is_control_congested();
+}
+
+size_t count_control_congested_bus_muxes() {
+    size_t num_congested = 0;
+    for (const t_bus_mux_route_inf& mux_inf : g_vpr_ctx.routing().bus_mux_route_inf) {
+        if (mux_inf.is_control_congested()) {
+            num_congested++;
+        }
+    }
+    return num_congested;
 }
 
 /** This routine recomputes the acc_cost (accumulated congestion cost) of each
@@ -272,13 +357,19 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
     overuse_info.total_overuse = total_overuse;
     overuse_info.worst_overuse = worst_overuse;
 #endif
+
+    // A legal routing has no bus muxes using multiple input sets.
+    overuse_info.control_congested_bus_muxes = count_control_congested_bus_muxes();
 }
 
 /** Update pathfinder cost of all nodes rooted at rt_node, including rt_node itself */
 void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_or_sub) {
     pathfinder_update_single_node_occupancy(root.inode, add_or_sub);
+    // all_nodes() skips root, so count the edge into root here.
+    pathfinder_update_bus_mux_occupancy(root, add_or_sub);
     for (auto& node : root.all_nodes()) {
         pathfinder_update_single_node_occupancy(node.inode, add_or_sub);
+        pathfinder_update_bus_mux_occupancy(node, add_or_sub);
     }
 }
 
@@ -508,6 +599,12 @@ void reset_rr_node_route_structs(const t_router_opts& route_opts) {
         node_inf.path_cost = std::numeric_limits<float>::infinity();
         node_inf.backward_path_cost = std::numeric_limits<float>::infinity();
         node_inf.set_occ(0);
+    }
+
+    // Clear the routed bit counts for every bus mux input set.
+    route_ctx.bus_mux_route_inf.assign(device_ctx.rr_bus_muxes.size(), t_bus_mux_route_inf());
+    for (size_t imux = 0; imux < device_ctx.rr_bus_muxes.size(); imux++) {
+        route_ctx.bus_mux_route_inf[imux].set_occ.assign(device_ctx.rr_bus_muxes[imux].num_sets, 0);
     }
 }
 

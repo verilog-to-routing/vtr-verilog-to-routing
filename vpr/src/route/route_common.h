@@ -3,9 +3,12 @@
 /** @file Misc. router utils: some used by the connection router, some by other
  * router files and some used globally. */
 
+#include <optional>
 #include <vector>
+#include "bus_mux_route_types.h"
 #include "router_stats.h"
 #include "globals.h"
+#include "route_tree_fwd.h"
 #include "rr_graph_fwd.h"
 #include "rr_graph_view.h"
 #include "vtr_assert.h"
@@ -97,6 +100,30 @@ void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_o
 void reset_path_costs(const std::vector<RRNodeId>& visited_rr_nodes);
 
 float get_rr_cong_cost(RRNodeId inode, float pres_fac);
+
+/**
+ * @brief Return the mux and input set for from_node -> to_node, or nullopt for other edges.
+ */
+std::optional<t_bus_mux_edge> find_bus_mux_edge(RRNodeId from_node, RRNodeId to_node);
+
+/**
+ * @brief Return the control congestion cost of the edge from_node -> to_node.
+ *
+ * Non-zero only when the edge implements one bit of a bus-based mux.
+ */
+float get_bus_mux_cong_cost(RRNodeId from_node, RRNodeId to_node, float pres_fac);
+
+/**
+ * @brief Add add_or_sub (+1 or -1) to the bit count of the input set used by the edge into rt_node.
+ * No effect if rt_node has no parent or that edge is outside a bus mux.
+ */
+void pathfinder_update_bus_mux_occupancy(const RouteTreeNode& rt_node, int add_or_sub);
+
+/** @brief Whether the edge into rt_node belongs to a bus mux using multiple input sets. */
+bool is_bus_mux_edge_control_congested(const RouteTreeNode& rt_node);
+
+/** @brief Count bus muxes using more than one input set. */
+size_t count_control_congested_bus_muxes();
 
 /* Returns the base cost of using this rr_node */
 inline float get_single_rr_cong_base_cost(RRNodeId inode) {
