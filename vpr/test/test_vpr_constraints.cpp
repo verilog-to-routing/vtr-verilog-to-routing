@@ -13,6 +13,7 @@
 #include "globals.h"
 #include "user_place_constraints.h"
 #include "user_relative_macros.h"
+#include "relative_macro_packing.h"
 #include "partition.h"
 #include "region.h"
 #include "place_constraints.h"
@@ -579,6 +580,50 @@ TEST_CASE("MacroConstraints", "[vpr]") {
     REQUIRE(mac_first_reg_coord.ymin() == 3);
     REQUIRE(mac_first_reg_coord.xmax() == 11);
     REQUIRE(mac_first_reg_coord.ymax() == 7);
+}
+
+// Check group compatibility for chains that span multiple clusters.
+TEST_CASE("RelativeMacroLongChainOwnership", "[vpr]") {
+    const t_relative_group unowned;
+    const t_relative_group group_g{UserRelativeMacroId(0), 0};
+    const t_relative_group group_h{UserRelativeMacroId(1), 2};
+
+    SECTION("a cluster with no long chain accepts anything") {
+        REQUIRE(long_chain_ownership_allows(false, unowned, unowned, false, unowned));
+        REQUIRE(long_chain_ownership_allows(false, unowned, group_g, false, unowned));
+        REQUIRE(long_chain_ownership_allows(true, unowned, unowned, false, unowned));
+        REQUIRE(long_chain_ownership_allows(true, group_g, group_g, false, unowned));
+    }
+
+    SECTION("unconstrained long chains are mutually compatible") {
+        // Unowned chains pass this check. The packer's separate limit of one
+        // long chain per cluster still applies.
+        REQUIRE(long_chain_ownership_allows(true, unowned, unowned, true, unowned));
+    }
+
+    SECTION("a long chain may not join a cluster hosting a different group") {
+        REQUIRE_FALSE(long_chain_ownership_allows(true, unowned, group_g, false, unowned));
+        REQUIRE_FALSE(long_chain_ownership_allows(true, group_h, group_g, false, unowned));
+        // The chain may join its own group.
+        REQUIRE(long_chain_ownership_allows(true, group_g, group_g, false, unowned));
+    }
+
+    SECTION("long chains with different owners may not share a cluster") {
+        REQUIRE_FALSE(long_chain_ownership_allows(true, group_g, unowned, true, group_h));
+        REQUIRE_FALSE(long_chain_ownership_allows(true, unowned, unowned, true, group_g));
+        REQUIRE_FALSE(long_chain_ownership_allows(true, group_g, unowned, true, unowned));
+        // Chains with the same owner are compatible.
+        REQUIRE(long_chain_ownership_allows(true, group_g, group_g, true, group_g));
+    }
+
+    SECTION("a group may not move into a cluster whose long chain it does not own") {
+        REQUIRE_FALSE(long_chain_ownership_allows(false, unowned, group_g, true, unowned));
+        REQUIRE_FALSE(long_chain_ownership_allows(false, unowned, group_g, true, group_h));
+        // The owning group may join the cluster.
+        REQUIRE(long_chain_ownership_allows(false, unowned, group_g, true, group_g));
+        // An unconstrained molecule may join without adopting the chain's group.
+        REQUIRE(long_chain_ownership_allows(false, unowned, unowned, true, group_g));
+    }
 }
 
 // Test the UserRelativeMacros storage class: macro storage and the

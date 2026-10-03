@@ -727,12 +727,11 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                                                                      g_vpr_ctx.atom().netlist());
     }
 
-    // Run the prepacker, packing the atoms into molecules.
-    // The Prepacker object performs prepacking and stores the pack molecules.
-    // As long as the molecules are used, this object must persist.
+    // Group atoms into molecules. Keep the prepacker alive while its molecules are used.
     const Prepacker prepacker(g_vpr_ctx.atom().netlist(),
                               arch.models,
-                              g_vpr_ctx.device().logical_block_types);
+                              g_vpr_ctx.device().logical_block_types,
+                              g_vpr_ctx.floorplanning().relative_macros);
 
     // Setup pre-clustering timing analysis
     PreClusterTimingManager pre_cluster_timing_manager(vpr_setup.PackerOpts.timing_driven,

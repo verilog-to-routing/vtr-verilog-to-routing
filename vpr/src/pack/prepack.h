@@ -13,6 +13,7 @@
 #include <unordered_set>
 #include "atom_netlist_fwd.h"
 #include "pack_patterns.h"
+#include "user_relative_macros.h"
 #include "vtr_assert.h"
 #include "vtr_range.h"
 #include "vtr_strong_id.h"
@@ -194,18 +195,17 @@ class Prepacker {
     ~Prepacker();
 
     /**
-     * @brief Constructor. Performs prepacking.
-     *
-     * Initializes the prepacker by performing prepacking and allocating the
-     * necessary data structures.
+     * @brief Prepack the atom netlist and initialize molecule data.
      *
      *  @param atom_nlist           The atom netlist to prepack.
-     *  @param models
-     *  @param logical_block_types  A list of the logical block types on the device.
+     *  @param models               Logical models supported by the architecture.
+     *  @param logical_block_types  Logical block types on the device.
+     *  @param relative_macros      User-defined relative placement macros.
      */
     Prepacker(const AtomNetlist& atom_nlist,
               const LogicalModels& models,
-              const std::vector<t_logical_block_type>& logical_block_types);
+              const std::vector<t_logical_block_type>& logical_block_types,
+              const UserRelativeMacros& relative_macros);
 
     /**
      * @brief A range of all prepacked molecules. Every atom should exist in one
@@ -330,34 +330,30 @@ class Prepacker {
 
   private:
     /**
-     * Pre-pack atoms in netlist to molecules
-     * 1.  Single atoms are by definition a molecule.
-     * 2.  Forced pack molecules are groupings of atoms that matches a t_pack_pattern definition.
-     * 3.  Chained molecules are molecules that follow a carry-chain style pattern,
-     *     ie. a single linear chain that can be split across multiple complex blocks
+     * @brief Group atoms into single-atom, forced-pattern, or chain molecules.
+     *
+     * Forced-pattern molecules match a t_pack_pattern. Chains follow a linear
+     * pattern, such as a carry chain, and may span multiple clusters.
      */
     void alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
                                        const AtomNetlist& atom_nlist,
                                        const LogicalModels& models,
-                                       const std::vector<t_logical_block_type>& logical_block_types);
+                                       const std::vector<t_logical_block_type>& logical_block_types,
+                                       const UserRelativeMacros& relative_macros);
 
     /**
-     * Given a pattern and an atom block to serve as the root block, determine if
-     * the candidate atom block serving as the root node matches the pattern.
-     * If yes, return the molecule with this atom block as the root, if not, return NULL
+     * @brief Try to create a molecule matching the pattern, rooted at blk_id.
      *
-     * Limitations: Currently assumes that forced pack nets must be single-fanout as
-     *              this covers all the reasonable architectures we wanted. More complicated
-     *              structures should probably be handled either downstream (general packing)
-     *              or upstream (in tech mapping).
-     *              If this limitation is too constraining, code is designed so that this limitation can be removed
+     * Pattern connections require a single sink unless marked allow_multi_fanout.
      *
-     * Side Effect: If successful, link atom to molecule
+     * On success, link the atoms to the new molecule and return its ID.
+     * Return an invalid PackMoleculeId if the pattern cannot be matched.
      */
     PackMoleculeId try_create_molecule(const int pack_pattern_index,
                                        AtomBlockId blk_id,
                                        std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
-                                       const AtomNetlist& atom_nlist);
+                                       const AtomNetlist& atom_nlist,
+                                       const UserRelativeMacros& relative_macros);
 
   private:
     /**
