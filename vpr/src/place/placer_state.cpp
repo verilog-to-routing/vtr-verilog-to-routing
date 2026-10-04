@@ -4,9 +4,10 @@
 #include "clustered_netlist.h"
 #include "globals.h"
 #include "move_transactions.h"
+#include "vpr_context.h"
 
-PlacerTimingContext::PlacerTimingContext(bool placement_is_timing_driven) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+PlacerTimingContext::PlacerTimingContext(bool placement_is_timing_driven, bool placement_uses_setup_slacks) {
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     const size_t num_nets = cluster_ctx.clb_nlist.nets().size();
 
@@ -14,7 +15,9 @@ PlacerTimingContext::PlacerTimingContext(bool placement_is_timing_driven) {
         connection_delay = make_net_pins_matrix<float>((const Netlist<>&)cluster_ctx.clb_nlist, 0.f);
         proposed_connection_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, 0.f);
 
-        connection_setup_slack = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, std::numeric_limits<float>::infinity());
+        if (placement_uses_setup_slacks) {
+            connection_setup_slack = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, std::numeric_limits<float>::infinity());
+        }
 
         connection_timing_cost = PlacerTimingCosts(cluster_ctx.clb_nlist);
         proposed_connection_timing_cost = make_net_pins_matrix<double>(cluster_ctx.clb_nlist, 0.);
@@ -38,8 +41,8 @@ PlacerTimingContext::PlacerTimingContext(bool placement_is_timing_driven) {
 }
 
 void PlacerTimingContext::commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& clb_nlist = cluster_ctx.clb_nlist;
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteredNetlist& clb_nlist = cluster_ctx.clb_nlist;
 
     // Go through all the sink pins affected
     for (ClusterPinId pin_id : blocks_affected.affected_pins) {
@@ -98,5 +101,5 @@ void PlacerTimingContext::revert_td_cost(const t_pl_blocks_to_be_moved& blocks_a
 #endif
 }
 
-PlacerState::PlacerState(bool placement_is_timing_driven)
-    : timing_(placement_is_timing_driven) {}
+PlacerState::PlacerState(bool placement_is_timing_driven, bool placement_uses_setup_slacks)
+    : timing_(placement_is_timing_driven, placement_uses_setup_slacks) {}

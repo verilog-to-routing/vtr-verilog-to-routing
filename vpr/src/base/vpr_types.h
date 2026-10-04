@@ -27,6 +27,7 @@
 #include <string>
 #include <string_view>
 #include "ap_flow_enums.h"
+#include "appack_gain_attenuation_fn_type.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
 #include "constant_nets.h"
@@ -68,6 +69,20 @@
 enum class ScreenUpdatePriority {
     MINOR = 0,
     MAJOR = 1
+};
+
+/**
+ * @brief How often interactive graphics pause for the user (--graphics_pause).
+ *
+ * Set with --graphics_pause (every_update, major, final_stage, never). The values are
+ * ordered against ScreenUpdatePriority: an update pauses when
+ * int(priority) >= int(mode), except for FINAL_STAGE, which has its own rule.
+ */
+enum class e_graphics_pause {
+    EVERY_UPDATE = 0,  ///<Pause on every update, including MINOR ones (e.g. each temperature)
+    MAJOR_UPDATES = 1, ///<Pause on MAJOR updates only
+    FINAL_STAGE = 2,   ///<Skip graphics until the last requested stage completes, then pause once
+    NEVER = 3          ///<Never pause
 };
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
@@ -662,6 +677,7 @@ struct t_file_name_opts {
 struct t_netlist_opts {
     e_const_gen_inference const_gen_inference = e_const_gen_inference::COMB;
     bool absorb_buffer_luts = true;
+    bool merge_constant_generators = false;
     bool sweep_dangling_primary_ios = true;
     bool sweep_dangling_blocks = true;
     bool sweep_dangling_nets = true;
@@ -1184,6 +1200,9 @@ struct t_ap_opts {
     /// different die than the cluster in an interposer-based architecture.
     float appack_inter_die_gain_multiplier;
 
+    /// The candidate gain attenuation function used by APPack.
+    e_appack_gain_attenuation_fn_type appack_gain_attenuation_fn;
+
     /// The number of threads the AP flow can use.
     unsigned num_threads;
 
@@ -1379,7 +1398,7 @@ struct t_router_opts {
     bool verify_route_file_switch_id;
 
     /// Options related to rr_node reordering, for testing and possible cache optimization
-    e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
+    e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = e_rr_node_reorder_algorithm::DONT_REORDER;
     int reorder_rr_graph_nodes_threshold = 0;
     int reorder_rr_graph_nodes_seed = 1;
 
@@ -1627,7 +1646,7 @@ struct t_vpr_setup {
     t_timing_inf Timing;                 ///<timing information
     float constant_net_delay;            ///<timing information when place and route not run
     bool ShowGraphics;                   ///<option to show graphics
-    int GraphPause;                      ///<user interactiveness graphics option
+    e_graphics_pause GraphPause;         ///<user interactiveness graphics option
     bool SaveGraphics;                   ///<option to save graphical contents to pdf, png, or svg
     std::string GraphicsCommands;        ///<commands to control graphics settings
     std::string RendererType;            ///<rendering backend: "immediate" (SW QPainter, no batching; most

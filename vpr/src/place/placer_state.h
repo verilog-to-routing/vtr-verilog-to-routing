@@ -43,8 +43,9 @@ struct PlacerTimingContext : public Context {
     /**
      * @brief Allocate structures associated with timing driven placement
      * @param placement_is_timing_driven Specifies whether the placement is timing driven.
+     * @param placement_uses_setup_slacks Specifies whether connection_setup_slack is allocated.
      */
-    PlacerTimingContext(bool placement_is_timing_driven);
+    PlacerTimingContext(bool placement_is_timing_driven, bool placement_uses_setup_slacks);
 
     /**
      * @brief Update the connection_timing_cost values from the temporary
@@ -94,7 +95,7 @@ struct PlacerTimingContext : public Context {
     /**
      * @brief Net connection setup slacks based on most recently updated timing graph.
      *
-     * Updated with commit_setup_slacks() routine.
+     * Updated with commit_setup_slacks() routine. Empty unless the placer uses setup slacks.
      *
      * Index ranges: [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]
      */
@@ -153,7 +154,7 @@ struct PlacerRuntimeContext : public Context {
  */
 class PlacerState : public Context {
   public:
-    PlacerState(bool placement_is_timing_driven);
+    PlacerState(bool placement_is_timing_driven, bool placement_uses_setup_slacks);
 
   public:
     inline const PlacerTimingContext& timing() const { return timing_; }

@@ -54,7 +54,7 @@ void restore_best_placement(PlacerState& placer_state,
                             std::shared_ptr<SetupTimingInfo>& timing_info,
                             t_placer_costs& costs,
                             std::unique_ptr<PlacerCriticalities>& placer_criticalities,
-                            std::unique_ptr<PlacerSetupSlacks>& placer_setup_slacks,
+                            std::optional<PlacerSetupSlacks>& placer_setup_slacks,
                             std::shared_ptr<PlaceDelayModel>& place_delay_model,
                             std::unique_ptr<NetPinTimingInvalidator>& pin_timing_invalidator,
                             PlaceCritParams crit_params,
@@ -79,14 +79,16 @@ void restore_best_placement(PlacerState& placer_state,
 
         net_cost_handler.comp_bb_cong_cost(e_cost_methods::NORMAL);
 
-        //recompute timing from scratch
+        // Recompute timing from scratch
         placer_criticalities.get()->set_recompute_required();
-        placer_setup_slacks.get()->set_recompute_required();
+        if (placer_setup_slacks) {
+            placer_setup_slacks->set_recompute_required();
+        }
         comp_td_connection_delays(place_delay_model.get(), placer_state);
         perform_full_timing_update(crit_params,
                                    place_delay_model.get(),
                                    placer_criticalities.get(),
-                                   placer_setup_slacks.get(),
+                                   placer_setup_slacks,
                                    pin_timing_invalidator.get(),
                                    timing_info.get(),
                                    &costs,
