@@ -35,12 +35,11 @@ struct t_logical_block_type;
 struct t_physical_tile_type;
 
 /**
- * @brief Analytical global placer using accelerated first-order updates.
+ * @brief Analytical global placer using Nesterov/FISTA accelerated gradient.
  *
- * This placer directly optimizes a differentiable nonlinear objective consisting of
- * weighted-average wirelength and a continuous bin-density penalty. The result
- * is then passed through the existing partial legalizer to clean up discrete
- * architecture constraints before full legalization.
+ * Optimizes a differentiable objective of weighted-average (WA) wirelength plus
+ * a continuous per-resource electrostatic bin-density penalty, then hands the
+ * result to the existing partial legalizer for discrete architecture cleanup.
  */
 class NonlinearNesterovPlacer : public GlobalPlacer {
   public:
@@ -72,9 +71,8 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     ~NonlinearNesterovPlacer();
 
     /**
-     * @brief Run global placement with weighted average smooth/differentiable wirelength
-     *        and electrostatic density formulation using Nesterov Accelerated Gradient optimizer
-     *        then hand the result to the partial legalizer.
+     * @brief Run WA-wirelength + electrostatic-density global placement with a
+     *        Nesterov/FISTA inner solver, then hand off to the partial legalizer.
      */
     PartialPlacement place() final;
 
@@ -334,40 +332,20 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     vtr::vector<APBlockId, float> pin_density_inflation_;          ///< Per-block density-term mass inflation from pin count (routability cell inflation); 1.0 for blocks at or below the reference pin count.
     std::vector<double> filler_unit_mass_;                         ///< [dim] density mass per filler.
     std::vector<double> filler_precond_;                           ///< [dim] density-only filler preconditioner.
-    // Placement-invariant density-grid constants, cached once (device grid,
-    // bin capacity, and target density are fixed across the optimization) and
-    // reused across every objective evaluation instead of being rebuilt.
+    // Placement-invariant density-grid caches (device/bin/target fixed; rebuilt once).
     mutable std::vector<std::vector<double>> cached_target_capacity_; ///< [dim][site] target capacity spread over each bin's footprint.
     mutable std::vector<double> cached_target_norm_floor_;            ///< [dim] floor added when dividing by target capacity.
-    /// @brief [dim] electrostatic field domain for each resource (elfPlace's B^s).
-    ///
-    /// The tile grid above stays the domain of overflow/legality accounting. The
-    /// Poisson field for a resource is instead solved on its own grid, resolved
-    /// at the pitch of that resource's capacity, so a scarce resource's field is
-    /// not defined over -- and cannot develop structure inside -- the tiles that
-    /// cannot hold it. Abundant resources select a stride of one and keep the
-    /// tile grid unchanged.
-    /// @brief Per-resource charge unit: the mean capacity of a capacity-bearing
-    ///        tile, so resources with very different natural magnitudes (an
-    ///        abundant LUT dimension vs. a sparse DSP one) contribute comparably
-    ///        scaled charge.
-    mutable std::vector<double> cached_charge_scale_;
-    // Reused density-evaluation storage. Objective/line-search evaluations are
-    // serial, so these mutable buffers safely remove repeated device-grid-sized
-    // allocation and zero-construction from the const evaluation routine.
+    mutable std::vector<double> cached_charge_scale_;                 ///< [dim] mean capacity of capacity-bearing tiles (charge unit).
+    // Mutable workspaces for serial objective/gradient evals (avoid per-call alloc).
     mutable std::vector<std::vector<double>> density_utilization_workspace_;       ///< [dim][tile site] deposited block mass (overflow accounting).
     mutable std::vector<std::vector<double>> density_field_utilization_workspace_; ///< [dim][field bin] deposited block + filler mass.
     mutable std::vector<std::vector<double>> density_potential_workspace_;         ///< [dim][field bin] electrostatic potential.
-    // Charge and layer workspaces are per dimension (not shared scratch) so the
-    // independent per-resource Poisson solves can run concurrently: each solve
-    // touches only its own dim_idx entry of these vectors.
+    // Per-dimension charge/potential scratch so concurrent Poisson solves do not alias.
     mutable std::vector<std::vector<double>> density_charge_workspace_;          ///< [dim][field bin] that resource dimension's charge.
     mutable std::vector<std::vector<double>> density_layer_charge_workspace_;    ///< [dim] one layer extracted for the Poisson solve.
     mutable std::vector<std::vector<double>> density_layer_potential_workspace_; ///< [dim] one layer returned by the Poisson solve.
 
-    /// @brief Worker pool for concurrent per-dimension field solves. Null when
-    ///        the configured thread count is 1 (the default): the solve loop
-    ///        then runs serially, byte-identical to the historical behavior.
+    /// @brief Worker pool for concurrent per-resource Poisson field solves; null when num_threads <= 1 (serial, identical results).
     std::unique_ptr<vtr::thread_pool> field_thread_pool_;
 
     size_t device_grid_width_ = 0;      ///< Width of the placement region.
@@ -375,16 +353,9 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     size_t device_grid_num_layers_ = 0; ///< Number of device layers.
     float ap_timing_tradeoff_ = 0.f;    ///< User timing tradeoff value.
 
-    /// @brief B2B/QP warm-start solver. initialize_placement_ seeds the nonlinear
-    ///        optimizer from a wirelength-aware analytical solve (elfPlace/ePlace
-    ///        QP initialization) instead of a block-ID grid spread. Always built in
-    ///        the constructor.
+    /// @brief LP-B2B analytical warm-start solver; always built; seeds initialize_placement_.
     std::unique_ptr<AnalyticalSolver> warmstart_solver_;
-    size_t warmstart_iters_ = 0;     ///< Minimum solve+legalize cycles (warm-start floor).
-    size_t warmstart_max_iters_ = 0; ///< Cap on the convergence-based warm-start loop.
 
-    /// @brief Active wirelength-smoothing fraction (gamma / device span). Seeded at
-    ///        the fixed default, then annealed coarse->sharp per epoch by
-    ///        run_global_optimization_ (gamma continuation).
+    /// @brief Active weighted-average gamma as a fraction of device span (annealed each epoch).
     double current_gamma_fraction_ = 0.02;
 };
