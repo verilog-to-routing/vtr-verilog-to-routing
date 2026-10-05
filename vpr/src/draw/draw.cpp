@@ -128,7 +128,7 @@ static void set_block_text(bool checked);
 static void set_draw_partitions(bool checked);
 static void clip_routing_util(bool checked);
 static void run_graphics_commands(const std::string& commands);
-static void init_final_graphics_stage(const t_vpr_setup& vpr_setup);
+static void set_final_graphics_stage(const t_vpr_setup& vpr_setup);
 static void parse_wait_for_stage_arg(const std::string& arg,
                                      e_pic_type& want,
                                      bool& wait_for_done);
@@ -192,7 +192,7 @@ std::set<e_pic_type> completed_stages;
 // Set once add_main_canvas() has created the main canvas of the current application.
 static bool main_canvas_added = false;
 
-// Last stage of the requested flow that is drawn; see init_final_graphics_stage().
+// Last stage of the requested flow that is drawn; see set_final_graphics_stage().
 static e_pic_type final_stage = e_pic_type::NO_PICTURE;
 
 // Used for scripted graphics (rendered to files via --graphics_commands).
@@ -227,7 +227,7 @@ void init_graphics_state(const t_vpr_setup& vpr_setup) {
     draw_state->renderer_type = vpr_setup.RendererType;
     draw_state->is_flat = vpr_setup.RouterOpts.flat_routing;
 
-    init_final_graphics_stage(vpr_setup);
+    set_final_graphics_stage(vpr_setup);
 
     // When --disp is off, force Qt into offscreen mode before QApplication is
     // created so it doesn't try to connect to an X11/Wayland display.
@@ -282,7 +282,7 @@ void init_graphics_ui() {
  * A `wait_for_stage` on any other stage is a fatal error. Must run after
  * graphics_pause is set in draw_state.
  */
-static void init_final_graphics_stage(const t_vpr_setup& vpr_setup) {
+static void set_final_graphics_stage(const t_vpr_setup& vpr_setup) {
     if (vpr_setup.RouterOpts.doRouting != e_stage_action::SKIP) {
         final_stage = e_pic_type::ROUTING;
     } else if (vpr_setup.PlacerOpts.do_placement != e_stage_action::SKIP) {
