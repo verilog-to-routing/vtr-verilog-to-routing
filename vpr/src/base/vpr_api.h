@@ -143,6 +143,14 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 ///@brief Create routing graph at specified channel width
 void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width, bool is_flat);
 
+/**
+ * @brief Initializes graphics for the current device: sets the draw state from
+ * the command-line options, creates the application, allocates the draw
+ * structures and draw coordinates and, under --disp on, builds the GUI without
+ * showing it so its widgets exist before the first update_screen() pause.
+ *
+ * Call once the device grid is valid.
+ */
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch);
 void vpr_init_server(const t_vpr_setup& vpr_setup);
 

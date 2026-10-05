@@ -302,8 +302,11 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     }
 
     // Initialize graphics here, after the device grid exists, so the draw structures
-    // can be allocated.
-    init_ap_graphics(vpr_setup, *device_ctx.arch);
+    // can be allocated, and before any APDrawManager is created. Not done in vpr_flow
+    // because non-AP flows must not set show_graphics before vpr_create_device builds
+    // the RR graph and calls init_draw_coords, which accesses tile arrays that
+    // alloc_draw_structs has not yet allocated.
+    vpr_init_graphics(vpr_setup, *device_ctx.arch);
 
     // Run the Global Placer.
     PartialPlacement p_placement = run_global_placer(ap_opts,

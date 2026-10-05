@@ -18,15 +18,6 @@
 #include "ap_netlist_utils.h"
 #endif
 
-void init_ap_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
-#ifndef NO_GRAPHICS
-    init_graphics_state(vpr_setup, arch);
-#else
-    (void)vpr_setup;
-    (void)arch;
-#endif
-}
-
 APDrawManager::APDrawManager(const AtomNetlist& atom_netlist, const APNetlist& ap_netlist, const Prepacker& prepacker, const PartialPlacement& p_placement)
 #ifndef NO_GRAPHICS
     : atom_block_ap_block_lookup_(atom_netlist, ap_netlist, prepacker)

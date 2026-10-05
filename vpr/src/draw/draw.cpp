@@ -29,6 +29,7 @@
 
 #include "move_utils.h"
 #include "vpr_types.h"
+#include "vpr_api.h"
 
 #ifndef NO_GRAPHICS
 
@@ -112,7 +113,7 @@ static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::rende
 
 /**
  * @brief Creates the main canvas over initial_world with the backend selected
- * by --renderer. Called once per application, from init_graphics_state() or on the
+ * by --renderer. Called once per application, from vpr_init_graphics() or on the
  * first update_screen() state change.
  */
 static void add_main_canvas();
@@ -210,7 +211,7 @@ static int pending_graphics_exit_code = 0;
 
 /********************** Subroutine definitions ******************************/
 
-void init_graphics_state(const t_vpr_setup& vpr_setup, const t_arch& arch) {
+void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
@@ -318,7 +319,7 @@ static void set_final_graphics_stage(const t_vpr_setup& vpr_setup) {
 static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    // init_graphics_state() builds the UI before any stage has set up a picture,
+    // vpr_init_graphics() builds the UI before any stage has set up a picture,
     // and the immediate/deferred backends draw once while initializing the canvas.
     if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE)
         return;

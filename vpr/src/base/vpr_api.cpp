@@ -518,7 +518,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     // TODO: Placer still assumes that cluster net list is used - graphics can not work with flat routing yet
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
-    // alloc_draw_structs now that the device context is valid (for both AP and non-AP paths).
+    // Initialize graphics now that the device context is valid (for both AP and non-AP paths).
     // This call also reinitializes graphics state and re-sizes draw arrays in case the AP flow
     // changed the device dimensions during full legalization. It also re-runs init_draw_coords():
     // the call inside vpr_create_device() fired before the graphics flags were set, so it hit the
@@ -1304,11 +1304,6 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     is_flat);
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(chan_width_fac, g_vpr_ctx.placement().blk_loc_registry());
-}
-
-void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
-    /* Startup X graphics */
-    init_graphics_state(vpr_setup, arch);
 }
 
 void vpr_init_server(const t_vpr_setup& vpr_setup) {
