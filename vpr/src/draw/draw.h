@@ -93,16 +93,10 @@ void set_initial_world_ap();
  */
 void set_initial_world();
 
-/* Sets the static show_graphics and gr_automode variables to the    *
+/* Sets the static show_graphics and graphics_pause variables to the *
  * desired values.  They control if graphics are enabled and, if so, *
  * how often the user is prompted for input.                         */
-void init_graphics_state(bool show_graphics_val,
-                         int gr_automode_val,
-                         enum e_route_type route_type,
-                         bool save_graphics,
-                         std::string graphics_commands,
-                         std::string renderer_type,
-                         bool is_flat);
+void init_graphics_state(const t_vpr_setup& vpr_setup);
 
 /* Allocates the structures needed to draw the placement and routing.*/
 void alloc_draw_structs(const t_arch* arch);

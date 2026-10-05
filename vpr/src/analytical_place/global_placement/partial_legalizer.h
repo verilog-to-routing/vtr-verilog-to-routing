@@ -414,6 +414,15 @@ class PerPrimitiveDimPrefixSum2D {
                             const vtr::Rect<double>& region,
                             size_t layer) const;
 
+    /**
+     * @brief Get the sum over the given dims over the given region as a
+     *        single scalar. Same as the Manhattan norm of get_sum() when
+     *        all values are non-negative.
+     */
+    float get_total_sum(const std::vector<PrimitiveVectorDim>& dims,
+                        const vtr::Rect<double>& region,
+                        size_t layer) const;
+
   private:
     /// @brief Per-layer, Per-Dim Prefix Sums. These are stored as fixed-point
     ///        numbers to prevent error accumulations due to numerical imprecisions.

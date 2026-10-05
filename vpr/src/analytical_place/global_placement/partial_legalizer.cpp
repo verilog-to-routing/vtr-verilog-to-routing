@@ -758,6 +758,16 @@ PrimitiveVector PerPrimitiveDimPrefixSum2D::get_sum(const std::vector<PrimitiveV
     return res;
 }
 
+float PerPrimitiveDimPrefixSum2D::get_total_sum(const std::vector<PrimitiveVectorDim>& dims,
+                                                const vtr::Rect<double>& region,
+                                                size_t layer) const {
+    float total = 0.0f;
+    for (PrimitiveVectorDim dim : dims) {
+        total += get_dim_sum(dim, region, layer);
+    }
+    return total;
+}
+
 PrimitiveDimGrouper::PrimitiveDimGrouper(const Prepacker& prepacker,
                                          const LogicalModels& models,
                                          const FlatPlacementDensityManager& density_manager,
@@ -1613,8 +1623,8 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
             float lower_window_capacity = 0.0f;
             float upper_window_capacity = 0.0f;
             for (size_t layer = window.layer_low; layer <= window.layer_high; layer++) {
-                lower_window_capacity += capacity_prefix_sum_.get_sum(dims, lower_region, layer).manhattan_norm();
-                upper_window_capacity += capacity_prefix_sum_.get_sum(dims, upper_region, layer).manhattan_norm();
+                lower_window_capacity += capacity_prefix_sum_.get_total_sum(dims, lower_region, layer);
+                upper_window_capacity += capacity_prefix_sum_.get_total_sum(dims, upper_region, layer);
             }
             lower_window_capacity = std::max(lower_window_capacity, 0.0f);
             upper_window_capacity = std::max(upper_window_capacity, 0.0f);
@@ -1656,8 +1666,8 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
             float lower_window_capacity = 0.0f;
             float upper_window_capacity = 0.0f;
             for (size_t layer = window.layer_low; layer <= window.layer_high; layer++) {
-                lower_window_capacity += capacity_prefix_sum_.get_sum(dims, lower_region, layer).manhattan_norm();
-                upper_window_capacity += capacity_prefix_sum_.get_sum(dims, upper_region, layer).manhattan_norm();
+                lower_window_capacity += capacity_prefix_sum_.get_total_sum(dims, lower_region, layer);
+                upper_window_capacity += capacity_prefix_sum_.get_total_sum(dims, upper_region, layer);
             }
             lower_window_capacity = std::max(lower_window_capacity, 0.0f);
             upper_window_capacity = std::max(upper_window_capacity, 0.0f);
@@ -1688,11 +1698,11 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
         for (size_t pivot_layer = window.layer_low; pivot_layer < window.layer_high; pivot_layer++) {
             float lower_window_capacity = 0.0f;
             for (size_t layer = window.layer_low; layer <= pivot_layer; layer++) {
-                lower_window_capacity += capacity_prefix_sum_.get_sum(dims, window.region, layer).manhattan_norm();
+                lower_window_capacity += capacity_prefix_sum_.get_total_sum(dims, window.region, layer);
             }
             float upper_window_capacity = 0.0f;
             for (size_t layer = pivot_layer + 1; layer <= window.layer_high; layer++) {
-                upper_window_capacity += capacity_prefix_sum_.get_sum(dims, window.region, layer).manhattan_norm();
+                upper_window_capacity += capacity_prefix_sum_.get_total_sum(dims, window.region, layer);
             }
             lower_window_capacity = std::max(lower_window_capacity, 0.0f);
             upper_window_capacity = std::max(upper_window_capacity, 0.0f);
@@ -1742,8 +1752,8 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
         float lower_window_capacity = 0.0f;
         float upper_window_capacity = 0.0f;
         for (size_t layer = window.layer_low; layer <= window.layer_high; layer++) {
-            lower_window_capacity += capacity_prefix_sum_.get_sum(dims, lower_region, layer).manhattan_norm();
-            upper_window_capacity += capacity_prefix_sum_.get_sum(dims, upper_region, layer).manhattan_norm();
+            lower_window_capacity += capacity_prefix_sum_.get_total_sum(dims, lower_region, layer);
+            upper_window_capacity += capacity_prefix_sum_.get_total_sum(dims, upper_region, layer);
         }
         lower_window_capacity = std::max(lower_window_capacity, 0.0f);
         upper_window_capacity = std::max(upper_window_capacity, 0.0f);
@@ -1792,8 +1802,8 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
         float lower_window_capacity = 0.0f;
         float upper_window_capacity = 0.0f;
         for (size_t layer = window.layer_low; layer <= window.layer_high; layer++) {
-            lower_window_capacity += capacity_prefix_sum_.get_sum(dims, lower_region, layer).manhattan_norm();
-            upper_window_capacity += capacity_prefix_sum_.get_sum(dims, upper_region, layer).manhattan_norm();
+            lower_window_capacity += capacity_prefix_sum_.get_total_sum(dims, lower_region, layer);
+            upper_window_capacity += capacity_prefix_sum_.get_total_sum(dims, upper_region, layer);
         }
         lower_window_capacity = std::max(lower_window_capacity, 0.0f);
         upper_window_capacity = std::max(upper_window_capacity, 0.0f);
