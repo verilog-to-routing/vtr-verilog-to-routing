@@ -1923,20 +1923,8 @@ static bool try_move_blk_to_other_window(const PrimitiveVector& blk_mass,
     other_window_curr_utilization += blk_mass;
 
     // Update the overfills in place.
-    for (PrimitiveVectorDim dim : blk_mass.dims()) {
-        float mass = blk_mass.get_dim_val(dim);
-
-        // Only the dimensions with mass can change.
-        if (mass == 0.0f) {
-            continue;
-        }
-
-        float window_new_overfill = std::max(0.0f, window_curr_overfill.get_dim_val(dim) - mass);
-        window_curr_overfill.set_dim_val(dim, window_new_overfill);
-
-        float other_window_new_overfill = std::max(0.0f, other_window_curr_utilization.get_dim_val(dim) - other_window_capacity.get_dim_val(dim));
-        other_window_curr_overfill.set_dim_val(dim, other_window_new_overfill);
-    }
+    window_curr_overfill.subtract_and_relu(blk_mass);
+    other_window_curr_overfill.set_relu_of_difference(other_window_curr_utilization, other_window_capacity);
 
     // The block was moved.
     return true;
@@ -2043,16 +2031,16 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
         const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
         lower_window_utilization += blk_mass;
     }
-    PrimitiveVector lower_window_overfill = lower_window_utilization - lower_window_capacity;
-    lower_window_overfill.relu();
+    PrimitiveVector lower_window_overfill;
+    lower_window_overfill.set_relu_of_difference(lower_window_utilization, lower_window_capacity);
 
     PrimitiveVector upper_window_utilization;
     for (APBlockId blk_id : upper_contained_blocks) {
         const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
         upper_window_utilization += blk_mass;
     }
-    PrimitiveVector upper_window_overfill = upper_window_utilization - upper_window_capacity;
-    upper_window_overfill.relu();
+    PrimitiveVector upper_window_overfill;
+    upper_window_overfill.set_relu_of_difference(upper_window_utilization, upper_window_capacity);
 
     // If both windows are not overfilled, we are done.
     if (lower_window_overfill.is_zero() && upper_window_overfill.is_zero()) {

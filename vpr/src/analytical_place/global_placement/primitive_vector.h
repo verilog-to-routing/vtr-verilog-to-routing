@@ -218,6 +218,29 @@ class PrimitiveVector {
         }
     }
 
+    /// @brief Subtract rhs from this vector, then clamp every dimension to be non-negative.
+    /// @note Equivalent to operator-= followed by relu.
+    inline void subtract_and_relu(const PrimitiveVector& rhs) {
+        if (rhs.data_.size() > data_.size()) {
+            data_.resize(rhs.data_.size(), 0.0f);
+        }
+        for (PrimitiveVectorDim dim : dims()) {
+            data_[dim] = std::max(0.0f, data_[dim] - rhs.get_dim_val(dim));
+        }
+    }
+
+    /// @brief Set this vector to lhs minus rhs with every dimension clamped to be non-negative.
+    /// @note Equivalent to assigning lhs - rhs and then calling relu.
+    inline void set_relu_of_difference(const PrimitiveVector& lhs, const PrimitiveVector& rhs) {
+        size_t num_dims = std::max({data_.size(), lhs.data_.size(), rhs.data_.size()});
+        if (num_dims > data_.size()) {
+            data_.resize(num_dims, 0.0f);
+        }
+        for (PrimitiveVectorDim dim : dims()) {
+            data_[dim] = std::max(0.0f, lhs.get_dim_val(dim) - rhs.get_dim_val(dim));
+        }
+    }
+
     /**
      * @brief Returns true if all dimensions of this vector are zero.
      */
