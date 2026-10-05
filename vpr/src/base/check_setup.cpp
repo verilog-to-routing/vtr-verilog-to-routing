@@ -64,6 +64,13 @@ void check_setup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
                         "Timing analysis must be enabled for timing-driven placement.\n");
     }
 
+    // The placer only builds its timing data structures when the anneal is timing driven.
+    if (placer_opts.place_quench_algorithm.is_timing_driven()
+        && !placer_opts.place_algorithm.is_timing_driven()) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "A timing-driven --place_quench_algorithm requires a timing-driven --place_algorithm.\n");
+    }
+
     if (placer_opts.do_placement == e_stage_action::SKIP && (!placer_opts.constraints_file.empty())) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "A block location file requires that placement is enabled.\n");
