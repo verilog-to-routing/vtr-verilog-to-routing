@@ -1,0 +1,113 @@
+# A small circuit containing many redundant constant generators (LUTs with no
+# inputs), similar to what synthesis tools may produce when they create a
+# separate constant generator for each signal tied to a constant.
+#
+# This circuit contains 26 constant generators:
+#   - gnd / vcc, which each drive 3 LUTs.
+#   - c0_* / c1_*, which each drive a single LUT.
+#   - zero_* / one_*, which each drive a single constant primary output.
+#
+# When constant generators are merged (--merge_constant_generators on), only
+# gnd and vcc should remain.
+.model top
+.inputs a b c d
+.outputs o_and0 o_and1 o_and2 o_or0 o_or1 o_or2 o_xor0 o_xor1 o_mux0 o_maj0 o_comb0 o_comb1 \
+zero_0 zero_1 zero_2 zero_3 zero_4 zero_5 zero_6 zero_7 zero_8 zero_9 zero_10 zero_11 \
+one_0 one_1 one_2 one_3
+
+# Shared constant generators
+.names gnd
+0
+.names vcc
+1
+
+# Redundant constant generators which each drive a single LUT
+.names c0_0
+0
+.names c0_1
+0
+.names c0_2
+0
+.names c0_3
+0
+.names c1_0
+1
+.names c1_1
+1
+.names c1_2
+1
+.names c1_3
+1
+
+# Logic which uses the constant generators. Each LUT has at least one
+# non-constant input, so none of these LUTs are constant generators.
+.names a c1_0 o_and0
+11 1
+.names b c1_1 o_and1
+11 1
+.names c d gnd o_and2
+110 1
+.names c c0_0 o_or0
+1- 1
+-1 1
+.names d c0_1 o_or1
+1- 1
+-1 1
+.names a vcc o_or2
+1- 1
+-0 1
+.names a b gnd o_xor0
+100 1
+010 1
+.names c d vcc o_xor1
+001 1
+010 1
+100 1
+111 1
+.names a b vcc o_mux0
+1-1 1
+-10 1
+.names a b gnd o_maj0
+11- 1
+1-1 1
+-11 1
+.names a c0_2 c1_2 o_comb0
+101 1
+.names b c0_3 c1_3 o_comb1
+001 1
+
+# Redundant constant generators which each drive a primary output
+.names zero_0
+0
+.names zero_1
+0
+.names zero_2
+0
+.names zero_3
+0
+.names zero_4
+0
+.names zero_5
+0
+.names zero_6
+0
+.names zero_7
+0
+.names zero_8
+0
+.names zero_9
+0
+.names zero_10
+0
+.names zero_11
+0
+.names one_0
+1
+.names one_1
+1
+.names one_2
+1
+.names one_3
+1
+
+.end

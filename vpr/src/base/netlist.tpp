@@ -952,7 +952,10 @@ void Netlist<BlockId, PortId, PinId, NetId>::merge_nets(const NetId driver_net, 
     //
 
     //Move the sinks to the driver net
-    for (PinId sink_pin : net_sinks(sink_net)) {
+    // Note that the sinks are copied first since moving a sink removes it from
+    // sink_net's pins, which would invalidate the iteration.
+    std::vector<PinId> sink_pins(net_sinks(sink_net).begin(), net_sinks(sink_net).end());
+    for (PinId sink_pin : sink_pins) {
         //Update pin -> net references, also adds pins to driver_net
         set_pin_net(sink_pin, pin_type(sink_pin), driver_net);
     }
