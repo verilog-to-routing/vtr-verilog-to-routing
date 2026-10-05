@@ -20,13 +20,7 @@
 
 void init_ap_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
 #ifndef NO_GRAPHICS
-    init_graphics_state(vpr_setup);
-    if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty()) {
-        alloc_draw_structs(&arch);
-        init_draw_coords(vpr_setup.PlacerOpts.place_chan_width,
-                         g_vpr_ctx.placement().blk_loc_registry());
-    }
-    init_graphics_ui();
+    init_graphics_state(vpr_setup, arch);
 #else
     (void)vpr_setup;
     (void)arch;

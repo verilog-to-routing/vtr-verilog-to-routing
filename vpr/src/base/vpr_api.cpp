@@ -520,20 +520,10 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
     // alloc_draw_structs now that the device context is valid (for both AP and non-AP paths).
     // This call also reinitializes graphics state and re-sizes draw arrays in case the AP flow
-    // changed the device dimensions during full legalization.
+    // changed the device dimensions during full legalization. It also re-runs init_draw_coords():
+    // the call inside vpr_create_device() fired before the graphics flags were set, so it hit the
+    // early-return and left initial_world at zero.
     vpr_init_graphics(vpr_setup, arch);
-
-    // Re-run init_draw_coords() now that the graphics state (show_graphics,
-    // save_graphics, graphics_commands) is fully configured. The call inside
-    // vpr_create_device() fired before vpr_init_graphics() set those flags,
-    // so it always hit the early-return and left initial_world at zero. This
-    // second call populates tile_x/tile_y and sets initial_world correctly,
-    // which save_graphics needs to compute valid image dimensions.
-    if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty()) {
-        init_draw_coords(vpr_setup.PlacerOpts.place_chan_width,
-                         g_vpr_ctx.placement().blk_loc_registry());
-    }
-    init_graphics_ui();
 
     vpr_init_server(vpr_setup);
 
@@ -1318,9 +1308,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     /* Startup X graphics */
-    init_graphics_state(vpr_setup);
-    if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty())
-        alloc_draw_structs(&arch);
+    init_graphics_state(vpr_setup, arch);
 }
 
 void vpr_init_server(const t_vpr_setup& vpr_setup) {

@@ -112,7 +112,7 @@ static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::rende
 
 /**
  * @brief Creates the main canvas over initial_world with the backend selected
- * by --renderer. Called once per application, from init_graphics_ui() or on the
+ * by --renderer. Called once per application, from init_graphics_state() or on the
  * first update_screen() state change.
  */
 static void add_main_canvas();
@@ -210,7 +210,7 @@ static int pending_graphics_exit_code = 0;
 
 /********************** Subroutine definitions ******************************/
 
-void init_graphics_state(const t_vpr_setup& vpr_setup) {
+void init_graphics_state(const t_vpr_setup& vpr_setup, const t_arch& arch) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
@@ -242,9 +242,26 @@ void init_graphics_state(const t_vpr_setup& vpr_setup) {
         application = new ezgl::application(settings, argc, argv);
     }
 
+    if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty()) {
+        alloc_draw_structs(&arch);
+        init_draw_coords(vpr_setup.PlacerOpts.place_chan_width,
+                         g_vpr_ctx.placement().blk_loc_registry());
+    }
+
+    // Under --disp on, create the main canvas and build the GUI without showing
+    // it, so its widgets exist before the first update_screen() pause.
+    if (vpr_setup.ShowGraphics) {
+        if (!main_canvas_added) {
+            set_initial_world();
+            add_main_canvas();
+        }
+        application->build_ui();
+    }
+
 #else
     //Suppress unused parameter warnings
     (void)vpr_setup;
+    (void)arch;
 #endif // NO_GRAPHICS
 }
 
@@ -253,19 +270,6 @@ void notify_stage_complete(e_pic_type stage) {
     completed_stages.insert(stage);
 #else
     (void)stage;
-#endif
-}
-
-void init_graphics_ui() {
-#ifndef NO_GRAPHICS
-    if (application == nullptr || !get_draw_state_vars()->show_graphics)
-        return;
-
-    if (!main_canvas_added) {
-        set_initial_world();
-        add_main_canvas();
-    }
-    application->build_ui();
 #endif
 }
 
@@ -314,7 +318,7 @@ static void set_final_graphics_stage(const t_vpr_setup& vpr_setup) {
 static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    // init_graphics_ui() builds the UI before any stage has set up a picture,
+    // init_graphics_state() builds the UI before any stage has set up a picture,
     // and the immediate/deferred backends draw once while initializing the canvas.
     if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE)
         return;

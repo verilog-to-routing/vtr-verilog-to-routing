@@ -60,15 +60,6 @@ void update_screen(ScreenUpdatePriority priority,
  */
 void notify_stage_complete(e_pic_type stage);
 
-/**
- * @brief Under --disp on, creates the main canvas and builds the GUI without
- * showing it, so its widgets exist before the first update_screen() pause.
- *
- * Call once draw coordinates are set up (after init_draw_coords()). Does
- * nothing for headless runs or if the GUI is already built.
- */
-void init_graphics_ui();
-
 //FIXME: Currently broken if no rr-graph is loaded
 /**
  * @brief Load the arrays containing the left and bottom coordinates of the clbs.
@@ -93,10 +84,15 @@ void set_initial_world_ap();
  */
 void set_initial_world();
 
-/* Sets the static show_graphics and graphics_pause variables to the *
- * desired values.  They control if graphics are enabled and, if so, *
- * how often the user is prompted for input.                         */
-void init_graphics_state(const t_vpr_setup& vpr_setup);
+/**
+ * @brief Initializes graphics for the current device: sets the draw state from
+ * the command-line options, creates the application, allocates the draw
+ * structures and draw coordinates and, under --disp on, builds the GUI without
+ * showing it so its widgets exist before the first update_screen() pause.
+ *
+ * Call once the device grid is valid.
+ */
+void init_graphics_state(const t_vpr_setup& vpr_setup, const t_arch& arch);
 
 /* Allocates the structures needed to draw the placement and routing.*/
 void alloc_draw_structs(const t_arch* arch);
