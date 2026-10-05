@@ -66,7 +66,6 @@ set_target_properties(test_vpr_gui PROPERTIES
     CXX_EXTENSIONS OFF
 )
 
-
 add_test(
     NAME test_vpr_gui
     COMMAND test_vpr_gui --colour-mode ansi
