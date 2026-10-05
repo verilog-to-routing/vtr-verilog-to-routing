@@ -244,6 +244,7 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     }
 
     if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty()) {
+        VTR_ASSERT(g_vpr_ctx.device().grid.width() > 0 && g_vpr_ctx.device().grid.height() > 0);
         alloc_draw_structs(&arch);
         init_draw_coords(vpr_setup.PlacerOpts.place_chan_width,
                          g_vpr_ctx.placement().blk_loc_registry());
