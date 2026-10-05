@@ -108,7 +108,7 @@ class DrawStructsScope {
 /// Sets draw.cpp's file-scope ``application`` pointer for the duration
 /// of the test, restoring it on destruction. Without this the highlight
 /// primitives crash on ``application->update_message`` because the test
-/// process never runs ``vpr_init_graphics``.
+/// process never runs ``init_graphics``.
 class DrawApplicationScope {
   public:
     explicit DrawApplicationScope(ezgl::application* app)

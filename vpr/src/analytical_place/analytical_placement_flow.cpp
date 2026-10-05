@@ -16,6 +16,7 @@
 #include "cluster_util.h"
 #include "detailed_placer.h"
 #include "device_size_estimate.h"
+#include "draw.h"
 #include "full_legalizer.h"
 #include "setup_grid.h"
 #include "logical_ram_infer.h"
@@ -306,7 +307,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     // because non-AP flows must not set show_graphics before vpr_create_device builds
     // the RR graph and calls init_draw_coords, which accesses tile arrays that
     // alloc_draw_structs has not yet allocated.
-    vpr_init_graphics(vpr_setup, *device_ctx.arch);
+    init_graphics(vpr_setup, *device_ctx.arch);
 
     // Run the Global Placer.
     PartialPlacement p_placement = run_global_placer(ap_opts,

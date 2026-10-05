@@ -523,7 +523,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     // changed the device dimensions during full legalization. It also re-runs init_draw_coords():
     // the call inside vpr_create_device() fired before the graphics flags were set, so it hit the
     // early-return and left initial_world at zero.
-    vpr_init_graphics(vpr_setup, arch);
+    init_graphics(vpr_setup, arch);
 
     vpr_init_server(vpr_setup);
 

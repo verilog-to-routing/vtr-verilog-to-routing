@@ -84,6 +84,16 @@ void set_initial_world_ap();
  */
 void set_initial_world();
 
+/**
+ * @brief Initializes graphics for the current device: sets the draw state from
+ * the command-line options, creates the application, allocates the draw
+ * structures and draw coordinates and, under --disp on, builds the GUI without
+ * showing it so its widgets exist before the first update_screen() pause.
+ *
+ * Call once the device grid is valid.
+ */
+void init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch);
+
 /* Allocates the structures needed to draw the placement and routing.*/
 void alloc_draw_structs(const t_arch* arch);
 

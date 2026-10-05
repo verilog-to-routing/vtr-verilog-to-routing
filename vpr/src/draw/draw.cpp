@@ -29,7 +29,6 @@
 
 #include "move_utils.h"
 #include "vpr_types.h"
-#include "vpr_api.h"
 
 #ifndef NO_GRAPHICS
 
@@ -113,7 +112,7 @@ static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::rende
 
 /**
  * @brief Creates the main canvas over initial_world with the backend selected
- * by --renderer. Called once per application, from vpr_init_graphics() or on the
+ * by --renderer. Called once per application, from init_graphics() or on the
  * first update_screen() state change.
  */
 static void add_main_canvas();
@@ -211,7 +210,7 @@ static int pending_graphics_exit_code = 0;
 
 /********************** Subroutine definitions ******************************/
 
-void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
+void init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
@@ -320,7 +319,7 @@ static void set_final_graphics_stage(const t_vpr_setup& vpr_setup) {
 static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    // vpr_init_graphics() builds the UI before any stage has set up a picture,
+    // init_graphics() builds the UI before any stage has set up a picture,
     // and the immediate/deferred backends draw once while initializing the canvas.
     if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE)
         return;
@@ -582,7 +581,7 @@ void update_screen(ScreenUpdatePriority priority,
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
     t_draw_state* draw_state = get_draw_state_vars();
 
-    // The application object is created lazily in vpr_init_graphics(), which is
+    // The application object is created lazily in init_graphics(), which is
     // called after the AP flow.  If we are called before that (e.g. from the
     // global placer's draw callbacks), bail out — there is nothing to draw.
     if (application == nullptr)

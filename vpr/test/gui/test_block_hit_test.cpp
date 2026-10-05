@@ -73,7 +73,7 @@ class DrawStructsScope {
   public:
     explicit DrawStructsScope(const t_arch* arch) {
         // Snapshot the show_graphics flag — production sets it via
-        // vpr_init_graphics from VPR's command-line flags. Our
+        // init_graphics from VPR's command-line flags. Our
         // fixture runs with --disp off, so we must flip it on so
         // init_draw_coords does not take its early-return path.
         t_draw_state* ds = get_draw_state_vars();
