@@ -1840,39 +1840,22 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
  * @brief Helper method to decide if we should move a block from one window
  *        to another given the change in overfills.
  *
- *  @param window_curr_overfill
- *      The overfill of this window if the block is not moved to other.
- *  @param window_new_overfill
- *      The overfill of this window if the block is moved to other.
- *  @param other_window_curr_overfill
- *      The overfill of the other window if the block is not moved to other.
- *  @param other_window_new_overfill
- *      THe overfill of the other window if the block is moved to other.
+ *  @param gain How much the overfill of this window would decrease by moving the block.
+ *  @param loss How much the overfill of the other window would increase by moving the block.
  */
-static bool should_move_blk_to_other_window(const PrimitiveVector& window_curr_overfill,
-                                            const PrimitiveVector& window_new_overfill,
-                                            const PrimitiveVector& other_window_curr_overfill,
-                                            const PrimitiveVector& other_window_new_overfill) {
-    // Check what would be the gain of moving this block to the other partition.
-    // Here, we define gain as the amount the overfill of the window would
-    // decrease due to moving this block to the other side.
-    float gain = window_curr_overfill.sum() - window_new_overfill.sum();
+static bool should_move_blk_to_other_window(float gain, float loss) {
     // If there is no gain for removing this from the current window, keep it where it is.
-    if (gain == 0.0)
+    if (gain == 0.0f) {
         return false;
+    }
 
-    // Compute how much the other window would "lose" due to having this
-    // block on the other side.
-    // Here, we define loss as the amount the overfill of the other window would
-    // increase due to moving this block to the other side.
-    float loss = other_window_new_overfill.sum() - other_window_curr_overfill.sum();
     // If we would lose more (i.e. make the overfill worse) by moving to
     // other window than we would gain, keep on this side.
-    if (loss >= gain)
+    if (loss >= gain) {
         return false;
+    }
 
-    // If we reach this point, this means that there is more gain to moving this
-    // block to the other window than there is loss. Move it.
+    // There is more gain to moving this block to the other window than there is loss. Move it.
     return true;
 }
 
@@ -1907,32 +1890,53 @@ static bool try_move_blk_to_other_window(const PrimitiveVector& blk_mass,
                                          PrimitiveVector& other_window_curr_utilization,
                                          PrimitiveVector& other_window_curr_overfill,
                                          const PrimitiveVector& other_window_capacity) {
-    // Compute the overfill this window would have if we remove the block from it.
-    PrimitiveVector window_new_overfill = window_curr_overfill - blk_mass;
-    window_new_overfill.relu();
+    // Compute the gain and loss of moving this block over the dimensions of
+    // its mass.
+    // The gain is how much the overfill of this window would decrease.
+    // The loss is how much the overfill of the other window would increase.
+    float gain = 0.0f;
+    float loss = 0.0f;
+    for (PrimitiveVectorDim dim : blk_mass.dims()) {
+        float mass = blk_mass.get_dim_val(dim);
 
-    // Compute the overfill of the other window if the block moved into it.
-    PrimitiveVector other_window_new_utilization = other_window_curr_utilization + blk_mass;
-    PrimitiveVector other_window_new_overfill = other_window_new_utilization - other_window_capacity;
-    other_window_new_overfill.relu();
+        // Dimensions with zero mass cannot change either overfill, so they are skipped.
+        if (mass == 0.0f) {
+            continue;
+        }
+
+        gain += std::min(window_curr_overfill.get_dim_val(dim), mass);
+
+        float other_window_new_utilization = other_window_curr_utilization.get_dim_val(dim) + mass;
+        float other_window_new_overfill = std::max(0.0f, other_window_new_utilization - other_window_capacity.get_dim_val(dim));
+        loss += other_window_new_overfill - other_window_curr_overfill.get_dim_val(dim);
+    }
 
     // Check if we should move this block to the other window, given the change
-    // in overfill.
-    bool should_move_block = should_move_blk_to_other_window(window_curr_overfill,
-                                                             window_new_overfill,
-                                                             other_window_curr_overfill,
-                                                             other_window_new_overfill);
-    // If we should not move it, return false.
-    if (!should_move_block)
+    // in overfill. If not, nothing has been modified.
+    bool should_move_block = should_move_blk_to_other_window(gain, loss);
+    if (!should_move_block) {
         return false;
+    }
 
-    // If we should move it, update the overfills of each window.
-    // NOTE: Here we are avoiding doing operations on the primitive vectors as
-    //       much as possible.
+    // Move the mass of the block from this window to the other window.
     window_curr_utilization -= blk_mass;
-    window_curr_overfill = std::move(window_new_overfill);
-    other_window_curr_utilization = std::move(other_window_new_utilization);
-    other_window_curr_overfill = std::move(other_window_new_overfill);
+    other_window_curr_utilization += blk_mass;
+
+    // Update the overfills in place.
+    for (PrimitiveVectorDim dim : blk_mass.dims()) {
+        float mass = blk_mass.get_dim_val(dim);
+
+        // Only the dimensions with mass can change.
+        if (mass == 0.0f) {
+            continue;
+        }
+
+        float window_new_overfill = std::max(0.0f, window_curr_overfill.get_dim_val(dim) - mass);
+        window_curr_overfill.set_dim_val(dim, window_new_overfill);
+
+        float other_window_new_overfill = std::max(0.0f, other_window_curr_utilization.get_dim_val(dim) - other_window_capacity.get_dim_val(dim));
+        other_window_curr_overfill.set_dim_val(dim, other_window_new_overfill);
+    }
 
     // The block was moved.
     return true;

@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <vector>
 #include "vtr_log.h"
+#include "vtr_strong_id_range.h"
 #include "vtr_vector.h"
 
 #include "primitive_vector_fwd.h"
@@ -90,6 +91,11 @@ class PrimitiveVector {
         if ((size_t)dim >= data_.size())
             data_.resize((size_t)dim + 1, 0.0f);
         data_[dim] = val;
+    }
+
+    /// @brief Range over the dimensions stored in this vector.
+    inline vtr::StrongIdRange<PrimitiveVectorDim> dims() const {
+        return vtr::StrongIdRange<PrimitiveVectorDim>(PrimitiveVectorDim(0), PrimitiveVectorDim(data_.size()));
     }
 
     /**
