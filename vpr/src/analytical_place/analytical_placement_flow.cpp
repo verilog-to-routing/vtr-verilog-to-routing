@@ -283,7 +283,8 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                      prepacker,
                                                      ram_mapper,
                                                      constraints,
-                                                     ap_opts.ap_high_fanout_threshold);
+                                                     ap_opts.ap_high_fanout_threshold,
+                                                     vpr_setup.constant_net_method);
     print_ap_netlist_stats(ap_netlist);
 
     // Pre-compute the place delay model. This will be passed into the global
