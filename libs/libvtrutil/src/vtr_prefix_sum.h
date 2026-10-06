@@ -7,7 +7,6 @@
  *          sums over regions of an unchanging grid of values.
  */
 
-#include <functional>
 #include <vector>
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
@@ -68,24 +67,25 @@ class PrefixSum1D {
      *  @param length
      *          The length of the array to a make a prefix sum of.
      *  @param lookup
-     *          A lambda function which will return the value in the array at
-     *          the given x index. This is a lambda to allow a prefix sum to be
-     *          created, even if the values in the array are not stored in a
-     *          vector (may be computed on the spot).
+     *          A callable which will return the value in the array at the given
+     *          x index. This is a callable to allow a prefix sum to be created,
+     *          even if the values in the array are not stored in a vector (may
+     *          be computed on the spot). Its return value is converted to T.
      *  @param zero
      *          What is zero for this data type. For most basic data types (like
      *          int float, etc.) this parameter can be ignored; for more complex
      *          data classes (like multi-dimensional vectors) this is necessary
      *          to be passed in.
      */
-    PrefixSum1D(size_t length, std::function<T(size_t)> lookup, T zero = T())
+    template<typename Lookup>
+    PrefixSum1D(size_t length, Lookup lookup, T zero = T())
         : prefix_sum_(length + 1, zero) {
         // The first value in the prefix sum is already initialized to 0.
 
         // Initialize the prefix sum. The prefix sum at position x is the sum
         // of all values in the original array from 0 to x - 1.
         for (size_t x = 1; x < length + 1; x++) {
-            prefix_sum_[x] = prefix_sum_[x - 1] + lookup(x - 1);
+            prefix_sum_[x] = prefix_sum_[x - 1] + static_cast<T>(lookup(x - 1));
         }
     }
 
@@ -199,17 +199,19 @@ class PrefixSum2D {
      *  @param h
      *          The height of the grid of values to make a prefix sum over.
      *  @param lookup
-     *          A lambda function which will return the value in the grid at the
-     *          given x, y position. This is a lambda to allow a prefix sum to
-     *          be created, even if the values in the grid are not stored in
-     *          a matrix (may be computed at runtime).
+     *          A callable which will return the value in the grid at the given
+     *          x, y position. This is a callable to allow a prefix sum to be
+     *          created, even if the values in the grid are not stored in a
+     *          matrix (may be computed at runtime). Its return value is
+     *          converted to T.
      *  @param zero
      *          What is zero for this data type. For most basic data types (like
      *          int, float, etc.) this parameter can be ignored; for more complex
      *          data classes (like multi-dimensional vectors) this is necessary
      *          to be passed in.
      */
-    PrefixSum2D(size_t w, size_t h, std::function<T(size_t, size_t)> lookup, T zero = T())
+    template<typename Lookup>
+    PrefixSum2D(size_t w, size_t h, Lookup lookup, T zero = T())
         : prefix_sum_({w + 1, h + 1}, zero) {
         // The first row and first column should already be initialized to zero.
 
@@ -220,7 +222,7 @@ class PrefixSum2D {
             for (size_t y = 1; y < h + 1; y++) {
                 prefix_sum_[x][y] = prefix_sum_[x - 1][y]
                                     + prefix_sum_[x][y - 1]
-                                    + lookup(x - 1, y - 1)
+                                    + static_cast<T>(lookup(x - 1, y - 1))
                                     - prefix_sum_[x - 1][y - 1];
             }
         }
@@ -233,7 +235,7 @@ class PrefixSum2D {
         : PrefixSum2D(
               vals.dim_size(0),
               vals.dim_size(1),
-              [&](size_t x, size_t y) {
+              [&](size_t x, size_t y) noexcept {
                   return vals[x][y];
               },
               zero) {}
