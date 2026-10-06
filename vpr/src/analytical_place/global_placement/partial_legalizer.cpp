@@ -326,7 +326,7 @@ static inline std::pair<APBlockId, float> get_min_cost_block_in_bin(
     float min_cost = std::numeric_limits<float>::infinity();
     const FlatPlacementBins& bins = density_manager.flat_placement_bins();
     const FlatPlacementMassCalculator& mass_calculator = density_manager.mass_calculator();
-    const std::vector<APBlockId>& src_contained_blocks = bins.bin_contained_blocks(src_bin);
+    const vtr::vector<BinSlotId, APBlockId>& src_contained_blocks = bins.bin_contained_blocks(src_bin);
     // FIXME: If these were somehow pre-sorted, this can be made much cheaper.
     for (APBlockId blk_id : src_contained_blocks) {
         // If this block is fixed, it has infinite cost to move.
