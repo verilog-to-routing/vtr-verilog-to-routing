@@ -101,6 +101,11 @@ class thread_pool {
         }
     }
 
+    /// @brief Number of threads in the pool.
+    size_t thread_count() const {
+        return threads.size();
+    }
+
     /** Schedule a function to be executed on one of the threads. */
     template<typename F>
     void schedule_work(F&& f) {

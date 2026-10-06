@@ -14,6 +14,7 @@
  */
 
 #include <memory>
+#include <optional>
 #include "ap_flow_enums.h"
 #include "flat_placement_density_manager.h"
 #include "partial_legalizer.h"
@@ -27,6 +28,9 @@ class PlaceDelayModel;
 class PreClusterTimingManager;
 class Prepacker;
 struct PartialPlacement;
+namespace vtr {
+class thread_pool;
+}
 
 /**
  * @brief The Global Placer base class
@@ -89,7 +93,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  float ap_timing_tradeoff,
                                                  bool generate_mass_report,
                                                  const std::vector<std::string>& target_density_arg_strs,
-                                                 unsigned num_threads,
+                                                 std::optional<vtr::thread_pool>& thread_pool,
                                                  int log_verbosity);
 
 /**
@@ -174,7 +178,7 @@ class SimPLGlobalPlacer : public GlobalPlacer {
                       float ap_timing_tradeoff,
                       bool generate_mass_report,
                       const std::vector<std::string>& target_density_arg_strs,
-                      unsigned num_threads,
+                      std::optional<vtr::thread_pool>& thread_pool,
                       int log_verbosity);
 
     /**
