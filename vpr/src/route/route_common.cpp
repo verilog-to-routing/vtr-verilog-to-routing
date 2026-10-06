@@ -269,7 +269,7 @@ float get_bus_mux_cong_cost(RRNodeId from_node, RRNodeId to_node, float pres_fac
     return get_single_rr_cong_base_cost(to_node) * get_single_rr_cong_acc_cost(to_node) * pres_fac * displaced_bits;
 }
 
-void pathfinder_update_bus_mux_occupancy(const RouteTreeNode& rt_node, int add_or_sub) {
+void pathfinder_update_bus_mux_occupancy(std::vector<t_bus_mux_route_inf>& bus_mux_route_inf, const RouteTreeNode& rt_node, int add_or_sub) {
     // The SOURCE at the root of a route tree has no incoming edge.
     if (!rt_node.parent()) {
         return;
@@ -370,12 +370,20 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
 
 /** Update pathfinder cost of all nodes rooted at rt_node, including rt_node itself */
 void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_or_sub) {
+    RoutingContext& route_ctx = g_vpr_ctx.mutable_routing();
+    // Skip the per-node bus mux lookups on architectures without bus muxes.
+    const bool has_bus_muxes = !g_vpr_ctx.device().rr_bus_muxes.empty();
+
     pathfinder_update_single_node_occupancy(root.inode, add_or_sub);
-    // all_nodes() skips root, so count the edge into root here.
-    pathfinder_update_bus_mux_occupancy(root, add_or_sub);
+    if (has_bus_muxes) {
+        // all_nodes() skips root, so count the edge into root here.
+        pathfinder_update_bus_mux_occupancy(route_ctx.bus_mux_route_inf, root, add_or_sub);
+    }
     for (auto& node : root.all_nodes()) {
         pathfinder_update_single_node_occupancy(node.inode, add_or_sub);
-        pathfinder_update_bus_mux_occupancy(node, add_or_sub);
+        if (has_bus_muxes) {
+            pathfinder_update_bus_mux_occupancy(route_ctx.bus_mux_route_inf, node, add_or_sub);
+        }
     }
 }
 

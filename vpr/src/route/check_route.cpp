@@ -511,6 +511,7 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
     for (t_bus_mux_route_inf& mux_inf : route_ctx.bus_mux_route_inf) {
         std::ranges::fill(mux_inf.set_occ, 0);
     }
+    const bool has_bus_muxes = !device_ctx.rr_bus_muxes.empty();
 
     /* Now go through each net and count the tracks and pins used everywhere */
 
@@ -524,7 +525,9 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
         for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
             route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
-            pathfinder_update_bus_mux_occupancy(rt_node, 1);
+            if (has_bus_muxes) {
+                pathfinder_update_bus_mux_occupancy(route_ctx.bus_mux_route_inf, rt_node, 1);
+            }
         }
     }
 
