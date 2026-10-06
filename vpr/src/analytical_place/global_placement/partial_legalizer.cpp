@@ -916,15 +916,32 @@ void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
         }
     }
 
-    // 2) For each group, identify non-overlapping windows and spread
+    // 2) Precompute a prefix sum for the current utilization of each 1x1 region
+    //    of the device. The mass of a bin is placed on its center tile.
+    //    Spreading a group only moves blocks whose mass lies in the dims of that
+    //    group, and dim groups are disjoint, so the prefix sum of every group
+    //    stays valid while the other groups are spread.
+    // TODO: A better way of doing this is actually using the solved positions to find
+    //       the utilization of tiles within each non-1x1 bin. However, this may slow
+    //       things down a lot.
     vtr::Timer runtime_timer;
     float window_identification_time = 0.0f;
     float window_spreading_time = 0.0f;
+    PerPrimitiveDimPrefixSum2D utilization_prefix_sum(
+        *density_manager_,
+        [&](PrimitiveVectorDim dim, FlatPlacementBinId bin_id) {
+            float util = density_manager_->get_bin_utilization(bin_id).get_dim_val(dim);
+            VTR_ASSERT_SAFE(util >= 0.0f);
+            return util;
+        });
+    window_identification_time += runtime_timer.elapsed_sec();
+
+    // 3) For each group, identify non-overlapping windows and spread
     for (PrimitiveGroupId group_id : groups_to_spread) {
         VTR_LOGV(log_verbosity_ >= 10, "\tSpreading group %zu\n", group_id);
         // Identify non-overlapping spreading windows.
         float window_identification_start_time = runtime_timer.elapsed_sec();
-        auto non_overlapping_windows = identify_non_overlapping_windows(group_id);
+        std::vector<SpreadingWindow> non_overlapping_windows = identify_non_overlapping_windows(group_id, utilization_prefix_sum);
         window_identification_time += runtime_timer.elapsed_sec() - window_identification_start_time;
         VTR_ASSERT(non_overlapping_windows.size() != 0);
 
@@ -954,7 +971,8 @@ void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
     density_manager_->export_placement_from_bins(p_placement);
 }
 
-std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::identify_non_overlapping_windows(PrimitiveGroupId group_id) {
+std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::identify_non_overlapping_windows(PrimitiveGroupId group_id,
+                                                                                              const PerPrimitiveDimPrefixSum2D& utilization_prefix_sum) {
 
     // 1) Cluster the overfilled bins. This will make creating minimum spanning
     //    windows more efficient.
@@ -962,7 +980,7 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::identify_non_overla
 
     // 2) For each of the overfilled bin clusters, create a minimum window such
     //    that there is enough space in the window for the atoms inside.
-    auto windows = get_min_windows_around_clusters(overfilled_bin_clusters, group_id);
+    std::vector<SpreadingWindow> windows = get_min_windows_around_clusters(overfilled_bin_clusters, group_id, utilization_prefix_sum);
 
     // 3) Merge overlapping windows.
     merge_overlapping_windows(windows);
@@ -1120,7 +1138,8 @@ static bool is_region_overfilled(const vtr::Rect<double>& region,
 
 std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_around_clusters(
     const std::vector<FlatPlacementBinCluster>& overfilled_bin_clusters,
-    PrimitiveGroupId group_id) {
+    PrimitiveGroupId group_id,
+    const PerPrimitiveDimPrefixSum2D& utilization_prefix_sum) {
     // TODO: Currently, we greedily grow the region by 1 in all directions until
     //       the capacity is larger than the utilization. This may not produce
     //       the minimum window. Should investigate "touching-up" the windows.
@@ -1132,21 +1151,6 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_aro
     // from outgrowing the device.
     size_t width, height, num_layers;
     std::tie(width, height, num_layers) = density_manager_->get_overall_placeable_region_size();
-
-    // Precompute a prefix sum for the current utilization of each 1x1 region
-    // of the device. This needs to be recomputed every time the bins are
-    // modified, so it is recomputed here.
-    // The mass of a bin is placed on its center tile by the prefix sum.
-    // TODO: A better way of doing this is actually using the solved positions to find
-    //       the utilization of tiles within each non-1x1 bin. However, this may slow
-    //       things down a lot.
-    PerPrimitiveDimPrefixSum2D utilization_prefix_sum(
-        *density_manager_,
-        [&](PrimitiveVectorDim dim, FlatPlacementBinId bin_id) {
-            float util = density_manager_->get_bin_utilization(bin_id).get_dim_val(dim);
-            VTR_ASSERT_SAFE(util >= 0.0f);
-            return util;
-        });
 
     // Create windows for each overfilled bin cluster.
     std::vector<SpreadingWindow> windows;
