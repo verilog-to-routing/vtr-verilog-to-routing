@@ -31,9 +31,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#ifndef VPR_MAIN_UI_PATH
-#define VPR_MAIN_UI_PATH ":/ezgl/main.ui"
-#endif
+#include "test_main_ui.hpp"
 
 #include <memory>
 
@@ -94,7 +92,7 @@ TEST_CASE("Key: act_on_key_press with null application + no searchBar is a no-op
 
 TEST_CASE("Helpers: simulate_mouse_move delivers Qt event to MainCanvas",
           "[layer4][interactive][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
     win->show();
@@ -112,7 +110,7 @@ TEST_CASE("Helpers: simulate_mouse_move delivers Qt event to MainCanvas",
 
 TEST_CASE("Helpers: simulate_mouse_click delivers Qt event to MainCanvas",
           "[layer4][interactive][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
     win->show();
@@ -128,7 +126,7 @@ TEST_CASE("Helpers: simulate_mouse_click delivers Qt event to MainCanvas",
 
 TEST_CASE("Helpers: simulate_key delivers Qt event to TextInput",
           "[layer4][interactive][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
     win->show();

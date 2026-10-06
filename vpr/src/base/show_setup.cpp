@@ -658,6 +658,21 @@ static void show_analytical_placer_opts(const t_ap_opts& ap_opts) {
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown analytical_solver_type\n");
     }
 
+    VTR_LOG("AnalyticalPlacerOpts.solver_threading: ");
+    switch (ap_opts.solver_threading) {
+        case e_ap_solver_threading::Auto:
+            VTR_LOG("auto\n");
+            break;
+        case e_ap_solver_threading::Sequential:
+            VTR_LOG("sequential\n");
+            break;
+        case e_ap_solver_threading::Concurrent:
+            VTR_LOG("concurrent\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown solver_threading\n");
+    }
+
     VTR_LOG("AnalyticalPlacerOpts.partial_legalizer_type: ");
     switch (ap_opts.partial_legalizer_type) {
         case e_ap_partial_legalizer::Identity:
@@ -710,6 +725,7 @@ static void show_analytical_placer_opts(const t_ap_opts& ap_opts) {
 
 static void show_netlist_opts(const t_netlist_opts& netlist_opts) {
     VTR_LOG("netlist_opts.absorb_buffer_luts            : %s\n", (netlist_opts.absorb_buffer_luts) ? "true" : "false");
+    VTR_LOG("netlist_opts.merge_constant_generators     : %s\n", (netlist_opts.merge_constant_generators) ? "true" : "false");
     VTR_LOG("netlist_opts.sweep_dangling_primary_ios    : %s\n", (netlist_opts.sweep_dangling_primary_ios) ? "true" : "false");
     VTR_LOG("netlist_opts.sweep_dangling_nets           : %s\n", (netlist_opts.sweep_dangling_nets) ? "true" : "false");
     VTR_LOG("netlist_opts.sweep_dangling_blocks         : %s\n", (netlist_opts.sweep_dangling_blocks) ? "true" : "false");

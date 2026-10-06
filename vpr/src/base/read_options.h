@@ -62,7 +62,7 @@ struct t_options {
 
     // Graphics Options
     argparse::ArgValue<bool> show_graphics; ///<Enable argparse::ArgValue<int>eractive graphics?
-    argparse::ArgValue<int> GraphPause;
+    argparse::ArgValue<e_graphics_pause> GraphPause;
     argparse::ArgValue<bool> save_graphics;
     argparse::ArgValue<std::string> graphics_commands;
     argparse::ArgValue<std::string> graphics_renderer;
@@ -96,6 +96,7 @@ struct t_options {
 
     // Atom netlist options
     argparse::ArgValue<bool> absorb_buffer_luts;
+    argparse::ArgValue<bool> merge_constant_generators;
     argparse::ArgValue<e_const_gen_inference> const_gen_inference;
     argparse::ArgValue<bool> sweep_dangling_primary_ios;
     argparse::ArgValue<bool> sweep_dangling_nets;
@@ -105,6 +106,7 @@ struct t_options {
 
     // Analytical Placement options
     argparse::ArgValue<e_ap_analytical_solver> ap_analytical_solver;
+    argparse::ArgValue<e_ap_solver_threading> ap_solver_threading;
     argparse::ArgValue<e_ap_partial_legalizer> ap_partial_legalizer;
     argparse::ArgValue<e_ap_full_legalizer> ap_full_legalizer;
     argparse::ArgValue<e_ap_detailed_placer> ap_detailed_placer;

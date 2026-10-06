@@ -135,7 +135,7 @@ void SetupVPR(const t_options* options,
               std::vector<t_segment_inf>& segments,
               t_timing_inf* timing,
               bool* showGraphics,
-              int* graphPause,
+              e_graphics_pause* graphPause,
               bool* saveGraphics,
               std::string* graphicsCommands,
               std::string* rendererType,
@@ -614,6 +614,7 @@ static void setup_anneal_sched(const t_options& Options,
 static void setup_ap_opts(const t_options& options,
                           t_ap_opts& apOpts) {
     apOpts.analytical_solver_type = options.ap_analytical_solver.value();
+    apOpts.solver_threading = options.ap_solver_threading.value();
     apOpts.partial_legalizer_type = options.ap_partial_legalizer.value();
     apOpts.full_legalizer_type = options.ap_full_legalizer.value();
     apOpts.detailed_placer_type = options.ap_detailed_placer.value();
@@ -666,6 +667,7 @@ void setup_packer_opts(const t_options& Options,
 static void setup_netlist_opts(const t_options& Options, t_netlist_opts& NetlistOpts) {
     NetlistOpts.const_gen_inference = Options.const_gen_inference;
     NetlistOpts.absorb_buffer_luts = Options.absorb_buffer_luts;
+    NetlistOpts.merge_constant_generators = Options.merge_constant_generators;
     NetlistOpts.sweep_dangling_primary_ios = Options.sweep_dangling_primary_ios;
     NetlistOpts.sweep_dangling_nets = Options.sweep_dangling_nets;
     NetlistOpts.sweep_dangling_blocks = Options.sweep_dangling_blocks;

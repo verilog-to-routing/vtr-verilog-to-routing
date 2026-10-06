@@ -33,6 +33,7 @@
 #include "vtr_time.h"
 
 std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytical_solver_type,
+                                                 e_ap_solver_threading solver_threading,
                                                  e_ap_partial_legalizer partial_legalizer_type,
                                                  const APNetlist& ap_netlist,
                                                  const Prepacker& prepacker,
@@ -49,6 +50,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  unsigned num_threads,
                                                  int log_verbosity) {
     return std::make_unique<SimPLGlobalPlacer>(analytical_solver_type,
+                                               solver_threading,
                                                partial_legalizer_type,
                                                ap_netlist,
                                                prepacker,
@@ -67,6 +69,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
 }
 
 SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_type,
+                                     e_ap_solver_threading solver_threading,
                                      e_ap_partial_legalizer partial_legalizer_type,
                                      const APNetlist& ap_netlist,
                                      const Prepacker& prepacker,
@@ -101,6 +104,7 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                      place_delay_model_,
                                      ap_timing_tradeoff,
                                      num_threads,
+                                     solver_threading,
                                      log_verbosity_);
 
     // Build the density manager used by the partial legalizer.
