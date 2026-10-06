@@ -9,8 +9,8 @@
  * defines a bin that is "overfilled".
  */
 
+#include <cstdint>
 #include <tuple>
-#include <unordered_set>
 #include <vector>
 #include "flat_placement_bins.h"
 #include "flat_placement_mass_calculator.h"
@@ -199,16 +199,25 @@ class FlatPlacementDensityManager {
      *        mass and is over capacity).
      */
     inline bool bin_is_overfilled(FlatPlacementBinId bin_id) const {
-        // A bin is overfilled if the overfill is non-zero.
-        return get_bin_overfill(bin_id).is_non_zero();
+        VTR_ASSERT(bin_id.is_valid());
+        return bin_is_overfilled_[bin_id] != 0;
     }
 
     /**
      * @brief Returns a list of all overfilled bins.
+     *
+     * Inserting or removing blocks makes this list out of date. It must then
+     * be rebuilt with update_overfilled_bins() before it is read again.
+     * Importing a placement and emptying the bins leave it up to date.
      */
-    inline const std::unordered_set<FlatPlacementBinId>& get_overfilled_bins() const {
+    inline const std::vector<FlatPlacementBinId>& get_overfilled_bins() const {
+        VTR_ASSERT_MSG(overfilled_bins_up_to_date_,
+                       "The overfilled bins must be updated after blocks are inserted or removed");
         return overfilled_bins_;
     }
+
+    /// @brief Rebuild the list of overfilled bins from the current state of the bins.
+    void update_overfilled_bins();
 
     /**
      * @brief Import the given flat placement into the bins.
@@ -284,8 +293,9 @@ class FlatPlacementDensityManager {
   private:
     /**
      * @brief Recompute the overfill and underfill of the given bin from its
-     *        current utilization and update its membership in the overfilled
-     *        bin set.
+     *        current utilization and record whether the bin is overfilled.
+     *
+     * This does not update the list of overfilled bins.
      */
     void update_bin_fill_(FlatPlacementBinId bin_id);
 
@@ -317,8 +327,15 @@ class FlatPlacementDensityManager {
     /// @brief The underfill of each bin.
     vtr::vector<FlatPlacementBinId, PrimitiveVector> bin_underfill_;
 
-    /// @brief The set of overfilled bins.
-    std::unordered_set<FlatPlacementBinId> overfilled_bins_;
+    /// @brief Whether each bin is overfilled, as 0 or 1.
+    vtr::vector<FlatPlacementBinId, uint8_t> bin_is_overfilled_;
+
+    /// @brief The overfilled bins, in increasing bin ID order. Only valid while
+    ///        overfilled_bins_up_to_date_ is true.
+    std::vector<FlatPlacementBinId> overfilled_bins_;
+
+    /// @brief Whether overfilled_bins_ matches the current state of the bins.
+    bool overfilled_bins_up_to_date_ = true;
 
     /// @brief A vector mask representing the used primitive vector dimensions
     ///        in the netlist. If a dimension is used, its value will be set to

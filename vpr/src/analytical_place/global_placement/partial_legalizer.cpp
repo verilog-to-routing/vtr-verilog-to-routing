@@ -626,7 +626,7 @@ void FlowBasedLegalizer::legalize(PartialPlacement& p_placement) {
             break;
         }
         // If there are no overfilled bins, no more work to do.
-        const std::unordered_set<FlatPlacementBinId>& overfilled_bins = density_manager_->get_overfilled_bins();
+        const std::vector<FlatPlacementBinId>& overfilled_bins = density_manager_->get_overfilled_bins();
         if (overfilled_bins.empty()) {
             VTR_LOGV(log_verbosity_ >= 10,
                      "Flow-Based legalizer has no overfilled tiles. No further spreading needed.\n");
@@ -671,6 +671,10 @@ void FlowBasedLegalizer::legalize(PartialPlacement& p_placement) {
                 flow_blocks_along_path(path, p_placement, psi);
             }
         }
+
+        // Flowing the blocks changed the bins. Rebuild the list of overfilled
+        // bins for the next iteration.
+        density_manager_->update_overfilled_bins();
 
         // Print status of the flow based legalizer for debugging.
         if (log_verbosity_ >= 10) {
@@ -948,6 +952,10 @@ void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
         // Spread the blocks over the non-overlapping windows.
         float window_spreading_start_time = runtime_timer.elapsed_sec();
         spread_over_windows(non_overlapping_windows, p_placement, group_id);
+
+        // Spreading this group moved blocks between bins. Rebuild the list of
+        // overfilled bins before it is read again.
+        density_manager_->update_overfilled_bins();
         window_spreading_time += runtime_timer.elapsed_sec() - window_spreading_start_time;
     }
 

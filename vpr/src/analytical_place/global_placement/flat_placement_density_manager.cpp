@@ -214,8 +214,9 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_net
         bin_overfill_[bin_id] = calc_bin_overfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
     }
 
-    // Note: The overfilled_bins_ are left empty. All bins are empty, therefore
-    //       no bin is overfilled.
+    // Mark every bin as not overfilled. All bins are empty, therefore no bin
+    // is overfilled and the overfilled_bins_ are left empty.
+    bin_is_overfilled_.resize(bins_.bins().size(), 0);
 }
 
 FlatPlacementBinId FlatPlacementDensityManager::get_bin(double x, double y, double layer) const {
@@ -237,11 +238,9 @@ void FlatPlacementDensityManager::insert_block_into_bin(APBlockId blk_id,
     // Update the bin utilization.
     bin_utilization_[bin_id] += mass_calculator_.get_block_mass(blk_id);
     // Update the bin overfill and underfill
-    bin_overfill_[bin_id] = calc_bin_overfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
-    bin_underfill_[bin_id] = calc_bin_underfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
-    // Insert the bin into the overfilled bin set if it is overfilled.
-    if (bin_is_overfilled(bin_id))
-        overfilled_bins_.insert(bin_id);
+    update_bin_fill_(bin_id);
+    // The list of overfilled bins may no longer match the bins.
+    overfilled_bins_up_to_date_ = false;
 }
 
 void FlatPlacementDensityManager::remove_block_from_bin(APBlockId blk_id,
@@ -253,11 +252,9 @@ void FlatPlacementDensityManager::remove_block_from_bin(APBlockId blk_id,
     // Update the bin utilization.
     bin_utilization_[bin_id] -= mass_calculator_.get_block_mass(blk_id);
     // Update the bin overfill and underfill.
-    bin_overfill_[bin_id] = calc_bin_overfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
-    bin_underfill_[bin_id] = calc_bin_underfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
-    // Remove from overfilled bins set if it is not overfilled.
-    if (!bin_is_overfilled(bin_id))
-        overfilled_bins_.erase(bin_id);
+    update_bin_fill_(bin_id);
+    // The list of overfilled bins may no longer match the bins.
+    overfilled_bins_up_to_date_ = false;
 }
 
 void FlatPlacementDensityManager::update_bin_fill_(FlatPlacementBinId bin_id) {
@@ -267,12 +264,21 @@ void FlatPlacementDensityManager::update_bin_fill_(FlatPlacementBinId bin_id) {
     bin_overfill_[bin_id] = calc_bin_overfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
     bin_underfill_[bin_id] = calc_bin_underfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
 
-    // Keep the overfilled bin set in sync with the new overfill.
-    if (bin_is_overfilled(bin_id)) {
-        overfilled_bins_.insert(bin_id);
-    } else {
-        overfilled_bins_.erase(bin_id);
+    // Record whether the bin is overfilled. A bin is overfilled if its
+    // overfill is non-zero.
+    bin_is_overfilled_[bin_id] = bin_overfill_[bin_id].is_non_zero();
+}
+
+void FlatPlacementDensityManager::update_overfilled_bins() {
+    // Collect the bins which are marked as overfilled.
+    overfilled_bins_.clear();
+    for (FlatPlacementBinId bin_id : bins_.bins()) {
+        if (bin_is_overfilled_[bin_id] != 0) {
+            overfilled_bins_.push_back(bin_id);
+        }
     }
+
+    overfilled_bins_up_to_date_ = true;
 }
 
 void FlatPlacementDensityManager::insert_blocks_into_bin(const std::vector<APBlockId>& blk_ids,
@@ -291,6 +297,9 @@ void FlatPlacementDensityManager::insert_blocks_into_bin(const std::vector<APBlo
 
     // Update the bin overfill and underfill once for the whole batch.
     update_bin_fill_(bin_id);
+
+    // The list of overfilled bins may no longer match the bins.
+    overfilled_bins_up_to_date_ = false;
 }
 
 void FlatPlacementDensityManager::remove_blocks_from_bin(const std::vector<APBlockId>& blk_ids,
@@ -309,6 +318,9 @@ void FlatPlacementDensityManager::remove_blocks_from_bin(const std::vector<APBlo
 
     // Update the bin overfill and underfill once for the whole batch.
     update_bin_fill_(bin_id);
+
+    // The list of overfilled bins may no longer match the bins.
+    overfilled_bins_up_to_date_ = false;
 }
 
 void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacement& p_placement) {
@@ -366,6 +378,9 @@ void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacem
         }
         update_bin_fill_(bin_id);
     }
+
+    // Collect the overfilled bins now that every bin has been filled.
+    update_overfilled_bins();
 }
 
 vtr::Point<double> FlatPlacementDensityManager::get_block_location_in_bin(APBlockId blk_id,
@@ -416,10 +431,12 @@ void FlatPlacementDensityManager::empty_bins() {
         bin_utilization_[bin_id].clear();
         bin_overfill_[bin_id].clear();
         bin_underfill_[bin_id] = bin_capacity_[bin_id];
+        bin_is_overfilled_[bin_id] = 0;
     }
     // Once all the bins are reset, all bins should be empty; therefore no bins
     // are overfilled.
     overfilled_bins_.clear();
+    overfilled_bins_up_to_date_ = true;
 }
 
 bool FlatPlacementDensityManager::verify() const {
@@ -474,13 +491,39 @@ bool FlatPlacementDensityManager::verify() const {
             return false;
         }
     }
-    // Make sure all overfilled bins are actually overfilled.
-    // TODO: Need to make sure that all non-overfilled bins are actually not
-    //       overfilled.
-    for (FlatPlacementBinId bin_id : overfilled_bins_) {
-        if (bin_overfill_[bin_id].is_zero()) {
-            VTR_LOG("Bin Verify: Found an overfilled bin that was not overfilled.\n");
+    // Make sure that each bin is marked as overfilled exactly when its
+    // overfill is non-zero.
+    size_t num_overfilled_bins = 0;
+    for (FlatPlacementBinId bin_id : bins_.bins()) {
+        bool is_marked_overfilled = bin_is_overfilled_[bin_id] != 0;
+        if (is_marked_overfilled != bin_overfill_[bin_id].is_non_zero()) {
+            VTR_LOG("Bin Verify: Found a bin whose overfilled flag does not match its overfill.\n");
             return false;
+        }
+        if (is_marked_overfilled) {
+            num_overfilled_bins++;
+        }
+    }
+
+    // Make sure that the list of overfilled bins holds exactly the bins
+    // marked as overfilled, in increasing order. The list cannot be checked
+    // while it is out of date.
+    if (overfilled_bins_up_to_date_) {
+        if (overfilled_bins_.size() != num_overfilled_bins) {
+            VTR_LOG("Bin Verify: The list of overfilled bins has the wrong size.\n");
+            return false;
+        }
+        FlatPlacementBinId prev_bin_id = FlatPlacementBinId::INVALID();
+        for (FlatPlacementBinId bin_id : overfilled_bins_) {
+            if (bin_is_overfilled_[bin_id] == 0) {
+                VTR_LOG("Bin Verify: Found an overfilled bin that was not overfilled.\n");
+                return false;
+            }
+            if (prev_bin_id.is_valid() && !(prev_bin_id < bin_id)) {
+                VTR_LOG("Bin Verify: The list of overfilled bins is not in increasing order.\n");
+                return false;
+            }
+            prev_bin_id = bin_id;
         }
     }
     // If all above passed, then the bins are valid.
