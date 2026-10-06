@@ -551,8 +551,11 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
         x_solve_succeeded = solve_linear_system(A_sparse_diff, b_x_diff, guess_x, x, x_cg_iters);
         y_solve_succeeded = solve_linear_system(A_sparse_diff, b_y_diff, guess_y, y, y_cg_iters);
     } else {
-        // Solve the systems at the same time.
+        // Solve the systems at the same time. The round robin is reset so the
+        // y system always runs on the same thread, which lets Eigen reuse
+        // that thread's OpenMP workers instead of creating a team per pool thread.
         VTR_ASSERT(thread_pool_.has_value());
+        thread_pool_->reset_round_robin();
         thread_pool_->schedule_work([&]() {
             y_solve_succeeded = solve_linear_system(A_sparse_diff, b_y_diff, guess_y, y, y_cg_iters);
         });
@@ -973,8 +976,12 @@ void B2BSolver::solve_linear_systems(Eigen::VectorXd& x_guess,
         }
     } else {
         // Solve the systems at the same time. The y and z systems are solved
-        // on the thread pool, each on its own thread.
+        // on the thread pool, each on its own thread. The round robin is reset
+        // so each system always runs on the same thread, which lets Eigen
+        // reuse that thread's OpenMP workers instead of creating a team per
+        // pool thread.
         VTR_ASSERT(thread_pool_.has_value());
+        thread_pool_->reset_round_robin();
         thread_pool_->schedule_work([&]() {
             y = solve_linear_system(A_sparse_y, b_y, y_guess, y_cg_iters);
         });
