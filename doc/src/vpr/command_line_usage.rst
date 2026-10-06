@@ -1445,6 +1445,26 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
 
     **Default:** ``lp-b2b``
 
+.. option:: --ap_solver_threading {auto | sequential | concurrent}
+
+    Controls how the analytical solver uses the threads given by
+    :option:`--num_workers` when solving the linear systems of the global
+    placement. There is one linear system per dimension: x, y, and z on
+    multi-layer devices.
+
+    * ``auto`` Solve the systems concurrently when there are at least two
+      threads per system, otherwise sequentially. That is, at least 4 threads on
+      single-layer devices and 6 threads on multi-layer devices.
+
+    * ``sequential`` Solve the systems one after the other, each using every
+      thread. Eigen parallelizes the work inside each solve.
+
+    * ``concurrent`` Solve all systems at the same time, splitting the threads
+      evenly between them. This needs at least one thread per system. VPR
+      errors out when there are fewer threads than systems.
+
+    **Default:** ``auto``
+
 .. option:: --ap_partial_legalizer {none | bipartitioning | flow-based}
 
     Controls which Partial Legalizer the Global Placer will use in the AP Flow.
