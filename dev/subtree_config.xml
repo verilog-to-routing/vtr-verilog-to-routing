@@ -1,5 +1,10 @@
 <subtrees>
     <subtree
+        name="eigen"
+        internal_path="libs/EXTERNAL/eigen"
+        external_url="https://gitlab.com/libeigen/eigen.git"
+        default_external_ref="3.4.0"/>
+    <subtree
         name="abc"
         internal_path="abc"
         external_url="https://github.com/berkeley-abc/abc.git"
@@ -13,11 +18,6 @@
         name="libblifparse"
         internal_path="libs/EXTERNAL/libblifparse"
         external_url="https://github.com/verilog-to-routing/libblifparse.git"
-        default_external_ref="master"/>
-    <subtree
-        name="libsdcparse"
-        internal_path="libs/EXTERNAL/libsdcparse"
-        external_url="https://github.com/verilog-to-routing/libsdcparse.git"
         default_external_ref="master"/>
     <subtree
         name="libtatum"
@@ -34,11 +34,6 @@
         internal_path="libs/EXTERNAL/libinterchange"
         external_url="https://github.com/chipsalliance/fpga-interchange-schema.git"
         default_external_ref="main"/>
-    <subtree
-        name="libcatch2"
-        internal_path="libs/EXTERNAL/libcatch2"
-        external_url="https://github.com/catchorg/Catch2.git"
-        default_external_ref="devel"/>
     <subtree
         name="hdmi"
         internal_path="vtr_flow/benchmarks/system_verilog/hdmi"
