@@ -251,12 +251,14 @@ std::optional<t_bus_mux_edge> find_bus_mux_edge(RRNodeId from_node, RRNodeId to_
 }
 
 float get_bus_mux_cong_cost(RRNodeId from_node, RRNodeId to_node, float pres_fac) {
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
+
     std::optional<t_bus_mux_edge> bus_mux_edge = find_bus_mux_edge(from_node, to_node);
     if (!bus_mux_edge) {
         return 0.f;
     }
 
-    const t_bus_mux_route_inf& mux_inf = g_vpr_ctx.routing().bus_mux_route_inf[bus_mux_edge->mux_idx];
+    const t_bus_mux_route_inf& mux_inf = route_ctx.bus_mux_route_inf[bus_mux_edge->mux_idx];
 
     // Each routed bit that would need to switch to this edge's input set adds one unit
     // of overuse to to_node's present cost.
@@ -277,12 +279,14 @@ void pathfinder_update_bus_mux_occupancy(const RouteTreeNode& rt_node, int add_o
         return;
     }
 
-    int& occ = g_vpr_ctx.mutable_routing().bus_mux_route_inf[bus_mux_edge->mux_idx].set_occ[bus_mux_edge->set];
+    int& occ = bus_mux_route_inf[bus_mux_edge->mux_idx].set_occ[bus_mux_edge->set];
     occ += add_or_sub;
     VTR_ASSERT(occ >= 0);
 }
 
 bool is_bus_mux_edge_control_congested(const RouteTreeNode& rt_node) {
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
+
     // The SOURCE at the root of a route tree has no incoming edge.
     if (!rt_node.parent()) {
         return false;
@@ -291,12 +295,14 @@ bool is_bus_mux_edge_control_congested(const RouteTreeNode& rt_node) {
     if (!bus_mux_edge) {
         return false;
     }
-    return g_vpr_ctx.routing().bus_mux_route_inf[bus_mux_edge->mux_idx].is_control_congested();
+    return route_ctx.bus_mux_route_inf[bus_mux_edge->mux_idx].is_control_congested();
 }
 
 size_t count_control_congested_bus_muxes() {
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
+
     size_t num_congested = 0;
-    for (const t_bus_mux_route_inf& mux_inf : g_vpr_ctx.routing().bus_mux_route_inf) {
+    for (const t_bus_mux_route_inf& mux_inf : route_ctx.bus_mux_route_inf) {
         if (mux_inf.is_control_congested()) {
             num_congested++;
         }
@@ -602,8 +608,9 @@ void reset_rr_node_route_structs(const t_router_opts& route_opts) {
     }
 
     // Clear the routed bit counts for every bus mux input set.
-    route_ctx.bus_mux_route_inf.assign(device_ctx.rr_bus_muxes.size(), t_bus_mux_route_inf());
-    for (size_t imux = 0; imux < device_ctx.rr_bus_muxes.size(); imux++) {
+    const size_t num_bus_muxes = device_ctx.rr_bus_muxes.size();
+    route_ctx.bus_mux_route_inf.assign(num_bus_muxes, t_bus_mux_route_inf());
+    for (size_t imux = 0; imux < num_bus_muxes; imux++) {
         route_ctx.bus_mux_route_inf[imux].set_occ.assign(device_ctx.rr_bus_muxes[imux].num_sets, 0);
     }
 }
