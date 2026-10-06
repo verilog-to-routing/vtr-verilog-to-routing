@@ -106,7 +106,7 @@ class FlatPlacementDensityManager {
      * @brief Returns the size of the placeable region, i.e. the region that
      *        contains all bins.
      */
-    inline std::tuple<double, double, double> get_overall_placeable_region_size() const {
+    inline std::tuple<size_t, size_t, size_t> get_overall_placeable_region_size() const {
         return std::make_tuple(bin_spatial_lookup_.dim_size(1),  // width
                                bin_spatial_lookup_.dim_size(2),  // height
                                bin_spatial_lookup_.dim_size(0)); // depth

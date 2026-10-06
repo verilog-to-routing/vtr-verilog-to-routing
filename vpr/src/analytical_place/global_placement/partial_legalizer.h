@@ -12,10 +12,11 @@
  * constraints of the architecture).
  */
 
-#include <functional>
-#include <memory>
-#include <vector>
+#include <cmath>
 #include <cstdint>
+#include <memory>
+#include <tuple>
+#include <vector>
 
 #include "ap_netlist_fwd.h"
 #include "ap_flow_enums.h"
@@ -27,6 +28,7 @@
 #include "primitive_vector_fwd.h"
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
+#include "vtr_ndmatrix.h"
 #include "vtr_prefix_sum.h"
 #include "vtr_vector.h"
 
@@ -393,11 +395,62 @@ class PerPrimitiveDimPrefixSum2D {
      *
      * Uses the density manager to get the size of the placeable region.
      *
-     * The lookup is a lambda used to populate the prefix sum. It provides
-     * the model index, layer, x, and y to be populated.
+     * The lookup returns the value of a given bin for a given dim. Each bin's
+     * value is placed on its center tile.
      */
+    template<typename BinLookup>
     PerPrimitiveDimPrefixSum2D(const FlatPlacementDensityManager& density_manager,
-                               std::function<float(PrimitiveVectorDim, size_t, size_t, size_t)> lookup);
+                               BinLookup bin_lookup) {
+        // Get the size that the prefix sums should be.
+        auto [width, height, num_layers] = density_manager.get_overall_placeable_region_size();
+
+        // Find the center tile of each bin and group the bins by layer. The value
+        // of a bin is placed on its center tile since the prefix sum assumes a
+        // 1x1 grid of values. All other tiles of the bin hold zero.
+        struct t_bin_center {
+            FlatPlacementBinId bin_id;
+            size_t x;
+            size_t y;
+        };
+        
+        const FlatPlacementBins& bins = density_manager.flat_placement_bins();
+        std::vector<std::vector<t_bin_center>> layer_bin_centers(num_layers);
+        for (FlatPlacementBinId bin_id : bins.bins()) {
+            const vtr::Rect<double>& bin_region = bins.bin_region(bin_id);
+            size_t center_x = std::floor(bin_region.xmin() + bin_region.width() / 2.0);
+            size_t center_y = std::floor(bin_region.ymin() + bin_region.height() / 2.0);
+            VTR_ASSERT_SAFE(center_x < width && center_y < height);
+            size_t layer = bins.bin_layer(bin_id);
+            VTR_ASSERT_SAFE(layer < num_layers);
+            layer_bin_centers[layer].push_back({bin_id, center_x, center_y});
+        }
+
+        // Dense grid of fixed-point values for one layer and dim. It is refilled
+        // for each prefix sum.
+        vtr::NdMatrix<uint64_t, 2> vals({width, height}, 0);
+
+        // Create each of the prefix sums.
+        const PrimitiveDimManager& dim_manager = density_manager.mass_calculator().get_dim_manager();
+        std::vector<PrimitiveVectorDim> used_dims = density_manager.get_used_dims_mask().get_non_zero_dims();
+        layer_dim_prefix_sum_.resize(num_layers);
+        for (size_t layer = 0; layer < num_layers; layer++) {
+            layer_dim_prefix_sum_[layer].resize(dim_manager.dims().size());
+            for (PrimitiveVectorDim dim : used_dims) {
+                vals.fill(0);
+                for (const t_bin_center& bin_center : layer_bin_centers[layer]) {
+                    // Convert the floating point value into fixed point to prevent
+                    // error accumulation in the prefix sum.
+                    // Note: We ceil here since we do not want to lose information
+                    //       on numbers that get very close to 0.
+                    float val = bin_lookup(dim, bin_center.bin_id);
+                    VTR_ASSERT_SAFE_MSG(val >= 0.0f,
+                                        "PerPrimitiveDimPrefixSum2D expected to only hold positive values");
+                    vals[bin_center.x][bin_center.y] = std::ceil(val * fractional_scale_);
+                }
+                layer_dim_prefix_sum_[layer][dim] = vtr::PrefixSum2D<uint64_t>(vals);
+            }
+        }
+    }
 
     /**
      * @brief Get the sum for a given dim over the given region.
