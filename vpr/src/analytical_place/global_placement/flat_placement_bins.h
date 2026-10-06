@@ -9,7 +9,7 @@
  * FPGA.
  */
 
-#include <unordered_set>
+#include <vector>
 #include "ap_netlist.h"
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
@@ -46,7 +46,8 @@ class FlatPlacementBins {
     typedef typename vtr::Range<bin_iterator> bin_range;
 
     FlatPlacementBins(const APNetlist& ap_netlist)
-        : block_bin_(ap_netlist.blocks().size(), FlatPlacementBinId::INVALID()) {}
+        : block_bin_(ap_netlist.blocks().size(), FlatPlacementBinId::INVALID())
+        , block_index_in_bin_(ap_netlist.blocks().size(), 0) {}
 
     /**
      * @brief Returns a range of all bins that have been created.
@@ -82,26 +83,45 @@ class FlatPlacementBins {
         VTR_ASSERT(blk_id.is_valid());
         VTR_ASSERT(bin_id.is_valid());
         VTR_ASSERT(!block_bin_[blk_id].is_valid());
-        bin_contained_blocks_[bin_id].insert(blk_id);
+        std::vector<APBlockId>& contained_blocks = bin_contained_blocks_[bin_id];
+        block_index_in_bin_[blk_id] = contained_blocks.size();
+        contained_blocks.push_back(blk_id);
         block_bin_[blk_id] = bin_id;
     }
 
     /**
      * @brief Remove the given block from the given bin. The bin must contain
      *        this block.
+     *
+     * The last block of the bin takes the position of the removed block, so
+     * the order of the remaining blocks in the bin changes.
      */
     inline void remove_block_from_bin(APBlockId blk_id, FlatPlacementBinId bin_id) {
         VTR_ASSERT(blk_id.is_valid());
         VTR_ASSERT(bin_id.is_valid());
         VTR_ASSERT(block_bin_[blk_id] == bin_id);
-        bin_contained_blocks_[bin_id].erase(blk_id);
+        std::vector<APBlockId>& contained_blocks = bin_contained_blocks_[bin_id];
+        size_t blk_index = block_index_in_bin_[blk_id];
+        VTR_ASSERT_SAFE(blk_index < contained_blocks.size());
+        VTR_ASSERT_SAFE(contained_blocks[blk_index] == blk_id);
+
+        // Move the last block of the bin into the position of the removed block.
+        APBlockId last_blk_id = contained_blocks.back();
+        contained_blocks[blk_index] = last_blk_id;
+        block_index_in_bin_[last_blk_id] = blk_index;
+
+        // Drop the last position, which is now a duplicate.
+        contained_blocks.pop_back();
         block_bin_[blk_id] = FlatPlacementBinId::INVALID();
     }
 
     /**
      * @brief Get the blocks contained within the given bin.
+     *
+     * Adding or removing a block from this bin invalidates iteration over the
+     * returned vector.
      */
-    inline const std::unordered_set<APBlockId>& bin_contained_blocks(FlatPlacementBinId bin_id) const {
+    inline const std::vector<APBlockId>& bin_contained_blocks(FlatPlacementBinId bin_id) const {
         VTR_ASSERT(bin_id.is_valid());
         return bin_contained_blocks_[bin_id];
     }
@@ -178,15 +198,37 @@ class FlatPlacementBins {
             return false;
         }
 
-        // Make sure that the bin_contained_blocks_ and the block_bin_ are
-        // consistent.
+        // Make sure that the bin_contained_blocks_, the block_bin_ and the
+        // block_index_in_bin_ are consistent.
+        size_t num_contained_blocks = 0;
         for (FlatPlacementBinId bin_id : bin_ids_) {
-            for (APBlockId blk_id : bin_contained_blocks_[bin_id]) {
+            const std::vector<APBlockId>& contained_blocks = bin_contained_blocks_[bin_id];
+            num_contained_blocks += contained_blocks.size();
+            for (size_t blk_index = 0; blk_index < contained_blocks.size(); blk_index++) {
+                APBlockId blk_id = contained_blocks[blk_index];
                 if (block_bin_[blk_id] != bin_id) {
                     VTR_LOG("Bin Verify: Block is contained within a bin but does not agree.\n");
                     return false;
                 }
+                if (block_index_in_bin_[blk_id] != blk_index) {
+                    VTR_LOG("Bin Verify: Block is not at its recorded position within its bin.\n");
+                    return false;
+                }
             }
+        }
+
+        // Make sure that every block with a bin appears in exactly one bin.
+        // The position check above rules out a block appearing twice, so it
+        // is enough to compare the counts.
+        size_t num_blocks_with_bin = 0;
+        for (FlatPlacementBinId blk_bin_id : block_bin_) {
+            if (blk_bin_id.is_valid()) {
+                num_blocks_with_bin++;
+            }
+        }
+        if (num_blocks_with_bin != num_contained_blocks) {
+            VTR_LOG("Bin Verify: Block has a bin but is not contained within it.\n");
+            return false;
         }
 
         return true;
@@ -197,11 +239,15 @@ class FlatPlacementBins {
     ///        then that means that the bin has been destroyed.
     vtr::vector_map<FlatPlacementBinId, FlatPlacementBinId> bin_ids_;
 
-    /// @brief The contained AP blocks of each bin.
-    vtr::vector_map<FlatPlacementBinId, std::unordered_set<APBlockId>> bin_contained_blocks_;
+    /// @brief The contained AP blocks of each bin, in no particular order.
+    vtr::vector_map<FlatPlacementBinId, std::vector<APBlockId>> bin_contained_blocks_;
 
     /// @brief The bin that contains each AP block.
     vtr::vector<APBlockId, FlatPlacementBinId> block_bin_;
+
+    /// @brief The position of each AP block within the contained blocks of its
+    ///        bin. Only meaningful while the block is in a bin.
+    vtr::vector<APBlockId, size_t> block_index_in_bin_;
 
     /// @brief The 2D region that each bin represents on a layer of the FPGA grid.
     vtr::vector_map<FlatPlacementBinId, vtr::Rect<double>> bin_region_;
