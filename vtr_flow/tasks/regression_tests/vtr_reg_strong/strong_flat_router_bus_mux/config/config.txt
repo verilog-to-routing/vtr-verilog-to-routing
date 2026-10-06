@@ -32,4 +32,3 @@ pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 script_params_common=-track_memory_usage --pack --place --route --analysis --route_chan_width 86 --max_router_iterations 100 --router_lookahead map --flat_routing on
 script_params_list_add =
-script_params_list_add = --routing_budgets_algorithm yoyo
