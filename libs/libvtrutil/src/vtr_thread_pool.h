@@ -106,6 +106,12 @@ class thread_pool {
         return threads.size();
     }
 
+    /// @brief Restart the round robin assignment from the first thread.
+    ///        Only call this when no tasks are in flight.
+    void reset_round_robin() {
+        next_thread = 0;
+    }
+
     /** Schedule a function to be executed on one of the threads. */
     template<typename F>
     void schedule_work(F&& f) {
