@@ -1,11 +1,14 @@
 include(GNUInstallDirs)
 
-if(NOT MSCV)
+if(NOT MSVC)
     # These flags generate noisy but non-bug warnings when using lib kj,
     # suppress them.
     set(WARN_FLAGS_TO_DISABLE
         -Wno-undef
         -Wno-non-virtual-dtor
+        # The capnp generated code leaves a stray ';' at namespace scope
+        # (CAPNP_DEFINE_ENUM expands to nothing in C++17 and later).
+        -Wno-extra-semi
         )
     foreach(flag ${WARN_FLAGS_TO_DISABLE})
         CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
