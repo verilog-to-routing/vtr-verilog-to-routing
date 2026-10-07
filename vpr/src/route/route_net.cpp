@@ -151,6 +151,7 @@ bool should_route_net(const Netlist<>& net_list,
         return true;
 
     const RouteTree& tree = route_ctx.route_trees[net_id].value();
+    const bool has_bus_muxes = !device_ctx.rr_bus_muxes.empty();
 
     /* Walk over all rt_nodes in the net */
     for (auto& rt_node : tree.all_nodes()) {
@@ -162,7 +163,7 @@ bool should_route_net(const Netlist<>& net_list,
             return true; /* overuse detected */
         }
 
-        if (is_bus_mux_edge_control_congested(rt_node)) {
+        if (has_bus_muxes && is_bus_mux_edge_control_congested(rt_node)) {
             return true; // Reroute bits of a mux with conflicting selects.
         }
 
