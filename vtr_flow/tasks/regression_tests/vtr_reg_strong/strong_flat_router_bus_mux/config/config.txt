@@ -7,7 +7,7 @@
 # (<mux bus="true"/>). Every bit of a bus-based mux must come from the same input set.
 
 # Path to directory of circuits to use
-circuits_dir=tasks/regression_tests/vtr_reg_strong/strong_flat_router_bus_mux/config
+circuits_dir=benchmarks/microbenchmarks
 
 # Path to directory of architectures to use
 archs_dir=arch/timing
