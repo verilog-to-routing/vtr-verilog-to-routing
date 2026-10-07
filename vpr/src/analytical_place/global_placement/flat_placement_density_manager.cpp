@@ -28,6 +28,32 @@
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
 
+#ifdef VPR_USE_TBB
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
+#endif
+
+/**
+ * @brief Call the given function for every index in [0, count).
+ *
+ * The calls run in parallel when VPR is built with TBB, so the function must
+ * not write to state shared between indices.
+ */
+template<typename F>
+static void for_each_index(size_t count, const F& func) {
+#ifdef VPR_USE_TBB
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, count), [&](const tbb::blocked_range<size_t>& range) {
+        for (size_t i = range.begin(); i != range.end(); i++) {
+            func(i);
+        }
+    });
+#else
+    for (size_t i = 0; i < count; i++) {
+        func(i);
+    }
+#endif
+}
+
 /**
  * @brief Calculates how over-capacity the given utilization vector is.
  */
@@ -327,13 +353,16 @@ void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacem
     // Empty the bins such that all blocks are no longer within the bins.
     empty_bins();
 
-    // Find the bin that each block is placed over.
+    // Find the bin that each block is placed over. Each block only writes its
+    // own entry, so the blocks are looked up in parallel.
     // TODO: Maybe import the fixed block locations in the constructor and then
     //       only import the moveable block locations.
-    size_t num_blocks = ap_netlist_.blocks().size();
+    APNetlist::block_range blocks = ap_netlist_.blocks();
+    size_t num_blocks = blocks.size();
     size_t num_bins = bins_.bins().size();
     vtr::vector<APBlockId, FlatPlacementBinId> block_bins(num_blocks);
-    for (APBlockId blk_id : ap_netlist_.blocks()) {
+    for_each_index(num_blocks, [&](size_t i) {
+        APBlockId blk_id = blocks.begin()[i];
         // Layers will be a floating point number between the minimum layer (usually 0),
         // and the maximum layer (num_layers - 1). For an architecture with two layers,
         // this means that the layer will be a number between 0 and 1. If we always
@@ -345,7 +374,7 @@ void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacem
         block_bins[blk_id] = get_bin(p_placement.block_x_locs[blk_id],
                                      p_placement.block_y_locs[blk_id],
                                      layer);
-    }
+    });
 
     // Group the blocks by bin. The blocks of bin b are stored contiguously in
     // blocks_by_bin, starting at bin_start[b] and ending before bin_start[b + 1].
@@ -365,19 +394,23 @@ void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacem
         next_slot[bin_idx]++;
     }
 
-    // Insert the blocks of each bin and update that bin's fill once.
-    for (FlatPlacementBinId bin_id : bins_.bins()) {
-        size_t bin_idx = (size_t)bin_id;
+    // Insert the blocks of each bin and update that bin's fill once. A bin
+    // only writes its own fill and the bin lookups of its own blocks, so the
+    // bins are filled in parallel.
+    FlatPlacementBins::bin_range bins = bins_.bins();
+    for_each_index(num_bins, [&](size_t bin_idx) {
         if (bin_start[bin_idx] == bin_start[bin_idx + 1]) {
-            continue;
+            return;
         }
+        FlatPlacementBinId bin_id = bins.begin()[bin_idx];
+        VTR_ASSERT_SAFE((size_t)bin_id == bin_idx);
         for (size_t i = bin_start[bin_idx]; i < bin_start[bin_idx + 1]; i++) {
             APBlockId blk_id = blocks_by_bin[i];
             bins_.add_block_to_bin(blk_id, bin_id);
             bin_utilization_[bin_id] += mass_calculator_.get_block_mass(blk_id);
         }
         update_bin_fill_(bin_id);
-    }
+    });
 
     // Collect the overfilled bins now that every bin has been filled.
     update_overfilled_bins();
@@ -403,11 +436,15 @@ vtr::Point<double> FlatPlacementDensityManager::get_block_location_in_bin(APBloc
 void FlatPlacementDensityManager::export_placement_from_bins(PartialPlacement& p_placement) const {
     // Updates the partial placement with the location of the blocks in the bin
     // by moving the blocks to the point with the bin closest to where they
-    // were originally.
-    for (APBlockId blk_id : ap_netlist_.blocks()) {
+    // were originally. Each block only writes its own location, so the blocks
+    // are exported in parallel.
+    APNetlist::block_range blocks = ap_netlist_.blocks();
+    for_each_index(blocks.size(), [&](size_t i) {
+        APBlockId blk_id = blocks.begin()[i];
         // Only the moveable block locations should be exported.
-        if (ap_netlist_.block_mobility(blk_id) == APBlockMobility::FIXED)
-            continue;
+        if (ap_netlist_.block_mobility(blk_id) == APBlockMobility::FIXED) {
+            return;
+        }
         // Project the coordinate of the block in the partial placement to the
         // closest point in the bin.
         FlatPlacementBinId blk_bin_id = bins_.block_bin(blk_id);
@@ -421,18 +458,22 @@ void FlatPlacementDensityManager::export_placement_from_bins(PartialPlacement& p
         //       It may be interesting to investigate using the clamping functions
         //       above on the layers. For now this should be ok.
         p_placement.block_layer_nums[blk_id] = bins_.bin_layer(blk_bin_id);
-    }
+    });
 }
 
 void FlatPlacementDensityManager::empty_bins() {
-    // Reset all of the bins and their utilizations.
-    for (FlatPlacementBinId bin_id : bins_.bins()) {
+    // Reset all of the bins and their utilizations. A bin only writes its own
+    // fill and the bin lookups of its own blocks, so the bins are reset in
+    // parallel.
+    FlatPlacementBins::bin_range bins = bins_.bins();
+    for_each_index(bins.size(), [&](size_t i) {
+        FlatPlacementBinId bin_id = bins.begin()[i];
         bins_.remove_all_blocks_from_bin(bin_id);
         bin_utilization_[bin_id].clear();
         bin_overfill_[bin_id].clear();
         bin_underfill_[bin_id] = bin_capacity_[bin_id];
         bin_is_overfilled_[bin_id] = 0;
-    }
+    });
     // Once all the bins are reset, all bins should be empty; therefore no bins
     // are overfilled.
     overfilled_bins_.clear();

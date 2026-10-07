@@ -226,6 +226,9 @@ class FlatPlacementDensityManager {
      *
      * This will reset the bins before importing the placement. Anything inside
      * the bins will be removed.
+     *
+     * When VPR is built with TBB, the blocks are looked up and the bins are
+     * filled in parallel. The result is the same as the serial import.
      */
     void import_placement_into_bins(const PartialPlacement& p_placement);
 
@@ -234,6 +237,8 @@ class FlatPlacementDensityManager {
      *
      * This will move each block to the position closest to the original flat
      * placement that is still within the bin the block was placed into.
+     *
+     * When VPR is built with TBB, the blocks are exported in parallel.
      */
     void export_placement_from_bins(PartialPlacement& p_placement) const;
 
