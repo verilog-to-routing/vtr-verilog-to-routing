@@ -363,9 +363,11 @@ class ClusterRouter {
      * @brief Given a pin of a net, assign route tree terminals for it.
      *
      * This assumes that the pin is not already assigned.
+     *
+     * @return The index into intra_lb_nets_ of the pin's net, or -1 if the pin has no net.
      */
-    void add_pin_to_rt_terminals_(const AtomPinId pin_id,
-                                  const AtomPBBimap& atom_to_pb);
+    int add_pin_to_rt_terminals_(const AtomPinId pin_id,
+                                 const AtomPBBimap& atom_to_pb);
 
     /**
      * @brief Given a pin of a net, remove route tree terminal from it.
@@ -376,8 +378,11 @@ class ClusterRouter {
     /**
      * @brief Fixup duplicate connections to a net by a logically equivalent
      *        set of primitive pins.
+     *
+     * @param ilb_net Index into intra_lb_nets_ of the net to check.
+     * @param atom_to_pb Mapping from atoms to their placed pbs.
      */
-    void fix_duplicate_equivalent_pins_(const AtomPBBimap& atom_to_pb);
+    void fix_duplicate_equivalent_pins_(size_t ilb_net, const AtomPBBimap& atom_to_pb);
 
     /**
      * @brief Reset the traceback information used in pathfinder.

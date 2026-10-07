@@ -19,7 +19,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <map>
 #include <queue>
 #include <cmath>
 
@@ -280,11 +279,21 @@ void ClusterRouter::add_atom_as_target(const AtomBlockId blk_id, const AtomPBBim
 
     set_reset_pb_modes(pb, true);
 
+    // Only the nets this atom's pins joined can have gained duplicate terminals.
+    std::vector<size_t> touched_nets;
     for (AtomPinId pin_id : atom_ctx.netlist().block_pins(blk_id)) {
-        add_pin_to_rt_terminals_(pin_id, atom_to_pb);
+        int ilb_net = add_pin_to_rt_terminals_(pin_id, atom_to_pb);
+        if (ilb_net >= 0) {
+            touched_nets.push_back(ilb_net);
+        }
     }
 
-    fix_duplicate_equivalent_pins_(atom_to_pb);
+    // Visit each touched net once, in index order.
+    std::ranges::sort(touched_nets);
+    touched_nets.erase(std::ranges::unique(touched_nets).begin(), touched_nets.end());
+    for (size_t ilb_net : touched_nets) {
+        fix_duplicate_equivalent_pins_(ilb_net, atom_to_pb);
+    }
 }
 
 void ClusterRouter::remove_atom_from_target(const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb) {
@@ -641,8 +650,8 @@ static void reset_lb_net_rt(t_lb_trace& lb_trace) {
     lb_trace.next_nodes.clear();
 }
 
-void ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
-                                             const AtomPBBimap& atom_to_pb) {
+int ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
+                                            const AtomPBBimap& atom_to_pb) {
     const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
     bool found = false;
     unsigned int ipos;
@@ -655,8 +664,8 @@ void ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
     AtomNetId net_id = atom_ctx.netlist().pin_net(pin_id);
 
     if (!net_id) {
-        //No net connected to this pin, so nothing to route
-        return;
+        // No net connected to this pin, so nothing to route
+        return -1;
     }
 
     /* Find if current net is in route tree, if not, then add to rt.
@@ -805,6 +814,8 @@ void ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
     VTR_ASSERT_SAFE_MSG(num_extern_sinks >= 0 && num_extern_sinks <= 1, "Net must have at most one external sink");
     VTR_ASSERT_SAFE_MSG(num_extern_sources >= 0 && num_extern_sources <= 1, "Net must have at most one external source");
 #endif
+
+    return ipos;
 }
 
 void ClusterRouter::remove_pin_from_rt_terminals_(const AtomPinId pin_id,
@@ -923,7 +934,7 @@ void ClusterRouter::remove_pin_from_rt_terminals_(const AtomPinId pin_id,
     }
 }
 
-void ClusterRouter::fix_duplicate_equivalent_pins_(const AtomPBBimap& atom_to_pb) {
+void ClusterRouter::fix_duplicate_equivalent_pins_(size_t ilb_net, const AtomPBBimap& atom_to_pb) {
     // It is possible that a net may connect multiple times to a logically equivalent set of primitive pins.
     // The cluster router will only route one connection for a particular net to the common sink of the
     // equivalent pins.
@@ -935,51 +946,61 @@ void ClusterRouter::fix_duplicate_equivalent_pins_(const AtomPBBimap& atom_to_pb
 
     const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
 
-    for (size_t ilb_net = 0; ilb_net < intra_lb_nets_.size(); ++ilb_net) {
-        //Collect all the sink terminals indices which target a particular node
-        std::map<int, std::vector<int>> duplicate_terminals;
-        for (size_t term_idx = 1; term_idx < intra_lb_nets_[ilb_net].terminals.size(); ++term_idx) {
-            int node = intra_lb_nets_[ilb_net].terminals[term_idx];
+    t_intra_lb_net& lb_net = intra_lb_nets_[ilb_net];
+    VTR_ASSERT(lb_net.atom_pins.size() == lb_net.terminals.size());
 
-            duplicate_terminals[node].push_back(term_idx);
+    // A duplicate needs at least two sinks after the source.
+    if (lb_net.terminals.size() < 3) {
+        return;
+    }
+
+    // Pair each sink terminal with its target node and sort so terminals sharing a node are adjacent.
+    std::vector<std::pair<int, int>> node_and_term_idx;
+    node_and_term_idx.reserve(lb_net.terminals.size() - 1);
+    for (size_t term_idx = 1; term_idx < lb_net.terminals.size(); ++term_idx) {
+        node_and_term_idx.emplace_back(lb_net.terminals[term_idx], term_idx);
+    }
+    std::ranges::sort(node_and_term_idx);
+
+    for (size_t i = 0; i < node_and_term_idx.size(); ++i) {
+        auto [node, term_idx] = node_and_term_idx[i];
+
+        // A terminal is a duplicate only if a neighbour targets the same node.
+        bool same_as_prev = i > 0 && node_and_term_idx[i - 1].first == node;
+        bool same_as_next = i + 1 < node_and_term_idx.size() && node_and_term_idx[i + 1].first == node;
+        if (!same_as_prev && !same_as_next) {
+            continue;
         }
 
-        for (std::pair<const int, std::vector<int>> kv : duplicate_terminals) {
-            if (kv.second.size() < 2) continue; //Only process duplicates
+        AtomPinId atom_pin = lb_net.atom_pins[term_idx];
+        VTR_ASSERT(atom_pin);
 
-            //Remap all the duplicate terminals so they target the pin instead of the sink
-            for (size_t idup_term = 0; idup_term < kv.second.size(); ++idup_term) {
-                int term_idx = kv.second[idup_term]; //The index in terminals which is duplicated
+        const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_netlist, atom_to_pb, atom_pin);
+        VTR_ASSERT(pb_graph_pin);
 
-                VTR_ASSERT(intra_lb_nets_[ilb_net].atom_pins.size() == intra_lb_nets_[ilb_net].terminals.size());
-                AtomPinId atom_pin = intra_lb_nets_[ilb_net].atom_pins[term_idx];
-                VTR_ASSERT(atom_pin);
-
-                const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_netlist, atom_to_pb, atom_pin);
-                VTR_ASSERT(pb_graph_pin);
-
-                if (pb_graph_pin->port->equivalent == PortEquivalence::NONE) continue; //Only need to remap equivalent ports
-
-                //Remap this terminal to an explicit pin instead of the common sink
-                int pin_index = pb_graph_pin->pin_count_in_cluster;
-
-                VTR_LOG_WARN(
-                    "Found duplicate nets connected to logically equivalent pins. "
-                    "Remapping intra lb net %d (atom net %zu '%s') from common sink "
-                    "pb_route %d to fixed pin pb_route %d\n",
-                    ilb_net, size_t(intra_lb_nets_[ilb_net].atom_net_id), atom_netlist.net_name(intra_lb_nets_[ilb_net].atom_net_id).c_str(),
-                    kv.first, pin_index);
-
-                VTR_ASSERT(lb_type_graph[pin_index].type == LB_INTERMEDIATE);
-                VTR_ASSERT(lb_type_graph[pin_index].num_fanout[0] == 1);
-                int sink_index = lb_type_graph[pin_index].outedges[0][0].node_index;
-                VTR_ASSERT(lb_type_graph[sink_index].type == LB_SINK);
-                VTR_ASSERT_MSG(sink_index == intra_lb_nets_[ilb_net].terminals[term_idx], "Remapped pin must be connected to original sink");
-
-                //Change the target
-                intra_lb_nets_[ilb_net].terminals[term_idx] = pin_index;
-            }
+        // Only equivalent ports need to be remapped.
+        if (pb_graph_pin->port->equivalent == PortEquivalence::NONE) {
+            continue;
         }
+
+        // Remap this terminal to an explicit pin instead of the common sink.
+        int pin_index = pb_graph_pin->pin_count_in_cluster;
+
+        VTR_LOG_WARN(
+            "Found duplicate nets connected to logically equivalent pins. "
+            "Remapping intra lb net %zu (atom net %zu '%s') from common sink "
+            "pb_route %d to fixed pin pb_route %d\n",
+            ilb_net, size_t(lb_net.atom_net_id), atom_netlist.net_name(lb_net.atom_net_id).c_str(),
+            node, pin_index);
+
+        VTR_ASSERT(lb_type_graph[pin_index].type == LB_INTERMEDIATE);
+        VTR_ASSERT(lb_type_graph[pin_index].num_fanout[0] == 1);
+        int sink_index = lb_type_graph[pin_index].outedges[0][0].node_index;
+        VTR_ASSERT(lb_type_graph[sink_index].type == LB_SINK);
+        VTR_ASSERT_MSG(sink_index == lb_net.terminals[term_idx], "Remapped pin must be connected to original sink");
+
+        // Change the target.
+        lb_net.terminals[term_idx] = pin_index;
     }
 }
 
