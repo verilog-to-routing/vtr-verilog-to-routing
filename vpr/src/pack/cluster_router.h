@@ -14,7 +14,7 @@
 #include <unordered_set>
 #include <vector>
 #include "atom_netlist_fwd.h"
-#include "atom_pb_bimap.h"
+#include "cluster_atom_lookup.h"
 #include "pack_types.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -283,12 +283,12 @@ class ClusterRouter {
     /**
      * @brief Add pins of netlist atom to current routing drivers/targets.
      */
-    void add_atom_as_target(const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb);
+    void add_atom_as_target(const AtomBlockId blk_id, const ClusterAtomPBBimap& atom_to_pb);
 
     /**
      * @brief Remove pins of netlist atom from current routing drivers/targets.
      */
-    void remove_atom_from_target(const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb);
+    void remove_atom_from_target(const AtomBlockId blk_id, const ClusterAtomPBBimap& atom_to_pb);
 
     /**
      * @brief Set/reset mode of rr nodes to the pb used.
@@ -365,19 +365,19 @@ class ClusterRouter {
      * This assumes that the pin is not already assigned.
      */
     void add_pin_to_rt_terminals_(const AtomPinId pin_id,
-                                  const AtomPBBimap& atom_to_pb);
+                                  const ClusterAtomPBBimap& atom_to_pb);
 
     /**
      * @brief Given a pin of a net, remove route tree terminal from it.
      */
     void remove_pin_from_rt_terminals_(const AtomPinId pin_id,
-                                       const AtomPBBimap& atom_to_pb);
+                                       const ClusterAtomPBBimap& atom_to_pb);
 
     /**
      * @brief Fixup duplicate connections to a net by a logically equivalent
      *        set of primitive pins.
      */
-    void fix_duplicate_equivalent_pins_(const AtomPBBimap& atom_to_pb);
+    void fix_duplicate_equivalent_pins_(const ClusterAtomPBBimap& atom_to_pb);
 
     /**
      * @brief Reset the traceback information used in pathfinder.

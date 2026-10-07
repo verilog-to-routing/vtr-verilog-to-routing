@@ -65,6 +65,7 @@ vtr::vector_map<Id, Id> compress_ids(const vtr::vector_map<Id, Id>& ids) {
  * Moves elements out of 'values'. After this returns, entries of 'values'
  * that were mapped through 'id_map' are in a valid but unspecified state
  * and must not be read.
+ * Supports move-only values; new entries are constructed without copying a sentinel.
  */
 template<typename Id, typename T>
 vtr::vector_map<Id, T> clean_and_reorder_values(vtr::vector_map<Id, T>& values, const vtr::vector_map<Id, Id>& id_map) {
@@ -80,7 +81,11 @@ vtr::vector_map<Id, T> clean_and_reorder_values(vtr::vector_map<Id, T>& values, 
         Id new_id = id_map[old_id];
         if (new_id) {
             //There is a valid mapping
-            result.insert(new_id, std::move(values[old_id]));
+            // Construct each sentinel separately so move-only values are supported.
+            while (result.size() <= size_t(new_id)) {
+                result.emplace_back(vtr::DefaultSentinel<T>::INVALID());
+            }
+            result[new_id] = std::move(values[old_id]);
         }
     }
 

@@ -119,6 +119,52 @@ LegalizationCluster::LegalizationCluster(t_logical_block_type_ptr cluster_type,
     pb->mode = cluster_mode;
 }
 
+LegalizationCluster::LegalizationCluster(LegalizationCluster&& other) noexcept
+    : LegalizationCluster() {
+    *this = std::move(other);
+}
+
+LegalizationCluster& LegalizationCluster::operator=(LegalizationCluster&& other) noexcept {
+    if (this != &other) {
+        LegalizationCluster previous;
+        previous.swap(*this);
+        swap(other);
+    }
+    return *this;
+}
+
+void LegalizationCluster::swap(LegalizationCluster& other) noexcept {
+    using std::swap;
+    swap(molecules, other.molecules);
+    swap(atoms, other.atoms);
+    swap(molecule_ids, other.molecule_ids);
+    swap(atom_pb_lookup, other.atom_pb_lookup);
+    swap(pending_chain_info, other.pending_chain_info);
+    swap(primitives_list, other.primitives_list);
+    swap(strategy, other.strategy);
+    swap(routing_verified, other.routing_verified);
+    swap(finalized, other.finalized);
+    swap(pb, other.pb);
+    swap(type, other.type);
+    swap(pr, other.pr);
+    swap(noc_grp_id, other.noc_grp_id);
+    swap(cluster_router, other.cluster_router);
+    swap(placement_stats, other.placement_stats);
+    swap(pin_counter, other.pin_counter);
+}
+
+LegalizationCluster::~LegalizationCluster() {
+    if (pb != nullptr) {
+        pin_counter.rollback_check();
+        pin_counter.deallocate_pin_count_state_recursive(pb);
+        pin_counter.clean_state();
+        cluster_router.clean_router_data();
+        free_pb(pb, nullptr, &atom_pb_lookup);
+        delete pb;
+    }
+    if (placement_stats != nullptr) free_cluster_placement_stats(placement_stats);
+}
+
 /*
  * @brief Check the atom blocks of a cluster pb. Used in the verify method.
  */
@@ -459,12 +505,12 @@ bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_pb_type
 /*
  * @brief Check if the given atom is feasible in the given pb.
  */
-static bool primitive_feasible(const AtomBlockId blk_id, t_pb* cur_pb, const AtomPBBimap& atom_to_pb) {
+static bool primitive_feasible(const AtomBlockId blk_id, t_pb* cur_pb, const ClusterAtomPBBimap& atom_to_pb) {
     const t_pb_type* cur_pb_type = cur_pb->pb_graph_node->pb_type;
 
     VTR_ASSERT(cur_pb_type->is_primitive()); /* primitive */
 
-    AtomBlockId cur_pb_blk_id = atom_to_pb.pb_atom(cur_pb);
+    AtomBlockId cur_pb_blk_id = atom_to_pb.get_pb_atom(cur_pb);
     if (cur_pb_blk_id && cur_pb_blk_id != blk_id) {
         /* This pb already has a different logical block */
         return false;
@@ -476,7 +522,7 @@ static bool primitive_feasible(const AtomBlockId blk_id, t_pb* cur_pb, const Ato
 
         /* find sibling if one exists */
         const t_pb* sibling_memory_pb = find_memory_sibling(cur_pb);
-        AtomBlockId sibling_memory_blk_id = atom_to_pb.pb_atom(sibling_memory_pb);
+        AtomBlockId sibling_memory_blk_id = atom_to_pb.get_pb_atom(sibling_memory_pb);
 
         if (sibling_memory_blk_id) {
             //There is a sibling, see if the current block is feasible with it
@@ -499,15 +545,11 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
                          const AtomBlockId blk_id,
                          t_pb* cb,
                          t_pb** parent,
-                         const LegalizationClusterId cluster_id,
-                         vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                         LegalizationCluster& cluster,
                          const PackMoleculeId molecule_id,
-                         ClusterRouter& cluster_router,
                          int verbosity,
                          const Prepacker& prepacker,
-                         const vtr::vector_map<MoleculeChainId, t_clustering_chain_info>& clustering_chain_info,
-                         AtomPBBimap& atom_to_pb,
-                         ClusterPinCounter& pin_counter) {
+                         const t_clustering_chain_info& clustering_chain_info) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const LogicalModels& models = g_vpr_ctx.device().arch->models;
 
@@ -519,12 +561,11 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
     if (pb_graph_node->parent_pb_graph_node != cb->pb_graph_node) {
         t_pb* my_parent = nullptr;
         block_pack_status = try_place_atom_block_rec(pb_graph_node->parent_pb_graph_node, blk_id, cb,
-                                                     &my_parent, cluster_id,
-                                                     atom_cluster,
+                                                     &my_parent,
+                                                     cluster,
                                                      molecule_id,
-                                                     cluster_router,
                                                      verbosity,
-                                                     prepacker, clustering_chain_info, atom_to_pb, pin_counter);
+                                                     prepacker, clustering_chain_info);
         parent_pb = my_parent;
     } else {
         parent_pb = cb;
@@ -536,7 +577,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
         VTR_ASSERT(parent_pb->name.empty());
         parent_pb->name = atom_ctx.netlist().block_name(blk_id);
         parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
-        cluster_router.set_reset_pb_modes(parent_pb, true);
+        cluster.cluster_router.set_reset_pb_modes(parent_pb, true);
         const t_mode* mode = &parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode];
         parent_pb->child_pbs = new t_pb*[mode->num_pb_type_children];
 
@@ -569,7 +610,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
     VTR_ASSERT(pb->pb_graph_node == pb_graph_node);
     if (pb->pb_stats == nullptr) {
         alloc_and_load_pb_stats(pb);
-        pin_counter.allocate_pin_count_state(pb);
+        cluster.pin_counter.allocate_pin_count_state(pb);
     }
 
     const t_pb_type* pb_type = pb_graph_node->pb_type;
@@ -582,24 +623,20 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
     }
 
     if (pb_type->is_primitive()) {
-        VTR_ASSERT(!atom_to_pb.pb_atom(pb)
-                   && atom_to_pb.atom_pb(blk_id) == nullptr
-                   && atom_cluster[blk_id] == LegalizationClusterId::INVALID());
+        VTR_ASSERT(!cluster.atom_pb_lookup.get_pb_atom(pb)
+                   && cluster.atom_pb_lookup.get_atom_pb(blk_id) == nullptr
+                   && !cluster.contains_atom(blk_id));
         /* try pack to location */
         VTR_ASSERT(pb->name.empty());
         pb->name = atom_ctx.netlist().block_name(blk_id);
 
-        //Update the atom netlist mappings
-        atom_cluster[blk_id] = cluster_id;
-        // NOTE: This pb is different from the pb of the cluster. It is the pb
-        //       of the actual primitive.
-        // TODO: It would be a good idea to remove the use of this global
-        //       variables to prevent external users from modifying this by
-        //       mistake.
-        atom_to_pb.set_atom_pb(blk_id, pb);
+        // Record the trial placement in the locally owned cluster.
+        cluster.atoms.insert(blk_id);
+        // NOTE: This pb is the leaf pb of the primitive the atom is being placed at
+        cluster.atom_pb_lookup.update(blk_id, pb);
 
-        cluster_router.add_atom_as_target(blk_id, atom_to_pb);
-        if (!primitive_feasible(blk_id, pb, atom_to_pb)) {
+        cluster.cluster_router.add_atom_as_target(blk_id, cluster.atom_pb_lookup);
+        if (!primitive_feasible(blk_id, pb, cluster.atom_pb_lookup)) {
             /* failed location feasibility check, revert pack */
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
         }
@@ -619,7 +656,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
                 const t_chain_info& prepack_chain_info = prepacker.get_molecule_chain_info(molecule.chain_id);
                 block_pack_status = check_chain_root_placement_feasibility(pb_graph_node,
                                                                            prepack_chain_info,
-                                                                           clustering_chain_info[molecule.chain_id],
+                                                                           clustering_chain_info,
                                                                            molecule.pack_pattern,
                                                                            blk_id);
             }
@@ -639,7 +676,8 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
     return block_pack_status;
 }
 
-void ClusterLegalizer::update_clustering_chain_info(PackMoleculeId chain_molecule_id,
+void ClusterLegalizer::update_clustering_chain_info(LegalizationCluster& cluster,
+                                                    PackMoleculeId chain_molecule_id,
                                                     const t_pb_graph_node* root_primitive) {
     // Get the molecule
     VTR_ASSERT(chain_molecule_id.is_valid());
@@ -651,7 +689,7 @@ void ClusterLegalizer::update_clustering_chain_info(PackMoleculeId chain_molecul
 
     // Get the prepacking and clustering information on this chain.
     const t_chain_info& prepack_chain_info = prepacker_.get_molecule_chain_info(chain_id);
-    t_clustering_chain_info& clustering_chain_info = clustering_chain_info_[chain_id];
+    t_clustering_chain_info& clustering_chain_info = cluster.pending_chain_info[chain_id];
     VTR_ASSERT(clustering_chain_info.chain_id == -1 && prepack_chain_info.is_long_chain);
 
     // Update the clustering chain information.
@@ -700,15 +738,15 @@ void ClusterLegalizer::reset_molecule_info(PackMoleculeId mol_id) {
  */
 static void revert_place_atom_block(const AtomBlockId blk_id,
                                     ClusterRouter& cluster_router,
-                                    vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                    AtomPBBimap& atom_to_pb,
+                                    std::unordered_set<AtomBlockId>& cluster_atoms,
+                                    ClusterAtomPBBimap& atom_to_pb,
                                     ClusterPinCounter& pin_counter) {
     //We cast away const here since we may free the pb, and it is
     //being removed from the active mapping.
     //
     //In general most code works fine accessing cosnt t_pb*,
     //which is why we store them as such in atom_ctx.lookup()
-    t_pb* pb = const_cast<t_pb*>(atom_to_pb.atom_pb(blk_id));
+    t_pb* pb = const_cast<t_pb*>(atom_to_pb.get_atom_pb(blk_id));
 
     if (pb != nullptr) {
         /* When freeing molecules, the current block might already have been freed by a prior revert
@@ -717,7 +755,7 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
 
         t_pb* next = pb->parent_pb;
         pin_counter.deallocate_pin_count_state_recursive(pb);
-        free_pb(pb, atom_to_pb);
+        free_pb(pb, nullptr, &atom_to_pb);
         pb = next;
 
         while (pb != nullptr) {
@@ -734,7 +772,7 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
                      * failed, don't free the actual complex block itself as the seed needs to find
                      * another placement */
                     pin_counter.deallocate_pin_count_state_recursive(pb);
-                    free_pb(pb, atom_to_pb);
+                    free_pb(pb, nullptr, &atom_to_pb);
                 }
             }
             pb = next;
@@ -742,8 +780,8 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
     }
 
     //Update the atom netlist mapping
-    atom_cluster[blk_id] = LegalizationClusterId::INVALID();
-    atom_to_pb.set_atom_pb(blk_id, nullptr);
+    cluster_atoms.erase(blk_id);
+    atom_to_pb.erase(blk_id);
 }
 
 /**
@@ -817,10 +855,33 @@ static bool cleanup_pb(t_pb* pb, ClusterPinCounter& pin_counter) {
     return can_free;
 }
 
+const t_clustering_chain_info& ClusterLegalizer::get_chain_info(MoleculeChainId chain_id,
+                                                               const LegalizationCluster& cluster) const {
+    auto local = cluster.pending_chain_info.find(chain_id);
+    if (local != cluster.pending_chain_info.end()) {
+        return local->second;
+    }
+    return get_chain_info(chain_id);
+}
+
+const t_clustering_chain_info& ClusterLegalizer::get_chain_info(
+    MoleculeChainId chain_id,
+    const LegalizationCluster& cluster,
+    const std::unordered_map<MoleculeChainId, t_clustering_chain_info>& flat_recon_chains) const {
+    const t_clustering_chain_info& chain_info = get_chain_info(chain_id, cluster);
+    if (chain_info.chain_id == -1) {
+        auto inherited = flat_recon_chains.find(chain_id);
+        if (inherited != flat_recon_chains.end()) {
+            return inherited->second;
+        }
+    }
+    return chain_info;
+}
+
 e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_id,
                                                         LegalizationCluster& cluster,
-                                                        LegalizationClusterId cluster_id,
-                                                        const t_ext_pin_util& max_external_pin_util) {
+                                                        const t_ext_pin_util& max_external_pin_util,
+                                                        const std::unordered_map<MoleculeChainId, t_clustering_chain_info>& flat_recon_chains) {
     // Try to pack the molecule into a cluster with this pb type.
 
     // Safety debugs.
@@ -842,6 +903,14 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
     // Get the molecule object.
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
+    // Segments of a long chain must use the same chain index across clusters.
+    // Use this cluster's pending choice, then a committed choice, then a choice
+    // from another local FlatRecon cluster. New choices stay local until commit.
+    t_clustering_chain_info chain_info;
+    if (molecule.is_chain()) {
+        chain_info = get_chain_info(molecule.chain_id, cluster, flat_recon_chains);
+    }
+    load_packing_signature(cluster);
 
     if (log_verbosity_ > 3) {
         AtomBlockId root_atom = molecule.atom_block_ids[molecule.root];
@@ -914,11 +983,11 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     }
 
     // Reuse the member scratch vector to avoid a heap allocation per candidate molecule.
-    primitives_list_.assign(max_molecule_size_, nullptr);
+    cluster.primitives_list.assign(max_molecule_size_, nullptr);
     e_block_pack_status block_pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
     LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> primitives_alive = build_primitive_candidate_queue(cluster.placement_stats,
                                                                                                                                  molecule_id,
-                                                                                                                                 primitives_list_,
+                                                                                                                                 cluster.primitives_list,
                                                                                                                                  prepacker_);
 
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
@@ -931,13 +1000,13 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         std::pair<t_pb_graph_node*, std::tuple<float, int, int>> primitive = primitives_alive.pop();
         t_pb_graph_node* root = primitive.first;
 
-        if (!try_start_root_placement(cluster.placement_stats, molecule_id, root, primitives_list_, prepacker_))
+        if (!try_start_root_placement(cluster.placement_stats, molecule_id, root, cluster.primitives_list, prepacker_))
             continue;
 
         block_pack_status = e_block_pack_status::BLK_PASSED;
         size_t failed_location = 0;
         for (size_t i_mol = 0; i_mol < molecule.atom_block_ids.size() && block_pack_status == e_block_pack_status::BLK_PASSED; i_mol++) {
-            VTR_ASSERT((primitives_list_[i_mol] == nullptr) == (!molecule.atom_block_ids[i_mol]));
+            VTR_ASSERT((cluster.primitives_list[i_mol] == nullptr) == (!molecule.atom_block_ids[i_mol]));
             failed_location = i_mol + 1;
             AtomBlockId atom_blk_id = molecule.atom_block_ids[i_mol];
             if (!atom_blk_id.is_valid())
@@ -945,19 +1014,15 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             // NOTE: This parent variable is only used in the recursion of this
             //       function.
             t_pb* parent = nullptr;
-            block_pack_status = try_place_atom_block_rec(primitives_list_[i_mol],
+            block_pack_status = try_place_atom_block_rec(cluster.primitives_list[i_mol],
                                                          atom_blk_id,
                                                          cluster.pb,
                                                          &parent,
-                                                         cluster_id,
-                                                         atom_cluster_,
+                                                         cluster,
                                                          molecule_id,
-                                                         cluster.cluster_router,
                                                          log_verbosity_,
                                                          prepacker_,
-                                                         clustering_chain_info_,
-                                                         mutable_atom_pb_lookup(),
-                                                         cluster.pin_counter);
+                                                         chain_info);
         }
 
         // This flag controls the pop_back cleanup of cluster.molecules in case of subsequent failure.
@@ -976,11 +1041,11 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 // a seed molecule packed with FULL_EXTERNAL_PIN_UTIL could push a class
                 // above the smaller scaled supply and every subsequent check would fail.
                 cluster.pin_counter.snapshot_root_class_sizes(cluster.pb);
-                cluster.pin_counter.apply_molecule_delta(molecule_id, prepacker_, atom_cluster_, atom_pb_lookup());
+                cluster.pin_counter.apply_molecule_delta(molecule_id, prepacker_, cluster.atoms, cluster.atom_pb_lookup);
 #ifdef VTR_ASSERT_DEBUG_ENABLED
                 // Verify apply_molecule_delta against a full recompute over cluster.molecules.
                 // Note: Expensive verification, do not keep in release.
-                cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+                cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, cluster.atoms, cluster.atom_pb_lookup);
 #endif
                 if (!cluster.pin_counter.check_pins_used(cluster.pb, max_external_pin_util)) {
                     VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
@@ -1044,7 +1109,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 for (size_t i = 0; i < molecule.atom_block_ids.size(); i++) {
                     AtomBlockId atom_block_id = molecule.atom_block_ids[i];
                     if (atom_block_id) {
-                        packing_signature_tree_->add_lcn(primitives_list_[i], atom_block_id);
+                        packing_signature_tree_->add_lcn(cluster.primitives_list[i], atom_block_id);
                     }
                 }
 
@@ -1058,9 +1123,10 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             }
 
             // Determine whether a legal routing exists for this cluster.
+            bool routing_verified = false;
             t_mode_selection_status mode_status;
             e_ecn_legality legality = e_ecn_legality::UNKNOWN;
-            bool do_detailed_routing_stage = (cluster_legalization_strategy_ == ClusterLegalizationStrategy::FULL);
+            bool do_detailed_routing_stage = (cluster.strategy == ClusterLegalizationStrategy::FULL);
             if (do_detailed_routing_stage) {
                 if (packing_signature_tree_) {
                     // Query the PST to see if this cluster pattern has been seen
@@ -1075,6 +1141,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                             cluster.cluster_router.reset_intra_lb_route();
                             routed = cluster.cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
                         } while (mode_status.is_mode_issue());
+                        routing_verified = routed;
                         legality = routed ? e_ecn_legality::LEGAL : e_ecn_legality::ILLEGAL;
                         packing_signature_tree_->add_ecn(legality);
                     }
@@ -1084,6 +1151,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                         cluster.cluster_router.reset_intra_lb_route();
                         routed = cluster.cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
                     } while (mode_status.is_mode_issue());
+                    routing_verified = routed;
                     legality = routed ? e_ecn_legality::LEGAL : e_ecn_legality::ILLEGAL;
                 }
             }
@@ -1101,7 +1169,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                     /* Chained molecules often take up lots of area and are important,
                      * if a chain is packed in, want to rename logic block to match chain name */
                     AtomBlockId chain_root_blk_id = molecule.atom_block_ids[molecule.pack_pattern->root_block->block_id];
-                    t_pb* cur_pb = atom_pb_lookup().atom_pb(chain_root_blk_id)->parent_pb;
+                    t_pb* cur_pb = cluster.atom_pb_lookup.get_atom_pb(chain_root_blk_id)->parent_pb;
                     while (cur_pb != nullptr) {
                         cur_pb->name = atom_ctx.netlist().block_name(chain_root_blk_id);
                         cur_pb = cur_pb->parent_pb;
@@ -1115,9 +1183,12 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                     const t_chain_info& prepack_chain_info = prepacker_.get_molecule_chain_info(molecule.chain_id);
                     if (prepack_chain_info.is_long_chain) {
                         cluster.placement_stats->has_long_chain = true;
-                        const t_clustering_chain_info& clustering_chain_info = clustering_chain_info_[molecule.chain_id];
+                        const t_clustering_chain_info& clustering_chain_info = chain_info;
                         if (clustering_chain_info.chain_id == -1) {
-                            update_clustering_chain_info(molecule_id, primitives_list_[molecule.root]);
+                            update_clustering_chain_info(cluster, molecule_id, cluster.primitives_list[molecule.root]);
+                        } else if (get_chain_info(molecule.chain_id).chain_id == -1
+                                   && !cluster.pending_chain_info.count(molecule.chain_id)) {
+                            cluster.pending_chain_info[molecule.chain_id] = {chain_info.chain_id, molecule_id};
                         }
                     }
                 }
@@ -1137,12 +1208,10 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                     if (!atom_blk_id.is_valid())
                         continue;
 
-                    commit_primitive(cluster.placement_stats, primitives_list_[i]);
-
-                    atom_cluster_[atom_blk_id] = cluster_id;
+                    commit_primitive(cluster.placement_stats, cluster.primitives_list[i]);
 
                     // Update the num child blocks in pb
-                    const t_pb* atom_pb = atom_pb_lookup().atom_pb(atom_blk_id);
+                    const t_pb* atom_pb = cluster.atom_pb_lookup.get_atom_pb(atom_blk_id);
                     VTR_ASSERT_SAFE(atom_pb != nullptr);
                     t_pb* cur_pb = atom_pb->parent_pb;
                     while (cur_pb != nullptr) {
@@ -1154,6 +1223,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 // Accept the pin state produced during this check. The record
                 // is discarded and the current state becomes the accepted
                 // baseline for the next candidate.
+                cluster.routing_verified = do_detailed_routing_stage && (routing_verified || cluster.cluster_router.is_saved_route_valid());
+                cluster.molecule_ids.insert(molecule_id);
                 cluster.pin_counter.commit_check();
 #ifdef VTR_ASSERT_DEBUG_ENABLED
                 // Recompute the pin state from scratch over the accepted
@@ -1163,7 +1234,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 // and the recompute would falsely report divergence.
                 // Note: This is expensive verification, do not keep in release.
                 if (enable_pin_feasibility_filter_) {
-                    cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+                    cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, cluster.atoms, cluster.atom_pb_lookup);
                 }
 #endif
             }
@@ -1187,16 +1258,15 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             for (size_t i = 0; i < failed_location; i++) {
                 AtomBlockId atom_blk_id = molecule.atom_block_ids[i];
                 if (atom_blk_id) {
-                    cluster.cluster_router.remove_atom_from_target(atom_blk_id, atom_pb_lookup());
+                    cluster.cluster_router.remove_atom_from_target(atom_blk_id, cluster.atom_pb_lookup);
                 }
             }
             for (size_t i = 0; i < failed_location; i++) {
                 AtomBlockId atom_blk_id = molecule.atom_block_ids[i];
                 if (atom_blk_id) {
-                    revert_place_atom_block(atom_blk_id, cluster.cluster_router, atom_cluster_, mutable_atom_pb_lookup(), cluster.pin_counter);
+                    revert_place_atom_block(atom_blk_id, cluster.cluster_router, cluster.atoms, cluster.atom_pb_lookup, cluster.pin_counter);
                 }
             }
-            reset_molecule_info(molecule_id);
 
             // Reset the traversal state of the PST to how it was before the new molecule was added.
             if (packing_signature_tree_) {
@@ -1219,7 +1289,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             // Note: Expensive verification, do not keep in release.
             cluster.pin_counter.assert_all_pbs_reachable_from(cluster.pb);
             if (enable_pin_feasibility_filter_) {
-                cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+                cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, cluster.atoms, cluster.atom_pb_lookup);
             }
 #endif
 
@@ -1237,19 +1307,16 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     return block_pack_status;
 }
 
-std::tuple<e_block_pack_status, LegalizationClusterId>
+std::tuple<e_block_pack_status, LegalizationCluster>
 ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
                                     t_logical_block_type_ptr cluster_type,
-                                    int cluster_mode) {
-    // Begin a new packing signature in the PST.
-    if (packing_signature_tree_) {
-        packing_signature_tree_->start_packing_signature(cluster_type);
-    }
-
+                                    int cluster_mode,
+                                    ClusterLegalizationStrategy strategy,
+                                    const std::unordered_map<MoleculeChainId, t_clustering_chain_info>& flat_recon_chains) {
     // Safety asserts to ensure the API is being called with valid arguments.
     VTR_ASSERT_DEBUG(molecule_id.is_valid());
     VTR_ASSERT_DEBUG(cluster_type != nullptr);
-    VTR_ASSERT_DEBUG(cluster_mode < cluster_type->pb_graph_head->pb_type->num_modes);
+    VTR_ASSERT_DEBUG(cluster_mode >= 0 && cluster_mode < cluster_type->pb_graph_head->pb_type->num_modes);
     // Ensure that the molecule has not already been placed.
     VTR_ASSERT_SAFE(!molecule_cluster_[molecule_id].is_valid());
     // Safety asserts to ensure that the API was initialized properly.
@@ -1263,16 +1330,16 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
     LegalizationCluster new_cluster(cluster_type, cluster_mode, *lb_type_rr_graphs_,
                                     valid_feedback_pins_by_type_[cluster_type->index],
                                     enable_cluster_router_hot_start_);
+    new_cluster.strategy = strategy;
 
     // Try to pack the molecule into the new_cluster.
     // When starting a new cluster, we set the external pin utilization to full
     // (meaning all cluster pins are allowed to be used).
     const t_ext_pin_util FULL_EXTERNAL_PIN_UTIL(1., 1.);
-    LegalizationClusterId new_cluster_id = LegalizationClusterId(legalization_cluster_ids_.size());
     e_block_pack_status pack_status = try_pack_molecule(molecule_id,
                                                         new_cluster,
-                                                        new_cluster_id,
-                                                        FULL_EXTERNAL_PIN_UTIL);
+                                                        FULL_EXTERNAL_PIN_UTIL,
+                                                        flat_recon_chains);
 
     if (pack_status == e_block_pack_status::BLK_PASSED) {
         // Give the new cluster pb a name. The current convention is to name the
@@ -1281,88 +1348,110 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
         AtomBlockId root_atom = molecule.atom_block_ids[molecule.root];
         const std::string& root_atom_name = atom_nlist.block_name(root_atom);
         new_cluster.pb->name = root_atom_name;
-        // Move the cluster into the vector of clusters and ids.
-        legalization_cluster_ids_.push_back(new_cluster_id);
-        legalization_clusters_.push_back(std::move(new_cluster));
-        // Update the molecule to cluster map.
-        molecule_cluster_[molecule_id] = new_cluster_id;
-    } else {
-        // Delete the new_cluster.
-        new_cluster.pin_counter.deallocate_pin_count_state_recursive(new_cluster.pb);
-        new_cluster.pin_counter.clean_state();
-        free_pb(new_cluster.pb, mutable_atom_pb_lookup());
-        delete new_cluster.pb;
-        free_cluster_placement_stats(new_cluster.placement_stats);
-        new_cluster_id = LegalizationClusterId::INVALID();
+        return {pack_status, std::move(new_cluster)};
     }
 
-    return {pack_status, new_cluster_id};
+    // The failed local attempt is destroyed without publishing any mappings.
+    return {pack_status, LegalizationCluster()};
 }
 
 e_block_pack_status ClusterLegalizer::add_mol_to_cluster(PackMoleculeId molecule_id,
-                                                         LegalizationClusterId cluster_id) {
+                                                         LegalizationCluster& cluster,
+                                                         const std::unordered_map<MoleculeChainId, t_clustering_chain_info>& flat_recon_chains) {
     // Safety asserts to make sure the inputs are valid.
-    VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
-    VTR_ASSERT(legalization_cluster_ids_[cluster_id].is_valid() && "Cannot add to a destroyed cluster");
+    VTR_ASSERT(!cluster.finalized);
     // Ensure that the molecule has not already been placed.
-    VTR_ASSERT(!molecule_cluster_[molecule_id].is_valid());
+    VTR_ASSERT(!is_mol_clustered(molecule_id, cluster));
     // Safety asserts to ensure that the API was initialized properly.
     VTR_ASSERT_DEBUG(lb_type_rr_graphs_ != nullptr);
 
-    // Get the cluster.
-    LegalizationCluster& cluster = legalization_clusters_[cluster_id];
     VTR_ASSERT(!cluster.cluster_router.is_clean() && cluster.placement_stats != nullptr
                && "Cannot add molecule to cleaned cluster!");
     // Set the target_external_pin_util.
     t_ext_pin_util target_ext_pin_util = target_external_pin_util_.get_pin_util(cluster.type->name);
     // Try to pack the molecule into the cluster.
-    e_block_pack_status pack_status = try_pack_molecule(molecule_id,
-                                                        cluster,
-                                                        cluster_id,
-                                                        target_ext_pin_util);
+    return try_pack_molecule(molecule_id,
+                             cluster,
+                             target_ext_pin_util,
+                             flat_recon_chains);
+}
 
-    // If the packing was successful, set the molecules' cluster to this one.
-    if (pack_status == e_block_pack_status::BLK_PASSED)
-        molecule_cluster_[molecule_id] = cluster_id;
-
-    return pack_status;
+LegalizationClusterId ClusterLegalizer::commit_cluster(LegalizationCluster&& cluster) {
+    VTR_ASSERT(cluster.finalized && cluster.pb != nullptr && !cluster.molecules.empty());
+    VTR_ASSERT(cluster.molecules.size() == cluster.molecule_ids.size());
+    size_t num_atoms = 0;
+    for (PackMoleculeId molecule_id : cluster.molecules) {
+        VTR_ASSERT(cluster.contains_molecule(molecule_id) && !is_mol_clustered(molecule_id));
+        for (AtomBlockId atom : prepacker_.get_molecule(molecule_id).atom_block_ids) {
+            if (!atom.is_valid()) continue;
+            VTR_ASSERT(cluster.contains_atom(atom));
+            ++num_atoms;
+        }
+    }
+    VTR_ASSERT(num_atoms == cluster.atoms.size());
+    for (AtomBlockId atom : cluster.atoms) {
+        VTR_ASSERT(!is_atom_clustered(atom) && atom_pb_lookup_.atom_pb(atom) == nullptr);
+        VTR_ASSERT(cluster.atom_pb_lookup.get_atom_pb(atom) != nullptr);
+    }
+    // Check that local chain choices agree with any committed choices.
+    // The choices are published below, after the cluster is moved into storage.
+    for (const auto& [chain, info] : cluster.pending_chain_info) {
+        VTR_ASSERT(clustering_chain_info_[chain].chain_id == -1
+                   || clustering_chain_info_[chain].chain_id == info.chain_id);
+    }
+    // This is the first point at which this cluster has a persistent ID.
+    LegalizationClusterId cluster_id(legalization_clusters_.size());
+    legalization_clusters_.push_back(std::move(cluster));
+    legalization_cluster_ids_.push_back(cluster_id);
+    LegalizationCluster& committed = legalization_clusters_[cluster_id];
+    // Update the molecule to cluster map after packing is finalized.
+    for (PackMoleculeId molecule : committed.molecules)
+        molecule_cluster_[molecule] = cluster_id;
+    for (AtomBlockId atom : committed.atoms) {
+        atom_cluster_[atom] = cluster_id;
+        atom_pb_lookup_.set_atom_pb(atom, committed.atom_pb_lookup.get_atom_pb(atom));
+    }
+    // Publish new chain choices and keep existing matching entries, including
+    // their first_packed_molecule. The local copies are no longer needed.
+    for (const auto& [chain, info] : committed.pending_chain_info) {
+        if (clustering_chain_info_[chain].chain_id == -1) clustering_chain_info_[chain] = info;
+    }
+    committed.pending_chain_info.clear();
+    return cluster_id;
 }
 
 void ClusterLegalizer::destroy_cluster(LegalizationClusterId cluster_id) {
     // Safety asserts to make sure the inputs are valid.
-    VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
-    VTR_ASSERT(legalization_cluster_ids_[cluster_id].is_valid() && "Cannot destroy an already destroyed cluster");
-    // Get the cluster.
+    VTR_ASSERT(cluster_id.is_valid() && legalization_cluster_ids_[cluster_id].is_valid());
     LegalizationCluster& cluster = legalization_clusters_[cluster_id];
-    // Remove all molecules from the cluster.
-    for (PackMoleculeId mol_id : cluster.molecules) {
-        VTR_ASSERT_SAFE(molecule_cluster_[mol_id] == cluster_id);
-        molecule_cluster_[mol_id] = LegalizationClusterId::INVALID();
-        // Revert the placement of all blocks in the molecule.
-        const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
-        for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
-            if (atom_blk_id) {
-                revert_place_atom_block(atom_blk_id, cluster.cluster_router, atom_cluster_, mutable_atom_pb_lookup(), cluster.pin_counter);
-            }
-        }
-        reset_molecule_info(mol_id);
-        molecule_cluster_[mol_id] = LegalizationClusterId::INVALID();
+    // Remove all molecules from the committed cluster.
+    for (PackMoleculeId molecule : cluster.molecules) {
+        VTR_ASSERT(molecule_cluster_[molecule] == cluster_id);
+        molecule_cluster_[molecule] = LegalizationClusterId::INVALID();
+        reset_molecule_info(molecule);
     }
-    cluster.molecules.clear();
-    // Free the rest of the cluster data.
-    //  Casting things to nullptr for safety just in case someone is trying to use it.
-    cluster.pin_counter.deallocate_pin_count_state_recursive(cluster.pb);
-    cluster.pin_counter.clean_state();
-    free_pb(cluster.pb, mutable_atom_pb_lookup());
-    delete cluster.pb;
-    cluster.pb = nullptr;
-    cluster.cluster_router.clean_router_data();
-    cluster.pr = PartitionRegion();
-    free_cluster_placement_stats(cluster.placement_stats);
-    cluster.placement_stats = nullptr;
-
-    // Mark the cluster as invalid.
+    // Revert the committed placement mappings of all blocks in the cluster.
+    for (AtomBlockId atom : cluster.atoms) {
+        VTR_ASSERT(atom_cluster_[atom] == cluster_id);
+        atom_cluster_[atom] = LegalizationClusterId::INVALID();
+        atom_pb_lookup_.set_atom_pb(atom, nullptr);
+        g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_clb(atom, ClusterBlockId::INVALID());
+    }
+    // Free the rest of the cluster data and mark the cluster as invalid.
+    cluster = LegalizationCluster();
     legalization_cluster_ids_[cluster_id] = LegalizationClusterId::INVALID();
+}
+
+void ClusterLegalizer::load_packing_signature(const LegalizationCluster& cluster) {
+    if (!packing_signature_tree_) return;
+    // FlatRecon may interleave local clusters. Rebuild the shared cursor from
+    // this cluster's accepted atoms; the memoization cache remains shared.
+    packing_signature_tree_->start_packing_signature(cluster.type);
+    for (PackMoleculeId molecule : cluster.molecules) {
+        for (AtomBlockId atom : prepacker_.get_molecule(molecule).atom_block_ids) {
+            if (atom.is_valid()) packing_signature_tree_->add_lcn(cluster.atom_pb_lookup.get_atom_pb_graph_node(atom), atom);
+        }
+    }
 }
 
 void ClusterLegalizer::compress() {
@@ -1392,11 +1481,10 @@ void ClusterLegalizer::compress() {
     atom_cluster_.shrink_to_fit();
 }
 
-void ClusterLegalizer::clean_cluster(LegalizationClusterId cluster_id) {
+void ClusterLegalizer::clean_cluster(LegalizationCluster& cluster) {
     // Safety asserts to make sure the inputs are valid.
-    VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
-    // Get the cluster.
-    LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+    VTR_ASSERT(!cluster.finalized);
+    VTR_ASSERT(cluster.routing_verified);
     VTR_ASSERT(!cluster.cluster_router.is_clean() && cluster.placement_stats != nullptr
                && "Should not clean an already cleaned cluster!");
     // Free the pb stats.
@@ -1411,50 +1499,57 @@ void ClusterLegalizer::clean_cluster(LegalizationClusterId cluster_id) {
     // Free the cluster placement stats.
     free_cluster_placement_stats(cluster.placement_stats);
     cluster.placement_stats = nullptr;
+    cluster.primitives_list.clear();
+    cluster.primitives_list.shrink_to_fit();
+    cluster.finalized = true;
 }
 
 // TODO: This is fine for the current implementation of the legalizer. But if
 //       more complex strategies are added, this will need to be updated to
 //       check more than just routing (such as PR and NoC groups).
-bool ClusterLegalizer::check_cluster_legality(LegalizationClusterId cluster_id) {
+bool ClusterLegalizer::check_cluster_legality(LegalizationCluster& cluster) {
     // Safety asserts to make sure the inputs are valid.
-    VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+    VTR_ASSERT(!cluster.finalized);
     // To check if a cluster is fully legal, try to perform an intra logic block
     // route on the cluster. If it succeeds, the cluster is fully legal.
     t_mode_selection_status mode_status;
-    LegalizationCluster& cluster = legalization_clusters_[cluster_id];
     bool routed;
     do {
         cluster.cluster_router.reset_intra_lb_route();
         routed = cluster.cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
     } while (mode_status.is_mode_issue());
+    cluster.routing_verified = routed;
     return routed;
 }
 
-bool ClusterLegalizer::ensure_legal_final_routing(LegalizationClusterId cluster_id) {
-    // Safety asserts to make sure the inputs are valid.
-    VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
-    LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+bool ClusterLegalizer::ensure_legal_final_routing(LegalizationCluster& cluster) {
+    VTR_ASSERT(!cluster.finalized);
+    load_packing_signature(cluster);
 
     // Fast path: if the saved route already covers the current nets exactly,
     // no re-route is needed. This handles both the normal case (last molecule
     // was successfully routed) and the case where a molecule that failed routing
     // was removed, restoring the cluster to its last successfully-routed state.
-    if (cluster.cluster_router.is_saved_route_valid())
+    if (cluster.cluster_router.is_saved_route_valid()) {
+        cluster.routing_verified = true;
         return true;
+    }
 
     if (packing_signature_tree_) {
         e_ecn_legality stored_legality = packing_signature_tree_->check_legality();
-        if (stored_legality == e_ecn_legality::ILLEGAL) return false;
+        if (stored_legality == e_ecn_legality::ILLEGAL) {
+            cluster.routing_verified = false;
+            return false;
+        }
 
-        e_ecn_legality computed_legality = (check_cluster_legality(cluster_id)) ? e_ecn_legality::LEGAL : e_ecn_legality::ILLEGAL;
+        e_ecn_legality computed_legality = (check_cluster_legality(cluster)) ? e_ecn_legality::LEGAL : e_ecn_legality::ILLEGAL;
         if (stored_legality == e_ecn_legality::UNKNOWN) {
             packing_signature_tree_->add_ecn(computed_legality);
         }
 
         return (computed_legality == e_ecn_legality::LEGAL);
     } else {
-        return check_cluster_legality(cluster_id);
+        return check_cluster_legality(cluster);
     }
 }
 
@@ -1463,7 +1558,6 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
                                    const std::vector<std::string>& target_external_pin_util_str,
                                    const t_pack_high_fanout_thresholds& high_fanout_thresholds,
-                                   ClusterLegalizationStrategy cluster_legalization_strategy,
                                    bool enable_pin_feasibility_filter,
                                    bool memoize_cluster_packings,
                                    bool enable_cluster_router_hot_start,
@@ -1491,7 +1585,6 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                        high_fanout_thresholds,
                                        atom_noc_grp_id_);
     // Copy the options passed by the user
-    cluster_legalization_strategy_ = cluster_legalization_strategy;
     enable_pin_feasibility_filter_ = enable_pin_feasibility_filter;
     enable_cluster_router_hot_start_ = enable_cluster_router_hot_start;
     log_verbosity_ = log_verbosity;
@@ -1620,9 +1713,9 @@ void ClusterLegalizer::verify() {
 }
 
 bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
-                                              LegalizationClusterId cluster_id) const {
+                                              const LegalizationCluster& cluster) const {
     VTR_ASSERT_SAFE(molecule_id.is_valid());
-    VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+    VTR_ASSERT(!cluster.finalized && cluster.placement_stats != nullptr);
     // Go through each atom in the molecule and check if there exists a free
     // primitive for that atom block.
     // TODO: This should probably also check if there are enough free primitives
@@ -1630,8 +1723,6 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
     //       but the cluster only has one free FF. This was something that Jason
     //       Luu was debating. Checking if placement exists for full molecule
     //       would be more robust, but checking individual atoms is faster.
-    const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
-
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
     for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
         // FIXME: Why is it possible that molecules contain invalid block IDs?
@@ -1640,7 +1731,7 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
             continue;
         // FIXME: This assert does not make sense. Can still check this even
         //        if the atom was clustered.
-        VTR_ASSERT(!is_atom_clustered(atom_blk_id));
+        VTR_ASSERT(!is_atom_clustered(atom_blk_id, cluster));
         if (!exists_free_primitive_for_atom_block(cluster.placement_stats,
                                                   atom_blk_id)) {
             return false;
@@ -1653,9 +1744,8 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
     return true;
 }
 
-size_t ClusterLegalizer::get_num_cluster_inputs_available(LegalizationClusterId cluster_id) const {
-    VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
-    const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+size_t ClusterLegalizer::get_num_cluster_inputs_available(const LegalizationCluster& cluster) const {
+    VTR_ASSERT(!cluster.finalized);
 
     // Count the number of inputs available per pin class.
     size_t inputs_avail = 0;
@@ -1667,14 +1757,9 @@ size_t ClusterLegalizer::get_num_cluster_inputs_available(LegalizationClusterId 
 }
 
 void ClusterLegalizer::finalize() {
+    // Only fully prepared clusters may enter committed storage.
     for (LegalizationClusterId cluster_id : legalization_cluster_ids_) {
-        if (!cluster_id.is_valid())
-            continue;
-        // If the cluster has not already been cleaned, clean it. This will
-        // generate the pb_route necessary for generating a clustered netlist.
-        const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
-        if (!cluster.cluster_router.is_clean())
-            clean_cluster(cluster_id);
+        if (cluster_id.is_valid()) VTR_ASSERT(legalization_clusters_[cluster_id].finalized);
     }
 }
 
