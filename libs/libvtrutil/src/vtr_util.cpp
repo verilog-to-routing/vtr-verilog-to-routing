@@ -54,10 +54,6 @@ std::string replace_all(std::string_view input, std::string_view search, std::st
     return output;
 }
 
-bool starts_with(const std::string& str, std::string_view prefix) {
-    return str.find(prefix) == 0;
-}
-
 std::string string_fmt(const char* fmt, ...) {
     // Make a variable argument list
     va_list va_args;

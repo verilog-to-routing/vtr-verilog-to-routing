@@ -15,9 +15,6 @@ std::string replace_first(std::string_view input, std::string_view search, std::
 ///@brief Returns 'input' with all instances of 'search' replaced with 'replace'
 std::string replace_all(std::string_view input, std::string_view search, std::string_view replace);
 
-///@brief Returns true if str starts with prefix
-bool starts_with(const std::string& str, std::string_view prefix);
-
 ///@brief Returns a std::string formatted using a printf-style format string
 std::string string_fmt(const char* fmt, ...);
 
