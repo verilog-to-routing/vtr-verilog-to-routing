@@ -15,6 +15,7 @@
 #include "atom_netlist.h"
 #include "flat_placement_bins.h"
 #include "flat_placement_mass_calculator.h"
+#include "for_each_index.h"
 #include "logic_types.h"
 #include "partial_placement.h"
 #include "physical_types.h"
@@ -27,32 +28,6 @@
 #include "vtr_geometry.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
-
-#ifdef VPR_USE_TBB
-#include <tbb/blocked_range.h>
-#include <tbb/parallel_for.h>
-#endif
-
-/**
- * @brief Call the given function for every index in [0, count).
- *
- * The calls run in parallel when VPR is built with TBB, so the function must
- * not write to state shared between indices.
- */
-template<typename F>
-static void for_each_index(size_t count, const F& func) {
-#ifdef VPR_USE_TBB
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, count), [&](const tbb::blocked_range<size_t>& range) {
-        for (size_t i = range.begin(); i != range.end(); i++) {
-            func(i);
-        }
-    });
-#else
-    for (size_t i = 0; i < count; i++) {
-        func(i);
-    }
-#endif
-}
 
 /**
  * @brief Calculates how over-capacity the given utilization vector is.
