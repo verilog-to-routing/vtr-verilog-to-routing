@@ -432,6 +432,9 @@ def ret_expected_runtime(job, work_dir):
     metrics = golden_results.metrics(job.arch(), job.circuit(), job.script_params())
     if metrics is None:
         metrics = golden_results.metrics(job.arch(), job.circuit(), "common")
+    # The task may not have golden results (or none for this circuit).
+    if metrics is None:
+        return seconds
 
     if "vtr_flow_elapsed_time" in metrics:
         seconds = float(metrics["vtr_flow_elapsed_time"])
@@ -447,11 +450,17 @@ def ret_expected_memory(job, work_dir):
     metrics = golden_results.metrics(job.arch(), job.circuit(), job.script_params())
     if metrics is None:
         metrics = golden_results.metrics(job.arch(), job.circuit(), "common")
+    # The task may not have golden results (or none for this circuit).
+    if metrics is None:
+        return -1
 
+    # The memory metrics are the maximum resident set sizes, in KiB.
     for metric in ["max_odin_mem", "max_abc_mem", "max_ace_mem", "max_vpr_mem"]:
         if metric in metrics and int(metrics[metric]) > memory_kib:
             memory_kib = int(metrics[metric])
-    return memory_kib
+    if memory_kib < 0:
+        return -1
+    return memory_kib * 1024
 
 
 def format_human_readable_time(seconds):
