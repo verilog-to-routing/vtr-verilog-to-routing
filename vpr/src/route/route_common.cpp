@@ -2,6 +2,8 @@
 
 #include "route_common.h"
 
+#include "bus_mux_routing.h"
+
 #include "atom_netlist_utils.h"
 #include "connection_router_interface.h"
 #include "describe_rr_node.h"
@@ -169,7 +171,7 @@ bool feasible_routing() {
     }
 
     // All routed bits of a bus mux must use the same input set.
-    if (count_control_congested_bus_muxes() > 0) {
+    if (count_control_congested_bus_muxes(route_ctx.bus_mux_route_inf) > 0) {
         return (false);
     }
 
@@ -222,92 +224,6 @@ void pathfinder_update_single_node_occupancy(RRNodeId inode, int add_or_sub) {
     route_ctx.rr_node_route_inf[inode].set_occ(occ);
     // can't have negative occupancy
     VTR_ASSERT(occ >= 0);
-}
-
-std::optional<t_bus_mux_edge> find_bus_mux_edge(RRNodeId from_node, RRNodeId to_node) {
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
-
-    if (device_ctx.rr_bus_mux_out_nodes.empty()) {
-        return std::nullopt;
-    }
-
-    // Only pin nodes can be bus mux outputs; skip other nodes before the lookup.
-    e_rr_type to_type = device_ctx.rr_graph.node_type(to_node);
-    if (to_type != e_rr_type::IPIN && to_type != e_rr_type::OPIN) {
-        return std::nullopt;
-    }
-
-    auto it = device_ctx.rr_bus_mux_out_nodes.find(to_node);
-    if (it == device_ctx.rr_bus_mux_out_nodes.end()) {
-        return std::nullopt;
-    }
-
-    for (const t_rr_bus_mux_in_edge& in_edge : it->second.in_edges) {
-        if (in_edge.from_node == from_node) {
-            return t_bus_mux_edge{it->second.mux_idx, in_edge.set};
-        }
-    }
-    return std::nullopt;
-}
-
-float get_bus_mux_cong_cost(RRNodeId from_node, RRNodeId to_node, float pres_fac) {
-    const RoutingContext& route_ctx = g_vpr_ctx.routing();
-
-    std::optional<t_bus_mux_edge> bus_mux_edge = find_bus_mux_edge(from_node, to_node);
-    if (!bus_mux_edge) {
-        return 0.f;
-    }
-
-    const t_bus_mux_route_inf& mux_inf = route_ctx.bus_mux_route_inf[bus_mux_edge->mux_idx];
-
-    // Each routed bit that would need to switch to this edge's input set adds one unit
-    // of overuse to to_node's present cost.
-    int displaced_bits = mux_inf.bits_on_other_sets(bus_mux_edge->set);
-    if (displaced_bits == 0) {
-        return 0.f;
-    }
-    return get_single_rr_cong_base_cost(to_node) * get_single_rr_cong_acc_cost(to_node) * pres_fac * displaced_bits;
-}
-
-void pathfinder_update_bus_mux_occupancy(std::vector<t_bus_mux_route_inf>& bus_mux_route_inf, const RouteTreeNode& rt_node, int add_or_sub) {
-    // The SOURCE at the root of a route tree has no incoming edge.
-    if (!rt_node.parent()) {
-        return;
-    }
-    std::optional<t_bus_mux_edge> bus_mux_edge = find_bus_mux_edge(rt_node.parent()->inode, rt_node.inode);
-    if (!bus_mux_edge) {
-        return;
-    }
-
-    int& occ = bus_mux_route_inf[bus_mux_edge->mux_idx].set_occ[bus_mux_edge->set];
-    occ += add_or_sub;
-    VTR_ASSERT(occ >= 0);
-}
-
-bool is_bus_mux_edge_control_congested(const RouteTreeNode& rt_node) {
-    const RoutingContext& route_ctx = g_vpr_ctx.routing();
-
-    // The SOURCE at the root of a route tree has no incoming edge.
-    if (!rt_node.parent()) {
-        return false;
-    }
-    std::optional<t_bus_mux_edge> bus_mux_edge = find_bus_mux_edge(rt_node.parent()->inode, rt_node.inode);
-    if (!bus_mux_edge) {
-        return false;
-    }
-    return route_ctx.bus_mux_route_inf[bus_mux_edge->mux_idx].is_control_congested();
-}
-
-size_t count_control_congested_bus_muxes() {
-    const RoutingContext& route_ctx = g_vpr_ctx.routing();
-
-    size_t num_congested = 0;
-    for (const t_bus_mux_route_inf& mux_inf : route_ctx.bus_mux_route_inf) {
-        if (mux_inf.is_control_congested()) {
-            num_congested++;
-        }
-    }
-    return num_congested;
 }
 
 /** This routine recomputes the acc_cost (accumulated congestion cost) of each
@@ -365,7 +281,7 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
 #endif
 
     // A legal routing has no bus muxes using multiple input sets.
-    overuse_info.control_congested_bus_muxes = count_control_congested_bus_muxes();
+    overuse_info.control_congested_bus_muxes = count_control_congested_bus_muxes(route_ctx.bus_mux_route_inf);
 }
 
 /** Update pathfinder cost of all nodes rooted at rt_node, including rt_node itself */
@@ -615,12 +531,7 @@ void reset_rr_node_route_structs(const t_router_opts& route_opts) {
         node_inf.set_occ(0);
     }
 
-    // Clear the routed bit counts for every bus mux input set.
-    const size_t num_bus_muxes = device_ctx.rr_bus_muxes.size();
-    route_ctx.bus_mux_route_inf.assign(num_bus_muxes, t_bus_mux_route_inf());
-    for (size_t imux = 0; imux < num_bus_muxes; imux++) {
-        route_ctx.bus_mux_route_inf[imux].set_occ.assign(device_ctx.rr_bus_muxes[imux].num_sets, 0);
-    }
+    reset_bus_mux_route_inf(device_ctx.rr_bus_muxes, route_ctx.bus_mux_route_inf);
 }
 
 /* Allocates and loads the route_ctx.net_rr_terminals data structure. For each net it stores the rr_node   *

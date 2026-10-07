@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "bus_mux_route_types.h"
+#include "bus_mux_routing.h"
 #include "describe_rr_node.h"
 #include "overuse_report.h"
 #include "physical_types_util.h"
@@ -122,7 +123,7 @@ void check_route(const Netlist<>& net_list,
 
     // A bus-based mux has one select for its whole bus, so all routed bits must use the same
     // input set. The bit counts were just recounted from the route trees above.
-    const size_t num_split_bus_muxes = count_control_congested_bus_muxes();
+    const size_t num_split_bus_muxes = count_control_congested_bus_muxes(route_ctx.bus_mux_route_inf);
     if (num_split_bus_muxes > 0) {
         log_control_congested_bus_muxes_status(device_ctx.rr_bus_muxes,
                                                route_ctx.bus_mux_route_inf,

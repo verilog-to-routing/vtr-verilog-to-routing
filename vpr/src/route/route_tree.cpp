@@ -5,6 +5,7 @@
 #include "netlist_fwd.h"
 #include "route_debug.h"
 #include "route_common.h"
+#include "bus_mux_routing.h"
 #include "rr_graph_fwd.h"
 #include "vtr_math.h"
 

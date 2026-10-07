@@ -1,6 +1,7 @@
 /** @file Impls for non-templated net routing fns & utils */
 
 #include "route_net.h"
+#include "bus_mux_routing.h"
 #include "connection_based_routing.h"
 #include "timing_util.h"
 

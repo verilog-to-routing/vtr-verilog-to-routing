@@ -1252,3 +1252,29 @@ void load_rr_bus_muxes(const RRSpatialLookup& node_lookup) {
                 device_ctx.rr_bus_muxes.size(), device_ctx.rr_bus_mux_out_nodes.size());
     }
 }
+
+std::optional<t_bus_mux_edge> find_bus_mux_edge(RRNodeId from_node, RRNodeId to_node) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+
+    if (device_ctx.rr_bus_mux_out_nodes.empty()) {
+        return std::nullopt;
+    }
+
+    // Only pin nodes can be bus mux outputs; skip other nodes before the lookup.
+    e_rr_type to_type = device_ctx.rr_graph.node_type(to_node);
+    if (to_type != e_rr_type::IPIN && to_type != e_rr_type::OPIN) {
+        return std::nullopt;
+    }
+
+    auto it = device_ctx.rr_bus_mux_out_nodes.find(to_node);
+    if (it == device_ctx.rr_bus_mux_out_nodes.end()) {
+        return std::nullopt;
+    }
+
+    for (const t_rr_bus_mux_in_edge& in_edge : it->second.in_edges) {
+        if (in_edge.from_node == from_node) {
+            return t_bus_mux_edge{it->second.mux_idx, in_edge.set};
+        }
+    }
+    return std::nullopt;
+}

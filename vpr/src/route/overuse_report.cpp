@@ -4,6 +4,7 @@
 #include <fstream>
 #include "globals.h"
 #include "route_common.h"
+#include "bus_mux_routing.h"
 #include "physical_types.h"
 #include "physical_types_util.h"
 #include "vpr_utils.h"
@@ -521,9 +522,7 @@ void log_control_congested_bus_muxes_status(const std::vector<t_rr_bus_mux>& rr_
                                             const ClusteredNetlist& clb_nlist) {
     VTR_ASSERT(bus_mux_route_inf.size() == rr_bus_muxes.size());
 
-    size_t num_congested = std::ranges::count_if(bus_mux_route_inf, [](const t_bus_mux_route_inf& mux_inf) noexcept {
-        return mux_inf.is_control_congested();
-    });
+    size_t num_congested = count_control_congested_bus_muxes(bus_mux_route_inf);
     if (num_congested == 0) {
         return;
     }
