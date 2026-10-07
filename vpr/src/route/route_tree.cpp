@@ -660,7 +660,7 @@ RouteTree::prune(CBRR& connections_inf, std::vector<int>* non_config_node_set_us
 
     // Architectures without bus muxes skip the per-node bus-mux lookup in prune_x().
     const bool has_bus_muxes = !g_vpr_ctx.device().rr_bus_muxes.empty();
-    auto pruned_node = prune_x(*_root, connections_inf, false, has_bus_muxes, non_config_node_set_usage);
+    vtr::optional<RouteTreeNode&> pruned_node = prune_x(*_root, connections_inf, false, has_bus_muxes, non_config_node_set_usage);
     if (pruned_node)
         return *this;
     else

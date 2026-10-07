@@ -26,7 +26,7 @@ static std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical
                                                int sub_tile_index);
 
 static void set_clusters_pin_chains(const ClusteredNetlist& clb_nlist,
-                                    vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+                                vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                     bool is_flat);
 
 static vtr::vector<ClusterBlockId, std::unordered_set<int>> get_pin_chains_flat(const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains);
@@ -1181,7 +1181,7 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
             }
 
             const t_bus_mux_key key{edge->interconnect, edge->bus_mux_owner()};
-            auto found = std::ranges::find_if(mux_ids, [&key](const auto& entry) noexcept {
+            auto found = std::ranges::find_if(mux_ids, [&key](const std::pair<t_bus_mux_key, BusMuxId>& entry) noexcept {
                 return entry.first == key;
             });
             if (found == mux_ids.end()) {
