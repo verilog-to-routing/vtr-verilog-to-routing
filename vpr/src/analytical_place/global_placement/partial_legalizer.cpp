@@ -41,6 +41,10 @@
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
 
+#ifdef VPR_USE_TBB
+#include <tbb/task_group.h>
+#endif
+
 std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer legalizer_type,
                                                          const APNetlist& netlist,
                                                          std::shared_ptr<FlatPlacementDensityManager> density_manager,
@@ -1396,6 +1400,119 @@ void BiPartitioningPartialLegalizer::move_blocks_into_windows(
     }
 }
 
+/**
+ * @brief A finished window together with its depth in the bisection tree.
+ */
+struct FinishedWindow {
+    /// @brief The window. It covers at most one tile and holds at least one block.
+    SpreadingWindow window;
+
+    /// @brief The number of partitions between a top-level window and this one.
+    unsigned depth;
+};
+
+/**
+ * @brief The finished windows produced by one bisection task.
+ *
+ * The windows are listed in depth-first order, lower half before upper half.
+ * When the task hands the upper half of a partition to another task, it
+ * records that task's segment and the position in its own list where the
+ * child's windows belong. The depth-first order over every task can then be
+ * rebuilt once all tasks are done.
+ */
+struct BisectionSegment {
+    /// @brief A segment produced by a child task and where its windows go.
+    struct Child {
+        /// @brief The index in windows before which the child's windows belong.
+        size_t position;
+
+        /// @brief The child's segment.
+        std::unique_ptr<BisectionSegment> segment;
+    };
+
+    /// @brief The window a child task starts from. The parent parks it here so
+    ///        the task can take it without a copy.
+    SpreadingWindow root_window;
+
+    /// @brief The finished windows this task produced itself, in depth-first order.
+    std::vector<FinishedWindow> windows;
+
+    /// @brief The segments of the tasks this task spawned, in depth-first order.
+    std::vector<Child> children;
+
+    /// @brief The number of windows this task partitioned.
+    unsigned num_windows_partitioned = 0;
+
+    /// @brief The number of blocks in the windows this task partitioned.
+    unsigned num_blocks_partitioned = 0;
+};
+
+/**
+ * @brief The state shared by every bisection of one spread_over_windows call.
+ */
+struct WindowBisectionContext {
+    /// @brief The primitive group being spread.
+    PrimitiveGroupId group_id;
+
+    /// @brief The solver's placement, which decides the side of a cut each
+    ///        block wants to be on.
+    const PartialPlacement& p_placement;
+
+#ifdef VPR_USE_TBB
+    /// @brief The task group that the bisections of large windows are run in.
+    tbb::task_group task_group;
+#endif
+};
+
+/**
+ * @brief Count the finished windows at each depth over the given segment and
+ *        the segments of its child tasks, and sum their partition statistics.
+ */
+static void count_finished_windows(const BisectionSegment& segment,
+                                   std::vector<size_t>& num_windows_per_depth,
+                                   unsigned& num_windows_partitioned,
+                                   unsigned& num_blocks_partitioned) {
+    for (const FinishedWindow& finished_window : segment.windows) {
+        if (finished_window.depth >= num_windows_per_depth.size()) {
+            num_windows_per_depth.resize(finished_window.depth + 1, 0);
+        }
+        num_windows_per_depth[finished_window.depth]++;
+    }
+    num_windows_partitioned += segment.num_windows_partitioned;
+    num_blocks_partitioned += segment.num_blocks_partitioned;
+
+    for (const BisectionSegment::Child& child : segment.children) {
+        count_finished_windows(*child.segment, num_windows_per_depth, num_windows_partitioned, num_blocks_partitioned);
+    }
+}
+
+/**
+ * @brief Move the finished windows of the given segment and its child tasks
+ *        into the output, grouped by depth and in depth-first order within
+ *        each depth.
+ *
+ * @param next_index_per_depth The output index for the next window of each
+ *                             depth. Advanced as windows are placed.
+ */
+static void place_finished_windows(BisectionSegment& segment,
+                                   std::vector<size_t>& next_index_per_depth,
+                                   std::vector<SpreadingWindow>& finished_windows) {
+    size_t next_child = 0;
+    for (size_t i = 0; i <= segment.windows.size(); i++) {
+        // The windows of a child task belong before the window at its position.
+        while (next_child < segment.children.size() && segment.children[next_child].position == i) {
+            place_finished_windows(*segment.children[next_child].segment, next_index_per_depth, finished_windows);
+            next_child++;
+        }
+
+        if (i < segment.windows.size()) {
+            FinishedWindow& finished_window = segment.windows[i];
+            finished_windows[next_index_per_depth[finished_window.depth]++] = std::move(finished_window.window);
+        }
+    }
+    VTR_ASSERT_SAFE(next_child == segment.children.size());
+}
+
 void BiPartitioningPartialLegalizer::spread_over_windows(std::vector<SpreadingWindow>& non_overlapping_windows,
                                                          const PartialPlacement& p_placement,
                                                          PrimitiveGroupId group_id) {
@@ -1429,62 +1546,34 @@ void BiPartitioningPartialLegalizer::spread_over_windows(std::vector<SpreadingWi
         }
     }
 
-    // Insert the windows into a queue for spreading.
-    std::queue<SpreadingWindow> window_queue;
+    // Bisect every window down to finished windows. The top-level windows are
+    // bisected in order, depth first. The windows are disjoint and the
+    // bisection only reads shared state, so the upper halves of large windows
+    // can be bisected by concurrent tasks, each writing its own segment.
+    // Nothing is written to the bins here.
+    WindowBisectionContext context{group_id, p_placement};
+    BisectionSegment root_segment;
     for (SpreadingWindow& window : non_overlapping_windows) {
-        window_queue.push(std::move(window));
+        bisect_window(std::move(window), 0, root_segment, context);
     }
+#ifdef VPR_USE_TBB
+    context.task_group.wait();
+#endif
 
-    // For each window in the queue:
-    //      1) If the window is small enough, do not partition further.
-    //      2) Partition the window
-    //      3) Partition the blocks into the window partitions
-    //      4) Insert the new windows into the queue
-    std::vector<SpreadingWindow> finished_windows;
-    while (!window_queue.empty()) {
-        // Get a reference to the front of the queue but do not pop it yet. We
-        // can save time from having to copy the element out since these windows
-        // contain vectors.
-        SpreadingWindow& window = window_queue.front();
-
-        // Check if the window is empty. This can happen when there is odd
-        // numbers of blocks or when things do not perfectly fit.
-        if (window.contained_blocks.empty()) {
-            // If the window does not contain any blocks, pop it from the queue
-            // and do not put it in finished windows. There is no point
-            // operating on it further.
-            window_queue.pop();
-            continue;
-        }
-
-        // 1) Check if the window is small enough (one bin in size).
-        // TODO: Perhaps we can make this stopping criteria more intelligent.
-        //       Like stopping when we know there is only one bin within the
-        //       window.
-        double window_area = window.window_area();
-        if (window_area <= 1.0) {
-            finished_windows.emplace_back(std::move(window));
-            window_queue.pop();
-            continue;
-        }
-
-        num_windows_partitioned_++;
-        num_blocks_partitioned_ += window.contained_blocks.size();
-
-        // 2) Partition the window.
-        auto partitioned_window = partition_window(window, group_id);
-
-        // 3) Partition the blocks.
-        partition_blocks_in_window(window, partitioned_window, group_id, p_placement);
-
-        // 4) Enqueue the new windows.
-        window_queue.push(std::move(partitioned_window.lower_window));
-        window_queue.push(std::move(partitioned_window.upper_window));
-
-        // Pop the top element off the queue. This will invalidate the window
-        // object.
-        window_queue.pop();
+    // Group the finished windows by depth, keeping the depth-first order
+    // within each depth. This is the breadth-first order a serial queue would
+    // have produced, so the blocks are inserted into the bins in the same
+    // sequence no matter how the bisection was scheduled.
+    std::vector<size_t> next_index_per_depth;
+    count_finished_windows(root_segment, next_index_per_depth, num_windows_partitioned_, num_blocks_partitioned_);
+    size_t num_finished_windows = 0;
+    for (size_t& index : next_index_per_depth) {
+        size_t num_windows_at_depth = index;
+        index = num_finished_windows;
+        num_finished_windows += num_windows_at_depth;
     }
+    std::vector<SpreadingWindow> finished_windows(num_finished_windows);
+    place_finished_windows(root_segment, next_index_per_depth, finished_windows);
 
     if (log_verbosity_ >= 10) {
         VTR_LOG("\t%zu finalized windows.\n",
@@ -1521,6 +1610,56 @@ void BiPartitioningPartialLegalizer::spread_over_windows(std::vector<SpreadingWi
 
     // Verify that the bins are valid after moving blocks back from windows.
     VTR_ASSERT_SAFE(density_manager_->verify());
+}
+
+void BiPartitioningPartialLegalizer::bisect_window(SpreadingWindow window,
+                                                   unsigned depth,
+                                                   BisectionSegment& segment,
+                                                   WindowBisectionContext& context) {
+    // An empty window has nothing to spread and is dropped. This can happen
+    // when there is an odd number of blocks or when things do not perfectly fit.
+    if (window.contained_blocks.empty()) {
+        return;
+    }
+
+    // A window that is small enough (one bin in size) is not partitioned further.
+    // TODO: Perhaps we can make this stopping criteria more intelligent.
+    //       Like stopping when we know there is only one bin within the
+    //       window.
+    if (window.window_area() <= 1.0) {
+        segment.windows.push_back({std::move(window), depth});
+        return;
+    }
+
+    segment.num_windows_partitioned++;
+    segment.num_blocks_partitioned += window.contained_blocks.size();
+
+    // Partition the window, then partition its blocks between the two halves.
+    PartitionedWindow partitioned_window = partition_window(window, context.group_id);
+    partition_blocks_in_window(window, partitioned_window, context.group_id, context.p_placement);
+
+#ifdef VPR_USE_TBB
+    // Bisect the upper half as its own task when it holds enough blocks to be
+    // worth one. The task writes its finished windows to a child segment,
+    // which is recorded after the lower half so that it lands after the lower
+    // half's windows in depth-first order.
+    if (partitioned_window.upper_window.contained_blocks.size() >= min_blocks_per_bisection_task_) {
+        std::unique_ptr<BisectionSegment> child_segment = std::make_unique<BisectionSegment>();
+        BisectionSegment* child_segment_ptr = child_segment.get();
+        child_segment_ptr->root_window = std::move(partitioned_window.upper_window);
+        context.task_group.run([this, child_segment_ptr, depth, &context]() {
+            bisect_window(std::move(child_segment_ptr->root_window), depth + 1, *child_segment_ptr, context);
+        });
+
+        bisect_window(std::move(partitioned_window.lower_window), depth + 1, segment, context);
+        segment.children.push_back({segment.windows.size(), std::move(child_segment)});
+        return;
+    }
+#endif
+
+    // Bisect both halves on this thread, lower half first.
+    bisect_window(std::move(partitioned_window.lower_window), depth + 1, segment, context);
+    bisect_window(std::move(partitioned_window.upper_window), depth + 1, segment, context);
 }
 
 PartitionedWindow BiPartitioningPartialLegalizer::partition_window(

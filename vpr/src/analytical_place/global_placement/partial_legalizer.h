@@ -36,6 +36,8 @@
 class APNetlist;
 class Prepacker;
 struct PartialPlacement;
+struct BisectionSegment;
+struct WindowBisectionContext;
 
 /**
  * @brief The Partial Legalizer base class
@@ -599,6 +601,12 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
     /// TODO: Should this be distance instead of number of bins?
     static constexpr int max_bin_cluster_gap_ = 2;
 
+    /// @brief The smallest number of blocks a window must contain for its
+    ///        bisection to run as its own task. Smaller windows are bisected
+    ///        on the thread that created them, since the task overhead would
+    ///        outweigh the work.
+    static constexpr size_t min_blocks_per_bisection_task_ = 256;
+
   public:
     /**
      * @brief Constructor for the bi-partitioning partial legalizer.
@@ -715,6 +723,21 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
     void spread_over_windows(std::vector<SpreadingWindow>& non_overlapping_windows,
                              const PartialPlacement& p_placement,
                              PrimitiveGroupId group_id);
+
+    /**
+     * @brief Recursively bisect the given window until every piece covers at
+     *        most one tile, appending the finished windows to the segment in
+     *        depth-first order together with their depth.
+     *
+     * When VPR is built with TBB, the upper half of a partition with enough
+     * blocks is bisected as a task in the context's task group, writing to a
+     * child segment, while the lower half continues on the calling thread.
+     * The caller must wait on the task group before reading the segment.
+     */
+    void bisect_window(SpreadingWindow window,
+                       unsigned depth,
+                       BisectionSegment& segment,
+                       WindowBisectionContext& context);
 
     /**
      * @brief Partition the given window into two sub-windows.
