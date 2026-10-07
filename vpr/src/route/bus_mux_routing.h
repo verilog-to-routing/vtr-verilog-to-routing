@@ -9,15 +9,15 @@
  * report which muxes still use more than one input set.
  */
 #include <cstddef>
-#include <vector>
 
 #include "bus_mux_route_types.h"
 #include "route_tree_fwd.h"
 #include "rr_graph_fwd.h"
+#include "vtr_vector.h"
 
 /// @brief Give every bus mux in rr_bus_muxes a zeroed per-set bit count in bus_mux_route_inf.
-void reset_bus_mux_route_inf(const std::vector<t_rr_bus_mux>& rr_bus_muxes,
-                             std::vector<t_bus_mux_route_inf>& bus_mux_route_inf);
+void reset_bus_mux_route_inf(const vtr::vector<BusMuxId, t_rr_bus_mux>& rr_bus_muxes,
+                             vtr::vector<BusMuxId, t_bus_mux_route_inf>& bus_mux_route_inf);
 
 /**
  * @brief Return the control congestion cost of the edge from_node -> to_node.
@@ -32,7 +32,7 @@ float get_bus_mux_cong_cost(RRNodeId from_node, RRNodeId to_node, float pres_fac
  *
  * No effect if rt_node has no parent or the edge is not part of a bus mux.
  */
-void pathfinder_update_bus_mux_occupancy(std::vector<t_bus_mux_route_inf>& bus_mux_route_inf,
+void pathfinder_update_bus_mux_occupancy(vtr::vector<BusMuxId, t_bus_mux_route_inf>& bus_mux_route_inf,
                                          const RouteTreeNode& rt_node,
                                          int add_or_sub);
 
@@ -40,4 +40,4 @@ void pathfinder_update_bus_mux_occupancy(std::vector<t_bus_mux_route_inf>& bus_m
 bool is_bus_mux_edge_control_congested(const RouteTreeNode& rt_node);
 
 /// @brief Count bus muxes using more than one input set.
-size_t count_control_congested_bus_muxes(const std::vector<t_bus_mux_route_inf>& bus_mux_route_inf);
+size_t count_control_congested_bus_muxes(const vtr::vector<BusMuxId, t_bus_mux_route_inf>& bus_mux_route_inf);

@@ -517,8 +517,8 @@ static void print_block_pins_nets(std::ostream& os,
     }
 }
 
-void log_control_congested_bus_muxes_status(const std::vector<t_rr_bus_mux>& rr_bus_muxes,
-                                            const std::vector<t_bus_mux_route_inf>& bus_mux_route_inf,
+void log_control_congested_bus_muxes_status(const vtr::vector<BusMuxId, t_rr_bus_mux>& rr_bus_muxes,
+                                            const vtr::vector<BusMuxId, t_bus_mux_route_inf>& bus_mux_route_inf,
                                             const ClusteredNetlist& clb_nlist) {
     VTR_ASSERT(bus_mux_route_inf.size() == rr_bus_muxes.size());
 
@@ -528,12 +528,12 @@ void log_control_congested_bus_muxes_status(const std::vector<t_rr_bus_mux>& rr_
     }
 
     VTR_LOG("\nBus-based muxes driven from more than one input set: %zu\n", num_congested);
-    for (size_t imux = 0; imux < rr_bus_muxes.size(); imux++) {
-        const t_bus_mux_route_inf& mux_inf = bus_mux_route_inf[imux];
+    for (BusMuxId mux_id : rr_bus_muxes.keys()) {
+        const t_bus_mux_route_inf& mux_inf = bus_mux_route_inf[mux_id];
         if (!mux_inf.is_control_congested()) {
             continue;
         }
-        const t_rr_bus_mux& mux = rr_bus_muxes[imux];
+        const t_rr_bus_mux& mux = rr_bus_muxes[mux_id];
         std::string sets;
         for (size_t set = 0; set < mux_inf.set_occ.size(); set++) {
             if (mux_inf.set_occ[set] > 0) {

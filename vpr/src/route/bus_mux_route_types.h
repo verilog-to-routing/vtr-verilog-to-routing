@@ -20,7 +20,11 @@
 #include "clustered_netlist_fwd.h"
 #include "physical_types.h"
 #include "rr_graph_fwd.h"
+#include "vtr_strong_id.h"
 #include "vtr_util.h"
+
+/// @brief Identifies one bus-based mux instance of the routing resource graph.
+typedef vtr::StrongId<struct bus_mux_id_tag> BusMuxId;
 
 /// @brief Identity of one bus-based mux instance: its <mux> tag and the pb instance that owns it.
 struct t_bus_mux_key {
@@ -54,9 +58,7 @@ struct t_rr_bus_mux {
 
 /// @brief The mux and input set an rr edge belongs to, see find_bus_mux_edge().
 struct t_bus_mux_edge {
-    /// @brief Index into DeviceContext::rr_bus_muxes.
-    int mux_idx;
-    /// @brief Input set (data line) selected by the edge.
+    BusMuxId mux_id;
     int set;
 };
 
@@ -68,8 +70,8 @@ struct t_rr_bus_mux_in_edge {
 
 /// @brief The bus-mux edges ending at one output bit of a bus-based mux.
 struct t_rr_bus_mux_out_node {
-    /// @brief Index into DeviceContext::rr_bus_muxes.
-    int mux_idx = -1;
+    /// @brief The mux this output bit belongs to.
+    BusMuxId mux_id;
     /// @brief The edges driving this output bit, one per input set present in the rr graph.
     std::vector<t_rr_bus_mux_in_edge> in_edges;
 };

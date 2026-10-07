@@ -8,11 +8,11 @@
 #include "rr_graph_intra_cluster.h"
 #include "vtr_assert.h"
 
-void reset_bus_mux_route_inf(const std::vector<t_rr_bus_mux>& rr_bus_muxes,
-                             std::vector<t_bus_mux_route_inf>& bus_mux_route_inf) {
+void reset_bus_mux_route_inf(const vtr::vector<BusMuxId, t_rr_bus_mux>& rr_bus_muxes,
+                             vtr::vector<BusMuxId, t_bus_mux_route_inf>& bus_mux_route_inf) {
     bus_mux_route_inf.assign(rr_bus_muxes.size(), t_bus_mux_route_inf());
-    for (size_t imux = 0; imux < rr_bus_muxes.size(); imux++) {
-        bus_mux_route_inf[imux].set_occ.assign(rr_bus_muxes[imux].num_sets, 0);
+    for (BusMuxId mux_id : rr_bus_muxes.keys()) {
+        bus_mux_route_inf[mux_id].set_occ.assign(rr_bus_muxes[mux_id].num_sets, 0);
     }
 }
 
@@ -24,7 +24,7 @@ float get_bus_mux_cong_cost(RRNodeId from_node, RRNodeId to_node, float pres_fac
         return 0.f;
     }
 
-    const t_bus_mux_route_inf& mux_inf = route_ctx.bus_mux_route_inf[bus_mux_edge->mux_idx];
+    const t_bus_mux_route_inf& mux_inf = route_ctx.bus_mux_route_inf[bus_mux_edge->mux_id];
 
     // Each routed bit that would need to switch to this edge's input set adds one unit
     // of overuse to to_node's present cost.
@@ -35,7 +35,7 @@ float get_bus_mux_cong_cost(RRNodeId from_node, RRNodeId to_node, float pres_fac
     return get_single_rr_cong_base_cost(to_node) * get_single_rr_cong_acc_cost(to_node) * pres_fac * displaced_bits;
 }
 
-void pathfinder_update_bus_mux_occupancy(std::vector<t_bus_mux_route_inf>& bus_mux_route_inf,
+void pathfinder_update_bus_mux_occupancy(vtr::vector<BusMuxId, t_bus_mux_route_inf>& bus_mux_route_inf,
                                          const RouteTreeNode& rt_node,
                                          int add_or_sub) {
     // The SOURCE at the root of a route tree has no incoming edge.
@@ -47,7 +47,7 @@ void pathfinder_update_bus_mux_occupancy(std::vector<t_bus_mux_route_inf>& bus_m
         return;
     }
 
-    int& occ = bus_mux_route_inf[bus_mux_edge->mux_idx].set_occ[bus_mux_edge->set];
+    int& occ = bus_mux_route_inf[bus_mux_edge->mux_id].set_occ[bus_mux_edge->set];
     occ += add_or_sub;
     VTR_ASSERT(occ >= 0);
 }
@@ -63,10 +63,10 @@ bool is_bus_mux_edge_control_congested(const RouteTreeNode& rt_node) {
     if (!bus_mux_edge) {
         return false;
     }
-    return route_ctx.bus_mux_route_inf[bus_mux_edge->mux_idx].is_control_congested();
+    return route_ctx.bus_mux_route_inf[bus_mux_edge->mux_id].is_control_congested();
 }
 
-size_t count_control_congested_bus_muxes(const std::vector<t_bus_mux_route_inf>& bus_mux_route_inf) {
+size_t count_control_congested_bus_muxes(const vtr::vector<BusMuxId, t_bus_mux_route_inf>& bus_mux_route_inf) {
     size_t num_congested = 0;
     for (const t_bus_mux_route_inf& mux_inf : bus_mux_route_inf) {
         if (mux_inf.is_control_congested()) {

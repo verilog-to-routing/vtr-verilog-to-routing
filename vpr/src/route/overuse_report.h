@@ -32,8 +32,8 @@ void log_overused_nodes_status(int max_logged_overused_rr_nodes);
 /**
  * @brief Log bus muxes using multiple input sets; print nothing if there are none.
  */
-void log_control_congested_bus_muxes_status(const std::vector<t_rr_bus_mux>& rr_bus_muxes,
-                                            const std::vector<t_bus_mux_route_inf>& bus_mux_route_inf,
+void log_control_congested_bus_muxes_status(const vtr::vector<BusMuxId, t_rr_bus_mux>& rr_bus_muxes,
+                                            const vtr::vector<BusMuxId, t_bus_mux_route_inf>& bus_mux_route_inf,
                                             const ClusteredNetlist& clb_nlist);
 
 ///@brief Print out RR node overuse info in a post-VPR report file.
