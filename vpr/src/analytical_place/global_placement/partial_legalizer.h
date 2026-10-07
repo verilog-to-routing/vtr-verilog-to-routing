@@ -22,6 +22,7 @@
 #include "ap_flow_enums.h"
 #include "flat_placement_bins.h"
 #include "flat_placement_density_manager.h"
+#include "for_each_index.h"
 #include "logic_types.h"
 #include "model_grouper.h"
 #include "primitive_dim_manager.h"
@@ -427,17 +428,34 @@ class PerPrimitiveDimPrefixSum2D {
             layer_bin_centers[layer].push_back({bin_id, center_x, center_y});
         }
 
-        // Dense grid of fixed-point values for one layer and dim. It is refilled
-        // for each prefix sum.
-        vtr::NdMatrix<uint64_t, 2> vals({width, height}, 0);
+        // List the (layer, dim) pairs that need a prefix sum and make room for
+        // each of them, so the pairs can be built independently of each other.
+        struct t_layer_dim {
+            size_t layer;
+            PrimitiveVectorDim dim;
+        };
 
-        // Create each of the prefix sums.
         const PrimitiveDimManager& dim_manager = density_manager.mass_calculator().get_dim_manager();
         std::vector<PrimitiveVectorDim> used_dims = density_manager.get_used_dims_mask().get_non_zero_dims();
+        std::vector<t_layer_dim> layer_dims;
+        layer_dims.reserve(num_layers * used_dims.size());
         layer_dim_prefix_sum_.resize(num_layers);
         for (size_t layer = 0; layer < num_layers; layer++) {
             layer_dim_prefix_sum_[layer].resize(dim_manager.dims().size());
             for (PrimitiveVectorDim dim : used_dims) {
+                layer_dims.push_back({layer, dim});
+            }
+        }
+
+        // Create each of the prefix sums. Each pair writes only its own prefix
+        // sum, so the pairs are built in parallel.
+        for_each_index_chunk(layer_dims.size(), [&](size_t begin, size_t end) {
+            // Dense grid of fixed-point values for one layer and dim. Each
+            // chunk has its own grid and refills it for each prefix sum.
+            vtr::NdMatrix<uint64_t, 2> vals({width, height}, 0);
+            for (size_t i = begin; i < end; i++) {
+                size_t layer = layer_dims[i].layer;
+                PrimitiveVectorDim dim = layer_dims[i].dim;
                 vals.fill(0);
                 for (const t_bin_center& bin_center : layer_bin_centers[layer]) {
                     // Convert the floating point value into fixed point to prevent
@@ -451,7 +469,7 @@ class PerPrimitiveDimPrefixSum2D {
                 }
                 layer_dim_prefix_sum_[layer][dim] = vtr::PrefixSum2D<uint64_t>(vals);
             }
-        }
+        });
     }
 
     /**
