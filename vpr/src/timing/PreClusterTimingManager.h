@@ -10,7 +10,6 @@
 #include <string>
 #include "vpr_types.h"
 #include "vtr_assert.h"
-#include "vtr_vector.h"
 
 // Forward declarations.
 class AtomLookup;
@@ -120,12 +119,7 @@ class PreClusterTimingManager {
      * perform STA. Call update_timing_info after updating the delays of all
      * arcs to save time.
      */
-    void set_timing_arc_delay(AtomPinId sink_pin_id, float delay) {
-        VTR_ASSERT_SAFE_MSG(sink_pin_id.is_valid(),
-                            "Cannot set arc delay of invalid pin");
-
-        timing_arc_delays_[sink_pin_id] = delay;
-    }
+    void set_timing_arc_delay(AtomPinId sink_pin_id, float delay);
 
     /**
      * @brief Perform STA to updating the timing information.
@@ -186,12 +180,6 @@ class PreClusterTimingManager {
     /// @brief The setup timing info used for getting the timing of edges
     ///        in the timing graph.
     std::shared_ptr<SetupTimingInfo> timing_info_;
-
-    /// @brief Delays of all timing arcs in the atom netlist. This is used to
-    ///        hold the estimated delays of all atom connections so that the
-    ///        delay calculator can query them when Tatum performs a timing analysis.
-    ///        Here, we use sink pins as unique identifiers for the the timing arc.
-    vtr::vector<AtomPinId, float> timing_arc_delays_;
 
     /// @brief The timing update type used in the construction of this class.
     const e_timing_update_type timing_update_type_;
