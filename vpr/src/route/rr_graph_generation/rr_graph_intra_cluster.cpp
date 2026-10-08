@@ -26,7 +26,7 @@ static std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical
                                                int sub_tile_index);
 
 static void set_clusters_pin_chains(const ClusteredNetlist& clb_nlist,
-                                vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+                                    vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                     bool is_flat);
 
 static vtr::vector<ClusterBlockId, std::unordered_set<int>> get_pin_chains_flat(const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains);
