@@ -26,6 +26,7 @@
 #include "prepack.h"
 #include "logical_ram_infer.h"
 #include "timing_info.h"
+#include "vpr_error.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
@@ -258,6 +259,9 @@ ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
     const t_pack_molecule& seed_mol = prepacker_.get_molecule(cluster_seed_mol_id);
     AtomBlockId seed_atom = seed_mol.atom_block_ids[seed_mol.root];
     const t_pb* seed_pb = cluster.atom_pb_lookup.get_atom_pb(seed_atom);
+    if (!seed_pb) {
+        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Seed molecule does not exist in the cluster's atom-pb mapping.");
+    }
     cluster_gain_stats.is_memory = seed_pb->pb_graph_node->pb_type->class_type == MEMORY_CLASS;
 
     if (has_ram_groups_ && cluster_gain_stats.is_memory) {

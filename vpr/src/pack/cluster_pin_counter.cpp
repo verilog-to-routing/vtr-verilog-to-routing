@@ -544,7 +544,7 @@ void ClusterPinCounter::full_recompute_from_molecules(
             }
 
             const t_pb* primitive_pb = atom_to_pb.get_atom_pb(blk_id);
-            VTR_ASSERT_SAFE(primitive_pb != nullptr);
+            VTR_ASSERT(primitive_pb != nullptr);
             VTR_ASSERT_SAFE(primitive_pb->pb_graph_node->pb_type->is_primitive());
 
             VTR_ASSERT(primitive_pb->pb_graph_node->pb_type->blif_model != nullptr);
@@ -659,12 +659,12 @@ bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_externa
         const t_pb* pb; ///< The pb whose class was touched.
         int class_id;   ///< Which pin class within pb.
         bool is_input;  ///< True: input pin class. False: output.
-        bool operator<(const TouchedKey& o) const {
+        bool operator<(const TouchedKey& o) const noexcept {
             if (pb != o.pb) return pb < o.pb;
             if (is_input != o.is_input) return is_input < o.is_input;
             return class_id < o.class_id;
         }
-        bool operator==(const TouchedKey& o) const {
+        bool operator==(const TouchedKey& o) const noexcept {
             return pb == o.pb && class_id == o.class_id && is_input == o.is_input;
         }
     };
@@ -799,8 +799,7 @@ void ClusterPinCounter::apply_molecule_delta(PackMoleculeId candidate_id,
     // Step 3: mark every pin of every atom in the molecule.
     for (AtomBlockId blk : molecule_atoms) {
         const t_pb* prim_pb = atom_to_pb.get_atom_pb(blk);
-        VTR_ASSERT_SAFE(prim_pb != nullptr);
-        VTR_ASSERT_SAFE(prim_pb->pb_graph_node->pb_type->is_primitive());
+        VTR_ASSERT(prim_pb != nullptr);
         VTR_ASSERT(prim_pb->pb_graph_node->pb_type->blif_model != nullptr);
         compute_and_mark_pins_used(blk, cluster_atoms, atom_to_pb);
     }
