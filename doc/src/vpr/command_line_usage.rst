@@ -349,10 +349,12 @@ General Options
 
 .. option:: --constant_net_method {global | route}
 
-    Specifies how constant nets (i.e. those driven to a constant value) are handled:
+    Specifies how constant nets (i.e. those driven by a constant generator such as vcc/gnd) are handled:
 
-     * ``global``: Treat constant nets as globals (not routed)
+     * ``global``: Treat constant nets as ignored (not routed)
      * ``route``: Treat constant nets as normal nets (routed)
+
+    Nets which are only inferred to be constant (e.g. the output of a primitive whose inputs are all constant, see :option:`--const_gen_inference`) are always routed, since the primitive driving them is still implemented.
 
      **Default:** ``global``
 
@@ -658,7 +660,8 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
 .. option:: --sweep_constant_primary_outputs {on | off}
 
-    Controls whether primary outputs driven by constant values are swept and removed from the netlist.
+    Controls whether primary outputs driven by constant generators (e.g. vcc/gnd) are swept and removed from the netlist.
+    Primary outputs driven by nets which are only inferred to be constant (see :option:`--const_gen_inference`) are not swept.
 
     .. seealso:: :option:`--sweep_dangling_primary_ios`
 
