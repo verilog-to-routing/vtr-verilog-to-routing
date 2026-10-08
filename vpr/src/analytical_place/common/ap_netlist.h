@@ -42,6 +42,14 @@ struct APFixedBlockLoc {
     float y = UNFIXED_DIM;
     int layer_num = UNFIXED_DIM;
     int sub_tile = UNFIXED_DIM;
+
+    /**
+     * @brief Returns true if the two fixed locations are exactly the same.
+     *
+     * Exact comparison of the floating-point dimensions is intended; fixed
+     * locations are generated from integer grid coordinates.
+     */
+    bool operator==(const APFixedBlockLoc& other) const = default;
 };
 
 /**
