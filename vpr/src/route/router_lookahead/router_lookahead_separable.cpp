@@ -4,11 +4,15 @@
 #include <cmath>
 #include <memory>
 #include "connection_router_interface.h"
+#include "device_grid.h"
 #include "globals.h"
 #include "router_lookahead_map.h"
 #include "router_lookahead_map_utils.h"
 #include "router_lookahead_sampling_utils.h"
+#include "rr_graph_builder.h"
+#include "rr_graph_view.h"
 #include "rr_node_types.h"
+#include "rr_spatial_lookup.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
 #include "vtr_time.h"
@@ -18,9 +22,9 @@
  * Unidirectional wires must be driven at the sample position; BIDIR wires may span it.
  */
 static RRNodeId get_chanxy_start_node_sep(int layer, int start_x, int start_y, Direction direction, e_rr_type rr_type, int seg_index) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-    const auto& node_lookup = rr_graph.node_lookup();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
+    const RRSpatialLookup& node_lookup = rr_graph.node_lookup();
 
     VTR_ASSERT(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
 
@@ -55,8 +59,8 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
                                            e_profile_axis axis,
                                            vtr::NdMatrix<util::Cost_Entry, 7>& wire_cost_map) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
-    const auto& grid = device_ctx.grid;
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceGrid& grid = device_ctx.grid;
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     const bool profile_x = (axis == e_profile_axis::X);
 
@@ -199,8 +203,8 @@ float SeparableLookahead::get_expected_cost(RRNodeId current_node, RRNodeId targ
 }
 
 std::pair<float, float> SeparableLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     e_rr_type from_type = rr_graph.node_type(from_node);
     if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::OPIN) {
@@ -211,6 +215,7 @@ std::pair<float, float> SeparableLookahead::get_expected_delay_and_cong(RRNodeId
         return {0.f, device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost};
     }
     if (!is_chanxy(from_type) && !is_chanz(from_type)) {
+        // In case of SINK nodes or MUX nodes, return zero
         return {0.f, 0.f};
     }
 

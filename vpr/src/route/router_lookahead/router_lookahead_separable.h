@@ -18,12 +18,12 @@
 /**
  * @brief Wire delay and congestion indexed by source layer, target layer, channel type
  * (CHANX/CHANY/CHANZ), segment type, direction (INC/DEC/BIDIR), source x and target x.
- * [0..num_layers][0..num_layers][0..2][0..num_seg_types-1][0..2][0..device_ctx.grid.width()-1][0..device_ctx.grid.width()-1]
+ * [0..num_layers-1][0..num_layers-1][0..2][0..num_seg_types-1][0..2][0..device_ctx.grid.width()-1][0..device_ctx.grid.width()-1]
  */
 using t_x_wire_cost_map = vtr::NdMatrix<util::Cost_Entry, 7>;
 
 /** @brief The y-coordinate counterpart of t_x_wire_cost_map.
- * [0..num_layers][0..num_layers][0..2][0..num_seg_types-1][0..2][0..device_ctx.grid.height()-1][0..device_ctx.grid.height()-1]
+ * [0..num_layers-1][0..num_layers-1][0..2][0..num_seg_types-1][0..2][0..device_ctx.grid.height()-1][0..device_ctx.grid.height()-1]
  */
 using t_y_wire_cost_map = vtr::NdMatrix<util::Cost_Entry, 7>;
 
@@ -33,10 +33,14 @@ using t_y_wire_cost_map = vtr::NdMatrix<util::Cost_Entry, 7>;
  *        cost is separable in x and y), rather than as a joint function of
  *        (delta_x, delta_y) as done by MapLookahead.
  */
-class SeparableLookahead : public RouterLookahead {
+class SeparableLookahead final : public RouterLookahead {
   public:
     /// @brief Configure profiling and the map lookahead used for fallback estimates.
-    explicit SeparableLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings, float interposer_base_cost_multiplier);
+    explicit SeparableLookahead(const t_det_routing_arch& det_routing_arch,
+                                bool is_flat,
+                                int route_verbosity,
+                                bool device_model_warnings,
+                                float interposer_base_cost_multiplier);
 
   private:
     // MapLookahead overrides are protected, so access them through the base interface.
