@@ -856,7 +856,7 @@ static bool cleanup_pb(t_pb* pb, ClusterPinCounter& pin_counter) {
 }
 
 const t_clustering_chain_info& ClusterLegalizer::get_chain_info(MoleculeChainId chain_id,
-                                                               const LegalizationCluster& cluster) const {
+                                                                const LegalizationCluster& cluster) const {
     auto local = cluster.pending_chain_info.find(chain_id);
     if (local != cluster.pending_chain_info.end()) {
         return local->second;

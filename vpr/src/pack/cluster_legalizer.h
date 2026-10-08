@@ -614,7 +614,7 @@ class ClusterLegalizer {
      *        yet, falling back to committed clusters if it has no entry.
      */
     const t_clustering_chain_info& get_chain_info(MoleculeChainId chain_id,
-                                                 const LegalizationCluster& cluster) const;
+                                                  const LegalizationCluster& cluster) const;
 
     /// @brief Returns a reference to the target_external_pin_util object. This
     ///        allows the user to modify the external pin utilization if needed.
