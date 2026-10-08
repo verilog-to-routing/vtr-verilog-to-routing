@@ -75,6 +75,7 @@ struct t_options {
     argparse::ArgValue<bool> timing_analysis;
     argparse::ArgValue<e_timing_update_type> timing_update_type;
     argparse::ArgValue<bool> CreateEchoFile;
+    argparse::ArgValue<std::vector<std::string>> echo_files;
     argparse::ArgValue<bool> verify_file_digests;
     argparse::ArgValue<bool> verify_route_file_switch_id;
     argparse::ArgValue<std::string> device_layout;

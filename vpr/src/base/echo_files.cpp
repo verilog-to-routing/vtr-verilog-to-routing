@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
@@ -47,6 +48,25 @@ void setEchoFileName(enum e_echo_files echo_option, const char* name) {
     }
     echoFileNames[(int)echo_option] = new char[strlen(name) + 1];
     strcpy(echoFileNames[(int)echo_option], name);
+}
+
+void setOnlyEchoFilesEnabled(const std::vector<std::string>& echo_file_names) {
+    VTR_ASSERT(echoFileEnabled != nullptr);
+    setAllEchoFileEnabled(false);
+    for (const std::string& echo_file_name : echo_file_names) {
+        bool found = false;
+        for (int i = 0; i < (int)E_ECHO_END_TOKEN; i++) {
+            if (echoFileNames[i] != nullptr && echo_file_name == echoFileNames[i]) {
+                echoFileEnabled[i] = true;
+                found = true;
+            }
+        }
+        if (!found) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Unknown echo file '%s' given to --echo_files.\n",
+                            echo_file_name.c_str());
+        }
+    }
 }
 
 bool isEchoFileEnabled(enum e_echo_files echo_option) {

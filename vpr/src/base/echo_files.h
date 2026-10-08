@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 enum e_echo_files {
 
@@ -89,6 +90,15 @@ void setEchoFileEnabled(enum e_echo_files echo_option, bool value);
 void setEchoFileName(enum e_echo_files echo_option, const char* name);
 
 bool isEchoFileEnabled(enum e_echo_files echo_option);
+
+/**
+ * @brief Enable only the echo files with the given (default) file names, and
+ *        disable all other echo files.
+ *
+ * Echo files must be enabled (see setEchoEnabled) before calling this. Throws
+ * a fatal error if a name does not match any echo file.
+ */
+void setOnlyEchoFilesEnabled(const std::vector<std::string>& echo_file_names);
 char* getEchoFileName(enum e_echo_files echo_option);
 
 void alloc_and_load_echo_file_info();

@@ -259,7 +259,12 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     VTR_LOG("\n");
 
     /* Determine whether echo is on or off */
-    setEchoEnabled(options->CreateEchoFile);
+    // If specific echo files are requested, turn echo on, but only for those
+    // files.
+    const std::vector<std::string>& echo_files = options->echo_files.value();
+    setEchoEnabled(options->CreateEchoFile || !echo_files.empty());
+    if (!echo_files.empty())
+        setOnlyEchoFilesEnabled(echo_files);
 
     /*
      * Initialize the functions names for which VPR_ERRORs

@@ -319,6 +319,14 @@ General Options
 
     **Default:** ``off``
 
+.. option:: --echo_files <echo_file_name> [<echo_file_name> ...]
+
+    Generates only the given echo files, identified by their default file names (e.g. ``timing_graph.analysis.echo``).
+    This turns on echo file generation (as :option:`--echo_file` ``on`` would), but only for the listed files.
+    This is useful when only a few echo files are needed, since some echo files can be very large.
+
+    **Default:** (none)
+
 .. option:: --verify_file_digests {on | off}
 
     Checks that any intermediate files loaded (e.g. previous packing/placement/routing) are consistent with the current netlist/architecture.

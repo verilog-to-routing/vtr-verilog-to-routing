@@ -1930,6 +1930,17 @@ static void add_general_options(argparse::ArgumentParser& parser, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    gen_grp.add_argument(args.echo_files, "--echo_files")
+        .help(
+            "Generate only the given echo files (by their default file names,"
+            " e.g. timing_graph.analysis.echo). This turns on echo file"
+            " generation (as --echo_file on would), but only for the listed"
+            " files. Useful when only a few echo files are needed, since some"
+            " echo files can be very large.")
+        .nargs('+')
+        .default_value({})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     gen_grp.add_argument<bool, ParseOnOff>(args.verify_file_digests, "--verify_file_digests")
         .help(
             "Verify that files loaded by VPR (e.g. architecture, netlist,"
