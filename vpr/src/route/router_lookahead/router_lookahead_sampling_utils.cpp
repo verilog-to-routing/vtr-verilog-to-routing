@@ -11,10 +11,10 @@
 #include "vpr_utils.h"
 
 void util::expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
-                                                                  vtr::vector<RRNodeId, float>& node_visited_costs,
-                                                                  vtr::vector<RRNodeId, bool>& node_expanded,
-                                                                  std::priority_queue<util::PQ_Entry>& pq,
-                                                                  const t_bb& bb) {
+                                      vtr::vector<RRNodeId, float>& node_visited_costs,
+                                      vtr::vector<RRNodeId, bool>& node_expanded,
+                                      std::priority_queue<util::PQ_Entry>& pq,
+                                      const t_bb& bb) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
 
