@@ -1313,7 +1313,7 @@ void free_pb(t_pb* pb,
     } else {
         // Primitive: remove its atom mapping before freeing its statistics.
         if (atom_pb_bimap) {
-            // If this is a commited cluster that's being freed, must remove mapping from the global data structures
+            // If this is a committed cluster that's being freed, must remove mapping from the global data structures
             AtomPBBimap& lookup = *atom_pb_bimap;
             auto& atom_ctx = g_vpr_ctx.mutable_atom();
             AtomBlockId blk_id = lookup.pb_atom(pb);
@@ -1324,7 +1324,7 @@ void free_pb(t_pb* pb,
             }
             lookup.set_atom_pb(AtomBlockId::INVALID(), pb);
         } else if (cluster_atom_pb_bimap) {
-            // Otherwise it's an uncommited cluster, can just erase the mapping from the local data structures.
+            // Otherwise it's an uncommitted cluster, can just erase the mapping from the local data structures.
             cluster_atom_pb_bimap->erase(pb);
         }
     }
