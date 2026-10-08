@@ -84,10 +84,15 @@ void set_initial_world_ap();
  */
 void set_initial_world();
 
-/* Sets the static show_graphics and graphics_pause variables to the *
- * desired values.  They control if graphics are enabled and, if so, *
- * how often the user is prompted for input.                         */
-void init_graphics_state(const t_vpr_setup& vpr_setup);
+/**
+ * @brief Initializes graphics for the current device: sets the draw state from
+ * the command-line options, creates the application, allocates the draw
+ * structures and draw coordinates and, under --disp on, builds the GUI without
+ * showing it so its widgets exist before the first update_screen() pause.
+ *
+ * Call once the device grid is valid.
+ */
+void init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch);
 
 /* Allocates the structures needed to draw the placement and routing.*/
 void alloc_draw_structs(const t_arch* arch);
