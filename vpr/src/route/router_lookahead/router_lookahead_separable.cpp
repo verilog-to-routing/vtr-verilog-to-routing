@@ -101,20 +101,28 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
                       (int)from_layer_num, (int)from_layer_num);
         }
 
+        // Pick sample points from each segment type e.g. L4, L16
         for (const t_segment_inf& segment_inf : segment_infs) {
+
+            // We need to figure out what channel types this segment can be found in
             std::vector<e_rr_type> chan_types;
             if (segment_inf.parallel_axis == e_parallel_axis::X_AXIS) {
+                // Only CHANX
                 chan_types.push_back(e_rr_type::CHANX);
             } else if (segment_inf.parallel_axis == e_parallel_axis::Y_AXIS) {
+                // Only CHANY
                 chan_types.push_back(e_rr_type::CHANY);
             } else if (segment_inf.parallel_axis == e_parallel_axis::Z_AXIS) {
+                // Only CHANZ
                 chan_types.push_back(e_rr_type::CHANZ);
             } else {
+                // Both CHANY and CHANZ
                 VTR_ASSERT(segment_inf.parallel_axis == e_parallel_axis::BOTH_AXIS);
                 // Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
                 chan_types.insert(chan_types.end(), {e_rr_type::CHANX, e_rr_type::CHANY});
             }
 
+            // Picsk sample points from each channel type e.g. CHANX, CHANY, CHANZ
             for (e_rr_type chan_type : chan_types) {
                 const int chan_index = util::chan_type_to_index(chan_type);
 
