@@ -1,8 +1,8 @@
 #include "vtr_expr_eval.h"
 #include "vtr_error.h"
 #include "vtr_util.h"
-#include "vtr_math.h"
 
+#include <numeric>
 #include <string>
 #include <sstream>
 
@@ -686,10 +686,10 @@ static int apply_rpn_op(const Formula_Object& arg1, const Formula_Object& arg2, 
             result = std::min(arg1.data.num, arg2.data.num);
             break;
         case E_OP_GCD:
-            result = vtr::gcd(arg1.data.num, arg2.data.num);
+            result = std::gcd(arg1.data.num, arg2.data.num);
             break;
         case E_OP_LCM:
-            result = vtr::lcm(arg1.data.num, arg2.data.num);
+            result = std::lcm(arg1.data.num, arg2.data.num);
             break;
         case E_OP_AND:
             result = arg1.data.num && arg2.data.num;

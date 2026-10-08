@@ -15,9 +15,6 @@ std::string replace_first(std::string_view input, std::string_view search, std::
 ///@brief Returns 'input' with all instances of 'search' replaced with 'replace'
 std::string replace_all(std::string_view input, std::string_view search, std::string_view replace);
 
-///@brief Returns true if str starts with prefix
-bool starts_with(const std::string& str, std::string_view prefix);
-
 ///@brief Returns a std::string formatted using a printf-style format string
 std::string string_fmt(const char* fmt, ...);
 
@@ -152,7 +149,6 @@ double atod(std::string_view value);
  * @brief Returns line number of last opened and read file
  */
 int get_file_line_number_of_last_opened_file();
-bool file_exists(const char* filename);
 
 /**
  * @brief Checks the file extension of an file to ensure correct file format. 
@@ -162,11 +158,6 @@ bool file_exists(const char* filename);
 bool check_file_name_extension(std::string_view file_name, std::string_view file_extension);
 
 extern std::string out_file_prefix;
-
-/**
- * @brief Legacy ReadLine Tokening
- */
-std::vector<std::string> ReadLineTokens(FILE* InFile, int* LineNum);
 
 /**
  * @brief Template join function implementation
