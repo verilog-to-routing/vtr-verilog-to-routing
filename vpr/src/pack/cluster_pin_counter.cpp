@@ -20,7 +20,7 @@
 #include <utility>
 
 #include "atom_netlist.h"
-#include "atom_pb_bimap.h"
+#include "cluster_atom_lookup.h"
 #include "globals.h"
 #include "physical_types.h"
 #include "vpr_context.h"
@@ -32,7 +32,7 @@
 
 void ClusterPinCounter::allocate_pin_count_state(const t_pb* pb) {
     VTR_ASSERT(pb != nullptr);
-    VTR_ASSERT_MSG(per_pb_state_.count(pb) == 0,
+    VTR_ASSERT_MSG(!per_pb_state_.contains(pb),
                    "Pin counting state should be empty before allocation");
 
     const t_pb_graph_node* pb_graph_node = pb->pb_graph_node;
@@ -82,14 +82,14 @@ void ClusterPinCounter::clean_state() {
 
 size_t ClusterPinCounter::input_size(const t_pb* pb, size_t class_id) const {
     VTR_ASSERT_SAFE(pb != nullptr);
-    VTR_ASSERT_SAFE(per_pb_state_.count(pb) > 0);
+    VTR_ASSERT_SAFE(per_pb_state_.contains(pb));
     const PerPbState& state = per_pb_state_.at(pb);
     return state.input_pin_class_net_counts.at(class_id).size();
 }
 
 size_t ClusterPinCounter::output_size(const t_pb* pb, size_t class_id) const {
     VTR_ASSERT_SAFE(pb != nullptr);
-    VTR_ASSERT_SAFE(per_pb_state_.count(pb) > 0);
+    VTR_ASSERT_SAFE(per_pb_state_.contains(pb));
     const PerPbState& state = per_pb_state_.at(pb);
     return state.output_pin_class_net_counts.at(class_id).size();
 }
@@ -178,7 +178,7 @@ void ClusterPinCounter::record_output_mark(AtomPinId pin_id, const t_pb* pb) {
     mark_record_journal_.push_back({pin_id, pb, /*is_input=*/false, +1});
 }
 
-void ClusterPinCounter::remove_input_pin_marks(AtomPinId pin_id, AtomNetId net_id, const AtomPBBimap& atom_to_pb) {
+void ClusterPinCounter::remove_input_pin_marks(AtomPinId pin_id, AtomNetId net_id, const ClusterAtomPBBimap& atom_to_pb) {
     auto it = input_mark_record_.find(pin_id);
     if (it == input_mark_record_.end()) {
         // Pin never contributed a mark on the input side.
@@ -189,7 +189,7 @@ void ClusterPinCounter::remove_input_pin_marks(AtomPinId pin_id, AtomNetId net_i
     const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(netlist, atom_to_pb, pin_id);
 
     for (const t_pb* pb : it->second) {
-        VTR_ASSERT_SAFE(per_pb_state_.count(pb) > 0);
+        VTR_ASSERT_SAFE(per_pb_state_.contains(pb));
 
         const int depth = pb->pb_graph_node->pb_type->depth;
         const int class_id = pb_graph_pin->parent_pin_class[depth];
@@ -201,7 +201,7 @@ void ClusterPinCounter::remove_input_pin_marks(AtomPinId pin_id, AtomNetId net_i
     input_mark_record_.erase(it);
 }
 
-void ClusterPinCounter::remove_output_pin_marks(AtomPinId pin_id, AtomNetId net_id, const AtomPBBimap& atom_to_pb) {
+void ClusterPinCounter::remove_output_pin_marks(AtomPinId pin_id, AtomNetId net_id, const ClusterAtomPBBimap& atom_to_pb) {
     auto it = output_mark_record_.find(pin_id);
     if (it == output_mark_record_.end()) {
         // Pin never contributed a mark on the output side.
@@ -212,7 +212,7 @@ void ClusterPinCounter::remove_output_pin_marks(AtomPinId pin_id, AtomNetId net_
     const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(netlist, atom_to_pb, pin_id);
 
     for (const t_pb* pb : it->second) {
-        VTR_ASSERT_SAFE(per_pb_state_.count(pb) > 0);
+        VTR_ASSERT_SAFE(per_pb_state_.contains(pb));
 
         const int depth = pb->pb_graph_node->pb_type->depth;
         const int class_id = pb_graph_pin->parent_pin_class[depth];
@@ -241,7 +241,9 @@ void ClusterPinCounter::rollback_check() {
         if (delta.change == +1) {
             // Undo an append: pop the last entry.
             auto it = record_map.find(delta.pin);
-            VTR_ASSERT(it != record_map.end() && !it->second.empty());
+            if (it == record_map.end() || it->second.empty()) {
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, "Cannot roll back an append to a missing or empty pin mark record.\n");
+            }
             VTR_ASSERT_SAFE(it->second.back() == delta.pb);
             it->second.pop_back();
             if (it->second.empty()) {
@@ -259,7 +261,7 @@ void ClusterPinCounter::rollback_check() {
         const PerPbStateDelta delta = per_pb_state_journal_.back();
         per_pb_state_journal_.pop_back();
 
-        VTR_ASSERT_SAFE(per_pb_state_.count(delta.pb) > 0);
+        VTR_ASSERT_SAFE(per_pb_state_.contains(delta.pb));
         auto pb_it = per_pb_state_.find(delta.pb);
 
         std::unordered_map<AtomNetId, int>& net_counts = delta.is_input ? pb_it->second.input_pin_class_net_counts.at(delta.class_id)
@@ -292,7 +294,7 @@ void ClusterPinCounter::rollback_check() {
  * @return                True if every sink pin of net_id is reachable from
  *                        driver_pb_gpin at the given depth.
  */
-static bool net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id, const AtomPBBimap& atom_to_pb) {
+static bool net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id, const ClusterAtomPBBimap& atom_to_pb) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     // Record the sink pb graph pins we are looking for.
@@ -309,7 +311,7 @@ static bool net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin,
     for (int i_prim_pin = 0; i_prim_pin < driver_pb_gpin->num_connectable_primitive_input_pins[depth]; ++i_prim_pin) {
         const t_pb_graph_pin* reachable_pb_gpin = driver_pb_gpin->list_of_connectable_input_pin_ptrs[depth][i_prim_pin];
 
-        if (sink_pb_gpins.count(reachable_pb_gpin)) {
+        if (sink_pb_gpins.contains(reachable_pb_gpin)) {
             ++num_reachable_sinks;
             if (num_reachable_sinks == atom_ctx.netlist().net_sinks(net_id).size()) {
                 return true;
@@ -358,24 +360,23 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_input_pin(AtomPinId pin_i
                                                                  const t_pb_graph_pin* pb_graph_pin,
                                                                  const t_pb* primitive_pb,
                                                                  AtomNetId net_id,
-                                                                 const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                                                 const AtomPBBimap& atom_to_pb) {
+                                                                 const std::unordered_set<AtomBlockId>& cluster_atoms,
+                                                                 const ClusterAtomPBBimap& atom_to_pb) {
     VTR_ASSERT(pb_graph_pin->port->type == IN_PORT);
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     const AtomBlockId driver_blk_id = atom_ctx.netlist().net_driver_block(net_id);
     const AtomPinId driver_pin_id = atom_ctx.netlist().net_driver(net_id);
-    const AtomBlockId prim_blk_id = atom_to_pb.pb_atom(primitive_pb);
-    const t_pb* driver_pb = atom_to_pb.atom_pb(driver_blk_id);
+    const AtomBlockId prim_blk_id = atom_to_pb.get_pb_atom(primitive_pb);
+    const t_pb* driver_pb = atom_to_pb.get_atom_pb(driver_blk_id);
 
     // If the driver atom is in the same cluster as primitive_pb, find the
     // pb_graph_pin that drives net_id. Otherwise leave it null; the driver
     // is outside the cluster, so the net must enter via an input pin at
     // every level.
     t_pb_graph_pin* output_pb_graph_pin = nullptr;
-    LegalizationClusterId driver_cluster_id = atom_cluster[driver_blk_id];
-    LegalizationClusterId prim_cluster_id = atom_cluster[prim_blk_id];
-    if (driver_cluster_id == prim_cluster_id) {
+    VTR_ASSERT_SAFE(cluster_atoms.contains(prim_blk_id));
+    if (cluster_atoms.contains(driver_blk_id)) {
         output_pb_graph_pin = get_driver_pb_graph_pin(driver_pb, driver_pin_id);
     }
 
@@ -417,8 +418,8 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_output_pin(AtomPinId pin_
                                                                   const t_pb_graph_pin* pb_graph_pin,
                                                                   const t_pb* primitive_pb,
                                                                   AtomNetId net_id,
-                                                                  const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                                                  const AtomPBBimap& atom_to_pb) {
+                                                                  const std::unordered_set<AtomBlockId>& cluster_atoms,
+                                                                  const ClusterAtomPBBimap& atom_to_pb) {
     VTR_ASSERT(pb_graph_pin->port->type == OUT_PORT);
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const AtomBlockId driver_blk_id = atom_ctx.netlist().net_driver_block(net_id);
@@ -469,10 +470,10 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_output_pin(AtomPinId pin_
 
             // Check if all the net sinks are, in fact, inside this cluster
             if (!all_sinks_in_cur_cluster_computed) {
-                const LegalizationClusterId driver_cluster = atom_cluster[driver_blk_id];
+                VTR_ASSERT(cluster_atoms.contains(driver_blk_id));
                 all_sinks_in_cur_cluster = true;
                 for (AtomPinId sink_pin_id : atom_ctx.netlist().net_sinks(net_id)) {
-                    if (atom_cluster[atom_ctx.netlist().pin_block(sink_pin_id)] != driver_cluster) {
+                    if (!cluster_atoms.contains(atom_ctx.netlist().pin_block(sink_pin_id))) {
                         all_sinks_in_cur_cluster = false;
                         break;
                     }
@@ -509,11 +510,11 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_output_pin(AtomPinId pin_
 
 void ClusterPinCounter::compute_and_mark_pins_used(
     AtomBlockId blk_id,
-    const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-    const AtomPBBimap& atom_to_pb) {
+    const std::unordered_set<AtomBlockId>& cluster_atoms,
+    const ClusterAtomPBBimap& atom_to_pb) {
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
 
-    const t_pb* cur_pb = atom_to_pb.atom_pb(blk_id);
+    const t_pb* cur_pb = atom_to_pb.get_atom_pb(blk_id);
     VTR_ASSERT(cur_pb != nullptr);
 
     // Walk through inputs and outputs marking pins off of the same class.
@@ -523,9 +524,9 @@ void ClusterPinCounter::compute_and_mark_pins_used(
         const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_netlist, atom_to_pb, pin_id);
 
         if (pb_graph_pin->port->type == IN_PORT) {
-            compute_and_mark_pins_used_for_input_pin(pin_id, pb_graph_pin, cur_pb, net_id, atom_cluster, atom_to_pb);
+            compute_and_mark_pins_used_for_input_pin(pin_id, pb_graph_pin, cur_pb, net_id, cluster_atoms, atom_to_pb);
         } else {
-            compute_and_mark_pins_used_for_output_pin(pin_id, pb_graph_pin, cur_pb, net_id, atom_cluster, atom_to_pb);
+            compute_and_mark_pins_used_for_output_pin(pin_id, pb_graph_pin, cur_pb, net_id, cluster_atoms, atom_to_pb);
         }
     }
 }
@@ -533,8 +534,8 @@ void ClusterPinCounter::compute_and_mark_pins_used(
 void ClusterPinCounter::full_recompute_from_molecules(
     const std::vector<PackMoleculeId>& molecules,
     const Prepacker& prepacker,
-    const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-    const AtomPBBimap& atom_to_pb) {
+    const std::unordered_set<AtomBlockId>& cluster_atoms,
+    const ClusterAtomPBBimap& atom_to_pb) {
     wipe_all_marks_journaled();
 
     for (PackMoleculeId molecule_id : molecules) {
@@ -544,12 +545,12 @@ void ClusterPinCounter::full_recompute_from_molecules(
                 continue;
             }
 
-            const t_pb* primitive_pb = atom_to_pb.atom_pb(blk_id);
-            VTR_ASSERT_SAFE(primitive_pb != nullptr);
+            const t_pb* primitive_pb = atom_to_pb.get_atom_pb(blk_id);
+            VTR_ASSERT(primitive_pb != nullptr);
             VTR_ASSERT_SAFE(primitive_pb->pb_graph_node->pb_type->is_primitive());
 
             VTR_ASSERT(primitive_pb->pb_graph_node->pb_type->blif_model != nullptr);
-            compute_and_mark_pins_used(blk_id, atom_cluster, atom_to_pb);
+            compute_and_mark_pins_used(blk_id, cluster_atoms, atom_to_pb);
         }
     }
 }
@@ -660,12 +661,12 @@ bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_externa
         const t_pb* pb; ///< The pb whose class was touched.
         int class_id;   ///< Which pin class within pb.
         bool is_input;  ///< True: input pin class. False: output.
-        bool operator<(const TouchedKey& o) const {
+        bool operator<(const TouchedKey& o) const noexcept {
             if (pb != o.pb) return pb < o.pb;
             if (is_input != o.is_input) return is_input < o.is_input;
             return class_id < o.class_id;
         }
-        bool operator==(const TouchedKey& o) const {
+        bool operator==(const TouchedKey& o) const noexcept {
             return pb == o.pb && class_id == o.class_id && is_input == o.is_input;
         }
     };
@@ -716,8 +717,8 @@ bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_externa
 
 void ClusterPinCounter::apply_molecule_delta(PackMoleculeId candidate_id,
                                              const Prepacker& prepacker,
-                                             const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                             const AtomPBBimap& atom_to_pb) {
+                                             const std::unordered_set<AtomBlockId>& cluster_atoms,
+                                             const ClusterAtomPBBimap& atom_to_pb) {
     VTR_ASSERT_SAFE_MSG(per_pb_state_journal_.empty() && mark_record_journal_.empty(),
                         "Both journals must be empty at the start of a candidate check "
                         "(apply_molecule_delta should run once per candidate check; the previous check must be committed or rolled back first).");
@@ -730,12 +731,6 @@ void ClusterPinCounter::apply_molecule_delta(PackMoleculeId candidate_id,
         if (blk.is_valid()) molecule_atoms.insert(blk);
     }
     VTR_ASSERT(!molecule_atoms.empty());
-
-    // Every atom in the molecule has already been placed and its cluster recorded by
-    // try_place_atom_block_rec, so any of them tells us which cluster we're
-    // in. Used to filter "atom is in this cluster" checks below.
-    const LegalizationClusterId our_cluster = atom_cluster[*molecule_atoms.begin()];
-    VTR_ASSERT(our_cluster.is_valid());
 
     // Step 1: every net the molecule now drives -> re-evaluate every pre-existing sink.
     // A net has a single driver, so no duplicate net_ids are collected here.
@@ -751,13 +746,13 @@ void ClusterPinCounter::apply_molecule_delta(PackMoleculeId candidate_id,
         for (AtomPinId sink_pin : netlist.net_sinks(net_id)) {
             const AtomBlockId sink_atom = netlist.pin_block(sink_pin);
             // Sink belongs to the molecule; Step 3 marks it.
-            if (molecule_atoms.count(sink_atom))
+            if (molecule_atoms.contains(sink_atom))
                 continue;
             // Sink belongs to another cluster; nothing to update here.
-            if (atom_cluster[sink_atom] != our_cluster)
+            if (!cluster_atoms.contains(sink_atom))
                 continue;
 
-            const t_pb* sink_prim_pb = atom_to_pb.atom_pb(sink_atom);
+            const t_pb* sink_prim_pb = atom_to_pb.get_atom_pb(sink_atom);
             // Sink has not been placed into a primitive pb yet.
             if (sink_prim_pb == nullptr)
                 continue;
@@ -765,7 +760,7 @@ void ClusterPinCounter::apply_molecule_delta(PackMoleculeId candidate_id,
             remove_input_pin_marks(sink_pin, net_id, atom_to_pb);
             const t_pb_graph_pin* sink_pb_graph_pin = find_pb_graph_pin(netlist, atom_to_pb, sink_pin);
             compute_and_mark_pins_used_for_input_pin(sink_pin, sink_pb_graph_pin, sink_prim_pb, net_id,
-                                                     atom_cluster, atom_to_pb);
+                                                     cluster_atoms, atom_to_pb);
         }
     }
 
@@ -786,13 +781,13 @@ void ClusterPinCounter::apply_molecule_delta(PackMoleculeId candidate_id,
             continue;
         const AtomBlockId driver_atom = netlist.pin_block(driver_pin);
         // Driver belongs to the molecule; Step 3 marks it.
-        if (molecule_atoms.count(driver_atom))
+        if (molecule_atoms.contains(driver_atom))
             continue;
         // Driver belongs to another cluster; nothing to update here.
-        if (atom_cluster[driver_atom] != our_cluster)
+        if (!cluster_atoms.contains(driver_atom))
             continue;
 
-        const t_pb* driver_prim_pb = atom_to_pb.atom_pb(driver_atom);
+        const t_pb* driver_prim_pb = atom_to_pb.get_atom_pb(driver_atom);
         // Driver has not been placed into a primitive pb yet.
         if (driver_prim_pb == nullptr)
             continue;
@@ -800,16 +795,15 @@ void ClusterPinCounter::apply_molecule_delta(PackMoleculeId candidate_id,
         remove_output_pin_marks(driver_pin, net_id, atom_to_pb);
         const t_pb_graph_pin* driver_pb_graph_pin = find_pb_graph_pin(netlist, atom_to_pb, driver_pin);
         compute_and_mark_pins_used_for_output_pin(driver_pin, driver_pb_graph_pin, driver_prim_pb, net_id,
-                                                  atom_cluster, atom_to_pb);
+                                                  cluster_atoms, atom_to_pb);
     }
 
     // Step 3: mark every pin of every atom in the molecule.
     for (AtomBlockId blk : molecule_atoms) {
-        const t_pb* prim_pb = atom_to_pb.atom_pb(blk);
-        VTR_ASSERT_SAFE(prim_pb != nullptr);
-        VTR_ASSERT_SAFE(prim_pb->pb_graph_node->pb_type->is_primitive());
+        const t_pb* prim_pb = atom_to_pb.get_atom_pb(blk);
+        VTR_ASSERT(prim_pb != nullptr);
         VTR_ASSERT(prim_pb->pb_graph_node->pb_type->blif_model != nullptr);
-        compute_and_mark_pins_used(blk, atom_cluster, atom_to_pb);
+        compute_and_mark_pins_used(blk, cluster_atoms, atom_to_pb);
     }
 }
 
@@ -858,15 +852,15 @@ static void compare_class_maps_or_die(const t_pb* pb,
 
 void ClusterPinCounter::verify_against_full_recompute(const std::vector<PackMoleculeId>& molecules,
                                                       const Prepacker& prepacker,
-                                                      const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                                      const AtomPBBimap& atom_to_pb) const {
+                                                      const std::unordered_set<AtomBlockId>& cluster_atoms,
+                                                      const ClusterAtomPBBimap& atom_to_pb) const {
     // Build a scratch counter with the same pb topology as this counter and
     // let it fill its state via the full recompute path.
     ClusterPinCounter scratch;
     for (const auto& [pb, _] : per_pb_state_) {
         scratch.allocate_pin_count_state(pb);
     }
-    scratch.full_recompute_from_molecules(molecules, prepacker, atom_cluster, atom_to_pb);
+    scratch.full_recompute_from_molecules(molecules, prepacker, cluster_atoms, atom_to_pb);
 
     for (const auto& [pb, this_state] : per_pb_state_) {
         const PerPbState& scratch_state = scratch.per_pb_state_.at(pb);
@@ -909,7 +903,7 @@ void ClusterPinCounter::assert_all_pbs_reachable_from(const t_pb* cluster_root) 
     collect_reachable_pbs(cluster_root, reachable_pbs);
 
     for (const auto& [pb, _] : per_pb_state_) {
-        if (reachable_pbs.count(pb) == 0) {
+        if (!reachable_pbs.contains(pb)) {
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "ClusterPinCounter tracks a pb (raw pointer %p) that is not "
                             "reachable from the cluster root. A free/cleanup site freed "

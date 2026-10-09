@@ -1,4 +1,5 @@
 #pragma once
+#include "cluster_atom_lookup.h"
 
 #include "arch_util.h"
 #include "atom_netlist.h"
@@ -175,6 +176,9 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
 
 const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBBimap& atom_pb_lookup, const AtomPinId pin_id);
 
+/** @brief Find a primitive pin using cluster-local atom mappings. */
+const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const ClusterAtomPBBimap& atom_pb_lookup, AtomPinId pin_id);
+
 /**
  * @brief Retrieves the atom pin associated with a specific CLB and pb_graph_pin. Warning: Not all pb_graph_pins are associated with an atom pin! Only pb_graph_pins on primitives are associated with an AtomPinId. Returns AtomPinId::INVALID() if no atom pin is found.
  */
@@ -228,7 +232,16 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id);
 std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line);
 
 void free_pb_stats(t_pb* pb);
-void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap);
+/**
+ * @brief Free a pb hierarchy and optionally remove its atom mappings.
+ * @param pb The pb hierarchy to free; the caller deletes the root pb.
+ * @param atom_pb_bimap Mapping to update along with global atom-to-CLB lookup.
+ * @param cluster_atom_pb_bimap Local mapping to update without changing global lookup.
+ * Supply at most one mapping; nullptr skips mapping cleanup.
+ */
+void free_pb(t_pb* pb,
+             AtomPBBimap* atom_pb_bimap = nullptr,
+             ClusterAtomPBBimap* cluster_atom_pb_bimap = nullptr);
 
 void print_switch_usage();
 void print_usage_by_wire_length();

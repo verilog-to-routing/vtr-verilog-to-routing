@@ -174,7 +174,7 @@ class GreedyClusterer {
      * @brief Given a seed molecule, starts a new cluster by trying to find a
      *        good logical block type and mode to put it in. This method cannot
      *        fail (only crash if the seed cannot be clustered), so it should
-     *        always return a valid ID to the cluster created.
+     *        always return a locally owned LegalizationCluster object.
      *
      * When balance_block_type_utilization is set to true, this method will try
      * to select less used logical block types if it has the option to in order
@@ -184,13 +184,14 @@ class GreedyClusterer {
      * device grid if it finds that more clusters of specific logical block
      * types have been created than the device can support.
      */
-    LegalizationClusterId start_new_cluster(PackMoleculeId seed_mol_id,
-                                            ClusterLegalizer& cluster_legalizer,
-                                            const Prepacker& prepacker,
-                                            const RamMapper& ram_mapper,
-                                            bool balance_block_type_utilization,
-                                            std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
-                                            DeviceContext& mutable_device_ctx);
+    LegalizationCluster start_new_cluster(PackMoleculeId seed_mol_id,
+                                          ClusterLegalizationStrategy strategy,
+                                          ClusterLegalizer& cluster_legalizer,
+                                          const Prepacker& prepacker,
+                                          const RamMapper& ram_mapper,
+                                          bool balance_block_type_utilization,
+                                          std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+                                          DeviceContext& mutable_device_ctx);
 
     /**
      * @brief Try to add the given candidate molecule to the given cluster.
@@ -198,7 +199,7 @@ class GreedyClusterer {
      *        otherwise.
      */
     bool try_add_candidate_mol_to_cluster(PackMoleculeId candidate_mol_id,
-                                          LegalizationClusterId legalization_cluster_id,
+                                          LegalizationCluster& cluster,
                                           ClusterLegalizer& cluster_legalizer,
                                           const Prepacker& prepacker);
 

@@ -14,9 +14,12 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <unordered_set>
+#include <unordered_map>
 #include "atom_netlist_fwd.h"
 #include "cluster_legalizer_fwd.h"
 #include "cluster_pin_counter.h"
+#include "cluster_atom_lookup.h"
 #include "cluster_router.h"
 #include "noc_data_types.h"
 #include "partition_region.h"
@@ -118,6 +121,34 @@ struct LegalizationCluster {
                         const std::unordered_set<int>& valid_feedback_pins,
                         bool enable_router_hot_start = false);
 
+    // This cluster owns pb and placement_stats and frees them on destruction.
+    // Copying would share these pointers and free the same resources twice.
+    // Move operations transfer ownership instead.
+    LegalizationCluster(const LegalizationCluster&) = delete;
+    LegalizationCluster& operator=(const LegalizationCluster&) = delete;
+    /** @brief Transfer local ownership without moving the pb hierarchy. */
+    LegalizationCluster(LegalizationCluster&& other) noexcept;
+    /** @brief Transfer ownership, leaving the source empty and destructible. */
+    LegalizationCluster& operator=(LegalizationCluster&& other) noexcept;
+    /** @brief Swap resources without relocating the owned pb hierarchy. */
+    void swap(LegalizationCluster& other) noexcept;
+    /** @brief Free local packing resources and pb mappings. */
+    ~LegalizationCluster();
+
+    /** @brief Whether an atom is accepted or currently placed for a trial. */
+    bool contains_atom(AtomBlockId atom) const { return atoms.count(atom) != 0; }
+    /** @brief Whether a molecule has been accepted into this cluster. */
+    bool contains_molecule(PackMoleculeId molecule) const { return molecule_ids.count(molecule) != 0; }
+
+    std::unordered_set<AtomBlockId> atoms;                                           ///< Accepted and currently placed trial atoms.
+    std::unordered_set<PackMoleculeId> molecule_ids;                                 ///< Accepted molecule membership.
+    ClusterAtomPBBimap atom_pb_lookup;                                               ///< Sparse local atom to primitive pb mapping.
+    std::unordered_map<MoleculeChainId, t_clustering_chain_info> pending_chain_info; ///< Chain info that has not been committed yet
+    std::vector<t_pb_graph_node*> primitives_list;                                   ///< Reused molecule placement scratch.
+    ClusterLegalizationStrategy strategy = ClusterLegalizationStrategy::FULL;        ///< Strategy for this attempt.
+    bool routing_verified = false;                                                   ///< Actual routing verified for the current accepted atoms.
+    bool finalized = false;                                                          ///< Final routing has been materialized as pb_route.
+
     /// @brief A list of the molecules in the cluster. By design, a cluster will
     ///        only contain molecules which have been previously legalized into
     ///        the cluster using a legalization strategy.
@@ -164,15 +195,16 @@ struct LegalizationCluster {
     ClusterPinCounter pin_counter;
 };
 
-/*
+/**
  * @brief A manager class which manages the legalization of clusters. As clusters
  *        are created, this class will legalize for each molecule added. It also
  *        provides methods which are helpful for clustering.
  *
  * Usage:
- * The ClusterLegalizer class maintains the clusters within itself since the
- * legalization of a cluster depends on the molecules which have already been
- * inserted into the clusters prior.
+ * The user of this class maintains local clusters (LegalizationCluster objects)
+ * while adding molecules, since the legalization of a cluster depends on the
+ * molecules which have already been inserted into the clusters prior. The
+ * ClusterLegalizer stores finalized clusters after the user calls commit_cluster.
  *
  * The class provides different legalization strategies the user may use to
  * legalize:
@@ -185,27 +217,27 @@ struct LegalizationCluster {
  * look something like this. Note, this example is simplified and the result
  * of the packings should be checked and handled.
  *
- * ClusterLegalizer legalizer(...,
- *                            ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
- *                            ...);
+ * ClusterLegalizer legalizer(...);
  *
- * std::tie(status, new_cluster_id) = legalizer.start_new_cluster(seed_mol,
- *                                                                cluster_type,
- *                                                                mode);
+ * LegalizationCluster new_cluster;
+ * std::tie(status, new_cluster) = legalizer.start_new_cluster(seed_mol,
+ *                                                            cluster_type,
+ *                                                            mode,
+ *                                                            ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
  * for mol in molecules_to_add:
  *      // Cheaper additions, but may pack a molecule that wouldn't route.
- *      status = legalizer.add_mol_to_cluster(mol, new_cluster_id);
+ *      status = legalizer.add_mol_to_cluster(mol, new_cluster);
  *      if (status != e_block_pack_status::BLK_PASSED)
  *          break;
  *
  * // Do the expensive check once all molecules are in.
- * if (!legalizer.check_cluster_legality(new_cluster_id))
- *      // Destroy the illegal cluster.
- *      legalizer.destroy_cluster(new_cluster_id);
- *      // Clean-up the internal bookkeeping of the class (required after
- *      // destroying a cluster).
- *      legalizer.compress();
+ * if (!legalizer.check_cluster_legality(new_cluster)) {
+ *      // Discard the illegal local cluster; its destructor frees its resources.
  *      // Handle how to try again (maybe use FULL strategy).
+ * } else {
+ *      legalizer.clean_cluster(new_cluster);
+ *      new_cluster_id = legalizer.commit_cluster(std::move(new_cluster));
+ * }
  *
  * 2) FULL Legalization Strategy Example:
  * This strategy will fully route the internal connections of the clusters for
@@ -213,20 +245,25 @@ struct LegalizationCluster {
  * that the cluster is fully legalized while it is being created. An example
  * of how to use this strategy would look something like this:
  *
- * Clusterlegalizer legalizer(...,
- *                            ClusterLegalizationStrategy::FULL,
- *                            ...);
+ * ClusterLegalizer legalizer(...);
  *
- * std::tie(pack_result, new_cluster_id) = legalizer.start_new_cluster(seed_mol,
- *                                                                     cluster_type,
- *                                                                     mode);
+ * LegalizationCluster new_cluster;
+ * std::tie(pack_result, new_cluster) = legalizer.start_new_cluster(seed_mol,
+ *                                                                 cluster_type,
+ *                                                                 mode,
+ *                                                                 ClusterLegalizationStrategy::FULL);
  * for mol in molecules_to_add:
  *      // Do the expensive check for each molecule added.
- *      status = legalizer.add_mol_to_cluster(mol, new_cluster_id);
+ *      status = legalizer.add_mol_to_cluster(mol, new_cluster);
  *      if (status != e_block_pack_status::BLK_PASSED)
  *          break;
  *
- * // new_cluster_id now contains a fully legalized cluster.
+ * // Ensure routing is present even if memoization skipped routing checks.
+ * if (legalizer.ensure_legal_final_routing(new_cluster)) {
+ *      legalizer.clean_cluster(new_cluster);
+ *      new_cluster_id = legalizer.commit_cluster(std::move(new_cluster));
+ * }
+ * // new_cluster_id now identifies a fully legalized cluster if committed.
  */
 class ClusterLegalizer {
   public:
@@ -246,23 +283,24 @@ class ClusterLegalizer {
      *
      *  @param molecule                 The molecule to insert into the cluster.
      *  @param cluster                  The cluster to try to insert the molecule into.
-     *  @param cluster_id               The ID of the cluster.
      *  @param max_external_pin_util    The max external pin utilization for a
      *                                  cluster of this type.
+     *  @param flat_recon_chains       Read-only choices from other local FlatRecon clusters.
      */
     e_block_pack_status try_pack_molecule(PackMoleculeId molecule_id,
                                           LegalizationCluster& cluster,
-                                          LegalizationClusterId cluster_id,
-                                          const t_ext_pin_util& max_external_pin_util);
+                                          const t_ext_pin_util& max_external_pin_util,
+                                          const std::unordered_map<MoleculeChainId, t_clustering_chain_info>& flat_recon_chains);
 
     /**
      * @brief This function takes a chain molecule, and the pb_graph_node that is
      *        chosen for packing the molecule's root block. Using the given
      *        root_primitive, this function will identify which chain id this
      *        molecule is being mapped to and will update the chain id value inside
-     *        the chain info data structure of this molecule.
+     *        the local cluster's pending chain information.
      */
-    void update_clustering_chain_info(PackMoleculeId chain_molecule_id,
+    void update_clustering_chain_info(LegalizationCluster& cluster,
+                                      PackMoleculeId chain_molecule_id,
                                       const t_pb_graph_node* root_primitive);
 
     /*
@@ -299,10 +337,6 @@ class ClusterLegalizer {
      *  @param high_fanout_thresholds
      *          An object that stores the thresholds for a net to be considered
      *          high fanout for different block types.
-     *  @param cluster_legalization_strategy
-     *          The legalization strategy to be used when creating clusters and
-     *          adding molecules to clusters. Controls the checks that are
-     *          performed.
      *  @param enable_pin_feasibility_filter
      *          A flag to turn on/off the check for pin usage feasibility.
      *  @param memoize_cluster_packings
@@ -319,7 +353,6 @@ class ClusterLegalizer {
                      const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
                      const std::vector<std::string>& target_external_pin_util_str,
                      const t_pack_high_fanout_thresholds& high_fanout_thresholds,
-                     ClusterLegalizationStrategy cluster_legalization_strategy,
                      bool enable_pin_feasibility_filter,
                      bool memoize_cluster_packings,
                      bool enable_cluster_router_hot_start,
@@ -331,40 +364,42 @@ class ClusterLegalizer {
     ClusterLegalizer(const ClusterLegalizer&) = delete;
     ClusterLegalizer& operator=(const ClusterLegalizer&) = delete;
 
-    /*
-     * @brief Start a new legalization cluster with the given molecule.
+    /**
+     * @brief Create a cluster from a seed and return the object
      *
-     *  @param molecule         The seed molecule used to start the new cluster.
-     *  @param cluster_type     The type of the cluster to start.
-     *  @param cluster_mode     The mode of the new cluster for the given type.
-     *
-     *  @return     A pair for the status of the packing and the ID of the new
-     *              cluster. If the new cluster could not be created, the pack
-     *              status will return the reason and the ID would be invalid.
+     * @param molecule_id The seed molecule used to start the new cluster.
+     * @param cluster_type The type of the cluster to start.
+     * @param cluster_mode The mode of the new cluster for the given type.
+     * @param strategy The legality checks to perform while creating and growing the cluster.
+     * @param flat_recon_chains chain choices used by the FlatRecon packer.
+     * @return The packing status and the local cluster. On failure, the status
+     *         gives the reason and the returned cluster is empty.
      */
-    std::tuple<e_block_pack_status, LegalizationClusterId>
+    std::tuple<e_block_pack_status, LegalizationCluster>
     start_new_cluster(PackMoleculeId molecule_id,
                       t_logical_block_type_ptr cluster_type,
-                      int cluster_mode);
+                      int cluster_mode,
+                      ClusterLegalizationStrategy strategy,
+                      const std::unordered_map<MoleculeChainId, t_clustering_chain_info>& flat_recon_chains = {});
 
-    /*
-     * @brief Add an unclustered molecule to the given legalization cluster.
+    /**
+     * @brief Try to add an available molecule to a caller-owned cluster.
      *
-     * The ClusterLegalizationStrategy (set either in the constructor or by the
-     * set_cluster_legalization_strategy method) decides what checks are
-     * performed when adding a molecule to the cluster.
+     * The cluster's legalization strategy decides which checks are performed.
+     * If the addition is unsuccessful (a check fails), the molecule remains
+     * unclustered and the previously accepted molecules remain in the cluster.
      *
-     * If the addition was unsuccessful (i.e. a check fails), the molecule will
-     * remain unclustered.
-     *
-     *  @param molecule         The molecule to add to the cluster.
-     *  @param cluster_id       The ID of the cluster to add the molecule to.
-     *
-     *  @return     The status of the pack (if the addition was successful and
-     *              if not why).
+     * @param molecule_id The molecule to add to the cluster.
+     * @param cluster The cluster to add the molecule to.
+     * @param flat_recon_chains chain choices used by the FlatRecon packer.
+     * @return The packing status, including the reason if the addition fails.
      */
     e_block_pack_status add_mol_to_cluster(PackMoleculeId molecule_id,
-                                           LegalizationClusterId cluster_id);
+                                           LegalizationCluster& cluster,
+                                           const std::unordered_map<MoleculeChainId, t_clustering_chain_info>& flat_recon_chains = {});
+
+    /** @brief Publish a routed, cleaned cluster and create its persistent ID. */
+    LegalizationClusterId commit_cluster(LegalizationCluster&& cluster);
 
     /*
      * @brief Destroy the given cluster.
@@ -408,11 +443,11 @@ class ClusterLegalizer {
      * correct the problematic molecules, it will only return true if the
      * cluster is legal and false if it is not.
      *
-     *  @param cluster_id       The ID of the cluster to fully legalize.
+     *  @param cluster          The cluster to check legalization of.
      *
      *  @return                 True if the cluster is legal, false otherwise.
      */
-    bool check_cluster_legality(LegalizationClusterId cluster_id);
+    bool check_cluster_legality(LegalizationCluster& cluster);
 
     /*
      * @brief Ensure that the cluster has a legal final routing.
@@ -428,11 +463,11 @@ class ClusterLegalizer {
      * skipped for cluster patterns where the legality was known from packing
      * a previous cluster.
      *
-     *  @param cluster_id       The ID of the cluster to ensure has a legal routing.
+     *  @param cluster          The cluster to check legalization of.
      *
      *  @return                 True if the cluster is routed and legal, false otherwise.
      * */
-    bool ensure_legal_final_routing(LegalizationClusterId cluster_id);
+    bool ensure_legal_final_routing(LegalizationCluster& cluster);
 
     /*
      * @brief Cleans the cluster of unnecessary data, reducing the memory footprint.
@@ -447,9 +482,9 @@ class ClusterLegalizer {
      * TODO: The pb stats should really not be calculated or stored in the
      *       cluster legalizer.
      *
-     *  @param cluster_id   The ID of the cluster to clean.
+     *  @param cluster      The routed cluster to prepare for commit.
      */
-    void clean_cluster(LegalizationClusterId cluster_id);
+    void clean_cluster(LegalizationCluster& cluster);
 
     /*
      * @brief Verify that all atoms have been clustered into some cluster.
@@ -458,13 +493,11 @@ class ClusterLegalizer {
      */
     void verify();
 
-    /*
-     * @brief Finalize the clustering. Required for generating a Clustered
-     *        Netlist.
+    /**
+     * @brief Verify that committed clusters have their final pb_route.
      *
-     * Before generating a Clustered Netlist, each cluster needs to allocate and
-     * load a pb_route. This method will generate a pb_route for each cluster
-     * and store it into the clusters' pb.
+     * Clusters must be routed and cleaned before commit; this checks the
+     * finalization invariant before generating the clustered netlist.
      */
     void finalize();
 
@@ -488,7 +521,7 @@ class ClusterLegalizer {
      * vs. calling the full checks.
      */
     bool is_molecule_compatible(PackMoleculeId molecule_id,
-                                LegalizationClusterId cluster_id) const;
+                                const LegalizationCluster& cluster) const;
 
     /// @brief Gets the top-level pb of the given cluster.
     inline t_pb* get_cluster_pb(LegalizationClusterId cluster_id) const {
@@ -534,7 +567,7 @@ class ClusterLegalizer {
     }
 
     /// @brief Gets the total number of cluster inputs available.
-    size_t get_num_cluster_inputs_available(LegalizationClusterId cluster_id) const;
+    size_t get_num_cluster_inputs_available(const LegalizationCluster& cluster) const;
 
     /// @brief Gets the ID of the cluster that contains the given atom block.
     inline LegalizationClusterId get_atom_cluster(AtomBlockId blk_id) const {
@@ -542,40 +575,51 @@ class ClusterLegalizer {
         return atom_cluster_[blk_id];
     }
 
-    /// @brief Returns true if the given atom block has been packed into a
-    ///        cluster, false otherwise.
+    /// @brief Return whether the atom belongs to a committed cluster.
     inline bool is_atom_clustered(AtomBlockId blk_id) const {
-        // Simply, if the atom is not in an invalid cluster, it has been clustered.
+        // A valid cluster ID means the atom belongs to a committed cluster.
         return get_atom_cluster(blk_id) != LegalizationClusterId::INVALID();
     }
 
-    /// @brief Returns true if the given molecule has been packed into a
-    ///        cluster, false otherwise.
+    /// @brief Return whether the molecule belongs to a committed cluster.
     inline bool is_mol_clustered(PackMoleculeId mol_id) const {
         VTR_ASSERT_SAFE(mol_id.is_valid());
-        // Check if the molecule has been assigned a cluster. It has not been
-        // assigned a cluster if it is assigned to a valid cluster.
+        // A valid cluster ID means the molecule belongs to a committed cluster.
         return molecule_cluster_[mol_id].is_valid();
     }
+
+    /**
+     * @brief Return whether the atom belongs to a committed cluster or the
+     *        given cluster that has not been committed yet.
+     */
+    bool is_atom_clustered(AtomBlockId atom, const LegalizationCluster& cluster) const {
+        return cluster.contains_atom(atom) || is_atom_clustered(atom);
+    }
+    /**
+     * @brief Return whether the molecule belongs to a committed cluster or the
+     *        given cluster that has not been committed yet.
+     */
+    bool is_mol_clustered(PackMoleculeId molecule, const LegalizationCluster& cluster) const {
+        return cluster.contains_molecule(molecule) || is_mol_clustered(molecule);
+    }
+
+    /** @brief Get chain info from committed clusters only. */
+    const t_clustering_chain_info& get_chain_info(MoleculeChainId chain_id) const {
+        VTR_ASSERT(chain_id.is_valid());
+        return clustering_chain_info_[chain_id];
+    }
+
+    /**
+     * @brief Get chain info from the given cluster that has not been committed
+     *        yet, falling back to committed clusters if it has no entry.
+     */
+    const t_clustering_chain_info& get_chain_info(MoleculeChainId chain_id,
+                                                  const LegalizationCluster& cluster) const;
 
     /// @brief Returns a reference to the target_external_pin_util object. This
     ///        allows the user to modify the external pin utilization if needed.
     inline t_ext_pin_util_targets& get_target_external_pin_util() {
         return target_external_pin_util_;
-    }
-
-    /*
-     * @brief Set the legalization strategy of the cluster legalizer.
-     *
-     * This allows the strategy of the cluster legalizer to change based on the
-     * needs of the user. For example, one can set the legalizer to use a more
-     * relaxed strategy to insert a batch of molecules in cheaply, saving the
-     * full legalizerion for the end (using check_cluster_legality).
-     *
-     *  @param strategy     The strategy to set the cluster legalizer to.
-     */
-    inline void set_legalization_strategy(ClusterLegalizationStrategy strategy) {
-        cluster_legalization_strategy_ = strategy;
     }
 
     /*
@@ -603,6 +647,15 @@ class ClusterLegalizer {
     ~ClusterLegalizer();
 
   private:
+    /** @brief Resolve local and committed choices, then fall back to sibling local clusters. */
+    const t_clustering_chain_info& get_chain_info(
+        MoleculeChainId chain_id,
+        const LegalizationCluster& cluster,
+        const std::unordered_map<MoleculeChainId, t_clustering_chain_info>& flat_recon_chains) const;
+
+    /** @brief Restore the shared memoization cursor for this local cluster. */
+    void load_packing_signature(const LegalizationCluster& cluster);
+
     /// @brief Build the per-type feedback-pin sets used by the intra-cluster router.
     ///        Called once by the constructor.
     void init_feedback_pin_sets();
@@ -640,11 +693,6 @@ class ClusterLegalizer {
     ///        expensive to calculate from the prepacker.
     size_t max_molecule_size_;
 
-    /// @brief Scratch vector used by try_pack_molecule() to hold the primitive
-    ///        chosen for each molecule atom. A member to avoid reallocating it
-    ///        for every candidate molecule.
-    std::vector<t_pb_graph_node*> primitives_list_;
-
     /// @brief A vector of routing resource nodes within each logical block type
     ///        [0 .. num_logical_block_types-1]
     const std::vector<std::vector<t_lb_type_rr_node>>* lb_type_rr_graphs_ = nullptr;
@@ -652,9 +700,6 @@ class ClusterLegalizer {
     /// @brief Per-type set of top-level output pin indices with Fc_out > 0.
     ///        Indexed by t_logical_block_type::index.
     std::vector<std::unordered_set<int>> valid_feedback_pins_by_type_;
-
-    /// @brief The current legalization strategy of the cluster legalizer.
-    ClusterLegalizationStrategy cluster_legalization_strategy_;
 
     /// @brief Controls whether the pin counting feasibility filter is used
     ///        during clustering. When enabled the clustering engine counts the

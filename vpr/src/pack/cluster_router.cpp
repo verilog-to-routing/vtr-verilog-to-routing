@@ -38,7 +38,7 @@
 #include "pb_type_graph.h"
 #include "lb_type_rr_graph.h"
 #include "cluster_router.h"
-#include "atom_pb_bimap.h"
+#include "cluster_atom_lookup.h"
 
 // #define PRINT_INTRA_LB_ROUTE
 
@@ -264,7 +264,7 @@ static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_n
  * Routing Functions
  ******************************************************************************************/
 
-void ClusterRouter::add_atom_as_target(const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb) {
+void ClusterRouter::add_atom_as_target(const AtomBlockId blk_id, const ClusterAtomPBBimap& atom_to_pb) {
     VTR_ASSERT_MSG(!is_clean_ && is_valid_, "Cannot operate on a cleaned / invalid router.");
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
@@ -272,7 +272,7 @@ void ClusterRouter::add_atom_as_target(const AtomBlockId blk_id, const AtomPBBim
         VPR_FATAL_ERROR(VPR_ERROR_PACK, "Atom %s added twice to router\n", atom_ctx.netlist().block_name(blk_id).c_str());
     }
 
-    const t_pb* pb = atom_to_pb.atom_pb(blk_id);
+    const t_pb* pb = atom_to_pb.get_atom_pb(blk_id);
 
     VTR_ASSERT(pb);
 
@@ -287,7 +287,7 @@ void ClusterRouter::add_atom_as_target(const AtomBlockId blk_id, const AtomPBBim
     fix_duplicate_equivalent_pins_(atom_to_pb);
 }
 
-void ClusterRouter::remove_atom_from_target(const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb) {
+void ClusterRouter::remove_atom_from_target(const AtomBlockId blk_id, const ClusterAtomPBBimap& atom_to_pb) {
     VTR_ASSERT_MSG(!is_clean_ && is_valid_, "Cannot operate on a cleaned / invalid router.");
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
@@ -295,7 +295,7 @@ void ClusterRouter::remove_atom_from_target(const AtomBlockId blk_id, const Atom
         return;
     }
 
-    const t_pb* pb = atom_to_pb.atom_pb(blk_id);
+    const t_pb* pb = atom_to_pb.get_atom_pb(blk_id);
     set_reset_pb_modes(pb, false);
 
     for (AtomPinId pin_id : atom_ctx.netlist().block_pins(blk_id)) {
@@ -642,7 +642,7 @@ static void reset_lb_net_rt(t_lb_trace& lb_trace) {
 }
 
 void ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
-                                             const AtomPBBimap& atom_to_pb) {
+                                             const ClusterAtomPBBimap& atom_to_pb) {
     const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
     bool found = false;
     unsigned int ipos;
@@ -808,7 +808,7 @@ void ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
 }
 
 void ClusterRouter::remove_pin_from_rt_terminals_(const AtomPinId pin_id,
-                                                  const AtomPBBimap& atom_to_pb) {
+                                                  const ClusterAtomPBBimap& atom_to_pb) {
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
     const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
 
@@ -923,7 +923,7 @@ void ClusterRouter::remove_pin_from_rt_terminals_(const AtomPinId pin_id,
     }
 }
 
-void ClusterRouter::fix_duplicate_equivalent_pins_(const AtomPBBimap& atom_to_pb) {
+void ClusterRouter::fix_duplicate_equivalent_pins_(const ClusterAtomPBBimap& atom_to_pb) {
     // It is possible that a net may connect multiple times to a logically equivalent set of primitive pins.
     // The cluster router will only route one connection for a particular net to the common sink of the
     // equivalent pins.
