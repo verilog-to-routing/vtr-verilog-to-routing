@@ -45,9 +45,6 @@ class SimpleDelayModel final : public PlaceDelayModel {
 
     float delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const override {
         const DeviceGrid& grid = g_vpr_ctx.device().grid;
-        int delta_x = std::abs(from_loc.x - to_loc.x);
-        int delta_y = std::abs(from_loc.y - to_loc.y);
-
         int from_tile_idx = grid.get_physical_type(from_loc)->index;
 
         float interposer_delay = 0.f;
@@ -60,7 +57,8 @@ class SimpleDelayModel final : public PlaceDelayModel {
         // starting from OPINs, not from channels.
         float min_delay = router_lookahead_.get_opin_distance_min_delay(from_tile_idx,
                                                                         from_loc.layer_num, to_loc.layer_num,
-                                                                        delta_x, delta_y);
+                                                                        from_loc.x, to_loc.x,
+                                                                        from_loc.y, to_loc.y);
         return min_delay + interposer_delay;
     }
 

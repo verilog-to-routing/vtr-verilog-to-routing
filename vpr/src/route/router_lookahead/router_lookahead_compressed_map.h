@@ -59,7 +59,7 @@ class CompressedMapLookahead final : public RouterLookahead {
   public:
     // Public so SimpleDelayModel can call it through the
     // concrete type statically, without using dynamic dispatch.
-    float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
+    float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*x1*/, int /*x2*/, int /*y1*/, int /*y2*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::get_opin_distance_min_delay unimplemented");
     }
 };

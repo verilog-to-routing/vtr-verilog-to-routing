@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdlib>
 #include <optional>
 #include <string>
 #include "vtr_ndmatrix.h"
@@ -61,8 +62,8 @@ class MapLookahead final : public RouterLookahead {
   public:
     // Public so SimpleDelayModel can call it through the
     // concrete type statically, without using dynamic dispatch.
-    inline float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const override {
-        return opin_distance_based_min_cost[physical_tile_idx][from_layer][to_layer][dx][dy].delay;
+    inline float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int x1, int x2, int y1, int y2) const override {
+        return opin_distance_based_min_cost[physical_tile_idx][from_layer][to_layer][std::abs(x1 - x2)][std::abs(y1 - y2)].delay;
     }
 };
 
