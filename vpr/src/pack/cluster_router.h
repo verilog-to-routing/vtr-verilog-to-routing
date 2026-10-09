@@ -18,10 +18,15 @@
 #include "pack_types.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
+#include "vtr_strong_id.h"
+#include "vtr_vector.h"
 
 /**************************************************************************
  * Intra-Logic Block Router Data Structures
  ***************************************************************************/
+
+/// @brief Index into ClusterRouter::intra_lb_nets_. Invalidated when a net is removed.
+typedef vtr::StrongId<struct intra_lb_net_idx_tag, size_t> IntraLbNetIdx;
 
 /**
  * @brief Describes the status of a logic cluster_ctx.blocks routing resource
@@ -146,8 +151,8 @@ struct t_explored_node_tb {
     /// @brief ID used to determine if this node has been explored.
     int explored_id;
 
-    /// @brief Net index of route tree.
-    int inet;
+    /// @brief Net of route tree.
+    IntraLbNetIdx inet;
 
     /// @brief ID used to determine if this node has been pushed on exploration priority queue.
     int enqueue_id;
@@ -159,7 +164,7 @@ struct t_explored_node_tb {
         prev_index = UNDEFINED;
         explored_id = UNDEFINED;
         enqueue_id = UNDEFINED;
-        inet = UNDEFINED;
+        inet = IntraLbNetIdx::INVALID();
         enqueue_cost = 0;
     }
 };
@@ -364,10 +369,10 @@ class ClusterRouter {
      *
      * This assumes that the pin is not already assigned.
      *
-     * @return The index into intra_lb_nets_ of the pin's net, or -1 if the pin has no net.
+     * @return The pin's net, or an invalid index if the pin has no net.
      */
-    int add_pin_to_rt_terminals_(const AtomPinId pin_id,
-                                 const AtomPBBimap& atom_to_pb);
+    IntraLbNetIdx add_pin_to_rt_terminals_(const AtomPinId pin_id,
+                                           const AtomPBBimap& atom_to_pb);
 
     /**
      * @brief Given a pin of a net, remove route tree terminal from it.
@@ -379,10 +384,10 @@ class ClusterRouter {
      * @brief Fixup duplicate connections to a net by a logically equivalent
      *        set of primitive pins.
      *
-     * @param ilb_net Index into intra_lb_nets_ of the net to check.
+     * @param ilb_net The net to check.
      * @param atom_to_pb Mapping from atoms to their placed pbs.
      */
-    void fix_duplicate_equivalent_pins_(size_t ilb_net, const AtomPBBimap& atom_to_pb);
+    void fix_duplicate_equivalent_pins_(IntraLbNetIdx ilb_net, const AtomPBBimap& atom_to_pb);
 
     /**
      * @brief Reset the traceback information used in pathfinder.
@@ -400,20 +405,20 @@ class ClusterRouter {
     /**
      * @brief Add source node of net as the starting point to existing route tree.
      */
-    void add_source_to_rt_(int inet);
+    void add_source_to_rt_(IntraLbNetIdx inet);
 
     /**
      * @brief Expand all nodes found in route tree into the priority queue.
      *
-     *  @param inet     Index into the intra_lb_nets_ to expand to route tree for.
+     *  @param inet     The net to expand the route tree for.
      */
-    void expand_rt_(int inet);
+    void expand_rt_(IntraLbNetIdx inet);
 
     /**
      * @brief Recursive function used by expand_rt_ to expand all nodes in a
      *        route tree into the priority queue.
      */
-    void expand_rt_rec_(const t_lb_trace& rt, int prev_index, int irt_net);
+    void expand_rt_rec_(const t_lb_trace& rt, int prev_index, IntraLbNetIdx irt_net);
 
     /**
      * @brief Add new path from existing route tree to target sink.
@@ -421,7 +426,7 @@ class ClusterRouter {
      * This reads the result of the path search to traceback the path and then
      * adds the path to the route tree.
      */
-    bool add_to_rt_(t_lb_trace& rt, int node_index, int irt_net);
+    bool add_to_rt_(t_lb_trace& rt, int node_index, IntraLbNetIdx irt_net);
 
     /**
      * @brief Expand all nodes for a given lb_net.
@@ -551,7 +556,7 @@ class ClusterRouter {
     // =========================================================================
 
     /// @brief Vector of intra logic cluster_ctx.blocks nets and their connections.
-    std::vector<t_intra_lb_net> intra_lb_nets_;
+    vtr::vector<IntraLbNetIdx, t_intra_lb_net> intra_lb_nets_;
 
     /// @brief Save vector of intra logic cluster_ctx.blocks nets and their connections.
     ///        This is used to save the solution for each successful route. This is used
