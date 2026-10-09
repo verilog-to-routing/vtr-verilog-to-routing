@@ -66,8 +66,7 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         , models_(models)
         , timing_arc_delays_(netlist.pins().size(), initial_arc_delay)
         , prepacker_(prepacker)
-        , intra_molecule_delays_(timing_graph.edges().size(), tatum::Time(NAN))
-        , chain_delays_(timing_graph.edges().size(), tatum::Time(NAN)) {
+        , internal_arc_delays_(timing_graph.edges().size(), tatum::Time(NAN)) {
         precompute_internal_arc_delays(timing_graph);
     }
 
@@ -109,26 +108,18 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
             VTR_ASSERT_SAFE(atom_sink_pin.is_valid());
             VTR_ASSERT_SAFE(netlist_.pin_type(atom_sink_pin) == PinType::SINK);
 
-            AtomPinId atom_src_pin = netlist_lookup_.tnode_atom_pin(src_node);
-            switch (get_arc_type(atom_src_pin, atom_sink_pin)) {
-                case e_pre_cluster_arc_type::INTRA_MOLECULE:
-                    // The source and sink atoms will be packed into the same
-                    // cluster, so the inter-cluster delay is a significant
-                    // overestimate. Use a more accurate intra-cluster delay
-                    // derived from the pb_graph hierarchy instead.
-                    VTR_ASSERT_SAFE(!std::isnan(intra_molecule_delays_[edge_id].value()));
-                    return intra_molecule_delays_[edge_id];
-                case e_pre_cluster_arc_type::INTER_MOLECULE_CHAIN:
-                    // The connection uses dedicated chain wiring between
-                    // clusters rather than general-purpose inter-cluster
-                    // routing.
-                    VTR_ASSERT_SAFE(!std::isnan(chain_delays_[edge_id].value()));
-                    return chain_delays_[edge_id];
-                case e_pre_cluster_arc_type::EXTERNAL:
-                default:
-                    // External net delay
-                    return tatum::Time(timing_arc_delays_[atom_sink_pin]);
-            }
+            // Intra-molecule and chain arcs have pre-computed delays (see
+            // precompute_internal_arc_delays). For intra-molecule arcs, the
+            // atoms will be packed into the same cluster, so the inter-cluster
+            // delay would be a significant overestimate. For chain arcs, the
+            // connection uses dedicated chain wiring rather than general
+            // inter-cluster routing. Their delay is only valid for these arcs.
+            tatum::Time internal_delay = internal_arc_delays_[edge_id];
+            if (internal_delay.valid())
+                return internal_delay;
+
+            // External net delay
+            return tatum::Time(timing_arc_delays_[atom_sink_pin]);
         }
     }
 
@@ -299,13 +290,13 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
                 auto [it, inserted] = intra_molecule_cache.try_emplace(gpins);
                 if (inserted)
                     it->second = calc_intra_molecule_delay(gpins.first, gpins.second);
-                intra_molecule_delays_[edge_id] = it->second;
+                internal_arc_delays_[edge_id] = it->second;
             } else {
                 VTR_ASSERT_SAFE(arc_type == e_pre_cluster_arc_type::INTER_MOLECULE_CHAIN);
                 auto [it, inserted] = chain_cache.try_emplace(gpins);
                 if (inserted)
                     it->second = calc_inter_molecule_chain_delay(gpins.first, gpins.second);
-                chain_delays_[edge_id] = it->second;
+                internal_arc_delays_[edge_id] = it->second;
             }
         }
     }
@@ -389,13 +380,10 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
     vtr::vector<AtomPinId, float> timing_arc_delays_;
     const Prepacker& prepacker_;
 
-    /// @brief The delays of intra-molecule interconnect arcs, indexed by
-    ///        timing edge. NaN for all other edges. Pre-computed on
-    ///        construction (see precompute_internal_arc_delays).
-    vtr::vector<tatum::EdgeId, tatum::Time> intra_molecule_delays_;
-
-    /// @brief The delays of inter-molecule chain interconnect arcs, indexed by
-    ///        timing edge. NaN for all other edges. Pre-computed on
-    ///        construction (see precompute_internal_arc_delays).
-    vtr::vector<tatum::EdgeId, tatum::Time> chain_delays_;
+    /// @brief The delays of interconnect arcs handled internally by this
+    ///        calculator (intra-molecule and inter-molecule chain arcs),
+    ///        indexed by timing edge. Invalid (NaN) for all other edges, which
+    ///        use timing_arc_delays_ instead. Pre-computed on construction
+    ///        (see precompute_internal_arc_delays).
+    vtr::vector<tatum::EdgeId, tatum::Time> internal_arc_delays_;
 };
