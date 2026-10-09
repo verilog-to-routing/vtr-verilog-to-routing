@@ -17,6 +17,7 @@
 #include "prepack.h"
 #include "region.h"
 #include "user_place_constraints.h"
+#include "vpr_error.h"
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_time.h"
@@ -127,11 +128,6 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                 PartitionId part_id = constraints.get_atom_partition(mol_atom_blk_id);
                 if (!part_id.is_valid())
                     continue;
-                // We should not fix a block twice. This would imply that a molecule
-                // contains two fixed blocks. This would only make sense if the blocks
-                // were fixed to the same location. I am not sure if that is even
-                // possible.
-                VTR_ASSERT(ap_netlist.block_mobility(ap_blk_id) == APBlockMobility::MOVEABLE);
                 // Get the partition region.
                 const PartitionRegion& partition_pr = constraints.get_partition_pr(part_id);
                 if (!is_single_point_pr(partition_pr)) {
@@ -164,8 +160,21 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                 int blk_sub_tile = APFixedBlockLoc::UNFIXED_DIM;
                 if (region.get_sub_tile() != NO_SUBTILE)
                     blk_sub_tile = region.get_sub_tile();
-                // Set the fixed block location.
                 APFixedBlockLoc loc = {blk_x_loc, blk_y_loc, blk_layer_num, blk_sub_tile};
+                // A block may contain multiple constrained atoms (e.g. a LUT and
+                // FF in the same molecule, or multiple molecules in a RAM group).
+                // This is fine as long as they are all fixed to the same location.
+                if (ap_netlist.block_mobility(ap_blk_id) == APBlockMobility::FIXED) {
+                    if (ap_netlist.block_loc(ap_blk_id) != loc) {
+                        VPR_FATAL_ERROR(VPR_ERROR_AP,
+                                        "AP: Atom '%s' is constrained to a different location than other atoms "
+                                        "which must be placed in the same AP block '%s'.\n",
+                                        atom_netlist.block_name(mol_atom_blk_id).c_str(),
+                                        ap_netlist.block_name(ap_blk_id).c_str());
+                    }
+                    continue;
+                }
+                // Set the fixed block location.
                 ap_netlist.set_block_loc(ap_blk_id, loc);
             }
         }
