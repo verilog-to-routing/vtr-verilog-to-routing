@@ -865,7 +865,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                 }
             };
 
-            run_dijkstra(sample_node, dijkstra_data, full_device_bb, map_lookahead_add_sample_route_to_table);
+            run_dijkstra<false>(sample_node, dijkstra_data, full_device_bb, map_lookahead_add_sample_route_to_table);
         }
     }
 

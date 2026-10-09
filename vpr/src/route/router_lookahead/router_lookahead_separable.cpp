@@ -180,7 +180,7 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
                             }
                         };
 
-                        run_dijkstra(sample_node, dijkstra_data, bb, record_cost);
+                        run_dijkstra<true>(sample_node, dijkstra_data, bb, record_cost);
                     }
                 }
             }
