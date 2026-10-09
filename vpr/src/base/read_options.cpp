@@ -1923,22 +1923,18 @@ static void add_general_options(argparse::ArgumentParser& parser, t_options& arg
         .default_value("auto")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    gen_grp.add_argument<bool, ParseOnOff>(args.CreateEchoFile, "--echo_file")
+    gen_grp.add_argument(args.echo_file, "--echo_file")
         .help(
             "Generate echo files of key internal data structures."
-            " Useful for debugging VPR, and typically end in .echo")
-        .default_value("off")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    gen_grp.add_argument(args.echo_files, "--echo_files")
-        .help(
-            "Generate only the given echo files (by their default file names,"
-            " e.g. timing_graph.analysis.echo). This turns on echo file"
-            " generation (as --echo_file on would), but only for the listed"
-            " files. Useful when only a few echo files are needed, since some"
-            " echo files can be very large.")
+            " Useful for debugging VPR, and typically end in .echo\n"
+            " * off: No echo files are generated\n"
+            " * on: All echo files are generated\n"
+            " * <echo_file_name> ...: Only the listed echo files are generated,\n"
+            "       identified by their default file names. Useful since some\n"
+            "       echo files can be very large.\n"
+            "       e.g. --echo_file timing_graph.analysis.echo clusters.echo")
         .nargs('+')
-        .default_value({})
+        .default_value({"off"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument<bool, ParseOnOff>(args.verify_file_digests, "--verify_file_digests")

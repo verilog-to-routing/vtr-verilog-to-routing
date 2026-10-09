@@ -50,7 +50,7 @@ void setEchoFileName(enum e_echo_files echo_option, const char* name) {
     strcpy(echoFileNames[(int)echo_option], name);
 }
 
-void setOnlyEchoFilesEnabled(const std::vector<std::string>& echo_file_names) {
+void set_only_echo_files_enabled(const std::vector<std::string>& echo_file_names) {
     VTR_ASSERT(echoFileEnabled != nullptr);
     setAllEchoFileEnabled(false);
     for (const std::string& echo_file_name : echo_file_names) {
@@ -63,7 +63,7 @@ void setOnlyEchoFilesEnabled(const std::vector<std::string>& echo_file_names) {
         }
         if (!found) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Unknown echo file '%s' given to --echo_files.\n",
+                            "Unknown echo file '%s' given to --echo_file.\n",
                             echo_file_name.c_str());
         }
     }

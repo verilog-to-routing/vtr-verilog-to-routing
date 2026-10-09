@@ -259,12 +259,29 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     VTR_LOG("\n");
 
     /* Determine whether echo is on or off */
-    // If specific echo files are requested, turn echo on, but only for those
+    // --echo_file takes either "on", "off", or a list of echo file names. If
+    // specific echo files are requested, turn echo on, but only for those
     // files.
-    const std::vector<std::string>& echo_files = options->echo_files.value();
-    setEchoEnabled(options->CreateEchoFile || !echo_files.empty());
-    if (!echo_files.empty())
-        setOnlyEchoFilesEnabled(echo_files);
+    const std::vector<std::string>& echo_file_args = options->echo_file.value();
+    VTR_ASSERT(!echo_file_args.empty());
+    bool echo_all_files = false;
+    bool echo_no_files = false;
+    if (echo_file_args.size() == 1) {
+        echo_all_files = (echo_file_args[0] == "on");
+        echo_no_files = (echo_file_args[0] == "off");
+    }
+    if (!echo_all_files && !echo_no_files) {
+        for (const std::string& echo_file_arg : echo_file_args) {
+            if (echo_file_arg == "on" || echo_file_arg == "off") {
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "--echo_file '%s' cannot be combined with other values.\n",
+                                echo_file_arg.c_str());
+            }
+        }
+    }
+    setEchoEnabled(!echo_no_files);
+    if (!echo_all_files && !echo_no_files)
+        set_only_echo_files_enabled(echo_file_args);
 
     /*
      * Initialize the functions names for which VPR_ERRORs

@@ -98,7 +98,7 @@ bool isEchoFileEnabled(enum e_echo_files echo_option);
  * Echo files must be enabled (see setEchoEnabled) before calling this. Throws
  * a fatal error if a name does not match any echo file.
  */
-void setOnlyEchoFilesEnabled(const std::vector<std::string>& echo_file_names);
+void set_only_echo_files_enabled(const std::vector<std::string>& echo_file_names);
 char* getEchoFileName(enum e_echo_files echo_option);
 
 void alloc_and_load_echo_file_info();
