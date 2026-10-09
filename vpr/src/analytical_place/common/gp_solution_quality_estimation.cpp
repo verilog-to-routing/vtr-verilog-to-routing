@@ -23,6 +23,28 @@
 #include "vtr_log.h"
 #include "vpr_types.h"
 
+/**
+ * @brief Empirical correction factor applied to the estimated wire usage of
+ *        each net.
+ *
+ * The tile-HPWL estimate assumes that a net uses exactly as much wire as its
+ * bounding box spans. Many FPGA architectures use longer wire segments (e.g.
+ * L4) rather than L1 wires; a net whose bounding box is shorter than a wire
+ * segment still uses the full segment. Since many nets are short, this causes
+ * the estimate to consistently underestimate the routed wirelength.
+ *
+ * This factor was tuned by comparing the estimated and routed wirelength over
+ * the koios, mcnc, titan_quick, and vtr_largest benchmarks (79 circuits over 4
+ * architectures). The mean ratio of routed to estimated wirelength was ~1.40,
+ * and scaling by this factor reduced the mean absolute percent error of the
+ * estimate from ~28% to ~9%.
+ *
+ * TODO: The ideal factor varies by architecture (~1.29 to ~1.53 over the
+ *       tested architectures). Investigate deriving it from the wire segment
+ *       lengths in the architecture instead of using a single constant.
+ */
+static constexpr double WIRE_USAGE_CORRECTION_FACTOR = 1.4;
+
 namespace {
 
 /**
@@ -224,9 +246,11 @@ static t_net_wire_usage_estimate estimate_net_wire_usage(APNetId net_id,
     //       this in the future easier.
     net_estimate.crossing = wirelength_crossing_count(net_estimate.num_distinct_tiles);
 
-    // Estimate the wire usage based on the tile-HPWL and the crossing factor.
+    // Estimate the wire usage based on the tile-HPWL and the crossing factor,
+    // corrected for the systematic underestimate of short nets (see
+    // WIRE_USAGE_CORRECTION_FACTOR).
     net_estimate.status = e_net_wire_usage_status::ESTIMATED;
-    net_estimate.wire_usage = static_cast<double>(tile_hpwl) * net_estimate.crossing;
+    net_estimate.wire_usage = static_cast<double>(tile_hpwl) * net_estimate.crossing * WIRE_USAGE_CORRECTION_FACTOR;
 
     return net_estimate;
 }
@@ -261,7 +285,7 @@ static void write_wire_usage_estimate_echo(const std::string& filename,
     os << "#   bb_dx/dy:  Tile bounding box span, including the full extent of the edge tiles (+1).\n";
     os << "#   bb_dz:     Number of layers crossed by the tile bounding box.\n";
     os << "#   crossing:  Crossing count used to weight the tile HPWL.\n";
-    os << "#   estimate:  (bb_dx + bb_dy + bb_dz) * crossing.\n";
+    os << "#   estimate:  (bb_dx + bb_dy + bb_dz) * crossing * " << WIRE_USAGE_CORRECTION_FACTOR << " (correction factor).\n";
     os << "num_pins status num_tiles bb_dx bb_dy bb_dz crossing estimate net_name\n";
     for (APNetId net_id : netlist.nets()) {
         t_net_wire_usage_estimate net_estimate = estimate_net_wire_usage(net_id,
