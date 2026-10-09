@@ -1307,6 +1307,8 @@ struct ParseRouterLookahead {
             conv_value.set_value(e_router_lookahead::EXTENDED_MAP);
         else if (str == "simple")
             conv_value.set_value(e_router_lookahead::SIMPLE);
+        else if (str == "separable")
+            conv_value.set_value(e_router_lookahead::SEPARABLE);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '"
@@ -1328,6 +1330,8 @@ struct ParseRouterLookahead {
             conv_value.set_value("compressed_map");
         } else if (val == e_router_lookahead::SIMPLE) {
             conv_value.set_value("simple");
+        } else if (val == e_router_lookahead::SEPARABLE) {
+            conv_value.set_value("separable");
         } else {
             VTR_ASSERT(val == e_router_lookahead::EXTENDED_MAP);
             conv_value.set_value("extended_map");
@@ -1336,7 +1340,7 @@ struct ParseRouterLookahead {
     }
 
     std::vector<std::string> default_choices() {
-        return {"classic", "map", "compressed_map", "extended_map", "simple"};
+        return {"classic", "map", "compressed_map", "extended_map", "simple", "separable"};
     }
 };
 
@@ -3493,6 +3497,8 @@ static void add_timing_driven_routing_options(argparse::ArgumentParser& parser, 
             " * extended_map: A more advanced and extended lookahead which accounts for a more\n"
             "                 exhaustive node sampling method\n"
             " * simple: A purely distance-based lookahead loaded from an external file\n"
+            " * separable: A lookahead which treats the x and y components of a route\n"
+            "              as separable\n"
             "\n"
             " The extended map differs from the map lookahead in the lookahead computation.\n"
             " It is better suited for architectures that have specialized routing for specific\n"
@@ -4125,9 +4131,9 @@ void set_conditional_defaults(t_options& args) {
         }
     }
 
-    // If MAP Router lookahead is not used, we cannot use simple place delay lookup
+    // If map or separable Router lookahead is not used, we cannot use simple place delay lookup
     if (args.place_delay_model.provenance() != Provenance::SPECIFIED) {
-        if (args.router_lookahead_type != e_router_lookahead::MAP) {
+        if (args.router_lookahead_type != e_router_lookahead::MAP && args.router_lookahead_type != e_router_lookahead::SEPARABLE) {
             args.place_delay_model.set(PlaceDelayModelType::DELTA, Provenance::INFERRED);
         }
     }

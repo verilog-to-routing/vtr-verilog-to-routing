@@ -2149,7 +2149,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``64``
 
-.. option:: --router_lookahead {classic | map | compressed_map | extended_map | simple}
+.. option:: --router_lookahead {classic | map | compressed_map | extended_map | separable | simple}
 
     Controls what lookahead the router uses to calculate cost of completing a connection.
 
@@ -2157,6 +2157,7 @@ The following options are only valid when the router is in timing-driven mode (t
      * ``map``: A more advanced lookahead which accounts for diverse wire types and their connectivity
      * ``compressed_map``: The algorithm is similar to map lookahead with the exception of sparse sampling of the chip to reduce the run-time to build the router lookahead and also its memory footprint.
      * ``extended_map``: A more advanced and extended lookahead which accounts for a more exhaustive node sampling method.
+     * ``separable``: An experimental lookahead which estimates delay and congestion by combining independently profiled costs along the x and y axes. It uses the map lookahead for SOURCE/OPIN estimates and as a fallback for unsampled wire costs. Flat routing and reading or writing lookahead files are currently unsupported.
      * ``simple``: A purely distance-based lookahead loaded from an external file using :option:`--read_router_lookahead`. This lookahead returns a cost estimate for channel nodes by querying a lookup table, while for any other node type it returns zero.
 
      **Default:** ``map``
