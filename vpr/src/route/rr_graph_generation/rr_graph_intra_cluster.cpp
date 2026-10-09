@@ -1146,7 +1146,7 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
     // Mux instances belong to one cluster, so this only spans the muxes of this cluster.
     // A vector rather than a hash map: the entries are few, and its order does not depend
     // on pointer values, so the indices assigned to muxes are the same on every run.
-    std::vector<std::pair<t_bus_mux_key, int>> mux_indices;
+    std::vector<std::pair<t_bus_mux_key, BusMuxId>> mux_ids;
 
     const t_pl_loc& block_loc = block_locs[cluster_blk_id].loc;
     const t_physical_tile_loc root_loc(block_loc.x, block_loc.y, block_loc.layer);
@@ -1165,6 +1165,10 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
         if (!out_node.is_valid()) {
             return;
         }
+        // find_bus_mux_edge() only looks up pin nodes, so every output bit must be one
+        const e_rr_type out_type = device_ctx.rr_graph.node_type(out_node);
+        VTR_ASSERT_MSG(out_type == e_rr_type::IPIN || out_type == e_rr_type::OPIN,
+                       "Bus-based mux output bit is not an IPIN or OPIN node");
         for (int iedge = 0; iedge < out_pin->num_input_edges; iedge++) {
             const t_pb_graph_edge* edge = out_pin->input_edges[iedge];
             if (!edge->is_bus_mux()) {
@@ -1177,21 +1181,21 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
             }
 
             const t_bus_mux_key key{edge->interconnect, edge->bus_mux_owner()};
-            auto found = std::ranges::find_if(mux_indices, [&key](const auto& entry) noexcept {
+            auto found = std::ranges::find_if(mux_ids, [&key](const std::pair<t_bus_mux_key, BusMuxId>& entry) noexcept {
                 return entry.first == key;
             });
-            if (found == mux_indices.end()) {
-                mux_indices.emplace_back(key, (int)device_ctx.rr_bus_muxes.size());
-                found = mux_indices.end() - 1;
+            if (found == mux_ids.end()) {
+                mux_ids.emplace_back(key, BusMuxId(device_ctx.rr_bus_muxes.size()));
+                found = mux_ids.end() - 1;
                 device_ctx.rr_bus_muxes.push_back({cluster_blk_id, key.interconnect, key.owner, 0});
             }
-            const int mux_idx = found->second;
+            const BusMuxId mux_id = found->second;
 
-            t_rr_bus_mux& mux = device_ctx.rr_bus_muxes[mux_idx];
+            t_rr_bus_mux& mux = device_ctx.rr_bus_muxes[mux_id];
             mux.num_sets = std::max(mux.num_sets, edge->driver_set + 1);
 
             t_rr_bus_mux_out_node& out = device_ctx.rr_bus_mux_out_nodes[out_node];
-            out.mux_idx = mux_idx;
+            out.mux_id = mux_id;
             out.in_edges.push_back({in_node, edge->driver_set});
         }
     };
@@ -1247,4 +1251,30 @@ void load_rr_bus_muxes(const RRSpatialLookup& node_lookup) {
         VTR_LOG("Bus-based muxes in the intra-cluster RR graph: %zu (%zu output bits)\n",
                 device_ctx.rr_bus_muxes.size(), device_ctx.rr_bus_mux_out_nodes.size());
     }
+}
+
+std::optional<t_bus_mux_edge> find_bus_mux_edge(RRNodeId from_node, RRNodeId to_node) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+
+    if (device_ctx.rr_bus_mux_out_nodes.empty()) {
+        return std::nullopt;
+    }
+
+    // Only pin nodes can be bus mux outputs; skip other nodes before the lookup.
+    e_rr_type to_type = device_ctx.rr_graph.node_type(to_node);
+    if (to_type != e_rr_type::IPIN && to_type != e_rr_type::OPIN) {
+        return std::nullopt;
+    }
+
+    auto it = device_ctx.rr_bus_mux_out_nodes.find(to_node);
+    if (it == device_ctx.rr_bus_mux_out_nodes.end()) {
+        return std::nullopt;
+    }
+
+    for (const t_rr_bus_mux_in_edge& in_edge : it->second.in_edges) {
+        if (in_edge.from_node == from_node) {
+            return t_bus_mux_edge{it->second.mux_id, in_edge.set};
+        }
+    }
+    return std::nullopt;
 }

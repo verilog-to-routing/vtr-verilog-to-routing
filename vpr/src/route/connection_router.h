@@ -58,6 +58,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , net_terminal_group_num(g_vpr_ctx.routing().net_terminal_group_num)
         , rr_node_route_inf_(rr_node_route_inf)
         , is_flat_(is_flat)
+        , has_bus_muxes_(is_flat && !g_vpr_ctx.device().rr_bus_muxes.empty())
         , route_verbosity_(route_verbosity)
         , router_stats_(nullptr)
         , router_debug_(false)
@@ -284,11 +285,13 @@ class ConnectionRouter : public ConnectionRouterInterface {
      * filled in to's backward_path_cost and R_upstream.
      * @param to Neighbor node to calculate costs before being expanded
      * @param cost_params Cost function parameters
+     * @param from_node Current node ID being explored
      * @param target_node Target node ID to route to
      * @param Tdel Delay of to_node, returned by evaluate_timing_driven_backward_costs()
      */
     void evaluate_timing_driven_total_cost(RTExploredNode* to,
                                            const t_conn_cost_params& cost_params,
+                                           RRNodeId from_node,
                                            RRNodeId target_node,
                                            float Tdel);
 
@@ -366,6 +369,9 @@ class ConnectionRouter : public ConnectionRouterInterface {
 
     /** Is flat router enabled or not? */
     bool is_flat_;
+
+    /** Does the routed architecture have bus-based muxes to negotiate (flat routing only)? */
+    bool has_bus_muxes_;
 
     /** The verbosity of log messages in the router. */
     int route_verbosity_;

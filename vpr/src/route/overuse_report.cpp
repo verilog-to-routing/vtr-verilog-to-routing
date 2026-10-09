@@ -1,12 +1,14 @@
 #include "overuse_report.h"
 
+#include <algorithm>
 #include <fstream>
 #include "globals.h"
+#include "route_common.h"
+#include "bus_mux_routing.h"
 #include "physical_types.h"
 #include "physical_types_util.h"
 #include "vpr_utils.h"
 #include "vtr_log.h"
-#include "route_common.h"
 
 /**
  * @brief Definitions of global and helper routines related to printing RR node overuse info.
@@ -512,5 +514,35 @@ static void print_block_pins_nets(std::ostream& os,
             os << "  -1";
         }
         os << "\n";
+    }
+}
+
+void log_control_congested_bus_muxes_status(const vtr::vector<BusMuxId, t_rr_bus_mux>& rr_bus_muxes,
+                                            const vtr::vector<BusMuxId, t_bus_mux_route_inf>& bus_mux_route_inf,
+                                            const ClusteredNetlist& clb_nlist) {
+    VTR_ASSERT(bus_mux_route_inf.size() == rr_bus_muxes.size());
+
+    size_t num_congested = count_control_congested_bus_muxes(bus_mux_route_inf);
+    if (num_congested == 0) {
+        return;
+    }
+
+    VTR_LOG("\nBus-based muxes driven from more than one input set: %zu\n", num_congested);
+    for (BusMuxId mux_id : rr_bus_muxes.keys()) {
+        const t_bus_mux_route_inf& mux_inf = bus_mux_route_inf[mux_id];
+        if (!mux_inf.is_control_congested()) {
+            continue;
+        }
+        const t_rr_bus_mux& mux = rr_bus_muxes[mux_id];
+        std::string sets;
+        for (size_t set = 0; set < mux_inf.set_occ.size(); set++) {
+            if (mux_inf.set_occ[set] > 0) {
+                sets += vtr::string_fmt(" input set %zu: %d bit(s);", set, mux_inf.set_occ[set]);
+            }
+        }
+        VTR_LOG("  Bus-based mux %s of cluster '%s':%s\n",
+                mux.describe().c_str(),
+                clb_nlist.block_name(mux.cluster).c_str(),
+                sets.c_str());
     }
 }

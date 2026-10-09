@@ -6,6 +6,7 @@
 #include <vector>
 #include "router_stats.h"
 #include "globals.h"
+#include "route_tree_fwd.h"
 #include "rr_graph_fwd.h"
 #include "rr_graph_view.h"
 #include "vtr_assert.h"
