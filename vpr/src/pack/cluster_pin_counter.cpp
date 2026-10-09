@@ -241,7 +241,9 @@ void ClusterPinCounter::rollback_check() {
         if (delta.change == +1) {
             // Undo an append: pop the last entry.
             auto it = record_map.find(delta.pin);
-            VTR_ASSERT(it != record_map.end() && !it->second.empty());
+            if (it == record_map.end() || it->second.empty()) {
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, "Cannot roll back an append to a missing or empty pin mark record.\n");
+            }
             VTR_ASSERT_SAFE(it->second.back() == delta.pb);
             it->second.pop_back();
             if (it->second.empty()) {

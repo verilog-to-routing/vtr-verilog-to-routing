@@ -1170,7 +1170,9 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                      * if a chain is packed in, want to rename logic block to match chain name */
                     AtomBlockId chain_root_blk_id = molecule.atom_block_ids[molecule.pack_pattern->root_block->block_id];
                     const t_pb* chain_root_pb = cluster.atom_pb_lookup.get_atom_pb(chain_root_blk_id);
-                    VTR_ASSERT(chain_root_pb != nullptr);
+                    if (chain_root_pb == nullptr) {
+                        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Packed chain root atom has no primitive pb.\n");
+                    }
                     t_pb* cur_pb = chain_root_pb->parent_pb;
                     while (cur_pb != nullptr) {
                         cur_pb->name = atom_ctx.netlist().block_name(chain_root_blk_id);
@@ -1214,7 +1216,9 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
                     // Update the num child blocks in pb
                     const t_pb* atom_pb = cluster.atom_pb_lookup.get_atom_pb(atom_blk_id);
-                    VTR_ASSERT(atom_pb != nullptr);
+                    if (atom_pb == nullptr) {
+                        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Packed atom has no primitive pb.\n");
+                    }
                     t_pb* cur_pb = atom_pb->parent_pb;
                     while (cur_pb != nullptr) {
                         cur_pb->pb_stats->num_child_blocks_in_pb++;
