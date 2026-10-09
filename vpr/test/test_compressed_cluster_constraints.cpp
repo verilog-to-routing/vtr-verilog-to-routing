@@ -82,6 +82,23 @@ void build_small_tile_device(t_physical_tile_type& empty_tile,
     g_vpr_ctx.mutable_placement().compressed_block_grids = create_compressed_block_grids();
 }
 
+/**
+ * @brief Resets, on destruction, the global state this test sets up.
+ */
+struct GlobalStateReset {
+    ~GlobalStateReset() {
+        DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
+        device_ctx.logical_block_types.clear();
+        device_ctx.EMPTY_PHYSICAL_TILE_TYPE = nullptr;
+        device_ctx.grid = DeviceGrid();
+        g_vpr_ctx.mutable_placement().compressed_block_grids.clear();
+        g_vpr_ctx.mutable_clustering().clb_nlist = ClusteredNetlist();
+        FloorplanningContext& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+        floorplanning_ctx.cluster_constraints.clear();
+        floorplanning_ctx.compressed_cluster_constraints.clear();
+    }
+};
+
 } // namespace
 
 TEST_CASE("compressed_cluster_constraints_keep_every_rectangle", "[vpr_place_constraints]") {
@@ -91,6 +108,7 @@ TEST_CASE("compressed_cluster_constraints_keep_every_rectangle", "[vpr_place_con
     t_logical_block_type empty_logical_type;
     t_logical_block_type io_logical_type;
     t_logical_block_type small_logical_type;
+    GlobalStateReset reset_global_state;
     build_small_tile_device(empty_tile, io_tile, small_tile,
                             empty_logical_type, io_logical_type, small_logical_type);
 
