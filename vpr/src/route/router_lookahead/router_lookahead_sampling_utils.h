@@ -60,7 +60,6 @@ void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
             continue;
         }
 
-
         // if conxtexpr: when RestrictToBoundingBox is false, this branch is taken out at compile time
         // This means that if a lookahead does not want to restrict its sampling with a bounding box
         // It does not pay any runtime cost.
