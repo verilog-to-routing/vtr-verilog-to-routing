@@ -4,6 +4,8 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <ranges>
+#include <vector>
 #include "connection_router_interface.h"
 #include "device_grid.h"
 #include "globals.h"
@@ -189,14 +191,73 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
     }
 }
 
+/// @brief A wire type reachable from the SOURCEs/OPINs of a tile type.
+struct t_opin_reachable_wire {
+    int layer;          ///< Layer of the wire.
+    int chan_index;     ///< Channel type index, as returned by util::chan_type_to_index().
+    int seg_index;      ///< Segment type of the wire.
+    float access_delay; ///< Minimum delay from any SOURCE/OPIN of the tile to the wire.
+};
+
 /**
- * @brief Minimum OPIN delay between two coordinates along one axis.
+ * @brief Collect the distinct wire types reachable from any SOURCE/OPIN of a tile type on a layer,
+ *        keeping the minimum access delay to each.
+ *
+ * Direct connections (SINK) and channel types outside the wire cost map are skipped since they have no profiled wire cost.
+ */
+static std::vector<t_opin_reachable_wire> get_opin_reachable_wires(const util::t_src_opin_delays& src_opin_delays,
+                                                                   const vtr::NdMatrix<util::Cost_Entry, 7>& wire_cost_map,
+                                                                   int physical_tile_idx,
+                                                                   int from_layer) {
+    // Indexed by wire layer, channel index and segment index; infinity marks an unreachable wire type.
+    vtr::NdMatrix<float, 3> min_access_delay({wire_cost_map.dim_size(0), wire_cost_map.dim_size(2), wire_cost_map.dim_size(3)},
+                                             std::numeric_limits<float>::infinity());
+
+    for (const auto& opin_delay_maps : src_opin_delays[from_layer][physical_tile_idx]) {
+        for (const auto& layer_opin_delay_map : opin_delay_maps) {
+            for (const util::t_reachable_wire_inf& reachable_wire_inf : layer_opin_delay_map | std::views::values) {
+                if (reachable_wire_inf.wire_rr_type == e_rr_type::SINK) {
+                    continue;
+                }
+
+                // CHANZ has no entry in the wire cost map of a single-layer device.
+                const int chan_index = util::chan_type_to_index(reachable_wire_inf.wire_rr_type);
+                if (chan_index >= (int)wire_cost_map.dim_size(2)) {
+                    continue;
+                }
+
+                VTR_ASSERT_SAFE(reachable_wire_inf.layer_number < (int)min_access_delay.dim_size(0));
+                VTR_ASSERT_SAFE(reachable_wire_inf.wire_seg_index < (int)min_access_delay.dim_size(2));
+                float& access_delay = min_access_delay[reachable_wire_inf.layer_number][chan_index][reachable_wire_inf.wire_seg_index];
+                access_delay = std::min(access_delay, reachable_wire_inf.delay);
+            }
+        }
+    }
+
+    std::vector<t_opin_reachable_wire> reachable_wires;
+    for (size_t layer = 0; layer < min_access_delay.dim_size(0); layer++) {
+        for (size_t chan_index = 0; chan_index < min_access_delay.dim_size(1); chan_index++) {
+            for (size_t seg_index = 0; seg_index < min_access_delay.dim_size(2); seg_index++) {
+                const float access_delay = min_access_delay[layer][chan_index][seg_index];
+                if (std::isfinite(access_delay)) {
+                    reachable_wires.push_back({(int)layer, (int)chan_index, (int)seg_index, access_delay});
+                }
+            }
+        }
+    }
+
+    return reachable_wires;
+}
+
+/**
+ * @brief Minimum OPIN delay between two coordinates along one axis, over all wires reachable from the tile's OPINs.
+ *
  * Reachable wires lack direction information, so minimize over all directions.
  * Include OPIN access delay only for x to count it once when summing the axes.
- * Fall back to MapLookahead for each OPIN without a usable wire cost; that estimate
+ * Fall back to MapLookahead when no reachable wire has a usable profiled cost; that estimate
  * includes OPIN access delay on either axis.
  */
-static float min_opin_axis_delay(const util::t_src_opin_delays& src_opin_delays,
+static float min_opin_axis_delay(const std::vector<t_opin_reachable_wire>& reachable_wires,
                                  const vtr::NdMatrix<util::Cost_Entry, 7>& wire_cost_map,
                                  e_profile_axis axis,
                                  const RouterLookahead& map_lookahead,
@@ -206,52 +267,31 @@ static float min_opin_axis_delay(const util::t_src_opin_delays& src_opin_delays,
                                  int c1,
                                  int c2) {
     const bool profile_x = (axis == e_profile_axis::X);
-    float min_delay = std::numeric_limits<float>::infinity();
 
-    // An entry is unusable if it was never profiled, or profiled as unreachable.
+    // An entry is unusable if it was never profiled (NaN), or profiled as unreachable.
     auto is_usable = [](float delay) {
         return std::isfinite(delay) && delay != ROUTER_LOOKAHEAD_NO_PATH_SENTINEL;
     };
 
-    for (const auto& tile_opin_map : src_opin_delays[from_layer][physical_tile_idx]) {
-        float expected_delay = std::numeric_limits<float>::infinity();
+    float min_delay = std::numeric_limits<float>::infinity();
+    for (const t_opin_reachable_wire& wire : reachable_wires) {
+        const float access_delay = profile_x ? wire.access_delay : 0.f;
 
-        for (const auto& layer_src_opin_delay_map : tile_opin_map) {
-            for (const auto& kv : layer_src_opin_delay_map) {
-                const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
-                if (reachable_wire_inf.wire_rr_type == e_rr_type::SINK) {
-                    continue;
-                }
-
-                const int chan_index = util::chan_type_to_index(reachable_wire_inf.wire_rr_type);
-                if (chan_index >= (int)wire_cost_map.dim_size(2)) {
-                    continue;
-                }
-
-                // The reachable wire info does not record the wire's direction, so consider all of them.
-                float wire_delay = std::numeric_limits<float>::infinity();
-                for (size_t dir_index = 0; dir_index < wire_cost_map.dim_size(4); ++dir_index) {
-                    const util::Cost_Entry& entry = wire_cost_map[reachable_wire_inf.layer_number][to_layer][chan_index][reachable_wire_inf.wire_seg_index][dir_index][c1][c2];
-                    if (entry.valid() && is_usable(entry.delay)) {
-                        wire_delay = std::min(wire_delay, entry.delay);
-                    }
-                }
-
-                const float access_delay = profile_x ? reachable_wire_inf.delay : 0.f;
-                expected_delay = std::min(expected_delay, access_delay + wire_delay);
+        for (size_t dir_index = 0; dir_index < wire_cost_map.dim_size(4); dir_index++) {
+            const float wire_delay = wire_cost_map[wire.layer][to_layer][wire.chan_index][wire.seg_index][dir_index][c1][c2].delay;
+            if (is_usable(wire_delay)) {
+                min_delay = std::min(min_delay, access_delay + wire_delay);
             }
         }
+    }
 
-        if (!is_usable(expected_delay)) {
-            // Query zero distance along the other axis.
-            if (profile_x) {
-                expected_delay = map_lookahead.get_opin_distance_min_delay(physical_tile_idx, from_layer, to_layer, c1, c2, 0, 0);
-            } else {
-                expected_delay = map_lookahead.get_opin_distance_min_delay(physical_tile_idx, from_layer, to_layer, 0, 0, c1, c2);
-            }
+    if (!is_usable(min_delay)) {
+        // Query zero distance along the other axis.
+        if (profile_x) {
+            min_delay = map_lookahead.get_opin_distance_min_delay(physical_tile_idx, from_layer, to_layer, c1, c2, 0, 0);
+        } else {
+            min_delay = map_lookahead.get_opin_distance_min_delay(physical_tile_idx, from_layer, to_layer, 0, 0, c1, c2);
         }
-
-        min_delay = std::min(min_delay, expected_delay);
     }
 
     // Keep unreachable pairs finite for placement cost calculations.
@@ -282,11 +322,13 @@ static void min_opin_axis_delay_map(const util::t_src_opin_delays& src_opin_dela
 
     for (int tile_type_idx = 0; tile_type_idx < num_tile_types; tile_type_idx++) {
         for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
+            const std::vector<t_opin_reachable_wire> reachable_wires = get_opin_reachable_wires(src_opin_delays, wire_cost_map, tile_type_idx, from_layer_num);
+
             for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
                 for (int c1 = 0; c1 < axis_dim_size; c1++) {
                     for (int c2 = 0; c2 < axis_dim_size; c2++) {
                         axis_min_delay[tile_type_idx][from_layer_num][to_layer_num][c1][c2] =
-                            min_opin_axis_delay(src_opin_delays, wire_cost_map, axis, map_lookahead,
+                            min_opin_axis_delay(reachable_wires, wire_cost_map, axis, map_lookahead,
                                                 tile_type_idx, from_layer_num, to_layer_num, c1, c2);
                     }
                 }
