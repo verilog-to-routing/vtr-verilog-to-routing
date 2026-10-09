@@ -3,9 +3,9 @@
 #include <cstddef>
 #include <vector>
 #include <iterator>
+#include <span>
 
 #include "vtr_assert.h"
-#include "vtr_array_view.h"
 
 namespace vtr {
 
@@ -122,21 +122,19 @@ class FlatRaggedMatrix {
     }
 
     ///@brief Indexing operators for the first dimension
-    vtr::array_view<T> operator[](Index0 i) {
+    std::span<T> operator[](Index0 i) {
         int idx = size_t(i);
         T* first = &data_[first_elem_[idx]];
         T* last = &data_[first_elem_[idx + 1]];
-        return vtr::array_view<T>(first,
-                                  last - first);
+        return std::span<T>(first, last);
     }
 
     ///@brief Indexing operators for the first dimension (immutable)
-    vtr::array_view<const T> operator[](Index0 i) const {
+    std::span<const T> operator[](Index0 i) const {
         int idx = size_t(i);
         const T* first = &data_[first_elem_[idx]];
         const T* last = &data_[first_elem_[idx + 1]];
-        return vtr::array_view<const T>(first,
-                                        last - first);
+        return std::span<const T>(first, last);
     }
 
     ///@brief Clears the matrix
