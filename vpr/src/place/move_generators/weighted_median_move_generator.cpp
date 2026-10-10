@@ -10,7 +10,8 @@
 #include <cmath>
 #include <tuple>
 
-#define CRIT_MULT_FOR_W_MEDIAN 10
+/// Number of copies of a bounding box edge added to the median vectors when its criticality is 1
+static constexpr int CRIT_MULT_FOR_W_MEDIAN = 10;
 
 WeightedMedianMoveGenerator::WeightedMedianMoveGenerator(PlacerState& placer_state,
                                                          const PlaceMacros& place_macros,
@@ -143,8 +144,8 @@ bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNet
                                                                       ClusterPinId moving_pin_id,
                                                                       const PlacerCriticalities* criticalities,
                                                                       t_bb_cost* coords) {
-    const auto& blk_loc_registry = placer_state_.get().blk_loc_registry();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const BlkLocRegistry& blk_loc_registry = placer_state_.get().blk_loc_registry();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     bool skip_net = true;
 
