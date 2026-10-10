@@ -51,6 +51,9 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     t_physical_tile_type_ptr grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
+    // Layer coordinates only need to be collected when the device has more than one layer
+    const bool is_multi_layer = g_vpr_ctx.device().grid.get_num_layers() > 1;
+
     /* Calculate the Edge weighted median region */
     t_pl_loc to;
 
@@ -92,11 +95,13 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         X_coord.insert(X_coord.end(), ceil(coords.xmax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmax.edge);
         Y_coord.insert(Y_coord.end(), ceil(coords.ymin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymin.edge);
         Y_coord.insert(Y_coord.end(), ceil(coords.ymax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymax.edge);
-        layer_coord.insert(layer_coord.end(), ceil(coords.layer_min.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_min.edge);
-        layer_coord.insert(layer_coord.end(), ceil(coords.layer_max.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_max.edge);
+        if (is_multi_layer) {
+            layer_coord.insert(layer_coord.end(), ceil(coords.layer_min.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_min.edge);
+            layer_coord.insert(layer_coord.end(), ceil(coords.layer_max.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_max.edge);
+        }
     }
 
-    if ((X_coord.empty()) || (Y_coord.empty()) || (layer_coord.empty())) {
+    if (X_coord.empty() || Y_coord.empty() || (is_multi_layer && layer_coord.empty())) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord or y_coord or layer_coord are empty\n");
         return e_create_move::ABORT;
     }
@@ -104,7 +109,6 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     //calculate the weighted median region
     std::stable_sort(X_coord.begin(), X_coord.end());
     std::stable_sort(Y_coord.begin(), Y_coord.end());
-    std::stable_sort(layer_coord.begin(), layer_coord.end());
 
     if (X_coord.size() == 1) {
         limit_coords.xmin = X_coord[0];
@@ -122,10 +126,14 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         limit_coords.ymax = Y_coord[((Y_coord.size() - 1) / 2) + 1];
     }
 
-    if (layer_coord.size() == 1) {
+    if (!is_multi_layer) {
+        limit_coords.layer_min = from.layer;
+        limit_coords.layer_max = from.layer;
+    } else if (layer_coord.size() == 1) {
         limit_coords.layer_min = layer_coord[0];
         limit_coords.layer_max = limit_coords.layer_min;
     } else {
+        std::stable_sort(layer_coord.begin(), layer_coord.end());
         limit_coords.layer_min = layer_coord[((layer_coord.size() - 1) / 2)];
         limit_coords.layer_max = layer_coord[((layer_coord.size() - 1) / 2) + 1];
     }
