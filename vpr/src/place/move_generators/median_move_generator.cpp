@@ -65,6 +65,9 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     t_physical_tile_type_ptr grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from_layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
+    // Layer coordinates only need to be collected when the device has more than one layer
+    const bool is_multi_layer = g_vpr_ctx.device().grid.get_num_layers() > 1;
+
     /* Calculate the median region */
     t_pl_loc to;
 
@@ -131,24 +134,32 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                     continue;
             }
         }
-        //push the calculated coordinates into X,Y coord vectors
+        // Push the calculated coordinates into X,Y coord vectors
         X_coord.push_back(coords.xmin);
         X_coord.push_back(coords.xmax);
         Y_coord.push_back(coords.ymin);
         Y_coord.push_back(coords.ymax);
-        layer_coord.push_back(coords.layer_min);
-        layer_coord.push_back(coords.layer_max);
+        if (is_multi_layer) {
+            layer_coord.push_back(coords.layer_min);
+            layer_coord.push_back(coords.layer_max);
+        }
     }
 
-    if ((X_coord.empty()) || (Y_coord.empty()) || (layer_coord.empty())) {
-        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord or y_coord or layer_coord are empty\n");
+    // X and Y coordinates are pushed together, so checking X_coord is enough
+    if (X_coord.empty()) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord and Y_coord are empty\n");
         return e_create_move::ABORT;
     }
 
     // Calculate the median region
     std::tie(limit_coords.xmin, limit_coords.xmax) = find_middle_pair(X_coord);
     std::tie(limit_coords.ymin, limit_coords.ymax) = find_middle_pair(Y_coord);
-    std::tie(limit_coords.layer_min, limit_coords.layer_max) = find_middle_pair(layer_coord);
+    if (is_multi_layer) {
+        std::tie(limit_coords.layer_min, limit_coords.layer_max) = find_middle_pair(layer_coord);
+    } else {
+        limit_coords.layer_min = from_layer;
+        limit_coords.layer_max = from_layer;
+    }
 
     //arrange the different range limiters
     t_range_limiters range_limiters{rlim,
