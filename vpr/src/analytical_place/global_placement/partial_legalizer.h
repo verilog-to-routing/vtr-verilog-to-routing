@@ -412,7 +412,7 @@ class PerPrimitiveDimPrefixSum2D {
             size_t x;
             size_t y;
         };
-        
+
         const FlatPlacementBins& bins = density_manager.flat_placement_bins();
         std::vector<std::vector<t_bin_center>> layer_bin_centers(num_layers);
         for (FlatPlacementBinId bin_id : bins.bins()) {
@@ -654,8 +654,12 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
      *    spread all the blocks in the chip, which is very expensive.
      *  - This allows us to ignore block models which are already in legal
      *    positions.
+     *
+     *  @param group_id The dim group to identify windows for.
+     *  @param utilization_prefix_sum Prefix sum of the bin utilization.
      */
-    std::vector<SpreadingWindow> identify_non_overlapping_windows(PrimitiveGroupId group_id);
+    std::vector<SpreadingWindow> identify_non_overlapping_windows(PrimitiveGroupId group_id,
+                                                                  const PerPrimitiveDimPrefixSum2D& utilization_prefix_sum);
 
     /**
      * @brief Identifies clusters of overfilled bins for the given model group.
@@ -672,10 +676,15 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
      * Here, minimum means that the windows are just large enough such that the
      * capacity of the bins within the window is larger than the utilization for
      * the given model group.
+     *
+     *  @param overfilled_bin_clusters The clusters of overfilled bins to grow windows around.
+     *  @param group_id The dim group the windows are grown for.
+     *  @param utilization_prefix_sum Prefix sum of the bin utilization.
      */
     std::vector<SpreadingWindow> get_min_windows_around_clusters(
         const std::vector<FlatPlacementBinCluster>& overfilled_bin_clusters,
-        PrimitiveGroupId group_id);
+        PrimitiveGroupId group_id,
+        const PerPrimitiveDimPrefixSum2D& utilization_prefix_sum);
 
     /**
      * @brief Merges overlapping windows in the given vector of windows.
