@@ -13,7 +13,7 @@
 
 /// @brief Returns the two middle values of coords, which must have an even size.
 static std::pair<int, int> find_middle_pair(std::vector<int>& coords) {
-    VTR_ASSERT(coords.size() >= 2 && coords.size() % 2 == 0);
+    VTR_ASSERT_SAFE(coords.size() >= 2 && coords.size() % 2 == 0);
 
     // Move the upper middle value to its sorted position
     auto upper_mid = coords.begin() + coords.size() / 2;
