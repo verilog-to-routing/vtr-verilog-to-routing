@@ -12,7 +12,6 @@
 #include <cstdio>
 #include <limits>
 #include <memory>
-#include <thread>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -88,14 +87,15 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          const PreClusterTimingManager& pre_cluster_timing_manager,
                                                          std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                          float ap_timing_tradeoff,
-                                                         unsigned num_threads,
+                                                         std::optional<vtr::thread_pool>& thread_pool,
                                                          e_ap_solver_threading solver_threading,
                                                          int log_verbosity) {
 #ifdef EIGEN_INSTALLED
-    // Get the total number of threads that the solver can use.
-    unsigned total_num_threads = num_threads;
-    if (num_threads == 0) {
-        total_num_threads = std::thread::hardware_concurrency();
+    // Get the total number of threads that the solver can use. There is no
+    // pool when the flow runs on a single thread.
+    unsigned total_num_threads = 1;
+    if (thread_pool.has_value()) {
+        total_num_threads = thread_pool->thread_count();
     }
 
     // Get the number of linear systems the solver solves in each iteration.
@@ -132,7 +132,6 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
     //       of threads.
     Eigen::setNbThreads(eigen_num_threads);
 #else
-    (void)num_threads;
     (void)solver_threading;
 #endif // EIGEN_INSTALLED
 
@@ -143,6 +142,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                               device_grid,
                                                               atom_netlist,
                                                               ap_timing_tradeoff,
+                                                              thread_pool,
                                                               log_verbosity);
         case e_ap_analytical_solver::QP_Hybrid:
 #ifdef EIGEN_INSTALLED
@@ -152,6 +152,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                     pre_cluster_timing_manager,
                                                     ap_timing_tradeoff,
                                                     solve_systems_concurrently,
+                                                    thread_pool,
                                                     log_verbosity);
 #else
             (void)netlist;
@@ -174,6 +175,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                place_delay_model,
                                                ap_timing_tradeoff,
                                                solve_systems_concurrently,
+                                               thread_pool,
                                                log_verbosity);
 #else
             VPR_FATAL_ERROR(VPR_ERROR_AP,
@@ -192,6 +194,7 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist,
                                    const AtomNetlist& atom_netlist,
                                    const DeviceGrid& device_grid,
                                    float ap_timing_tradeoff,
+                                   std::optional<vtr::thread_pool>& thread_pool,
                                    int log_verbosity)
     : netlist_(netlist)
     , atom_netlist_(atom_netlist)
@@ -202,7 +205,8 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist,
     , device_grid_height_(device_grid.height())
     , device_grid_num_layers_(device_grid.get_num_layers())
     , ap_timing_tradeoff_(ap_timing_tradeoff)
-    , log_verbosity_(log_verbosity) {
+    , log_verbosity_(log_verbosity)
+    , thread_pool_(thread_pool) {
 
     // Mark completely disconnected blocks. Since these blocks are not connected
     // to any nets that we care about for AP, we should not pass them into the
@@ -547,7 +551,11 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
         x_solve_succeeded = solve_linear_system(A_sparse_diff, b_x_diff, guess_x, x, x_cg_iters);
         y_solve_succeeded = solve_linear_system(A_sparse_diff, b_y_diff, guess_y, y, y_cg_iters);
     } else {
-        // Solve the systems at the same time.
+        // Solve the systems at the same time. The round robin is reset so the
+        // y system always runs on the same thread, which lets Eigen reuse
+        // that thread's OpenMP workers instead of creating a team per pool thread.
+        VTR_ASSERT(thread_pool_.has_value());
+        thread_pool_->reset_round_robin();
         thread_pool_->schedule_work([&]() {
             y_solve_succeeded = solve_linear_system(A_sparse_diff, b_y_diff, guess_y, y, y_cg_iters);
         });
@@ -683,25 +691,17 @@ B2BSolver::B2BSolver(const APNetlist& ap_netlist,
                      std::shared_ptr<PlaceDelayModel> place_delay_model,
                      float ap_timing_tradeoff,
                      bool solve_systems_concurrently,
+                     std::optional<vtr::thread_pool>& thread_pool,
                      int log_verbosity)
     : AnalyticalSolver(ap_netlist,
                        atom_netlist,
                        device_grid,
                        ap_timing_tradeoff,
+                       thread_pool,
                        log_verbosity)
     , pre_cluster_timing_manager_(pre_cluster_timing_manager)
     , place_delay_model_(place_delay_model)
     , solve_systems_concurrently_(solve_systems_concurrently) {
-
-    // The calling thread solves the x system, so the pool needs one thread for
-    // each of the other systems.
-    if (solve_systems_concurrently_) {
-        size_t num_pool_threads = 1;
-        if (has_multiple_layers()) {
-            num_pool_threads = 2;
-        }
-        thread_pool_.emplace(num_pool_threads);
-    }
 
     // Reserve space for the triplet lists once here, since their buffers are
     // reused for every linear system built by this solver.
@@ -976,8 +976,12 @@ void B2BSolver::solve_linear_systems(Eigen::VectorXd& x_guess,
         }
     } else {
         // Solve the systems at the same time. The y and z systems are solved
-        // on the thread pool, each on its own thread.
+        // on the thread pool, each on its own thread. The round robin is reset
+        // so each system always runs on the same thread, which lets Eigen
+        // reuse that thread's OpenMP workers instead of creating a team per
+        // pool thread.
         VTR_ASSERT(thread_pool_.has_value());
+        thread_pool_->reset_round_robin();
         thread_pool_->schedule_work([&]() {
             y = solve_linear_system(A_sparse_y, b_y, y_guess, y_cg_iters);
         });

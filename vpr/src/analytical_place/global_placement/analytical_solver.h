@@ -70,6 +70,7 @@ class AnalyticalSolver {
                      const AtomNetlist& atom_netlist,
                      const DeviceGrid& device_grid,
                      float ap_timing_tradeoff,
+                     std::optional<vtr::thread_pool>& thread_pool,
                      int log_verbosity);
 
     /**
@@ -170,7 +171,7 @@ class AnalyticalSolver {
 
     /// @brief Thread pool that inheriting classes may use to parallelize
     ///        linear system construction and solving.
-    std::optional<vtr::thread_pool> thread_pool_;
+    std::optional<vtr::thread_pool>& thread_pool_;
 };
 
 /**
@@ -183,7 +184,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          const PreClusterTimingManager& pre_cluster_timing_manager,
                                                          std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                          float ap_timing_tradeoff,
-                                                         unsigned num_threads,
+                                                         std::optional<vtr::thread_pool>& thread_pool,
                                                          e_ap_solver_threading solver_threading,
                                                          int log_verbosity);
 
@@ -202,11 +203,13 @@ class IdentityAnalyticalSolver : public AnalyticalSolver {
                              const DeviceGrid& device_grid,
                              const AtomNetlist& atom_netlist,
                              float ap_timing_tradeoff,
+                             std::optional<vtr::thread_pool>& thread_pool,
                              int log_verbosity)
         : AnalyticalSolver(netlist,
                            atom_netlist,
                            device_grid,
                            ap_timing_tradeoff,
+                           thread_pool,
                            log_verbosity) {}
 
     /**
@@ -407,22 +410,18 @@ class QPHybridSolver : public AnalyticalSolver {
                    const PreClusterTimingManager& pre_cluster_timing_manager,
                    float ap_timing_tradeoff,
                    bool solve_systems_concurrently,
+                   std::optional<vtr::thread_pool>& thread_pool,
                    int log_verbosity)
         : AnalyticalSolver(netlist,
                            atom_netlist,
                            device_grid,
                            ap_timing_tradeoff,
+                           thread_pool,
                            log_verbosity)
         , solve_systems_concurrently_(solve_systems_concurrently) {
         // This solver only solves for the x and y dimensions.
         VTR_ASSERT_MSG(device_grid.get_num_layers() == 1,
                        "The QP Hybrid solver does not support multi-layer devices");
-
-        // The calling thread solves the x system, so the pool only needs one
-        // thread for the y system.
-        if (solve_systems_concurrently_) {
-            thread_pool_.emplace(1);
-        }
 
         // Update the net weights. These net weights are used when the linear
         // system is initialized.
@@ -588,6 +587,7 @@ class B2BSolver : public AnalyticalSolver {
               std::shared_ptr<PlaceDelayModel> place_delay_model,
               float ap_timing_tradeoff,
               bool solve_systems_concurrently,
+              std::optional<vtr::thread_pool>& thread_pool,
               int log_verbosity);
 
     /**

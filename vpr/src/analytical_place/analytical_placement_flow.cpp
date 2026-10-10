@@ -6,7 +6,10 @@
  */
 
 #include "analytical_placement_flow.h"
+#include <algorithm>
 #include <memory>
+#include <optional>
+#include <thread>
 #include "PlacementDelayModelCreator.h"
 #include "PreClusterTimingManager.h"
 #include "analytical_solver.h"
@@ -36,6 +39,7 @@
 #include "vpr_types.h"
 #include "stats.h"
 #include "vtr_assert.h"
+#include "vtr_thread_pool.h"
 #include "vtr_time.h"
 #include "vtr_math.h"
 
@@ -191,7 +195,8 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
                                           const Prepacker& prepacker,
                                           PreClusterTimingManager& pre_cluster_timing_manager,
                                           std::shared_ptr<PlaceDelayModel> place_delay_model,
-                                          const DeviceContext& device_ctx) {
+                                          const DeviceContext& device_ctx,
+                                          std::optional<vtr::thread_pool>& thread_pool) {
     if (g_vpr_ctx.atom().flat_placement_info().valid) {
         VTR_LOG("Flat Placement is provided in the AP flow, skipping the Global Placement.\n");
         PartialPlacement p_placement(ap_netlist);
@@ -217,7 +222,7 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
                                                                          ap_opts.ap_timing_tradeoff,
                                                                          ap_opts.generate_mass_report,
                                                                          ap_opts.ap_partial_legalizer_target_density,
-                                                                         ap_opts.num_threads,
+                                                                         thread_pool,
                                                                          ap_opts.log_verbosity);
         return global_placer->place();
     }
@@ -307,6 +312,18 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     // can be allocated.
     init_graphics(vpr_setup, *device_ctx.arch);
 
+    // Create the thread pool shared by the stages of the AP flow. A thread
+    // count of zero means use every hardware thread. No pool is created when
+    // the flow runs on a single thread.
+    unsigned num_threads = ap_opts.num_threads;
+    if (num_threads == 0) {
+        num_threads = std::max(1u, std::thread::hardware_concurrency());
+    }
+    std::optional<vtr::thread_pool> thread_pool;
+    if (num_threads > 1) {
+        thread_pool.emplace(num_threads);
+    }
+
     // Run the Global Placer.
     PartialPlacement p_placement = run_global_placer(ap_opts,
                                                      atom_nlist,
@@ -314,7 +331,8 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                      prepacker,
                                                      pre_cluster_timing_manager,
                                                      place_delay_model,
-                                                     device_ctx);
+                                                     device_ctx,
+                                                     thread_pool);
 
     // Verify that the partial placement is valid before running the full
     // legalizer.

@@ -47,7 +47,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  float ap_timing_tradeoff,
                                                  bool generate_mass_report,
                                                  const std::vector<std::string>& target_density_arg_strs,
-                                                 unsigned num_threads,
+                                                 std::optional<vtr::thread_pool>& thread_pool,
                                                  int log_verbosity) {
     return std::make_unique<SimPLGlobalPlacer>(analytical_solver_type,
                                                solver_threading,
@@ -64,7 +64,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                ap_timing_tradeoff,
                                                generate_mass_report,
                                                target_density_arg_strs,
-                                               num_threads,
+                                               thread_pool,
                                                log_verbosity);
 }
 
@@ -83,7 +83,7 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                      float ap_timing_tradeoff,
                                      bool generate_mass_report,
                                      const std::vector<std::string>& target_density_arg_strs,
-                                     unsigned num_threads,
+                                     std::optional<vtr::thread_pool>& thread_pool,
                                      int log_verbosity)
     : GlobalPlacer(ap_netlist, log_verbosity)
     , pre_cluster_timing_manager_(pre_cluster_timing_manager)
@@ -103,7 +103,7 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                      pre_cluster_timing_manager_,
                                      place_delay_model_,
                                      ap_timing_tradeoff,
-                                     num_threads,
+                                     thread_pool,
                                      solver_threading,
                                      log_verbosity_);
 
