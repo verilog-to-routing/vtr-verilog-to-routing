@@ -70,29 +70,33 @@ void alloc_and_load_echo_file_info() {
     }
 
     setAllEchoFileEnabled(getEchoEnabled());
-    //User input nelist
+    // User input nelist
     setEchoFileName(E_ECHO_ATOM_NETLIST_ORIG, "atom_netlist.orig.echo.blif");
     setEchoFileName(E_ECHO_ATOM_NETLIST_CLEANED, "atom_netlist.cleaned.echo.blif");
 
-    //Vpr constraints
+    // Vpr constraints
     setEchoFileName(E_ECHO_VPR_CONSTRAINTS, "vpr_constraints.echo");
 
-    //Packing
+    // Packing
     setEchoFileName(E_ECHO_CLUSTERS, "clusters.echo");
 
-    //Legalizer
+    // Legalizer
     setEchoFileName(E_ECHO_FLAT_PLACE, "post_legalizer_flat_placement.echo");
 
-    //Intra-block routing
+    // Intra-block routing
     setEchoFileName(E_ECHO_INTRA_LB_FAILED_ROUTE, "intra_lb_failed_route.echo");
 
-    //Timing Graphs
+    // Timing Graphs
     setEchoFileName(E_ECHO_TRACK_TO_PIN_MAP, "track_to_pin_map.echo");
     setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH, "timing_graph.pre_pack.echo");
     setEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH, "timing_graph.place_initial.echo");
     setEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH, "timing_graph.place_final.echo");
     setEchoFileName(E_ECHO_FINAL_ROUTING_TIMING_GRAPH, "timing_graph.route_final.echo");
     setEchoFileName(E_ECHO_ANALYSIS_TIMING_GRAPH, "timing_graph.analysis.echo");
+
+    // Wire usage
+    setEchoFileName(E_ECHO_AP_POST_ROUTING_WIRE_USAGE_ESTIMATE, "wire_usage.ap_post_routing_estimate.echo");
+    setEchoFileName(E_ECHO_ROUTED_NET_WIRE_USAGE, "wire_usage.routed.echo");
 
     setEchoFileName(E_ECHO_PLACE_MACROS, "place_macros.echo");
     setEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT, "initial_clb_placement.echo");
@@ -132,7 +136,7 @@ void alloc_and_load_echo_file_info() {
     setEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA, "rr_indexed_data.echo");
     setEchoFileName(E_ECHO_COMPRESSED_GRIDS, "compressed_grids.echo");
 
-    //NoC
+    // NoC
     setEchoFileName(E_ECHO_NOC_MODEL, "noc_model.echo");
     setEchoFileName(E_ECHO_NOC_TRAFFIC_FLOWS, "noc_traffic_flows.echo");
 }
