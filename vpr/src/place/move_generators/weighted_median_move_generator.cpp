@@ -7,8 +7,8 @@
 #include "placer_state.h"
 #include "move_utils.h"
 
-#include <algorithm>
 #include <cmath>
+#include <tuple>
 
 #define CRIT_MULT_FOR_W_MEDIAN 10
 
@@ -106,36 +106,14 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         return e_create_move::ABORT;
     }
 
-    //calculate the weighted median region
-    std::stable_sort(X_coord.begin(), X_coord.end());
-    std::stable_sort(Y_coord.begin(), Y_coord.end());
-
-    if (X_coord.size() == 1) {
-        limit_coords.xmin = X_coord[0];
-        limit_coords.xmax = limit_coords.xmin;
+    // Calculate the weighted median region
+    std::tie(limit_coords.xmin, limit_coords.xmax) = find_middle_pair(X_coord);
+    std::tie(limit_coords.ymin, limit_coords.ymax) = find_middle_pair(Y_coord);
+    if (is_multi_layer) {
+        std::tie(limit_coords.layer_min, limit_coords.layer_max) = find_middle_pair(layer_coord);
     } else {
-        limit_coords.xmin = X_coord[((X_coord.size() - 1) / 2)];
-        limit_coords.xmax = X_coord[((X_coord.size() - 1) / 2) + 1];
-    }
-
-    if (Y_coord.size() == 1) {
-        limit_coords.ymin = Y_coord[0];
-        limit_coords.ymax = limit_coords.ymin;
-    } else {
-        limit_coords.ymin = Y_coord[((Y_coord.size() - 1) / 2)];
-        limit_coords.ymax = Y_coord[((Y_coord.size() - 1) / 2) + 1];
-    }
-
-    if (!is_multi_layer) {
         limit_coords.layer_min = from.layer;
         limit_coords.layer_max = from.layer;
-    } else if (layer_coord.size() == 1) {
-        limit_coords.layer_min = layer_coord[0];
-        limit_coords.layer_max = limit_coords.layer_min;
-    } else {
-        std::stable_sort(layer_coord.begin(), layer_coord.end());
-        limit_coords.layer_min = layer_coord[((layer_coord.size() - 1) / 2)];
-        limit_coords.layer_max = layer_coord[((layer_coord.size() - 1) / 2) + 1];
     }
 
     t_range_limiters range_limiters{rlim,

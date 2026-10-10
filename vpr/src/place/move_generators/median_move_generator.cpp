@@ -8,22 +8,7 @@
 #include "move_utils.h"
 #include "net_cost_handler.h"
 
-#include <algorithm>
 #include <tuple>
-
-/// @brief Returns the two middle values of coords, which must have an even size.
-static std::pair<int, int> find_middle_pair(std::vector<int>& coords) {
-    VTR_ASSERT_SAFE(coords.size() >= 2 && coords.size() % 2 == 0);
-
-    // Move the upper middle value to its sorted position
-    auto upper_mid = coords.begin() + coords.size() / 2;
-    std::nth_element(coords.begin(), upper_mid, coords.end());
-
-    // The lower middle value is the largest element before it
-    int lower = *std::max_element(coords.begin(), upper_mid);
-
-    return {lower, *upper_mid};
-}
 
 MedianMoveGenerator::MedianMoveGenerator(PlacerState& placer_state,
                                          const PlaceMacros& place_macros,
