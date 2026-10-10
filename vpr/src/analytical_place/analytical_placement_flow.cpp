@@ -16,6 +16,7 @@
 #include "cluster_util.h"
 #include "detailed_placer.h"
 #include "device_size_estimate.h"
+#include "draw.h"
 #include "full_legalizer.h"
 #include "setup_grid.h"
 #include "logical_ram_infer.h"
@@ -304,7 +305,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
 
     // Initialize graphics here, after the device grid exists, so the draw structures
     // can be allocated.
-    init_ap_graphics(vpr_setup, *device_ctx.arch);
+    init_graphics(vpr_setup, *device_ctx.arch);
 
     // Run the Global Placer.
     PartialPlacement p_placement = run_global_placer(ap_opts,
