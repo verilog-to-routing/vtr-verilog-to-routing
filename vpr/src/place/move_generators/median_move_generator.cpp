@@ -9,6 +9,21 @@
 #include "net_cost_handler.h"
 
 #include <algorithm>
+#include <tuple>
+
+/// @brief Returns the two middle values of coords, which must have an even size.
+static std::pair<int, int> find_middle_pair(std::vector<int>& coords) {
+    VTR_ASSERT(coords.size() >= 2 && coords.size() % 2 == 0);
+
+    // Move the upper middle value to its sorted position
+    auto upper_mid = coords.begin() + coords.size() / 2;
+    std::nth_element(coords.begin(), upper_mid, coords.end());
+
+    // The lower middle value is the largest element before it
+    int lower = *std::max_element(coords.begin(), upper_mid);
+
+    return {lower, *upper_mid};
+}
 
 MedianMoveGenerator::MedianMoveGenerator(PlacerState& placer_state,
                                          const PlaceMacros& place_macros,
@@ -130,19 +145,10 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         return e_create_move::ABORT;
     }
 
-    //calculate the median region
-    std::stable_sort(X_coord.begin(), X_coord.end());
-    std::stable_sort(Y_coord.begin(), Y_coord.end());
-    std::stable_sort(layer_coord.begin(), layer_coord.end());
-
-    limit_coords.xmin = X_coord[((X_coord.size() - 1) / 2)];
-    limit_coords.xmax = X_coord[((X_coord.size() - 1) / 2) + 1];
-
-    limit_coords.ymin = Y_coord[((Y_coord.size() - 1) / 2)];
-    limit_coords.ymax = Y_coord[((Y_coord.size() - 1) / 2) + 1];
-
-    limit_coords.layer_min = layer_coord[((layer_coord.size() - 1) / 2)];
-    limit_coords.layer_max = layer_coord[((layer_coord.size() - 1) / 2) + 1];
+    // Calculate the median region
+    std::tie(limit_coords.xmin, limit_coords.xmax) = find_middle_pair(X_coord);
+    std::tie(limit_coords.ymin, limit_coords.ymax) = find_middle_pair(Y_coord);
+    std::tie(limit_coords.layer_min, limit_coords.layer_max) = find_middle_pair(layer_coord);
 
     //arrange the different range limiters
     t_range_limiters range_limiters{rlim,
