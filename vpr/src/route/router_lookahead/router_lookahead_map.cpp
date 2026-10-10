@@ -795,7 +795,7 @@ static void compute_tile_lookahead(std::unordered_map<int, util::t_ipin_primitiv
                                                                                       physical_tile,
                                                                                       tile_loc);
 
-    auto insert_res = intra_tile_pin_primitive_pin_delay.insert(std::make_pair(physical_tile->index, pin_delays));
+    auto insert_res = intra_tile_pin_primitive_pin_delay.emplace(physical_tile->index, std::move(pin_delays));
     VTR_ASSERT(insert_res.second);
 
     rr_graph_builder.clear();
