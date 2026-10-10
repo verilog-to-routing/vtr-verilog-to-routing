@@ -23,7 +23,6 @@
 #include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_time.h"
-#include "vtr_vector.h"
 
 /**
  * Since the parameters of a switch may change as a function of its fanin,
@@ -80,13 +79,12 @@ PreClusterTimingManager::PreClusterTimingManager(bool timing_driven,
     // TODO: This can be improved using molecule information.
     float inter_cluster_net_delay = approximate_inter_cluster_delay(arch, routing_arch, device_layout);
     VTR_LOG("Using inter-cluster delay: %g\n", inter_cluster_net_delay);
-    timing_arc_delays_.resize(atom_netlist.pins().size(), inter_cluster_net_delay);
 
     // Initialize the timing analyzer
     clustering_delay_calc_ = std::make_shared<PreClusterDelayCalculator>(atom_netlist,
                                                                          atom_lookup,
                                                                          arch.models,
-                                                                         timing_arc_delays_,
+                                                                         inter_cluster_net_delay,
                                                                          prepacker,
                                                                          *g_vpr_ctx.timing().graph);
     timing_info_ = make_setup_timing_info(clustering_delay_calc_, timing_update_type);
@@ -308,6 +306,13 @@ float PreClusterTimingManager::calc_net_setup_criticality(AtomNetId net_id,
     VTR_ASSERT_SAFE_MSG(net_driver_pin_id.is_valid(),
                         "Net has no driver");
     return timing_info_->setup_pin_criticality(net_driver_pin_id);
+}
+
+void PreClusterTimingManager::set_timing_arc_delay(AtomPinId sink_pin_id, float delay) {
+    VTR_ASSERT_SAFE_MSG(is_valid_,
+                        "Timing manager has not been initialized");
+
+    clustering_delay_calc_->set_arc_delay(sink_pin_id, delay);
 }
 
 void PreClusterTimingManager::update_timing_info() {
