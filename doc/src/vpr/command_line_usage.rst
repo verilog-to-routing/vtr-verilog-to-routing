@@ -312,10 +312,21 @@ General Options
 
     **Default:**  ``on``
 
-.. option:: --echo_file {on | off}
+.. option:: --echo_file {on | off | <echo_file_name> [<echo_file_name> ...]}
 
     Generates echo files of key internal data structures.
     These files are generally used for debugging vpr, and typically end in ``.echo``
+
+    * ``off``: No echo files are generated.
+    * ``on``: All echo files are generated.
+    * ``<echo_file_name> [<echo_file_name> ...]``: Only the listed echo files are generated, identified by their default file names.
+      This is useful when only a few echo files are needed, since some echo files can be very large.
+
+    For example, the following generates only the timing graph analysis and clusters echo files:
+
+    .. code-block:: none
+
+        --echo_file timing_graph.analysis.echo clusters.echo
 
     **Default:** ``off``
 

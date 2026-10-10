@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
@@ -47,6 +48,50 @@ void setEchoFileName(enum e_echo_files echo_option, const char* name) {
     }
     echoFileNames[(int)echo_option] = new char[strlen(name) + 1];
     strcpy(echoFileNames[(int)echo_option], name);
+}
+
+void set_only_echo_files_enabled(const std::vector<std::string>& echo_file_names) {
+    VTR_ASSERT(echoFileEnabled != nullptr);
+    setAllEchoFileEnabled(false);
+    for (const std::string& echo_file_name : echo_file_names) {
+        bool found = false;
+        for (int i = 0; i < (int)E_ECHO_END_TOKEN; i++) {
+            if (echoFileNames[i] != nullptr && echo_file_name == echoFileNames[i]) {
+                echoFileEnabled[i] = true;
+                found = true;
+            }
+        }
+        if (!found) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Unknown echo file '%s' given to --echo_file.\n",
+                            echo_file_name.c_str());
+        }
+    }
+}
+
+void init_echo_files_from_options(const std::vector<std::string>& echo_file_args) {
+    // --echo_file takes either "on", "off", or a list of echo file names. If
+    // specific echo files are requested, turn echo on, but only for those
+    // files.
+    VTR_ASSERT(!echo_file_args.empty());
+    bool echo_all_files = false;
+    bool echo_no_files = false;
+    if (echo_file_args.size() == 1) {
+        echo_all_files = (echo_file_args[0] == "on");
+        echo_no_files = (echo_file_args[0] == "off");
+    }
+    if (!echo_all_files && !echo_no_files) {
+        for (const std::string& echo_file_arg : echo_file_args) {
+            if (echo_file_arg == "on" || echo_file_arg == "off") {
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "--echo_file '%s' cannot be combined with other values.\n",
+                                echo_file_arg.c_str());
+            }
+        }
+    }
+    setEchoEnabled(!echo_no_files);
+    if (!echo_all_files && !echo_no_files)
+        set_only_echo_files_enabled(echo_file_args);
 }
 
 bool isEchoFileEnabled(enum e_echo_files echo_option) {

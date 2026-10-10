@@ -259,7 +259,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     VTR_LOG("\n");
 
     /* Determine whether echo is on or off */
-    setEchoEnabled(options->CreateEchoFile);
+    init_echo_files_from_options(options->echo_file.value());
 
     /*
      * Initialize the functions names for which VPR_ERRORs
