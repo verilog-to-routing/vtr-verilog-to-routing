@@ -180,8 +180,8 @@ void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_i
                                                               ClusterBlockId moving_block_id,
                                                               bool& skip_net) {
     //TODO: account for multiple physical pin instances per logical pin
-    const auto& blk_loc_registry = placer_state_.get().blk_loc_registry();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const BlkLocRegistry& blk_loc_registry = placer_state_.get().blk_loc_registry();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     /* If the net is only connected to the moving block, it should be skipped.
      * Let's initially assume that the net is only connected to the moving block.
