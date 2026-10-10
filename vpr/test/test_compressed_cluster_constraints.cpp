@@ -108,6 +108,7 @@ TEST_CASE("compressed_cluster_constraints_keep_every_rectangle", "[vpr_place_con
     t_logical_block_type empty_logical_type;
     t_logical_block_type io_logical_type;
     t_logical_block_type small_logical_type;
+    // g_vpr_ctx keeps pointers to the stack objects above; clear it on exit so later tests do not use them.
     GlobalStateReset reset_global_state;
     build_small_tile_device(empty_tile, io_tile, small_tile,
                             empty_logical_type, io_logical_type, small_logical_type);
