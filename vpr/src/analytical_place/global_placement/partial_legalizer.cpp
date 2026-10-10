@@ -11,7 +11,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-#include <functional>
 #include <iterator>
 #include <limits>
 #include <map>
@@ -703,35 +702,6 @@ void FlowBasedLegalizer::legalize(PartialPlacement& p_placement) {
     density_manager_->export_placement_from_bins(p_placement);
 }
 
-PerPrimitiveDimPrefixSum2D::PerPrimitiveDimPrefixSum2D(const FlatPlacementDensityManager& density_manager,
-                                                       std::function<float(PrimitiveVectorDim, size_t, size_t, size_t)> lookup) {
-    // Get the size that the prefix sums should be.
-    size_t width, height, num_layers;
-    std::tie(width, height, num_layers) = density_manager.get_overall_placeable_region_size();
-
-    // Create each of the prefix sums.
-    const PrimitiveDimManager& dim_manager = density_manager.mass_calculator().get_dim_manager();
-    layer_dim_prefix_sum_.resize(num_layers);
-    for (size_t layer = 0; layer < num_layers; layer++) {
-        layer_dim_prefix_sum_[layer].resize(dim_manager.dims().size());
-        for (PrimitiveVectorDim dim : density_manager.get_used_dims_mask().get_non_zero_dims()) {
-            layer_dim_prefix_sum_[layer][dim] = vtr::PrefixSum2D<uint64_t>(
-                width,
-                height,
-                [&](size_t x, size_t y) {
-                    // Convert the floating point value into fixed point to prevent
-                    // error accumulation in the prefix sum.
-                    // Note: We ceil here since we do not want to lose information
-                    //       on numbers that get very close to 0.
-                    float val = lookup(dim, layer, x, y);
-                    VTR_ASSERT_SAFE_MSG(val >= 0.0f,
-                                        "PerPrimitiveDimPrefixSum2D expected to only hold positive values");
-                    return std::ceil(val * fractional_scale_);
-                });
-        }
-    }
-}
-
 float PerPrimitiveDimPrefixSum2D::get_dim_sum(PrimitiveVectorDim dim,
                                               const vtr::Rect<double>& region,
                                               size_t layer) const {
@@ -885,22 +855,7 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
     // between iterations of the partial legalizer.
     capacity_prefix_sum_ = PerPrimitiveDimPrefixSum2D(
         *density_manager,
-        [&](PrimitiveVectorDim dim, size_t layer, size_t x, size_t y) {
-            // Get the bin at this grid location.
-            FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
-
-            // If the bin is not 1x1, then we only want to apply the capacity to the
-            // center tile of this bin. The other tiles will have zero
-            // capacity. This must be done since the prefix-sum assumes 1x1 grid of
-            // values, so we set the center bin as the representative of the entire
-            // bin.
-            const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
-            size_t center_x = std::floor(bin_region.xmin() + bin_region.width() / 2.0);
-            size_t center_y = std::floor(bin_region.ymin() + bin_region.height() / 2.0);
-            if (x != center_x || y != center_y) {
-                return 0.0f;
-            }
-
+        [&](PrimitiveVectorDim dim, FlatPlacementBinId bin_id) {
             // Get the capacity of the bin for this dim.
             float cap = density_manager_->get_bin_capacity(bin_id).get_dim_val(dim);
             VTR_ASSERT_SAFE(cap >= 0.0f);
@@ -1181,23 +1136,13 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_aro
     // Precompute a prefix sum for the current utilization of each 1x1 region
     // of the device. This needs to be recomputed every time the bins are
     // modified, so it is recomputed here.
+    // The mass of a bin is placed on its center tile by the prefix sum.
+    // TODO: A better way of doing this is actually using the solved positions to find
+    //       the utilization of tiles within each non-1x1 bin. However, this may slow
+    //       things down a lot.
     PerPrimitiveDimPrefixSum2D utilization_prefix_sum(
         *density_manager_,
-        [&](PrimitiveVectorDim dim, size_t layer, size_t x, size_t y) {
-            FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
-
-            // Matching the code for the capacity prefix sum, we assume that all of the
-            // mass of a tile is concentrated in its center. All other bins are zeroed out.
-            // TODO: A better way of doing this is actually using the solved positions to find
-            //       the capacity of tiles within each non-1x1 bin. However, this may slow
-            //       things down a lot.
-            const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
-            size_t center_x = std::floor(bin_region.xmin() + bin_region.width() / 2.0);
-            size_t center_y = std::floor(bin_region.ymin() + bin_region.height() / 2.0);
-            if (x != center_x || y != center_y) {
-                return 0.0f;
-            }
-
+        [&](PrimitiveVectorDim dim, FlatPlacementBinId bin_id) {
             float util = density_manager_->get_bin_utilization(bin_id).get_dim_val(dim);
             VTR_ASSERT_SAFE(util >= 0.0f);
             return util;
