@@ -156,10 +156,8 @@ static void print_placement_stats(const PartialPlacement& p_placement,
     VTR_LOG("\tPlacement estimated wirelength: %g\n", estimate_post_routing_wire_usage(p_placement, ap_netlist, g_vpr_ctx.device().grid));
 
     // Print the estimated post-routing timing.
-    // NOTE: This overwrites the arc delays in the timing manager's delay
-    //       calculator. The global placer uses the same arc delay estimator,
-    //       so these are the same delays the timing manager was last updated
-    //       with (assuming it was last updated with this placement).
+    // NOTE: The estimate restores the arc delays in the delay calculator before
+    //       returning, so this does not affect the timing manager's timing info.
     if (pre_cluster_timing_manager.is_valid()) {
         VTR_ASSERT(arc_delay_estimator != nullptr);
         t_ap_timing_estimate timing_estimate = estimate_post_routing_timing(p_placement,
