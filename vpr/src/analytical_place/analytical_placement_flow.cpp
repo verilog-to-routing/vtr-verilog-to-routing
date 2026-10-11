@@ -219,12 +219,18 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
                                           p_placement);
         VTR_LOG("\tPlacement estimated wirelength: %g\n", estimate_post_routing_wire_usage(p_placement, ap_netlist, device_ctx.grid));
 
-        // Print the estimated post-routing timing of the flat placement.
+        // Update the timing information using the flat placement, so the rest
+        // of the flow sees criticalities based on where the atoms are placed,
+        // and print the estimated post-routing timing.
         if (pre_cluster_timing_manager.is_valid()) {
             FlatPlacementArcDelayEstimator arc_delay_estimator(ap_netlist,
                                                                *pre_cluster_timing_manager.get_delay_calculator_ptr(),
                                                                *place_delay_model,
                                                                device_ctx.grid);
+            update_timing_info_with_flat_placement(pre_cluster_timing_manager,
+                                                   &arc_delay_estimator,
+                                                   p_placement);
+
             t_ap_timing_estimate timing_estimate = estimate_post_routing_timing(p_placement,
                                                                                 arc_delay_estimator,
                                                                                 pre_cluster_timing_manager.get_delay_calculator_ptr());
