@@ -12,8 +12,11 @@
 #include "atom_netlist_fwd.h"
 #include "logical_ram_infer.h"
 #include "netlist_fwd.h"
+#include "logic_types.h"
 #include "partition.h"
 #include "partition_region.h"
+#include "physical_types.h"
+#include "physical_types_util.h"
 #include "prepack.h"
 #include "region.h"
 #include "user_place_constraints.h"
@@ -22,6 +25,7 @@
 #include "vtr_geometry.h"
 #include "vtr_time.h"
 #include "vtr_vector.h"
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -53,10 +57,126 @@ static bool is_single_point_pr(const PartitionRegion& pr) {
     return true;
 }
 
+/**
+ * @brief Returns true if the given pb_graph pin can only be reached from
+ *        global pins of its cluster (i.e. root block pins which connect to
+ *        global pins of the physical tile).
+ *
+ * The pb_graph is searched backwards from the pin. If any path reaches a
+ * non-global root block pin, or the output of another primitive within the
+ * cluster, the pin can be driven by a non-global signal.
+ *
+ *  @param pin              The pb_graph pin to check.
+ *  @param logical_block    The logical block (cluster type) containing the pin.
+ *  @param physical_tile    A physical tile which can implement the logical
+ *                          block. Used to find which root block pins are
+ *                          global.
+ */
+static bool is_pin_only_reachable_from_global_pins(const t_pb_graph_pin* pin,
+                                                   t_logical_block_type_ptr logical_block,
+                                                   t_physical_tile_type_ptr physical_tile) {
+    bool reached_root_pin = false;
+    std::vector<const t_pb_graph_pin*> stack = {pin};
+    std::unordered_set<const t_pb_graph_pin*> visited = {pin};
+    while (!stack.empty()) {
+        const t_pb_graph_pin* cur_pin = stack.back();
+        stack.pop_back();
+
+        if (cur_pin->is_root_block_pin()) {
+            // The root block pins are numbered by their logical pin index.
+            int physical_pin = get_physical_pin(physical_tile, logical_block, cur_pin->pin_count_in_cluster);
+            if (!physical_tile->is_pin_global[physical_pin])
+                return false;
+            reached_root_pin = true;
+            continue;
+        }
+
+        // The pin may be driven by another primitive within the cluster.
+        if (cur_pin != pin && cur_pin->is_primitive_pin())
+            return false;
+
+        for (const t_pb_graph_edge* edge : cur_pin->input_edges) {
+            for (int ipin = 0; ipin < edge->num_input_pins; ipin++) {
+                const t_pb_graph_pin* prev_pin = edge->input_pins[ipin];
+                if (visited.insert(prev_pin).second)
+                    stack.push_back(prev_pin);
+            }
+        }
+    }
+
+    return reached_root_pin;
+}
+
+/**
+ * @brief Find the model input ports whose pins will always connect to global
+ *        pins of the physical tiles that implement them.
+ *
+ * VPR marks a net as global if it connects to a global pin of a physical tile
+ * (see read_netlist). The architecture may mark a tile port as global (using
+ * is_non_clock_global) without marking the ports of the models implemented
+ * within it, so the model ports alone are not enough to know which nets will
+ * be global.
+ *
+ * A model port is considered global if every pin of every primitive which
+ * implements the port (in every logical block and mode) can only be reached
+ * from global pins of its cluster.
+ */
+static std::unordered_set<const t_model_ports*> find_tile_global_model_ports(const std::vector<t_logical_block_type>& logical_block_types) {
+    // Whether each model port seen so far is global for all of its
+    // implementations.
+    std::unordered_map<const t_model_ports*, bool> model_port_is_global;
+    for (const t_logical_block_type& logical_block : logical_block_types) {
+        if (logical_block.pb_graph_head == nullptr || logical_block.equivalent_tiles.empty())
+            continue;
+        // The architecture guarantees that a logical pin is global for either
+        // all or none of the equivalent tiles, so any tile can be used.
+        t_physical_tile_type_ptr physical_tile = pick_physical_type(&logical_block);
+
+        std::vector<const t_pb_graph_node*> stack = {logical_block.pb_graph_head};
+        while (!stack.empty()) {
+            const t_pb_graph_node* node = stack.back();
+            stack.pop_back();
+
+            if (node->is_primitive()) {
+                for (int iport = 0; iport < node->num_input_ports; iport++) {
+                    for (int ipin = 0; ipin < node->num_input_pins[iport]; ipin++) {
+                        const t_pb_graph_pin* pin = &node->input_pins[iport][ipin];
+                        const t_model_ports* model_port = pin->port->model_port;
+                        if (model_port == nullptr)
+                            continue;
+                        bool is_global = is_pin_only_reachable_from_global_pins(pin, &logical_block, physical_tile);
+                        auto [it, inserted] = model_port_is_global.try_emplace(model_port, is_global);
+                        if (!inserted)
+                            it->second = it->second && is_global;
+                    }
+                }
+                continue;
+            }
+
+            for (int imode = 0; imode < node->pb_type->num_modes; imode++) {
+                const t_mode& mode = node->pb_type->modes[imode];
+                for (int ichild = 0; ichild < mode.num_pb_type_children; ichild++) {
+                    for (int inst = 0; inst < mode.pb_type_children[ichild].num_pb; inst++) {
+                        stack.push_back(&node->child_pb_graph_nodes[imode][ichild][inst]);
+                    }
+                }
+            }
+        }
+    }
+
+    std::unordered_set<const t_model_ports*> global_model_ports;
+    for (const auto& [model_port, is_global] : model_port_is_global) {
+        if (is_global)
+            global_model_ports.insert(model_port);
+    }
+    return global_model_ports;
+}
+
 APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                                     const Prepacker& prepacker,
                                     const RamMapper& ram_mapper,
                                     const UserPlaceConstraints& constraints,
+                                    const std::vector<t_logical_block_type>& logical_block_types,
                                     int high_fanout_threshold,
                                     e_constant_net_method constant_net_method) {
     // Create a scoped timer for reading the atom netlist.
@@ -181,6 +301,10 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
         }
     }
 
+    // Find the model ports which will connect to global pins of the tiles that
+    // implement them. Used below to speculatively mark nets as global.
+    std::unordered_set<const t_model_ports*> tile_global_model_ports = find_tile_global_model_ports(logical_block_types);
+
     // Cleanup the netlist by marking undesirable nets.
     // Currently undesirable nets are nets that are:
     //  - ignored for placement
@@ -220,7 +344,9 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
         // been annotated with being global or ignored. To get around this, we
         // annotate the AP Netlist speculatively.
         // We label a net as being global if one of its pin connect to a clock
-        // port or a non-clock global model port.
+        // port, a non-clock global model port, or a model port which will
+        // connect to a global pin of the tile implementing it. VPR marks a net
+        // as global if any of its pins connect to a global tile pin.
         bool is_global = false;
         for (AtomPinId pin_id : atom_netlist.net_pins(atom_net_id)) {
             AtomPortId port_id = atom_netlist.pin_port(pin_id);
@@ -228,7 +354,8 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                 is_global = true;
                 break;
             }
-            if (atom_netlist.port_model(port_id)->is_non_clock_global) {
+            const t_model_ports* model_port = atom_netlist.port_model(port_id);
+            if (model_port->is_non_clock_global || tile_global_model_ports.count(model_port) != 0) {
                 is_global = true;
                 break;
             }
