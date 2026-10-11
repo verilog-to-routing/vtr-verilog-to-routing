@@ -15,6 +15,7 @@
 
 #include <memory>
 #include "ap_flow_enums.h"
+#include "ap_timing_estimation.h"
 #include "flat_placement_density_manager.h"
 #include "partial_legalizer.h"
 
@@ -146,6 +147,11 @@ class SimPLGlobalPlacer : public GlobalPlacer {
     /// @brief A placement delay model which is used to help compute the delays
     ///        of connections in the AP netlist.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
+
+    /// @brief Estimator used to compute the delays of timing arcs from the
+    ///        flat placement. Only constructed if the pre-cluster timing
+    ///        manager is valid (i.e. timing analysis is on).
+    std::unique_ptr<FlatPlacementArcDelayEstimator> arc_delay_estimator_;
 
     /// @brief The atom netlist used to create an atom block to AP block lookup for the draw manager.
     const AtomNetlist& atom_netlist_;

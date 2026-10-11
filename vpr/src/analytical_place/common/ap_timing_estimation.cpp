@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 #include "PreClusterDelayCalculator.h"
+#include "PreClusterTimingManager.h"
 #include "ap_netlist.h"
 #include "clb2clb_directs.h"
 #include "device_grid.h"
@@ -25,6 +26,7 @@
 #include "physical_types_util.h"
 #include "place_delay_model.h"
 #include "router_lookahead_constants.h"
+#include "timing_info.h"
 #include "vtr_assert.h"
 #include "vtr_hash.h"
 
@@ -449,4 +451,39 @@ void FlatPlacementArcDelayEstimator::update_arc_delays(const PartialPlacement& p
         float delay = estimate_arc_delay(ap_pin_id, p_placement);
         delay_calc.set_arc_delay(ap_netlist_.pin_atom_pin(ap_pin_id), delay);
     }
+}
+
+void update_timing_info_with_flat_placement(PreClusterTimingManager& pre_cluster_timing_manager,
+                                            const FlatPlacementArcDelayEstimator* arc_delay_estimator,
+                                            const PartialPlacement& p_placement) {
+    // If the timing manager is invalid (i.e. timing analysis is off), do not
+    // update.
+    if (!pre_cluster_timing_manager.is_valid())
+        return;
+    VTR_ASSERT_SAFE(arc_delay_estimator != nullptr);
+
+    // Re-estimate the delays of all timing arcs using the flat placement.
+    arc_delay_estimator->update_arc_delays(p_placement,
+                                           *pre_cluster_timing_manager.get_delay_calculator_ptr());
+
+    // If the timing update type is incremental, we need to invalidate all edges which have changed.
+    // We assume here that all edge delays change in some way. We could do a more complicated
+    // check for each edge modified and check if the delay has changed; but that may likely
+    // take more time than just invalidating all of the edges.
+    // Since this loop iterates over all of the edges in the timing graph, we only do this if incremental
+    // is selected.
+    if (pre_cluster_timing_manager.get_timing_update_type() == e_timing_update_type::INCREMENTAL) {
+        for (tatum::EdgeId edge : pre_cluster_timing_manager.get_timing_info().timing_graph()->edges()) {
+            pre_cluster_timing_manager.get_timing_info_ptr()->invalidate_delay(edge);
+        }
+    }
+
+    // Update the timing info. This will run STA to recompute the slacks and
+    // the criticalities of all timing arcs.
+    pre_cluster_timing_manager.update_timing_info();
+
+    // Do not warn again about unconstrained nodes during placement.
+    // Without this line, every GP iteration would see the same warning.
+    // Ok to warn once after the first iteration.
+    pre_cluster_timing_manager.get_timing_info_ptr()->set_warn_unconstrained(false);
 }
