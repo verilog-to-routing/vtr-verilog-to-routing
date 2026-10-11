@@ -204,6 +204,11 @@ void BlkLocRegistry::place_sync_external_block_connections(ClusterBlockId iblk) 
 
     int rel_capacity = block_loc.sub_tile - sub_tile.capacity.low;
 
+    // The flat router can rebuild the clustered netlist with more pins than at init()
+    if (tile_pin_offsets_.size() < clb_nlist.pins().size()) {
+        tile_pin_offsets_.resize(clb_nlist.pins().size());
+    }
+
     for (ClusterPinId pin : clb_nlist.block_pins(iblk)) {
         int logical_pin_index = clb_nlist.pin_logical_index(pin);
         int sub_tile_pin_index = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_index);
