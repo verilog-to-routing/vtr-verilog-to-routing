@@ -238,6 +238,13 @@ jobs:
         cd build
         make test -j${{ steps.cpu-cores.outputs.count }}
 
+    # Catch2 runs test cases in a random order. Run several extra orders to
+    # catch test cases that leave global state behind and break later tests.
+    # On failure, the log ends with the exact command to reproduce locally.
+    - name: Test with shuffled test orders
+      run: |
+        ./dev/run_shuffled_unit_tests.py --build-dir build --num-seeds 5 -j${{ steps.cpu-cores.outputs.count }}
+
 
   # GUITests — Plan §7.9 — runs the full GUI test pyramid on ubuntu-24.04.
   # Builds with -DVPR_USE_EZGL=on so the local and CI command lines match:
