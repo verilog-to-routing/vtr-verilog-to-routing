@@ -320,6 +320,12 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
      *        the same molecule (and will therefore be packed into the same
      *        cluster), using the pb_graph path between their pb_graph pins.
      *
+     * The pb_graph pins of the source and sink are the pins they are expected
+     * to be implemented by, chosen independently. The molecule may be packed
+     * into a different set of primitives (for example, an adder and the
+     * flip-flop it directly drives), so the minimum path delay between any
+     * equivalent source and sink pins is used.
+     *
      * @param src_gpin  Source pb_graph pin.
      * @param sink_gpin Sink pb_graph pin.
      *
@@ -327,7 +333,7 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
      *         no path was found in the pb_graph.
      */
     static tatum::Time calc_intra_molecule_delay(const t_pb_graph_pin* src_gpin, const t_pb_graph_pin* sink_gpin) {
-        float delay = calc_pb_graph_path_delay(src_gpin, sink_gpin);
+        float delay = calc_min_equivalent_pin_path_delay(src_gpin, sink_gpin);
 
         // If a valid path was found through the pb_graph hierarchy, use it.
         // Otherwise we assume that it is a very low delay, close to 0.
@@ -357,8 +363,19 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         // measure it from, and chain direct connections in VTR architectures
         // commonly use a delayless switch by default. Omitting it is still
         // far more accurate than the pessimistic general inter-cluster delay.
-        float src_to_boundary = calc_pb_graph_delay_to_root_pin(src_gpin);
-        float boundary_to_sink = calc_pb_graph_delay_from_root_pin(sink_gpin);
+        // NOTE: Architectures may model the delay of entering / leaving the
+        //       cluster on the intra-cluster interconnect instead (e.g. the
+        //       interconnect from the cluster's cin pin to the first adder).
+        //
+        // A chain can only leave a cluster through the last primitive in the
+        // chain within the cluster, and can only enter a cluster through the
+        // first primitive. The pb_graph pins of the source and sink pins are
+        // the expected pins, which may be in the middle of the chain (and
+        // therefore have no path to the cluster boundary). Instead, use the
+        // equivalent pins of every instance of the primitive in the cluster
+        // to find the boundary delays.
+        float src_to_boundary = calc_min_equivalent_pin_delay_to_root_pin(src_gpin);
+        float boundary_to_sink = calc_min_equivalent_pin_delay_from_root_pin(sink_gpin);
 
         if (src_to_boundary < 0.0f || boundary_to_sink < 0.0f) {
             // Could not find a path to/from the cluster boundary; fall back
