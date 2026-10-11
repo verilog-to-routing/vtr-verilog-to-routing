@@ -22,6 +22,7 @@
 #include "flat_placement_bins.h"
 #include "flat_placement_density_manager.h"
 #include "globals.h"
+#include "gp_solution_legality_estimation.h"
 #include "gp_solution_quality_estimation.h"
 #include "logic_types.h"
 #include "partial_legalizer.h"
@@ -137,6 +138,8 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
  */
 static void print_placement_stats(const PartialPlacement& p_placement,
                                   const APNetlist& ap_netlist,
+                                  const AtomNetlist& atom_netlist,
+                                  const Prepacker& prepacker,
                                   FlatPlacementDensityManager& density_manager,
                                   const PreClusterTimingManager& pre_cluster_timing_manager) {
     // Print the placement HPWL
@@ -150,6 +153,17 @@ static void print_placement_stats(const PartialPlacement& p_placement,
         VTR_LOG("\tPlacement estimated CPD: %f ns\n", cpd_ns);
         VTR_LOG("\tPlacement estimated sTNS: %f ns\n", stns_ns);
     }
+
+    // Print the estimated legality of the placement.
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    t_ap_legality_estimate legality_estimate = estimate_legality(p_placement,
+                                                                 ap_netlist,
+                                                                 atom_netlist,
+                                                                 prepacker,
+                                                                 device_ctx.grid,
+                                                                 device_ctx.physical_tile_types,
+                                                                 g_vpr_ctx.floorplanning().constraints);
+    print_legality_summary(legality_estimate, device_ctx.physical_tile_types);
 
     // Print density information. Need to reset the density manager to ensure
     // the data is valid.
@@ -515,6 +529,8 @@ PartialPlacement SimPLGlobalPlacer::place() {
     VTR_LOG("Placement after Global Placement:\n");
     print_placement_stats(best_p_placement,
                           ap_netlist_,
+                          atom_netlist_,
+                          prepacker_,
                           *density_manager_,
                           pre_cluster_timing_manager_);
 
