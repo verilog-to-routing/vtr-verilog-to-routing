@@ -11,17 +11,27 @@
 #include <cstddef>
 #include <fstream>
 #include <limits>
+#include <memory>
 #include <string>
 #include <unordered_set>
+#include "PreClusterDelayCalculator.h"
 #include "ap_netlist.h"
+#include "ap_timing_estimation.h"
+#include "atom_netlist.h"
 #include "device_grid.h"
 #include "echo_files.h"
+#include "globals.h"
 #include "net_cost_handler.h"
 #include "partial_placement.h"
 #include "physical_types.h"
+#include "tatum/analyzer_factory.hpp"
+#include "tatum/analyzers/SetupTimingAnalyzer.hpp"
+#include "tatum/echo_writer.hpp"
+#include "timing_util.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vpr_types.h"
+#include "vtr_vector.h"
 
 /**
  * @brief Empirical correction factor applied to the estimated wire usage of
@@ -323,4 +333,61 @@ double estimate_post_routing_wire_usage(const PartialPlacement& p_placement,
                                        device_grid);
 
     return wire_usage;
+}
+
+t_ap_timing_estimate estimate_post_routing_timing(const PartialPlacement& p_placement,
+                                                  const FlatPlacementArcDelayEstimator& arc_delay_estimator,
+                                                  std::shared_ptr<PreClusterDelayCalculator> delay_calc) {
+    VTR_ASSERT(delay_calc != nullptr);
+
+    // Save the current arc delays in the delay calculator, so they can be
+    // restored after the estimate. The delay calculator may be shared with
+    // other timing info (e.g. the pre-cluster timing manager), which should
+    // not be affected by this estimate.
+    const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
+    vtr::vector<AtomPinId, float> prev_arc_delays(atom_netlist.pins().size(), 0.0f);
+    for (AtomPinId pin_id : atom_netlist.pins()) {
+        if (atom_netlist.pin_type(pin_id) == PinType::SINK)
+            prev_arc_delays[pin_id] = delay_calc->get_arc_delay(pin_id);
+    }
+
+    // Re-estimate the delays of all timing arcs from the flat placement. All
+    // arcs are re-estimated, since the delay calculator may hold delays from
+    // a different placement.
+    arc_delay_estimator.update_arc_delays(p_placement, *delay_calc);
+
+    // Perform a full setup timing analysis using a new timing analyzer.
+    // A new analyzer is used so that this estimate is independent of the state
+    // of any other analyzer sharing the delay calculator (e.g. incremental
+    // timing updates).
+    // NOTE: A Tatum analyzer is used directly (instead of a SetupTimingInfo)
+    //       since the slacks and criticalities of every pin are not needed.
+    const TimingContext& timing_ctx = g_vpr_ctx.timing();
+    using SetupAnalyzerFactory = tatum::AnalyzerFactory<tatum::SetupAnalysis, tatum::ParallelWalker>;
+    std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = SetupAnalyzerFactory::make(*timing_ctx.graph,
+                                                                                      *timing_ctx.constraints,
+                                                                                      *delay_calc);
+    analyzer->update_timing();
+
+    // Write the estimated timing graph to an echo file if requested.
+    if (isEchoFileEnabled(E_ECHO_AP_POST_ROUTING_TIMING_ESTIMATE_GRAPH)) {
+        tatum::write_echo(getEchoFileName(E_ECHO_AP_POST_ROUTING_TIMING_ESTIMATE_GRAPH),
+                          *timing_ctx.graph,
+                          *timing_ctx.constraints,
+                          *delay_calc,
+                          analyzer);
+    }
+
+    t_ap_timing_estimate timing_estimate;
+    timing_estimate.cpd = find_least_slack_critical_path_delay(*timing_ctx.constraints, *analyzer).delay();
+    timing_estimate.stns = find_setup_total_negative_slack(*analyzer);
+    timing_estimate.swns = find_setup_worst_negative_slack(*analyzer);
+
+    // Restore the arc delays saved above.
+    for (AtomPinId pin_id : atom_netlist.pins()) {
+        if (atom_netlist.pin_type(pin_id) == PinType::SINK)
+            delay_calc->set_arc_delay(pin_id, prev_arc_delays[pin_id]);
+    }
+
+    return timing_estimate;
 }

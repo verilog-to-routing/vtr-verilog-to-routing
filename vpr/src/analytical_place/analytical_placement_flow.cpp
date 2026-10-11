@@ -8,10 +8,12 @@
 #include "analytical_placement_flow.h"
 #include <memory>
 #include "PlacementDelayModelCreator.h"
+#include "PreClusterDelayCalculator.h"
 #include "PreClusterTimingManager.h"
 #include "analytical_solver.h"
 #include "ap_draw_manager.h"
 #include "ap_netlist.h"
+#include "ap_timing_estimation.h"
 #include "atom_netlist.h"
 #include "cluster_util.h"
 #include "detailed_placer.h"
@@ -201,6 +203,21 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
                                           prepacker,
                                           p_placement);
         VTR_LOG("\tPlacement estimated wirelength: %g\n", estimate_post_routing_wire_usage(p_placement, ap_netlist, device_ctx.grid));
+
+        // Print the estimated post-routing timing of the flat placement.
+        if (pre_cluster_timing_manager.is_valid()) {
+            FlatPlacementArcDelayEstimator arc_delay_estimator(ap_netlist,
+                                                               *pre_cluster_timing_manager.get_delay_calculator_ptr(),
+                                                               *place_delay_model,
+                                                               device_ctx.grid);
+            t_ap_timing_estimate timing_estimate = estimate_post_routing_timing(p_placement,
+                                                                                arc_delay_estimator,
+                                                                                pre_cluster_timing_manager.get_delay_calculator_ptr());
+            VTR_LOG("\tPlacement estimated CPD: %f ns\n", timing_estimate.cpd * 1e9);
+            VTR_LOG("\tPlacement estimated sTNS: %f ns\n", timing_estimate.stns * 1e9);
+            VTR_LOG("\tPlacement estimated sWNS: %f ns\n", timing_estimate.swns * 1e9);
+        }
+
         return p_placement;
     } else {
         // Run the Global Placer

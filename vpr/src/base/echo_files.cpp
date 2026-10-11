@@ -89,6 +89,7 @@ void alloc_and_load_echo_file_info() {
     // Timing Graphs
     setEchoFileName(E_ECHO_TRACK_TO_PIN_MAP, "track_to_pin_map.echo");
     setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH, "timing_graph.pre_pack.echo");
+    setEchoFileName(E_ECHO_AP_POST_ROUTING_TIMING_ESTIMATE_GRAPH, "timing_graph.ap_post_routing_estimate.echo");
     setEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH, "timing_graph.place_initial.echo");
     setEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH, "timing_graph.place_final.echo");
     setEchoFileName(E_ECHO_FINAL_ROUTING_TIMING_GRAPH, "timing_graph.route_final.echo");
