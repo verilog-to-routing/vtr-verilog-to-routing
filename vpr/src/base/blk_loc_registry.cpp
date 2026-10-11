@@ -17,19 +17,17 @@ void BlkLocRegistry::init() {
     vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = mutable_block_locs();
     GridBlock& grid_blocks = mutable_grid_blocks();
 
-    /* Initialize the lookup of CLB block positions */
+    // Initialize the lookup of CLB block positions
     block_locs.clear();
     block_locs.resize(clb_nlist.blocks().size());
 
     tile_pin_offsets_.clear();
     tile_pin_offsets_.resize(clb_nlist.pins().size());
 
-    /* Initialize the reverse lookup of CLB block positions */
+    // Initialize the reverse lookup of CLB block positions
     grid_blocks.init_grid_blocks(device_grid);
 
-    /* Initialize the grid blocks to empty.
-     * Initialize all the blocks to unplaced.
-     */
+    // Initialize the grid blocks to empty and mark all blocks as unplaced
     clear_all_grid_locs();
 }
 
@@ -200,8 +198,6 @@ void BlkLocRegistry::place_sync_external_block_connections(ClusterBlockId iblk) 
     VTR_ASSERT(sub_tile.num_phy_pins % sub_tile.capacity.total() == 0);
 
     int max_num_block_pins = sub_tile.num_phy_pins / sub_tile.capacity.total();
-    /* Logical location and physical location is offset by z * max_num_block_pins */
-
     int rel_capacity = block_loc.sub_tile - sub_tile.capacity.low;
 
     // The flat router can rebuild the clustered netlist with more pins than at init()
@@ -213,6 +209,7 @@ void BlkLocRegistry::place_sync_external_block_connections(ClusterBlockId iblk) 
         int logical_pin_index = clb_nlist.pin_logical_index(pin);
         int sub_tile_pin_index = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_index);
 
+        // The pins of each block in the sub tile start at an offset of rel_capacity * max_num_block_pins
         int new_physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index + rel_capacity * max_num_block_pins];
 
         auto result = physical_pins_.find(pin);
