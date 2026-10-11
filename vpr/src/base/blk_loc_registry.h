@@ -165,7 +165,7 @@ class BlkLocRegistry {
      * @param pin The unique Id of the cluster pin whose coordinates is desired.
      * @return The coordinates of the given pin.
      */
-    t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin) const;
+    t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin) const { return pin_locs_[pin]; }
 
     enum class e_expected_transaction {
         APPLY,
