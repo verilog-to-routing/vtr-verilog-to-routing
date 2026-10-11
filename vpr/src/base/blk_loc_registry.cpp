@@ -21,8 +21,8 @@ void BlkLocRegistry::init() {
     block_locs.clear();
     block_locs.resize(clb_nlist.blocks().size());
 
-    tile_pin_offsets_.clear();
-    tile_pin_offsets_.resize(clb_nlist.pins().size());
+    pin_locs_.clear();
+    pin_locs_.resize(clb_nlist.pins().size());
 
     // Initialize the reverse lookup of CLB block positions
     grid_blocks.init_grid_blocks(device_grid);
@@ -179,6 +179,9 @@ void BlkLocRegistry::clear_block_type_grid_locs(const std::unordered_set<int>& u
         int blk_type = cluster_ctx.clb_nlist.block_type(blk_id)->index;
         if (clear_all_block_types || unplaced_blk_types_index.count(blk_type)) {
             block_locs_[blk_id].loc = t_pl_loc();
+            for (ClusterPinId pin : cluster_ctx.clb_nlist.block_pins(blk_id)) {
+                pin_locs_[pin] = t_physical_tile_loc();
+            }
         }
     }
 }
@@ -201,8 +204,8 @@ void BlkLocRegistry::place_sync_external_block_connections(ClusterBlockId iblk) 
     int rel_capacity = block_loc.sub_tile - sub_tile.capacity.low;
 
     // The flat router can rebuild the clustered netlist with more pins than at init()
-    if (tile_pin_offsets_.size() < clb_nlist.pins().size()) {
-        tile_pin_offsets_.resize(clb_nlist.pins().size());
+    if (pin_locs_.size() < clb_nlist.pins().size()) {
+        pin_locs_.resize(clb_nlist.pins().size());
     }
 
     for (ClusterPinId pin : clb_nlist.block_pins(iblk)) {
@@ -218,10 +221,20 @@ void BlkLocRegistry::place_sync_external_block_connections(ClusterBlockId iblk) 
         } else {
             physical_pins_.insert(pin, new_physical_pin_index);
         }
+    }
 
-        // Cache the pin offset within the tile so get_coordinate_of_pin() does not look up the tile type
-        tile_pin_offsets_[pin] = {physical_tile->pin_width_offset[new_physical_pin_index],
-                                  physical_tile->pin_height_offset[new_physical_pin_index]};
+    update_pin_locs_(iblk, physical_tile);
+}
+
+void BlkLocRegistry::update_pin_locs_(ClusterBlockId blk_id, t_physical_tile_type_ptr tile) {
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const t_pl_loc& loc = block_locs_[blk_id].loc;
+
+    for (ClusterPinId pin : clb_nlist.block_pins(blk_id)) {
+        int tile_pin = physical_pins_[pin];
+        pin_locs_[pin] = {loc.x + tile->pin_width_offset[tile_pin],
+                          loc.y + tile->pin_height_offset[tile_pin],
+                          loc.layer};
     }
 }
 
@@ -249,6 +262,8 @@ void BlkLocRegistry::apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_aff
         // if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (old_type != new_type) {
             place_sync_external_block_connections(blk);
+        } else {
+            update_pin_locs_(blk, new_type);
         }
     }
 
@@ -301,6 +316,8 @@ void BlkLocRegistry::revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_af
         // if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (old_type != new_type) {
             place_sync_external_block_connections(blk);
+        } else {
+            update_pin_locs_(blk, old_type);
         }
 
         VTR_ASSERT_SAFE_MSG(grid_blocks_.block_at_location(old_loc) == blk,
@@ -311,16 +328,5 @@ void BlkLocRegistry::revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_af
 }
 
 t_physical_tile_loc BlkLocRegistry::get_coordinate_of_pin(ClusterPinId pin) const {
-    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
-
-    ClusterBlockId block = cluster_ctx.clb_nlist.pin_block(pin);
-    const t_pl_loc& block_loc = block_locs_[block].loc;
-    const auto& [x_offset, y_offset] = tile_pin_offsets_[pin];
-
-    t_physical_tile_loc tile_loc;
-    tile_loc.x = block_loc.x + x_offset;
-    tile_loc.y = block_loc.y + y_offset;
-    tile_loc.layer_num = block_loc.layer;
-
-    return tile_loc;
+    return pin_locs_[pin];
 }

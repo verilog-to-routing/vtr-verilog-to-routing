@@ -7,8 +7,6 @@
 #include "vpr_types.h"
 #include "grid_block.h"
 
-#include <utility>
-
 struct t_block_loc;
 struct t_pl_blocks_to_be_moved;
 
@@ -48,9 +46,14 @@ class BlkLocRegistry {
     ///@brief Clustered pin placement mapping with physical pin
     vtr::vector_map<ClusterPinId, int> physical_pins_;
 
-    /// @brief (x, y) offset of each clustered pin from the root location of the tile its block is placed in.
-    /// Kept in sync with physical_pins_ by place_sync_external_block_connections().
-    vtr::vector<ClusterPinId, std::pair<int, int>> tile_pin_offsets_;
+    /// @brief Location of each clustered pin on the device.
+    /// Updated whenever a block is placed, moved, or unplaced.
+    vtr::vector<ClusterPinId, t_physical_tile_loc> pin_locs_;
+
+    /// @brief Recomputes pin_locs_ for every pin of the given block from its current location.
+    /// @param blk_id The block whose pins are updated.
+    /// @param tile The physical tile type at the block's location.
+    void update_pin_locs_(ClusterBlockId blk_id, t_physical_tile_type_ptr tile);
 
     /// @brief Stores ClusterBlockId of all movable clustered blocks
     /// (blocks that are not locked down to a single location)
