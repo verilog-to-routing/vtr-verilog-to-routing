@@ -21,6 +21,9 @@ void BlkLocRegistry::init() {
     block_locs.clear();
     block_locs.resize(clb_nlist.blocks().size());
 
+    tile_pin_offsets_.clear();
+    tile_pin_offsets_.resize(clb_nlist.pins().size());
+
     /* Initialize the reverse lookup of CLB block positions */
     grid_blocks.init_grid_blocks(device_grid);
 
@@ -213,6 +216,10 @@ void BlkLocRegistry::place_sync_external_block_connections(ClusterBlockId iblk) 
         } else {
             physical_pins_.insert(pin, new_physical_pin_index);
         }
+
+        // Cache the pin offset within the tile so get_coordinate_of_pin() does not look up the tile type
+        tile_pin_offsets_[pin] = {physical_tile->pin_width_offset[new_physical_pin_index],
+                                  physical_tile->pin_height_offset[new_physical_pin_index]};
     }
 }
 
@@ -304,13 +311,13 @@ void BlkLocRegistry::revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_af
 t_physical_tile_loc BlkLocRegistry::get_coordinate_of_pin(ClusterPinId pin) const {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    int pnum = tile_pin_index(pin);
     ClusterBlockId block = cluster_ctx.clb_nlist.pin_block(pin);
+    const t_pl_loc& block_loc = block_locs_[block].loc;
+    const auto& [x_offset, y_offset] = tile_pin_offsets_[pin];
 
     t_physical_tile_loc tile_loc;
-    t_pl_loc block_loc = block_locs()[block].loc;
-    tile_loc.x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
-    tile_loc.y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
+    tile_loc.x = block_loc.x + x_offset;
+    tile_loc.y = block_loc.y + y_offset;
     tile_loc.layer_num = block_loc.layer;
 
     return tile_loc;

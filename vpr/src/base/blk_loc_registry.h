@@ -2,9 +2,12 @@
 #pragma once
 
 #include "clustered_netlist_fwd.h"
+#include "vtr_vector.h"
 #include "vtr_vector_map.h"
 #include "vpr_types.h"
 #include "grid_block.h"
+
+#include <utility>
 
 struct t_block_loc;
 struct t_pl_blocks_to_be_moved;
@@ -44,6 +47,10 @@ class BlkLocRegistry {
 
     ///@brief Clustered pin placement mapping with physical pin
     vtr::vector_map<ClusterPinId, int> physical_pins_;
+
+    /// @brief (x, y) offset of each clustered pin from the root location of the tile its block is placed in.
+    /// Kept in sync with physical_pins_ by place_sync_external_block_connections().
+    vtr::vector<ClusterPinId, std::pair<int, int>> tile_pin_offsets_;
 
     /// @brief Stores ClusterBlockId of all movable clustered blocks
     /// (blocks that are not locked down to a single location)
