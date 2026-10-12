@@ -367,7 +367,13 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
     void update_hold() override { hold_timing_.update_hold(); }
 
     //Update setup only
-    void update_setup() override { setup_timing_.update_setup(); }
+    void update_setup() override {
+        setup_timing_.update_setup();
+
+        if (warn_unconstrained_) {
+            warn_unconstrained(analyzer());
+        }
+    }
 
     void set_warn_unconstrained(bool val) override { warn_unconstrained_ = val; }
 

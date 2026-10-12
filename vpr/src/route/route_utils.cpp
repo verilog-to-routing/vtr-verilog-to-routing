@@ -298,6 +298,7 @@ void print_route_status(int itry,
                         const OveruseInfo& overuse_info,
                         const WirelengthInfo& wirelength_info,
                         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                        bool hold_timing_updated,
                         float est_success_iteration) {
     //Iteration
     VTR_LOG("%4d", itry);
@@ -366,16 +367,16 @@ void print_route_status(int itry,
         VTR_LOG(" %10s", "N/A");
     }
 
-    //hTNS
-    if (timing_info) {
+    // hTNS
+    if (timing_info && hold_timing_updated) {
         float hTNS = timing_info->hold_total_negative_slack();
         VTR_LOG(" % #10.4g", 1e9 * hTNS);
     } else {
         VTR_LOG(" %10s", "N/A");
     }
 
-    //hWNS
-    if (timing_info) {
+    // hWNS
+    if (timing_info && hold_timing_updated) {
         float hWNS = timing_info->hold_worst_negative_slack();
         VTR_LOG(" % #10.3f", 1e9 * hWNS);
     } else {
