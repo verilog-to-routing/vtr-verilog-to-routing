@@ -45,6 +45,8 @@ class MapLookahead final : public RouterLookahead {
     int route_verbosity_;
     bool device_model_warnings_;
     bool has_interposer_cuts_;
+    /// True when the device has a single layer, so every RR node is on layer 0.
+    bool is_single_layer_;
     const float interposer_base_cost_multiplier_;
 
   protected:
