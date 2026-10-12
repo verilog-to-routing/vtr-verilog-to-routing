@@ -342,7 +342,7 @@ float get_rr_cong_cost(RRNodeId inode, float pres_fac) {
 
     float cost = get_single_rr_cong_cost(inode, pres_fac);
 
-    if (route_ctx.non_configurable_bitset.get(inode)) {
+    if (route_ctx.rr_node_route_inf[inode].in_non_config_node_set()) {
         // Access unordered_map only when the node is part of a non-configurable set
         auto itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
         if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
@@ -437,13 +437,15 @@ void alloc_and_load_rr_node_route_structs(const t_router_opts& router_opts) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     route_ctx.rr_node_route_inf.resize(device_ctx.rr_graph.num_nodes());
-    route_ctx.non_configurable_bitset.resize(device_ctx.rr_graph.num_nodes());
-    route_ctx.non_configurable_bitset.fill(false);
 
     reset_rr_node_route_structs(router_opts);
 
+    // Mark the nodes that belong to a non-configurable node set
+    for (t_rr_node_route_inf& node_inf : route_ctx.rr_node_route_inf) {
+        node_inf.set_in_non_config_node_set(false);
+    }
     for (const RRNodeId node_id : device_ctx.rr_node_to_non_config_node_set | std::views::keys) {
-        route_ctx.non_configurable_bitset.set(node_id, true);
+        route_ctx.rr_node_route_inf[node_id].set_in_non_config_node_set(true);
     }
 }
 

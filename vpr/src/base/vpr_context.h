@@ -601,17 +601,6 @@ struct RoutingContext : public Context {
 
     vtr::vector<ParentNetId, std::vector<int>> net_terminal_group_num;
 
-    /**
-     * @brief Information about whether a node is part of a non-configurable set
-     *
-     * (i.e. connected to others with non-configurable edges like metal shorts that can't be disabled)
-     * Stored in a single bit per rr_node for efficiency
-     * bit value 0: node is not part of a non-configurable set
-     * bit value 1: node is part of a non-configurable set
-     * Initialized once when RoutingContext is initialized, static throughout invocation of router
-     */
-    vtr::dynamic_bitset<RRNodeId> non_configurable_bitset; /*[0...device_ctx.num_rr_nodes] */
-
     ///@brief Information about current routing status of each net
     t_net_routing_status net_status;
 

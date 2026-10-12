@@ -43,13 +43,23 @@ struct t_rr_node_route_inf {
     /** @return The current occupancy of the associated rr node. */
     short occ() const { return occ_; }
 
+    /// @return True when the associated rr node belongs to a non-configurable node set.
+    bool in_non_config_node_set() const { return in_non_config_node_set_; }
+
   public: // Mutators
     /** @param new_occ The new occupancy to set. */
     void set_occ(int new_occ) { occ_ = new_occ; }
 
+    /// @param value Whether the associated rr node belongs to a non-configurable node set.
+    void set_in_non_config_node_set(bool value) { in_non_config_node_set_ = value; }
+
   private: // Data
     /** The current occupancy of the associated rr node. */
     short occ_ = 0;
+
+    /// Whether the associated rr node belongs to a non-configurable node set.
+    /// Set once when the routing structures are allocated and fixed for the rest of routing.
+    bool in_non_config_node_set_ = false;
 };
 
 /** This routine checks to see if this is a resource-feasible routing.
