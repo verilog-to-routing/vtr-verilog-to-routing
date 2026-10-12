@@ -113,10 +113,8 @@ static void print_culprit_line_with_context(int column, int target_line, const c
     }
 }
 
-void _log_message(odin_error error_type, loc_t loc, bool fatal_error, const char* function_file_name, int function_line, const char* function_name, const char* message, ...) {
+static void _vlog_message(odin_error error_type, loc_t loc, bool fatal_error, const char* function_file_name, int function_line, const char* function_name, const char* message, va_list ap) {
     fflush(stdout);
-
-    va_list ap;
 
     if (loc.file >= 0 && (size_t)loc.file < include_file_names.size()) {
         char* path = realpath(include_file_names[loc.file].first.c_str(), NULL);
@@ -134,9 +132,7 @@ void _log_message(odin_error error_type, loc_t loc, bool fatal_error, const char
 
     if (message != NULL) {
         fprintf(stderr, " ");
-        va_start(ap, message);
         vfprintf(stderr, message, ap);
-        va_end(ap);
 
         if (message[strlen(message) - 1] != '\n')
             fprintf(stderr, "\n");
@@ -151,6 +147,22 @@ void _log_message(odin_error error_type, loc_t loc, bool fatal_error, const char
     if (fatal_error) {
         _verbose_abort(NULL, function_file_name, function_line, function_name);
     }
+}
+
+void _log_message(odin_error error_type, loc_t loc, bool fatal_error, const char* function_file_name, int function_line, const char* function_name, const char* message, ...) {
+    va_list ap;
+    va_start(ap, message);
+    _vlog_message(error_type, loc, fatal_error, function_file_name, function_line, function_name, message, ap);
+    va_end(ap);
+}
+
+void _log_error_message(odin_error error_type, loc_t loc, const char* function_file_name, int function_line, const char* function_name, const char* message, ...) {
+    va_list ap;
+    va_start(ap, message);
+    _vlog_message(error_type, loc, true, function_file_name, function_line, function_name, message, ap);
+    va_end(ap);
+    // _vlog_message aborts on fatal errors; this keeps the noreturn contract explicit.
+    std::abort();
 }
 
 void _verbose_abort(const char* condition_str, const char* odin_file_name, int odin_line_number, const char* odin_function_name) {

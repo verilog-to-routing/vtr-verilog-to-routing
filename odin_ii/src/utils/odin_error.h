@@ -72,8 +72,12 @@ extern const loc_t unknown_location;
 
 void _log_message(odin_error error_type, loc_t loc, bool soft_error, const char* function_file_name, int function_line, const char* function_name, const char* message, ...);
 
+// Same as _log_message with a fatal error, but marked noreturn so the compiler
+// knows that code following an error_message is unreachable.
+[[noreturn]] void _log_error_message(odin_error error_type, loc_t loc, const char* function_file_name, int function_line, const char* function_name, const char* message, ...);
+
 #define error_message(error_type, loc, message, ...) \
-    _log_message(error_type, loc, true, __FILE__, __LINE__, __PRETTY_FUNCTION__, message, __VA_ARGS__)
+    _log_error_message(error_type, loc, __FILE__, __LINE__, __PRETTY_FUNCTION__, message, __VA_ARGS__)
 
 #define warning_message(error_type, loc, message, ...) \
     _log_message(error_type, loc, false, __FILE__, __LINE__, __PRETTY_FUNCTION__, message, __VA_ARGS__)
