@@ -616,7 +616,13 @@ netvec* get_bus_from_hash (std::unordered_map<std::string, int> & hash_table, ch
 	std::string bus_name_str(bus_name);
     auto hash_entry = hash_table.find(bus_name_str);
 
-	VTR_ASSERT(hash_entry != hash_table.end());
+	// Checked explicitly (not with VTR_ASSERT) so the lookup is still guarded
+	// when assertions are compiled out (VTR_ASSERT_LEVEL=0).
+	if (hash_entry == hash_table.end()){
+		//should never get here
+		cout << "ERROR: Bus '" << bus_name_str << "' not found in the bus hash table.\n" ;
+		exit(1);
+	}
 	VTR_ASSERT((unsigned int)hash_entry->second < buses->size());
 
 	return &(buses->at(hash_entry->second));
