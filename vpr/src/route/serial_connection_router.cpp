@@ -199,7 +199,9 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbours(const RTExplo
 
     // This is a simple prefetch that prefetches:
     //  - RR node data reachable from this node
-    //  - rr switch data to reach those nodes from this node.
+    //  - rr switch data to reach those nodes from this node
+    //  - the routing info of those nodes, which is the first thing read per
+    //    neighbour by the pre-evaluation prune in timing_driven_add_to_heap().
     //
     // This code will be a NOP on compiler targets that do not have a
     // builtin to emit prefetch instructions.
@@ -213,12 +215,10 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbours(const RTExplo
     //
     //  - directrf_stratixiv_arch_timing.blif
     //  - gsm_switch_stratixiv_arch_timing.blif
-    //
-    // TODO: Also prefetch rr_node_route_inf_[to_node]. It is the first thing touched
-    // per neighbor, by the pre-evaluation prune in timing_driven_add_to_heap().
     for (RREdgeId from_edge : edges) {
         RRNodeId to_node = this->rr_nodes_.edge_sink_node(from_edge);
         this->rr_nodes_.prefetch_node(to_node);
+        VTR_PREFETCH(&this->rr_node_route_inf_[to_node], 0, 0);
 
         int switch_idx = this->rr_nodes_.edge_switch(from_edge);
         VTR_PREFETCH(&this->rr_switch_inf_[switch_idx], 0, 0);
