@@ -26,7 +26,6 @@ apt install -y \
   bash \
   bison \
   binutils \
-  binutils-gold \
   build-essential \
   capnproto \
   clang \
