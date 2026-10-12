@@ -9,6 +9,7 @@
  * defines a bin that is "overfilled".
  */
 
+#include <span>
 #include <tuple>
 #include <unordered_set>
 #include <vector>
@@ -133,7 +134,7 @@ class FlatPlacementDensityManager {
      * The utilization, overfill, and underfill of the bin are updated once
      * for the whole batch rather than once per block.
      */
-    void insert_blocks_into_bin(const std::vector<APBlockId>& blk_ids, FlatPlacementBinId bin_id);
+    void insert_blocks_into_bin(std::span<const APBlockId> blk_ids, FlatPlacementBinId bin_id);
 
     /**
      * @brief Remove all of the given blocks from the given bin.
@@ -141,7 +142,7 @@ class FlatPlacementDensityManager {
      * The utilization, overfill, and underfill of the bin are updated once
      * for the whole batch rather than once per block.
      */
-    void remove_blocks_from_bin(const std::vector<APBlockId>& blk_ids, FlatPlacementBinId bin_id);
+    void remove_blocks_from_bin(std::span<const APBlockId> blk_ids, FlatPlacementBinId bin_id);
 
     /**
      * @brief Returns the current utilization of the given bin.

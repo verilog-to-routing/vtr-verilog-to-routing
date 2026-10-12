@@ -275,7 +275,7 @@ void FlatPlacementDensityManager::update_bin_fill_(FlatPlacementBinId bin_id) {
     }
 }
 
-void FlatPlacementDensityManager::insert_blocks_into_bin(const std::vector<APBlockId>& blk_ids,
+void FlatPlacementDensityManager::insert_blocks_into_bin(std::span<const APBlockId> blk_ids,
                                                          FlatPlacementBinId bin_id) {
     VTR_ASSERT(bin_id.is_valid());
     if (blk_ids.empty()) {
@@ -293,7 +293,7 @@ void FlatPlacementDensityManager::insert_blocks_into_bin(const std::vector<APBlo
     update_bin_fill_(bin_id);
 }
 
-void FlatPlacementDensityManager::remove_blocks_from_bin(const std::vector<APBlockId>& blk_ids,
+void FlatPlacementDensityManager::remove_blocks_from_bin(std::span<const APBlockId> blk_ids,
                                                          FlatPlacementBinId bin_id) {
     VTR_ASSERT(bin_id.is_valid());
     if (blk_ids.empty()) {
@@ -358,18 +358,12 @@ void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacem
         next_slot[bin_idx]++;
     }
 
-    // Insert the blocks of each bin and update that bin's fill once.
+    // Insert the blocks of each bin as one batch.
+    std::span<const APBlockId> all_blocks(blocks_by_bin);
     for (FlatPlacementBinId bin_id : bins_.bins()) {
         size_t bin_idx = (size_t)bin_id;
-        if (bin_start[bin_idx] == bin_start[bin_idx + 1]) {
-            continue;
-        }
-        for (size_t i = bin_start[bin_idx]; i < bin_start[bin_idx + 1]; i++) {
-            APBlockId blk_id = blocks_by_bin[i];
-            bins_.add_block_to_bin(blk_id, bin_id);
-            bin_utilization_[bin_id] += mass_calculator_.get_block_mass(blk_id);
-        }
-        update_bin_fill_(bin_id);
+        size_t num_bin_blocks = bin_start[bin_idx + 1] - bin_start[bin_idx];
+        insert_blocks_into_bin(all_blocks.subspan(bin_start[bin_idx], num_bin_blocks), bin_id);
     }
 }
 
