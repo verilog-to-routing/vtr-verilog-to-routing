@@ -1157,15 +1157,20 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
 
     RamInfo ram_info;
 
+    // The mode and port A widths are required. These are checked explicitly (not
+    // with VTR_ASSERT) so they are still guarded when assertions are compiled out
+    // (VTR_ASSERT_LEVEL=0).
+    if (!operation_mode || !port_a_addr_width || !port_a_data_width) {
+        cout << "ERROR: RAM block '" << vqm_node->name << "' is missing a required parameter "
+             << "(operation_mode, port_a_address_width or port_a_data_width).\n";
+        exit(1);
+    }
+
     //Set the mode
-    VTR_ASSERT(operation_mode);
     ram_info.mode = operation_mode->value.string_value;
 
     //Set the widths
-    VTR_ASSERT(port_a_addr_width);
     ram_info.port_a_addr_width = port_a_addr_width->value.integer_value;
-
-    VTR_ASSERT(port_a_data_width);
     ram_info.port_a_data_width = port_a_data_width->value.integer_value;
 
     if (port_a_addr2_width) {
