@@ -41,15 +41,18 @@ class UserPlaceConstraints;
  * rule only considers the primitives which have not already been evicted by
  * an earlier rule, so each evicted primitive is charged to exactly one rule.
  *
- * TODO: Chain offsets, mode conflicts between primitives of different models,
- *       and tile-specific rules (e.g. RAM address conflicts) are not checked
- *       yet.
+ * Mode conflicts (primitives which need conflicting modes of the tile, e.g. a
+ * fracturable LUT used as a LUT6 next to two LUT5s) are checked by
+ * PRIMITIVE_CAPACITY, which counts the primitive slots of every model together.
+ *
+ * TODO: Chain offsets and tile-specific rules (e.g. RAM address conflicts) are
+ *       not checked yet.
  */
 enum class e_ap_legality_rule : size_t {
     INCOMPATIBLE_TILE,  ///< The primitive is in a tile which cannot implement it (or is not in a tile at all).
     OUTSIDE_REGION,     ///< The primitive is outside of its floorplanning region.
     CONTROL_PINS,       ///< More clock / global nets enter the tile than it has clock / global pins.
-    PRIMITIVE_CAPACITY, ///< The tile does not have enough primitive slots for the primitives placed in it.
+    PRIMITIVE_CAPACITY, ///< The tile cannot use enough primitive slots at the same time (in any of its modes) for the primitives placed in it.
     TILE_PINS,          ///< More nets enter / leave the tile than it has (non-global) input / output pins.
     NUM_RULES
 };
