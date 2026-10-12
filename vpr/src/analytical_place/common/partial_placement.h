@@ -16,6 +16,11 @@
 #include "physical_types.h"
 #include "vtr_vector.h"
 
+// Forward declarations
+class AtomNetlist;
+class FlatPlacementInfo;
+class Prepacker;
+
 /**
  * @brief A partial placement during the Analytical Placement flow
  *
@@ -200,3 +205,19 @@ struct PartialPlacement {
                 size_t grid_height,
                 size_t grid_num_layers) const;
 };
+
+/**
+ * @brief Convert a partial placement (over the APNetlist) into a flat placement
+ *        (over the AtomNetlist).
+ *
+ * Each atom is given the location of the AP block that contains it.
+ *
+ *  @param p_placement  The partial placement to convert.
+ *  @param ap_netlist   The APNetlist the partial placement is over.
+ *  @param prepacker    The Prepacker used to get the atoms in each AP block.
+ *  @param atom_netlist The atom netlist the flat placement will be over.
+ */
+FlatPlacementInfo convert_partial_to_flat_placement(const PartialPlacement& p_placement,
+                                                    const APNetlist& ap_netlist,
+                                                    const Prepacker& prepacker,
+                                                    const AtomNetlist& atom_netlist);
