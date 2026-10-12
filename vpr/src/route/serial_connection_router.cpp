@@ -220,8 +220,8 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbours(const RTExplo
         this->rr_nodes_.prefetch_node(to_node);
         VTR_PREFETCH(&this->rr_node_route_inf_[to_node], 0, 0);
 
-        int switch_idx = this->rr_nodes_.edge_switch(from_edge);
-        VTR_PREFETCH(&this->rr_switch_inf_[switch_idx], 0, 0);
+        RRSwitchId switch_id(this->rr_nodes_.edge_switch(from_edge));
+        VTR_PREFETCH(&this->rr_switch_cost_inf_[switch_id], 0, 0);
     }
 
     for (RREdgeId from_edge : edges) {

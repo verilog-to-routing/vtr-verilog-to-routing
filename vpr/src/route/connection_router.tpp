@@ -273,10 +273,10 @@ float ConnectionRouter<Heap>::evaluate_timing_driven_backward_costs(RTExploredNo
      */
 
     // Info for the switch connecting from_node to_node (i.e., to->index)
-    int iswitch = rr_nodes_.edge_switch(to->prev_edge);
-    const t_rr_switch_inf& switch_inf = rr_switch_inf_[iswitch];
-    bool switch_buffered = switch_inf.buffered();
-    bool reached_configurably = switch_inf.configurable();
+    RRSwitchId iswitch(rr_nodes_.edge_switch(to->prev_edge));
+    const t_rr_switch_cost_inf& switch_inf = rr_switch_cost_inf_[iswitch];
+    bool switch_buffered = switch_inf.buffered;
+    bool reached_configurably = switch_inf.configurable;
     float switch_R = switch_inf.R;
     float switch_Tdel = switch_inf.Tdel;
     float switch_Cinternal = switch_inf.Cinternal;

@@ -19,8 +19,6 @@
  * through the rr_node_route_inf. See update_traceback as an example of this tracing.
  */
 
-#include <span>
-
 #include "connection_router_interface.h"
 #include "globals.h"
 #include "route_path_manager.h"
@@ -30,6 +28,22 @@
 #include "router_stats.h"
 #include "rr_graph_view.h"
 #include "spatial_route_tree_lookup.h"
+
+/// @brief The fields of a t_rr_switch_inf that the neighbour cost evaluation reads.
+/// A t_rr_switch_inf holds a std::string and spans two cache lines. This copy holds only
+/// the per-switch values read for every expanded edge and the two switch type tests.
+struct t_rr_switch_cost_inf {
+    /// Equivalent resistance of the switch.
+    float R = 0.;
+    /// Internal capacitance of the switch.
+    float Cinternal = 0.;
+    /// Intrinsic delay of the switch.
+    float Tdel = 0.;
+    /// True when the switch isolates its input from its output.
+    bool buffered = false;
+    /// True when the switch can be turned on or off.
+    bool configurable = true;
+};
 
 /**
  * @class ConnectionRouter defines the interface for the serial and parallel connection
@@ -53,7 +67,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , rr_nodes_(rr_nodes.view())
         , rr_graph_(rr_graph)
         , rr_rc_data_(rr_rc_data)
-        , rr_switch_inf_(rr_switch_inf.data(), rr_switch_inf.size())
+        , rr_switch_cost_inf_(build_rr_switch_cost_inf(rr_switch_inf))
         , net_terminal_groups(g_vpr_ctx.routing().net_terminal_groups)
         , net_terminal_group_num(g_vpr_ctx.routing().net_terminal_group_num)
         , rr_node_route_inf_(rr_node_route_inf)
@@ -66,6 +80,24 @@ class ConnectionRouter : public ConnectionRouterInterface {
     }
 
     virtual ~ConnectionRouter() {}
+
+  private:
+    /// @brief Copy the fields read per expanded edge out of every RR switch.
+    static vtr::vector<RRSwitchId, t_rr_switch_cost_inf>
+    build_rr_switch_cost_inf(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf) {
+        vtr::vector<RRSwitchId, t_rr_switch_cost_inf> cost_inf(rr_switch_inf.size());
+        for (RRSwitchId switch_id : rr_switch_inf.keys()) {
+            const t_rr_switch_inf& switch_inf = rr_switch_inf[switch_id];
+            cost_inf[switch_id].R = switch_inf.R;
+            cost_inf[switch_id].Cinternal = switch_inf.Cinternal;
+            cost_inf[switch_id].Tdel = switch_inf.Tdel;
+            cost_inf[switch_id].buffered = switch_inf.buffered();
+            cost_inf[switch_id].configurable = switch_inf.configurable();
+        }
+        return cost_inf;
+    }
+
+  public:
 
     /**
      * @brief Clears the modified list
@@ -352,8 +384,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
     /** RR node resistance/capacitance data */
     const RRRCData& rr_rc_data_;
 
-    /** RR switch data */
-    std::span<const t_rr_switch_inf> rr_switch_inf_;
+    /// The per-switch values read when evaluating the cost of a neighbour
+    vtr::vector<RRSwitchId, t_rr_switch_cost_inf> rr_switch_cost_inf_;
 
     //@{
     /** Net terminal groups */

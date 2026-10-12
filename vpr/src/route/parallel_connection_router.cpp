@@ -287,8 +287,8 @@ void ParallelConnectionRouter<Heap>::timing_driven_expand_neighbours(const RTExp
         RRNodeId to_node = this->rr_nodes_.edge_sink_node(from_edge);
         this->rr_nodes_.prefetch_node(to_node);
 
-        int switch_idx = this->rr_nodes_.edge_switch(from_edge);
-        VTR_PREFETCH(&this->rr_switch_inf_[switch_idx], 0, 0);
+        RRSwitchId switch_id(this->rr_nodes_.edge_switch(from_edge));
+        VTR_PREFETCH(&this->rr_switch_cost_inf_[switch_id], 0, 0);
     }
 
     for (RREdgeId from_edge : edges) {
