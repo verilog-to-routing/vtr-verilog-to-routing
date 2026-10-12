@@ -146,7 +146,8 @@ class NetCostHandler {
      *
      * The timing costs are calculated by getting the new connection delays,
      * multiplied by the connection criticalities returned by the timing
-     * analyzer. These timing costs are stored in the proposed_* data structures.
+     * analyzer. These proposed delays and timing costs are stored in
+     * PlacerTimingContext::proposed_connection_timing.
      *
      * The change in the bounding box cost is stored in `bb_delta_c`.
      * The change in the timing cost is stored in `timing_delta_c`.
