@@ -138,12 +138,12 @@ jobs:
 
   Coverity:
     name: 'Coverity Scan'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
+    env:
+      # Use the default compiler of the GitHub-hosted runner (the workflow-level
+      # MATRIX_EVAL is for the self-hosted runners).
+      MATRIX_EVAL: "CC=gcc-15 && CXX=g++-15"
     steps:
-
-    - uses: actions/setup-python@v7
-      with:
-        python-version: 3.12.3
 
     - uses: actions/checkout@v7
       with:

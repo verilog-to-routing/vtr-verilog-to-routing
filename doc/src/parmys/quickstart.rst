@@ -33,7 +33,7 @@ Building
 To build the VTR flow with the Parmys front-end you may use the VTR Makefile wrapper, by calling the ``make CMAKE_PARAMS="-DWITH_PARMYS=ON"`` command in the `$VTR_ROOT` directory.
 
 .. note::
-    Our CI testing is on Ubuntu 22.04, so that is the best tested platform and recommended for development.
+    Our CI testing is on Ubuntu 26.04, so that is the best tested platform and recommended for development.
 
 .. note::
 
