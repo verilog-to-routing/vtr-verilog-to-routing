@@ -336,9 +336,11 @@ void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacem
         VTR_ASSERT(block_bins[blk_id].is_valid());
     }
 
-    // Group the blocks by bin. The blocks of bin b are stored contiguously in
-    // blocks_by_bin, starting at bin_start[b] and ending before bin_start[b + 1].
-    // Blocks keep their netlist order within each bin.
+    // Group the blocks by bin in one flat array instead of a vector per bin.
+    // The blocks of bin b are blocks_by_bin[bin_start[b]] up to, but not
+    // including, blocks_by_bin[bin_start[b + 1]].
+
+    // Count the blocks in each bin, then turn the counts into start positions.
     std::vector<size_t> bin_start(num_bins + 1, 0);
     for (APBlockId blk_id : ap_netlist_.blocks()) {
         bin_start[(size_t)block_bins[blk_id] + 1]++;
@@ -346,6 +348,8 @@ void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacem
     for (size_t bin_idx = 0; bin_idx < num_bins; bin_idx++) {
         bin_start[bin_idx + 1] += bin_start[bin_idx];
     }
+
+    // Write each block into the next free position of its bin's range.
     std::vector<size_t> next_slot(bin_start.begin(), bin_start.end() - 1);
     std::vector<APBlockId> blocks_by_bin(num_blocks);
     for (APBlockId blk_id : ap_netlist_.blocks()) {
