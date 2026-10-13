@@ -41,19 +41,6 @@ class SeparableLookahead final : public RouterLookahead {
                                 bool device_model_warnings,
                                 float interposer_base_cost_multiplier);
 
-    /**
-     * @brief Returns the x component of the minimum delay across all OPINs of the physical tile type
-     *        "physical_tile_idx" on layer "from_layer", travelling from x-coordinate x1 to an IPIN at
-     *        x-coordinate x2 on layer "to_layer".
-     *
-     * Profiled costs include OPIN-to-wire delay in x only. MapLookahead fallback estimates
-     * include that delay on either axis, so sums involving a y fallback may count it twice.
-     */
-    float get_opin_min_delay_x(int physical_tile_idx, int from_layer, int to_layer, int x1, int x2) const;
-
-    /// @brief The y counterpart of get_opin_min_delay_x(); excludes the delay of going from the source/opin node to the wire.
-    float get_opin_min_delay_y(int physical_tile_idx, int from_layer, int to_layer, int y1, int y2) const;
-
   private:
     // MapLookahead overrides are protected, so access them through the base interface.
     std::unique_ptr<RouterLookahead> map_lookahead_; ///< SOURCE/OPIN estimates and fallback for unsampled wire costs.
