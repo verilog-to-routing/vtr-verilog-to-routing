@@ -118,8 +118,8 @@ export QT_SCALE_FACTOR=1
 #   default              → diff written only when SSIM < threshold (FAIL).
 #   VPR_GUI_DEBUG=1      → diff written for every case (PASS and FAIL),
 #                          set by `run_all_tests.sh --debug`.
-# REPO_ROOT is VTR's SOURCE root; under a nested build (aurora2 -> OpenFPGA ->
-# VTR) <src>/build is not the build tree, and this dir gets rm -rf'd below.
+# REPO_ROOT is VTR's SOURCE root; under a nested build <src>/build is not the
+# build tree, and this dir gets rm -rf'd below.
 # CMake passes the real one; the default only serves a standalone build.
 readonly TEST_OUTDIR="${VPR_GUI_ARTIFACT_DIR:-${REPO_ROOT}/build/vpr/test/gui/artifacts}"
 rm -rf "${TEST_OUTDIR}"

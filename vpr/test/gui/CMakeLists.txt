@@ -42,7 +42,7 @@ add_executable(test_vpr_gui ${VPR_GUI_TEST_SOURCES})
 # GUI-T-017 — compile-time bench / arch resolution. Hardcoded relative to
 # the source tree so the fixture has no working-directory dependency
 # (it chdirs into a per-fixture temp dir at construction time).
-# VTR_SOURCE_DIR, not CMAKE_SOURCE_DIR: VTR is built nested under aurora2.
+# VTR_SOURCE_DIR, not CMAKE_SOURCE_DIR: VTR may be built as a nested subproject.
 target_compile_definitions(test_vpr_gui PRIVATE
     VPR_TEST_ARCH_XML="${VTR_SOURCE_DIR}/vtr_flow/arch/timing/k6_N10_40nm.xml"
     VPR_TEST_BLIF_AND_LATCH="${VTR_SOURCE_DIR}/vtr_flow/benchmarks/microbenchmarks/and_latch.blif"
@@ -132,8 +132,8 @@ set_tests_properties(test_vpr_gui_visual PROPERTIES
 #
 # Labelled layer3 rather than layer5: it validates the comparator, not the
 # rendered corpus, so it must keep running wherever the visual layer is
-# excluded (aurora2 drops layer5, whose runner only ever reports a skip on a
-# CI runner). layer3 also keeps it reachable from `make gui-tests-unit`.
+# excluded (e.g. a superproject that drops layer5, whose runner only ever
+# reports a skip on a CI runner). layer3 also keeps it reachable from `make gui-tests-unit`.
 # ---------------------------------------------------------------------------
 add_test(
     NAME test_vpr_gui_compare_selftest
@@ -153,7 +153,7 @@ set_tests_properties(test_vpr_gui_compare_selftest PROPERTIES
 # WORKING_DIRECTORY must be VTR's build dir so ctest sees the whole registry
 # (enable_testing() is called at VTR's top level); CMAKE_CURRENT_BINARY_DIR
 # would only see this subdir. Use VTR_BINARY_DIR, not CMAKE_BINARY_DIR: when
-# VTR is built as a nested subproject (aurora2 -> OpenFPGA -> VTR) the latter
+# VTR is built as a nested subproject the latter
 # is the superproject's build root, which has no CTest registry at all.
 # ---------------------------------------------------------------------------
 add_custom_target(gui-tests
