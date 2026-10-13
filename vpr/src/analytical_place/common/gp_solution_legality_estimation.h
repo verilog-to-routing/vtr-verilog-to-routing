@@ -11,14 +11,10 @@
  * used by the partial legalizer and of every full legalizer (including the
  * cluster legalizer), so that it can be used to verify them.
  *
- * All penalties are in units of connected primitive pins, so that the
- * different sources of illegality (legality rules) can be fairly compared.
- * Two numbers are reported:
- *  - Pins in violation: the number of connected primitive pins which must move
- *    for the placement to become legal.
- *  - Pin-weighted displacement: the sum, over the primitives which must move,
- *    of their number of connected pins times the Manhattan distance (in tiles)
- *    to the nearest location they could legally move to.
+ * The penalty is the number of pins in violation: the number of connected
+ * primitive pins which must move for the placement to become legal. Using
+ * connected pins as the unit allows the different sources of illegality
+ * (legality rules) to be fairly compared.
  */
 
 #include <array>
@@ -66,24 +62,6 @@ constexpr size_t NUM_AP_LEGALITY_RULES = static_cast<size_t>(e_ap_legality_rule:
 const char* ap_legality_rule_name(e_ap_legality_rule rule);
 
 /**
- * @brief A legality penalty, in units of connected primitive pins.
- */
-struct t_ap_legality_penalty {
-    /// @brief The number of connected primitive pins which must move.
-    size_t pins_in_violation = 0;
-    /// @brief The sum, over the primitives which must move, of their number of
-    ///        connected pins times the distance (in tiles) they must move.
-    double pin_weighted_displacement = 0.0;
-
-    /// @brief Add the given penalty to this penalty.
-    t_ap_legality_penalty& operator+=(const t_ap_legality_penalty& rhs) {
-        pins_in_violation += rhs.pins_in_violation;
-        pin_weighted_displacement += rhs.pin_weighted_displacement;
-        return *this;
-    }
-};
-
-/**
  * @brief The legality penalty of a single tile, broken down by rule.
  */
 struct t_ap_tile_legality_penalty {
@@ -91,10 +69,11 @@ struct t_ap_tile_legality_penalty {
     t_physical_tile_loc root_loc;
     /// @brief The index of the physical tile type of the tile.
     int tile_type_index = -1;
-    /// @brief The total penalty of the primitives evicted from this tile.
-    t_ap_legality_penalty total;
-    /// @brief The penalty of the primitives evicted from this tile, per rule.
-    std::array<t_ap_legality_penalty, NUM_AP_LEGALITY_RULES> rule_penalty;
+    /// @brief The number of connected pins of the primitives evicted from
+    ///        this tile.
+    size_t pins_in_violation = 0;
+    /// @brief The pins in violation of this tile, per rule.
+    std::array<size_t, NUM_AP_LEGALITY_RULES> rule_pins_in_violation = {};
 };
 
 /**
@@ -102,27 +81,27 @@ struct t_ap_tile_legality_penalty {
  *        used to build the legality summary.
  */
 struct t_ap_legality_estimate {
-    /// @brief The total legality penalty of the placement.
-    t_ap_legality_penalty total;
+    /// @brief The total number of pins in violation of the placement.
+    size_t pins_in_violation = 0;
     /// @brief The total number of connected primitive pins in the netlist.
     ///        Used to normalize the penalty.
     size_t num_connected_pins = 0;
-    /// @brief The legality penalty per rule.
-    std::array<t_ap_legality_penalty, NUM_AP_LEGALITY_RULES> rule_penalty;
-    /// @brief The legality penalty per physical tile type (indexed by the
+    /// @brief The pins in violation per rule.
+    std::array<size_t, NUM_AP_LEGALITY_RULES> rule_pins_in_violation = {};
+    /// @brief The pins in violation per physical tile type (indexed by the
     ///        physical tile type index), charged to the type of the tile that
     ///        each evicted primitive was placed in. Primitives placed in empty
     ///        grid locations are charged to the empty tile type.
-    std::vector<t_ap_legality_penalty> tile_type_penalty;
-    /// @brief The legality penalty of primitives placed outside of the device.
-    t_ap_legality_penalty off_device_penalty;
+    std::vector<size_t> tile_type_pins_in_violation;
+    /// @brief The pins in violation of primitives placed outside of the device.
+    size_t off_device_pins_in_violation = 0;
     /// @brief The tiles with the largest number of pins in violation, sorted
     ///        from worst to best. Only tiles with violations are included.
     std::vector<t_ap_tile_legality_penalty> worst_tiles;
     /// @brief The number of primitives placed outside of the device.
     size_t num_off_device_primitives = 0;
-    /// @brief The number of evicted primitives which had no tile that they
-    ///        could legally move to.
+    /// @brief The number of evicted primitives which no tile on the device
+    ///        can implement.
     size_t num_primitives_without_compatible_tile = 0;
     /// @brief The number of molecules whose atoms are not all placed within
     ///        the same tile. This should always be zero, and it is not part of
@@ -131,9 +110,6 @@ struct t_ap_legality_estimate {
 
     /// @brief The pins in violation, normalized by the number of connected pins.
     double normalized_pins_in_violation() const;
-    /// @brief The pin-weighted displacement, normalized by the number of
-    ///        connected pins.
-    double normalized_pin_weighted_displacement() const;
 };
 
 /**
@@ -143,8 +119,7 @@ struct t_ap_legality_estimate {
  * is assigned to the physical tile whose bounding box contains it. Then the
  * legality rules (see e_ap_legality_rule) are applied in order. Each rule
  * evicts the primitives which must move for the placement to become legal,
- * charging their connected pins (and their pin-weighted displacement) to the
- * rule.
+ * charging their connected pins to the rule.
  *
  * If the legality estimate echo file is enabled, the penalty of every occupied
  * tile is written to it. This can be compared tile-by-tile against the mass

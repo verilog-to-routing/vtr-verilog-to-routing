@@ -11,10 +11,8 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
-#include <cstdlib>
 #include <fstream>
 #include <functional>
-#include <limits>
 #include <map>
 #include <optional>
 #include <string>
@@ -132,10 +130,8 @@ struct t_atom_placement {
     /// @brief The grid location containing the atom. If the atom is outside of
     ///        the device, this is the closest grid location on the device.
     t_physical_tile_loc grid_loc;
-    /// @brief The Manhattan distance (in tiles) from the grid location that
-    ///        the atom is placed in to grid_loc. This is only non-zero if the
-    ///        atom is outside of the device.
-    double off_device_distance = 0.0;
+    /// @brief Whether the atom is placed outside of the device.
+    bool is_off_device = false;
     /// @brief The root location of the tile containing the atom. This is
     ///        invalid if the atom is not in a tile (i.e. it is outside of the
     ///        device or in an empty grid location).
@@ -235,48 +231,10 @@ class LegalityEstimator {
     size_t count_split_molecules() const;
 
     /**
-     * @brief Evict the given atom, charging its penalty to the given rule.
-     *
-     *  @param atom                     The atom to evict.
-     *  @param rule                     The rule the eviction is charged to.
-     *  @param exclude_current_tile     If true, the atom must move to a tile
-     *                                  other than the one it is in (the tile
-     *                                  can implement it, but it was evicted).
+     * @brief Evict the given atom, charging its connected pins to the given
+     *        rule.
      */
-    void evict_atom(AtomBlockId atom, e_ap_legality_rule rule, bool exclude_current_tile);
-
-    /**
-     * @brief Get the minimum distance (in tiles) the given atom must move to
-     *        reach a compatible tile (i.e. one which can implement the atom
-     *        and satisfies its region constraint).
-     *
-     * The capacity of the destination tile is ignored. If there is no
-     * compatible tile, max(width, height) of the device is returned.
-     */
-    double get_min_displacement(AtomBlockId atom, bool exclude_current_tile);
-
-    /**
-     * @brief Get the Manhattan distance from the given grid location to the
-     *        closest grid location covered by a compatible tile, if any.
-     *
-     * Searches outward from the given location in rings of increasing
-     * Manhattan distance, where the layer distance counts the same as the x
-     * and y distances.
-     */
-    std::optional<int> find_nearest_compatible_tile_distance(const t_physical_tile_loc& from_loc,
-                                                             size_t atom_kind,
-                                                             const PartitionRegion* pr,
-                                                             const t_physical_tile_loc* excluded_tile_root) const;
-
-    /**
-     * @brief Returns true if the tile covering the given grid location can
-     *        implement the given atom kind, satisfies the given region (if
-     *        any), and is not the excluded tile (if any).
-     */
-    bool is_compatible_tile(const t_physical_tile_loc& grid_loc,
-                            size_t atom_kind,
-                            const PartitionRegion* pr,
-                            const t_physical_tile_loc* excluded_tile_root) const;
+    void evict_atom(AtomBlockId atom, e_ap_legality_rule rule);
 
     /**
      * @brief Get the region the given atom is constrained to, or nullptr if
@@ -408,13 +366,7 @@ const char* ap_legality_rule_name(e_ap_legality_rule rule) {
 double t_ap_legality_estimate::normalized_pins_in_violation() const {
     if (num_connected_pins == 0)
         return 0.0;
-    return static_cast<double>(total.pins_in_violation) / static_cast<double>(num_connected_pins);
-}
-
-double t_ap_legality_estimate::normalized_pin_weighted_displacement() const {
-    if (num_connected_pins == 0)
-        return 0.0;
-    return total.pin_weighted_displacement / static_cast<double>(num_connected_pins);
+    return static_cast<double>(pins_in_violation) / static_cast<double>(num_connected_pins);
 }
 
 // ============================================================================
@@ -777,27 +729,25 @@ static std::unordered_map<const t_model_ports*, e_tile_pin_class> get_port_pin_c
  * A position is contained within the grid location which is the floor of the
  * position (so each grid location includes its lower edge but not its upper
  * edge). Positions outside of the device are moved to the closest grid
- * location on the device, and the distance moved is recorded.
+ * location on the device, and are marked as off-device.
  */
 static t_atom_placement get_atom_placement(double x, double y, double layer, const DeviceGrid& device_grid) {
-    // Clamp each dimension onto the device. Since the device is a box, the
-    // Manhattan distance from an off-device location to any location on the
-    // device is the distance to the clamped location plus the distance from
-    // the clamped location.
-    auto clamp_dim = [](double pos, size_t dim_size, double& off_device_distance) {
+    // Clamp each dimension onto the device.
+    auto clamp_dim = [](double pos, size_t dim_size, bool& is_off_device) {
         double grid_pos = std::floor(pos);
         double clamped_pos = std::clamp(grid_pos, 0.0, static_cast<double>(dim_size) - 1.0);
-        off_device_distance += std::abs(grid_pos - clamped_pos);
+        if (clamped_pos != grid_pos)
+            is_off_device = true;
         return static_cast<int>(clamped_pos);
     };
 
     t_atom_placement atom_placement;
-    atom_placement.grid_loc.x = clamp_dim(x, device_grid.width(), atom_placement.off_device_distance);
-    atom_placement.grid_loc.y = clamp_dim(y, device_grid.height(), atom_placement.off_device_distance);
-    atom_placement.grid_loc.layer_num = clamp_dim(layer, device_grid.get_num_layers(), atom_placement.off_device_distance);
+    atom_placement.grid_loc.x = clamp_dim(x, device_grid.width(), atom_placement.is_off_device);
+    atom_placement.grid_loc.y = clamp_dim(y, device_grid.height(), atom_placement.is_off_device);
+    atom_placement.grid_loc.layer_num = clamp_dim(layer, device_grid.get_num_layers(), atom_placement.is_off_device);
 
     // Off-device positions and empty grid locations are not in any tile.
-    if (atom_placement.off_device_distance > 0.0)
+    if (atom_placement.is_off_device)
         return atom_placement;
     if (device_grid.get_physical_type(atom_placement.grid_loc)->is_empty())
         return atom_placement;
@@ -852,8 +802,8 @@ LegalityEstimator::LegalityEstimator(const PartialPlacement& p_placement,
     init_atom_kinds(physical_tile_types);
 
     // Find which kinds of atoms can be implemented by at least one tile on
-    // the device. This allows the search for a compatible tile to quickly
-    // give up when there is no such tile.
+    // the device. An evicted atom of a kind with no such tile cannot legally
+    // be placed anywhere, which is counted as a sanity check.
     std::vector<bool> tile_type_on_device(physical_tile_types.size(), false);
     for (size_t layer = 0; layer < device_grid.get_num_layers(); layer++) {
         for (size_t x = 0; x < device_grid.width(); x++) {
@@ -916,7 +866,7 @@ LegalityEstimator::LegalityEstimator(const PartialPlacement& p_placement,
         tile.penalty.tile_type_index = device_grid.get_physical_type(tile_root)->index;
     }
 
-    estimate_.tile_type_penalty.resize(physical_tile_types.size());
+    estimate_.tile_type_pins_in_violation.resize(physical_tile_types.size());
 }
 
 void LegalityEstimator::init_atom_kinds(const std::vector<t_physical_tile_type>& physical_tile_types) {
@@ -1050,13 +1000,13 @@ t_ap_legality_estimate LegalityEstimator::run() {
 
     // Collect the worst tiles for the legality summary.
     for (const auto& [tile_root, tile] : tiles_) {
-        if (tile.penalty.total.pins_in_violation > 0)
+        if (tile.penalty.pins_in_violation > 0)
             estimate_.worst_tiles.push_back(tile.penalty);
     }
     // Stable sort, so tiles with the same penalty remain in location order.
     std::stable_sort(estimate_.worst_tiles.begin(), estimate_.worst_tiles.end(),
                      [](const t_ap_tile_legality_penalty& lhs, const t_ap_tile_legality_penalty& rhs) {
-                         return lhs.total.pins_in_violation > rhs.total.pins_in_violation;
+                         return lhs.pins_in_violation > rhs.pins_in_violation;
                      });
     if (estimate_.worst_tiles.size() > NUM_WORST_TILES_TO_REPORT)
         estimate_.worst_tiles.resize(NUM_WORST_TILES_TO_REPORT);
@@ -1075,19 +1025,19 @@ void LegalityEstimator::apply_tile_type_and_region_rules() {
 
         // The atom must be in a tile which can implement it. Atoms outside of
         // the device or in empty grid locations are not in a tile.
-        if (atom_placement.off_device_distance > 0.0)
+        if (atom_placement.is_off_device)
             estimate_.num_off_device_primitives++;
         bool is_in_compatible_tile_type = atom_placement.tile_root.is_valid()
                                           && kind_tile_compatible_[atom_kind_[atom]][get_tile_type(atom_placement.tile_root)->index];
         if (!is_in_compatible_tile_type) {
-            evict_atom(atom, e_ap_legality_rule::INCOMPATIBLE_TILE, false);
+            evict_atom(atom, e_ap_legality_rule::INCOMPATIBLE_TILE);
             continue;
         }
 
         // The atom must be in its region (if it is constrained).
         const PartitionRegion* pr = get_atom_region(atom);
         if (pr != nullptr && !is_tile_in_region(atom_placement.tile_root, *pr))
-            evict_atom(atom, e_ap_legality_rule::OUTSIDE_REGION, false);
+            evict_atom(atom, e_ap_legality_rule::OUTSIDE_REGION);
     }
 }
 
@@ -1152,7 +1102,7 @@ void LegalityEstimator::apply_control_pin_rule(t_tile_state& tile) {
             // An atom may be in more than one group (e.g. a RAM with two
             // clocks), but groups are rebuilt after every eviction, so every
             // atom in this group is still in the tile.
-            evict_atom(atom, e_ap_legality_rule::CONTROL_PINS, true);
+            evict_atom(atom, e_ap_legality_rule::CONTROL_PINS);
         }
     }
 }
@@ -1288,7 +1238,7 @@ void LegalityEstimator::apply_primitive_capacity_rule(t_tile_state& tile) {
         VTR_ASSERT(evict_class.has_value());
 
         size_t c = evict_class.value();
-        evict_atom(class_atoms[c].back(), e_ap_legality_rule::PRIMITIVE_CAPACITY, true);
+        evict_atom(class_atoms[c].back(), e_ap_legality_rule::PRIMITIVE_CAPACITY);
         class_atoms[c].pop_back();
         class_demand[c]--;
 
@@ -1356,7 +1306,7 @@ void LegalityEstimator::apply_tile_pin_rule(t_tile_state& tile) {
             demand.num_inputs[pin_class] += delta.num_inputs[pin_class];
         demand.num_outputs += delta.num_outputs;
         update_net_tile_usage(atom, tile_type_idx, -1, net_usage);
-        evict_atom(atom, e_ap_legality_rule::TILE_PINS, true);
+        evict_atom(atom, e_ap_legality_rule::TILE_PINS);
         candidates.erase(candidates.begin() + evict_idx);
     }
 }
@@ -1384,97 +1334,31 @@ size_t LegalityEstimator::count_split_molecules() const {
     return num_split_molecules;
 }
 
-void LegalityEstimator::evict_atom(AtomBlockId atom, e_ap_legality_rule rule, bool exclude_current_tile) {
+void LegalityEstimator::evict_atom(AtomBlockId atom, e_ap_legality_rule rule) {
     VTR_ASSERT_SAFE(!atom_is_evicted_[atom]);
     atom_is_evicted_[atom] = true;
 
-    int num_pins = atom_num_pins_[atom];
-    t_ap_legality_penalty penalty;
-    penalty.pins_in_violation = num_pins;
-    penalty.pin_weighted_displacement = num_pins * get_min_displacement(atom, exclude_current_tile);
+    if (!kind_has_tile_on_device_[atom_kind_[atom]])
+        estimate_.num_primitives_without_compatible_tile++;
 
+    size_t num_pins = atom_num_pins_[atom];
     size_t rule_idx = static_cast<size_t>(rule);
-    estimate_.total += penalty;
-    estimate_.rule_penalty[rule_idx] += penalty;
+    estimate_.pins_in_violation += num_pins;
+    estimate_.rule_pins_in_violation[rule_idx] += num_pins;
 
-    // Charge the penalty to the tile type and tile the atom was placed in.
+    // Charge the pins to the tile type and tile the atom was placed in.
     const t_atom_placement& atom_placement = atom_placement_[atom];
-    if (atom_placement.off_device_distance > 0.0) {
-        estimate_.off_device_penalty += penalty;
+    if (atom_placement.is_off_device) {
+        estimate_.off_device_pins_in_violation += num_pins;
     } else {
         int tile_type_idx = device_grid_.get_physical_type(atom_placement.grid_loc)->index;
-        estimate_.tile_type_penalty[tile_type_idx] += penalty;
+        estimate_.tile_type_pins_in_violation[tile_type_idx] += num_pins;
     }
     if (atom_placement.tile_root.is_valid()) {
         t_ap_tile_legality_penalty& tile_penalty = tiles_.at(atom_placement.tile_root).penalty;
-        tile_penalty.total += penalty;
-        tile_penalty.rule_penalty[rule_idx] += penalty;
+        tile_penalty.pins_in_violation += num_pins;
+        tile_penalty.rule_pins_in_violation[rule_idx] += num_pins;
     }
-}
-
-double LegalityEstimator::get_min_displacement(AtomBlockId atom, bool exclude_current_tile) {
-    const t_atom_placement& atom_placement = atom_placement_[atom];
-    const t_physical_tile_loc* excluded_tile_root = exclude_current_tile ? &atom_placement.tile_root : nullptr;
-    std::optional<int> distance = find_nearest_compatible_tile_distance(atom_placement.grid_loc,
-                                                                        atom_kind_[atom],
-                                                                        get_atom_region(atom),
-                                                                        excluded_tile_root);
-    if (!distance.has_value()) {
-        estimate_.num_primitives_without_compatible_tile++;
-        return static_cast<double>(std::max(device_grid_.width(), device_grid_.height()));
-    }
-    return atom_placement.off_device_distance + distance.value();
-}
-
-std::optional<int> LegalityEstimator::find_nearest_compatible_tile_distance(const t_physical_tile_loc& from_loc,
-                                                                            size_t atom_kind,
-                                                                            const PartitionRegion* pr,
-                                                                            const t_physical_tile_loc* excluded_tile_root) const {
-    if (!kind_has_tile_on_device_[atom_kind])
-        return std::nullopt;
-
-    int width = device_grid_.width();
-    int height = device_grid_.height();
-    int num_layers = device_grid_.get_num_layers();
-    int max_distance = (width - 1) + (height - 1) + (num_layers - 1);
-    for (int distance = 0; distance <= max_distance; distance++) {
-        // Visit every grid location at exactly this Manhattan distance.
-        for (int dlayer = -distance; dlayer <= distance; dlayer++) {
-            int layer = from_loc.layer_num + dlayer;
-            if (layer < 0 || layer >= num_layers)
-                continue;
-            int xy_distance = distance - std::abs(dlayer);
-            for (int dx = -xy_distance; dx <= xy_distance; dx++) {
-                int x = from_loc.x + dx;
-                if (x < 0 || x >= width)
-                    continue;
-                int dy = xy_distance - std::abs(dx);
-                if (is_compatible_tile({x, from_loc.y + dy, layer}, atom_kind, pr, excluded_tile_root))
-                    return distance;
-                if (dy != 0 && is_compatible_tile({x, from_loc.y - dy, layer}, atom_kind, pr, excluded_tile_root))
-                    return distance;
-            }
-        }
-    }
-
-    return std::nullopt;
-}
-
-bool LegalityEstimator::is_compatible_tile(const t_physical_tile_loc& grid_loc,
-                                           size_t atom_kind,
-                                           const PartitionRegion* pr,
-                                           const t_physical_tile_loc* excluded_tile_root) const {
-    if (grid_loc.y < 0 || grid_loc.y >= static_cast<int>(device_grid_.height()))
-        return false;
-    t_physical_tile_type_ptr tile_type = device_grid_.get_physical_type(grid_loc);
-    if (!kind_tile_compatible_[atom_kind][tile_type->index])
-        return false;
-    t_physical_tile_loc tile_root = device_grid_.get_root_location(grid_loc);
-    if (excluded_tile_root != nullptr && tile_root == *excluded_tile_root)
-        return false;
-    if (pr != nullptr && !is_tile_in_region(tile_root, *pr))
-        return false;
-    return true;
 }
 
 const PartitionRegion* LegalityEstimator::get_atom_region(AtomBlockId atom) const {
@@ -1581,7 +1465,6 @@ void LegalityEstimator::write_legality_estimate_echo(const std::string& filename
     os << "#   num_prims:    Number of primitives placed in the tile.\n";
     os << "#   num_pins:     Number of connected pins of the primitives placed in the tile.\n";
     os << "#   pins_in_viol: Number of connected pins of the primitives evicted from the tile.\n";
-    os << "#   displacement: Pin-weighted displacement of the primitives evicted from the tile.\n";
     os << "#   rule_*:       Pins in violation charged to each rule.\n";
     os << "#   in_*/out:     Number of tile pins of each class used by the nets entering / leaving the tile,\n";
     os << "#                 counting every primitive placed in the tile (before any evictions). Every net\n";
@@ -1592,7 +1475,7 @@ void LegalityEstimator::write_legality_estimate_echo(const std::string& filename
     os << "#                   clock:   Clock pins (checked by rule_control_pins).\n";
     os << "#                   out:     Output pins (checked by rule_tile_pins).\n";
     os << "#   *_cap:        Number of tile pins of each class.\n";
-    os << "x y layer num_prims num_pins pins_in_viol displacement";
+    os << "x y layer num_prims num_pins pins_in_viol";
     for (size_t rule_idx = 0; rule_idx < NUM_AP_LEGALITY_RULES; rule_idx++)
         os << " rule_" << ap_legality_rule_name(static_cast<e_ap_legality_rule>(rule_idx));
     os << " in_regular in_regular_cap in_global in_global_cap in_clock in_clock_cap out out_cap";
@@ -1607,10 +1490,9 @@ void LegalityEstimator::write_legality_estimate_echo(const std::string& filename
            << tile_root.layer_num << " "
            << tile.atoms.size() << " "
            << num_pins << " "
-           << tile.penalty.total.pins_in_violation << " "
-           << tile.penalty.total.pin_weighted_displacement;
-        for (const t_ap_legality_penalty& rule_penalty : tile.penalty.rule_penalty)
-            os << " " << rule_penalty.pins_in_violation;
+           << tile.penalty.pins_in_violation;
+        for (size_t rule_pins_in_violation : tile.penalty.rule_pins_in_violation)
+            os << " " << rule_pins_in_violation;
 
         t_tile_pin_demand demand = get_tile_pin_demand(get_net_tile_usage(tile, true));
         const t_tile_pin_capacity& pin_capacity = tile_type_info_[tile.penalty.tile_type_index].pin_capacity;
@@ -1645,55 +1527,43 @@ void print_legality_summary(const t_ap_legality_estimate& estimate,
                             const std::vector<t_physical_tile_type>& physical_tile_types) {
     VTR_LOG("Legality Estimate Summary:\n");
     VTR_LOG("\tPins in violation: %zu (%f of %zu connected pins)\n",
-            estimate.total.pins_in_violation,
+            estimate.pins_in_violation,
             estimate.normalized_pins_in_violation(),
             estimate.num_connected_pins);
-    VTR_LOG("\tPin-weighted displacement: %g tiles (%f per connected pin)\n",
-            estimate.total.pin_weighted_displacement,
-            estimate.normalized_pin_weighted_displacement());
 
-    VTR_LOG("\tPer rule (pins in violation / pin-weighted displacement):\n");
+    VTR_LOG("\tPer rule (pins in violation):\n");
     for (size_t rule_idx = 0; rule_idx < NUM_AP_LEGALITY_RULES; rule_idx++) {
-        const t_ap_legality_penalty& penalty = estimate.rule_penalty[rule_idx];
-        VTR_LOG("\t\tRule %s: %zu / %g\n",
+        VTR_LOG("\t\tRule %s: %zu\n",
                 ap_legality_rule_name(static_cast<e_ap_legality_rule>(rule_idx)),
-                penalty.pins_in_violation,
-                penalty.pin_weighted_displacement);
+                estimate.rule_pins_in_violation[rule_idx]);
     }
     VTR_LOG("\t\tNot checked: chain offsets, tile-specific rules.\n");
 
-    VTR_LOG("\tPer tile type (pins in violation / pin-weighted displacement):\n");
+    VTR_LOG("\tPer tile type (pins in violation):\n");
     for (const t_physical_tile_type& tile_type : physical_tile_types) {
-        const t_ap_legality_penalty& penalty = estimate.tile_type_penalty[tile_type.index];
-        if (penalty.pins_in_violation == 0)
+        size_t pins_in_violation = estimate.tile_type_pins_in_violation[tile_type.index];
+        if (pins_in_violation == 0)
             continue;
-        VTR_LOG("\t\t%s: %zu / %g\n",
-                tile_type.name.c_str(),
-                penalty.pins_in_violation,
-                penalty.pin_weighted_displacement);
+        VTR_LOG("\t\t%s: %zu\n", tile_type.name.c_str(), pins_in_violation);
     }
-    if (estimate.off_device_penalty.pins_in_violation != 0) {
-        VTR_LOG("\t\t<off-device>: %zu / %g\n",
-                estimate.off_device_penalty.pins_in_violation,
-                estimate.off_device_penalty.pin_weighted_displacement);
-    }
+    if (estimate.off_device_pins_in_violation != 0)
+        VTR_LOG("\t\t<off-device>: %zu\n", estimate.off_device_pins_in_violation);
 
     VTR_LOG("\tWorst %zu tiles (pins in violation per rule):\n", estimate.worst_tiles.size());
     for (const t_ap_tile_legality_penalty& tile_penalty : estimate.worst_tiles) {
         const t_physical_tile_loc& loc = tile_penalty.root_loc;
-        VTR_LOG("\t\t%s at (%d, %d, %d): %zu pins, %g displacement (",
+        VTR_LOG("\t\t%s at (%d, %d, %d): %zu pins (",
                 physical_tile_types[tile_penalty.tile_type_index].name.c_str(),
                 loc.x, loc.y, loc.layer_num,
-                tile_penalty.total.pins_in_violation,
-                tile_penalty.total.pin_weighted_displacement);
+                tile_penalty.pins_in_violation);
         bool is_first = true;
         for (size_t rule_idx = 0; rule_idx < NUM_AP_LEGALITY_RULES; rule_idx++) {
-            if (tile_penalty.rule_penalty[rule_idx].pins_in_violation == 0)
+            if (tile_penalty.rule_pins_in_violation[rule_idx] == 0)
                 continue;
             VTR_LOG("%s%s: %zu",
                     is_first ? "" : ", ",
                     ap_legality_rule_name(static_cast<e_ap_legality_rule>(rule_idx)),
-                    tile_penalty.rule_penalty[rule_idx].pins_in_violation);
+                    tile_penalty.rule_pins_in_violation[rule_idx]);
             is_first = false;
         }
         VTR_LOG(")\n");
