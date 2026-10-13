@@ -96,10 +96,33 @@ typedef vtr::StrongId<struct atom_kind_id_tag, size_t> AtomKindId;
 typedef vtr::StrongId<struct slot_type_id_tag, size_t> SlotTypeId;
 
 /**
+ * @brief The ID of a dimension of a tile type's slot frontier.
+ *
+ * The slot types within a tile type which can implement exactly the same kinds
+ * of atoms are interchangeable, so their slots are counted together in one
+ * dimension (see t_slot_frontier). The dimensions are numbered separately for
+ * each tile type.
+ */
+typedef vtr::StrongId<struct slot_dim_id_tag, size_t> SlotDimId;
+
+/**
  * @brief The number of primitive slots used at the same time in each dimension
  *        of a tile type's slot frontier (see t_slot_frontier).
  */
-typedef std::vector<int> t_slot_counts;
+typedef vtr::vector<SlotDimId, int> t_slot_counts;
+
+/**
+ * @brief Compares two vtr::vectors in lexicographic order.
+ *
+ * vtr::vector does not provide comparison operators, so this is used to sort
+ * them and to use them as the keys of ordered maps.
+ */
+struct t_vtr_vector_less {
+    template<typename K, typename V>
+    bool operator()(const vtr::vector<K, V>& lhs, const vtr::vector<K, V>& rhs) const {
+        return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+    }
+};
 
 /// @brief The maximum number of slot combinations stored for a tile type. If
 ///        a tile type has more, its combinations are relaxed to a single
@@ -125,10 +148,10 @@ constexpr size_t MAX_SLOT_FRONTIER_POINTS = 256;
  * counted. Only the maximal combinations are stored.
  */
 struct t_slot_frontier {
-    /// @brief A global slot type (primitive pb_type) of each dimension of the
-    ///        points. Every primitive pb_type sharing a dimension can implement
-    ///        the same kinds of atoms, so any one of them represents it.
-    std::vector<SlotTypeId> dim_slot_types;
+    /// @brief A slot type (primitive pb_type) of each dimension of the points.
+    ///        Every primitive pb_type sharing a dimension can implement the
+    ///        same kinds of atoms, so any one of them represents it.
+    vtr::vector<SlotDimId, SlotTypeId> dim_slot_types;
     /// @brief The maximal combinations of slots which can be used at the
     ///        same time.
     std::vector<t_slot_counts> points;
@@ -502,11 +525,11 @@ namespace {
 class SlotFrontierBuilder {
   public:
     /**
-     *  @param slot_dims    The dimension (slot type) of each primitive pb_type
-     *                      which is counted. Other primitives are not counted.
+     *  @param slot_dims    The dimension of each primitive pb_type which is
+     *                      counted. Other primitives are not counted.
      *  @param num_dims     The number of dimensions.
      */
-    SlotFrontierBuilder(const std::unordered_map<const t_pb_type*, size_t>& slot_dims, size_t num_dims)
+    SlotFrontierBuilder(const std::unordered_map<const t_pb_type*, SlotDimId>& slot_dims, size_t num_dims)
         : slot_dims_(slot_dims)
         , num_dims_(num_dims) {}
 
@@ -555,13 +578,18 @@ class SlotFrontierBuilder {
     std::vector<t_slot_counts> prune_dominated_points(std::vector<t_slot_counts> points) {
         // Sorted in decreasing lexicographic order, a point can only be
         // dominated by a point before it.
-        std::sort(points.begin(), points.end(), std::greater<t_slot_counts>());
-        points.erase(std::unique(points.begin(), points.end()), points.end());
+        std::sort(points.begin(), points.end(), [](const t_slot_counts& lhs, const t_slot_counts& rhs) {
+            return t_vtr_vector_less()(rhs, lhs);
+        });
+        auto is_equal = [](const t_slot_counts& lhs, const t_slot_counts& rhs) {
+            return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+        };
+        points.erase(std::unique(points.begin(), points.end(), is_equal), points.end());
 
         std::vector<t_slot_counts> frontier;
         for (const t_slot_counts& point : points) {
             bool is_dominated = std::any_of(frontier.begin(), frontier.end(), [&](const t_slot_counts& other) {
-                for (size_t dim = 0; dim < point.size(); dim++) {
+                for (SlotDimId dim : point.keys()) {
                     if (other[dim] < point[dim])
                         return false;
                 }
@@ -574,7 +602,7 @@ class SlotFrontierBuilder {
                 is_relaxed_ = true;
                 t_slot_counts max_point(num_dims_, 0);
                 for (const t_slot_counts& other : points) {
-                    for (size_t dim = 0; dim < num_dims_; dim++)
+                    for (SlotDimId dim : max_point.keys())
                         max_point[dim] = std::max(max_point[dim], other[dim]);
                 }
                 return {max_point};
@@ -593,7 +621,7 @@ class SlotFrontierBuilder {
         for (const t_slot_counts& lhs_point : lhs) {
             for (const t_slot_counts& rhs_point : rhs) {
                 t_slot_counts point = lhs_point;
-                for (size_t dim = 0; dim < num_dims_; dim++)
+                for (SlotDimId dim : point.keys())
                     point[dim] += rhs_point[dim];
                 sum.push_back(std::move(point));
             }
@@ -639,7 +667,7 @@ class SlotFrontierBuilder {
         return prune_dominated_points(std::move(points));
     }
 
-    const std::unordered_map<const t_pb_type*, size_t>& slot_dims_;
+    const std::unordered_map<const t_pb_type*, SlotDimId>& slot_dims_;
     size_t num_dims_;
     bool is_relaxed_ = false;
 };
@@ -691,18 +719,18 @@ static std::vector<const t_pb_type*> get_tile_primitive_pb_types(const t_physica
  *  @param classes          The atom classes to check. These should not share
  *                          any slot type with the other classes.
  *  @param class_demand     The number of atoms of each class.
- *  @param class_slots      [class][dim] Whether each slot type (dimension of
- *                          the slot counts) can implement each atom class.
- *  @param slot_counts      The number of slots of each type.
+ *  @param class_slots      [class][dim] Whether the slots of each dimension
+ *                          can implement each atom class.
+ *  @param slot_counts      The number of slots of each dimension.
  */
 static int get_slot_deficiency(const std::vector<size_t>& classes,
                                const std::vector<int>& class_demand,
-                               const std::vector<std::vector<bool>>& class_slots,
+                               const std::vector<vtr::vector<SlotDimId, bool>>& class_slots,
                                const t_slot_counts& slot_counts) {
     size_t num_classes = classes.size();
     VTR_ASSERT_MSG(num_classes < 8 * sizeof(size_t), "Too many atom classes sharing slots in a tile");
     int deficiency = 0;
-    std::vector<bool> slot_is_usable(slot_counts.size());
+    vtr::vector<SlotDimId, bool> slot_is_usable(slot_counts.size());
     for (size_t class_set = 1; class_set < (size_t(1) << num_classes); class_set++) {
         int demand = 0;
         std::fill(slot_is_usable.begin(), slot_is_usable.end(), false);
@@ -711,13 +739,13 @@ static int get_slot_deficiency(const std::vector<size_t>& classes,
                 continue;
             size_t c = classes[i];
             demand += class_demand[c];
-            for (size_t dim = 0; dim < slot_counts.size(); dim++) {
+            for (SlotDimId dim : slot_counts.keys()) {
                 if (class_slots[c][dim])
                     slot_is_usable[dim] = true;
             }
         }
         int supply = 0;
-        for (size_t dim = 0; dim < slot_counts.size(); dim++) {
+        for (SlotDimId dim : slot_counts.keys()) {
             if (slot_is_usable[dim])
                 supply += slot_counts[dim];
         }
@@ -733,14 +761,14 @@ static int get_slot_deficiency(const std::vector<size_t>& classes,
  * The deficiency of each group (see get_slot_deficiency) is independent of
  * the other groups, which keeps the number of sets of classes checked small.
  *
- *  @param class_slots  [class][dim] Whether each slot type can implement each
- *                      atom class.
+ *  @param class_slots  [class][dim] Whether the slots of each dimension can
+ *                      implement each atom class.
  *
  *  @return The classes in each group.
  */
-static std::vector<std::vector<size_t>> get_independent_class_groups(const std::vector<std::vector<bool>>& class_slots) {
+static std::vector<std::vector<size_t>> get_independent_class_groups(const std::vector<vtr::vector<SlotDimId, bool>>& class_slots) {
     auto share_slot = [&](size_t lhs, size_t rhs) {
-        for (size_t dim = 0; dim < class_slots[lhs].size(); dim++) {
+        for (SlotDimId dim : class_slots[lhs].keys()) {
             if (class_slots[lhs][dim] && class_slots[rhs][dim])
                 return true;
         }
@@ -1211,17 +1239,15 @@ void LegalityEstimator::init_slot_frontiers(const std::vector<t_physical_tile_ty
         // interchangeable, so they share a dimension. Primitives which cannot
         // implement any atom are not counted. This keeps the number of
         // dimensions (and combinations) small.
-        std::map<std::vector<bool>, size_t> dim_of_kinds;
-        std::unordered_map<const t_pb_type*, size_t> slot_dims;
+        std::map<vtr::vector<AtomKindId, bool>, SlotDimId, t_vtr_vector_less> dim_of_kinds;
+        std::unordered_map<const t_pb_type*, SlotDimId> slot_dims;
         for (SlotTypeId slot_type : tile_info.slot_types) {
-            // Whether this slot type can implement each kind, in kind order.
-            std::vector<bool> feasible_kinds;
-            feasible_kinds.reserve(kind_feasible_slots_.size());
+            vtr::vector<AtomKindId, bool> feasible_kinds(kind_feasible_slots_.size(), false);
             for (AtomKindId kind : kind_feasible_slots_.keys())
-                feasible_kinds.push_back(kind_feasible_slots_[kind][slot_type]);
+                feasible_kinds[kind] = kind_feasible_slots_[kind][slot_type];
             if (std::none_of(feasible_kinds.begin(), feasible_kinds.end(), [](bool feasible) { return feasible; }))
                 continue;
-            auto [it, inserted] = dim_of_kinds.emplace(std::move(feasible_kinds), tile_info.slot_frontier.dim_slot_types.size());
+            auto [it, inserted] = dim_of_kinds.emplace(std::move(feasible_kinds), SlotDimId(tile_info.slot_frontier.dim_slot_types.size()));
             if (inserted)
                 tile_info.slot_frontier.dim_slot_types.push_back(slot_type);
             slot_dims[slot_pb_types_[slot_type]] = it->second;
@@ -1558,14 +1584,14 @@ void LegalityEstimator::apply_primitive_capacity_rule(t_tile_state& tile) {
     // Group the remaining atoms into classes by which slots of the tile can
     // implement them. For example, with fracturable LUTs, a LUT6 can only use
     // the LUT6 slots while a LUT2 can use either the LUT6 or the LUT5 slots.
-    std::map<std::vector<bool>, size_t> class_of_slots;
-    std::vector<std::vector<bool>> class_slots;
+    std::map<vtr::vector<SlotDimId, bool>, size_t, t_vtr_vector_less> class_of_slots;
+    std::vector<vtr::vector<SlotDimId, bool>> class_slots;
     std::vector<std::vector<AtomBlockId>> class_atoms;
     for (AtomBlockId atom : tile.atoms) {
         if (atom_is_evicted_[atom])
             continue;
-        std::vector<bool> slots(num_dims, false);
-        for (size_t dim = 0; dim < num_dims; dim++)
+        vtr::vector<SlotDimId, bool> slots(num_dims, false);
+        for (SlotDimId dim : slot_frontier.dim_slot_types.keys())
             slots[dim] = kind_feasible_slots_[atom_kind_[atom]][slot_frontier.dim_slot_types[dim]];
         auto [it, inserted] = class_of_slots.emplace(std::move(slots), class_slots.size());
         if (inserted) {
