@@ -273,10 +273,10 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
         AtomBlockId root_atom = mol.atom_block_ids[mol.root];
         const t_pb_graph_node* prim = prepacker.get_expected_lowest_cost_pb_gnode(root_atom);
 
-        // Skip RAMs, they are handled separately via logical ram groups.
         if (!prim || !prim->pb_type || !prim->pb_type->is_primitive())
             continue;
-        if (prim->pb_type->class_type == MEMORY_CLASS)
+        // Skip RAMs, they are handled separately via logical ram groups.
+        if (prim->pb_type->is_memory_primitive())
             continue;
 
         LogicalModelId root_model_id = atom_ctx.netlist().block_model(root_atom);

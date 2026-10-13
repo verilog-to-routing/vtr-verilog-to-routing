@@ -14,6 +14,7 @@
 #include <fstream>
 #include <functional>
 #include <map>
+#include <numeric>
 #include <optional>
 #include <set>
 #include <string>
@@ -83,7 +84,7 @@ typedef std::vector<int> t_slot_counts;
 /// @brief The maximum number of slot combinations stored for a tile type. If
 ///        a tile type has more, its combinations are relaxed to a single
 ///        combination which over-estimates its capacity.
-static constexpr size_t MAX_SLOT_FRONTIER_POINTS = 256;
+constexpr size_t MAX_SLOT_FRONTIER_POINTS = 256;
 
 /**
  * @brief The combinations of primitive slots which a tile can use at the same
@@ -106,7 +107,7 @@ struct t_slot_frontier {
     /// @brief A global slot type (primitive pb_type) of each dimension of the
     ///        points. Every primitive pb_type sharing a dimension can implement
     ///        the same kinds of atoms, so any one of them represents it.
-    std::vector<size_t> slot_types;
+    std::vector<size_t> dim_slot_types;
     /// @brief The maximal combinations of slots which can be used at the
     ///        same time.
     std::vector<t_slot_counts> points;
@@ -154,8 +155,8 @@ struct t_atom_placement {
  * of the tile, since they must move.
  */
 struct t_net_tile_usage {
-    bool has_driver = false;                                  ///< Whether the driver of the net is in the tile.
-    int num_sinks = 0;                                        ///< The number of sinks of the net in the tile.
+    bool has_driver = false;                                 ///< Whether the driver of the net is in the tile.
+    int num_sinks = 0;                                       ///< The number of sinks of the net in the tile.
     std::array<int, NUM_TILE_PIN_CLASSES> num_class_sinks{}; ///< The number of sinks in the tile which need each class of tile pin.
 };
 
@@ -165,7 +166,22 @@ struct t_net_tile_usage {
 struct t_tile_pin_demand {
     std::array<int, NUM_TILE_PIN_CLASSES> num_inputs{}; ///< The number of nets entering the tile through each class of input pin.
     int num_outputs = 0;                                ///< The number of nets leaving the tile.
+
+    /// @brief Add the given change in demand to this demand.
+    t_tile_pin_demand& operator+=(const t_tile_pin_demand& delta) {
+        for (size_t pin_class = 0; pin_class < NUM_TILE_PIN_CLASSES; pin_class++)
+            num_inputs[pin_class] += delta.num_inputs[pin_class];
+        num_outputs += delta.num_outputs;
+        return *this;
+    }
 };
+
+/**
+ * @brief The ports of a RAM slice model which must have the same nets
+ *        (including unconnected pins) for RAM slices to share a RAM block,
+ *        along with the width of each port.
+ */
+typedef std::vector<std::pair<const t_model_ports*, int>> t_ram_shared_ports;
 
 /**
  * @brief A chain of molecules (e.g. a carry chain split across several tiles)
@@ -199,6 +215,11 @@ struct t_tile_state {
  */
 class LegalityEstimator {
   public:
+    /**
+     * @brief Pre-compute the information needed by the rules from the
+     *        architecture, netlist, and placement (see estimate_legality for
+     *        the parameters).
+     */
     LegalityEstimator(const PartialPlacement& p_placement,
                       const APNetlist& ap_netlist,
                       const AtomNetlist& atom_netlist,
@@ -215,18 +236,35 @@ class LegalityEstimator {
 
   private:
     /**
-     * @brief Group the atoms into kinds and find the primitive slot types
-     *        which can implement each kind. Also finds the non-data ports of
-     *        each RAM slice model.
+     * @brief Compute the pins, RAM blocks, and primitive slot types of each
+     *        tile type from the architecture.
+     */
+    void init_tile_type_info(const std::vector<t_physical_tile_type>& physical_tile_types);
+
+    /**
+     * @brief Group the atoms into kinds, and find which slot types and tile
+     *        types can implement each kind.
      */
     void init_atom_kinds(const std::vector<t_physical_tile_type>& physical_tile_types);
 
     /**
+     * @brief Compute the combinations of primitive slots which each tile type
+     *        can use at the same time.
+     */
+    void init_slot_frontiers(const std::vector<t_physical_tile_type>& physical_tile_types);
+
+    /**
      * @brief Find the chains of molecules which must be placed at a fixed
-     *        offset from each other, and the order of their molecules.
+     *        offset from each other.
      */
     void init_chains(const std::vector<t_physical_tile_type>& physical_tile_types,
                      const std::vector<t_direct_inf>& directs);
+
+    /**
+     * @brief Find where each atom is placed, count the connected pins of each
+     *        atom, and collect the atoms in each occupied tile.
+     */
+    void init_atom_placement(const PartialPlacement& p_placement, const APNetlist& ap_netlist);
 
     /**
      * @brief Evict the atoms which are in a tile that cannot implement them
@@ -284,11 +322,6 @@ class LegalityEstimator {
      *        it is unconstrained.
      */
     const PartitionRegion* get_atom_region(AtomBlockId atom) const;
-
-    /**
-     * @brief Get the physical tile type of the tile with the given root.
-     */
-    t_physical_tile_type_ptr get_tile_type(const t_physical_tile_loc& tile_root) const;
 
     /**
      * @brief Get the class of tile pin which the net connected to the given
@@ -358,6 +391,10 @@ class LegalityEstimator {
     /// @brief The information about each physical tile type (indexed by the
     ///        physical tile type index).
     std::vector<t_tile_type_info> tile_type_info_;
+    /// @brief The primitive pb_type of each global slot type.
+    std::vector<const t_pb_type*> slot_pb_types_;
+    /// @brief The shared ports of each RAM slice model.
+    std::unordered_map<LogicalModelId, t_ram_shared_ports> ram_model_shared_ports_;
 
     /// @brief The kind of each atom. Atoms of the same kind have the same model
     ///        and the same number of used pins on each port, so they can be
@@ -370,10 +407,6 @@ class LegalityEstimator {
     std::vector<std::vector<bool>> kind_tile_compatible_;
     /// @brief Whether any tile on the device can implement each kind.
     std::vector<bool> kind_has_tile_on_device_;
-    /// @brief The non-data ports (and their widths) of each RAM slice model.
-    ///        RAM slices can only share a RAM block if they have the same nets
-    ///        (including unconnected pins) on all of these ports.
-    std::unordered_map<LogicalModelId, std::vector<std::pair<const t_model_ports*, int>>> ram_model_shared_ports_;
 
     /// @brief Where each atom is placed.
     vtr::vector<AtomBlockId, t_atom_placement> atom_placement_;
@@ -626,59 +659,6 @@ static std::vector<const t_pb_type*> get_tile_primitive_pb_types(const t_physica
 }
 
 /**
- * @brief Returns true if the given primitive pb_type is a RAM slice (i.e. its
- *        siblings must share all of its non-data nets, see
- *        primitive_memory_sibling_feasible).
- */
-static bool is_ram_slice(const t_pb_type& pb_type) {
-    return pb_type.is_primitive() && pb_type.class_type == MEMORY_CLASS;
-}
-
-/**
- * @brief Get the number of RAM blocks within the given pb_type which can be
- *        used at the same time.
- *
- * A RAM block is a mode whose children are RAM slices: the slices of one RAM
- * block must share all of their non-data nets (as checked by the cluster
- * legalizer). Each pb_type uses one of its modes, so this is the maximum over
- * its modes.
- */
-static int get_num_ram_blocks(const t_pb_type& pb_type) {
-    int num_ram_blocks = 0;
-    for (int imode = 0; imode < pb_type.num_modes; imode++) {
-        const t_mode& mode = pb_type.modes[imode];
-        bool is_ram_block = false;
-        int mode_num_ram_blocks = 0;
-        for (int ichild = 0; ichild < mode.num_pb_type_children; ichild++) {
-            const t_pb_type& child = mode.pb_type_children[ichild];
-            is_ram_block |= is_ram_slice(child);
-            mode_num_ram_blocks += child.num_pb * get_num_ram_blocks(child);
-        }
-        if (is_ram_block)
-            mode_num_ram_blocks = 1;
-        num_ram_blocks = std::max(num_ram_blocks, mode_num_ram_blocks);
-    }
-    return num_ram_blocks;
-}
-
-/**
- * @brief Get the number of RAM blocks of the given tile type which can be
- *        used at the same time.
- */
-static int get_tile_num_ram_blocks(const t_physical_tile_type& tile_type) {
-    int num_ram_blocks = 0;
-    for (const t_sub_tile& sub_tile : tile_type.sub_tiles) {
-        int site_num_ram_blocks = 0;
-        for (t_logical_block_type_ptr site : sub_tile.equivalent_sites) {
-            if (site->pb_type != nullptr)
-                site_num_ram_blocks = std::max(site_num_ram_blocks, get_num_ram_blocks(*site->pb_type));
-        }
-        num_ram_blocks += sub_tile.capacity.total() * site_num_ram_blocks;
-    }
-    return num_ram_blocks;
-}
-
-/**
  * @brief Get the minimum number of atoms of the given classes which must be
  *        evicted for them to fit within the given combination of slots.
  *
@@ -723,6 +703,49 @@ static int get_slot_deficiency(const std::vector<size_t>& classes,
         deficiency = std::max(deficiency, demand - supply);
     }
     return deficiency;
+}
+
+/**
+ * @brief Split the given atom classes into groups which do not share any slot
+ *        type, directly or through other classes in the group.
+ *
+ * The deficiency of each group (see get_slot_deficiency) is independent of
+ * the other groups, which keeps the number of sets of classes checked small.
+ *
+ *  @param class_slots  [class][dim] Whether each slot type can implement each
+ *                      atom class.
+ *
+ *  @return The classes in each group.
+ */
+static std::vector<std::vector<size_t>> get_independent_class_groups(const std::vector<std::vector<bool>>& class_slots) {
+    auto share_slot = [&](size_t lhs, size_t rhs) {
+        for (size_t dim = 0; dim < class_slots[lhs].size(); dim++) {
+            if (class_slots[lhs][dim] && class_slots[rhs][dim])
+                return true;
+        }
+        return false;
+    };
+
+    // Each group is the connected component of the classes which share a
+    // slot type.
+    size_t num_classes = class_slots.size();
+    std::vector<bool> is_grouped(num_classes, false);
+    std::vector<std::vector<size_t>> groups;
+    for (size_t first_c = 0; first_c < num_classes; first_c++) {
+        if (is_grouped[first_c])
+            continue;
+        std::vector<size_t>& group = groups.emplace_back(1, first_c);
+        is_grouped[first_c] = true;
+        for (size_t i = 0; i < group.size(); i++) {
+            for (size_t c = 0; c < num_classes; c++) {
+                if (!is_grouped[c] && share_slot(group[i], c)) {
+                    is_grouped[c] = true;
+                    group.push_back(c);
+                }
+            }
+        }
+    }
+    return groups;
 }
 
 // ============================================================================
@@ -778,7 +801,7 @@ static std::unordered_map<const t_model_ports*, e_tile_pin_class> get_port_pin_c
                     // The root block pins are numbered by their logical pin index.
                     int physical_pin = get_physical_pin(&tile_type, site, pin->pin_count_in_cluster);
                     e_tile_pin_class pin_class = tile_type.is_pin_global[physical_pin] ? e_tile_pin_class::GLOBAL
-                                                                                      : e_tile_pin_class::REGULAR;
+                                                                                       : e_tile_pin_class::REGULAR;
                     root_pins[static_cast<size_t>(pin_class)].push_back(pin);
                 }
             }
@@ -825,6 +848,72 @@ static std::unordered_map<const t_model_ports*, e_tile_pin_class> get_port_pin_c
         port_pin_class[model_port] = pin_class;
     }
     return port_pin_class;
+}
+
+// ============================================================================
+// RAM blocks
+// ============================================================================
+
+/**
+ * @brief Get the number of RAM blocks within the given pb_type which can be
+ *        used at the same time.
+ *
+ * A RAM block is a mode whose children are RAM slices: the slices of one RAM
+ * block must share all of their non-data nets (as checked by the cluster
+ * legalizer). Each pb_type uses one of its modes, so this is the maximum over
+ * its modes.
+ */
+static int get_num_ram_blocks(const t_pb_type& pb_type) {
+    int num_ram_blocks = 0;
+    for (int imode = 0; imode < pb_type.num_modes; imode++) {
+        const t_mode& mode = pb_type.modes[imode];
+        bool is_ram_block = false;
+        int mode_num_ram_blocks = 0;
+        for (int ichild = 0; ichild < mode.num_pb_type_children; ichild++) {
+            const t_pb_type& child = mode.pb_type_children[ichild];
+            is_ram_block |= child.is_memory_primitive();
+            mode_num_ram_blocks += child.num_pb * get_num_ram_blocks(child);
+        }
+        if (is_ram_block)
+            mode_num_ram_blocks = 1;
+        num_ram_blocks = std::max(num_ram_blocks, mode_num_ram_blocks);
+    }
+    return num_ram_blocks;
+}
+
+/**
+ * @brief Get the number of RAM blocks of the given tile type which can be
+ *        used at the same time.
+ */
+static int get_tile_num_ram_blocks(const t_physical_tile_type& tile_type) {
+    int num_ram_blocks = 0;
+    for (const t_sub_tile& sub_tile : tile_type.sub_tiles) {
+        int site_num_ram_blocks = 0;
+        for (t_logical_block_type_ptr site : sub_tile.equivalent_sites) {
+            if (site->pb_type != nullptr)
+                site_num_ram_blocks = std::max(site_num_ram_blocks, get_num_ram_blocks(*site->pb_type));
+        }
+        num_ram_blocks += sub_tile.capacity.total() * site_num_ram_blocks;
+    }
+    return num_ram_blocks;
+}
+
+/**
+ * @brief Get the ports of the given RAM slice which must have the same nets
+ *        for RAM slices to share a RAM block.
+ *
+ * These are the ports whose port_class does not start with "data" (the same
+ * ports the cluster legalizer checks, see primitive_memory_sibling_feasible).
+ */
+static t_ram_shared_ports get_ram_shared_ports(const t_pb_type& ram_slice) {
+    t_ram_shared_ports shared_ports;
+    for (int iport = 0; iport < ram_slice.num_ports; iport++) {
+        const t_port& port = ram_slice.ports[iport];
+        if (port.port_class != nullptr && std::string_view(port.port_class).starts_with("data"))
+            continue;
+        shared_ports.emplace_back(port.model_port, port.num_pins);
+    }
+    return shared_ports;
 }
 
 // ============================================================================
@@ -882,6 +971,10 @@ static bool is_tile_in_region(const t_physical_tile_loc& tile_root, const Partit
     return false;
 }
 
+// ============================================================================
+// Chains
+// ============================================================================
+
 /**
  * @brief Returns true if the given tile pin cannot connect to the general
  *        routing (i.e. every Fc of the pin is 0).
@@ -898,8 +991,8 @@ static bool is_dedicated_tile_pin(const t_physical_tile_type& tile_type, int phy
 }
 
 /**
- * @brief Get the offsets (dx, dy) of the direct connections which can connect
- *        one molecule of the given chain pack pattern to the next.
+ * @brief Get the required offset (dx, dy) from each molecule of the given
+ *        chain pack pattern to the next molecule of the chain.
  *
  * A chain enters a tile through the root block input pins whose edges are part
  * of its pack pattern (the same pins the prepacker uses to find the start of
@@ -908,10 +1001,14 @@ static bool is_dedicated_tile_pin(const t_physical_tile_type& tile_type, int phy
  * the previous one; this is what forms the placement macros of the chain. As
  * in PlaceMacros, only pins which cannot connect to the general routing are
  * considered.
+ *
+ *  @return The offset, or std::nullopt if the chain is not connected by a
+ *          direct connection (so its molecules can be placed anywhere) or can
+ *          be connected at more than one offset (which is not checked).
  */
-static std::set<std::pair<int, int>> get_chain_offsets(const t_pack_patterns& chain_pattern,
-                                                       const std::vector<t_physical_tile_type>& physical_tile_types,
-                                                       const std::vector<t_direct_inf>& directs) {
+static std::optional<std::pair<int, int>> get_chain_offset(const t_pack_patterns& chain_pattern,
+                                                           const std::vector<t_physical_tile_type>& physical_tile_types,
+                                                           const std::vector<t_direct_inf>& directs) {
     // Find the tile pins (tile type index, physical pin) which the chain
     // enters a tile through.
     std::set<std::pair<int, int>> chain_input_tile_pins;
@@ -960,7 +1057,16 @@ static std::set<std::pair<int, int>> get_chain_offsets(const t_pack_patterns& ch
             }
         }
     }
-    return offsets;
+
+    if (offsets.empty())
+        return std::nullopt;
+    if (offsets.size() > 1) {
+        VTR_LOG_WARN("Legality estimate: chain pack pattern '%s' can be connected at more than one offset; "
+                     "its chain offsets are not checked.\n",
+                     chain_pattern.name.c_str());
+        return std::nullopt;
+    }
+    return *offsets.begin();
 }
 
 // ============================================================================
@@ -979,119 +1085,40 @@ LegalityEstimator::LegalityEstimator(const PartialPlacement& p_placement,
     , prepacker_(prepacker)
     , device_grid_(device_grid)
     , constraints_(constraints) {
-    // Compute the pins of each tile type from the architecture.
+    init_tile_type_info(physical_tile_types);
+    init_atom_kinds(physical_tile_types);
+    init_slot_frontiers(physical_tile_types);
+    init_chains(physical_tile_types, directs);
+    init_atom_placement(p_placement, ap_netlist);
+
+    estimate_.tile_type_pins_in_violation.resize(physical_tile_types.size());
+}
+
+void LegalityEstimator::init_tile_type_info(const std::vector<t_physical_tile_type>& physical_tile_types) {
     tile_type_info_.resize(physical_tile_types.size());
+    std::unordered_map<const t_pb_type*, size_t> slot_type_index;
     for (const t_physical_tile_type& tile_type : physical_tile_types) {
         t_tile_type_info& tile_info = tile_type_info_[tile_type.index];
         tile_info.pin_capacity = get_tile_pin_capacity(tile_type);
         tile_info.port_pin_class = get_port_pin_classes(tile_type);
         tile_info.num_ram_blocks = get_tile_num_ram_blocks(tile_type);
-    }
 
-    // Compute the primitive slots of each tile type, and which slots can
-    // implement each atom.
-    init_atom_kinds(physical_tile_types);
-
-    // Find the chains which must be placed at a fixed offset.
-    init_chains(physical_tile_types, directs);
-
-    // Find which kinds of atoms can be implemented by at least one tile on
-    // the device. An evicted atom of a kind with no such tile cannot legally
-    // be placed anywhere, which is counted as a sanity check.
-    std::vector<bool> tile_type_on_device(physical_tile_types.size(), false);
-    for (size_t layer = 0; layer < device_grid.get_num_layers(); layer++) {
-        for (size_t x = 0; x < device_grid.width(); x++) {
-            for (size_t y = 0; y < device_grid.height(); y++) {
-                t_physical_tile_loc grid_loc(x, y, layer);
-                tile_type_on_device[device_grid.get_physical_type(grid_loc)->index] = true;
-            }
-        }
-    }
-    kind_has_tile_on_device_.resize(kind_tile_compatible_.size(), false);
-    for (size_t kind = 0; kind < kind_tile_compatible_.size(); kind++) {
-        for (size_t tile_type_idx = 0; tile_type_idx < physical_tile_types.size(); tile_type_idx++) {
-            if (tile_type_on_device[tile_type_idx] && kind_tile_compatible_[kind][tile_type_idx])
-                kind_has_tile_on_device_[kind] = true;
-        }
-    }
-
-    // Place each atom at the position of the AP block which contains it.
-    // TODO: Once AP blocks contain multiple molecules with offsets, add the
-    //       offset of the atom within its AP block here.
-    atom_placement_.resize(atom_netlist.blocks().size());
-    vtr::vector<AtomBlockId, bool> atom_is_placed(atom_netlist.blocks().size(), false);
-    for (APBlockId ap_blk_id : ap_netlist.blocks()) {
-        t_atom_placement blk_placement = get_atom_placement(p_placement.block_x_locs[ap_blk_id],
-                                                            p_placement.block_y_locs[ap_blk_id],
-                                                            p_placement.block_layer_nums[ap_blk_id],
-                                                            device_grid);
-        for (PackMoleculeId mol_id : ap_netlist.block_molecules(ap_blk_id)) {
-            for (AtomBlockId atom : prepacker.get_molecule(mol_id).atom_block_ids) {
-                if (!atom.is_valid())
-                    continue;
-                atom_placement_[atom] = blk_placement;
-                atom_is_placed[atom] = true;
-            }
-        }
-    }
-
-    // Count the connected pins of each atom, and the total number of connected
-    // pins (used to normalize the score).
-    atom_num_pins_.resize(atom_netlist.blocks().size(), 0);
-    for (AtomBlockId atom : atom_netlist.blocks()) {
-        VTR_ASSERT_MSG(atom_is_placed[atom], "Every atom should be in a molecule of an AP block");
-        for (AtomPinId pin : atom_netlist.block_pins(atom)) {
-            if (atom_netlist.pin_net(pin).is_valid())
-                atom_num_pins_[atom]++;
-        }
-        estimate_.num_connected_pins += atom_num_pins_[atom];
-    }
-    atom_is_evicted_.resize(atom_netlist.blocks().size(), false);
-
-    // Collect the atoms in each occupied tile. Atoms are visited in ID order,
-    // so the atoms of each tile are sorted by ID.
-    for (AtomBlockId atom : atom_netlist.blocks()) {
-        const t_physical_tile_loc& tile_root = atom_placement_[atom].tile_root;
-        if (!tile_root.is_valid())
-            continue;
-        t_tile_state& tile = tiles_[tile_root];
-        tile.atoms.push_back(atom);
-        tile.penalty.root_loc = tile_root;
-        tile.penalty.tile_type_index = device_grid.get_physical_type(tile_root)->index;
-    }
-
-    estimate_.tile_type_pins_in_violation.resize(physical_tile_types.size());
-}
-
-void LegalityEstimator::init_atom_kinds(const std::vector<t_physical_tile_type>& physical_tile_types) {
-    // Give each primitive pb_type a global slot type index, and collect the
-    // slot types of each tile type.
-    std::unordered_map<const t_pb_type*, size_t> slot_type_index;
-    std::vector<const t_pb_type*> slot_types;
-    for (const t_physical_tile_type& tile_type : physical_tile_types) {
+        // Give each primitive pb_type a global slot type index.
         for (const t_pb_type* primitive : get_tile_primitive_pb_types(tile_type)) {
             if (!primitive->model_id.is_valid())
                 continue;
-            auto [it, inserted] = slot_type_index.emplace(primitive, slot_types.size());
-            if (inserted)
-                slot_types.push_back(primitive);
-
-            // Find the non-data ports of each RAM slice model. These are the
-            // ports whose port_class does not start with "data" (the same
-            // ports the cluster legalizer checks).
-            if (is_ram_slice(*primitive) && ram_model_shared_ports_.count(primitive->model_id) == 0) {
-                std::vector<std::pair<const t_model_ports*, int>>& shared_ports = ram_model_shared_ports_[primitive->model_id];
-                for (int iport = 0; iport < primitive->num_ports; iport++) {
-                    const t_port& port = primitive->ports[iport];
-                    if (port.port_class != nullptr && std::string_view(port.port_class).starts_with("data"))
-                        continue;
-                    shared_ports.emplace_back(port.model_port, port.num_pins);
-                }
+            auto [it, inserted] = slot_type_index.emplace(primitive, slot_pb_types_.size());
+            if (inserted) {
+                slot_pb_types_.push_back(primitive);
+                if (primitive->is_memory_primitive())
+                    ram_model_shared_ports_.try_emplace(primitive->model_id, get_ram_shared_ports(*primitive));
             }
-            tile_type_info_[tile_type.index].slot_types.push_back(it->second);
+            tile_info.slot_types.push_back(it->second);
         }
     }
+}
 
+void LegalityEstimator::init_atom_kinds(const std::vector<t_physical_tile_type>& physical_tile_types) {
     // Group the atoms into kinds. Whether a primitive can implement an atom
     // only depends on the atom's model and the number of used pins on each of
     // its ports (see primitive_type_feasible), so atoms with the same model
@@ -1117,14 +1144,14 @@ void LegalityEstimator::init_atom_kinds(const std::vector<t_physical_tile_type>&
     // NOTE: primitive_type_feasible is the same check the packer uses to decide
     //       if a primitive can implement an atom.
     size_t num_kinds = kind_representative.size();
-    kind_feasible_slots_.assign(num_kinds, std::vector<bool>(slot_types.size(), false));
+    kind_feasible_slots_.assign(num_kinds, std::vector<bool>(slot_pb_types_.size(), false));
     kind_tile_compatible_.assign(num_kinds, std::vector<bool>(physical_tile_types.size(), false));
     for (size_t kind = 0; kind < num_kinds; kind++) {
         AtomBlockId representative = kind_representative[kind];
         LogicalModelId model_id = atom_netlist_.block_model(representative);
-        for (size_t slot_type = 0; slot_type < slot_types.size(); slot_type++) {
-            if (slot_types[slot_type]->model_id == model_id)
-                kind_feasible_slots_[kind][slot_type] = primitive_type_feasible(representative, slot_types[slot_type]);
+        for (size_t slot_type = 0; slot_type < slot_pb_types_.size(); slot_type++) {
+            if (slot_pb_types_[slot_type]->model_id == model_id)
+                kind_feasible_slots_[kind][slot_type] = primitive_type_feasible(representative, slot_pb_types_[slot_type]);
         }
         for (const t_physical_tile_type& tile_type : physical_tile_types) {
             for (size_t slot_type : tile_type_info_[tile_type.index].slot_types) {
@@ -1134,9 +1161,29 @@ void LegalityEstimator::init_atom_kinds(const std::vector<t_physical_tile_type>&
         }
     }
 
-    // Compute the primitive slots of each tile type. The slots of every model
-    // are counted together, since the modes of the tile decide which slots
-    // (of any model) can be used at the same time.
+    // Find which kinds can be implemented by at least one tile on the device.
+    // An evicted atom of a kind with no such tile cannot legally be placed
+    // anywhere, which is counted as a sanity check.
+    std::vector<bool> tile_type_on_device(physical_tile_types.size(), false);
+    for (size_t layer = 0; layer < device_grid_.get_num_layers(); layer++) {
+        for (size_t x = 0; x < device_grid_.width(); x++) {
+            for (size_t y = 0; y < device_grid_.height(); y++)
+                tile_type_on_device[device_grid_.get_physical_type(t_physical_tile_loc(x, y, layer))->index] = true;
+        }
+    }
+    kind_has_tile_on_device_.assign(num_kinds, false);
+    for (size_t kind = 0; kind < num_kinds; kind++) {
+        for (size_t tile_type_idx = 0; tile_type_idx < physical_tile_types.size(); tile_type_idx++) {
+            if (tile_type_on_device[tile_type_idx] && kind_tile_compatible_[kind][tile_type_idx])
+                kind_has_tile_on_device_[kind] = true;
+        }
+    }
+}
+
+void LegalityEstimator::init_slot_frontiers(const std::vector<t_physical_tile_type>& physical_tile_types) {
+    // The slots of every model are counted together, since the modes of the
+    // tile decide which slots (of any model) can be used at the same time.
+    size_t num_kinds = kind_feasible_slots_.size();
     for (const t_physical_tile_type& tile_type : physical_tile_types) {
         t_tile_type_info& tile_info = tile_type_info_[tile_type.index];
 
@@ -1152,13 +1199,13 @@ void LegalityEstimator::init_atom_kinds(const std::vector<t_physical_tile_type>&
                 feasible_kinds[kind] = kind_feasible_slots_[kind][slot_type];
             if (std::none_of(feasible_kinds.begin(), feasible_kinds.end(), [](bool feasible) { return feasible; }))
                 continue;
-            auto [it, inserted] = dim_of_kinds.emplace(std::move(feasible_kinds), tile_info.slot_frontier.slot_types.size());
+            auto [it, inserted] = dim_of_kinds.emplace(std::move(feasible_kinds), tile_info.slot_frontier.dim_slot_types.size());
             if (inserted)
-                tile_info.slot_frontier.slot_types.push_back(slot_type);
-            slot_dims[slot_types[slot_type]] = it->second;
+                tile_info.slot_frontier.dim_slot_types.push_back(slot_type);
+            slot_dims[slot_pb_types_[slot_type]] = it->second;
         }
 
-        SlotFrontierBuilder frontier_builder(slot_dims, tile_info.slot_frontier.slot_types.size());
+        SlotFrontierBuilder frontier_builder(slot_dims, tile_info.slot_frontier.dim_slot_types.size());
         tile_info.slot_frontier.points = frontier_builder.get_tile_points(tile_type);
         if (frontier_builder.is_relaxed()) {
             VTR_LOG_WARN("Legality estimate: tile type '%s' has too many combinations of primitives to count "
@@ -1171,68 +1218,79 @@ void LegalityEstimator::init_atom_kinds(const std::vector<t_physical_tile_type>&
 void LegalityEstimator::init_chains(const std::vector<t_physical_tile_type>& physical_tile_types,
                                     const std::vector<t_direct_inf>& directs) {
     // The required offset between the molecules of each chain pack pattern.
-    // Patterns without a direct connection between their molecules are
-    // connected through the general routing, so they have no fixed offset.
     std::unordered_map<const t_pack_patterns*, std::optional<std::pair<int, int>>> pattern_offset;
 
-    // Find the next molecule of each molecule in a chain. The root atom of a
-    // chain molecule is the first atom of the chain within the molecule, so
-    // the atom driving its chain input is in the previous molecule.
-    std::vector<PackMoleculeId> chain_molecules;
-    std::unordered_map<PackMoleculeId, PackMoleculeId> next_molecule;
-    std::unordered_set<PackMoleculeId> has_prev_molecule;
+    // The prepacker creates the molecules of a chain in order from the start
+    // of the chain (see init_molecule_chain_info), so visiting the molecules
+    // in ID order visits the molecules of each chain in order.
+    std::unordered_map<MoleculeChainId, size_t> chain_index;
     for (PackMoleculeId mol_id : prepacker_.molecules()) {
         const t_pack_molecule& molecule = prepacker_.get_molecule(mol_id);
+        // Only long chains are split into more than one molecule.
         if (!molecule.is_chain() || !prepacker_.get_molecule_chain_info(molecule.chain_id).is_long_chain)
             continue;
 
-        const t_pack_patterns* chain_pattern = molecule.pack_pattern;
-        auto [offset_it, inserted] = pattern_offset.try_emplace(chain_pattern);
-        if (inserted) {
-            std::set<std::pair<int, int>> offsets = get_chain_offsets(*chain_pattern, physical_tile_types, directs);
-            if (offsets.size() == 1) {
-                offset_it->second = *offsets.begin();
-            } else if (offsets.size() > 1) {
-                VTR_LOG_WARN("Legality estimate: chain pack pattern '%s' can be connected at more than one offset; "
-                             "its chain offsets are not checked.\n",
-                             chain_pattern->name.c_str());
-            }
-        }
+        auto [offset_it, is_new_pattern] = pattern_offset.try_emplace(molecule.pack_pattern);
+        if (is_new_pattern)
+            offset_it->second = get_chain_offset(*molecule.pack_pattern, physical_tile_types, directs);
         if (!offset_it->second.has_value())
             continue;
-        chain_molecules.push_back(mol_id);
 
-        AtomBlockId root_atom = prepacker_.get_molecule_root_atom(mol_id);
-        for (const std::vector<t_pb_graph_pin*>& root_pins : chain_pattern->chain_root_pins) {
-            const t_pb_graph_pin* root_pin = root_pins[0];
-            AtomBlockId driver_atom = atom_netlist_.find_atom_pin_driver(root_atom, root_pin->port->model_port, root_pin->pin_number);
-            if (!driver_atom.is_valid())
-                continue;
-            PackMoleculeId prev_mol_id = prepacker_.get_atom_molecule(driver_atom);
-            if (prev_mol_id != mol_id && prepacker_.get_molecule(prev_mol_id).chain_id == molecule.chain_id) {
-                next_molecule[prev_mol_id] = mol_id;
-                has_prev_molecule.insert(mol_id);
-                break;
+        auto [chain_it, is_new_chain] = chain_index.try_emplace(molecule.chain_id, chains_.size());
+        if (is_new_chain) {
+            t_chain& chain = chains_.emplace_back();
+            std::tie(chain.dx, chain.dy) = offset_it->second.value();
+        }
+        chains_[chain_it->second].molecules.push_back(mol_id);
+    }
+    estimate_.num_chains = chains_.size();
+}
+
+void LegalityEstimator::init_atom_placement(const PartialPlacement& p_placement, const APNetlist& ap_netlist) {
+    // Place each atom at the position of the AP block which contains it.
+    // TODO: Once AP blocks contain multiple molecules with offsets, add the
+    //       offset of the atom within its AP block here.
+    atom_placement_.resize(atom_netlist_.blocks().size());
+    vtr::vector<AtomBlockId, bool> atom_is_placed(atom_netlist_.blocks().size(), false);
+    for (APBlockId ap_blk_id : ap_netlist.blocks()) {
+        t_atom_placement blk_placement = get_atom_placement(p_placement.block_x_locs[ap_blk_id],
+                                                            p_placement.block_y_locs[ap_blk_id],
+                                                            p_placement.block_layer_nums[ap_blk_id],
+                                                            device_grid_);
+        for (PackMoleculeId mol_id : ap_netlist.block_molecules(ap_blk_id)) {
+            for (AtomBlockId atom : prepacker_.get_molecule(mol_id).atom_block_ids) {
+                if (!atom.is_valid())
+                    continue;
+                atom_placement_[atom] = blk_placement;
+                atom_is_placed[atom] = true;
             }
         }
     }
 
-    // Build each chain by following the next molecules from the start of
-    // the chain.
-    for (PackMoleculeId mol_id : chain_molecules) {
-        if (has_prev_molecule.count(mol_id) != 0)
-            continue;
-        t_chain chain;
-        std::tie(chain.dx, chain.dy) = *pattern_offset.at(prepacker_.get_molecule(mol_id).pack_pattern);
-        for (PackMoleculeId cur_mol_id = mol_id; cur_mol_id.is_valid();) {
-            chain.molecules.push_back(cur_mol_id);
-            auto next_it = next_molecule.find(cur_mol_id);
-            cur_mol_id = (next_it == next_molecule.end()) ? PackMoleculeId::INVALID() : next_it->second;
+    // Count the connected pins of each atom, and the total number of connected
+    // pins (used to normalize the score).
+    atom_num_pins_.resize(atom_netlist_.blocks().size(), 0);
+    for (AtomBlockId atom : atom_netlist_.blocks()) {
+        VTR_ASSERT_MSG(atom_is_placed[atom], "Every atom should be in a molecule of an AP block");
+        for (AtomPinId pin : atom_netlist_.block_pins(atom)) {
+            if (atom_netlist_.pin_net(pin).is_valid())
+                atom_num_pins_[atom]++;
         }
-        if (chain.molecules.size() > 1)
-            chains_.push_back(std::move(chain));
+        estimate_.num_connected_pins += atom_num_pins_[atom];
     }
-    estimate_.num_chains = chains_.size();
+    atom_is_evicted_.resize(atom_netlist_.blocks().size(), false);
+
+    // Collect the atoms in each occupied tile. Atoms are visited in ID order,
+    // so the atoms of each tile are sorted by ID.
+    for (AtomBlockId atom : atom_netlist_.blocks()) {
+        const t_physical_tile_loc& tile_root = atom_placement_[atom].tile_root;
+        if (!tile_root.is_valid())
+            continue;
+        t_tile_state& tile = tiles_[tile_root];
+        tile.atoms.push_back(atom);
+        tile.penalty.root_loc = tile_root;
+        tile.penalty.tile_type_index = device_grid_.get_physical_type(tile_root)->index;
+    }
 }
 
 t_ap_legality_estimate LegalityEstimator::run() {
@@ -1255,10 +1313,6 @@ t_ap_legality_estimate LegalityEstimator::run() {
     // Chains: a relationship between atoms which may be in different tiles.
     for (const t_chain& chain : chains_)
         apply_chain_offset_rule(chain);
-
-    // NOTE: Mode conflicts (atoms which need conflicting modes of the tile)
-    //       are checked by the primitive capacity rule, since the primitive
-    //       slots of every model are counted together.
 
     // Control pins and RAM sharing: sharing limits.
     for (auto& [tile_root, tile] : tiles_)
@@ -1303,7 +1357,7 @@ void LegalityEstimator::apply_tile_type_and_region_rules() {
         if (atom_placement.is_off_device)
             estimate_.num_off_device_primitives++;
         bool is_in_compatible_tile_type = atom_placement.tile_root.is_valid()
-                                          && kind_tile_compatible_[atom_kind_[atom]][get_tile_type(atom_placement.tile_root)->index];
+                                          && kind_tile_compatible_[atom_kind_[atom]][device_grid_.get_physical_type(atom_placement.tile_root)->index];
         if (!is_in_compatible_tile_type) {
             evict_atom(atom, e_ap_legality_rule::INCOMPATIBLE_TILE);
             continue;
@@ -1465,8 +1519,7 @@ void LegalityEstimator::apply_ram_sharing_rule(t_tile_state& tile) {
     // rest, i.e. the groups with the fewest pins are evicted. Ties are broken
     // by the smallest atom ID in the group.
     std::vector<size_t> group_order(groups.size());
-    for (size_t group_idx = 0; group_idx < groups.size(); group_idx++)
-        group_order[group_idx] = group_idx;
+    std::iota(group_order.begin(), group_order.end(), 0);
     std::stable_sort(group_order.begin(), group_order.end(), [&](size_t lhs, size_t rhs) {
         return group_pins[lhs] > group_pins[rhs];
     });
@@ -1478,7 +1531,7 @@ void LegalityEstimator::apply_ram_sharing_rule(t_tile_state& tile) {
 
 void LegalityEstimator::apply_primitive_capacity_rule(t_tile_state& tile) {
     const t_slot_frontier& slot_frontier = tile_type_info_[tile.penalty.tile_type_index].slot_frontier;
-    size_t num_dims = slot_frontier.slot_types.size();
+    size_t num_dims = slot_frontier.dim_slot_types.size();
 
     // Group the remaining atoms into classes by which slots of the tile can
     // implement them. For example, with fracturable LUTs, a LUT6 can only use
@@ -1491,7 +1544,7 @@ void LegalityEstimator::apply_primitive_capacity_rule(t_tile_state& tile) {
             continue;
         std::vector<bool> slots(num_dims, false);
         for (size_t dim = 0; dim < num_dims; dim++)
-            slots[dim] = kind_feasible_slots_[atom_kind_[atom]][slot_frontier.slot_types[dim]];
+            slots[dim] = kind_feasible_slots_[atom_kind_[atom]][slot_frontier.dim_slot_types[dim]];
         auto [it, inserted] = class_of_slots.emplace(std::move(slots), class_slots.size());
         if (inserted) {
             class_slots.push_back(it->first);
@@ -1520,42 +1573,11 @@ void LegalityEstimator::apply_primitive_capacity_rule(t_tile_state& tile) {
     // Split the classes into groups which do not share any slot type (e.g. the
     // classes of different models). For a given combination of slots, the
     // deficiency of the tile is the sum of the deficiencies of the groups.
+    std::vector<std::vector<size_t>> group_classes = get_independent_class_groups(class_slots);
     std::vector<size_t> class_group(num_classes);
-    std::vector<std::vector<size_t>> group_classes;
-    {
-        std::vector<std::optional<size_t>> dim_group(num_dims);
-        for (size_t c = 0; c < num_classes; c++) {
-            // Merge every group which shares a slot type with this class.
-            std::optional<size_t> group;
-            for (size_t dim = 0; dim < num_dims; dim++) {
-                if (!class_slots[c][dim] || !dim_group[dim].has_value())
-                    continue;
-                size_t other_group = dim_group[dim].value();
-                if (!group.has_value()) {
-                    group = other_group;
-                } else if (other_group != group.value()) {
-                    for (size_t other_c : group_classes[other_group]) {
-                        class_group[other_c] = group.value();
-                        group_classes[group.value()].push_back(other_c);
-                    }
-                    group_classes[other_group].clear();
-                    for (std::optional<size_t>& g : dim_group) {
-                        if (g == other_group)
-                            g = group;
-                    }
-                }
-            }
-            if (!group.has_value()) {
-                group = group_classes.size();
-                group_classes.emplace_back();
-            }
-            class_group[c] = group.value();
-            group_classes[group.value()].push_back(c);
-            for (size_t dim = 0; dim < num_dims; dim++) {
-                if (class_slots[c][dim])
-                    dim_group[dim] = group;
-            }
-        }
+    for (size_t g = 0; g < group_classes.size(); g++) {
+        for (size_t c : group_classes[g])
+            class_group[c] = g;
     }
 
     // The deficiency of each group, and of the whole tile, for each
@@ -1566,8 +1588,6 @@ void LegalityEstimator::apply_primitive_capacity_rule(t_tile_state& tile) {
     std::vector<int> point_deficiency(points.size(), 0);
     for (size_t p = 0; p < points.size(); p++) {
         for (size_t g = 0; g < group_classes.size(); g++) {
-            if (group_classes[g].empty())
-                continue;
             point_group_deficiency[p][g] = get_slot_deficiency(group_classes[g], class_demand, class_slots, points[p]);
             point_deficiency[p] += point_group_deficiency[p][g];
         }
@@ -1658,11 +1678,8 @@ void LegalityEstimator::apply_tile_pin_rule(t_tile_state& tile) {
         // evicted.
         size_t evict_idx = 0;
         for (size_t i = 0; i < candidates.size(); i++) {
-            t_tile_pin_demand delta = get_eviction_pin_demand_delta(candidates[i], tile_type_idx, net_usage);
             t_tile_pin_demand new_demand = demand;
-            for (size_t pin_class = 0; pin_class < NUM_TILE_PIN_CLASSES; pin_class++)
-                new_demand.num_inputs[pin_class] += delta.num_inputs[pin_class];
-            new_demand.num_outputs += delta.num_outputs;
+            new_demand += get_eviction_pin_demand_delta(candidates[i], tile_type_idx, net_usage);
             if (get_pin_overflow(new_demand) < get_pin_overflow(demand)) {
                 evict_idx = i;
                 break;
@@ -1670,10 +1687,7 @@ void LegalityEstimator::apply_tile_pin_rule(t_tile_state& tile) {
         }
 
         AtomBlockId atom = candidates[evict_idx];
-        t_tile_pin_demand delta = get_eviction_pin_demand_delta(atom, tile_type_idx, net_usage);
-        for (size_t pin_class = 0; pin_class < NUM_TILE_PIN_CLASSES; pin_class++)
-            demand.num_inputs[pin_class] += delta.num_inputs[pin_class];
-        demand.num_outputs += delta.num_outputs;
+        demand += get_eviction_pin_demand_delta(atom, tile_type_idx, net_usage);
         update_net_tile_usage(atom, tile_type_idx, -1, net_usage);
         evict_atom(atom, e_ap_legality_rule::TILE_PINS);
         candidates.erase(candidates.begin() + evict_idx);
@@ -1735,10 +1749,6 @@ const PartitionRegion* LegalityEstimator::get_atom_region(AtomBlockId atom) cons
     if (!part_id.is_valid())
         return nullptr;
     return &constraints_.get_partition_pr(part_id);
-}
-
-t_physical_tile_type_ptr LegalityEstimator::get_tile_type(const t_physical_tile_loc& tile_root) const {
-    return device_grid_.get_physical_type(tile_root);
 }
 
 e_tile_pin_class LegalityEstimator::get_sink_pin_class(AtomPinId sink_pin, int tile_type_idx) const {
@@ -1871,7 +1881,7 @@ void LegalityEstimator::write_legality_estimate_echo(const std::string& filename
         }
         os << " " << demand.num_outputs << " " << pin_capacity.num_output_pins;
 
-        os << " " << get_tile_type(tile_root)->name << "\n";
+        os << " " << device_grid_.get_physical_type(tile_root)->name << "\n";
     }
 }
 
