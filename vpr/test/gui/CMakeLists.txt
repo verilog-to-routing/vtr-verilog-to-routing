@@ -42,9 +42,10 @@ add_executable(test_vpr_gui ${VPR_GUI_TEST_SOURCES})
 # GUI-T-017 — compile-time bench / arch resolution. Hardcoded relative to
 # the source tree so the fixture has no working-directory dependency
 # (it chdirs into a per-fixture temp dir at construction time).
+# VTR_SOURCE_DIR, not CMAKE_SOURCE_DIR: VTR is built nested under aurora2.
 target_compile_definitions(test_vpr_gui PRIVATE
-    VPR_TEST_ARCH_XML="${CMAKE_SOURCE_DIR}/vtr_flow/arch/timing/k6_N10_40nm.xml"
-    VPR_TEST_BLIF_AND_LATCH="${CMAKE_SOURCE_DIR}/vtr_flow/benchmarks/microbenchmarks/and_latch.blif"
+    VPR_TEST_ARCH_XML="${VTR_SOURCE_DIR}/vtr_flow/arch/timing/k6_N10_40nm.xml"
+    VPR_TEST_BLIF_AND_LATCH="${VTR_SOURCE_DIR}/vtr_flow/benchmarks/microbenchmarks/and_latch.blif"
 )
 
 target_link_libraries(test_vpr_gui PRIVATE
@@ -93,8 +94,8 @@ set_tests_properties(test_vpr_gui_interactive PROPERTIES
 # Layer 1 — Headless Smoke Tests
 # ---------------------------------------------------------------------------
 set(VPR_BINARY $<TARGET_FILE:vpr>)
-set(ARCH_DIR "${CMAKE_SOURCE_DIR}/vtr_flow/arch/timing")
-set(BENCH_DIR "${CMAKE_SOURCE_DIR}/vtr_flow/benchmarks/microbenchmarks")
+set(ARCH_DIR "${VTR_SOURCE_DIR}/vtr_flow/arch/timing")
+set(BENCH_DIR "${VTR_SOURCE_DIR}/vtr_flow/benchmarks/microbenchmarks")
 
 add_test(
     NAME test_vpr_gui_smoke
@@ -114,12 +115,33 @@ add_test(
     NAME test_vpr_gui_visual
     COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/run_visual_regression.sh
             "${VPR_BINARY}" "${ARCH_DIR}" "${BENCH_DIR}"
-            "${CMAKE_CURRENT_SOURCE_DIR}/golden" "0.999"
+            "${CMAKE_CURRENT_SOURCE_DIR}/golden"
 )
+# VPR_GUI_ARTIFACT_DIR: the runner otherwise defaults to <vtr-src>/build, which
+# in a nested build is the submodule SOURCE tree -- and it rm -rf's that dir.
 set_tests_properties(test_vpr_gui_visual PROPERTIES
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_SCALE_FACTOR=1"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_SCALE_FACTOR=1;VPR_GUI_ARTIFACT_DIR=${CMAKE_CURRENT_BINARY_DIR}/artifacts"
     TIMEOUT 600
     LABELS "gui;visual;layer5"
+    SKIP_RETURN_CODE 2
+)
+
+# ---------------------------------------------------------------------------
+# Comparator self-test — pins that the layer-5 gate still detects each class of
+# regression it claims to. Pure image maths, no VPR run and no display.
+#
+# Labelled layer3 rather than layer5: it validates the comparator, not the
+# rendered corpus, so it must keep running wherever the visual layer is
+# excluded (aurora2 drops layer5, whose runner only ever reports a skip on a
+# CI runner). layer3 also keeps it reachable from `make gui-tests-unit`.
+# ---------------------------------------------------------------------------
+add_test(
+    NAME test_vpr_gui_compare_selftest
+    COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/run_selftest.sh
+)
+set_tests_properties(test_vpr_gui_compare_selftest PROPERTIES
+    TIMEOUT 120
+    LABELS "gui;unit;layer3"
     SKIP_RETURN_CODE 2
 )
 
@@ -128,8 +150,11 @@ set_tests_properties(test_vpr_gui_visual PROPERTIES
 #
 # Label-based selection — every GUI test carries LABELS "gui;<kind>;<layerN>"
 # so a future S6 layer-4 test joins the aggregate automatically.
-# WORKING_DIRECTORY must be the top-level build dir so ctest sees the
-# whole registry; CMAKE_CURRENT_BINARY_DIR would only see this subdir.
+# WORKING_DIRECTORY must be VTR's build dir so ctest sees the whole registry
+# (enable_testing() is called at VTR's top level); CMAKE_CURRENT_BINARY_DIR
+# would only see this subdir. Use VTR_BINARY_DIR, not CMAKE_BINARY_DIR: when
+# VTR is built as a nested subproject (aurora2 -> OpenFPGA -> VTR) the latter
+# is the superproject's build root, which has no CTest registry at all.
 # ---------------------------------------------------------------------------
 add_custom_target(gui-tests
     COMMENT "Running VPR Qt GUI test suite (all layers, label=gui)"
@@ -137,7 +162,7 @@ add_custom_target(gui-tests
             -L gui --output-on-failure --no-tests=error
     DEPENDS vpr test_vpr_gui
     USES_TERMINAL
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    WORKING_DIRECTORY ${VTR_BINARY_DIR}
 )
 
 add_custom_target(gui-tests-unit
@@ -145,7 +170,7 @@ add_custom_target(gui-tests-unit
     COMMAND ${CMAKE_CTEST_COMMAND} -L layer3 --output-on-failure
     DEPENDS test_vpr_gui
     USES_TERMINAL
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    WORKING_DIRECTORY ${VTR_BINARY_DIR}
 )
 
 add_custom_target(gui-tests-smoke
@@ -153,7 +178,7 @@ add_custom_target(gui-tests-smoke
     COMMAND ${CMAKE_CTEST_COMMAND} -L layer1 --output-on-failure
     DEPENDS vpr
     USES_TERMINAL
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    WORKING_DIRECTORY ${VTR_BINARY_DIR}
 )
 
 add_custom_target(gui-tests-visual
@@ -161,7 +186,7 @@ add_custom_target(gui-tests-visual
     COMMAND ${CMAKE_CTEST_COMMAND} -L layer5 --output-on-failure
     DEPENDS vpr
     USES_TERMINAL
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    WORKING_DIRECTORY ${VTR_BINARY_DIR}
 )
 
 add_custom_target(gui-tests-interactive
@@ -169,7 +194,7 @@ add_custom_target(gui-tests-interactive
     COMMAND ${CMAKE_CTEST_COMMAND} -L layer4 --output-on-failure
     DEPENDS test_vpr_gui
     USES_TERMINAL
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    WORKING_DIRECTORY ${VTR_BINARY_DIR}
 )
 
 # ---------------------------------------------------------------------------
@@ -211,11 +236,11 @@ if(VTR_ENABLE_COVERAGE)
     add_custom_target(gui-coverage
         COMMENT "Generating GUI code coverage report (gcovr → coverage_gui.{html,xml,txt})"
         COMMAND sh "${_gui_cov_wrapper}"
-        COMMAND ${GCOVR_EXECUTABLE} -r ${CMAKE_SOURCE_DIR}
+        COMMAND ${GCOVR_EXECUTABLE} -r ${VTR_SOURCE_DIR}
                 --gcov-executable "${GCOV_EXECUTABLE}"
-                --html-details ${CMAKE_BINARY_DIR}/coverage_gui.html
-                --xml ${CMAKE_BINARY_DIR}/coverage_gui.xml
-                --txt ${CMAKE_BINARY_DIR}/coverage_gui.txt
+                --html-details ${VTR_BINARY_DIR}/coverage_gui.html
+                --xml ${VTR_BINARY_DIR}/coverage_gui.xml
+                --txt ${VTR_BINARY_DIR}/coverage_gui.txt
                 # S8 regression gate (see DEF-014 in the discovered-defects
                 # log for the rationale: the plan §7.8 80%/70% target is
                 # unreachable from Layer 3 alone on the current renderer
@@ -223,14 +248,14 @@ if(VTR_ENABLE_COVERAGE)
                 # ~5pp below the measured baseline of 40.85% / 27.23%).
                 --fail-under-line 35
                 --fail-under-branch 22
-                -f ${CMAKE_SOURCE_DIR}/vpr/src/draw
-                -f ${CMAKE_SOURCE_DIR}/vpr/src/base/read_options.cpp
-                -f ${CMAKE_SOURCE_DIR}/libs/EXTERNAL/libezgl/src
+                -f ${VTR_SOURCE_DIR}/vpr/src/draw
+                -f ${VTR_SOURCE_DIR}/vpr/src/base/read_options.cpp
+                -f ${VTR_SOURCE_DIR}/libs/EXTERNAL/libezgl/src
                 -e ".*moc_.*"
                 -e ".*qrc_.*"
                 -e ".*ui_.*"
-                ${CMAKE_BINARY_DIR}
+                ${VTR_BINARY_DIR}
         DEPENDS test_vpr_gui vpr
         USES_TERMINAL
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+        WORKING_DIRECTORY ${VTR_BINARY_DIR})
 endif()

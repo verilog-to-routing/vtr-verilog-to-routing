@@ -32,6 +32,9 @@
 #
 # NOTE: Re-generating goldens invalidates all previous comparisons.
 #       Only regenerate when intentional visual changes are made.
+#
+# Exit: 0 all renderers regenerated; 2 partial (rhi skipped, no QRhi here);
+#       1 on error.
 
 set -euo pipefail
 
@@ -95,6 +98,33 @@ for renderer in "${RENDERERS[@]}"; do
         --renderer "${renderer}"
 done
 
+# --- Detect an rhi fallback BEFORE collecting --------------------------------
+# Without a QRhi context, --renderer rhi silently yields immediate output;
+# promoting that overwrites the rhi baseline with a different rasterizer's
+# pixels. Detect by output identity -- the Qt diagnostic varies by backend and
+# EZGL still reports "active renderer backend: rhi" after a failed context.
+#
+# This must run before the collection loop below, which MOVES each renderer's
+# PNGs out of GEN_TMPDIR: probing from inside that loop only works while rhi
+# happens to precede immediate in RENDERERS, and a missing operand makes
+# `cmp -s` return 2, which would read as "no fallback" and bake the wrong
+# pixels in.
+RHI_FELL_BACK=0
+if printf '%s\n' "${RENDERERS[@]}" | grep -qx rhi \
+   && printf '%s\n' "${RENDERERS[@]}" | grep -qx immediate; then
+    RHI_FELL_BACK=1
+    for name in "${VISUAL_CASE_NAMES[@]:0:3}"; do
+        rhi_png="${GEN_TMPDIR}/rhi/${name}.png"
+        imm_png="${GEN_TMPDIR}/immediate/${name}.png"
+        if [[ ! -s "${rhi_png}" || ! -s "${imm_png}" ]]; then
+            echo "ERROR: fallback probe missing or empty: ${rhi_png} / ${imm_png}" >&2
+            exit 1
+        fi
+        cmp -s "${rhi_png}" "${imm_png}" || { RHI_FELL_BACK=0; break; }
+    done
+fi
+readonly RHI_FELL_BACK
+
 # --- Collect: every (renderer, case) pair must have produced a PNG -----------
 echo ""
 echo "--- Collecting PNGs into ${GOLDEN_DIR}/{${RENDERERS[*]// /,}}/"
@@ -102,6 +132,13 @@ missing=()
 for renderer in "${RENDERERS[@]}"; do
     R_TMPDIR="${GEN_TMPDIR}/${renderer}"
     R_GOLDEN="${GOLDEN_DIR}/${renderer}"
+
+    if [[ "${renderer}" == "rhi" && "${RHI_FELL_BACK}" -eq 1 ]]; then
+        echo "    SKIP rhi: QRhi unsupported on this host; leaving rhi goldens untouched."
+        echo "              Regenerate them on an RHI-capable host."
+        continue
+    fi
+
     mkdir -p "${R_GOLDEN}"
     for name in "${VISUAL_CASE_NAMES[@]}"; do
         src="${R_TMPDIR}/${name}.png"
@@ -129,23 +166,8 @@ fi
 # --- Debug triptychs: [rhi | <renderer> | 8x-diff] under golden/tmp/ ---------
 # Resolve a Python interpreter that has skimage/PIL/numpy available; same
 # fallback chain used by run_visual_regression.sh.
-resolve_python() {
-    local candidates=()
-    [[ -n "${VPR_GUI_PYTHON:-}" ]] && candidates+=("${VPR_GUI_PYTHON}")
-    [[ -x "${REPO_ROOT}/.venv/bin/python3" ]] && candidates+=("${REPO_ROOT}/.venv/bin/python3")
-    [[ -n "${VIRTUAL_ENV:-}" && -x "${VIRTUAL_ENV}/bin/python3" ]] && candidates+=("${VIRTUAL_ENV}/bin/python3")
-    candidates+=(python3 python)
-    for cand in "${candidates[@]}"; do
-        local resolved
-        resolved="$(command -v "${cand}" 2>/dev/null || true)"
-        [[ -z "${resolved}" ]] && continue
-        if "${resolved}" -c 'import skimage, PIL, numpy' >/dev/null 2>&1; then
-            echo "${resolved}"
-            return 0
-        fi
-    done
-    return 1
-}
+# shellcheck source=find_gui_python.sh
+source "${SCRIPT_DIR}/find_gui_python.sh"
 
 echo ""
 # Always wipe the debug-triptych dir at the start of a regeneration so stale
@@ -153,7 +175,7 @@ echo ""
 # are missing and we skip the rewrite.
 readonly TMP_DIR="${GOLDEN_DIR}/tmp"
 rm -rf "${TMP_DIR}"
-if ! PYTHON="$(resolve_python)"; then
+if ! PYTHON="$(resolve_gui_python)"; then
     echo "WARNING: no Python with scikit-image/Pillow/numpy on PATH —"
     echo "         skipping cross-renderer debug triptychs."
     echo "         Install with:  python3 -m pip install scikit-image Pillow numpy"
@@ -185,7 +207,9 @@ else
                 tag="[ERROR]   "
             else
                 delta=$(awk "BEGIN { printf \"%.6f\", 1 - ${ssim} }")
-                if awk "BEGIN { exit !(${ssim} < 0.98) }"; then
+                # Debug heuristic only -- deliberately looser than the gate, so cross-renderer
+# drift is flagged for a human without failing generation.
+if awk "BEGIN { exit !(${ssim} < 0.98) }"; then
                     tag="[WARNING] "
                 else
                     tag="          "
@@ -205,3 +229,14 @@ for renderer in "${RENDERERS[@]}"; do
     echo "      ${renderer}/: ${count} files"
 done
 echo "    Debug triptychs: ${GOLDEN_DIR}/tmp/ (rhi-vs-{immediate,deferred} per case)"
+
+# Exit 2, not 0, on a partial regeneration: the rhi baseline is now older than
+# the rest, and a wrapper committing this must be able to tell. Distinct from 1
+# so a genuine generation error stays distinguishable.
+if [[ "${RHI_FELL_BACK:-0}" -eq 1 ]]; then
+    echo ""
+    echo "    WARNING: rhi goldens were NOT regenerated (no QRhi on this host)."
+    echo "             They are now older than immediate/deferred. Regenerate"
+    echo "             them on an RHI-capable host before committing a baseline."
+    exit 2
+fi
