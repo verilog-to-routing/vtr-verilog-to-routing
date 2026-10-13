@@ -121,8 +121,8 @@ float calculate_clb_net_pin_setup_slack(const SetupTimingInfo& timing_info, cons
 //         IEEE CAD, vol. 34, no. 12, pp. 1942-1953, Dec. 2015. doi: 10.1109/TCAD.2015.2440316
 //
 // which handles the trade-off between different timing constraints in multi-clock circuits.
-float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_req,
-                               const std::map<DomainPair, float>& domains_worst_slack,
+float calc_relaxed_criticality(const DomainPairTable<float>& domains_max_req,
+                               const DomainPairTable<float>& domains_worst_slack,
                                const tatum::TimingTags::tag_range tags);
 
 /*
