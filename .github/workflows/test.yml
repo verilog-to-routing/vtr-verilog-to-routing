@@ -1126,3 +1126,50 @@ jobs:
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         make -j${{ steps.cpu-cores.outputs.count}}
+
+  MacosCompatibility:
+    name: 'MacOS 26 - Compatibility Test'
+    runs-on: macos-26
+    needs: [BuildVTR]
+    # Define the steps to run the build job
+    env:
+      CC: clang
+      CXX: clang++
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Show build environment
+        run: |
+          sw_vers
+          uname -m
+          xcodebuild -version
+          clang --version
+          clang++ --version
+          cmake --version
+          ninja --version
+
+      - name: Install dependencies
+        run: |
+          ./install_macos_packages.sh
+          # use the homebrew verions which meets the requirements
+          echo "$(brew --prefix bison)/bin" >> $GITHUB_PATH
+          echo "LDFLAGS=-L$(brew --prefix bison)/lib" >> $GITHUB_ENV
+          echo "CPPFLAGS=-I$(brew --prefix bison)/include" >> $GITHUB_ENV
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ github.job }}-macos-26
+
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v3
+        id: cpu-cores
+
+      - name: Build
+        env:
+          CCACHE_DIR: ${{ github.workspace }}/.ccache
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count}}
