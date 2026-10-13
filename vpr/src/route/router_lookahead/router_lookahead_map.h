@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 #include "vtr_ndmatrix.h"
 #include "router_lookahead.h"
 #include "router_lookahead_map_utils.h"
@@ -29,12 +30,29 @@ class MapLookahead final : public RouterLookahead {
     //The original non-flat routing delay/congestion lookup.
     //Called directly by get_expected_delay_and_cong_flat_router() and by get_expected_delay_and_cong() when !is_flat_.
     std::pair<float, float> get_expected_delay_and_cong_global(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const;
+    /**
+     * @brief Add the intra-cluster cost from the target tile's root-level IPINs to the target SINK to a
+     *        (delay, congestion) cost that only reaches the root-level pins.
+     */
+    std::pair<float, float> add_target_sink_cost(std::pair<float, float> root_pin_cost, RRNodeId target_node, const t_conn_cost_params& params) const;
+    /**
+     * @brief Cost from a node inside a cluster to a SINK in another tile: the cheapest wire cost over the
+     *        (dx, dy) distance plus the intra-cluster cost into the target. The cost of leaving the current
+     *        cluster is unknown and not included.
+     */
+    std::pair<float, float> cost_to_sink_in_other_tile(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params) const;
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
     util::t_src_opin_delays src_opin_delays;
-    // Lookup table from a tile pins to the primitive classes inside that tile
-    std::unordered_map<int, util::t_ipin_primitive_sink_delays> intra_tile_pin_primitive_pin_delay; // [physical_tile_type][from_pin_physical_num][sink_physical_num] -> cost
-    // Lookup table to store the minimum cost to reach to a primitive pin from the root-level IPINs
-    std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>> tile_min_cost; // [physical_tile_type][sink_physical_num] -> cost
+    /// Intra-cluster cost from each pin of the tile (root-level and intra-cluster) to each primitive sink
+    /// reachable from it: [physical tile type index][pin ptc] -> {sink ptc -> cost}. Built only for flat
+    /// routing; the inner vector is empty for the EMPTY type.
+    std::vector<util::t_ipin_primitive_sink_delays> intra_tile_pin_primitive_pin_delay;
+    /// Minimum cost from a tile's root-level IPINs to each primitive sink:
+    /// [physical tile type index][sink ptc] -> cost, sized get_tile_class_max_ptc(tile, true) per type
+    /// (empty for the EMPTY type). Primitive sinks no root-level IPIN reaches hold
+    /// ROUTER_LOOKAHEAD_NO_PATH_SENTINEL; so do the entries at the ptc numbers of root-level classes, which are
+    /// never queried.
+    std::vector<std::vector<util::Cost_Entry>> tile_min_cost;
     // Lookup table to store the minimum cost for each dx and dy
     vtr::NdMatrix<util::Cost_Entry, 4> chann_distance_based_min_cost; // [from_layer_num][to_layer_num][dx][dy] -> cost
     vtr::NdMatrix<util::Cost_Entry, 5> opin_distance_based_min_cost;  // [physical_tile_idx][from_layer_num][to_layer_num][dx][dy] -> cost
