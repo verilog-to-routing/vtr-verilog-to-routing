@@ -17,6 +17,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
@@ -124,6 +125,10 @@ struct t_tile_type_info {
     std::vector<size_t> slot_types;
     /// @brief The primitive slots of the tile type.
     t_slot_frontier slot_frontier;
+    /// @brief The number of RAM blocks of the tile type which can be used at
+    ///        the same time. The RAM slices within a RAM block must share all
+    ///        of their non-data nets.
+    int num_ram_blocks = 0;
 };
 
 /**
@@ -211,7 +216,8 @@ class LegalityEstimator {
   private:
     /**
      * @brief Group the atoms into kinds and find the primitive slot types
-     *        which can implement each kind.
+     *        which can implement each kind. Also finds the non-data ports of
+     *        each RAM slice model.
      */
     void init_atom_kinds(const std::vector<t_physical_tile_type>& physical_tile_types);
 
@@ -241,6 +247,13 @@ class LegalityEstimator {
      *        tile (CONTROL_PINS).
      */
     void apply_control_pin_rule(t_tile_state& tile);
+
+    /**
+     * @brief Evict the groups of RAM slices which cannot share a RAM block
+     *        with the others until they fit within the RAM blocks of the tile
+     *        (RAM_SHARING).
+     */
+    void apply_ram_sharing_rule(t_tile_state& tile);
 
     /**
      * @brief Evict atoms until the atoms fit within a combination of the
@@ -357,6 +370,10 @@ class LegalityEstimator {
     std::vector<std::vector<bool>> kind_tile_compatible_;
     /// @brief Whether any tile on the device can implement each kind.
     std::vector<bool> kind_has_tile_on_device_;
+    /// @brief The non-data ports (and their widths) of each RAM slice model.
+    ///        RAM slices can only share a RAM block if they have the same nets
+    ///        (including unconnected pins) on all of these ports.
+    std::unordered_map<LogicalModelId, std::vector<std::pair<const t_model_ports*, int>>> ram_model_shared_ports_;
 
     /// @brief Where each atom is placed.
     vtr::vector<AtomBlockId, t_atom_placement> atom_placement_;
@@ -389,6 +406,8 @@ const char* ap_legality_rule_name(e_ap_legality_rule rule) {
             return "chain_offset";
         case e_ap_legality_rule::CONTROL_PINS:
             return "control_pins";
+        case e_ap_legality_rule::RAM_SHARING:
+            return "ram_sharing";
         case e_ap_legality_rule::PRIMITIVE_CAPACITY:
             return "primitive_capacity";
         case e_ap_legality_rule::TILE_PINS:
@@ -604,6 +623,59 @@ static std::vector<const t_pb_type*> get_tile_primitive_pb_types(const t_physica
     std::sort(primitives.begin(), primitives.end());
     primitives.erase(std::unique(primitives.begin(), primitives.end()), primitives.end());
     return primitives;
+}
+
+/**
+ * @brief Returns true if the given primitive pb_type is a RAM slice (i.e. its
+ *        siblings must share all of its non-data nets, see
+ *        primitive_memory_sibling_feasible).
+ */
+static bool is_ram_slice(const t_pb_type& pb_type) {
+    return pb_type.is_primitive() && pb_type.class_type == MEMORY_CLASS;
+}
+
+/**
+ * @brief Get the number of RAM blocks within the given pb_type which can be
+ *        used at the same time.
+ *
+ * A RAM block is a mode whose children are RAM slices: the slices of one RAM
+ * block must share all of their non-data nets (as checked by the cluster
+ * legalizer). Each pb_type uses one of its modes, so this is the maximum over
+ * its modes.
+ */
+static int get_num_ram_blocks(const t_pb_type& pb_type) {
+    int num_ram_blocks = 0;
+    for (int imode = 0; imode < pb_type.num_modes; imode++) {
+        const t_mode& mode = pb_type.modes[imode];
+        bool is_ram_block = false;
+        int mode_num_ram_blocks = 0;
+        for (int ichild = 0; ichild < mode.num_pb_type_children; ichild++) {
+            const t_pb_type& child = mode.pb_type_children[ichild];
+            is_ram_block |= is_ram_slice(child);
+            mode_num_ram_blocks += child.num_pb * get_num_ram_blocks(child);
+        }
+        if (is_ram_block)
+            mode_num_ram_blocks = 1;
+        num_ram_blocks = std::max(num_ram_blocks, mode_num_ram_blocks);
+    }
+    return num_ram_blocks;
+}
+
+/**
+ * @brief Get the number of RAM blocks of the given tile type which can be
+ *        used at the same time.
+ */
+static int get_tile_num_ram_blocks(const t_physical_tile_type& tile_type) {
+    int num_ram_blocks = 0;
+    for (const t_sub_tile& sub_tile : tile_type.sub_tiles) {
+        int site_num_ram_blocks = 0;
+        for (t_logical_block_type_ptr site : sub_tile.equivalent_sites) {
+            if (site->pb_type != nullptr)
+                site_num_ram_blocks = std::max(site_num_ram_blocks, get_num_ram_blocks(*site->pb_type));
+        }
+        num_ram_blocks += sub_tile.capacity.total() * site_num_ram_blocks;
+    }
+    return num_ram_blocks;
 }
 
 /**
@@ -913,6 +985,7 @@ LegalityEstimator::LegalityEstimator(const PartialPlacement& p_placement,
         t_tile_type_info& tile_info = tile_type_info_[tile_type.index];
         tile_info.pin_capacity = get_tile_pin_capacity(tile_type);
         tile_info.port_pin_class = get_port_pin_classes(tile_type);
+        tile_info.num_ram_blocks = get_tile_num_ram_blocks(tile_type);
     }
 
     // Compute the primitive slots of each tile type, and which slots can
@@ -1002,6 +1075,19 @@ void LegalityEstimator::init_atom_kinds(const std::vector<t_physical_tile_type>&
             auto [it, inserted] = slot_type_index.emplace(primitive, slot_types.size());
             if (inserted)
                 slot_types.push_back(primitive);
+
+            // Find the non-data ports of each RAM slice model. These are the
+            // ports whose port_class does not start with "data" (the same
+            // ports the cluster legalizer checks).
+            if (is_ram_slice(*primitive) && ram_model_shared_ports_.count(primitive->model_id) == 0) {
+                std::vector<std::pair<const t_model_ports*, int>>& shared_ports = ram_model_shared_ports_[primitive->model_id];
+                for (int iport = 0; iport < primitive->num_ports; iport++) {
+                    const t_port& port = primitive->ports[iport];
+                    if (port.port_class != nullptr && std::string_view(port.port_class).starts_with("data"))
+                        continue;
+                    shared_ports.emplace_back(port.model_port, port.num_pins);
+                }
+            }
             tile_type_info_[tile_type.index].slot_types.push_back(it->second);
         }
     }
@@ -1174,11 +1260,11 @@ t_ap_legality_estimate LegalityEstimator::run() {
     //       are checked by the primitive capacity rule, since the primitive
     //       slots of every model are counted together.
 
-    // Control pins: sharing limits.
-    // TODO: Tile-specific rules (e.g. RAM address conflicts) should also be
-    //       applied here.
+    // Control pins and RAM sharing: sharing limits.
     for (auto& [tile_root, tile] : tiles_)
         apply_control_pin_rule(tile);
+    for (auto& [tile_root, tile] : tiles_)
+        apply_ram_sharing_rule(tile);
 
     // Primitive capacity and tile pins: counting rules, which are applied
     // last since the earlier evictions reduce the demand on the tile.
@@ -1332,6 +1418,61 @@ void LegalityEstimator::apply_control_pin_rule(t_tile_state& tile) {
             // atom in this group is still in the tile.
             evict_atom(atom, e_ap_legality_rule::CONTROL_PINS);
         }
+    }
+}
+
+void LegalityEstimator::apply_ram_sharing_rule(t_tile_state& tile) {
+    int num_ram_blocks = tile_type_info_[tile.penalty.tile_type_index].num_ram_blocks;
+    if (num_ram_blocks == 0)
+        return;
+
+    // Group the remaining RAM slices by their model and the nets on their
+    // non-data ports. Only the slices within a group can share a RAM block.
+    // Atoms are visited in ID order, so the groups are ordered by their
+    // smallest atom ID.
+    typedef std::pair<LogicalModelId, std::vector<AtomNetId>> t_ram_signature;
+    std::map<t_ram_signature, size_t> group_of_signature;
+    std::vector<std::vector<AtomBlockId>> groups;
+    std::vector<int> group_pins;
+    for (AtomBlockId atom : tile.atoms) {
+        if (atom_is_evicted_[atom])
+            continue;
+        auto shared_ports_it = ram_model_shared_ports_.find(atom_netlist_.block_model(atom));
+        if (shared_ports_it == ram_model_shared_ports_.end())
+            continue;
+
+        t_ram_signature signature;
+        signature.first = atom_netlist_.block_model(atom);
+        for (const auto& [model_port, num_pins] : shared_ports_it->second) {
+            // Unconnected pins (and ports) must also match.
+            AtomPortId port = atom_netlist_.find_atom_port(atom, model_port);
+            for (int ipin = 0; ipin < num_pins; ipin++)
+                signature.second.push_back(port.is_valid() ? atom_netlist_.port_net(port, ipin) : AtomNetId::INVALID());
+        }
+
+        auto [it, inserted] = group_of_signature.emplace(std::move(signature), groups.size());
+        if (inserted) {
+            groups.emplace_back();
+            group_pins.push_back(0);
+        }
+        groups[it->second].push_back(atom);
+        group_pins[it->second] += atom_num_pins_[atom];
+    }
+    if (groups.size() <= static_cast<size_t>(num_ram_blocks))
+        return;
+
+    // Keep the groups with the most pins (one per RAM block) and evict the
+    // rest, i.e. the groups with the fewest pins are evicted. Ties are broken
+    // by the smallest atom ID in the group.
+    std::vector<size_t> group_order(groups.size());
+    for (size_t group_idx = 0; group_idx < groups.size(); group_idx++)
+        group_order[group_idx] = group_idx;
+    std::stable_sort(group_order.begin(), group_order.end(), [&](size_t lhs, size_t rhs) {
+        return group_pins[lhs] > group_pins[rhs];
+    });
+    for (size_t order_idx = num_ram_blocks; order_idx < group_order.size(); order_idx++) {
+        for (AtomBlockId atom : groups[group_order[order_idx]])
+            evict_atom(atom, e_ap_legality_rule::RAM_SHARING);
     }
 }
 
@@ -1767,7 +1908,6 @@ void print_legality_summary(const t_ap_legality_estimate& estimate,
                 ap_legality_rule_name(static_cast<e_ap_legality_rule>(rule_idx)),
                 estimate.rule_pins_in_violation[rule_idx]);
     }
-    VTR_LOG("\t\tNot checked: tile-specific rules.\n");
 
     VTR_LOG("\tPer tile type (pins in violation):\n");
     for (const t_physical_tile_type& tile_type : physical_tile_types) {

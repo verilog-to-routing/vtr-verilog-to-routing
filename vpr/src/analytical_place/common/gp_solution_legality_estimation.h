@@ -40,14 +40,13 @@ class UserPlaceConstraints;
  * Mode conflicts (primitives which need conflicting modes of the tile, e.g. a
  * fracturable LUT used as a LUT6 next to two LUT5s) are checked by
  * PRIMITIVE_CAPACITY, which counts the primitive slots of every model together.
- *
- * TODO: Tile-specific rules (e.g. RAM address conflicts) are not checked yet.
  */
 enum class e_ap_legality_rule : size_t {
     INCOMPATIBLE_TILE,  ///< The primitive is in a tile which cannot implement it (or is not in a tile at all).
     OUTSIDE_REGION,     ///< The primitive is outside of its floorplanning region.
     CHAIN_OFFSET,       ///< The primitive is part of a chain (e.g. a carry chain) and is not at the required offset from the rest of the chain.
     CONTROL_PINS,       ///< More clock / global nets enter the tile than it has clock / global pins.
+    RAM_SHARING,        ///< The RAM slices in the tile need more RAM blocks than the tile has (slices can only share a RAM block if they share all of their non-data nets, e.g. address and write enable).
     PRIMITIVE_CAPACITY, ///< The tile cannot use enough primitive slots at the same time (in any of its modes) for the primitives placed in it.
     TILE_PINS,          ///< More nets enter / leave the tile than it has (non-global) input / output pins.
     NUM_RULES
