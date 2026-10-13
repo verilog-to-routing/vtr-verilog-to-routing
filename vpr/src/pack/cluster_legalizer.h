@@ -595,14 +595,14 @@ class ClusterLegalizer {
      *        given cluster that has not been committed yet.
      */
     bool is_atom_clustered(AtomBlockId atom, const LegalizationCluster& cluster) const {
-        return cluster.contains_atom(atom) || is_atom_clustered(atom);
+        return is_atom_clustered(atom) || cluster.contains_atom(atom);
     }
     /**
      * @brief Return whether the molecule belongs to a committed cluster or the
      *        given cluster that has not been committed yet.
      */
     bool is_mol_clustered(PackMoleculeId molecule, const LegalizationCluster& cluster) const {
-        return cluster.contains_molecule(molecule) || is_mol_clustered(molecule);
+        return is_mol_clustered(molecule) || cluster.contains_molecule(molecule);
     }
 
     /** @brief Get chain info from committed clusters only. */

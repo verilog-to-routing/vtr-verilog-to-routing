@@ -510,7 +510,10 @@ void GreedyCandidateSelector::update_connection_gain_values(
         AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
         const t_pb* pin_block_pb = cluster.atom_pb_lookup.get_atom_pb(blk_id);
 
-        if (cluster.contains_atom(blk_id) && is_pb_in_cluster_pb(pin_block_pb, cluster_pb)) {
+        // Only atoms in this cluster have a pb in its lookup, so a non-null
+        // pin_block_pb means that cluster.contains_atom should also be true
+        VTR_ASSERT_SAFE((pin_block_pb != nullptr) == cluster.contains_atom(blk_id));
+        if (is_pb_in_cluster_pb(pin_block_pb, cluster_pb)) {
             num_internal_connections++;
         } else if (!cluster_legalizer.is_atom_clustered(blk_id, cluster)) {
             num_open_connections++;

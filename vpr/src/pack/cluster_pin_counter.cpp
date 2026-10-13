@@ -470,7 +470,7 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_output_pin(AtomPinId pin_
 
             // Check if all the net sinks are, in fact, inside this cluster
             if (!all_sinks_in_cur_cluster_computed) {
-                VTR_ASSERT(cluster_atoms.contains(driver_blk_id));
+                VTR_ASSERT_SAFE(cluster_atoms.contains(driver_blk_id));
                 all_sinks_in_cur_cluster = true;
                 for (AtomPinId sink_pin_id : atom_ctx.netlist().net_sinks(net_id)) {
                     if (!cluster_atoms.contains(atom_ctx.netlist().pin_block(sink_pin_id))) {
