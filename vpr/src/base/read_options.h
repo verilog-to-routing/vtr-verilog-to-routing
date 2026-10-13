@@ -38,6 +38,7 @@ struct t_options {
     argparse::ArgValue<std::string> read_flat_place_file;
     argparse::ArgValue<std::string> write_flat_place_file;
     argparse::ArgValue<std::string> write_legalized_flat_place_file;
+    argparse::ArgValue<std::string> write_post_gp_flat_place_file;
     argparse::ArgValue<int> flat_place_verbosity;
 
     argparse::ArgValue<std::string> write_placement_delay_lookup;
@@ -56,6 +57,7 @@ struct t_options {
     argparse::ArgValue<bool> do_legalize;
     argparse::ArgValue<bool> do_placement;
     argparse::ArgValue<bool> do_analytical_placement;
+    argparse::ArgValue<bool> do_global_placement;
     argparse::ArgValue<bool> do_routing;
     argparse::ArgValue<bool> do_analysis;
     argparse::ArgValue<bool> do_power;
