@@ -24,7 +24,7 @@ class SimpleDelayModel final : public PlaceDelayModel {
     explicit SimpleDelayModel(const LookaheadT& router_lookahead)
         : router_lookahead_(router_lookahead) {}
 
-    /// @brief Nothing to compute: all delay information is queried from the router lookahead.
+    /// @brief Nothing to compute in this model. all delay information is queried from the router lookahead.
     void compute(RouterDelayProfiler& /*route_profiler*/,
                  const t_placer_opts& /*placer_opts*/,
                  const t_router_opts& /*router_opts*/,
