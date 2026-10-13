@@ -12,7 +12,6 @@
 #include <cmath>
 #include <cstddef>
 #include <fstream>
-#include <functional>
 #include <map>
 #include <numeric>
 #include <optional>
@@ -106,10 +105,17 @@ typedef vtr::StrongId<struct slot_type_id_tag, size_t> SlotTypeId;
 typedef vtr::StrongId<struct slot_dim_id_tag, size_t> SlotDimId;
 
 /**
- * @brief The number of primitive slots used at the same time in each dimension
- *        of a tile type's slot frontier (see t_slot_frontier).
+ * @brief A slot combination: the number of slots of each dimension which a
+ *        tile uses at the same time.
+ *
+ * For example, a fracturable LUT6 which can either be used as one LUT6 or two
+ * LUT5s can use the combinations {1 LUT6, 0 LUT5} and {0 LUT6, 2 LUT5}.
+ *
+ * A combination is dominated by another if it uses fewer or equal slots in
+ * every dimension. A dominated combination adds no capacity to the tile, so it
+ * can be removed.
  */
-typedef vtr::vector<SlotDimId, int> t_slot_counts;
+typedef vtr::vector<SlotDimId, int> t_slot_combination;
 
 /**
  * @brief Compares two vtr::vectors in lexicographic order.
@@ -127,34 +133,30 @@ struct t_vtr_vector_less {
 /// @brief The maximum number of slot combinations stored for a tile type. If
 ///        a tile type has more, its combinations are relaxed to a single
 ///        combination which over-estimates its capacity.
-constexpr size_t MAX_SLOT_FRONTIER_POINTS = 256;
+constexpr size_t MAX_SLOT_FRONTIER_COMBINATIONS = 256;
 
 /**
- * @brief The combinations of primitive slots which a tile can use at the same
- *        time.
+ * @brief The slot frontier of a tile type: the slot combinations which the
+ *        tile can use at the same time, excluding any dominated combination
+ *        (see t_slot_combination).
  *
- * Each primitive pb_type within the tile is a slot. The modes of the tile
- * decide which combinations of slots can be used at the same time, including
- * slots of different models. For example, a fracturable LUT6 which can either
- * be used as one LUT6 or two LUT5s gives the combinations {1 LUT6, 0 LUT5} and
- * {0 LUT6, 2 LUT5}; and a RAM block whose modes each implement a different
- * model (e.g. a different address width) can only use the slots of one of
- * those models at a time.
+ * The modes of the tile decide which combinations of slots can be used at the
+ * same time, including slots of different models. For example, a RAM block
+ * whose modes each implement a different model (e.g. a different address
+ * width) can only use the slots of one of those models at a time.
  *
  * Primitive pb_types which can implement exactly the same kinds of atoms in
- * the netlist are interchangeable, so their slots are counted together in
- * one dimension of the combinations.
- * Primitive pb_types which cannot implement any atom in the netlist are not
- * counted. Only the maximal combinations are stored.
+ * the netlist are interchangeable, so their slots are counted together in one
+ * dimension (see SlotDimId). Primitive pb_types which cannot implement any
+ * atom in the netlist are not counted.
  */
 struct t_slot_frontier {
-    /// @brief A slot type (primitive pb_type) of each dimension of the points.
-    ///        Every primitive pb_type sharing a dimension can implement the
-    ///        same kinds of atoms, so any one of them represents it.
+    /// @brief A slot type (primitive pb_type) of each dimension. Every
+    ///        primitive pb_type sharing a dimension can implement the same
+    ///        kinds of atoms, so any one of them represents it.
     vtr::vector<SlotDimId, SlotTypeId> dim_slot_types;
-    /// @brief The maximal combinations of slots which can be used at the
-    ///        same time.
-    std::vector<t_slot_counts> points;
+    /// @brief The slot combinations which are not dominated by another.
+    std::vector<t_slot_combination> combinations;
 };
 
 /**
@@ -292,8 +294,8 @@ class LegalityEstimator {
     void init_atom_kinds(const std::vector<t_physical_tile_type>& physical_tile_types);
 
     /**
-     * @brief Compute the combinations of primitive slots which each tile type
-     *        can use at the same time.
+     * @brief Compute the slot frontier of each tile type (see
+     *        t_slot_frontier).
      */
     void init_slot_frontiers(const std::vector<t_physical_tile_type>& physical_tile_types);
 
@@ -338,8 +340,8 @@ class LegalityEstimator {
     void apply_ram_sharing_rule(t_tile_state& tile);
 
     /**
-     * @brief Evict atoms until the atoms fit within a combination of the
-     *        primitive slots of the tile (PRIMITIVE_CAPACITY).
+     * @brief Evict atoms until the atoms fit within one of the slot
+     *        combinations of the tile (PRIMITIVE_CAPACITY).
      */
     void apply_primitive_capacity_rule(t_tile_state& tile);
 
@@ -508,8 +510,7 @@ double t_ap_legality_estimate::normalized_pins_in_violation() const {
 namespace {
 
 /**
- * @brief Computes the combinations of primitive slots which a tile type can
- *        use at the same time (see t_slot_frontier).
+ * @brief Computes the slot frontier of a tile type (see t_slot_frontier).
  *
  * Each instance of a pb_type is in one of its modes, so its combinations are
  * the union of the combinations of each mode. Within a mode, each child
@@ -518,9 +519,9 @@ namespace {
  *
  * The number of combinations can grow quickly in tiles with many independent
  * children with many modes. If a set of combinations grows larger than
- * MAX_SLOT_FRONTIER_POINTS, it is relaxed to the single combination which uses
- * the most slots of every type. This over-estimates the capacity of the tile,
- * so the estimate remains a lower bound.
+ * MAX_SLOT_FRONTIER_COMBINATIONS, it is relaxed to the single combination
+ * which uses the most slots in every dimension. This over-estimates the
+ * capacity of the tile, so the estimate remains a lower bound.
  */
 class SlotFrontierBuilder {
   public:
@@ -534,29 +535,28 @@ class SlotFrontierBuilder {
         , num_dims_(num_dims) {}
 
     /**
-     * @brief Get the maximal combinations of slots which the given tile type
-     *        can use at the same time.
+     * @brief Get the slot frontier of the given tile type.
      *
      * Each sub-tile instance holds one of its equivalent sites, so its
      * combinations are the union of the combinations of each site. The
      * sub-tile instances are independent, so their combinations are added.
      */
-    std::vector<t_slot_counts> get_tile_points(const t_physical_tile_type& tile_type) {
-        std::vector<t_slot_counts> tile_points = {t_slot_counts(num_dims_, 0)};
+    std::vector<t_slot_combination> get_tile_combinations(const t_physical_tile_type& tile_type) {
+        std::vector<t_slot_combination> tile_combinations = {t_slot_combination(num_dims_, 0)};
         for (const t_sub_tile& sub_tile : tile_type.sub_tiles) {
-            std::vector<t_slot_counts> site_points;
+            std::vector<t_slot_combination> site_combinations;
             for (t_logical_block_type_ptr site : sub_tile.equivalent_sites) {
                 if (site->pb_type == nullptr)
                     continue;
-                std::vector<t_slot_counts> points = get_pb_type_points(*site->pb_type);
-                site_points.insert(site_points.end(), points.begin(), points.end());
+                std::vector<t_slot_combination> combinations = get_pb_type_combinations(*site->pb_type);
+                site_combinations.insert(site_combinations.end(), combinations.begin(), combinations.end());
             }
-            if (site_points.empty())
+            if (site_combinations.empty())
                 continue;
-            site_points = prune_dominated_points(std::move(site_points));
-            tile_points = add_points(tile_points, repeat_points(site_points, sub_tile.capacity.total()));
+            site_combinations = prune_dominated_combinations(std::move(site_combinations));
+            tile_combinations = add_combinations(tile_combinations, repeat_combinations(site_combinations, sub_tile.capacity.total()));
         }
-        return tile_points;
+        return tile_combinations;
     }
 
     /**
@@ -569,102 +569,105 @@ class SlotFrontierBuilder {
 
   private:
     /**
-     * @brief Remove the duplicate and dominated points (i.e. points which use
-     *        fewer or equal slots of every type than another point).
+     * @brief Remove the duplicate and dominated combinations (see
+     *        t_slot_combination).
      *
-     * If more than MAX_SLOT_FRONTIER_POINTS points remain, they are relaxed to
-     * the single point which uses the most slots of every type.
+     * If more than MAX_SLOT_FRONTIER_COMBINATIONS combinations remain, they are
+     * relaxed to the single combination which uses the most slots in every
+     * dimension.
      */
-    std::vector<t_slot_counts> prune_dominated_points(std::vector<t_slot_counts> points) {
-        // Sorted in decreasing lexicographic order, a point can only be
-        // dominated by a point before it.
-        std::sort(points.begin(), points.end(), [](const t_slot_counts& lhs, const t_slot_counts& rhs) {
+    std::vector<t_slot_combination> prune_dominated_combinations(std::vector<t_slot_combination> combinations) {
+        // Sorted in decreasing lexicographic order, a combination can only be
+        // dominated by a combination before it.
+        std::sort(combinations.begin(), combinations.end(), [](const t_slot_combination& lhs, const t_slot_combination& rhs) {
             return t_vtr_vector_less()(rhs, lhs);
         });
-        auto is_equal = [](const t_slot_counts& lhs, const t_slot_counts& rhs) {
+        auto is_equal = [](const t_slot_combination& lhs, const t_slot_combination& rhs) {
             return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
         };
-        points.erase(std::unique(points.begin(), points.end(), is_equal), points.end());
+        combinations.erase(std::unique(combinations.begin(), combinations.end(), is_equal), combinations.end());
 
-        std::vector<t_slot_counts> frontier;
-        for (const t_slot_counts& point : points) {
-            bool is_dominated = std::any_of(frontier.begin(), frontier.end(), [&](const t_slot_counts& other) {
-                for (SlotDimId dim : point.keys()) {
-                    if (other[dim] < point[dim])
+        std::vector<t_slot_combination> frontier;
+        for (const t_slot_combination& combination : combinations) {
+            bool is_dominated = std::any_of(frontier.begin(), frontier.end(), [&](const t_slot_combination& other) {
+                for (SlotDimId dim : combination.keys()) {
+                    if (other[dim] < combination[dim])
                         return false;
                 }
                 return true;
             });
             if (is_dominated)
                 continue;
-            frontier.push_back(point);
-            if (frontier.size() > MAX_SLOT_FRONTIER_POINTS) {
+            frontier.push_back(combination);
+            if (frontier.size() > MAX_SLOT_FRONTIER_COMBINATIONS) {
                 is_relaxed_ = true;
-                t_slot_counts max_point(num_dims_, 0);
-                for (const t_slot_counts& other : points) {
-                    for (SlotDimId dim : max_point.keys())
-                        max_point[dim] = std::max(max_point[dim], other[dim]);
+                t_slot_combination max_combination(num_dims_, 0);
+                for (const t_slot_combination& other : combinations) {
+                    for (SlotDimId dim : max_combination.keys())
+                        max_combination[dim] = std::max(max_combination[dim], other[dim]);
                 }
-                return {max_point};
+                return {max_combination};
             }
         }
         return frontier;
     }
 
     /**
-     * @brief Get the combinations of slots used by two independent blocks.
+     * @brief Get the slot combinations which two independent blocks can use
+     *        together: every combination of one block plus every combination
+     *        of the other.
      */
-    std::vector<t_slot_counts> add_points(const std::vector<t_slot_counts>& lhs,
-                                          const std::vector<t_slot_counts>& rhs) {
-        std::vector<t_slot_counts> sum;
+    std::vector<t_slot_combination> add_combinations(const std::vector<t_slot_combination>& lhs,
+                                                     const std::vector<t_slot_combination>& rhs) {
+        std::vector<t_slot_combination> sum;
         sum.reserve(lhs.size() * rhs.size());
-        for (const t_slot_counts& lhs_point : lhs) {
-            for (const t_slot_counts& rhs_point : rhs) {
-                t_slot_counts point = lhs_point;
-                for (SlotDimId dim : point.keys())
-                    point[dim] += rhs_point[dim];
-                sum.push_back(std::move(point));
+        for (const t_slot_combination& lhs_combination : lhs) {
+            for (const t_slot_combination& rhs_combination : rhs) {
+                t_slot_combination combination = lhs_combination;
+                for (SlotDimId dim : combination.keys())
+                    combination[dim] += rhs_combination[dim];
+                sum.push_back(std::move(combination));
             }
         }
-        return prune_dominated_points(std::move(sum));
+        return prune_dominated_combinations(std::move(sum));
     }
 
     /**
-     * @brief Get the combinations of slots used by the given number of
-     *        independent copies of a block.
+     * @brief Get the slot combinations which the given number of independent
+     *        copies of a block can use together.
      */
-    std::vector<t_slot_counts> repeat_points(const std::vector<t_slot_counts>& points, int num_copies) {
-        std::vector<t_slot_counts> result = {t_slot_counts(num_dims_, 0)};
+    std::vector<t_slot_combination> repeat_combinations(const std::vector<t_slot_combination>& combinations, int num_copies) {
+        std::vector<t_slot_combination> result = {t_slot_combination(num_dims_, 0)};
         for (int i = 0; i < num_copies; i++)
-            result = add_points(result, points);
+            result = add_combinations(result, combinations);
         return result;
     }
 
     /**
-     * @brief Get the maximal combinations of slots which a single instance of
-     *        the given pb_type can use at the same time.
+     * @brief Get the slot combinations which a single instance of the given
+     *        pb_type can use at the same time, excluding dominated ones.
      */
-    std::vector<t_slot_counts> get_pb_type_points(const t_pb_type& pb_type) {
+    std::vector<t_slot_combination> get_pb_type_combinations(const t_pb_type& pb_type) {
         if (pb_type.is_primitive()) {
-            t_slot_counts point(num_dims_, 0);
+            t_slot_combination combination(num_dims_, 0);
             auto it = slot_dims_.find(&pb_type);
             if (it != slot_dims_.end())
-                point[it->second] = 1;
-            return {point};
+                combination[it->second] = 1;
+            return {combination};
         }
 
-        std::vector<t_slot_counts> points;
+        std::vector<t_slot_combination> combinations;
         for (int imode = 0; imode < pb_type.num_modes; imode++) {
             const t_mode& mode = pb_type.modes[imode];
-            std::vector<t_slot_counts> mode_points = {t_slot_counts(num_dims_, 0)};
+            std::vector<t_slot_combination> mode_combinations = {t_slot_combination(num_dims_, 0)};
             for (int ichild = 0; ichild < mode.num_pb_type_children; ichild++) {
                 const t_pb_type& child_pb_type = mode.pb_type_children[ichild];
-                mode_points = add_points(mode_points,
-                                         repeat_points(get_pb_type_points(child_pb_type), child_pb_type.num_pb));
+                mode_combinations = add_combinations(mode_combinations,
+                                                     repeat_combinations(get_pb_type_combinations(child_pb_type), child_pb_type.num_pb));
             }
-            points.insert(points.end(), mode_points.begin(), mode_points.end());
+            combinations.insert(combinations.end(), mode_combinations.begin(), mode_combinations.end());
         }
-        return prune_dominated_points(std::move(points));
+        return prune_dominated_combinations(std::move(combinations));
     }
 
     const std::unordered_map<const t_pb_type*, SlotDimId>& slot_dims_;
@@ -709,7 +712,7 @@ static std::vector<const t_pb_type*> get_tile_primitive_pb_types(const t_physica
 
 /**
  * @brief Get the minimum number of atoms of the given classes which must be
- *        evicted for them to fit within the given combination of slots.
+ *        evicted for them to fit within the given slot combination.
  *
  * This is the deficiency of assigning the atoms to slots, where each atom can
  * use any slot which can implement it. By Hall's theorem, it is the largest
@@ -717,20 +720,20 @@ static std::vector<const t_pb_type*> get_tile_primitive_pb_types(const t_physica
  * classes over the number of slots which can implement any of them.
  *
  *  @param classes          The atom classes to check. These should not share
- *                          any slot type with the other classes.
+ *                          any dimension with the other classes.
  *  @param class_demand     The number of atoms of each class.
  *  @param class_slots      [class][dim] Whether the slots of each dimension
  *                          can implement each atom class.
- *  @param slot_counts      The number of slots of each dimension.
+ *  @param combination      The slot combination to fit the atoms within.
  */
 static int get_slot_deficiency(const std::vector<size_t>& classes,
                                const std::vector<int>& class_demand,
                                const std::vector<vtr::vector<SlotDimId, bool>>& class_slots,
-                               const t_slot_counts& slot_counts) {
+                               const t_slot_combination& combination) {
     size_t num_classes = classes.size();
     VTR_ASSERT_MSG(num_classes < 8 * sizeof(size_t), "Too many atom classes sharing slots in a tile");
     int deficiency = 0;
-    vtr::vector<SlotDimId, bool> slot_is_usable(slot_counts.size());
+    vtr::vector<SlotDimId, bool> slot_is_usable(combination.size());
     for (size_t class_set = 1; class_set < (size_t(1) << num_classes); class_set++) {
         int demand = 0;
         std::fill(slot_is_usable.begin(), slot_is_usable.end(), false);
@@ -739,15 +742,15 @@ static int get_slot_deficiency(const std::vector<size_t>& classes,
                 continue;
             size_t c = classes[i];
             demand += class_demand[c];
-            for (SlotDimId dim : slot_counts.keys()) {
+            for (SlotDimId dim : combination.keys()) {
                 if (class_slots[c][dim])
                     slot_is_usable[dim] = true;
             }
         }
         int supply = 0;
-        for (SlotDimId dim : slot_counts.keys()) {
+        for (SlotDimId dim : combination.keys()) {
             if (slot_is_usable[dim])
-                supply += slot_counts[dim];
+                supply += combination[dim];
         }
         deficiency = std::max(deficiency, demand - supply);
     }
@@ -755,8 +758,8 @@ static int get_slot_deficiency(const std::vector<size_t>& classes,
 }
 
 /**
- * @brief Split the given atom classes into groups which do not share any slot
- *        type, directly or through other classes in the group.
+ * @brief Split the given atom classes into groups which do not share any
+ *        dimension, directly or through other classes in the group.
  *
  * The deficiency of each group (see get_slot_deficiency) is independent of
  * the other groups, which keeps the number of sets of classes checked small.
@@ -776,7 +779,7 @@ static std::vector<std::vector<size_t>> get_independent_class_groups(const std::
     };
 
     // Each group is the connected component of the classes which share a
-    // slot type.
+    // dimension.
     size_t num_classes = class_slots.size();
     std::vector<bool> is_grouped(num_classes, false);
     std::vector<std::vector<size_t>> groups;
@@ -1254,7 +1257,7 @@ void LegalityEstimator::init_slot_frontiers(const std::vector<t_physical_tile_ty
         }
 
         SlotFrontierBuilder frontier_builder(slot_dims, tile_info.slot_frontier.dim_slot_types.size());
-        tile_info.slot_frontier.points = frontier_builder.get_tile_points(tile_type);
+        tile_info.slot_frontier.combinations = frontier_builder.get_tile_combinations(tile_type);
         if (frontier_builder.is_relaxed()) {
             VTR_LOG_WARN("Legality estimate: tile type '%s' has too many combinations of primitives to count "
                          "exactly; its primitive capacity is over-estimated.\n",
@@ -1618,8 +1621,8 @@ void LegalityEstimator::apply_primitive_capacity_rule(t_tile_state& tile) {
     for (size_t c = 0; c < num_classes; c++)
         class_demand[c] = class_atoms[c].size();
 
-    // Split the classes into groups which do not share any slot type (e.g. the
-    // classes of different models). For a given combination of slots, the
+    // Split the classes into groups which do not share any dimension (e.g. the
+    // classes of different models). For a given slot combination, the
     // deficiency of the tile is the sum of the deficiencies of the groups.
     std::vector<std::vector<size_t>> group_classes = get_independent_class_groups(class_slots);
     std::vector<size_t> class_group(num_classes);
@@ -1628,19 +1631,19 @@ void LegalityEstimator::apply_primitive_capacity_rule(t_tile_state& tile) {
             class_group[c] = g;
     }
 
-    // The deficiency of each group, and of the whole tile, for each
-    // combination of slots. The overflow is the minimum number of atoms which
-    // must be evicted for the atoms to fit within any combination.
-    const std::vector<t_slot_counts>& points = slot_frontier.points;
-    std::vector<std::vector<int>> point_group_deficiency(points.size(), std::vector<int>(group_classes.size(), 0));
-    std::vector<int> point_deficiency(points.size(), 0);
-    for (size_t p = 0; p < points.size(); p++) {
+    // The deficiency of each group, and of the whole tile, for each slot
+    // combination of the tile's frontier. The overflow is the minimum number of
+    // atoms which must be evicted for the atoms to fit within any combination.
+    const std::vector<t_slot_combination>& combinations = slot_frontier.combinations;
+    std::vector<std::vector<int>> combination_group_deficiency(combinations.size(), std::vector<int>(group_classes.size(), 0));
+    std::vector<int> combination_deficiency(combinations.size(), 0);
+    for (size_t ci = 0; ci < combinations.size(); ci++) {
         for (size_t g = 0; g < group_classes.size(); g++) {
-            point_group_deficiency[p][g] = get_slot_deficiency(group_classes[g], class_demand, class_slots, points[p]);
-            point_deficiency[p] += point_group_deficiency[p][g];
+            combination_group_deficiency[ci][g] = get_slot_deficiency(group_classes[g], class_demand, class_slots, combinations[ci]);
+            combination_deficiency[ci] += combination_group_deficiency[ci][g];
         }
     }
-    int overflow = *std::min_element(point_deficiency.begin(), point_deficiency.end());
+    int overflow = *std::min_element(combination_deficiency.begin(), combination_deficiency.end());
 
     while (overflow > 0) {
         // Evict the atom with the fewest pins (ties broken by atom ID) whose
@@ -1661,10 +1664,10 @@ void LegalityEstimator::apply_primitive_capacity_rule(t_tile_state& tile) {
             size_t g = class_group[c];
             class_demand[c]--;
             bool reduces_overflow = false;
-            for (size_t p = 0; p < points.size() && !reduces_overflow; p++) {
-                if (point_deficiency[p] != overflow)
+            for (size_t ci = 0; ci < combinations.size() && !reduces_overflow; ci++) {
+                if (combination_deficiency[ci] != overflow)
                     continue;
-                reduces_overflow = get_slot_deficiency(group_classes[g], class_demand, class_slots, points[p]) < point_group_deficiency[p][g];
+                reduces_overflow = get_slot_deficiency(group_classes[g], class_demand, class_slots, combinations[ci]) < combination_group_deficiency[ci][g];
             }
             class_demand[c]++;
             if (reduces_overflow)
@@ -1681,12 +1684,12 @@ void LegalityEstimator::apply_primitive_capacity_rule(t_tile_state& tile) {
 
         // Only the deficiency of the evicted atom's group changes.
         size_t g = class_group[c];
-        for (size_t p = 0; p < points.size(); p++) {
-            int group_deficiency = get_slot_deficiency(group_classes[g], class_demand, class_slots, points[p]);
-            point_deficiency[p] += group_deficiency - point_group_deficiency[p][g];
-            point_group_deficiency[p][g] = group_deficiency;
+        for (size_t ci = 0; ci < combinations.size(); ci++) {
+            int group_deficiency = get_slot_deficiency(group_classes[g], class_demand, class_slots, combinations[ci]);
+            combination_deficiency[ci] += group_deficiency - combination_group_deficiency[ci][g];
+            combination_group_deficiency[ci][g] = group_deficiency;
         }
-        overflow = *std::min_element(point_deficiency.begin(), point_deficiency.end());
+        overflow = *std::min_element(combination_deficiency.begin(), combination_deficiency.end());
     }
 }
 
