@@ -137,6 +137,7 @@ void LegalizationCluster::swap(LegalizationCluster& other) noexcept {
     using std::swap;
     swap(molecules, other.molecules);
     swap(atoms, other.atoms);
+    swap(candidate_id, other.candidate_id);
     swap(molecule_ids, other.molecule_ids);
     swap(atom_pb_lookup, other.atom_pb_lookup);
     swap(pending_chain_info, other.pending_chain_info);
@@ -1337,6 +1338,7 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
                                     valid_feedback_pins_by_type_[cluster_type->index],
                                     enable_cluster_router_hot_start_);
     new_cluster.strategy = strategy;
+    new_cluster.candidate_id = CandidateClusterId(next_candidate_cluster_id_.fetch_add(1, std::memory_order_relaxed));
 
     // Try to pack the molecule into the new_cluster.
     // When starting a new cluster, we set the external pin utilization to full
@@ -1450,9 +1452,14 @@ void ClusterLegalizer::destroy_cluster(LegalizationClusterId cluster_id) {
 
 void ClusterLegalizer::load_packing_signature(const LegalizationCluster& cluster) {
     if (!packing_signature_tree_) return;
+    VTR_ASSERT(cluster.candidate_id.is_valid());
+    // try_pack_molecule keeps the cursor in sync with the cluster it last
+    // loaded (accepted molecules advance it, rejected ones roll it back), so
+    // the cursor only needs rebuilding when a different cluster used the PST.
+    if (packing_signature_tree_->current_candidate_cluster() == cluster.candidate_id) return;
     // FlatRecon may interleave local clusters. Rebuild the shared cursor from
     // this cluster's accepted atoms; the memoization cache remains shared.
-    packing_signature_tree_->start_packing_signature(cluster.type);
+    packing_signature_tree_->start_packing_signature(cluster.type, cluster.candidate_id);
     for (PackMoleculeId molecule : cluster.molecules) {
         for (AtomBlockId atom : prepacker_.get_molecule(molecule).atom_block_ids) {
             if (atom.is_valid()) packing_signature_tree_->add_lcn(cluster.atom_pb_lookup.get_atom_pb_graph_node(atom), atom);

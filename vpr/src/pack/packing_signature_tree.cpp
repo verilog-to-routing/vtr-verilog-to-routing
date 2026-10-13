@@ -15,7 +15,10 @@
 
 #include "packing_signature_tree.h"
 
-void PackingSignatureTree::start_packing_signature(const t_logical_block_type* cluster_logical_block_type) {
+void PackingSignatureTree::start_packing_signature(const t_logical_block_type* cluster_logical_block_type,
+                                                   CandidateClusterId candidate_cluster_id) {
+    current_candidate_cluster_ = candidate_cluster_id;
+
     // Reset external IO bookkeeping
     input_nets_.clear();
     output_nets_.clear();

@@ -11,6 +11,7 @@
  * externally to the Packer in VPR.
  */
 
+#include <atomic>
 #include <optional>
 #include <string>
 #include <vector>
@@ -141,6 +142,7 @@ struct LegalizationCluster {
     bool contains_molecule(PackMoleculeId molecule) const { return molecule_ids.count(molecule) != 0; }
 
     std::unordered_set<AtomBlockId> atoms;                                           ///< Accepted and currently placed trial atoms.
+    CandidateClusterId candidate_id;                                                 ///< Unique ID assigned by the ClusterLegalizer when the cluster is started.
     std::unordered_set<PackMoleculeId> molecule_ids;                                 ///< Accepted molecule membership.
     ClusterAtomPBBimap atom_pb_lookup;                                               ///< Sparse local atom to primitive pb mapping.
     std::unordered_map<MoleculeChainId, t_clustering_chain_info> pending_chain_info; ///< Chain info that has not been committed yet
@@ -692,6 +694,11 @@ class ClusterLegalizer {
     ///        array within the legalizer, and in its current form this is a bit
     ///        expensive to calculate from the prepacker.
     size_t max_molecule_size_;
+
+    /// @brief The ID to assign to the next candidate cluster started by
+    ///        start_new_cluster. Atomic so that IDs stay unique if clusters
+    ///        are started concurrently.
+    std::atomic<size_t> next_candidate_cluster_id_{0};
 
     /// @brief A vector of routing resource nodes within each logical block type
     ///        [0 .. num_logical_block_types-1]
