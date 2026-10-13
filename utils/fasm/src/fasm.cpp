@@ -64,7 +64,8 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
     tags_.clear();
     if(grid_meta != nullptr && grid_meta->has(fasm_placeholders)) {
       const std::vector<t_metadata_value>* value = grid_meta->get(fasm_placeholders);
-      VTR_ASSERT(value != nullptr);
+      if (value == nullptr || value->empty())
+          VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Expected a metadata value for fasm_placeholders but got none.");
 
       // Parse placeholder definition
       std::vector<std::string> tag_defs = vtr::StringToken(value->front().as_string().get(strings_)).split("\n");
@@ -91,7 +92,8 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
     std::string grid_prefix;
     if(grid_meta != nullptr && grid_meta->has(fasm_prefix)) {
       const std::vector<t_metadata_value>* value = grid_meta->get(fasm_prefix);
-      VTR_ASSERT(value != nullptr);
+      if (value == nullptr || value->empty())
+          VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Expected a metadata value for fasm_prefix but got none.");
       std::string prefix_unsplit = value->front().as_string().get(strings_);
       std::vector<std::string> fasm_prefixes = vtr::StringToken(prefix_unsplit).split(" \t\n");
       if(fasm_prefixes.size() != static_cast<size_t>(physical_tile_->capacity)) {
@@ -136,7 +138,8 @@ void FasmWriterVisitor::check_interconnect(const t_pb_routes &pb_routes, int ino
   auto *interconnect = prev_pin->output_edges[prev_edge]->interconnect;
   if(interconnect->meta.has(fasm_mux)) {
     auto* value = interconnect->meta.get(fasm_mux);
-    VTR_ASSERT(value != nullptr);
+    if (value == nullptr || value->empty())
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Expected a metadata value for fasm_mux but got none.");
     std::string fasm_mux_str = value->front().as_string().get(strings_);
     output_fasm_mux(fasm_mux_str, interconnect, prev_pin);
   }
@@ -150,7 +153,8 @@ std::string FasmWriterVisitor::handle_fasm_prefix(const t_metadata_dict *meta,
   }
 
   auto* value = meta->one(fasm_prefix);
-  VTR_ASSERT(value != nullptr);
+  if (value == nullptr)
+      VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Expected a metadata value for fasm_prefix but got none.");
   auto fasm_prefix_unsplit = value->as_string().get(strings_);
   auto fasm_prefixes = vtr::StringToken(fasm_prefix_unsplit).split(" \t\n");
   VTR_ASSERT(pb_type->num_pb >= 0);
@@ -296,7 +300,8 @@ void FasmWriterVisitor::check_features(const t_metadata_dict *meta) const {
   }
 
   auto* value = meta->one(fasm_features);
-  VTR_ASSERT(value != nullptr);
+  if (value == nullptr)
+      VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Expected a metadata value for fasm_features but got none.");
 
   output_fasm_features(value->as_string().get(strings_));
 }
@@ -527,7 +532,8 @@ const LutOutputDefinition* FasmWriterVisitor::find_lut(const t_pb_graph_node* pb
       if(meta != nullptr) {
         VTR_ASSERT(meta->has(fasm_lut));
         auto* value = meta->one(fasm_lut);
-        VTR_ASSERT(value != nullptr);
+        if (value == nullptr)
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Expected a metadata value for fasm_lut but got none.");
 
         std::vector<std::pair<std::string, LutOutputDefinition>> luts;
         luts.emplace_back(vtr::string_fmt("%s[0]", pb_graph_node->pb_type->name),
@@ -543,7 +549,8 @@ const LutOutputDefinition* FasmWriterVisitor::find_lut(const t_pb_graph_node* pb
       if(meta != nullptr) {
         VTR_ASSERT(meta->has(fasm_lut));
         auto* value = meta->one(fasm_lut);
-        VTR_ASSERT(value != nullptr);
+        if (value == nullptr)
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Expected a metadata value for fasm_lut but got none.");
         std::string fasm_lut_str = value->as_string().get(strings_);
         auto lut_parts = split_fasm_entry(fasm_lut_str, "\n", "\t ");
         if(std::popcount(lut_parts.size()) != 1) {
@@ -624,7 +631,8 @@ void FasmWriterVisitor::check_for_param(const t_pb *atom) {
     if(iter == parameters_.end()) {
         Parameters params;
         auto* value = meta->one(fasm_params);
-        VTR_ASSERT(value != nullptr);
+        if (value == nullptr)
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Expected a metadata value for fasm_params but got none.");
 
         std::string fasm_params_str = value->as_string().get(strings_);
         for(const std::string& param : vtr::StringToken(fasm_params_str).split("\n")) {
