@@ -225,6 +225,7 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
                                                                      prepacker,
                                                                      device_ctx.grid,
                                                                      device_ctx.physical_tile_types,
+                                                                     device_ctx.arch->directs,
                                                                      g_vpr_ctx.floorplanning().constraints);
         print_legality_summary(legality_estimate, device_ctx.physical_tile_types);
 

@@ -162,6 +162,7 @@ static void print_placement_stats(const PartialPlacement& p_placement,
                                                                  prepacker,
                                                                  device_ctx.grid,
                                                                  device_ctx.physical_tile_types,
+                                                                 device_ctx.arch->directs,
                                                                  g_vpr_ctx.floorplanning().constraints);
     print_legality_summary(legality_estimate, device_ctx.physical_tile_types);
 

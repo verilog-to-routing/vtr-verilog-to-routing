@@ -41,12 +41,12 @@ class UserPlaceConstraints;
  * fracturable LUT used as a LUT6 next to two LUT5s) are checked by
  * PRIMITIVE_CAPACITY, which counts the primitive slots of every model together.
  *
- * TODO: Chain offsets and tile-specific rules (e.g. RAM address conflicts) are
- *       not checked yet.
+ * TODO: Tile-specific rules (e.g. RAM address conflicts) are not checked yet.
  */
 enum class e_ap_legality_rule : size_t {
     INCOMPATIBLE_TILE,  ///< The primitive is in a tile which cannot implement it (or is not in a tile at all).
     OUTSIDE_REGION,     ///< The primitive is outside of its floorplanning region.
+    CHAIN_OFFSET,       ///< The primitive is part of a chain (e.g. a carry chain) and is not at the required offset from the rest of the chain.
     CONTROL_PINS,       ///< More clock / global nets enter the tile than it has clock / global pins.
     PRIMITIVE_CAPACITY, ///< The tile cannot use enough primitive slots at the same time (in any of its modes) for the primitives placed in it.
     TILE_PINS,          ///< More nets enter / leave the tile than it has (non-global) input / output pins.
@@ -103,6 +103,13 @@ struct t_ap_legality_estimate {
     /// @brief The number of evicted primitives which no tile on the device
     ///        can implement.
     size_t num_primitives_without_compatible_tile = 0;
+    /// @brief The number of chains whose relative placement was checked (i.e.
+    ///        chains of more than one molecule which must be placed at a
+    ///        fixed offset from each other by a direct connection).
+    size_t num_chains = 0;
+    /// @brief The number of chains which had primitives evicted for not
+    ///        being at the required offset from the rest of the chain.
+    size_t num_broken_chains = 0;
     /// @brief The number of molecules whose atoms are not all placed within
     ///        the same tile. This should always be zero, and it is not part of
     ///        the score.
@@ -131,6 +138,9 @@ struct t_ap_legality_estimate {
  *  @param prepacker            The prepacker which holds the molecules.
  *  @param device_grid          The device grid that the placement is over.
  *  @param physical_tile_types  The physical tile types of the device.
+ *  @param directs              The direct connections between tiles of the
+ *                              architecture. Used to find the required offsets
+ *                              between the molecules of a chain.
  *  @param constraints          The user floorplanning constraints.
  *
  *  @return The estimated legality of the placement.
@@ -141,6 +151,7 @@ t_ap_legality_estimate estimate_legality(const PartialPlacement& p_placement,
                                          const Prepacker& prepacker,
                                          const DeviceGrid& device_grid,
                                          const std::vector<t_physical_tile_type>& physical_tile_types,
+                                         const std::vector<t_direct_inf>& directs,
                                          const UserPlaceConstraints& constraints);
 
 /**

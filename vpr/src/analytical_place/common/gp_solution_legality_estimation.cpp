@@ -15,7 +15,9 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <set>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -25,6 +27,7 @@
 #include "device_grid.h"
 #include "echo_files.h"
 #include "logic_types.h"
+#include "pack_patterns.h"
 #include "partial_placement.h"
 #include "partition_region.h"
 #include "physical_types.h"
@@ -160,6 +163,19 @@ struct t_tile_pin_demand {
 };
 
 /**
+ * @brief A chain of molecules (e.g. a carry chain split across several tiles)
+ *        which must be placed at a fixed offset from each other.
+ */
+struct t_chain {
+    /// @brief The molecules of the chain, in order from the start of the chain.
+    std::vector<PackMoleculeId> molecules;
+    /// @brief The offset from the tile of each molecule to the tile of the
+    ///        next molecule in the chain.
+    int dx = 0;
+    int dy = 0;
+};
+
+/**
  * @brief The primitives placed within an occupied tile, and their penalty.
  */
 struct t_tile_state {
@@ -184,6 +200,7 @@ class LegalityEstimator {
                       const Prepacker& prepacker,
                       const DeviceGrid& device_grid,
                       const std::vector<t_physical_tile_type>& physical_tile_types,
+                      const std::vector<t_direct_inf>& directs,
                       const UserPlaceConstraints& constraints);
 
     /**
@@ -199,11 +216,24 @@ class LegalityEstimator {
     void init_atom_kinds(const std::vector<t_physical_tile_type>& physical_tile_types);
 
     /**
+     * @brief Find the chains of molecules which must be placed at a fixed
+     *        offset from each other, and the order of their molecules.
+     */
+    void init_chains(const std::vector<t_physical_tile_type>& physical_tile_types,
+                     const std::vector<t_direct_inf>& directs);
+
+    /**
      * @brief Evict the atoms which are in a tile that cannot implement them
      *        (INCOMPATIBLE_TILE), or which are outside of their region
      *        (OUTSIDE_REGION).
      */
     void apply_tile_type_and_region_rules();
+
+    /**
+     * @brief Evict the atoms of the given chain which are not at the required
+     *        offset from the rest of the chain (CHAIN_OFFSET).
+     */
+    void apply_chain_offset_rule(const t_chain& chain);
 
     /**
      * @brief Evict groups of atoms which share a clock / global net until the
@@ -335,6 +365,10 @@ class LegalityEstimator {
     /// @brief Whether each atom has been evicted by a rule.
     vtr::vector<AtomBlockId, bool> atom_is_evicted_;
 
+    /// @brief The chains whose molecules must be placed at a fixed offset
+    ///        from each other.
+    std::vector<t_chain> chains_;
+
     /// @brief The occupied tiles, keyed by the root location of each tile.
     ///        An ordered map is used so that the results are deterministic.
     std::map<t_physical_tile_loc, t_tile_state> tiles_;
@@ -351,6 +385,8 @@ const char* ap_legality_rule_name(e_ap_legality_rule rule) {
             return "incompatible_tile";
         case e_ap_legality_rule::OUTSIDE_REGION:
             return "outside_region";
+        case e_ap_legality_rule::CHAIN_OFFSET:
+            return "chain_offset";
         case e_ap_legality_rule::CONTROL_PINS:
             return "control_pins";
         case e_ap_legality_rule::PRIMITIVE_CAPACITY:
@@ -774,6 +810,87 @@ static bool is_tile_in_region(const t_physical_tile_loc& tile_root, const Partit
     return false;
 }
 
+/**
+ * @brief Returns true if the given tile pin cannot connect to the general
+ *        routing (i.e. every Fc of the pin is 0).
+ *
+ * Only these pins are used for the direct connections of placement macros
+ * (see PlaceMacros).
+ */
+static bool is_dedicated_tile_pin(const t_physical_tile_type& tile_type, int physical_pin) {
+    for (const t_fc_specification& fc_spec : tile_type.fc_specs) {
+        if (fc_spec.fc_value > 0 && std::find(fc_spec.pins.begin(), fc_spec.pins.end(), physical_pin) != fc_spec.pins.end())
+            return false;
+    }
+    return true;
+}
+
+/**
+ * @brief Get the offsets (dx, dy) of the direct connections which can connect
+ *        one molecule of the given chain pack pattern to the next.
+ *
+ * A chain enters a tile through the root block input pins whose edges are part
+ * of its pack pattern (the same pins the prepacker uses to find the start of
+ * a chain). If such a pin is the sink of a direct connection, the next
+ * molecule of the chain must be at the offset of that direct connection from
+ * the previous one; this is what forms the placement macros of the chain. As
+ * in PlaceMacros, only pins which cannot connect to the general routing are
+ * considered.
+ */
+static std::set<std::pair<int, int>> get_chain_offsets(const t_pack_patterns& chain_pattern,
+                                                       const std::vector<t_physical_tile_type>& physical_tile_types,
+                                                       const std::vector<t_direct_inf>& directs) {
+    // Find the tile pins (tile type index, physical pin) which the chain
+    // enters a tile through.
+    std::set<std::pair<int, int>> chain_input_tile_pins;
+    for (const t_physical_tile_type& tile_type : physical_tile_types) {
+        for (const t_sub_tile& sub_tile : tile_type.sub_tiles) {
+            for (t_logical_block_type_ptr logical_block : sub_tile.equivalent_sites) {
+                const t_pb_graph_node* root = logical_block->pb_graph_head;
+                if (root == nullptr)
+                    continue;
+                for (int iport = 0; iport < root->num_input_ports; iport++) {
+                    for (int ipin = 0; ipin < root->num_input_pins[iport]; ipin++) {
+                        const t_pb_graph_pin& pin = root->input_pins[iport][ipin];
+                        bool is_chain_input = std::any_of(pin.output_edges.begin(), pin.output_edges.end(),
+                                                          [&](const t_pb_graph_edge* edge) {
+                                                              return edge->belongs_to_pattern(chain_pattern.index);
+                                                          });
+                        if (!is_chain_input)
+                            continue;
+                        int physical_pin = get_physical_pin(&tile_type, logical_block, pin.pin_count_in_cluster);
+                        if (is_dedicated_tile_pin(tile_type, physical_pin))
+                            chain_input_tile_pins.insert({tile_type.index, physical_pin});
+                    }
+                }
+            }
+        }
+    }
+
+    // Find the direct connections whose sink is one of these pins.
+    std::set<std::pair<int, int>> offsets;
+    for (const t_direct_inf& direct : directs) {
+        auto [start_pin_index, end_pin_index, tile_name, port_name] = parse_direct_pin_name(direct.to_pin, direct.line);
+        t_physical_tile_type_ptr to_tile_type = find_tile_type_by_name(tile_name, physical_tile_types);
+        if (to_tile_type == nullptr)
+            continue;
+        t_physical_tile_port to_port = find_tile_port_by_name(to_tile_type, port_name);
+        if (start_pin_index == UNDEFINED) {
+            start_pin_index = 0;
+            end_pin_index = to_port.num_pins - 1;
+        }
+        int first_pin = to_port.absolute_first_pin_index + std::min(start_pin_index, end_pin_index);
+        int last_pin = to_port.absolute_first_pin_index + std::max(start_pin_index, end_pin_index);
+        for (int physical_pin = first_pin; physical_pin <= last_pin; physical_pin++) {
+            if (chain_input_tile_pins.count({to_tile_type->index, physical_pin}) != 0) {
+                offsets.insert({direct.x_offset, direct.y_offset});
+                break;
+            }
+        }
+    }
+    return offsets;
+}
+
 // ============================================================================
 // Legality estimator
 // ============================================================================
@@ -784,6 +901,7 @@ LegalityEstimator::LegalityEstimator(const PartialPlacement& p_placement,
                                      const Prepacker& prepacker,
                                      const DeviceGrid& device_grid,
                                      const std::vector<t_physical_tile_type>& physical_tile_types,
+                                     const std::vector<t_direct_inf>& directs,
                                      const UserPlaceConstraints& constraints)
     : atom_netlist_(atom_netlist)
     , prepacker_(prepacker)
@@ -800,6 +918,9 @@ LegalityEstimator::LegalityEstimator(const PartialPlacement& p_placement,
     // Compute the primitive slots of each tile type, and which slots can
     // implement each atom.
     init_atom_kinds(physical_tile_types);
+
+    // Find the chains which must be placed at a fixed offset.
+    init_chains(physical_tile_types, directs);
 
     // Find which kinds of atoms can be implemented by at least one tile on
     // the device. An evicted atom of a kind with no such tile cannot legally
@@ -961,6 +1082,73 @@ void LegalityEstimator::init_atom_kinds(const std::vector<t_physical_tile_type>&
     }
 }
 
+void LegalityEstimator::init_chains(const std::vector<t_physical_tile_type>& physical_tile_types,
+                                    const std::vector<t_direct_inf>& directs) {
+    // The required offset between the molecules of each chain pack pattern.
+    // Patterns without a direct connection between their molecules are
+    // connected through the general routing, so they have no fixed offset.
+    std::unordered_map<const t_pack_patterns*, std::optional<std::pair<int, int>>> pattern_offset;
+
+    // Find the next molecule of each molecule in a chain. The root atom of a
+    // chain molecule is the first atom of the chain within the molecule, so
+    // the atom driving its chain input is in the previous molecule.
+    std::vector<PackMoleculeId> chain_molecules;
+    std::unordered_map<PackMoleculeId, PackMoleculeId> next_molecule;
+    std::unordered_set<PackMoleculeId> has_prev_molecule;
+    for (PackMoleculeId mol_id : prepacker_.molecules()) {
+        const t_pack_molecule& molecule = prepacker_.get_molecule(mol_id);
+        if (!molecule.is_chain() || !prepacker_.get_molecule_chain_info(molecule.chain_id).is_long_chain)
+            continue;
+
+        const t_pack_patterns* chain_pattern = molecule.pack_pattern;
+        auto [offset_it, inserted] = pattern_offset.try_emplace(chain_pattern);
+        if (inserted) {
+            std::set<std::pair<int, int>> offsets = get_chain_offsets(*chain_pattern, physical_tile_types, directs);
+            if (offsets.size() == 1) {
+                offset_it->second = *offsets.begin();
+            } else if (offsets.size() > 1) {
+                VTR_LOG_WARN("Legality estimate: chain pack pattern '%s' can be connected at more than one offset; "
+                             "its chain offsets are not checked.\n",
+                             chain_pattern->name.c_str());
+            }
+        }
+        if (!offset_it->second.has_value())
+            continue;
+        chain_molecules.push_back(mol_id);
+
+        AtomBlockId root_atom = prepacker_.get_molecule_root_atom(mol_id);
+        for (const std::vector<t_pb_graph_pin*>& root_pins : chain_pattern->chain_root_pins) {
+            const t_pb_graph_pin* root_pin = root_pins[0];
+            AtomBlockId driver_atom = atom_netlist_.find_atom_pin_driver(root_atom, root_pin->port->model_port, root_pin->pin_number);
+            if (!driver_atom.is_valid())
+                continue;
+            PackMoleculeId prev_mol_id = prepacker_.get_atom_molecule(driver_atom);
+            if (prev_mol_id != mol_id && prepacker_.get_molecule(prev_mol_id).chain_id == molecule.chain_id) {
+                next_molecule[prev_mol_id] = mol_id;
+                has_prev_molecule.insert(mol_id);
+                break;
+            }
+        }
+    }
+
+    // Build each chain by following the next molecules from the start of
+    // the chain.
+    for (PackMoleculeId mol_id : chain_molecules) {
+        if (has_prev_molecule.count(mol_id) != 0)
+            continue;
+        t_chain chain;
+        std::tie(chain.dx, chain.dy) = *pattern_offset.at(prepacker_.get_molecule(mol_id).pack_pattern);
+        for (PackMoleculeId cur_mol_id = mol_id; cur_mol_id.is_valid();) {
+            chain.molecules.push_back(cur_mol_id);
+            auto next_it = next_molecule.find(cur_mol_id);
+            cur_mol_id = (next_it == next_molecule.end()) ? PackMoleculeId::INVALID() : next_it->second;
+        }
+        if (chain.molecules.size() > 1)
+            chains_.push_back(std::move(chain));
+    }
+    estimate_.num_chains = chains_.size();
+}
+
 t_ap_legality_estimate LegalityEstimator::run() {
     // The atoms of a molecule are placed together by construction, so this
     // is only a sanity check.
@@ -978,8 +1166,9 @@ t_ap_legality_estimate LegalityEstimator::run() {
     // of what else is in the tile.
     apply_tile_type_and_region_rules();
 
-    // TODO: Chains: evict the atoms which break the required offset of their
-    //       chain. Needs a definition of the required chain offsets.
+    // Chains: a relationship between atoms which may be in different tiles.
+    for (const t_chain& chain : chains_)
+        apply_chain_offset_rule(chain);
 
     // NOTE: Mode conflicts (atoms which need conflicting modes of the tile)
     //       are checked by the primitive capacity rule, since the primitive
@@ -1039,6 +1228,45 @@ void LegalityEstimator::apply_tile_type_and_region_rules() {
         if (pr != nullptr && !is_tile_in_region(atom_placement.tile_root, *pr))
             evict_atom(atom, e_ap_legality_rule::OUTSIDE_REGION);
     }
+}
+
+void LegalityEstimator::apply_chain_offset_rule(const t_chain& chain) {
+    // For each atom, find the tile that the first molecule of the chain would
+    // need to be in for the atom to be at its required offset (its anchor).
+    // The atoms with the same anchor can stay where they are together; every
+    // other atom must move. So the anchor with the most pins is kept, and the
+    // atoms with any other anchor are evicted. Ties are broken in favour of
+    // the anchor found first along the chain.
+    std::map<t_physical_tile_loc, size_t> anchor_index;
+    std::vector<size_t> anchor_pins;
+    std::vector<std::pair<AtomBlockId, size_t>> chain_atom_anchors;
+    for (size_t mol_idx = 0; mol_idx < chain.molecules.size(); mol_idx++) {
+        int offset_mult = static_cast<int>(mol_idx);
+        for (AtomBlockId atom : prepacker_.get_molecule(chain.molecules[mol_idx]).atom_block_ids) {
+            // Evicted atoms must move anyway, so they do not decide where the
+            // chain stays.
+            if (!atom.is_valid() || atom_is_evicted_[atom])
+                continue;
+            const t_physical_tile_loc& tile_root = atom_placement_[atom].tile_root;
+            t_physical_tile_loc anchor(tile_root.x - offset_mult * chain.dx,
+                                       tile_root.y - offset_mult * chain.dy,
+                                       tile_root.layer_num);
+            auto [it, inserted] = anchor_index.emplace(anchor, anchor_pins.size());
+            if (inserted)
+                anchor_pins.push_back(0);
+            anchor_pins[it->second] += atom_num_pins_[atom];
+            chain_atom_anchors.emplace_back(atom, it->second);
+        }
+    }
+    if (anchor_pins.size() <= 1)
+        return;
+
+    size_t kept_anchor = std::distance(anchor_pins.begin(), std::max_element(anchor_pins.begin(), anchor_pins.end()));
+    for (const auto& [atom, anchor] : chain_atom_anchors) {
+        if (anchor != kept_anchor)
+            evict_atom(atom, e_ap_legality_rule::CHAIN_OFFSET);
+    }
+    estimate_.num_broken_chains++;
 }
 
 void LegalityEstimator::apply_control_pin_rule(t_tile_state& tile) {
@@ -1512,6 +1740,7 @@ t_ap_legality_estimate estimate_legality(const PartialPlacement& p_placement,
                                          const Prepacker& prepacker,
                                          const DeviceGrid& device_grid,
                                          const std::vector<t_physical_tile_type>& physical_tile_types,
+                                         const std::vector<t_direct_inf>& directs,
                                          const UserPlaceConstraints& constraints) {
     LegalityEstimator estimator(p_placement,
                                 ap_netlist,
@@ -1519,6 +1748,7 @@ t_ap_legality_estimate estimate_legality(const PartialPlacement& p_placement,
                                 prepacker,
                                 device_grid,
                                 physical_tile_types,
+                                directs,
                                 constraints);
     return estimator.run();
 }
@@ -1537,7 +1767,7 @@ void print_legality_summary(const t_ap_legality_estimate& estimate,
                 ap_legality_rule_name(static_cast<e_ap_legality_rule>(rule_idx)),
                 estimate.rule_pins_in_violation[rule_idx]);
     }
-    VTR_LOG("\t\tNot checked: chain offsets, tile-specific rules.\n");
+    VTR_LOG("\t\tNot checked: tile-specific rules.\n");
 
     VTR_LOG("\tPer tile type (pins in violation):\n");
     for (const t_physical_tile_type& tile_type : physical_tile_types) {
@@ -1569,6 +1799,7 @@ void print_legality_summary(const t_ap_legality_estimate& estimate,
         VTR_LOG(")\n");
     }
 
+    VTR_LOG("\tChains with a fixed offset: %zu (%zu broken)\n", estimate.num_chains, estimate.num_broken_chains);
     VTR_LOG("\tPrimitives placed outside of the device: %zu\n", estimate.num_off_device_primitives);
     VTR_LOG("\tEvicted primitives with no compatible tile: %zu\n", estimate.num_primitives_without_compatible_tile);
     VTR_LOG("\tMolecules split across tiles: %zu\n", estimate.num_split_molecules);
