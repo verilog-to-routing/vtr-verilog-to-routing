@@ -88,6 +88,6 @@ class SeparableLookahead final : public RouterLookahead {
     void write_intra_cluster(const std::string& file) const override;
 
   public:
-    /// @brief Minimum OPIN delay from (x1, y1) to (x2, y2), as the sum of the per-axis OPIN delays.
-    float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int x1, int x2, int y1, int y2) const override;
+    /// @brief Minimum OPIN delay from from_loc to to_loc, as the sum of the per-axis OPIN delays.
+    float get_opin_distance_min_delay(int physical_tile_idx, const t_physical_tile_loc& from_loc, const t_physical_tile_loc& to_loc) const override;
 };

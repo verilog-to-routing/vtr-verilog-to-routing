@@ -288,9 +288,9 @@ static float min_opin_axis_delay(const std::vector<t_opin_reachable_wire>& reach
     if (!is_usable(min_delay)) {
         // Query zero distance along the other axis.
         if (profile_x) {
-            min_delay = map_lookahead.get_opin_distance_min_delay(physical_tile_idx, from_layer, to_layer, c1, c2, 0, 0);
+            min_delay = map_lookahead.get_opin_distance_min_delay(physical_tile_idx, {c1, 0, from_layer}, {c2, 0, to_layer});
         } else {
-            min_delay = map_lookahead.get_opin_distance_min_delay(physical_tile_idx, from_layer, to_layer, 0, 0, c1, c2);
+            min_delay = map_lookahead.get_opin_distance_min_delay(physical_tile_idx, {0, c1, from_layer}, {0, c2, to_layer});
         }
     }
 
@@ -452,9 +452,9 @@ void SeparableLookahead::write_intra_cluster(const std::string& /*file*/) const 
     VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "SeparableLookahead::write_intra_cluster is not implemented yet");
 }
 
-float SeparableLookahead::get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int x1, int x2, int y1, int y2) const {
-    const float x_delay = opin_x_min_delay_[physical_tile_idx][from_layer][to_layer][x1][x2];
-    const float y_delay = opin_y_min_delay_[physical_tile_idx][from_layer][to_layer][y1][y2];
+float SeparableLookahead::get_opin_distance_min_delay(int physical_tile_idx, const t_physical_tile_loc& from_loc, const t_physical_tile_loc& to_loc) const {
+    const float x_delay = opin_x_min_delay_[physical_tile_idx][from_loc.layer_num][to_loc.layer_num][from_loc.x][to_loc.x];
+    const float y_delay = opin_y_min_delay_[physical_tile_idx][from_loc.layer_num][to_loc.layer_num][from_loc.y][to_loc.y];
 
     return x_delay + y_delay;
 }

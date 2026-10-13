@@ -62,8 +62,13 @@ class MapLookahead final : public RouterLookahead {
   public:
     // Public so SimpleDelayModel can call it through the
     // concrete type statically, without using dynamic dispatch.
-    inline float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int x1, int x2, int y1, int y2) const override {
-        return opin_distance_based_min_cost[physical_tile_idx][from_layer][to_layer][std::abs(x1 - x2)][std::abs(y1 - y2)].delay;
+    inline float get_opin_distance_min_delay(int physical_tile_idx, const t_physical_tile_loc& from_loc, const t_physical_tile_loc& to_loc) const override {
+        return opin_distance_based_min_cost[physical_tile_idx]
+                                           [from_loc.layer_num]
+                                           [to_loc.layer_num]
+                                           [std::abs(from_loc.x - to_loc.x)]
+                                           [std::abs(from_loc.y - to_loc.y)]
+                                               .delay;
     }
 };
 

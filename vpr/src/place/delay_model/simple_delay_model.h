@@ -55,10 +55,7 @@ class SimpleDelayModel final : public PlaceDelayModel {
 
         // The cost is used for placement, so the source is on OPINs; thus, we need the minimum delay
         // starting from OPINs, not from channels.
-        float min_delay = router_lookahead_.get_opin_distance_min_delay(from_tile_idx,
-                                                                        from_loc.layer_num, to_loc.layer_num,
-                                                                        from_loc.x, to_loc.x,
-                                                                        from_loc.y, to_loc.y);
+        float min_delay = router_lookahead_.get_opin_distance_min_delay(from_tile_idx, from_loc, to_loc);
         return min_delay + interposer_delay;
     }
 
