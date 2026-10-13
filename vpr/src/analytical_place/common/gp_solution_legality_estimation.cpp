@@ -1919,7 +1919,10 @@ void print_legality_summary(const t_ap_legality_estimate& estimate,
                 estimate.rule_pins_in_violation[rule_idx]);
     }
 
-    VTR_LOG("\tPer tile type (pins in violation):\n");
+    // Every pin in violation is charged to a tile type or to off-device, so
+    // this list is only empty when nothing is in violation.
+    if (estimate.pins_in_violation != 0)
+        VTR_LOG("\tPer tile type (pins in violation):\n");
     for (const t_physical_tile_type& tile_type : physical_tile_types) {
         size_t pins_in_violation = estimate.tile_type_pins_in_violation[tile_type.index];
         if (pins_in_violation == 0)
@@ -1929,7 +1932,8 @@ void print_legality_summary(const t_ap_legality_estimate& estimate,
     if (estimate.off_device_pins_in_violation != 0)
         VTR_LOG("\t\t<off-device>: %zu\n", estimate.off_device_pins_in_violation);
 
-    VTR_LOG("\tWorst %zu tiles (pins in violation per rule):\n", estimate.worst_tiles.size());
+    if (!estimate.worst_tiles.empty())
+        VTR_LOG("\tWorst %zu tiles (pins in violation per rule):\n", estimate.worst_tiles.size());
     for (const t_ap_tile_legality_penalty& tile_penalty : estimate.worst_tiles) {
         const t_physical_tile_loc& loc = tile_penalty.root_loc;
         VTR_LOG("\t\t%s at (%d, %d, %d): %zu pins (",
