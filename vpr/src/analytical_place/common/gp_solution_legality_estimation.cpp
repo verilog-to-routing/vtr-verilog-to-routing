@@ -77,7 +77,7 @@ struct t_tile_pin_capacity {
 
 /**
  * @brief The number of primitive slots of each slot type used at the same
- *        time.
+ *        time. A slot is a physical primitive site which can implement an atom.
  */
 typedef std::vector<int> t_slot_counts;
 
