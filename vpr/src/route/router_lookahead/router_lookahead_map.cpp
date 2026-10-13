@@ -1073,10 +1073,8 @@ static void read_intra_cluster_router_lookahead(std::vector<util::t_ipin_primiti
                            map.getPhysicalTileNumPins(),
                            toIntEntry);
 
-    // Validate the file against the current device before touching the tables: later consumers
-    // (store_min_cost_to_sinks, the lookahead query) index the tables by the current device's
-    // tile type indices and pin ptc numbers, so a file written for a different architecture
-    // must be rejected here rather than corrupt those accesses.
+    // Validate against the current device to prevent invalid tile and pin indices
+    // from causing out-of-bounds table accesses.
     const auto& tiles = g_vpr_ctx.device().physical_tile_types;
     if (physical_tile_num_pin_arr.size() != tiles.size()) {
         VPR_THROW(VPR_ERROR_ROUTE,

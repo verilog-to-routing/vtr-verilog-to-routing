@@ -45,13 +45,10 @@ class MapLookahead final : public RouterLookahead {
     util::t_src_opin_delays src_opin_delays;
     /// Intra-cluster cost from each pin of the tile (root-level and intra-cluster) to each primitive sink
     /// reachable from it: [physical tile type index][pin ptc] -> {sink ptc -> cost}. Built only for flat
-    /// routing; the inner vector is empty for the EMPTY type.
+    /// routing.
     std::vector<util::t_ipin_primitive_sink_delays> intra_tile_pin_primitive_pin_delay;
     /// Minimum cost from a tile's root-level IPINs to each primitive sink:
-    /// [physical tile type index][sink ptc] -> cost, sized get_tile_class_max_ptc(tile, true) per type
-    /// (empty for the EMPTY type). Primitive sinks no root-level IPIN reaches hold
-    /// ROUTER_LOOKAHEAD_NO_PATH_SENTINEL; so do the entries at the ptc numbers of root-level classes, which are
-    /// never queried.
+    /// [physical tile type index][sink ptc] -> cost.
     std::vector<std::vector<util::Cost_Entry>> tile_min_cost;
     // Lookup table to store the minimum cost for each dx and dy
     vtr::NdMatrix<util::Cost_Entry, 4> chann_distance_based_min_cost; // [from_layer_num][to_layer_num][dx][dy] -> cost
