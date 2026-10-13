@@ -41,6 +41,7 @@
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_log.h"
+#include "vtr_strong_id.h"
 #include "vtr_vector.h"
 
 /// @brief The number of worst tiles reported in the legality summary.
@@ -76,8 +77,27 @@ struct t_tile_pin_capacity {
 };
 
 /**
- * @brief The number of primitive slots of each slot type used at the same
- *        time. A slot is a physical primitive site which can implement an atom.
+ * @brief The ID of a kind of atom.
+ *
+ * Atoms of the same kind have the same model and the same number of used pins
+ * on each port. Whether a primitive can implement an atom only depends on
+ * these (see primitive_type_feasible), so a primitive which can implement one
+ * atom of a kind can implement every atom of that kind.
+ */
+typedef vtr::StrongId<struct atom_kind_id_tag, size_t> AtomKindId;
+
+/**
+ * @brief The ID of a type of primitive slot.
+ *
+ * A slot is a physical primitive site within a tile which can implement an
+ * atom. Its slot type is its primitive pb_type; every primitive pb_type of the
+ * device which implements a model is given a slot type.
+ */
+typedef vtr::StrongId<struct slot_type_id_tag, size_t> SlotTypeId;
+
+/**
+ * @brief The number of primitive slots used at the same time in each dimension
+ *        of a tile type's slot frontier (see t_slot_frontier).
  */
 typedef std::vector<int> t_slot_counts;
 
@@ -99,7 +119,8 @@ constexpr size_t MAX_SLOT_FRONTIER_POINTS = 256;
  * those models at a time.
  *
  * Primitive pb_types which can implement exactly the same kinds of atoms in
- * the netlist are interchangeable, so they share a slot type (dimension).
+ * the netlist are interchangeable, so their slots are counted together in
+ * one dimension of the combinations.
  * Primitive pb_types which cannot implement any atom in the netlist are not
  * counted. Only the maximal combinations are stored.
  */
@@ -107,7 +128,7 @@ struct t_slot_frontier {
     /// @brief A global slot type (primitive pb_type) of each dimension of the
     ///        points. Every primitive pb_type sharing a dimension can implement
     ///        the same kinds of atoms, so any one of them represents it.
-    std::vector<size_t> dim_slot_types;
+    std::vector<SlotTypeId> dim_slot_types;
     /// @brief The maximal combinations of slots which can be used at the
     ///        same time.
     std::vector<t_slot_counts> points;
@@ -123,7 +144,7 @@ struct t_tile_type_info {
     ///        port implemented within the tile type.
     std::unordered_map<const t_model_ports*, e_tile_pin_class> port_pin_class;
     /// @brief The global slot types (primitive pb_types) within the tile type.
-    std::vector<size_t> slot_types;
+    std::vector<SlotTypeId> slot_types;
     /// @brief The primitive slots of the tile type.
     t_slot_frontier slot_frontier;
     /// @brief The number of RAM blocks of the tile type which can be used at
@@ -392,21 +413,21 @@ class LegalityEstimator {
     ///        physical tile type index).
     std::vector<t_tile_type_info> tile_type_info_;
     /// @brief The primitive pb_type of each global slot type.
-    std::vector<const t_pb_type*> slot_pb_types_;
+    vtr::vector<SlotTypeId, const t_pb_type*> slot_pb_types_;
     /// @brief The shared ports of each RAM slice model.
     std::unordered_map<LogicalModelId, t_ram_shared_ports> ram_model_shared_ports_;
 
     /// @brief The kind of each atom. Atoms of the same kind have the same model
     ///        and the same number of used pins on each port, so they can be
     ///        implemented by the same primitives.
-    vtr::vector<AtomBlockId, size_t> atom_kind_;
+    vtr::vector<AtomBlockId, AtomKindId> atom_kind_;
     /// @brief [kind][slot type] Whether each slot type can implement each kind.
-    std::vector<std::vector<bool>> kind_feasible_slots_;
+    vtr::vector<AtomKindId, vtr::vector<SlotTypeId, bool>> kind_feasible_slots_;
     /// @brief [kind][physical tile type index] Whether each tile type can
     ///        implement each kind.
-    std::vector<std::vector<bool>> kind_tile_compatible_;
+    vtr::vector<AtomKindId, std::vector<bool>> kind_tile_compatible_;
     /// @brief Whether any tile on the device can implement each kind.
-    std::vector<bool> kind_has_tile_on_device_;
+    vtr::vector<AtomKindId, bool> kind_has_tile_on_device_;
 
     /// @brief Where each atom is placed.
     vtr::vector<AtomBlockId, t_atom_placement> atom_placement_;
@@ -1096,18 +1117,18 @@ LegalityEstimator::LegalityEstimator(const PartialPlacement& p_placement,
 
 void LegalityEstimator::init_tile_type_info(const std::vector<t_physical_tile_type>& physical_tile_types) {
     tile_type_info_.resize(physical_tile_types.size());
-    std::unordered_map<const t_pb_type*, size_t> slot_type_index;
+    std::unordered_map<const t_pb_type*, SlotTypeId> slot_type_index;
     for (const t_physical_tile_type& tile_type : physical_tile_types) {
         t_tile_type_info& tile_info = tile_type_info_[tile_type.index];
         tile_info.pin_capacity = get_tile_pin_capacity(tile_type);
         tile_info.port_pin_class = get_port_pin_classes(tile_type);
         tile_info.num_ram_blocks = get_tile_num_ram_blocks(tile_type);
 
-        // Give each primitive pb_type a global slot type index.
+        // Give each primitive pb_type a slot type.
         for (const t_pb_type* primitive : get_tile_primitive_pb_types(tile_type)) {
             if (!primitive->model_id.is_valid())
                 continue;
-            auto [it, inserted] = slot_type_index.emplace(primitive, slot_pb_types_.size());
+            auto [it, inserted] = slot_type_index.emplace(primitive, SlotTypeId(slot_pb_types_.size()));
             if (inserted) {
                 slot_pb_types_.push_back(primitive);
                 if (primitive->is_memory_primitive())
@@ -1124,8 +1145,8 @@ void LegalityEstimator::init_atom_kinds(const std::vector<t_physical_tile_type>&
     // its ports (see primitive_type_feasible), so atoms with the same model
     // and port usage are the same kind.
     typedef std::pair<LogicalModelId, std::vector<std::pair<const t_model_ports*, size_t>>> t_kind_signature;
-    std::map<t_kind_signature, size_t> kind_of_signature;
-    std::vector<AtomBlockId> kind_representative;
+    std::map<t_kind_signature, AtomKindId> kind_of_signature;
+    vtr::vector<AtomKindId, AtomBlockId> kind_representative;
     atom_kind_.resize(atom_netlist_.blocks().size());
     for (AtomBlockId atom : atom_netlist_.blocks()) {
         t_kind_signature signature;
@@ -1134,7 +1155,7 @@ void LegalityEstimator::init_atom_kinds(const std::vector<t_physical_tile_type>&
             signature.second.emplace_back(atom_netlist_.port_model(port), atom_netlist_.port_pins(port).size());
         std::sort(signature.second.begin(), signature.second.end());
 
-        auto [it, inserted] = kind_of_signature.emplace(std::move(signature), kind_representative.size());
+        auto [it, inserted] = kind_of_signature.emplace(std::move(signature), AtomKindId(kind_representative.size()));
         if (inserted)
             kind_representative.push_back(atom);
         atom_kind_[atom] = it->second;
@@ -1144,17 +1165,17 @@ void LegalityEstimator::init_atom_kinds(const std::vector<t_physical_tile_type>&
     // NOTE: primitive_type_feasible is the same check the packer uses to decide
     //       if a primitive can implement an atom.
     size_t num_kinds = kind_representative.size();
-    kind_feasible_slots_.assign(num_kinds, std::vector<bool>(slot_pb_types_.size(), false));
+    kind_feasible_slots_.assign(num_kinds, vtr::vector<SlotTypeId, bool>(slot_pb_types_.size(), false));
     kind_tile_compatible_.assign(num_kinds, std::vector<bool>(physical_tile_types.size(), false));
-    for (size_t kind = 0; kind < num_kinds; kind++) {
+    for (AtomKindId kind : kind_representative.keys()) {
         AtomBlockId representative = kind_representative[kind];
         LogicalModelId model_id = atom_netlist_.block_model(representative);
-        for (size_t slot_type = 0; slot_type < slot_pb_types_.size(); slot_type++) {
+        for (SlotTypeId slot_type : slot_pb_types_.keys()) {
             if (slot_pb_types_[slot_type]->model_id == model_id)
                 kind_feasible_slots_[kind][slot_type] = primitive_type_feasible(representative, slot_pb_types_[slot_type]);
         }
         for (const t_physical_tile_type& tile_type : physical_tile_types) {
-            for (size_t slot_type : tile_type_info_[tile_type.index].slot_types) {
+            for (SlotTypeId slot_type : tile_type_info_[tile_type.index].slot_types) {
                 if (kind_feasible_slots_[kind][slot_type])
                     kind_tile_compatible_[kind][tile_type.index] = true;
             }
@@ -1172,7 +1193,7 @@ void LegalityEstimator::init_atom_kinds(const std::vector<t_physical_tile_type>&
         }
     }
     kind_has_tile_on_device_.assign(num_kinds, false);
-    for (size_t kind = 0; kind < num_kinds; kind++) {
+    for (AtomKindId kind : kind_representative.keys()) {
         for (size_t tile_type_idx = 0; tile_type_idx < physical_tile_types.size(); tile_type_idx++) {
             if (tile_type_on_device[tile_type_idx] && kind_tile_compatible_[kind][tile_type_idx])
                 kind_has_tile_on_device_[kind] = true;
@@ -1183,7 +1204,6 @@ void LegalityEstimator::init_atom_kinds(const std::vector<t_physical_tile_type>&
 void LegalityEstimator::init_slot_frontiers(const std::vector<t_physical_tile_type>& physical_tile_types) {
     // The slots of every model are counted together, since the modes of the
     // tile decide which slots (of any model) can be used at the same time.
-    size_t num_kinds = kind_feasible_slots_.size();
     for (const t_physical_tile_type& tile_type : physical_tile_types) {
         t_tile_type_info& tile_info = tile_type_info_[tile_type.index];
 
@@ -1193,10 +1213,12 @@ void LegalityEstimator::init_slot_frontiers(const std::vector<t_physical_tile_ty
         // dimensions (and combinations) small.
         std::map<std::vector<bool>, size_t> dim_of_kinds;
         std::unordered_map<const t_pb_type*, size_t> slot_dims;
-        for (size_t slot_type : tile_info.slot_types) {
-            std::vector<bool> feasible_kinds(num_kinds, false);
-            for (size_t kind = 0; kind < num_kinds; kind++)
-                feasible_kinds[kind] = kind_feasible_slots_[kind][slot_type];
+        for (SlotTypeId slot_type : tile_info.slot_types) {
+            // Whether this slot type can implement each kind, in kind order.
+            std::vector<bool> feasible_kinds;
+            feasible_kinds.reserve(kind_feasible_slots_.size());
+            for (AtomKindId kind : kind_feasible_slots_.keys())
+                feasible_kinds.push_back(kind_feasible_slots_[kind][slot_type]);
             if (std::none_of(feasible_kinds.begin(), feasible_kinds.end(), [](bool feasible) { return feasible; }))
                 continue;
             auto [it, inserted] = dim_of_kinds.emplace(std::move(feasible_kinds), tile_info.slot_frontier.dim_slot_types.size());
