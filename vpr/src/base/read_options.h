@@ -38,6 +38,7 @@ struct t_options {
     argparse::ArgValue<std::string> read_flat_place_file;
     argparse::ArgValue<std::string> write_flat_place_file;
     argparse::ArgValue<std::string> write_legalized_flat_place_file;
+    argparse::ArgValue<std::string> write_post_gp_flat_place_file;
     argparse::ArgValue<int> flat_place_verbosity;
 
     argparse::ArgValue<std::string> write_placement_delay_lookup;
@@ -56,6 +57,7 @@ struct t_options {
     argparse::ArgValue<bool> do_legalize;
     argparse::ArgValue<bool> do_placement;
     argparse::ArgValue<bool> do_analytical_placement;
+    argparse::ArgValue<bool> do_global_placement;
     argparse::ArgValue<bool> do_routing;
     argparse::ArgValue<bool> do_analysis;
     argparse::ArgValue<bool> do_power;
@@ -74,7 +76,7 @@ struct t_options {
     argparse::ArgValue<size_t> num_workers;
     argparse::ArgValue<bool> timing_analysis;
     argparse::ArgValue<e_timing_update_type> timing_update_type;
-    argparse::ArgValue<bool> CreateEchoFile;
+    argparse::ArgValue<std::vector<std::string>> echo_file;
     argparse::ArgValue<bool> verify_file_digests;
     argparse::ArgValue<bool> verify_route_file_switch_id;
     argparse::ArgValue<std::string> device_layout;
@@ -107,6 +109,7 @@ struct t_options {
     // Analytical Placement options
     argparse::ArgValue<e_ap_global_placer> ap_global_placer;
     argparse::ArgValue<e_ap_analytical_solver> ap_analytical_solver;
+    argparse::ArgValue<e_ap_solver_threading> ap_solver_threading;
     argparse::ArgValue<e_ap_partial_legalizer> ap_partial_legalizer;
     argparse::ArgValue<e_ap_full_legalizer> ap_full_legalizer;
     argparse::ArgValue<e_ap_detailed_placer> ap_detailed_placer;

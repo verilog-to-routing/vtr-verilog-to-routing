@@ -13,9 +13,7 @@
 
 #include <memory>
 
-#ifndef VPR_MAIN_UI_PATH
-#define VPR_MAIN_UI_PATH ":/ezgl/main.ui"
-#endif
+#include "test_main_ui.hpp"
 
 #include <QMainWindow>
 #include <QPushButton>
@@ -39,7 +37,7 @@
 // ---------------------------------------------------------------------------
 
 TEST_CASE("Flow: MainWindow loads main.ui successfully", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
@@ -57,7 +55,7 @@ TEST_CASE("Flow: MainWindow loads main.ui successfully", "[layer3][vpr_gui]") {
 }
 
 TEST_CASE("Flow: main.ui contains MainCanvas drawing area", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
@@ -76,7 +74,7 @@ TEST_CASE("Flow: main.ui contains MainCanvas drawing area", "[layer3][vpr_gui]")
 }
 
 TEST_CASE("Flow: main.ui contains StatusBar", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
@@ -85,7 +83,7 @@ TEST_CASE("Flow: main.ui contains StatusBar", "[layer3][vpr_gui]") {
 }
 
 TEST_CASE("Flow: main.ui contains top menu grid with search", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
@@ -114,7 +112,7 @@ TEST_CASE("Flow: main.ui contains top menu grid with search", "[layer3][vpr_gui]
 }
 
 TEST_CASE("Flow: main.ui contains bottom menu bar with all menu buttons", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
@@ -149,7 +147,7 @@ TEST_CASE("Flow: main.ui contains bottom menu bar with all menu buttons", "[laye
 // ---------------------------------------------------------------------------
 
 TEST_CASE("Flow: Block popover has expected controls", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
@@ -182,7 +180,7 @@ TEST_CASE("Flow: Block popover has expected controls", "[layer3][vpr_gui]") {
 }
 
 TEST_CASE("Flow: Net popover has expected controls", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
@@ -211,7 +209,7 @@ TEST_CASE("Flow: Net popover has expected controls", "[layer3][vpr_gui]") {
 }
 
 TEST_CASE("Flow: Routing popover has expected controls", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
@@ -265,7 +263,7 @@ TEST_CASE("Flow: Routing popover has expected controls", "[layer3][vpr_gui]") {
 }
 
 TEST_CASE("Flow: Misc popover has proceed by step, save, debug, manual move", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
@@ -289,7 +287,7 @@ TEST_CASE("Flow: Misc popover has proceed by step, save, debug, manual move", "[
 }
 
 TEST_CASE("Flow: Critical path controls loaded from Net popover", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
@@ -313,7 +311,7 @@ TEST_CASE("Flow: Critical path controls loaded from Net popover", "[layer3][vpr_
 }
 
 TEST_CASE("Flow: 3D layers popover has layer and transparency boxes", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
@@ -327,7 +325,7 @@ TEST_CASE("Flow: 3D layers popover has layer and transparency boxes", "[layer3][
 }
 
 TEST_CASE("Flow: Congestion cost combo has all 8 options", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
@@ -340,7 +338,7 @@ TEST_CASE("Flow: Congestion cost combo has all 8 options", "[layer3][vpr_gui]") 
 }
 
 TEST_CASE("Flow: NoC display combo has expected items", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
@@ -379,7 +377,7 @@ TEST_CASE("Flow: widgets lifetime bounded by window lifetime",
     const QSet<QWidget*> baseline_set(baseline_list.cbegin(), baseline_list.cend());
 
     {
-        ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+        auto mw = vpr_gui_test::load_main_ui();
         std::unique_ptr<QMainWindow> win(mw.release());
         REQUIRE(win != nullptr);
         // Sanity check: loading main.ui actually added widgets, so an empty

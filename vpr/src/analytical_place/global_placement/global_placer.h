@@ -22,6 +22,7 @@
 class APNetlist;
 class AnalyticalSolver;
 class LogicalModels;
+class PartialLegalizer;
 class PlaceDelayModel;
 class PreClusterTimingManager;
 class Prepacker;
@@ -75,6 +76,7 @@ class GlobalPlacer {
  */
 std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_global_placer global_placer_type,
                                                  e_ap_analytical_solver analytical_solver_type,
+                                                 e_ap_solver_threading solver_threading,
                                                  e_ap_partial_legalizer partial_legalizer_type,
                                                  const APNetlist& ap_netlist,
                                                  const Prepacker& prepacker,
@@ -97,10 +99,10 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_global_placer global_place
  * This associates each AP sink pin with the delay estimated between its driver
  * and sink locations, then runs STA to refresh timing criticalities.
  */
-void update_timing_info_with_partial_placement(PreClusterTimingManager& pre_cluster_timing_manager,
-                                               const PlaceDelayModel& place_delay_model,
-                                               const PartialPlacement& p_placement,
-                                               const APNetlist& ap_netlist);
+void update_timing_info_with_gp_placement(PreClusterTimingManager& pre_cluster_timing_manager,
+                                          const PlaceDelayModel& place_delay_model,
+                                          const PartialPlacement& p_placement,
+                                          const APNetlist& ap_netlist);
 
 /**
  * @brief A Global Placer based on the SimPL work for analytical ASIC placement.
@@ -170,6 +172,7 @@ class SimPLGlobalPlacer : public GlobalPlacer {
      * Constructs the solver and partial legalizer.
      */
     SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_type,
+                      e_ap_solver_threading solver_threading,
                       e_ap_partial_legalizer partial_legalizer_type,
                       const APNetlist& ap_netlist,
                       const Prepacker& prepacker,

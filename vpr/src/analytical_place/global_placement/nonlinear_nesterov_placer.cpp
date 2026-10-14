@@ -220,6 +220,7 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
                                                place_delay_model,
                                                ap_timing_tradeoff_,
                                                1 /*num_threads*/,
+                                               e_ap_solver_threading::Sequential,
                                                log_verbosity_);
 }
 
@@ -294,10 +295,10 @@ PartialPlacement NonlinearNesterovPlacer::run_global_optimization_(const std::ve
     // Leave the pre-cluster timing manager consistent with the returned placement,
     // deterministically -- matching the lp-b2b handoff.
     if (pre_cluster_timing_manager_.is_valid() && place_delay_model_) {
-        update_timing_info_with_partial_placement(pre_cluster_timing_manager_,
-                                                  *place_delay_model_,
-                                                  result,
-                                                  ap_netlist_);
+        update_timing_info_with_gp_placement(pre_cluster_timing_manager_,
+                                             *place_delay_model_,
+                                             result,
+                                             ap_netlist_);
     }
 
     // Print the same post-global-placement statistics block as the SimPL placer,
@@ -822,11 +823,8 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
         weighted_nets++;
     }
 
-    // Telemetry only. Rebalancing the density weight by this was tried and made
-    // no measurable difference, though note lambda_0 is normalized against
-    // unit-weight wirelength while the epoch loop applies multipliers well
-    // above 1, so the wirelength/density balance does carry a design-dependent
-    // factor.
+    // Logged for diagnostics only; the weight statistics do not feed back into
+    // the objective.
     double avg_net_weight = weighted_nets > 0 ? total_weight / weighted_nets : 1.0;
     if (log_verbosity_ >= 1 && weighted_nets > 0) {
         VTR_LOG("Nonlinear Nesterov timing net weights: tradeoff=%g min=%g avg=%g max=%g nets=%zu\n",

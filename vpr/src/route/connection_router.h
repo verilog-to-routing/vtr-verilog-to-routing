@@ -19,6 +19,8 @@
  * through the rr_node_route_inf. See update_traceback as an example of this tracing.
  */
 
+#include <span>
+
 #include "connection_router_interface.h"
 #include "globals.h"
 #include "route_path_manager.h"
@@ -351,7 +353,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     const RRRCData& rr_rc_data_;
 
     /** RR switch data */
-    vtr::array_view<const t_rr_switch_inf> rr_switch_inf_;
+    std::span<const t_rr_switch_inf> rr_switch_inf_;
 
     //@{
     /** Net terminal groups */

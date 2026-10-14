@@ -14,9 +14,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#ifndef VPR_MAIN_UI_PATH
-#define VPR_MAIN_UI_PATH ":/ezgl/main.ui"
-#endif
+#include "test_main_ui.hpp"
 
 #include <QMainWindow>
 #include <QPushButton>
@@ -36,18 +34,18 @@
 // ---------------------------------------------------------------------------
 
 TEST_CASE("WidgetHierarchy: loadFile returns QMainWindow for valid file", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     QMainWindow* win = mw.window();
     REQUIRE(win != nullptr);
 }
 
 TEST_CASE("WidgetHierarchy: loadFile returns null for nonexistent file", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw("/nonexistent/path/to/missing.ui");
+    auto mw = vpr_gui_test::load_ui("/nonexistent/path/to/missing.ui");
     CHECK(mw.window() == nullptr);
 }
 
 TEST_CASE("WidgetHierarchy: loadFile returns null for empty path", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(QString{});
+    auto mw = vpr_gui_test::load_ui(QString{});
     CHECK(mw.window() == nullptr);
 }
 
@@ -56,7 +54,7 @@ TEST_CASE("WidgetHierarchy: loadFile returns null for empty path", "[layer3][vpr
 // ---------------------------------------------------------------------------
 
 TEST_CASE("WidgetHierarchy: builds GtkWindow as QMainWindow", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     QMainWindow* win = mw.window();
     REQUIRE(win != nullptr);
 
@@ -66,7 +64,7 @@ TEST_CASE("WidgetHierarchy: builds GtkWindow as QMainWindow", "[layer3][vpr_gui]
 }
 
 TEST_CASE("WidgetHierarchy: builds GtkButton as QPushButton", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     QMainWindow* win = mw.window();
     REQUIRE(win != nullptr);
 
@@ -76,7 +74,7 @@ TEST_CASE("WidgetHierarchy: builds GtkButton as QPushButton", "[layer3][vpr_gui]
 }
 
 TEST_CASE("WidgetHierarchy: builds GtkLabel as QLabel", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     QMainWindow* win = mw.window();
     REQUIRE(win != nullptr);
 
@@ -86,7 +84,7 @@ TEST_CASE("WidgetHierarchy: builds GtkLabel as QLabel", "[layer3][vpr_gui]") {
 }
 
 TEST_CASE("WidgetHierarchy: builds GtkComboBoxText as QComboBox with items", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     QMainWindow* win = mw.window();
     REQUIRE(win != nullptr);
 
@@ -104,7 +102,7 @@ TEST_CASE("WidgetHierarchy: builds GtkComboBoxText as QComboBox with items", "[l
 }
 
 TEST_CASE("WidgetHierarchy: builds GtkCheckButton as QCheckBox with active state", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     QMainWindow* win = mw.window();
     REQUIRE(win != nullptr);
 
@@ -120,7 +118,7 @@ TEST_CASE("WidgetHierarchy: builds GtkCheckButton as QCheckBox with active state
 }
 
 TEST_CASE("WidgetHierarchy: builds GtkSpinButton as QSpinBox", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     QMainWindow* win = mw.window();
     REQUIRE(win != nullptr);
 
@@ -129,7 +127,7 @@ TEST_CASE("WidgetHierarchy: builds GtkSpinButton as QSpinBox", "[layer3][vpr_gui
 }
 
 TEST_CASE("WidgetHierarchy: builds GtkEntry as QLineEdit", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     QMainWindow* win = mw.window();
     REQUIRE(win != nullptr);
 
@@ -138,7 +136,7 @@ TEST_CASE("WidgetHierarchy: builds GtkEntry as QLineEdit", "[layer3][vpr_gui]") 
 }
 
 TEST_CASE("WidgetHierarchy: builds GtkGrid as QWidget with QGridLayout", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     QMainWindow* win = mw.window();
     REQUIRE(win != nullptr);
 
@@ -149,7 +147,7 @@ TEST_CASE("WidgetHierarchy: builds GtkGrid as QWidget with QGridLayout", "[layer
 }
 
 TEST_CASE("WidgetHierarchy: builds GtkDrawingArea as QWidget", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     QMainWindow* win = mw.window();
     REQUIRE(win != nullptr);
 
@@ -162,7 +160,7 @@ TEST_CASE("WidgetHierarchy: builds GtkDrawingArea as QWidget", "[layer3][vpr_gui
 // ---------------------------------------------------------------------------
 
 TEST_CASE("WidgetHierarchy: popovers are loaded and accessible as children", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     QMainWindow* win = mw.window();
     REQUIRE(win != nullptr);
 
@@ -193,7 +191,7 @@ TEST_CASE("WidgetHierarchy: popovers are loaded and accessible as children", "[l
 TEST_CASE("WidgetHierarchy: sensitive=False disables widget", "[layer3][vpr_gui][!mayfail]") {
     // KNOWN LIMITATION: QtGladeLoader::applyCommonProperties() does not
     // handle the "sensitive" Glade property. See defect log DEF-001.
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     QMainWindow* win = mw.window();
     REQUIRE(win != nullptr);
 
@@ -213,7 +211,7 @@ TEST_CASE("WidgetHierarchy: sensitive=False disables widget", "[layer3][vpr_gui]
 // ---------------------------------------------------------------------------
 
 TEST_CASE("WidgetHierarchy: visible=True widgets are not hidden", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     QMainWindow* win = mw.window();
     REQUIRE(win != nullptr);
 
@@ -229,7 +227,7 @@ TEST_CASE("WidgetHierarchy: visible=True widgets are not hidden", "[layer3][vpr_
 // ---------------------------------------------------------------------------
 
 TEST_CASE("WidgetHierarchy: GtkMenuButton built as QPushButton with popover association", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     QMainWindow* win = mw.window();
     REQUIRE(win != nullptr);
 
@@ -253,10 +251,10 @@ TEST_CASE("WidgetHierarchy: GtkMenuButton built as QPushButton with popover asso
 // ---------------------------------------------------------------------------
 
 TEST_CASE("WidgetHierarchy: can load the same file multiple times", "[layer3][vpr_gui]") {
-    ezgl::MainWindow mw1(VPR_MAIN_UI_PATH);
+    auto mw1 = vpr_gui_test::load_main_ui();
     REQUIRE(mw1.window() != nullptr);
 
-    ezgl::MainWindow mw2(VPR_MAIN_UI_PATH);
+    auto mw2 = vpr_gui_test::load_main_ui();
     REQUIRE(mw2.window() != nullptr);
 
     CHECK(mw1.window() != mw2.window()); // Each load produces a new window

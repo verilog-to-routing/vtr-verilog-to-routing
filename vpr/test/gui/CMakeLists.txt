@@ -8,9 +8,9 @@
 
 enable_testing()
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Xml Svg Test)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Svg Test)
 
-add_executable(test_vpr_gui
+set(VPR_GUI_TEST_SOURCES
     test_gui_main.cpp
     test_widget_hierarchy.cpp
     test_gui_flow.cpp
@@ -18,6 +18,7 @@ add_executable(test_vpr_gui
     test_draw_state.cpp
     test_renderer.cpp
     test_ui_contract.cpp        # GUI-T-018 — main.ui ↔ ui_setup.cpp contract
+    test_layout_contract.cpp    # layout geometry contract (grid slots, stretch, margins)
     test_search_null_guard.cpp  # GUI-T-019 — search subsystem null-guard symmetry
     test_runstage_fixture.cpp   # GUI-T-017 — VPR run-stage Catch2 fixture
     test_ezgl_app_fixture.cpp   # GUI-T-017 — Layer-4 ezgl::application + main.ui fixture
@@ -35,6 +36,8 @@ add_executable(test_vpr_gui
     test_toggle_callbacks.cpp   # GUI-T-021 — draw_toggle_functions.cpp callback contracts
     ${CMAKE_CURRENT_SOURCE_DIR}/../../vpr.qrc
 )
+
+add_executable(test_vpr_gui ${VPR_GUI_TEST_SOURCES})
 
 # GUI-T-017 — compile-time bench / arch resolution. Hardcoded relative to
 # the source tree so the fixture has no working-directory dependency

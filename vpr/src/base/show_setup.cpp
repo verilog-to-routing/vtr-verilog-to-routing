@@ -38,6 +38,9 @@ void show_setup(const t_vpr_setup& vpr_setup) {
     VTR_LOG("Packer: %s\n", stage_action_strings[vpr_setup.PackerOpts.doPacking]);
     VTR_LOG("Placer: %s\n", stage_action_strings[vpr_setup.PlacerOpts.do_placement]);
     VTR_LOG("Analytical Placer: %s\n", stage_action_strings[vpr_setup.APOpts.doAP]);
+    if (vpr_setup.APOpts.doAP != e_stage_action::SKIP && vpr_setup.APOpts.stop_after_global_placement) {
+        VTR_LOG("\tStopping after Global Placement\n");
+    }
     VTR_LOG("Router: %s\n", stage_action_strings[vpr_setup.RouterOpts.doRouting]);
     VTR_LOG("Analysis: %s\n", stage_action_strings[vpr_setup.AnalysisOpts.doAnalysis]);
     VTR_LOG("\n");
@@ -433,6 +436,9 @@ static void show_router_opts(const t_router_opts& router_opts) {
             case e_router_lookahead::SIMPLE:
                 VTR_LOG("SIMPLE\n");
                 break;
+            case e_router_lookahead::SEPARABLE:
+                VTR_LOG("SEPARABLE\n");
+                break;
             case e_router_lookahead::NO_OP:
                 VTR_LOG("NO_OP\n");
                 break;
@@ -668,6 +674,21 @@ static void show_analytical_placer_opts(const t_ap_opts& ap_opts) {
             break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown analytical_solver_type\n");
+    }
+
+    VTR_LOG("AnalyticalPlacerOpts.solver_threading: ");
+    switch (ap_opts.solver_threading) {
+        case e_ap_solver_threading::Auto:
+            VTR_LOG("auto\n");
+            break;
+        case e_ap_solver_threading::Sequential:
+            VTR_LOG("sequential\n");
+            break;
+        case e_ap_solver_threading::Concurrent:
+            VTR_LOG("concurrent\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown solver_threading\n");
     }
 
     VTR_LOG("AnalyticalPlacerOpts.partial_legalizer_type: ");

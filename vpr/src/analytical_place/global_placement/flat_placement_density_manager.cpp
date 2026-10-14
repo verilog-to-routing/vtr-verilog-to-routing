@@ -260,13 +260,67 @@ void FlatPlacementDensityManager::remove_block_from_bin(APBlockId blk_id,
         overfilled_bins_.erase(bin_id);
 }
 
+void FlatPlacementDensityManager::update_bin_fill_(FlatPlacementBinId bin_id) {
+    VTR_ASSERT(bin_id.is_valid());
+
+    // Recompute the overfill and underfill from the current utilization.
+    bin_overfill_[bin_id] = calc_bin_overfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
+    bin_underfill_[bin_id] = calc_bin_underfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
+
+    // Keep the overfilled bin set in sync with the new overfill.
+    if (bin_is_overfilled(bin_id)) {
+        overfilled_bins_.insert(bin_id);
+    } else {
+        overfilled_bins_.erase(bin_id);
+    }
+}
+
+void FlatPlacementDensityManager::insert_blocks_into_bin(std::span<const APBlockId> blk_ids,
+                                                         FlatPlacementBinId bin_id) {
+    VTR_ASSERT(bin_id.is_valid());
+    if (blk_ids.empty()) {
+        return;
+    }
+
+    // Add each block to the bin and accumulate its mass into the utilization.
+    for (APBlockId blk_id : blk_ids) {
+        VTR_ASSERT(blk_id.is_valid());
+        bins_.add_block_to_bin(blk_id, bin_id);
+        bin_utilization_[bin_id] += mass_calculator_.get_block_mass(blk_id);
+    }
+
+    // Update the bin overfill and underfill once for the whole batch.
+    update_bin_fill_(bin_id);
+}
+
+void FlatPlacementDensityManager::remove_blocks_from_bin(std::span<const APBlockId> blk_ids,
+                                                         FlatPlacementBinId bin_id) {
+    VTR_ASSERT(bin_id.is_valid());
+    if (blk_ids.empty()) {
+        return;
+    }
+
+    // Remove each block from the bin and subtract its mass from the utilization.
+    for (APBlockId blk_id : blk_ids) {
+        VTR_ASSERT(blk_id.is_valid());
+        bins_.remove_block_from_bin(blk_id, bin_id);
+        bin_utilization_[bin_id] -= mass_calculator_.get_block_mass(blk_id);
+    }
+
+    // Update the bin overfill and underfill once for the whole batch.
+    update_bin_fill_(bin_id);
+}
+
 void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacement& p_placement) {
     // Empty the bins such that all blocks are no longer within the bins.
     empty_bins();
 
-    // Insert each block in the netlist into their bin based on their placement.
+    // Find the bin that each block is placed over.
     // TODO: Maybe import the fixed block locations in the constructor and then
     //       only import the moveable block locations.
+    size_t num_blocks = ap_netlist_.blocks().size();
+    size_t num_bins = bins_.bins().size();
+    vtr::vector<APBlockId, FlatPlacementBinId> block_bins(num_blocks);
     for (APBlockId blk_id : ap_netlist_.blocks()) {
         // Layers will be a floating point number between the minimum layer (usually 0),
         // and the maximum layer (num_layers - 1). For an architecture with two layers,
@@ -276,10 +330,40 @@ void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacem
         // one tile off grid. To prevent this behavior for layers, we round to the
         // nearest layer.
         double layer = std::round(p_placement.block_layer_nums[blk_id]);
-        FlatPlacementBinId bin_id = get_bin(p_placement.block_x_locs[blk_id],
-                                            p_placement.block_y_locs[blk_id],
-                                            layer);
-        insert_block_into_bin(blk_id, bin_id);
+        block_bins[blk_id] = get_bin(p_placement.block_x_locs[blk_id],
+                                     p_placement.block_y_locs[blk_id],
+                                     layer);
+        VTR_ASSERT(block_bins[blk_id].is_valid());
+    }
+
+    // Group the blocks by bin in one flat array instead of a vector per bin.
+    // The blocks of bin b are blocks_by_bin[bin_start[b]] up to, but not
+    // including, blocks_by_bin[bin_start[b + 1]].
+
+    // Count the blocks in each bin, then turn the counts into start positions.
+    std::vector<size_t> bin_start(num_bins + 1, 0);
+    for (APBlockId blk_id : ap_netlist_.blocks()) {
+        bin_start[(size_t)block_bins[blk_id] + 1]++;
+    }
+    for (size_t bin_idx = 0; bin_idx < num_bins; bin_idx++) {
+        bin_start[bin_idx + 1] += bin_start[bin_idx];
+    }
+
+    // Write each block into the next free position of its bin's range.
+    std::vector<size_t> next_slot(bin_start.begin(), bin_start.end() - 1);
+    std::vector<APBlockId> blocks_by_bin(num_blocks);
+    for (APBlockId blk_id : ap_netlist_.blocks()) {
+        size_t bin_idx = (size_t)block_bins[blk_id];
+        blocks_by_bin[next_slot[bin_idx]] = blk_id;
+        next_slot[bin_idx]++;
+    }
+
+    // Insert the blocks of each bin as one batch.
+    std::span<const APBlockId> all_blocks(blocks_by_bin);
+    for (FlatPlacementBinId bin_id : bins_.bins()) {
+        size_t bin_idx = (size_t)bin_id;
+        size_t num_bin_blocks = bin_start[bin_idx + 1] - bin_start[bin_idx];
+        insert_blocks_into_bin(all_blocks.subspan(bin_start[bin_idx], num_bin_blocks), bin_id);
     }
 }
 

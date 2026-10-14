@@ -259,8 +259,7 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
 
     const NetPinsMatrix<float>& connection_delay = placer_state_.timing().connection_delay;
     PlacerTimingCosts& connection_timing_cost = placer_state_.mutable_timing().connection_timing_cost;
-    ClbNetPinsMatrix<float>& proposed_connection_delay = placer_state_.mutable_timing().proposed_connection_delay;
-    ClbNetPinsMatrix<double>& proposed_connection_timing_cost = placer_state_.mutable_timing().proposed_connection_timing_cost;
+    std::vector<t_connection_commit_entry>& proposed_connection_timing = placer_state_.mutable_timing().proposed_connection_timing;
 
     if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
         /* This pin is a net driver on a moved block. */
@@ -272,13 +271,12 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
                 continue;
             }
 
-            /* Calculate proposed delay and cost values */
-            proposed_connection_delay[net][ipin] = temp_delay;
+            // Calculate proposed delay and cost values
+            double temp_timing_cost = criticalities.criticality(net, ipin) * temp_delay;
+            delta_timing_cost += temp_timing_cost - connection_timing_cost[net][ipin];
+            proposed_connection_timing.push_back({net, static_cast<int>(ipin), temp_delay, temp_timing_cost});
 
-            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
-            delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
-
-            /* Record this connection in blocks_affected.affected_pins */
+            // Record this connection in blocks_affected.affected_pins
             ClusterPinId sink_pin = cluster_ctx.clb_nlist.net_pin(net, ipin);
             affected_pins.push_back(sink_pin);
         }
@@ -297,13 +295,12 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
                 return;
             }
 
-            /* Calculate proposed delay and cost values */
-            proposed_connection_delay[net][ipin] = temp_delay;
+            // Calculate proposed delay and cost values
+            double temp_timing_cost = criticalities.criticality(net, ipin) * temp_delay;
+            delta_timing_cost += temp_timing_cost - connection_timing_cost[net][ipin];
+            proposed_connection_timing.push_back({net, ipin, temp_delay, temp_timing_cost});
 
-            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
-            delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
-
-            /* Record this connection in blocks_affected.affected_pins */
+            // Record this connection in blocks_affected.affected_pins
             affected_pins.push_back(pin);
         }
     }
