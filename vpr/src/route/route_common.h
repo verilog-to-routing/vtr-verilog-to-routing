@@ -60,11 +60,10 @@ bool feasible_routing();
 /** Is \p inode inside this bounding box?
  * In the context of the parallel router, an inode is inside a bounding box
  * if its reference point is inside it, which is the drive point for a CHAN and
- * (xlow, ylow, z) of anything else */
-inline bool inside_bb(RRNodeId inode, const t_bb& bb) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-
+ * (xlow, ylow, z) of anything else.
+ * \p rr_graph is either an RRGraphView or a t_rr_graph_view. */
+template<typename RRGraphType>
+inline bool inside_bb(const RRGraphType& rr_graph, RRNodeId inode, const t_bb& bb) {
     int x, y;
     Direction dir = rr_graph.node_direction(inode);
     if (dir == Direction::DEC) {
@@ -81,13 +80,18 @@ inline bool inside_bb(RRNodeId inode, const t_bb& bb) {
 
     // A box that spans every layer of the device contains the node's layer,
     // so the layer array does not need to be read. This always holds on a single-layer device.
-    int num_layers = device_ctx.grid.get_num_layers();
+    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     if (bb.layer_min <= 0 && bb.layer_max >= num_layers - 1) {
         return true;
     }
 
     int z = (dir == Direction::DEC) ? rr_graph.node_layer_high(inode) : rr_graph.node_layer_low(inode);
     return z >= bb.layer_min && z <= bb.layer_max;
+}
+
+/// @brief Same as inside_bb(rr_graph, inode, bb), reading the RR graph from the device context.
+inline bool inside_bb(RRNodeId inode, const t_bb& bb) {
+    return inside_bb(g_vpr_ctx.device().rr_graph, inode, bb);
 }
 
 vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,

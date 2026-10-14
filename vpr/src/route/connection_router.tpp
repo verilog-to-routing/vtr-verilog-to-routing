@@ -504,9 +504,9 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                         continue;
                 }
 
-                /* In case of the parallel router, we may be dealing with a virtual net
-                 * so prune the nodes from the HF lookup against the bounding box just in case */
-                if (!inside_bb(rr_node_to_add, net_bounding_box))
+                // In case of the parallel router, we may be dealing with a virtual net
+                // so prune the nodes from the HF lookup against the bounding box just in case
+                if (!inside_bb(rr_nodes_, rr_node_to_add, net_bounding_box))
                     continue;
 
                 short rt_node_layer_num = rr_graph_->node_layer_low(rr_node_to_add);
