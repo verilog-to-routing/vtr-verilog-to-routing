@@ -53,7 +53,7 @@ enum class e_profile_axis {
     Y  ///< Profiles vertical travel; populates a y_wire_cost_map (keyed by y1/y2).
 };
 
-/// @brief The line that wire costs are sampled along, perpendicular to the profiling axis.
+/// @brief The line that wire costs are sampled along, parallel to the profiling axis.
 struct t_sampling_strip {
     int coord;       ///< Row (x profiling) or column (y profiling) that sample wires are driven from.
     int region_low;  ///< Lowest coordinate of the die region containing coord.
