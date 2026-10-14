@@ -18,6 +18,7 @@
 #include "rr_spatial_lookup.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
+#include "vtr_assert.h"
 #include "vtr_time.h"
 
 /**
@@ -76,7 +77,8 @@ static t_sampling_strip get_sampling_strip(const DeviceGrid& grid, e_profile_axi
     // A cut at c lies between c and c + 1.
     std::vector<int> cuts = profile_x ? grid.get_horizontal_interposer_cuts()[layer]
                                       : grid.get_vertical_interposer_cuts()[layer];
-    std::ranges::sort(cuts);
+
+    VTR_ASSERT_SAFE(std::ranges::is_sorted(cuts));
     cuts.push_back(perpendicular_dim_size - 1);
 
     t_sampling_strip strip{0, 0, perpendicular_dim_size - 1};
