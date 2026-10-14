@@ -65,19 +65,29 @@ inline bool inside_bb(RRNodeId inode, const t_bb& bb) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    int x, y, z;
+    int x, y;
     Direction dir = rr_graph.node_direction(inode);
     if (dir == Direction::DEC) {
         x = rr_graph.node_xhigh(inode);
         y = rr_graph.node_yhigh(inode);
-        z = rr_graph.node_layer_high(inode);
     } else {
         x = rr_graph.node_xlow(inode);
         y = rr_graph.node_ylow(inode);
-        z = rr_graph.node_layer_low(inode);
     }
 
-    return x >= bb.xmin && x <= bb.xmax && y >= bb.ymin && y <= bb.ymax && z >= bb.layer_min && z <= bb.layer_max;
+    if (x < bb.xmin || x > bb.xmax || y < bb.ymin || y > bb.ymax) {
+        return false;
+    }
+
+    // A box that spans every layer of the device contains the node's layer,
+    // so the layer array does not need to be read. This always holds on a single-layer device.
+    int num_layers = device_ctx.grid.get_num_layers();
+    if (bb.layer_min <= 0 && bb.layer_max >= num_layers - 1) {
+        return true;
+    }
+
+    int z = (dir == Direction::DEC) ? rr_graph.node_layer_high(inode) : rr_graph.node_layer_low(inode);
+    return z >= bb.layer_min && z <= bb.layer_max;
 }
 
 vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
