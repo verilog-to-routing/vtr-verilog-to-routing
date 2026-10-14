@@ -47,10 +47,20 @@ static int get_tile_src_opin_max_ptc(int itile);
 
 static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_ptr tile_type, t_physical_tile_loc prev);
 
+/**
+ * @brief Run Dijkstra from starting_node_id over the intra-tile RR graph, recording the
+ *        minimum delay/congestion to each reachable SINK in pin_delays[starting node's ptc].
+ *
+ * Scratch-vector contract: node_expanded must be all-false and node_seen_cost all -1 (with
+ * touched_nodes empty) on entry, sized to the tile RR graph; the function restores that state
+ * before returning, so the caller can reuse the same vectors across starting pins.
+ */
 static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                     util::t_ipin_primitive_sink_delays& pin_delays,
-                                    t_physical_tile_type_ptr physical_tile,
-                                    RRNodeId starting_node_id);
+                                    RRNodeId starting_node_id,
+                                    vtr::vector<RRNodeId, bool>& node_expanded,
+                                    vtr::vector<RRNodeId, float>& node_seen_cost,
+                                    std::vector<RRNodeId>& touched_nodes);
 
 /**
  * @brief Computes the adjusted location of a pin to match the position of
@@ -511,6 +521,13 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
     t_ipin_primitive_sink_delays pin_delays;
     pin_delays.resize(max_ptc_num);
 
+    // Scratch structures for run_intra_tile_dijkstra(), shared across all starting pins.
+    // Invariant between calls: node_expanded all false, node_seen_cost all -1, touched_nodes empty
+    // (run_intra_tile_dijkstra restores this before returning).
+    vtr::vector<RRNodeId, bool> node_expanded(rr_graph.num_nodes(), false);
+    vtr::vector<RRNodeId, float> node_seen_cost(rr_graph.num_nodes(), -1.f);
+    std::vector<RRNodeId> touched_nodes;
+
     for (int pin_physical_num : tile_pins_vec) {
         RRNodeId pin_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),
                                                   physical_tile,
@@ -518,7 +535,7 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
                                                   pin_physical_num);
         VTR_ASSERT(pin_node_id != RRNodeId::INVALID());
 
-        run_intra_tile_dijkstra(rr_graph, pin_delays, physical_tile, pin_node_id);
+        run_intra_tile_dijkstra(rr_graph, pin_delays, pin_node_id, node_expanded, node_seen_cost, touched_nodes);
     }
 
     return pin_delays;
@@ -1269,14 +1286,16 @@ static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_
 
 static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                     util::t_ipin_primitive_sink_delays& pin_delays,
-                                    t_physical_tile_type_ptr /*physical_tile*/,
-                                    RRNodeId starting_node_id) {
+                                    RRNodeId starting_node_id,
+                                    vtr::vector<RRNodeId, bool>& node_expanded,
+                                    vtr::vector<RRNodeId, float>& node_seen_cost,
+                                    std::vector<RRNodeId>& touched_nodes) {
     // device_ctx should not be used to access rr_graph, since the graph get from device_ctx is not the intra-tile graph
     const auto& device_ctx = g_vpr_ctx.device();
 
-    vtr::vector<RRNodeId, bool> node_expanded(rr_graph.num_nodes(), false);
-
-    vtr::vector<RRNodeId, float> node_seen_cost(rr_graph.num_nodes(), -1.f);
+    VTR_ASSERT_SAFE(node_expanded.size() == rr_graph.num_nodes());
+    VTR_ASSERT_SAFE(node_seen_cost.size() == rr_graph.num_nodes());
+    VTR_ASSERT_SAFE(touched_nodes.empty());
 
     struct t_pq_entry {
         float delay;
@@ -1302,6 +1321,8 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
     int root_ptc = rr_graph.node_ptc_num(root.node);
     std::unordered_map<int, util::Cost_Entry>& starting_pin_delay_map = pin_delays.at(root_ptc);
     pq.push(root);
+    // The root may be expanded without ever getting a node_seen_cost entry, so record it explicitly
+    touched_nodes.push_back(root.node);
 
     while (!pq.empty()) {
         t_pq_entry curr = pq.top();
@@ -1328,17 +1349,29 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
                 next.node = next_node;
 
                 if (node_seen_cost[next_node] < 0. || node_seen_cost[next_node] > next.delay) {
+                    if (node_seen_cost[next_node] < 0.) {
+                        touched_nodes.push_back(next_node);
+                    }
                     node_seen_cost[next_node] = next.delay;
                     pq.push(next);
                 }
             }
         } else {
             int curr_ptc = rr_graph.node_ptc_num(curr.node);
-            if (starting_pin_delay_map.find(curr_ptc) == starting_pin_delay_map.end() || starting_pin_delay_map.at(curr_ptc).delay > curr.delay) {
-                starting_pin_delay_map[curr_ptc] = util::Cost_Entry(curr.delay, curr.congestion);
+            auto [delay_itr, inserted] = starting_pin_delay_map.try_emplace(curr_ptc, curr.delay, curr.congestion);
+            if (!inserted && delay_itr->second.delay > curr.delay) {
+                delay_itr->second = util::Cost_Entry(curr.delay, curr.congestion);
             }
         }
     }
+
+    // Restore the scratch-vector invariant (all false / all -1 / empty) for the entries this
+    // search touched; untouched entries already satisfy it.
+    for (RRNodeId touched_node : touched_nodes) {
+        node_expanded[touched_node] = false;
+        node_seen_cost[touched_node] = -1.f;
+    }
+    touched_nodes.clear();
 }
 
 static std::pair<int, int> get_adjusted_rr_pin_position(const RRNodeId rr) {

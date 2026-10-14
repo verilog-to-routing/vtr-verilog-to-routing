@@ -1,29 +1,30 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 enum e_echo_files {
 
-    //Input netlist
+    // Input netlist
     E_ECHO_ATOM_NETLIST_ORIG,
     E_ECHO_ATOM_NETLIST_CLEANED,
 
-    //Pre-packing
+    // Pre-packing
     E_ECHO_PRE_PACKING_SLACK,
     E_ECHO_PRE_PACKING_CRITICALITY,
     E_ECHO_PRE_PACKING_MOLECULES_AND_PATTERNS,
     E_ECHO_VPR_CONSTRAINTS,
 
-    //Packing
+    // Packing
     E_ECHO_CLUSTERS,
 
-    //Legalizer
+    // Legalizer
     E_ECHO_FLAT_PLACE,
 
     // Intra-block routing
     E_ECHO_INTRA_LB_FAILED_ROUTE,
 
-    //Placement
+    // Placement
     E_ECHO_INITIAL_CLB_PLACEMENT,
     E_ECHO_PLACE_MACROS,
     E_ECHO_INITIAL_PLACEMENT_SLACK,
@@ -60,14 +61,18 @@ enum e_echo_files {
     E_ECHO_RR_GRAPH_INDEXED_DATA,
     E_ECHO_COMPRESSED_GRIDS,
 
-    //Timing Graphs
+    // Wire usage
+    E_ECHO_AP_POST_ROUTING_WIRE_USAGE_ESTIMATE,
+    E_ECHO_ROUTED_NET_WIRE_USAGE,
+
+    // Timing Graphs
     E_ECHO_PRE_PACKING_TIMING_GRAPH,
     E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH,
     E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH,
     E_ECHO_FINAL_ROUTING_TIMING_GRAPH,
     E_ECHO_ANALYSIS_TIMING_GRAPH,
 
-    //NoC
+    // NoC
     E_ECHO_NOC_MODEL,
     E_ECHO_NOC_TRAFFIC_FLOWS,
 
@@ -89,6 +94,26 @@ void setEchoFileEnabled(enum e_echo_files echo_option, bool value);
 void setEchoFileName(enum e_echo_files echo_option, const char* name);
 
 bool isEchoFileEnabled(enum e_echo_files echo_option);
+
+/**
+ * @brief Enable only the echo files with the given (default) file names, and
+ *        disable all other echo files.
+ *
+ * Echo files must be enabled (see setEchoEnabled) before calling this. Throws
+ * a fatal error if a name does not match any echo file.
+ */
+void set_only_echo_files_enabled(const std::vector<std::string>& echo_file_names);
+
+/**
+ * @brief Set up which echo files are enabled from the values given to the
+ *        --echo_file command-line option.
+ *
+ * The values may be "on" (all echo files), "off" (no echo files), or a list of
+ * echo file (default) names, in which case only those echo files are enabled.
+ * Throws a fatal error if "on" or "off" is combined with other values, or if a
+ * name does not match any echo file.
+ */
+void init_echo_files_from_options(const std::vector<std::string>& echo_file_args);
 char* getEchoFileName(enum e_echo_files echo_option);
 
 void alloc_and_load_echo_file_info();

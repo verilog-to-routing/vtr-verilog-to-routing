@@ -38,6 +38,9 @@ void show_setup(const t_vpr_setup& vpr_setup) {
     VTR_LOG("Packer: %s\n", stage_action_strings[vpr_setup.PackerOpts.doPacking]);
     VTR_LOG("Placer: %s\n", stage_action_strings[vpr_setup.PlacerOpts.do_placement]);
     VTR_LOG("Analytical Placer: %s\n", stage_action_strings[vpr_setup.APOpts.doAP]);
+    if (vpr_setup.APOpts.doAP != e_stage_action::SKIP && vpr_setup.APOpts.stop_after_global_placement) {
+        VTR_LOG("\tStopping after Global Placement\n");
+    }
     VTR_LOG("Router: %s\n", stage_action_strings[vpr_setup.RouterOpts.doRouting]);
     VTR_LOG("Analysis: %s\n", stage_action_strings[vpr_setup.AnalysisOpts.doAnalysis]);
     VTR_LOG("\n");
