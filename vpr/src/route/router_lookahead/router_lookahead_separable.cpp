@@ -137,17 +137,17 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
         const int fixed_coord = strip.coord;
 
         // Restrict the Dijkstra flood to a few rows/columns around the sample line (to keep the flood
-        // cheap), but the full extent of the profiling axis. Keep it within the strip's die region so
-        // it does not cross a cut parallel to the profiling axis.
+        // cheap), but the full extent of the profiling axis. We clamp sampling regions to a single die so
+        // they do not cross a cut parallel to the profiling axis.
         constexpr int SAMPLING_SPAN = 2;
-        const int strip_low = std::max(strip.region_low, fixed_coord - SAMPLING_SPAN);
-        const int strip_high = std::min(strip.region_high, fixed_coord + SAMPLING_SPAN);
+        const int region_low = std::max(strip.region_low, fixed_coord - SAMPLING_SPAN);
+        const int region_high = std::min(strip.region_high, fixed_coord + SAMPLING_SPAN);
 
         t_bb bb;
         if (profile_x) {
-            bb = t_bb(0, grid.width() - 1, strip_low, strip_high, (int)from_layer_num, (int)from_layer_num);
+            bb = t_bb(0, grid.width() - 1, region_low, region_high, (int)from_layer_num, (int)from_layer_num);
         } else {
-            bb = t_bb(strip_low, strip_high, 0, grid.height() - 1, (int)from_layer_num, (int)from_layer_num);
+            bb = t_bb(region_low, region_high, 0, grid.height() - 1, (int)from_layer_num, (int)from_layer_num);
         }
 
         // Pick sample points from each segment type e.g. L4, L16
