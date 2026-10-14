@@ -83,6 +83,8 @@ static t_sampling_strip get_sampling_strip(const DeviceGrid& grid, e_profile_axi
     int best_region_size = -1;
     int region_low = 0;
     // Search for the widest region, place strip in middle of it
+    // In case there are multiple widest regions with the same width
+    // We choose the first/lowest one.
     for (int region_high : cuts) {
         if (region_high - region_low > best_region_size) {
             best_region_size = region_high - region_low;
