@@ -21,6 +21,7 @@
  */
 
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "atom_netlist_fwd.h"
@@ -29,7 +30,7 @@
 #include "vpr_types.h"
 #include "vtr_vector_map.h"
 
-class AtomPBBimap;
+class ClusterAtomPBBimap;
 class t_pb;
 class t_pb_graph_pin;
 
@@ -194,14 +195,14 @@ class ClusterPinCounter {
      *
      * Note: snapshot_root_class_sizes must have been called for this check,
      * and the candidate's atoms must already be placed in their primitive pbs
-     * and recorded in atom_cluster (i.e. try_place_atom_block_rec has succeeded).
+     * and recorded in cluster_atoms (i.e. try_place_atom_block_rec has succeeded).
      *
      * @param candidate_id  The molecule id currently under evaluation.
      */
     void apply_molecule_delta(PackMoleculeId candidate_id,
                               const Prepacker& prepacker,
-                              const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                              const AtomPBBimap& atom_to_pb);
+                              const std::unordered_set<AtomBlockId>& cluster_atoms,
+                              const ClusterAtomPBBimap& atom_to_pb);
 
     /**
      * @brief Check whether the current pin usage is feasible.
@@ -241,8 +242,8 @@ class ClusterPinCounter {
      */
     void full_recompute_from_molecules(const std::vector<PackMoleculeId>& molecules,
                                        const Prepacker& prepacker,
-                                       const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                       const AtomPBBimap& atom_to_pb);
+                                       const std::unordered_set<AtomBlockId>& cluster_atoms,
+                                       const ClusterAtomPBBimap& atom_to_pb);
 
     /**
      * @brief Build a scratch counter via full_recompute_from_molecules over
@@ -251,8 +252,8 @@ class ClusterPinCounter {
      */
     void verify_against_full_recompute(const std::vector<PackMoleculeId>& molecules,
                                        const Prepacker& prepacker,
-                                       const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                       const AtomPBBimap& atom_to_pb) const;
+                                       const std::unordered_set<AtomBlockId>& cluster_atoms,
+                                       const ClusterAtomPBBimap& atom_to_pb) const;
 
     /**
      * @brief Assert every pb tracked in per_pb_state_ is reachable from
@@ -298,10 +299,10 @@ class ClusterPinCounter {
     void record_output_mark(AtomPinId pin_id, const t_pb* pb);
 
     /// @brief Remove every mark this input pin has contributed, and clear its entry in input_mark_record_. Undoable via rollback_check.
-    void remove_input_pin_marks(AtomPinId pin_id, AtomNetId net_id, const AtomPBBimap& atom_to_pb);
+    void remove_input_pin_marks(AtomPinId pin_id, AtomNetId net_id, const ClusterAtomPBBimap& atom_to_pb);
 
     /// @brief Remove every mark this output pin has contributed, and clear its entry in output_mark_record_. Undoable via rollback_check.
-    void remove_output_pin_marks(AtomPinId pin_id, AtomNetId net_id, const AtomPBBimap& atom_to_pb);
+    void remove_output_pin_marks(AtomPinId pin_id, AtomNetId net_id, const ClusterAtomPBBimap& atom_to_pb);
 
     /// @brief Wipe all pin state, journaled so it can be rolled back. Used only by full_recompute_from_molecules.
     void wipe_all_marks_journaled();
@@ -312,8 +313,8 @@ class ClusterPinCounter {
      *        primitive to root.
      */
     void compute_and_mark_pins_used(AtomBlockId blk_id,
-                                    const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                    const AtomPBBimap& atom_to_pb);
+                                    const std::unordered_set<AtomBlockId>& cluster_atoms,
+                                    const ClusterAtomPBBimap& atom_to_pb);
 
     /**
      * @brief Walk from primitive_pb up to root. At each pb where the pin's
@@ -326,8 +327,8 @@ class ClusterPinCounter {
                                                   const t_pb_graph_pin* pb_graph_pin,
                                                   const t_pb* primitive_pb,
                                                   AtomNetId net_id,
-                                                  const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                                  const AtomPBBimap& atom_to_pb);
+                                                  const std::unordered_set<AtomBlockId>& cluster_atoms,
+                                                  const ClusterAtomPBBimap& atom_to_pb);
 
     /**
      * @brief Walk from primitive_pb up to root. At each pb where the pin's
@@ -339,8 +340,8 @@ class ClusterPinCounter {
                                                    const t_pb_graph_pin* pb_graph_pin,
                                                    const t_pb* primitive_pb,
                                                    AtomNetId net_id,
-                                                   const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                                   const AtomPBBimap& atom_to_pb);
+                                                   const std::unordered_set<AtomBlockId>& cluster_atoms,
+                                                   const ClusterAtomPBBimap& atom_to_pb);
 
     /**
      * @brief Debug reference: walk every non-primitive pb in the subtree and

@@ -876,14 +876,11 @@ AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin) {
     return atom_pin;
 }
 
-// Retrieves the pb_graph_pin associated with an AtomPinId
-const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBBimap& atom_pb_lookup, const AtomPinId pin_id) {
+/** @brief Find the pb graph pin for the given atom pin and its pb graph node. */
+static const t_pb_graph_pin* find_atom_pb_graph_pin(const AtomNetlist& netlist, const t_pb_graph_node* pb_gnode, const AtomPinId pin_id) {
     VTR_ASSERT(pin_id);
-
-    //Get the graph node
-    AtomBlockId blk_id = netlist.pin_block(pin_id);
-    const t_pb_graph_node* pb_gnode = atom_pb_lookup.atom_pb_graph_node(blk_id);
     VTR_ASSERT(pb_gnode);
+    AtomBlockId blk_id = netlist.pin_block(pin_id);
 
     //The graph node and pin/block should agree on the model they represent
     VTR_ASSERT(netlist.block_model(blk_id) == pb_gnode->pb_type->model_id);
@@ -897,6 +894,24 @@ const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPB
     VTR_ASSERT(model_port);
 
     return get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
+}
+
+/** @brief  Retrieves the pb_graph_pin associated with an AtomPinId using the global cluster mappings. */
+const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBBimap& atom_pb_lookup, const AtomPinId pin_id) {
+    VTR_ASSERT(pin_id);
+
+    //Get the graph node
+    AtomBlockId blk_id = netlist.pin_block(pin_id);
+    const t_pb_graph_node* pb_gnode = atom_pb_lookup.atom_pb_graph_node(blk_id);
+    return find_atom_pb_graph_pin(netlist, pb_gnode, pin_id);
+}
+
+/** @brief Retrieve the pb_graph_pin associated with an AtomPinId using local cluster mappings. */
+const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const ClusterAtomPBBimap& atom_pb_lookup, const AtomPinId pin_id) {
+    VTR_ASSERT(pin_id);
+    AtomBlockId blk_id = netlist.pin_block(pin_id);
+    const t_pb_graph_node* pb_gnode = atom_pb_lookup.get_atom_pb_graph_node(blk_id);
+    return find_atom_pb_graph_pin(netlist, pb_gnode, pin_id);
 }
 
 t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node,
@@ -1263,17 +1278,10 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id) {
     return (ext_inps);
 }
 
-/**
- * @brief Free pb and remove its lookup data.
- *        CLB lookup data is removed from the global context
- *        and PB to Atom bimap data is removed from atom_pb_bimap
- *
- *  @param pb
- *              Pointer to t_pb to be freed
- *  @param atom_pb_bimap
- *              Reference to the atom to pb bimap to free the data from
- */
-void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap) {
+void free_pb(t_pb* pb,
+             AtomPBBimap* atom_pb_bimap,
+             ClusterAtomPBBimap* cluster_atom_pb_bimap) {
+    VTR_ASSERT(!(atom_pb_bimap && cluster_atom_pb_bimap));
     if (pb == nullptr) {
         return;
     }
@@ -1287,7 +1295,7 @@ void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap) {
         for (int i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
             for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
                 if (!pb->child_pbs[i][j].name.empty() || pb->child_pbs[i][j].child_pbs != nullptr) {
-                    free_pb(&pb->child_pbs[i][j], atom_pb_bimap);
+                    free_pb(&pb->child_pbs[i][j], atom_pb_bimap, cluster_atom_pb_bimap);
                 }
             }
             if (pb->child_pbs[i]) {
@@ -1303,15 +1311,22 @@ void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap) {
         pb->child_pbs = nullptr;
 
     } else {
-        /* Primitive */
-        auto& atom_ctx = g_vpr_ctx.mutable_atom();
-        auto blk_id = atom_pb_bimap.pb_atom(pb);
-        if (blk_id) {
-            //Update atom netlist mapping
-            atom_ctx.mutable_lookup().set_atom_clb(blk_id, ClusterBlockId::INVALID());
-            atom_pb_bimap.set_atom_pb(blk_id, nullptr);
+        // Primitive: remove its atom mapping before freeing its statistics.
+        if (atom_pb_bimap) {
+            // If this is a committed cluster that's being freed, must remove mapping from the global data structures
+            AtomPBBimap& lookup = *atom_pb_bimap;
+            auto& atom_ctx = g_vpr_ctx.mutable_atom();
+            AtomBlockId blk_id = lookup.pb_atom(pb);
+            if (blk_id) {
+                //Update atom netlist mapping
+                atom_ctx.mutable_lookup().set_atom_clb(blk_id, ClusterBlockId::INVALID());
+                lookup.set_atom_pb(blk_id, nullptr);
+            }
+            lookup.set_atom_pb(AtomBlockId::INVALID(), pb);
+        } else if (cluster_atom_pb_bimap) {
+            // Otherwise it's an uncommitted cluster, can just erase the mapping from the local data structures.
+            cluster_atom_pb_bimap->erase(pb);
         }
-        atom_pb_bimap.set_atom_pb(AtomBlockId::INVALID(), pb);
     }
     free_pb_stats(pb);
 }

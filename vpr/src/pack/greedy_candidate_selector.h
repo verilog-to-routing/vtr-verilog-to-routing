@@ -274,7 +274,7 @@ class GreedyCandidateSelector {
 
     /**
      * @brief Create and initialize the gain stats for the cluster with the
-     *        given cluster_id which was created with the given cluster_seed_mol.
+     *        given cluster which was created with the given cluster_seed_mol.
      *
      * Used when a seed is used to create a new cluster in a greedy clusterer.
      *
@@ -284,8 +284,8 @@ class GreedyCandidateSelector {
      *
      *  @param cluster_seed_mol
      *              The seed molecule which was used to create the cluster.
-     *  @param cluster_id
-     *              The legalization cluster ID of the cluster.
+     *  @param cluster
+     *              The local legalization cluster.
      *  @param cluster_legalizer
      *              The legalizer used to create the cluster.
      *  @param attraction_groups
@@ -294,7 +294,7 @@ class GreedyCandidateSelector {
      */
     ClusterGainStats create_cluster_gain_stats(
         PackMoleculeId cluster_seed_mol_id,
-        LegalizationClusterId cluster_id,
+        const LegalizationCluster& cluster,
         const ClusterLegalizer& cluster_legalizer,
         AttractionInfo& attraction_groups);
 
@@ -309,8 +309,8 @@ class GreedyCandidateSelector {
      *              The cluster gain stats to update.
      *  @param successful_mol
      *              The molecule which was successfully packed into the cluster.
-     *  @param cluster_id
-     *              The legalization cluster ID of the cluster.
+     *  @param cluster
+     *              The local legalization cluster.
      *  @param cluster_legalizer
      *              The legalizer used to create the cluster.
      *  @param attraction_groups
@@ -320,7 +320,7 @@ class GreedyCandidateSelector {
     void update_cluster_gain_stats_candidate_success(
         ClusterGainStats& cluster_gain_stats,
         PackMoleculeId successful_mol_id,
-        LegalizationClusterId cluster_id,
+        const LegalizationCluster& cluster,
         const ClusterLegalizer& cluster_legalizer,
         AttractionInfo& attraction_groups);
 
@@ -349,8 +349,8 @@ class GreedyCandidateSelector {
      *
      *  @param cluster_gain_stats
      *              The cluster gain stats maintained for this cluster.
-     *  @param cluster_id
-     *              The legalization cluster id for the cluster.
+     *  @param cluster
+     *              The local legalization cluster.
      *  @param cluster_legalizer
      *              The legalizer used to create the cluster.
      *  @param attraction_groups
@@ -359,7 +359,7 @@ class GreedyCandidateSelector {
      */
     PackMoleculeId get_next_candidate_for_cluster(
         ClusterGainStats& cluster_gain_stats,
-        LegalizationClusterId cluster_id,
+        const LegalizationCluster& cluster,
         const ClusterLegalizer& cluster_legalizer,
         AttractionInfo& attraction_groups);
 
@@ -432,6 +432,7 @@ class GreedyCandidateSelector {
                                       e_gain_update gain_flag,
                                       AtomBlockId clustered_blk_id,
                                       const ClusterLegalizer& cluster_legalizer,
+                                      const LegalizationCluster& cluster,
                                       int high_fanout_net_threshold,
                                       e_net_relation_to_clustered_block net_relation_to_clustered_block);
 
@@ -442,6 +443,7 @@ class GreedyCandidateSelector {
                                        AtomNetId net_id,
                                        AtomBlockId clustered_blk_id,
                                        const ClusterLegalizer& cluster_legalizer,
+                                       const LegalizationCluster& cluster,
                                        e_net_relation_to_clustered_block net_relation_to_clustered_block);
 
     /**
@@ -450,6 +452,7 @@ class GreedyCandidateSelector {
     void update_timing_gain_values(ClusterGainStats& cluster_gain_stats,
                                    AtomNetId net_id,
                                    const ClusterLegalizer& cluster_legalizer,
+                                   const LegalizationCluster& cluster,
                                    e_net_relation_to_clustered_block net_relation_to_clustered_block);
 
     /**
@@ -473,7 +476,7 @@ class GreedyCandidateSelector {
      */
     void add_general_cluster_molecule_candidates(
         ClusterGainStats& cluster_gain_stats,
-        LegalizationClusterId legalization_cluster_id,
+        const LegalizationCluster& cluster,
         const ClusterLegalizer& cluster_legalizer,
         AttractionInfo& attraction_groups);
 
@@ -489,7 +492,7 @@ class GreedyCandidateSelector {
      */
     void add_ram_cluster_molecule_candidates(
         ClusterGainStats& cluster_gain_stats,
-        LegalizationClusterId legalization_cluster_id,
+        const LegalizationCluster& cluster,
         const ClusterLegalizer& cluster_legalizer,
         AttractionInfo& attraction_groups);
 
@@ -499,7 +502,7 @@ class GreedyCandidateSelector {
      */
     void add_cluster_molecule_candidates_by_connectivity_and_timing(
         ClusterGainStats& cluster_gain_stats,
-        LegalizationClusterId legalization_cluster_id,
+        const LegalizationCluster& cluster,
         const ClusterLegalizer& cluster_legalizer,
         AttractionInfo& attraction_groups);
 
@@ -517,7 +520,7 @@ class GreedyCandidateSelector {
      */
     void load_transitive_fanout_candidates(
         ClusterGainStats& cluster_gain_stats,
-        LegalizationClusterId legalization_cluster_id,
+        const LegalizationCluster& cluster,
         const ClusterLegalizer& cluster_legalizer);
 
     /**
@@ -526,7 +529,7 @@ class GreedyCandidateSelector {
      */
     void add_cluster_molecule_candidates_by_transitive_connectivity(
         ClusterGainStats& cluster_gain_stats,
-        LegalizationClusterId legalization_cluster_id,
+        const LegalizationCluster& cluster,
         const ClusterLegalizer& cluster_legalizer,
         AttractionInfo& attraction_groups);
 
@@ -536,7 +539,7 @@ class GreedyCandidateSelector {
      */
     void add_cluster_molecule_candidates_by_highfanout_connectivity(
         ClusterGainStats& cluster_gain_stats,
-        LegalizationClusterId legalization_cluster_id,
+        const LegalizationCluster& cluster,
         const ClusterLegalizer& cluster_legalizer,
         AttractionInfo& attraction_groups);
 
@@ -553,7 +556,7 @@ class GreedyCandidateSelector {
      */
     void add_cluster_molecule_candidates_by_attraction_group(
         ClusterGainStats& cluster_gain_stats,
-        LegalizationClusterId legalization_cluster_id,
+        const LegalizationCluster& cluster,
         const ClusterLegalizer& cluster_legalizer,
         AttractionInfo& attraction_groups);
 
@@ -562,7 +565,7 @@ class GreedyCandidateSelector {
      *        cluster.
      */
     PackMoleculeId get_unrelated_candidate_for_cluster(
-        LegalizationClusterId cluster_id,
+        const LegalizationCluster& cluster,
         const ClusterLegalizer& cluster_legalizer);
 
     /**
@@ -575,7 +578,7 @@ class GreedyCandidateSelector {
      */
     PackMoleculeId get_unrelated_candidate_for_cluster_appack(
         ClusterGainStats& cluster_gain_stats,
-        LegalizationClusterId cluster_id,
+        const LegalizationCluster& cluster,
         const ClusterLegalizer& cluster_legalizer);
 
     // ===================================================================== //

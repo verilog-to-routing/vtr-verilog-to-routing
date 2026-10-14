@@ -183,26 +183,29 @@ class FlatRecon : public FullLegalizer {
     void legalize(const PartialPlacement& p_placement) final;
 
   private:
-    /// @brief Mapping from subtile location to legalization cluster id to keep
-    ///        track of clusters created.
-    /// TODO: It might make sense to store this as a 3D NDMatrix of arrays where we can
-    ///       index into the [layer][x][y][subtile] and get the cluster ID at that location.
-    ///       It will be faster than using an unordered map and likely more space efficient.
-    std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
+    /// @brief Clusters owned by FlatRecon until reconstruction fits the device.
+    std::unordered_map<t_pl_loc, LegalizationCluster> local_clusters_;
+
+    /// @brief Molecules accepted into the current local reconstruction, including orphan attempts.
+    std::unordered_set<PackMoleculeId> clustered_molecules_;
+
+    /// @brief Chain choices shared by the current local reconstruction.
+    std::unordered_map<MoleculeChainId, t_clustering_chain_info> chain_choices_;
 
     /// @brief Mapping from a molecule id to its desired physical tile location.
     vtr::vector<PackMoleculeId, t_physical_tile_loc> mol_desired_physical_tile_loc;
 
-    /// @brief Mapping from legalization cluster ids to subtile locations. Using
-    ///        unordered_map instead of vtr::vector since LegalizationClusterIds
-    ///        can have significant gaps as you create a new ID for each cluster
-    ///        you attempt to create.
-    std::unordered_map<LegalizationClusterId, t_pl_loc> cluster_locs;
+    /// @brief Subtile locations of local clusters, indexed by [layer][x][y] for the neighbor pass.
+    vtr::NdMatrix<std::unordered_set<t_pl_loc>, 3> tile_clusters_matrix;
 
-    /// @brief 3D NDMatrix of legalization cluster ids. Stores the cluster ids at
-    ///        that tile location and can be accessed in the format of [layer][x][y].
-    ///        This is stored to be used in the neighbor pass.
-    vtr::NdMatrix<std::unordered_set<LegalizationClusterId>, 3> tile_clusters_matrix;
+    /// @brief Record accepted (but not fully finalized) molecules and chain choices from a cluster in local data structures.
+    void record_cluster_membership(const LegalizationCluster& cluster);
+
+    /// @brief Remove a discarded cluster's molecules from local data structures.
+    void remove_cluster_membership(const LegalizationCluster& cluster);
+
+    /// @brief Rebuild chain information from clusters after discarding some clusters.
+    void rebuild_chain_info();
 
     /**
      * @brief Helper method to sort and group molecules by desired tile location.
@@ -220,22 +223,24 @@ class FlatRecon : public FullLegalizer {
      *
      * Iterates over each subtile in the same order each time, hence trying to
      * create the fewest clusters in that tile. It also checks the compatibility
-     * of the molecules with the tile before creating a cluster. Stores the cluster
-     * ids' to check their legality or clean afterwards if needed.
+     * of the molecules with the tile before creating a cluster. Stores the
+     * attempts locally.
      *
      *  @param tile_loc                        The physical tile location that clusters aimed to be created.
      *  @param tile_type                       The physical type of the tile that clusters aimed to be created.
      *  @param tile_molecules                  A vector of molecule ids aimed to be placed in that tile.
      *  @param cluster_legalizer               The cluster legalizer which is used to create and grow clusters.
      *  @param primitive_candidate_block_types A list of candidate block types for the given molecule to create a cluster.
-     *  @return The set of LegalizationClusterIds created in that tile.
+     *  @param strategy The legalization strategy
+     *  @return Locations of new clusters created in that tile.
      */
-    std::unordered_set<LegalizationClusterId>
+    std::unordered_set<t_pl_loc>
     cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
                               const t_physical_tile_type_ptr& tile_type,
                               const std::vector<PackMoleculeId>& tile_molecules,
                               ClusterLegalizer& cluster_legalizer,
-                              const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
+                              const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                              ClusterLegalizationStrategy strategy);
 
     /**
      * @brief Helper method to perform self clustering pass.
@@ -246,7 +251,7 @@ class FlatRecon : public FullLegalizer {
      * molecules with the FULL strategy before going to next tile.
      *
      *  @param cluster_legalizer               The cluster legalizer which is used to create and grow clusters. The result of
-     *                                         this pass is an updated cluster_legalizer.
+     *                                         this pass is an updated local reconstruction.
      *  @param device_grid                     The device grid used to get physical tile types.
      *  @param primitive_candidate_block_types A list of candidate block types for the given molecule to create a cluster.
      *  @param tile_blocks                     The list of molecules to pack in each non-empty tile.
@@ -284,9 +289,9 @@ class FlatRecon : public FullLegalizer {
      *  @param primitive_candidate_block_types A list of candidate block types for the given molecule to create a cluster.
      *  @param search_radius                   The search radius that determines the allowed max distance from the seed
      *                                         molecule to candidate molecules.
-     *  @return The set of LegalizationClusterIds created in that pass.
+     *  @return Clusters created in that pass.
      */
-    std::unordered_set<LegalizationClusterId>
+    std::vector<LegalizationCluster>
     orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
                              const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                              int search_radius);

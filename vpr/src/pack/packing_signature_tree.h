@@ -180,7 +180,7 @@
  *
  *     PackMoleculeId seed = select_seed_molecule(netlist);
  *     t_logical_block_type* cluster_logical_block_type = start_cluster(seed);
- *     pst.start_packing_signature(cluster_logical_block_type);
+ *     pst.start_packing_signature(cluster_logical_block_type, candidate_cluster_id);
  *
  * Molecule Packing
  * ----------------
@@ -412,7 +412,14 @@ class PackingSignatureTree {
     /// A separate PST branch is created for each logical block type.
     ///
     ///   @param cluster_logical_block_type The logical block type of the new cluster
-    void start_packing_signature(const t_logical_block_type* cluster_logical_block_type);
+    ///   @param candidate_cluster_id       The candidate cluster whose signature
+    ///                                     the cursor will track
+    void start_packing_signature(const t_logical_block_type* cluster_logical_block_type,
+                                 CandidateClusterId candidate_cluster_id);
+
+    /// @brief Get the candidate cluster whose packing signature the cursor
+    ///        currently tracks.
+    inline CandidateClusterId current_candidate_cluster() const { return current_candidate_cluster_; }
 
     /// @brief Save current bookkeeping state in case rollback needs to occur.
     void set_checkpoint();
@@ -474,6 +481,11 @@ class PackingSignatureTree {
 
     /// @brief Cursor to most recent node for the signature being constructed.
     LocationAndConnectivityNode* cursor_;
+
+    /// @brief The candidate cluster whose packing signature is being
+    ///        constructed (i.e. the cluster that cursor_ and the bookkeeping
+    ///        state currently correspond to).
+    CandidateClusterId current_candidate_cluster_;
 
     /// @brief Mappings from atom IDs of primitives that have been added to
     ///        the open cluster to their primitive_num.

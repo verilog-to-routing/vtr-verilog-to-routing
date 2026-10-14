@@ -177,7 +177,7 @@ ClusterNetId ClusteredNetlist::create_net(const std::string& name) {
 
 void ClusteredNetlist::remove_block_impl(const ClusterBlockId blk_id) {
     //Remove & invalidate pointers
-    free_pb(block_pbs_[blk_id], g_vpr_ctx.mutable_atom().mutable_lookup().mutable_atom_pb_bimap());
+    free_pb(block_pbs_[blk_id], &g_vpr_ctx.mutable_atom().mutable_lookup().mutable_atom_pb_bimap());
     delete block_pbs_[blk_id];
     block_pbs_.insert(blk_id, NULL);
     block_types_.insert(blk_id, NULL);
