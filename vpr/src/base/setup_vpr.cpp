@@ -625,6 +625,7 @@ static void setup_anneal_sched(const t_options& Options,
 
 static void setup_ap_opts(const t_options& options,
                           t_ap_opts& apOpts) {
+    apOpts.global_placer_type = options.ap_global_placer.value();
     apOpts.analytical_solver_type = options.ap_analytical_solver.value();
     apOpts.solver_threading = options.ap_solver_threading.value();
     apOpts.partial_legalizer_type = options.ap_partial_legalizer.value();

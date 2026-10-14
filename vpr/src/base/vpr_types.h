@@ -1173,7 +1173,10 @@ struct t_ap_opts {
     /// legalization and detailed placement). This is set by --global_place.
     bool stop_after_global_placement;
 
-    /// The type of analytical solver the Global Placer in the AP flow will use.
+    /// The type of Global Placer the AP flow will use.
+    e_ap_global_placer global_placer_type;
+
+    /// The type of analytical solver the SimPL Global Placer in the AP flow will use.
     e_ap_analytical_solver analytical_solver_type;
 
     /// How the analytical solver uses its threads across the per dimension linear systems.
