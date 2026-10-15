@@ -295,7 +295,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong_flat_router(RR
 
     VTR_ASSERT_SAFE(rr_graph.node_type(target_node) == e_rr_type::SINK);
     // We have not checked the multi-layer FPGA for flat routing
-    VTR_ASSERT_SAFE(rr_graph.node_layer_low(current_node) == rr_graph.node_layer_low(target_node));
+    VTR_ASSERT(rr_graph.node_layer_low(current_node) == rr_graph.node_layer_low(target_node));
 
     if (from_rr_type == e_rr_type::CHANX || from_rr_type == e_rr_type::CHANY
         || (from_rr_type == e_rr_type::OPIN && is_inter_cluster_node(rr_graph, current_node))) {
@@ -323,7 +323,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong_flat_router(RR
         // Route-through is not supported and the router only pushes IPINs of the target tile (target_bb prune in
         // timing_driven_expand_neighbour, relevant_node_to_target when seeding), so the current tile's pin table
         // is the one that holds the target SINK.
-        VTR_ASSERT_SAFE(node_in_same_physical_tile(current_node, target_node));
+        VTR_ASSERT(node_in_same_physical_tile(current_node, target_node));
         const std::unordered_map<int, util::Cost_Entry>& pin_delays = pin_to_sink_costs(intra_tile_pin_primitive_pin_delay, grid, rr_graph, current_node);
         auto pin_delay_itr = pin_delays.find(rr_graph.node_ptc_num(target_node));
         if (pin_delay_itr == pin_delays.end()) {
