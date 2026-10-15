@@ -10,7 +10,10 @@
 #include <cstddef>
 #include <limits>
 #include "ap_netlist.h"
+#include "atom_netlist.h"
+#include "flat_placement_types.h"
 #include "globals.h"
+#include "prepack.h"
 
 double PartialPlacement::get_hpwl(const APNetlist& netlist) const {
     double hpwl = 0.0;
@@ -136,4 +139,25 @@ bool PartialPlacement::verify(const APNetlist& netlist,
         return false;
     // If all other verify methods passed, then the placement is valid.
     return true;
+}
+
+FlatPlacementInfo convert_partial_to_flat_placement(const PartialPlacement& p_placement,
+                                                    const APNetlist& ap_netlist,
+                                                    const Prepacker& prepacker,
+                                                    const AtomNetlist& atom_netlist) {
+    FlatPlacementInfo flat_placement_info(atom_netlist);
+    for (APBlockId ap_blk_id : ap_netlist.blocks()) {
+        for (PackMoleculeId mol_id : ap_netlist.block_molecules(ap_blk_id)) {
+            const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
+            for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
+                if (!atom_blk_id.is_valid())
+                    continue;
+                flat_placement_info.blk_x_pos[atom_blk_id] = p_placement.block_x_locs[ap_blk_id];
+                flat_placement_info.blk_y_pos[atom_blk_id] = p_placement.block_y_locs[ap_blk_id];
+                flat_placement_info.blk_layer[atom_blk_id] = p_placement.block_layer_nums[ap_blk_id];
+                flat_placement_info.blk_sub_tile[atom_blk_id] = p_placement.block_sub_tiles[ap_blk_id];
+            }
+        }
+    }
+    return flat_placement_info;
 }

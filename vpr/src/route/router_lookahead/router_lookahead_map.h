@@ -1,8 +1,11 @@
 #pragma once
 
+#include <cstdlib>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <vector>
+#include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
 #include "router_lookahead.h"
 #include "router_lookahead_map_utils.h"
@@ -76,8 +79,23 @@ class MapLookahead final : public RouterLookahead {
   public:
     // Public so SimpleDelayModel can call it through the
     // concrete type statically, without using dynamic dispatch.
-    inline float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const override {
-        return opin_distance_based_min_cost[physical_tile_idx][from_layer][to_layer][dx][dy].delay;
+    inline float get_opin_distance_min_delay(int physical_tile_idx, const t_physical_tile_loc& from_loc, const t_physical_tile_loc& to_loc) const override {
+        float min_delay = opin_distance_based_min_cost[physical_tile_idx]
+                                                      [from_loc.layer_num]
+                                                      [to_loc.layer_num]
+                                                      [std::abs(from_loc.x - to_loc.x)]
+                                                      [std::abs(from_loc.y - to_loc.y)]
+                                                          .delay;
+
+        // Add the delay of crossing interposer cuts, used in 2.5D architectures.
+        if (has_interposer_cuts_) {
+            VTR_ASSERT_SAFE(interposer_lookahead_);
+            float interposer_delay;
+            std::tie(interposer_delay, std::ignore) = interposer_lookahead_->get_interposer_lookahead_cost(from_loc, to_loc);
+            min_delay += interposer_delay;
+        }
+
+        return min_delay;
     }
 };
 

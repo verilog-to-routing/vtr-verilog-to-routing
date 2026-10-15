@@ -669,6 +669,7 @@ struct t_file_name_opts {
     std::string read_flat_place_file;
     std::string write_flat_place_file;
     std::string write_legalized_flat_place_file;
+    std::string write_post_gp_flat_place_file;
     std::string write_block_usage;
     bool verify_file_digests;
     ///@brief How much annotation to write into flat placement files.
@@ -1167,6 +1168,10 @@ struct t_placer_opts {
 struct t_ap_opts {
     /// True if analytical placement is supposed to be done in the CAD flow. False if otherwise.
     e_stage_action doAP;
+
+    /// True if the AP flow should stop after Global Placement (i.e. skip full
+    /// legalization and detailed placement). This is set by --global_place.
+    bool stop_after_global_placement;
 
     /// The type of analytical solver the Global Placer in the AP flow will use.
     e_ap_analytical_solver analytical_solver_type;
