@@ -3,9 +3,9 @@
 #   - numpy / scikit-image / Pillow : GUI Layer-5 visual regression (SSIM compare)
 #   - gcovr                         : GUI coverage report / regression gate
 #
-# Pinned to Ubuntu 24.04's distro versions (the CI runner OS). These have
-# Python 3.12 wheels on PyPI, so they install without a source build.
-numpy==1.26.4
-scikit-image==0.22.0
+# Pinned to Ubuntu 26.04's distro versions (the CI runner OS). These have
+# Python 3.14 wheels on PyPI, so they install without a source build.
+numpy==2.3.5
+scikit-image==0.26.0
 Pillow==12.3.0
-gcovr==7.0
+gcovr==7.2

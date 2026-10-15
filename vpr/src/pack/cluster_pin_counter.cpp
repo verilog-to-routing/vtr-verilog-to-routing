@@ -25,6 +25,7 @@
 #include "physical_types.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
+#include "vpr_error.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "vtr_assert.h"
@@ -240,8 +241,12 @@ void ClusterPinCounter::rollback_check() {
 
         if (delta.change == +1) {
             // Undo an append: pop the last entry.
+            // Checked explicitly (not with VTR_ASSERT) so the lookup is still
+            // guarded when assertions are compiled out (VTR_ASSERT_LEVEL=0).
             auto it = record_map.find(delta.pin);
-            VTR_ASSERT(it != record_map.end() && !it->second.empty());
+            if (it == record_map.end() || it->second.empty()) {
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, "Cluster pin counter rollback found no mark record to undo.");
+            }
             VTR_ASSERT_SAFE(it->second.back() == delta.pb);
             it->second.pop_back();
             if (it->second.empty()) {
@@ -259,8 +264,10 @@ void ClusterPinCounter::rollback_check() {
         const PerPbStateDelta delta = per_pb_state_journal_.back();
         per_pb_state_journal_.pop_back();
 
-        VTR_ASSERT_SAFE(per_pb_state_.count(delta.pb) > 0);
         auto pb_it = per_pb_state_.find(delta.pb);
+        if (pb_it == per_pb_state_.end()) {
+            VPR_FATAL_ERROR(VPR_ERROR_PACK, "Cluster pin counter rollback found no state for the pb.");
+        }
 
         std::unordered_map<AtomNetId, int>& net_counts = delta.is_input ? pb_it->second.input_pin_class_net_counts.at(delta.class_id)
                                                                         : pb_it->second.output_pin_class_net_counts.at(delta.class_id);

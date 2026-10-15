@@ -37,15 +37,23 @@ target_link_libraries(parmys
 set_target_properties(parmys PROPERTIES PREFIX "") # Avoid extra 'lib' prefix
 set_target_properties(parmys PROPERTIES SUFFIX ".so") # Yosys expects the suffix to be '.so' even on macOS
 
+# Stage the plugin and its data files into the yosys data directory in the
+# build tree (yosys is built with PREFIX=${CMAKE_BINARY_DIR}). The install
+# rules use relative destinations (absolute ones are an error under
+# -Werror=dev with CMake 4.x) and are installed here with --prefix pointing at
+# the build tree. They are excluded from the default install since yosys itself
+# is not installed to CMAKE_INSTALL_PREFIX.
 add_custom_target(parmys-plugin ALL
 		DEPENDS parmys
 		COMMAND ${CMAKE_COMMAND}
 		--install ${CMAKE_BINARY_DIR}/parmys
+		--prefix ${CMAKE_BINARY_DIR}
+		--component parmys_plugin
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/share/yosys/plugins)
-install(TARGETS parmys DESTINATION ${CMAKE_BINARY_DIR}/share/yosys/plugins)
+install(TARGETS parmys DESTINATION share/yosys/plugins COMPONENT parmys_plugin EXCLUDE_FROM_ALL)
 
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/share/yosys/parmys)
-install(FILES ${LIB_VERILOGS} DESTINATION ${CMAKE_BINARY_DIR}/share/yosys/parmys)
-install(FILES "third_party/vtr_flow/primitives.v" DESTINATION ${CMAKE_BINARY_DIR}/share/yosys/parmys RENAME vtr_primitives.v)
+install(FILES ${LIB_VERILOGS} DESTINATION share/yosys/parmys COMPONENT parmys_plugin EXCLUDE_FROM_ALL)
+install(FILES "third_party/vtr_flow/primitives.v" DESTINATION share/yosys/parmys RENAME vtr_primitives.v COMPONENT parmys_plugin EXCLUDE_FROM_ALL)

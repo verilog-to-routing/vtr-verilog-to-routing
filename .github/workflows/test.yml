@@ -31,7 +31,7 @@ concurrency:
 
 env:
   # default compiler for all non-compatibility tests
-  MATRIX_EVAL: "CC=gcc-13 && CXX=g++-13"
+  MATRIX_EVAL: "CC=gcc-15 && CXX=g++-15"
   # install_apt_packages.sh installs the apt packages. Jobs that build the GUI
   # additionally run dev/ensure_qt6_sdk.sh to provision a Qt6 SDK (>= the
   # supported floor). CMake discovers Qt and bakes its location into the
@@ -40,7 +40,7 @@ env:
 jobs:
   BuildVTR:
     name: 'B: Building VTR Release'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
     - uses: actions/checkout@v7
       with:
@@ -85,7 +85,7 @@ jobs:
 
   BuildVTRWithOdin:
     name: 'B: Building VTR Release With Odin'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
     - uses: actions/checkout@v7
       with:
@@ -132,7 +132,7 @@ jobs:
 
 
   Format:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -158,18 +158,9 @@ jobs:
       if: ${{ matrix.all_vtr_pkgs == 'yes' }}
       run: ./install_apt_packages.sh
 
-    # TODO: This should be on the same version of Python as would be found on
-    #       Ubuntu 24.04 (3.12.3); however that version has some linting errors.
-    #         - The version of Pylint in requirements.txt is not compatible with
-    #           python version 3.12.3. Pylint needs to be updated to move to this version.
-    - uses: actions/setup-python@v7
-      if: ${{ matrix.with_python == 'yes' }}
-      with:
-        python-version: 3.10.10
-
     - name: Build Python Virtual Env
       run: |
-        python -m venv .venv
+        python3 -m venv .venv
 
     - name: Install Python Requirements
       if: ${{ matrix.with_python == 'yes' }}
@@ -188,13 +179,9 @@ jobs:
 
 
   VerifyTestSuites:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: 'Verify Test Suites'
     steps:
-
-    - uses: actions/setup-python@v7
-      with:
-        python-version: 3.12.3
 
     - uses: actions/checkout@v7
       # NOTE: We do not need sub-modules. This only verifies the tests, does not run them.
@@ -208,7 +195,7 @@ jobs:
 
   UnitTests:
     name: 'U: C++ Unit Tests'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [BuildVTR]
     steps:
 
@@ -239,13 +226,13 @@ jobs:
         make test -j${{ steps.cpu-cores.outputs.count }}
 
 
-  # GUITests — Plan §7.9 — runs the full GUI test pyramid on ubuntu-24.04.
+  # GUITests — Plan §7.9 — runs the full GUI test pyramid on ubuntu-26.04.
   # Builds with -DVPR_USE_EZGL=on so the local and CI command lines match:
   #
   #     make CMAKE_PARAMS="-DVPR_USE_EZGL=on" gui-tests
   GUITests:
     name: 'T: GUI Tests (Layers 1+3+4+5)'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
 
     - uses: actions/checkout@v7
@@ -255,10 +242,6 @@ jobs:
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
-
-    - uses: actions/setup-python@v7
-      with:
-        python-version: 3.12.3
 
     - name: Install dependencies
       run: ./install_apt_packages.sh
@@ -306,7 +289,7 @@ jobs:
     - name: Run vtr_reg_gui regression suite
       run: |
         # run_reg_test.py needs the flow harness Python deps (prettytable,
-        # pandas, lxml, ...); install them into the setup-python environment.
+        # pandas, lxml, ...); install them into the runner's system Python.
         pip install -r requirements.txt
         ./run_reg_test.py vtr_reg_gui -show_failures
 
@@ -343,7 +326,7 @@ jobs:
   GUICoverage:
     name: 'T: GUI Coverage (Linux, gcovr regression gate)'
     if: false
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [GUITests]
     steps:
 
@@ -354,10 +337,6 @@ jobs:
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
-
-    - uses: actions/setup-python@v7
-      with:
-        python-version: 3.12.3
 
     - name: Install dependencies
       run: ./install_apt_packages.sh
@@ -447,17 +426,13 @@ jobs:
   # and ensures that they can run the basic regression tests. This also ensures
   # that these build variations are warning clean.
   BuildVariations:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: 'B: Build Variations'
     env:
       # For the CI, we want all build variations to be warning clean.
       # NOTE: Need to turn IPO off due to false warnings being produced.
       COMMON_CMAKE_PARAMS: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off'
     steps:
-
-    - uses: actions/setup-python@v7
-      with:
-        python-version: 3.12.3
 
     - uses: actions/checkout@v7
       with:
@@ -565,7 +540,7 @@ jobs:
 
 
   Regression:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [BuildVTR]
     strategy:
       fail-fast: false
@@ -605,10 +580,6 @@ jobs:
         ]
     name: 'R: ${{ matrix.name }}'
     steps:
-
-    - uses: actions/setup-python@v7
-      with:
-        python-version: 3.12.3
 
     - uses: actions/checkout@v7
       with:
@@ -669,7 +640,7 @@ jobs:
 
 
   RegressionWithOdin:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [BuildVTRWithOdin]
     strategy:
       fail-fast: false
@@ -693,10 +664,6 @@ jobs:
         ]
     name: 'R: ${{ matrix.name }}'
     steps:
-
-    - uses: actions/setup-python@v7
-      with:
-        python-version: 3.12.3
 
     - uses: actions/checkout@v7
       with:
@@ -757,7 +724,7 @@ jobs:
 
 
   RegressionWithMosaic:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [BuildVTR]
     strategy:
       fail-fast: false
@@ -771,10 +738,6 @@ jobs:
         ]
     name: 'R: ${{ matrix.name }}'
     steps:
-
-    - uses: actions/setup-python@v7
-      with:
-        python-version: 3.12.3
 
     - uses: actions/checkout@v7
       with:
@@ -848,7 +811,7 @@ jobs:
 
 
   Sanitized:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -865,9 +828,6 @@ jobs:
     name: 'S: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v7
-      with:
-        python-version: 3.12.3
     - uses: actions/checkout@v7
       with:
         submodules: 'true'
@@ -909,13 +869,10 @@ jobs:
 
   Parmys:
     name: 'Parmys Basic Test'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [BuildVTR]
     steps:
 
-      - uses: actions/setup-python@v7
-        with:
-          python-version: 3.12.3
       - uses: actions/checkout@v7
         with:
           submodules: 'true'
@@ -949,13 +906,10 @@ jobs:
 
   ODINII:
     name: 'ODIN-II Basic Test'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [BuildVTRWithOdin]
     steps:
 
-    - uses: actions/setup-python@v7
-      with:
-        python-version: 3.12.3
     - uses: actions/checkout@v7
       with:
         submodules: 'true'
@@ -990,13 +944,10 @@ jobs:
 
   VQM2BLIF:
     name: 'VQM2BLIF Basic Tests'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [BuildVTR]
     steps:
 
-    - uses: actions/setup-python@v7
-      with:
-        python-version: 3.12.3
     - uses: actions/checkout@v7
       with:
         submodules: 'true'
@@ -1023,19 +974,19 @@ jobs:
         ./utils/vqm2blif/test/scripts/test_vqm2blif.sh
 
   Compatibility:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [BuildVTR]
     strategy:
       fail-fast: false
       matrix:
         include:
-        - { name: 'GCC 12 (Ubuntu Noble - 24.04)',    CC: 'gcc-12',   CXX: 'g++-12',     }
-        - { name: 'GCC 14 (Ubuntu Noble - 24.04)',    CC: 'gcc-14',   CXX: 'g++-14',     }
-        - { name: 'Clang 16 (Ubuntu Noble - 24.04)',  CC: 'clang-16', CXX: 'clang++-16', }
-        - { name: 'Clang 17 (Ubuntu Noble - 24.04)',  CC: 'clang-17', CXX: 'clang++-17', }
-        - { name: 'Clang 18 (Ubuntu Noble - 24.04)',  CC: 'clang-18', CXX: 'clang++-18', }
-        # Note: We do not include GCC-13 since it is the default and is already tested.
-        #       We also do not include GCC-11 since it is tested in the JammyCompatibility test.
+        - { name: 'GCC 14 (Ubuntu Resolute - 26.04)',    CC: 'gcc-14',   CXX: 'g++-14',     }
+        - { name: 'Clang 20 (Ubuntu Resolute - 26.04)',  CC: 'clang-20', CXX: 'clang++-20', }
+        - { name: 'Clang 21 (Ubuntu Resolute - 26.04)',  CC: 'clang-21', CXX: 'clang++-21', }
+        - { name: 'Clang 22 (Ubuntu Resolute - 26.04)',  CC: 'clang-22', CXX: 'clang++-22', }
+        # Note: We do not include GCC-15 since it is the default and is already tested.
+        #       We also do not include GCC-13 since it is tested in the NobleCompatibility test,
+        #       or GCC-11 since it is tested in the JammyCompatibility test.
     name: 'B: ${{ matrix.name }}'
     env:
       CC: ${{ matrix.CC }}
@@ -1096,13 +1047,13 @@ jobs:
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         make -j${{ steps.cpu-cores.outputs.count}}
 
-  ResoluteCompatibility:
-    name: 'Ubuntu Resolute - 26.04 Compatibility Test'
-    runs-on: ubuntu-26.04
+  NobleCompatibility:
+    name: 'Ubuntu Noble - 24.04 Compatibility Test'
+    runs-on: ubuntu-24.04
     needs: [BuildVTR]
     env:
-      CC: gcc-15
-      CXX: g++-15
+      CC: gcc-13
+      CXX: g++-13
     steps:
     - uses: actions/checkout@v7
       with:
@@ -1117,7 +1068,7 @@ jobs:
 
     - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
-        key: ${{ github.job }}-gcc-15
+        key: ${{ github.job }}-gcc-13
 
     - name: Build
       env:

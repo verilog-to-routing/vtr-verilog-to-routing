@@ -49,8 +49,10 @@ set_target_properties(mosaic PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/share/yosys/plugins
 )
 
+# NOTE: The plugin is written directly into the yosys plugin directory of the
+#       build tree via LIBRARY_OUTPUT_DIRECTORY above, so no install rule is
+#       needed (yosys itself is not installed to CMAKE_INSTALL_PREFIX).
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/share/yosys/plugins)
-install(TARGETS mosaic DESTINATION ${CMAKE_BINARY_DIR}/share/yosys/plugins)
 
 # fallback path used by max_level when templateDir is unset:
 # share/yosys/plugins/mosaic/lut_models/LUTs.v
@@ -64,4 +66,3 @@ configure_file(
     ${MOSAIC_LUT_MODELS_DST}/LUTs.v
     COPYONLY
 )
-install(FILES ${MOSAIC_LUT_MODELS_SRC} DESTINATION ${MOSAIC_LUT_MODELS_DST})

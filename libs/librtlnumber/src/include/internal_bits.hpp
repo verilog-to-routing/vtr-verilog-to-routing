@@ -26,6 +26,10 @@ constexpr short integer_t_size = (sizeof(integer_t) * 8);
     constexpr auto _##x = x; \
     }
 
+// Different builds of clang-format-18 (e.g. Ubuntu 24.04 vs 26.04) disagree on
+// the spacing inside these braced initializer macros, so formatting is
+// disabled here to keep the result stable across platforms.
+// clang-format off
 #define unroll_1d(lut) \
     { lut[_0], lut[_1], lut[_x], lut[_z] }
 #define unroll_2d(lut) \
@@ -35,6 +39,7 @@ constexpr short integer_t_size = (sizeof(integer_t) * 8);
     { l_not[lut[_0]], l_not[lut[_1]], l_not[lut[_x]], l_not[lut[_z]] }
 #define unroll_2d_invert(lut) \
     { unroll_1d_invert(lut[_0]), unroll_1d_invert(lut[_1]), unroll_1d_invert(lut[_x]), unroll_1d_invert(lut[_z]) }
+// clang-format on
 
 namespace BitSpace {
 typedef uint8_t bit_value_t;

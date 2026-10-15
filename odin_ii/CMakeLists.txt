@@ -81,7 +81,6 @@ if(ODIN_SANITIZE)
         "-fsanitize=address"
         "-fsanitize=leak"
         "-fsanitize=undefined"
-        "-fuse-ld=gold"
         ${ODIN_EXTRA_FLAGS}
     )
 
@@ -91,7 +90,6 @@ if(ODIN_SANITIZE)
         "-fsanitize=address"
         "-fsanitize=leak"
         "-fsanitize=undefined"        
-        "-fuse-ld=gold"
         ${ODIN_EXTRA_LINK_FLAGS}
     )
 
