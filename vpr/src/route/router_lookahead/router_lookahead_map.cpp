@@ -828,7 +828,7 @@ static void compute_tile_lookahead(std::vector<util::t_ipin_primitive_sink_delay
 static void store_min_cost_to_sinks(std::vector<std::vector<util::Cost_Entry>>& tile_min_cost,
                                     t_physical_tile_type_ptr physical_tile,
                                     const std::vector<util::t_ipin_primitive_sink_delays>& intra_tile_pin_primitive_pin_delay) {
-    const auto& tile_pin_delays = intra_tile_pin_primitive_pin_delay[physical_tile->index];
+    const util::t_ipin_primitive_sink_delays& tile_pin_delays = intra_tile_pin_primitive_pin_delay[physical_tile->index];
 
     // Entries whose ptc number is not a primitive sink of the tile keep the no-path sentinel and are never queried
     std::vector<util::Cost_Entry>& min_cost_arr = tile_min_cost[physical_tile->index];
@@ -1039,13 +1039,13 @@ static void getIntraClusterArrayFlatSize(int& num_tile_types,
     num_tile_types = (int)physical_tile_types.size();
 
     num_pins = 0;
-    for (const auto& tile_pin_delays : intra_tile_pin_primitive_pin_delay) {
+    for (const util::t_ipin_primitive_sink_delays& tile_pin_delays : intra_tile_pin_primitive_pin_delay) {
         num_pins += (int)tile_pin_delays.size();
     }
 
     num_sinks = 0;
-    for (const auto& tile_pin_delays : intra_tile_pin_primitive_pin_delay) {
-        for (const auto& pin_sink : tile_pin_delays) {
+    for (const util::t_ipin_primitive_sink_delays& tile_pin_delays : intra_tile_pin_primitive_pin_delay) {
+        for (const std::unordered_map<int, util::Cost_Entry>& pin_sink : tile_pin_delays) {
             num_sinks += (int)pin_sink.size();
         }
     }
@@ -1075,7 +1075,7 @@ static void read_intra_cluster_router_lookahead(std::vector<util::t_ipin_primiti
 
     // Validate against the current device to prevent invalid tile and pin indices
     // from causing out-of-bounds table accesses.
-    const auto& tiles = g_vpr_ctx.device().physical_tile_types;
+    const std::vector<t_physical_tile_type>& tiles = g_vpr_ctx.device().physical_tile_types;
     if (physical_tile_num_pin_arr.size() != tiles.size()) {
         VPR_THROW(VPR_ERROR_ROUTE,
                   "Intra-cluster router lookahead file (--read_intra_cluster_router_lookahead) describes %zu "
@@ -1162,7 +1162,7 @@ static void write_intra_cluster_router_lookahead(const std::string& file,
                                  num_sinks,
                                  intra_tile_pin_primitive_pin_delay);
 
-    const auto& tiles = g_vpr_ctx.device().physical_tile_types;
+    const std::vector<t_physical_tile_type>& tiles = g_vpr_ctx.device().physical_tile_types;
     VTR_ASSERT(intra_tile_pin_primitive_pin_delay.size() == (size_t)num_tile_types);
     std::vector<int> physical_tile_num_pin_arr(num_tile_types, 0);
     {
@@ -1181,7 +1181,7 @@ static void write_intra_cluster_router_lookahead(const std::string& file,
     {
         int num_seen_pin = 0;
         for (int physical_tile_idx = 0; physical_tile_idx < num_tile_types; ++physical_tile_idx) {
-            for (const auto& pin_sinks : intra_tile_pin_primitive_pin_delay[physical_tile_idx]) {
+            for (const std::unordered_map<int, util::Cost_Entry>& pin_sinks : intra_tile_pin_primitive_pin_delay[physical_tile_idx]) {
                 pin_num_sink_arr[num_seen_pin] = (int)pin_sinks.size();
                 ++num_seen_pin;
             }
