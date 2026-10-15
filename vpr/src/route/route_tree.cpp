@@ -5,6 +5,7 @@
 #include "netlist_fwd.h"
 #include "route_debug.h"
 #include "route_common.h"
+#include "bus_mux_routing.h"
 #include "rr_graph_fwd.h"
 #include "vtr_math.h"
 
@@ -657,7 +658,9 @@ RouteTree::prune(CBRR& connections_inf, std::vector<int>* non_config_node_set_us
     VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[root().inode].occ() <= rr_graph.node_capacity(root().inode),
                    "Route tree root/SOURCE should never be congested");
 
-    auto pruned_node = prune_x(*_root, connections_inf, false, non_config_node_set_usage);
+    // Architectures without bus muxes skip the per-node bus-mux lookup in prune_x().
+    const bool has_bus_muxes = !g_vpr_ctx.device().rr_bus_muxes.empty();
+    vtr::optional<RouteTreeNode&> pruned_node = prune_x(*_root, connections_inf, false, has_bus_muxes, non_config_node_set_usage);
     if (pruned_node)
         return *this;
     else
@@ -668,11 +671,16 @@ RouteTree::prune(CBRR& connections_inf, std::vector<int>* non_config_node_set_us
  * Recursively traverse the route tree rooted at node and remove any congested subtrees.
  * Returns nullopt if pruned */
 vtr::optional<RouteTreeNode&>
-RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_prune, std::vector<int>* non_config_node_set_usage) {
+RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_prune, bool has_bus_muxes, std::vector<int>* non_config_node_set_usage) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
     bool congested = (route_ctx.rr_node_route_inf[rt_node.inode].occ() > rr_graph.node_capacity(rt_node.inode));
+
+    // Rip up bits of a mux with conflicting selects so routing can choose one input set.
+    if (!congested && has_bus_muxes && is_bus_mux_edge_control_congested(rt_node)) {
+        congested = true;
+    }
 
     int node_set = -1;
     auto itr = device_ctx.rr_node_to_non_config_node_set.find(rt_node.inode);
@@ -693,7 +701,7 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
     // Recursively prune child nodes
     bool all_children_pruned = true;
     remove_child_if(rt_node, [&](auto& child) {
-        vtr::optional<RouteTreeNode&> child_maybe = prune_x(child, connections_inf, force_prune, non_config_node_set_usage);
+        vtr::optional<RouteTreeNode&> child_maybe = prune_x(child, connections_inf, force_prune, has_bus_muxes, non_config_node_set_usage);
 
         if (child_maybe.has_value()) { // Not pruned
             all_children_pruned = false;
@@ -811,7 +819,7 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
             //  node set usage count will be > 0. However after
             //  prune_route_tree_recurr visits 2, 3 and 4, the node set usage
             //  will be 0, so everything can be pruned.
-            return prune_x(rt_node, connections_inf, /*force_prune=*/false, non_config_node_set_usage);
+            return prune_x(rt_node, connections_inf, /*force_prune=*/false, has_bus_muxes, non_config_node_set_usage);
         }
 
         //An unpruned intermediate node

@@ -2,6 +2,8 @@
 
 #include "route_common.h"
 
+#include "bus_mux_routing.h"
+
 #include "atom_netlist_utils.h"
 #include "connection_router_interface.h"
 #include "describe_rr_node.h"
@@ -168,6 +170,11 @@ bool feasible_routing() {
         }
     }
 
+    // All routed bits of a bus mux must use the same input set.
+    if (count_control_congested_bus_muxes(route_ctx.bus_mux_route_inf) > 0) {
+        return (false);
+    }
+
     return (true);
 }
 
@@ -272,13 +279,27 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
     overuse_info.total_overuse = total_overuse;
     overuse_info.worst_overuse = worst_overuse;
 #endif
+
+    // A legal routing has no bus muxes using multiple input sets.
+    overuse_info.control_congested_bus_muxes = count_control_congested_bus_muxes(route_ctx.bus_mux_route_inf);
 }
 
 /** Update pathfinder cost of all nodes rooted at rt_node, including rt_node itself */
 void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_or_sub) {
+    RoutingContext& route_ctx = g_vpr_ctx.mutable_routing();
+    // Skip the per-node bus mux lookups on architectures without bus muxes.
+    const bool has_bus_muxes = !g_vpr_ctx.device().rr_bus_muxes.empty();
+
     pathfinder_update_single_node_occupancy(root.inode, add_or_sub);
+    if (has_bus_muxes) {
+        // all_nodes() skips root, so count the edge into root here.
+        pathfinder_update_bus_mux_occupancy(route_ctx.bus_mux_route_inf, root, add_or_sub);
+    }
     for (auto& node : root.all_nodes()) {
         pathfinder_update_single_node_occupancy(node.inode, add_or_sub);
+        if (has_bus_muxes) {
+            pathfinder_update_bus_mux_occupancy(route_ctx.bus_mux_route_inf, node, add_or_sub);
+        }
     }
 }
 
@@ -509,6 +530,8 @@ void reset_rr_node_route_structs(const t_router_opts& route_opts) {
         node_inf.backward_path_cost = std::numeric_limits<float>::infinity();
         node_inf.set_occ(0);
     }
+
+    reset_bus_mux_route_inf(device_ctx.rr_bus_muxes, route_ctx.bus_mux_route_inf);
 }
 
 /* Allocates and loads the route_ctx.net_rr_terminals data structure. For each net it stores the rr_node   *

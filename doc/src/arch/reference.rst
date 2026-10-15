@@ -1711,11 +1711,13 @@ The following describes the tags that are accepted in the ``<interconnect>`` tag
 
     .. note::
 
-        ``bus="true"`` is currently a convenience shorthand: VPR expands it into a
-        set of independent single-bit muxes (one per output bit), rather than
-        modeling a true multi-bit bus. This means each single-bit mux gets its own
-        separate config bit, whereas in a true bus-based mux all of the bit-level
-        muxes would share a single config bit.
+        VPR expands a ``bus="true"`` mux into one single-bit mux per output bit.
+        All bits share one hardware select and must use the same input data line.
+        Flat routing (:option:`--flat_routing` ``on``) enforces this constraint.
+
+        Packing does not yet enforce the shared select, so the packed netlist
+        (``.net``) may use multiple input data lines for a bus mux. Flat routing
+        reroutes these connections and writes the result to ``.net.post_routing``.
 
 
 
@@ -3637,4 +3639,3 @@ VIB Architecture
 ~~~~~~~~~~~~~~~~
 
 .. include:: VIB.rst
-
