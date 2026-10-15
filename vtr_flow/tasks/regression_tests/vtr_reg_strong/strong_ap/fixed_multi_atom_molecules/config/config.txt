@@ -3,26 +3,25 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/titan_blif/titan23/stratixiv
+circuits_dir=benchmarks/blif
 
 # Path to directory of architectures to use
-archs_dir=arch/titan
+archs_dir=arch/reg_test_archs
 
 # Add circuits to list to sweep
-circuit_list_add=neuron_stratixiv_arch_timing.blif
+circuit_list_add=s298.blif
 
 # Add architectures to list to sweep
-arch_list_add=stratixiv_arch.timing.xml
+arch_list_add=fix_clusters_multiple_clb.xml
 
 # Parse info and how to parse
 parse_file=vpr_fixed_chan_width.txt
-parse_file=vpr_parse_second_file.txt
 
 # How to parse QoR info
-qor_parse_file=qor_rr_graph.txt
+qor_parse_file=qor_ap_fixed_chan_width.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements_verify_rr_graph.txt
+pass_requirements_file=pass_requirements_ap_fixed_chan_width.txt
 
 # Script parameters
-script_params =-starting_stage vpr --route_chan_width 300 --max_router_iterations 400 -verify_rr_graph
+script_params =-starting_stage vpr --device fixed_device --analytical_place --route --analysis --route_chan_width 36 --read_vpr_constraints ../../../../placement_constraints.xml

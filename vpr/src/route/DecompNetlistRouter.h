@@ -6,6 +6,7 @@
  * See "Parallel FPGA Routing with On-the-Fly Net Decomposition", FPT'24 */
 #include "netlist_routers.h"
 
+#include <tbb/enumerable_thread_specific.h>
 #include <tbb/task_group.h>
 
 /** Maximum number of iterations for net decomposition

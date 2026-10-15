@@ -122,6 +122,23 @@ instead of the default analytical placement flow, pass all four stage flags expl
 
     **Default:** ``off``
 
+.. option:: --global_place
+
+    Run only the Global Placement stage of the analytical placement flow (see :option:`--analytical_place`).
+    The flow stops right after global placement; full legalization and detailed placement are skipped, so no
+    clustered netlist or placement is produced.
+    After global placement, post-global placement quality metrics are reported.
+
+    If a flat placement is provided with :option:`--read_flat_place`, the global placer is not run; instead,
+    the flat placement is read and used as the global placement solution.
+
+    The global placement solution can be written to a file using :option:`--write_post_gp_flat_place`.
+
+    This option cannot be combined with :option:`--route` or :option:`--analysis`.
+    If :option:`--analytical_place` is also specified, the full analytical placement flow is run.
+
+    **Default:** ``off``
+
 .. option:: --route
 
     Run routing stage.
@@ -312,10 +329,21 @@ General Options
 
     **Default:**  ``on``
 
-.. option:: --echo_file {on | off}
+.. option:: --echo_file {on | off | <echo_file_name> [<echo_file_name> ...]}
 
     Generates echo files of key internal data structures.
     These files are generally used for debugging vpr, and typically end in ``.echo``
+
+    * ``off``: No echo files are generated.
+    * ``on``: All echo files are generated.
+    * ``<echo_file_name> [<echo_file_name> ...]``: Only the listed echo files are generated, identified by their default file names.
+      This is useful when only a few echo files are needed, since some echo files can be very large.
+
+    For example, the following generates only the timing graph analysis and clusters echo files:
+
+    .. code-block:: none
+
+        --echo_file timing_graph.analysis.echo clusters.echo
 
     **Default:** ``off``
 
@@ -570,6 +598,17 @@ Use the options below to override this default naming behaviour.
     flat placement file:
 
     * The x, y, and sub_tile location of the cluster that contains this atom.
+
+.. option:: --write_post_gp_flat_place <file>
+
+    Writes the flat placement produced by Global Placement in the analytical
+    placement flow (see :option:`--analytical_place` and :option:`--global_place`)
+    into a flat placement file (see :ref:`flat placement file format <vpr_flat_place_file>`).
+
+    For each atom in the netlist, the (x, y, layer) position and sub_tile chosen by
+    the global placer are stored. Since the global placement has not been legalized
+    yet, these positions may be fractional (off-grid). This file can be read back in
+    using :option:`--read_flat_place`.
 
 .. option:: --flat_place_verbosity <int>
 
@@ -2149,7 +2188,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``64``
 
-.. option:: --router_lookahead {classic | map | compressed_map | extended_map | simple}
+.. option:: --router_lookahead {classic | map | compressed_map | extended_map | separable | simple}
 
     Controls what lookahead the router uses to calculate cost of completing a connection.
 
@@ -2157,6 +2196,7 @@ The following options are only valid when the router is in timing-driven mode (t
      * ``map``: A more advanced lookahead which accounts for diverse wire types and their connectivity
      * ``compressed_map``: The algorithm is similar to map lookahead with the exception of sparse sampling of the chip to reduce the run-time to build the router lookahead and also its memory footprint.
      * ``extended_map``: A more advanced and extended lookahead which accounts for a more exhaustive node sampling method.
+     * ``separable``: An experimental lookahead which estimates delay and congestion by combining independently profiled costs along the x and y axes. It uses the map lookahead for SOURCE/OPIN estimates and as a fallback for unsampled wire costs. Flat routing and reading or writing lookahead files are currently unsupported.
      * ``simple``: A purely distance-based lookahead loaded from an external file using :option:`--read_router_lookahead`. This lookahead returns a cost estimate for channel nodes by querying a lookup table, while for any other node type it returns zero.
 
      **Default:** ``map``

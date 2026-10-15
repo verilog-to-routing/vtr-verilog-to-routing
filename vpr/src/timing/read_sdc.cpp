@@ -22,6 +22,7 @@
 
 #include <filesystem>
 #include <limits>
+#include <numeric>
 #include <regex>
 #include <unordered_map>
 
@@ -1260,7 +1261,7 @@ class SdcParseCallback : public sdcparse::Callback {
 
             //Find the LCM of the two periods. This determines how long it takes before
             //the pattern of the two clocks' edges starts repeating.
-            int lcm_period = vtr::lcm(launch_period, capture_period);
+            int lcm_period = std::lcm(launch_period, capture_period);
 
             //Create arrays of edges for each clock over one LCM period.
 

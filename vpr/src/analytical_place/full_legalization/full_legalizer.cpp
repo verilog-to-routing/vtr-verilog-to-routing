@@ -943,20 +943,10 @@ void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
     // The partial placement has been set by the GP (if using internal VTR AP),
     // or by reading in the flat placement file. Cast / copy it to the flat
     // placement data structures so we can always use them.
-    FlatPlacementInfo flat_placement_info(atom_netlist_);
-    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-        for (PackMoleculeId mol_id : ap_netlist_.block_molecules(ap_blk_id)) {
-            const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
-            for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
-                if (!atom_blk_id.is_valid())
-                    continue;
-                flat_placement_info.blk_x_pos[atom_blk_id] = p_placement.block_x_locs[ap_blk_id];
-                flat_placement_info.blk_y_pos[atom_blk_id] = p_placement.block_y_locs[ap_blk_id];
-                flat_placement_info.blk_layer[atom_blk_id] = p_placement.block_layer_nums[ap_blk_id];
-                flat_placement_info.blk_sub_tile[atom_blk_id] = p_placement.block_sub_tiles[ap_blk_id];
-            }
-        }
-    }
+    FlatPlacementInfo flat_placement_info = convert_partial_to_flat_placement(p_placement,
+                                                                              ap_netlist_,
+                                                                              prepacker_,
+                                                                              atom_netlist_);
 
     // Run the initial placer on the clusters created.
     // TODO: Currently, the way initial placer sorts the blocks to place is aligned
@@ -1280,20 +1270,10 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     size_t prev_grid_num_layers = pre_pack_grid.get_num_layers();
 
     // Convert the Partial Placement (APNetlist) to a flat placement (AtomNetlist).
-    FlatPlacementInfo flat_placement_info(atom_netlist_);
-    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-        for (PackMoleculeId mol_id : ap_netlist_.block_molecules(ap_blk_id)) {
-            const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
-            for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
-                if (!atom_blk_id.is_valid())
-                    continue;
-                flat_placement_info.blk_x_pos[atom_blk_id] = p_placement.block_x_locs[ap_blk_id];
-                flat_placement_info.blk_y_pos[atom_blk_id] = p_placement.block_y_locs[ap_blk_id];
-                flat_placement_info.blk_layer[atom_blk_id] = p_placement.block_layer_nums[ap_blk_id];
-                flat_placement_info.blk_sub_tile[atom_blk_id] = p_placement.block_sub_tiles[ap_blk_id];
-            }
-        }
-    }
+    FlatPlacementInfo flat_placement_info = convert_partial_to_flat_placement(p_placement,
+                                                                              ap_netlist_,
+                                                                              prepacker_,
+                                                                              atom_netlist_);
 
     {
         // Run the Packer stage with the flat placement as a hint.

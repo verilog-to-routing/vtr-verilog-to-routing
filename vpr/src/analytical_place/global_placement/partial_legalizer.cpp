@@ -11,7 +11,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-#include <functional>
 #include <iterator>
 #include <limits>
 #include <map>
@@ -703,35 +702,6 @@ void FlowBasedLegalizer::legalize(PartialPlacement& p_placement) {
     density_manager_->export_placement_from_bins(p_placement);
 }
 
-PerPrimitiveDimPrefixSum2D::PerPrimitiveDimPrefixSum2D(const FlatPlacementDensityManager& density_manager,
-                                                       std::function<float(PrimitiveVectorDim, size_t, size_t, size_t)> lookup) {
-    // Get the size that the prefix sums should be.
-    size_t width, height, num_layers;
-    std::tie(width, height, num_layers) = density_manager.get_overall_placeable_region_size();
-
-    // Create each of the prefix sums.
-    const PrimitiveDimManager& dim_manager = density_manager.mass_calculator().get_dim_manager();
-    layer_dim_prefix_sum_.resize(num_layers);
-    for (size_t layer = 0; layer < num_layers; layer++) {
-        layer_dim_prefix_sum_[layer].resize(dim_manager.dims().size());
-        for (PrimitiveVectorDim dim : density_manager.get_used_dims_mask().get_non_zero_dims()) {
-            layer_dim_prefix_sum_[layer][dim] = vtr::PrefixSum2D<uint64_t>(
-                width,
-                height,
-                [&](size_t x, size_t y) {
-                    // Convert the floating point value into fixed point to prevent
-                    // error accumulation in the prefix sum.
-                    // Note: We ceil here since we do not want to lose information
-                    //       on numbers that get very close to 0.
-                    float val = lookup(dim, layer, x, y);
-                    VTR_ASSERT_SAFE_MSG(val >= 0.0f,
-                                        "PerPrimitiveDimPrefixSum2D expected to only hold positive values");
-                    return std::ceil(val * fractional_scale_);
-                });
-        }
-    }
-}
-
 float PerPrimitiveDimPrefixSum2D::get_dim_sum(PrimitiveVectorDim dim,
                                               const vtr::Rect<double>& region,
                                               size_t layer) const {
@@ -885,22 +855,7 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
     // between iterations of the partial legalizer.
     capacity_prefix_sum_ = PerPrimitiveDimPrefixSum2D(
         *density_manager,
-        [&](PrimitiveVectorDim dim, size_t layer, size_t x, size_t y) {
-            // Get the bin at this grid location.
-            FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
-
-            // If the bin is not 1x1, then we only want to apply the capacity to the
-            // center tile of this bin. The other tiles will have zero
-            // capacity. This must be done since the prefix-sum assumes 1x1 grid of
-            // values, so we set the center bin as the representative of the entire
-            // bin.
-            const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
-            size_t center_x = std::floor(bin_region.xmin() + bin_region.width() / 2.0);
-            size_t center_y = std::floor(bin_region.ymin() + bin_region.height() / 2.0);
-            if (x != center_x || y != center_y) {
-                return 0.0f;
-            }
-
+        [&](PrimitiveVectorDim dim, FlatPlacementBinId bin_id) {
             // Get the capacity of the bin for this dim.
             float cap = density_manager_->get_bin_capacity(bin_id).get_dim_val(dim);
             VTR_ASSERT_SAFE(cap >= 0.0f);
@@ -961,15 +916,32 @@ void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
         }
     }
 
-    // 2) For each group, identify non-overlapping windows and spread
+    // 2) Precompute a prefix sum for the current utilization of each 1x1 region
+    //    of the device. The mass of a bin is placed on its center tile.
+    //    Spreading a group only moves blocks whose mass lies in the dims of that
+    //    group, and dim groups are disjoint, so the prefix sum of every group
+    //    stays valid while the other groups are spread.
+    // TODO: A better way of doing this is actually using the solved positions to find
+    //       the utilization of tiles within each non-1x1 bin. However, this may slow
+    //       things down a lot.
     vtr::Timer runtime_timer;
     float window_identification_time = 0.0f;
     float window_spreading_time = 0.0f;
+    PerPrimitiveDimPrefixSum2D utilization_prefix_sum(
+        *density_manager_,
+        [&](PrimitiveVectorDim dim, FlatPlacementBinId bin_id) {
+            float util = density_manager_->get_bin_utilization(bin_id).get_dim_val(dim);
+            VTR_ASSERT_SAFE(util >= 0.0f);
+            return util;
+        });
+    window_identification_time += runtime_timer.elapsed_sec();
+
+    // 3) For each group, identify non-overlapping windows and spread
     for (PrimitiveGroupId group_id : groups_to_spread) {
         VTR_LOGV(log_verbosity_ >= 10, "\tSpreading group %zu\n", group_id);
         // Identify non-overlapping spreading windows.
         float window_identification_start_time = runtime_timer.elapsed_sec();
-        auto non_overlapping_windows = identify_non_overlapping_windows(group_id);
+        std::vector<SpreadingWindow> non_overlapping_windows = identify_non_overlapping_windows(group_id, utilization_prefix_sum);
         window_identification_time += runtime_timer.elapsed_sec() - window_identification_start_time;
         VTR_ASSERT(non_overlapping_windows.size() != 0);
 
@@ -999,7 +971,8 @@ void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
     density_manager_->export_placement_from_bins(p_placement);
 }
 
-std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::identify_non_overlapping_windows(PrimitiveGroupId group_id) {
+std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::identify_non_overlapping_windows(PrimitiveGroupId group_id,
+                                                                                              const PerPrimitiveDimPrefixSum2D& utilization_prefix_sum) {
 
     // 1) Cluster the overfilled bins. This will make creating minimum spanning
     //    windows more efficient.
@@ -1007,7 +980,7 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::identify_non_overla
 
     // 2) For each of the overfilled bin clusters, create a minimum window such
     //    that there is enough space in the window for the atoms inside.
-    auto windows = get_min_windows_around_clusters(overfilled_bin_clusters, group_id);
+    std::vector<SpreadingWindow> windows = get_min_windows_around_clusters(overfilled_bin_clusters, group_id, utilization_prefix_sum);
 
     // 3) Merge overlapping windows.
     merge_overlapping_windows(windows);
@@ -1165,7 +1138,8 @@ static bool is_region_overfilled(const vtr::Rect<double>& region,
 
 std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_around_clusters(
     const std::vector<FlatPlacementBinCluster>& overfilled_bin_clusters,
-    PrimitiveGroupId group_id) {
+    PrimitiveGroupId group_id,
+    const PerPrimitiveDimPrefixSum2D& utilization_prefix_sum) {
     // TODO: Currently, we greedily grow the region by 1 in all directions until
     //       the capacity is larger than the utilization. This may not produce
     //       the minimum window. Should investigate "touching-up" the windows.
@@ -1177,31 +1151,6 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_aro
     // from outgrowing the device.
     size_t width, height, num_layers;
     std::tie(width, height, num_layers) = density_manager_->get_overall_placeable_region_size();
-
-    // Precompute a prefix sum for the current utilization of each 1x1 region
-    // of the device. This needs to be recomputed every time the bins are
-    // modified, so it is recomputed here.
-    PerPrimitiveDimPrefixSum2D utilization_prefix_sum(
-        *density_manager_,
-        [&](PrimitiveVectorDim dim, size_t layer, size_t x, size_t y) {
-            FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
-
-            // Matching the code for the capacity prefix sum, we assume that all of the
-            // mass of a tile is concentrated in its center. All other bins are zeroed out.
-            // TODO: A better way of doing this is actually using the solved positions to find
-            //       the capacity of tiles within each non-1x1 bin. However, this may slow
-            //       things down a lot.
-            const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
-            size_t center_x = std::floor(bin_region.xmin() + bin_region.width() / 2.0);
-            size_t center_y = std::floor(bin_region.ymin() + bin_region.height() / 2.0);
-            if (x != center_x || y != center_y) {
-                return 0.0f;
-            }
-
-            float util = density_manager_->get_bin_utilization(bin_id).get_dim_val(dim);
-            VTR_ASSERT_SAFE(util >= 0.0f);
-            return util;
-        });
 
     // Create windows for each overfilled bin cluster.
     std::vector<SpreadingWindow> windows;
@@ -1427,12 +1376,12 @@ void BiPartitioningPartialLegalizer::move_blocks_into_windows(
 
                         moveable_blks.push_back(blk_id);
                     }
-                    // Remove the moveable blocks from their bins and store into
-                    // the windows.
-                    for (APBlockId blk_id : moveable_blks) {
-                        density_manager_->remove_block_from_bin(blk_id, bin_id);
-                        window.contained_blocks.push_back(blk_id);
-                    }
+                    // Remove the moveable blocks from their bin in one batch
+                    // and store them into the window.
+                    density_manager_->remove_blocks_from_bin(moveable_blks, bin_id);
+                    window.contained_blocks.insert(window.contained_blocks.end(),
+                                                   moveable_blks.begin(),
+                                                   moveable_blks.end());
                 }
             }
         }
@@ -1840,39 +1789,22 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
  * @brief Helper method to decide if we should move a block from one window
  *        to another given the change in overfills.
  *
- *  @param window_curr_overfill
- *      The overfill of this window if the block is not moved to other.
- *  @param window_new_overfill
- *      The overfill of this window if the block is moved to other.
- *  @param other_window_curr_overfill
- *      The overfill of the other window if the block is not moved to other.
- *  @param other_window_new_overfill
- *      THe overfill of the other window if the block is moved to other.
+ *  @param gain How much the overfill of this window would decrease by moving the block.
+ *  @param loss How much the overfill of the other window would increase by moving the block.
  */
-static bool should_move_blk_to_other_window(const PrimitiveVector& window_curr_overfill,
-                                            const PrimitiveVector& window_new_overfill,
-                                            const PrimitiveVector& other_window_curr_overfill,
-                                            const PrimitiveVector& other_window_new_overfill) {
-    // Check what would be the gain of moving this block to the other partition.
-    // Here, we define gain as the amount the overfill of the window would
-    // decrease due to moving this block to the other side.
-    float gain = window_curr_overfill.sum() - window_new_overfill.sum();
+static bool should_move_blk_to_other_window(float gain, float loss) {
     // If there is no gain for removing this from the current window, keep it where it is.
-    if (gain == 0.0)
+    if (gain == 0.0f) {
         return false;
+    }
 
-    // Compute how much the other window would "lose" due to having this
-    // block on the other side.
-    // Here, we define loss as the amount the overfill of the other window would
-    // increase due to moving this block to the other side.
-    float loss = other_window_new_overfill.sum() - other_window_curr_overfill.sum();
     // If we would lose more (i.e. make the overfill worse) by moving to
     // other window than we would gain, keep on this side.
-    if (loss >= gain)
+    if (loss >= gain) {
         return false;
+    }
 
-    // If we reach this point, this means that there is more gain to moving this
-    // block to the other window than there is loss. Move it.
+    // There is more gain to moving this block to the other window than there is loss. Move it.
     return true;
 }
 
@@ -1907,32 +1839,41 @@ static bool try_move_blk_to_other_window(const PrimitiveVector& blk_mass,
                                          PrimitiveVector& other_window_curr_utilization,
                                          PrimitiveVector& other_window_curr_overfill,
                                          const PrimitiveVector& other_window_capacity) {
-    // Compute the overfill this window would have if we remove the block from it.
-    PrimitiveVector window_new_overfill = window_curr_overfill - blk_mass;
-    window_new_overfill.relu();
+    // Compute the gain and loss of moving this block over the dimensions of
+    // its mass.
+    // The gain is how much the overfill of this window would decrease.
+    // The loss is how much the overfill of the other window would increase.
+    float gain = 0.0f;
+    float loss = 0.0f;
+    for (PrimitiveVectorDim dim : blk_mass.dims()) {
+        float mass = blk_mass.get_dim_val(dim);
 
-    // Compute the overfill of the other window if the block moved into it.
-    PrimitiveVector other_window_new_utilization = other_window_curr_utilization + blk_mass;
-    PrimitiveVector other_window_new_overfill = other_window_new_utilization - other_window_capacity;
-    other_window_new_overfill.relu();
+        // Dimensions with zero mass cannot change either overfill, so they are skipped.
+        if (mass == 0.0f) {
+            continue;
+        }
+
+        gain += std::min(window_curr_overfill.get_dim_val(dim), mass);
+
+        float other_window_new_utilization = other_window_curr_utilization.get_dim_val(dim) + mass;
+        float other_window_new_overfill = std::max(0.0f, other_window_new_utilization - other_window_capacity.get_dim_val(dim));
+        loss += other_window_new_overfill - other_window_curr_overfill.get_dim_val(dim);
+    }
 
     // Check if we should move this block to the other window, given the change
-    // in overfill.
-    bool should_move_block = should_move_blk_to_other_window(window_curr_overfill,
-                                                             window_new_overfill,
-                                                             other_window_curr_overfill,
-                                                             other_window_new_overfill);
-    // If we should not move it, return false.
-    if (!should_move_block)
+    // in overfill. If not, nothing has been modified.
+    bool should_move_block = should_move_blk_to_other_window(gain, loss);
+    if (!should_move_block) {
         return false;
+    }
 
-    // If we should move it, update the overfills of each window.
-    // NOTE: Here we are avoiding doing operations on the primitive vectors as
-    //       much as possible.
+    // Move the mass of the block from this window to the other window.
     window_curr_utilization -= blk_mass;
-    window_curr_overfill = std::move(window_new_overfill);
-    other_window_curr_utilization = std::move(other_window_new_utilization);
-    other_window_curr_overfill = std::move(other_window_new_overfill);
+    other_window_curr_utilization += blk_mass;
+
+    // Update the overfills in place.
+    window_curr_overfill.subtract_and_relu(blk_mass);
+    other_window_curr_overfill.set_relu_of_difference(other_window_curr_utilization, other_window_capacity);
 
     // The block was moved.
     return true;
@@ -2039,16 +1980,16 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
         const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
         lower_window_utilization += blk_mass;
     }
-    PrimitiveVector lower_window_overfill = lower_window_utilization - lower_window_capacity;
-    lower_window_overfill.relu();
+    PrimitiveVector lower_window_overfill;
+    lower_window_overfill.set_relu_of_difference(lower_window_utilization, lower_window_capacity);
 
     PrimitiveVector upper_window_utilization;
     for (APBlockId blk_id : upper_contained_blocks) {
         const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
         upper_window_utilization += blk_mass;
     }
-    PrimitiveVector upper_window_overfill = upper_window_utilization - upper_window_capacity;
-    upper_window_overfill.relu();
+    PrimitiveVector upper_window_overfill;
+    upper_window_overfill.set_relu_of_difference(upper_window_utilization, upper_window_capacity);
 
     // If both windows are not overfilled, we are done.
     if (lower_window_overfill.is_zero() && upper_window_overfill.is_zero()) {
@@ -2165,12 +2106,10 @@ void BiPartitioningPartialLegalizer::move_blocks_out_of_windows(
         size_t layer = window.layer_low;
         FlatPlacementBinId bin_id = density_manager_->get_bin(center.x(), center.y(), layer);
 
-        // Move all blocks in the window into this bin.
-        for (APBlockId blk_id : window.contained_blocks) {
-            // Note: The blocks should have been removed from their original
-            //       bins when they were put into the windows. There are asserts
-            //       within the density manager class which will verify this.
-            density_manager_->insert_block_into_bin(blk_id, bin_id);
-        }
+        // Move all blocks in the window into this bin in one batch.
+        // Note: The blocks should have been removed from their original
+        //       bins when they were put into the windows. There are asserts
+        //       within the density manager class which will verify this.
+        density_manager_->insert_blocks_into_bin(window.contained_blocks, bin_id);
     }
 }

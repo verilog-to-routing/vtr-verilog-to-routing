@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <string>
 #include <iomanip>
+#include <limits>
+#include <unordered_set>
 
 #include "physical_types.h"
 #include "physical_types_util.h"
@@ -25,6 +27,7 @@
 #include "rr_graph_area.h"
 #include "segment_stats.h"
 #include "channel_stats.h"
+#include "echo_files.h"
 #include "interposer_routing_stats.h"
 
 /********************** Subroutines local to this module *********************/
@@ -61,6 +64,22 @@ static void write_channel_occupancy_table(std::string_view filename,
  */
 static void length_and_bends_stats(const Netlist<>& net_list, bool is_flat);
 
+/**
+ * @brief Writes the routed wire usage of each net to a file.
+ *
+ * Each row contains the routed wirelength, number of segments and bends of
+ * the net (as computed by get_num_bends_and_length, so the lengths sum to the
+ * total wirelength reported in the log), along with the bounding box of the
+ * placed tiles which the net connects. The net name is the last column.
+ *
+ *  @param filename     Output file path.
+ *  @param net_list     The netlist which was routed.
+ *  @param is_flat      Whether the routing is flat (net_list is the atom netlist).
+ */
+static void write_routed_net_wire_usage(const std::string& filename,
+                                        const Netlist<>& net_list,
+                                        bool is_flat);
+
 ///@brief Determines how many tracks are used in each channel and prints out statistics
 static void get_channel_occupancy_stats(const Netlist<>& net_list);
 
@@ -83,6 +102,8 @@ void routing_stats(const Netlist<>& net_list,
     int num_rr_switch = rr_graph.num_rr_switches();
 
     length_and_bends_stats(net_list, is_flat);
+    if (isEchoFileEnabled(E_ECHO_ROUTED_NET_WIRE_USAGE))
+        write_routed_net_wire_usage(getEchoFileName(E_ECHO_ROUTED_NET_WIRE_USAGE), net_list, is_flat);
     print_channel_stats(is_flat);
     get_channel_occupancy_stats(net_list);
     print_interposer_routing_stats(net_list);
@@ -133,6 +154,83 @@ void routing_stats(const Netlist<>& net_list,
 
     if (full_stats) {
         print_wirelen_prob_dist(is_flat);
+    }
+}
+
+static void write_routed_net_wire_usage(const std::string& filename,
+                                        const Netlist<>& net_list,
+                                        bool is_flat) {
+    std::ofstream os(filename);
+    if (!os) {
+        VTR_LOG_WARN("Unable to open routed net wire usage echo file '%s' for writing.\n", filename.c_str());
+        return;
+    }
+
+    os << "# Routed wire usage of each net.\n";
+    os << "#   num_pins:  Number of pins on the net.\n";
+    os << "#   status:    global (ignored by the router) | no_sinks | absorbed (no wires used) | routed.\n";
+    os << "#   num_tiles: Number of distinct placed tiles connected by the net (by tile root location).\n";
+    os << "#   bb_dx/dy:  Placed tile bounding box span, including the adjacent channel (+1).\n";
+    os << "#   bb_dz:     Number of layers crossed by the placed tile bounding box.\n";
+    os << "#   length:    Routed wirelength, in units of 1 tile wire segments.\n";
+    os << "#   segments:  Number of CHANX / CHANY wires used.\n";
+    os << "#   bends:     Number of bends in the routing.\n";
+    os << "num_pins status num_tiles bb_dx bb_dy bb_dz length segments bends net_name\n";
+    for (ParentNetId net_id : net_list.nets()) {
+        // Compute the bounding box over the root locations of the tiles which
+        // the pins of this net are placed in.
+        int min_x = std::numeric_limits<int>::max();
+        int max_x = std::numeric_limits<int>::lowest();
+        int min_y = std::numeric_limits<int>::max();
+        int max_y = std::numeric_limits<int>::lowest();
+        int min_z = std::numeric_limits<int>::max();
+        int max_z = std::numeric_limits<int>::lowest();
+        std::unordered_set<t_physical_tile_loc> net_tile_locs;
+        for (ParentPinId pin_id : net_list.net_pins(net_id)) {
+            t_pl_loc blk_loc = get_block_loc(net_list.pin_block(pin_id), is_flat).loc;
+            min_x = std::min(min_x, blk_loc.x);
+            max_x = std::max(max_x, blk_loc.x);
+            min_y = std::min(min_y, blk_loc.y);
+            max_y = std::max(max_y, blk_loc.y);
+            min_z = std::min(min_z, blk_loc.layer);
+            max_z = std::max(max_z, blk_loc.layer);
+            net_tile_locs.insert(t_physical_tile_loc(blk_loc.x, blk_loc.y, blk_loc.layer));
+        }
+        VTR_ASSERT(!net_tile_locs.empty());
+
+        // Same convention as the placer: the x and y spans include the adjacent
+        // channel, and the z span only counts layer crossings.
+        int bb_dx = max_x - min_x + 1;
+        int bb_dy = max_y - min_y + 1;
+        int bb_dz = max_z - min_z;
+
+        // Collect the routed wire usage, using the same criteria as the
+        // wirelength statistics printed in the log.
+        const char* status = "routed";
+        int bends = 0;
+        int length = 0;
+        int segments = 0;
+        if (net_list.net_is_ignored(net_id)) {
+            status = "global";
+        } else if (net_list.net_sinks(net_id).size() == 0) {
+            status = "no_sinks";
+        } else {
+            bool is_absorbed;
+            get_num_bends_and_length(net_id, &bends, &length, &segments, &is_absorbed);
+            if (is_absorbed)
+                status = "absorbed";
+        }
+
+        os << net_list.net_pins(net_id).size() << " "
+           << status << " "
+           << net_tile_locs.size() << " "
+           << bb_dx << " "
+           << bb_dy << " "
+           << bb_dz << " "
+           << length << " "
+           << segments << " "
+           << bends << " "
+           << net_list.net_name(net_id) << "\n";
     }
 }
 
