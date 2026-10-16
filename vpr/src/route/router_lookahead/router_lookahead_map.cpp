@@ -178,7 +178,9 @@ MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_f
     , route_verbosity_(route_verbosity)
     , device_model_warnings_(device_model_warnings)
     , interposer_base_cost_multiplier_(interposer_base_cost_multiplier) {
-    has_interposer_cuts_ = g_vpr_ctx.device().grid.has_interposer_cuts();
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
+    has_interposer_cuts_ = grid.has_interposer_cuts();
+    is_single_layer_ = (grid.get_num_layers() == 1);
 }
 
 float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
@@ -332,11 +334,16 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 }
 
 std::pair<float, float> MapLookahead::get_expected_delay_and_cong_global(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
-    int from_layer_num = rr_graph.node_layer_low(from_node);
-    int to_layer_num = rr_graph.node_layer_low(to_node);
+    // The layer array is separate from the node data, so skip reading it when every node is on layer 0.
+    int from_layer_num = 0;
+    int to_layer_num = 0;
+    if (!is_single_layer_) {
+        from_layer_num = rr_graph.node_layer_low(from_node);
+        to_layer_num = rr_graph.node_layer_low(to_node);
+    }
     auto [delta_x, delta_y] = util::get_xy_deltas(from_node, to_node);
     delta_x = abs(delta_x);
     delta_y = abs(delta_y);
