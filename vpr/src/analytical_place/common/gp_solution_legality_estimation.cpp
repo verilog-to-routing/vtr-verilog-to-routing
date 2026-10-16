@@ -44,6 +44,7 @@
 #include "vtr_log.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_strong_id.h"
+#include "vtr_time.h"
 #include "vtr_vector.h"
 
 /// @brief The number of worst tiles reported in the legality summary.
@@ -2008,6 +2009,7 @@ t_ap_legality_estimate estimate_legality(const PartialPlacement& p_placement,
                                          const std::vector<t_physical_tile_type>& physical_tile_types,
                                          const std::vector<t_direct_inf>& directs,
                                          const UserPlaceConstraints& constraints) {
+    vtr::ScopedStartFinishTimer timer("Legality Estimation");
     LegalityEstimator estimator(p_placement,
                                 ap_netlist,
                                 atom_netlist,
