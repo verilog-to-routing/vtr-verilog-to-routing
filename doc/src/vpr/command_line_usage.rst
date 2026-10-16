@@ -687,6 +687,10 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
     Controls whether dangling nets (i.e. those who do not drive, or are not driven by anything) are swept and removed from the netlist.
 
+    .. note:: VPR cannot implement nets which have sinks but no driver.
+              If such undriven nets are found when this option is ``off``, VPR reports them as an error.
+              Undriven nets usually indicate a problem in the design or in synthesis.
+
     **Default**: ``on``
 
 .. option:: --sweep_dangling_blocks {on | off}
