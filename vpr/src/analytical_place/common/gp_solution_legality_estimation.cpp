@@ -12,9 +12,11 @@
 #include <cmath>
 #include <cstddef>
 #include <fstream>
+#include <limits>
 #include <map>
 #include <numeric>
 #include <optional>
+#include <queue>
 #include <set>
 #include <string>
 #include <string_view>
@@ -40,6 +42,7 @@
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_log.h"
+#include "vtr_ndmatrix.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 
@@ -714,10 +717,33 @@ static std::vector<const t_pb_type*> get_tile_primitive_pb_types(const t_physica
  * @brief Get the minimum number of atoms of the given classes which must be
  *        evicted for them to fit within the given slot combination.
  *
- * This is the deficiency of assigning the atoms to slots, where each atom can
- * use any slot which can implement it. By Hall's theorem, it is the largest
- * excess, over every set of the classes, of the number of atoms in those
- * classes over the number of slots which can implement any of them.
+ * Fitting the atoms into the slots is a matching problem: each atom needs its
+ * own slot, and can only use the slots which can implement it. The number of
+ * atoms which cannot be matched to a slot (the deficiency) is the number which
+ * must be evicted.
+ *
+ * Comparing the total number of atoms against the total number of slots is not
+ * enough, since some atoms can only use some of the slots. For example, with
+ * one LUT6 slot and two LUT5 slots, two LUT6 atoms and one LUT2 atom do not
+ * fit, even though there are three atoms and three slots: the two LUT6 atoms
+ * only have one slot between them.
+ *
+ * The largest number of atoms which can be matched to slots is the maximum
+ * flow through the network:
+ *
+ *      source --[atoms]--> class --> dimension --[slots]--> sink
+ *
+ * where the source is connected to each class with a capacity of the number
+ * of atoms in the class, each class is connected to each dimension whose slots
+ * can implement it, and each dimension is connected to the sink with a
+ * capacity of the number of slots of the dimension. Each unit of flow assigns
+ * one atom to one slot. The atoms of a class can all use the same slots, so
+ * only the number of atoms in each class matters.
+ *
+ * The network has one node per class and per dimension, so it is small. The
+ * maximum flow is found with the Edmonds-Karp algorithm, which repeatedly
+ * pushes flow along the shortest path from the source to the sink which still
+ * has capacity.
  *
  *  @param classes          The atom classes to check. These should not share
  *                          any dimension with the other classes.
@@ -730,31 +756,68 @@ static int get_slot_deficiency(const std::vector<size_t>& classes,
                                const std::vector<int>& class_demand,
                                const std::vector<vtr::vector<SlotDimId, bool>>& class_slots,
                                const t_slot_combination& combination) {
+    // Node 0 is the source, followed by a node for each class, a node for each
+    // dimension, and the sink.
     size_t num_classes = classes.size();
-    VTR_ASSERT_MSG(num_classes < 8 * sizeof(size_t), "Too many atom classes sharing slots in a tile");
-    int deficiency = 0;
-    vtr::vector<SlotDimId, bool> slot_is_usable(combination.size());
-    for (size_t class_set = 1; class_set < (size_t(1) << num_classes); class_set++) {
-        int demand = 0;
-        std::fill(slot_is_usable.begin(), slot_is_usable.end(), false);
-        for (size_t i = 0; i < num_classes; i++) {
-            if (((class_set >> i) & 1) == 0)
-                continue;
-            size_t c = classes[i];
-            demand += class_demand[c];
-            for (SlotDimId dim : combination.keys()) {
-                if (class_slots[c][dim])
-                    slot_is_usable[dim] = true;
+    size_t num_nodes = 1 + num_classes + combination.size() + 1;
+    size_t source = 0;
+    size_t sink = num_nodes - 1;
+    auto class_node = [](size_t i) { return 1 + i; };
+    auto dim_node = [&](SlotDimId dim) { return 1 + num_classes + static_cast<size_t>(dim); };
+
+    // The remaining (residual) capacity of each edge. The edge from a class to
+    // a dimension does not limit the flow, so it is given the number of atoms
+    // in the class.
+    vtr::NdMatrix<int, 2> capacity({num_nodes, num_nodes}, 0);
+    int demand = 0;
+    for (size_t i = 0; i < num_classes; i++) {
+        size_t c = classes[i];
+        demand += class_demand[c];
+        capacity[source][class_node(i)] = class_demand[c];
+        for (SlotDimId dim : combination.keys()) {
+            if (class_slots[c][dim])
+                capacity[class_node(i)][dim_node(dim)] = class_demand[c];
+        }
+    }
+    for (SlotDimId dim : combination.keys())
+        capacity[dim_node(dim)][sink] = combination[dim];
+
+    int max_flow = 0;
+    std::vector<size_t> parent(num_nodes);
+    std::vector<bool> visited(num_nodes);
+    std::queue<size_t> frontier;
+    while (true) {
+        // Find the shortest path from the source to the sink with capacity.
+        std::fill(visited.begin(), visited.end(), false);
+        visited[source] = true;
+        frontier.push(source);
+        while (!frontier.empty()) {
+            size_t node = frontier.front();
+            frontier.pop();
+            for (size_t next = 0; next < num_nodes; next++) {
+                if (visited[next] || capacity[node][next] <= 0)
+                    continue;
+                visited[next] = true;
+                parent[next] = node;
+                frontier.push(next);
             }
         }
-        int supply = 0;
-        for (SlotDimId dim : combination.keys()) {
-            if (slot_is_usable[dim])
-                supply += combination[dim];
+        if (!visited[sink])
+            break;
+
+        // Push as much flow as the path allows. Pushing flow along an edge
+        // allows it to be undone later through the reverse edge.
+        int path_flow = std::numeric_limits<int>::max();
+        for (size_t node = sink; node != source; node = parent[node])
+            path_flow = std::min(path_flow, capacity[parent[node]][node]);
+        for (size_t node = sink; node != source; node = parent[node]) {
+            capacity[parent[node]][node] -= path_flow;
+            capacity[node][parent[node]] += path_flow;
         }
-        deficiency = std::max(deficiency, demand - supply);
+        max_flow += path_flow;
     }
-    return deficiency;
+
+    return demand - max_flow;
 }
 
 /**
@@ -762,7 +825,8 @@ static int get_slot_deficiency(const std::vector<size_t>& classes,
  *        dimension, directly or through other classes in the group.
  *
  * The deficiency of each group (see get_slot_deficiency) is independent of
- * the other groups, which keeps the number of sets of classes checked small.
+ * the other groups, so evicting an atom only changes the deficiency of its
+ * own group.
  *
  *  @param class_slots  [class][dim] Whether the slots of each dimension can
  *                      implement each atom class.
