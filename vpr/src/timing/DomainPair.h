@@ -1,11 +1,10 @@
 #pragma once
 
-#include <algorithm>
 #include <tuple>
-#include <vector>
 
 #include "tatum/TimingGraphFwd.hpp"
 #include "vtr_assert.h"
+#include "vtr_ndmatrix.h"
 
 //A pair of clock domains
 struct DomainPair {
@@ -35,12 +34,11 @@ class DomainPairTable {
 
     /// @brief Creates a table covering num_domains clock domains with every entry invalid.
     explicit DomainPairTable(size_t num_domains)
-        : num_domains_(num_domains)
-        , valid_(num_domains * num_domains, false)
-        , values_(num_domains * num_domains) {}
+        : valid_({num_domains, num_domains}, false)
+        , values_({num_domains, num_domains}) {}
 
     /// @brief Returns true if a value has been set for the domain pair.
-    bool contains(DomainPair pair) const { return valid_[index_(pair)]; }
+    bool contains(DomainPair pair) const { return valid_[size_t(pair.launch)][size_t(pair.capture)]; }
 
     /// @brief Returns true if no value has been set for any domain pair.
     bool empty() const { return num_valid_ == 0; }
@@ -48,34 +46,37 @@ class DomainPairTable {
     /// @brief Returns the value set for the domain pair.
     const T& operator[](DomainPair pair) const {
         VTR_ASSERT_SAFE(contains(pair));
-        return values_[index_(pair)];
+        return values_[size_t(pair.launch)][size_t(pair.capture)];
     }
 
     /// @brief Sets the value for the domain pair.
     void set(DomainPair pair, const T& value) {
-        size_t idx = index_(pair);
-        if (!valid_[idx]) {
-            valid_[idx] = true;
+        bool& valid = valid_[size_t(pair.launch)][size_t(pair.capture)];
+        if (!valid) {
+            valid = true;
             ++num_valid_;
         }
-        values_[idx] = value;
+        values_[size_t(pair.launch)][size_t(pair.capture)] = value;
     }
 
     /// @brief Marks every entry invalid.
     void clear() {
-        std::ranges::fill(valid_, false);
+        valid_.fill(false);
         num_valid_ = 0;
     }
 
     /// @brief Two tables are equal when the same domain pairs are set and their values are equal.
     /// Declared as a friend so it can read the private members of both operands.
     friend bool operator==(const DomainPairTable& lhs, const DomainPairTable& rhs) {
-        if (lhs.num_domains_ != rhs.num_domains_ || lhs.valid_ != rhs.valid_) {
+        if (lhs.valid_.dim_size(0) != rhs.valid_.dim_size(0)) {
             return false;
         }
 
         for (size_t idx = 0; idx < lhs.valid_.size(); ++idx) {
-            if (lhs.valid_[idx] && !(lhs.values_[idx] == rhs.values_[idx])) {
+            if (lhs.valid_.get(idx) != rhs.valid_.get(idx)) {
+                return false;
+            }
+            if (lhs.valid_.get(idx) && !(lhs.values_.get(idx) == rhs.values_.get(idx))) {
                 return false;
             }
         }
@@ -84,20 +85,12 @@ class DomainPairTable {
     }
 
   private:
-    size_t index_(DomainPair pair) const {
-        VTR_ASSERT_SAFE(size_t(pair.launch) < num_domains_ && size_t(pair.capture) < num_domains_);
-        return size_t(pair.launch) * num_domains_ + size_t(pair.capture);
-    }
-
-    /// Number of clock domains covered by the table
-    size_t num_domains_ = 0;
-
     /// Number of domain pairs with a value set
     size_t num_valid_ = 0;
 
-    /// Whether each domain pair has a value set
-    std::vector<char> valid_;
+    /// Whether each (launch, capture) domain pair has a value set
+    vtr::NdMatrix<bool, 2> valid_;
 
-    /// The value of each domain pair
-    std::vector<T> values_;
+    /// The value of each (launch, capture) domain pair
+    vtr::NdMatrix<T, 2> values_;
 };
