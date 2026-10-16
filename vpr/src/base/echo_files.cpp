@@ -143,6 +143,9 @@ void alloc_and_load_echo_file_info() {
     setEchoFileName(E_ECHO_AP_POST_ROUTING_WIRE_USAGE_ESTIMATE, "wire_usage.ap_post_routing_estimate.echo");
     setEchoFileName(E_ECHO_ROUTED_NET_WIRE_USAGE, "wire_usage.routed.echo");
 
+    // Legality
+    setEchoFileName(E_ECHO_AP_LEGALITY_ESTIMATE, "legality.ap_estimate.echo");
+
     setEchoFileName(E_ECHO_PLACE_MACROS, "place_macros.echo");
     setEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT, "initial_clb_placement.echo");
     setEchoFileName(E_ECHO_INITIAL_PLACEMENT_SLACK, "initial_placement_slack.echo");

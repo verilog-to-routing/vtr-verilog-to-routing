@@ -20,6 +20,7 @@
 #include "device_size_estimate.h"
 #include "draw.h"
 #include "full_legalizer.h"
+#include "gp_solution_legality_estimation.h"
 #include "gp_solution_quality_estimation.h"
 #include "setup_grid.h"
 #include "logical_ram_infer.h"
@@ -216,6 +217,18 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
                                           prepacker,
                                           p_placement);
         VTR_LOG("\tPlacement estimated wirelength: %g\n", estimate_post_routing_wire_usage(p_placement, ap_netlist, device_ctx.grid));
+
+        // Print the estimated legality of the flat placement.
+        t_ap_legality_estimate legality_estimate = estimate_legality(p_placement,
+                                                                     ap_netlist,
+                                                                     atom_nlist,
+                                                                     prepacker,
+                                                                     device_ctx.grid,
+                                                                     device_ctx.physical_tile_types,
+                                                                     device_ctx.arch->directs,
+                                                                     g_vpr_ctx.floorplanning().constraints);
+        print_legality_summary(legality_estimate, device_ctx.physical_tile_types);
+
         return p_placement;
     } else {
         // Run the Global Placer

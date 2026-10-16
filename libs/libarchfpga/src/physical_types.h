@@ -1039,6 +1039,18 @@ struct t_pb_type {
     }
 
     /**
+     * @brief Check if t_pb_type is a memory primitive (i.e. a RAM slice).
+     *
+     * The memory primitives of the same mode share a RAM block, so they must
+     * share all of their non-data nets (see primitive_memory_sibling_feasible).
+     *
+     * @return if t_pb_type is a primitive of the memory class or not
+     */
+    inline bool is_memory_primitive() const {
+        return is_primitive() && class_type == MEMORY_CLASS;
+    }
+
+    /**
      * @brief Check if this pb_type or any of its descendants contains a bus-based mux
      *        (<mux bus="true">).
      *
