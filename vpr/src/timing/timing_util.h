@@ -12,7 +12,7 @@
 #include "tatum/report/TimingPath.hpp"
 #include "tatum/report/SkewPath.hpp"
 #include "timing_info_fwd.h"
-#include "DomainPair.h"
+#include "domain_pair.h"
 
 #include "clustered_netlist_utils.h"
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "atom_netlist_fwd.h"
-#include "DomainPair.h"
+#include "domain_pair.h"
 #include "tatum/analyzers/HoldTimingAnalyzer.hpp"
 #include "tatum/analyzers/SetupTimingAnalyzer.hpp"
 #include "vtr_vector.h"
