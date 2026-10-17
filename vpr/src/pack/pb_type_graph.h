@@ -105,8 +105,9 @@ std::vector<const t_pb_graph_pin*> find_equivalent_pb_graph_pins(const t_pb_grap
  * @param src   Source pb_graph pin whose equivalent pins are searched from.
  * @param sink  Sink pb_graph pin whose equivalent pins are searched for.
  *
- * @return The minimum accumulated delay_max along a path from an equivalent
- *         source pin to an equivalent sink pin, or -1.0f if no path exists.
+ * @return The minimum, over equivalent source / sink pin pairs, of the
+ *         accumulated delay_max along the fewest-hop path between them, or
+ *         -1.0f if no path exists.
  */
 float calc_min_equivalent_pin_path_delay(const t_pb_graph_pin* src, const t_pb_graph_pin* sink);
 
@@ -125,7 +126,8 @@ float calc_min_equivalent_pin_path_delay(const t_pb_graph_pin* src, const t_pb_g
  *
  * @param src   Source pb_graph pin whose equivalent pins are searched from.
  *
- * @return The minimum accumulated delay_max from an equivalent pin to a
+ * @return The minimum, over equivalent pins, of the accumulated delay_max
+ *         along the fewest-hop path from the equivalent pin to the nearest
  *         root-block pin, or -1.0f if no root-block pin is reachable.
  */
 float calc_min_equivalent_pin_delay_to_root_pin(const t_pb_graph_pin* src);
@@ -145,7 +147,8 @@ float calc_min_equivalent_pin_delay_to_root_pin(const t_pb_graph_pin* src);
  *
  * @param sink  Sink pb_graph pin whose equivalent pins are searched to.
  *
- * @return The minimum accumulated delay_max from a root-block pin to an
+ * @return The minimum, over equivalent pins, of the accumulated delay_max
+ *         along the fewest-hop path from the nearest root-block pin to the
  *         equivalent pin, or -1.0f if no equivalent pin is reachable.
  */
 float calc_min_equivalent_pin_delay_from_root_pin(const t_pb_graph_pin* sink);

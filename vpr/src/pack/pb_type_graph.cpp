@@ -2070,7 +2070,9 @@ std::vector<const t_pb_graph_pin*> find_equivalent_pb_graph_pins(const t_pb_grap
  *                  pin; otherwise, search from a root-block pin to the
  *                  equivalent pins.
  *
- * @return The minimum delay, or -1.0f if no equivalent pin can reach (or be
+ * @return The minimum, over equivalent pins, of the accumulated delay_max
+ *         along the fewest-hop path between the equivalent pin and the nearest
+ *         root-block pin, or -1.0f if no equivalent pin can reach (or be
  *         reached from) a root-block pin.
  */
 static float calc_min_equivalent_pin_root_delay(const t_pb_graph_pin* pin, bool forward) {
