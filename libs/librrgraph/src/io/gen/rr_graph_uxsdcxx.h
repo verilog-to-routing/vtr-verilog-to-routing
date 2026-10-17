@@ -4,8 +4,8 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/alex/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/alex/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
  * md5sum of input file: 4b2ef78f43cba03933974d33ee053c65
  */
 
@@ -4394,9 +4394,16 @@ inline void dfa_error(const char *wrong, const int *states, const char * const *
 		if(states[i] != -1) expected.push_back(lookup[i]);
 	}
 
-	std::string expected_or = expected[0];
-	for(unsigned int i=1; i<expected.size(); i++)
-		expected_or += std::string(" or ") + expected[i];
+	/* If the current state has no valid transitions (e.g. the content model
+	 * has already been fully matched), there is nothing to suggest. */
+	if(expected.empty())
+		noreturn_report(report_error, ("Unexpected " + std::string(wrong)).c_str());
+
+	std::string expected_or;
+	for(const auto &e : expected){
+		if(!expected_or.empty()) expected_or += " or ";
+		expected_or += e;
+	}
 
 	noreturn_report(report_error, ("Expected " + expected_or + ", found " + std::string(wrong)).c_str());
 }

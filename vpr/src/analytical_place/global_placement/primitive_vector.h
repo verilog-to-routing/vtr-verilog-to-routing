@@ -17,10 +17,12 @@
  * available dims and lookups between the models and the dims.
  */
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <vector>
 #include "vtr_log.h"
+#include "vtr_strong_id_range.h"
 #include "vtr_vector.h"
 
 #include "primitive_vector_fwd.h"
@@ -90,6 +92,12 @@ class PrimitiveVector {
         if ((size_t)dim >= data_.size())
             data_.resize((size_t)dim + 1, 0.0f);
         data_[dim] = val;
+    }
+
+    /// @brief Range over the dimensions stored in this vector.
+    inline vtr::StrongIdRange<PrimitiveVectorDim> dims() const {
+        return vtr::StrongIdRange<PrimitiveVectorDim>(PrimitiveVectorDim(0),
+                                                      PrimitiveVectorDim(data_.size()));
     }
 
     /**
@@ -209,6 +217,29 @@ class PrimitiveVector {
         for (float& val : data_) {
             if (val < 0.0f)
                 val = 0.0f;
+        }
+    }
+
+    /// @brief Subtract rhs from this vector, then clamp every dimension to be non-negative.
+    /// @note Equivalent to operator-= followed by relu.
+    inline void subtract_and_relu(const PrimitiveVector& rhs) {
+        if (rhs.data_.size() > data_.size()) {
+            data_.resize(rhs.data_.size(), 0.0f);
+        }
+        for (PrimitiveVectorDim dim : dims()) {
+            data_[dim] = std::max(0.0f, data_[dim] - rhs.get_dim_val(dim));
+        }
+    }
+
+    /// @brief Set this vector to lhs minus rhs with every dimension clamped to be non-negative.
+    /// @note Equivalent to assigning lhs - rhs and then calling relu.
+    inline void set_relu_of_difference(const PrimitiveVector& lhs, const PrimitiveVector& rhs) {
+        size_t num_dims = std::max({data_.size(), lhs.data_.size(), rhs.data_.size()});
+        if (num_dims > data_.size()) {
+            data_.resize(num_dims, 0.0f);
+        }
+        for (PrimitiveVectorDim dim : dims()) {
+            data_[dim] = std::max(0.0f, lhs.get_dim_val(dim) - rhs.get_dim_val(dim));
         }
     }
 

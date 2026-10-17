@@ -60,6 +60,29 @@ void write_flat_placement(const char* flat_place_file_path,
                           int flat_place_verbosity);
 
 /**
+ * @brief A function that writes a flat placement file from an atom-level flat
+ *        placement (e.g. a global placement), before clustering.
+ *
+ * Each atom is written at its own location in the flat placement, which may be
+ * off-grid. Atoms without a location in the flat placement are not written.
+ *
+ *  @param flat_place_file_path
+ *                  Path to the file to write the flat placement to.
+ *  @param flat_placement_info
+ *                  The flat placement to write.
+ *  @param atom_netlist
+ *                  The netlist of atom blocks in the circuit.
+ *  @param flat_place_verbosity
+ *                  How much annotation to write (see --flat_place_verbosity).
+ *                  Since there is no clustering, the only annotation is the
+ *                  header comments, written when this is at least 1.
+ */
+void write_flat_placement(const char* flat_place_file_path,
+                          const FlatPlacementInfo& flat_placement_info,
+                          const AtomNetlist& atom_netlist,
+                          int flat_place_verbosity);
+
+/**
  * @brief Reads a flat placement file generated from a previous run of VTR or
  *        externally generated.
  *

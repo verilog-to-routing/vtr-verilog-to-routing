@@ -122,6 +122,23 @@ instead of the default analytical placement flow, pass all four stage flags expl
 
     **Default:** ``off``
 
+.. option:: --global_place
+
+    Run only the Global Placement stage of the analytical placement flow (see :option:`--analytical_place`).
+    The flow stops right after global placement; full legalization and detailed placement are skipped, so no
+    clustered netlist or placement is produced.
+    After global placement, post-global placement quality metrics are reported.
+
+    If a flat placement is provided with :option:`--read_flat_place`, the global placer is not run; instead,
+    the flat placement is read and used as the global placement solution.
+
+    The global placement solution can be written to a file using :option:`--write_post_gp_flat_place`.
+
+    This option cannot be combined with :option:`--route` or :option:`--analysis`.
+    If :option:`--analytical_place` is also specified, the full analytical placement flow is run.
+
+    **Default:** ``off``
+
 .. option:: --route
 
     Run routing stage.
@@ -312,10 +329,21 @@ General Options
 
     **Default:**  ``on``
 
-.. option:: --echo_file {on | off}
+.. option:: --echo_file {on | off | <echo_file_name> [<echo_file_name> ...]}
 
     Generates echo files of key internal data structures.
     These files are generally used for debugging vpr, and typically end in ``.echo``
+
+    * ``off``: No echo files are generated.
+    * ``on``: All echo files are generated.
+    * ``<echo_file_name> [<echo_file_name> ...]``: Only the listed echo files are generated, identified by their default file names.
+      This is useful when only a few echo files are needed, since some echo files can be very large.
+
+    For example, the following generates only the timing graph analysis and clusters echo files:
+
+    .. code-block:: none
+
+        --echo_file timing_graph.analysis.echo clusters.echo
 
     **Default:** ``off``
 
@@ -571,6 +599,17 @@ Use the options below to override this default naming behaviour.
 
     * The x, y, and sub_tile location of the cluster that contains this atom.
 
+.. option:: --write_post_gp_flat_place <file>
+
+    Writes the flat placement produced by Global Placement in the analytical
+    placement flow (see :option:`--analytical_place` and :option:`--global_place`)
+    into a flat placement file (see :ref:`flat placement file format <vpr_flat_place_file>`).
+
+    For each atom in the netlist, the (x, y, layer) position and sub_tile chosen by
+    the global placer are stored. Since the global placement has not been legalized
+    yet, these positions may be fractional (off-grid). This file can be read back in
+    using :option:`--read_flat_place`.
+
 .. option:: --flat_place_verbosity <int>
 
     Controls how much annotation is written into flat placement files
@@ -647,6 +686,10 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 .. option:: --sweep_dangling_nets {on | off}
 
     Controls whether dangling nets (i.e. those who do not drive, or are not driven by anything) are swept and removed from the netlist.
+
+    .. note:: VPR cannot implement nets which have sinks but no driver.
+              If such undriven nets are found when this option is ``off``, VPR reports them as an error.
+              Undriven nets usually indicate a problem in the design or in synthesis.
 
     **Default**: ``on``
 

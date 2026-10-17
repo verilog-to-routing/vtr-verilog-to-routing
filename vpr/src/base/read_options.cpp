@@ -1737,6 +1737,11 @@ static void add_stage_options(argparse::ArgumentParser& parser, t_options& args)
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 
+    stage_grp.add_argument<bool, ParseOnOff>(args.do_global_placement, "--global_place")
+        .help("Run only the Global Placement stage of the analytical placement flow. This stops the analytical placement flow after global placement (skipping full legalization and detailed placement) and reports post-global placement quality metrics. If --read_flat_place is provided, the flat placement is used as the global placement solution instead of running the global placer. Cannot be combined with --route or --analysis.")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
     stage_grp.add_argument<bool, ParseOnOff>(args.do_routing, "--route")
         .help("Run routing")
         .action(argparse::Action::STORE_TRUE)
@@ -1927,11 +1932,18 @@ static void add_general_options(argparse::ArgumentParser& parser, t_options& arg
         .default_value("auto")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    gen_grp.add_argument<bool, ParseOnOff>(args.CreateEchoFile, "--echo_file")
+    gen_grp.add_argument(args.echo_file, "--echo_file")
         .help(
             "Generate echo files of key internal data structures."
-            " Useful for debugging VPR, and typically end in .echo")
-        .default_value("off")
+            " Useful for debugging VPR, and typically end in .echo\n"
+            " * off: No echo files are generated\n"
+            " * on: All echo files are generated\n"
+            " * <echo_file_name> ...: Only the listed echo files are generated,\n"
+            "       identified by their default file names. Useful since some\n"
+            "       echo files can be very large.\n"
+            "       e.g. --echo_file timing_graph.analysis.echo clusters.echo")
+        .nargs('+')
+        .default_value({"off"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument<bool, ParseOnOff>(args.verify_file_digests, "--verify_file_digests")
@@ -2148,6 +2160,11 @@ static void add_file_options(argparse::ArgumentParser& parser, t_options& args) 
     file_grp.add_argument(args.write_legalized_flat_place_file, "--write_legalized_flat_place")
         .help(
             "VPR's (or reconstructed external) placement solution after legalization and before anneal in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_post_gp_flat_place_file, "--write_post_gp_flat_place")
+        .help(
+            "Writes the flat placement produced by Global Placement in the analytical placement flow to the given file in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom. The coordinates may be fractional (off-grid), since the global placement has not been legalized yet.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument<int>(args.flat_place_verbosity, "--flat_place_verbosity")

@@ -3,7 +3,6 @@
 // Experimental separable lookahead.
 // TODO: Remove the dependency on the map lookahead for filling in unsampled elements in the table
 // TODO: Clean up the OPIN/SOURCE lookahead code
-// TODO: Use the separable lookahead in the get_opin_distance_min_delay function
 // TODO: Fix the sampling strip logic to not hardcode the position
 // TODO: Add flat router support
 // TODO: Add writing/reading lookahead support
@@ -48,7 +47,13 @@ class SeparableLookahead final : public RouterLookahead {
     t_x_wire_cost_map x_wire_cost_map_;              ///< Profiled wire costs along x.
     t_y_wire_cost_map y_wire_cost_map_;              ///< Profiled wire costs along y.
 
-    bool is_flat_; ///< Whether flat routing is enabled.
+    // Indexed by tile type, source layer, target layer, source coordinate and target coordinate.
+    vtr::NdMatrix<float, 5> opin_x_min_delay_; ///< Minimum x delay, including OPIN access delay.
+    vtr::NdMatrix<float, 5> opin_y_min_delay_; ///< Minimum y delay.
+
+    bool is_flat_;               ///< Whether flat routing is enabled.
+    int route_verbosity_;        ///< Verbosity for SOURCE/OPIN profiling.
+    bool device_model_warnings_; ///< Whether to report device model warnings during profiling.
 
   protected:
     /// @brief Return the combined delay and congestion estimate; flat routing is unsupported.
@@ -56,7 +61,7 @@ class SeparableLookahead final : public RouterLookahead {
     /// @brief Return criticality-weighted delay and congestion estimates.
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
 
-    /// @brief Profile wire costs and compute the map lookahead used for SOURCE/OPIN estimates and fallback.
+    /// @brief Profile wire costs and precompute the minimum OPIN delay along each axis.
     void compute(const std::vector<t_segment_inf>& segment_inf) override;
     /// @brief Report that intra-tile profiling is unsupported.
     void compute_intra_tile() override;
@@ -70,6 +75,6 @@ class SeparableLookahead final : public RouterLookahead {
     void write_intra_cluster(const std::string& file) const override;
 
   public:
-    /// @brief Delegate relative-coordinate OPIN delay queries to the map lookahead.
-    float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const override;
+    /// @brief Minimum OPIN delay from from_loc to to_loc, as the sum of the per-axis OPIN delays.
+    float get_opin_distance_min_delay(int physical_tile_idx, const t_physical_tile_loc& from_loc, const t_physical_tile_loc& to_loc) const override;
 };
