@@ -1,12 +1,13 @@
 #pragma once
 
+#include <map>
 #include <tuple>
+#include <vector>
 
 #include "tatum/TimingGraphFwd.hpp"
 #include "vtr_assert.h"
-#include "vtr_ndmatrix.h"
 
-//A pair of clock domains
+// A pair of clock domains
 struct DomainPair {
     DomainPair(tatum::DomainId l, tatum::DomainId c)
         : launch(l)
@@ -24,8 +25,10 @@ struct DomainPair {
     }
 };
 
-/// @brief Values stored densely for every (launch, capture) clock domain pair.
+/// @brief Values stored for (launch, capture) clock domain pairs.
 ///
+/// Pairs with the same launch and capture domain are stored densely in a vector indexed by domain.
+/// Pairs with different domains are stored in a std::map keyed by the pair.
 /// Every entry starts invalid. Reading an entry that has not been set is an error.
 template<typename T>
 class DomainPairTable {
@@ -34,63 +37,82 @@ class DomainPairTable {
 
     /// @brief Creates a table covering num_domains clock domains with every entry invalid.
     explicit DomainPairTable(size_t num_domains)
-        : valid_({num_domains, num_domains}, false)
-        , values_({num_domains, num_domains}) {}
+        : same_domain_valid_(num_domains, false)
+        , same_domain_values_(num_domains) {}
 
     /// @brief Returns true if a value has been set for the domain pair.
-    bool contains(DomainPair pair) const { return valid_[size_t(pair.launch)][size_t(pair.capture)]; }
+    bool contains(DomainPair pair) const {
+        if (pair.launch == pair.capture) {
+            return same_domain_valid_[size_t(pair.launch)];
+        }
+        return cross_domain_values_.count(pair) > 0;
+    }
 
     /// @brief Returns true if no value has been set for any domain pair.
     bool empty() const { return num_valid_ == 0; }
 
     /// @brief Returns the value set for the domain pair.
     const T& operator[](DomainPair pair) const {
-        VTR_ASSERT_SAFE(contains(pair));
-        return values_[size_t(pair.launch)][size_t(pair.capture)];
+        if (pair.launch == pair.capture) {
+            VTR_ASSERT_SAFE(same_domain_valid_[size_t(pair.launch)]);
+            return same_domain_values_[size_t(pair.launch)];
+        }
+
+        auto it = cross_domain_values_.find(pair);
+        VTR_ASSERT_SAFE(it != cross_domain_values_.end());
+        return it->second;
     }
 
     /// @brief Sets the value for the domain pair.
     void set(DomainPair pair, const T& value) {
-        bool& valid = valid_[size_t(pair.launch)][size_t(pair.capture)];
-        if (!valid) {
-            valid = true;
-            ++num_valid_;
+        if (pair.launch == pair.capture) {
+            size_t domain = size_t(pair.launch);
+            if (!same_domain_valid_[domain]) {
+                same_domain_valid_[domain] = true;
+                ++num_valid_;
+            }
+            same_domain_values_[domain] = value;
+        } else {
+            auto result = cross_domain_values_.insert_or_assign(pair, value);
+            if (result.second) {
+                ++num_valid_;
+            }
         }
-        values_[size_t(pair.launch)][size_t(pair.capture)] = value;
     }
 
     /// @brief Marks every entry invalid.
     void clear() {
-        valid_.fill(false);
+        same_domain_valid_.assign(same_domain_valid_.size(), false);
+        cross_domain_values_.clear();
         num_valid_ = 0;
     }
 
     /// @brief Two tables are equal when the same domain pairs are set and their values are equal.
     /// Declared as a friend so it can read the private members of both operands.
     friend bool operator==(const DomainPairTable& lhs, const DomainPairTable& rhs) {
-        if (lhs.valid_.dim_size(0) != rhs.valid_.dim_size(0)) {
+        if (lhs.same_domain_valid_ != rhs.same_domain_valid_) {
             return false;
         }
 
-        for (size_t idx = 0; idx < lhs.valid_.size(); ++idx) {
-            if (lhs.valid_.get(idx) != rhs.valid_.get(idx)) {
-                return false;
-            }
-            if (lhs.valid_.get(idx) && !(lhs.values_.get(idx) == rhs.values_.get(idx))) {
+        for (size_t domain = 0; domain < lhs.same_domain_valid_.size(); ++domain) {
+            if (lhs.same_domain_valid_[domain] && !(lhs.same_domain_values_[domain] == rhs.same_domain_values_[domain])) {
                 return false;
             }
         }
 
-        return true;
+        return lhs.cross_domain_values_ == rhs.cross_domain_values_;
     }
 
   private:
     /// Number of domain pairs with a value set
     size_t num_valid_ = 0;
 
-    /// Whether each (launch, capture) domain pair has a value set
-    vtr::NdMatrix<bool, 2> valid_;
+    /// Whether each domain has a value set for the pair (domain, domain)
+    std::vector<bool> same_domain_valid_;
 
-    /// The value of each (launch, capture) domain pair
-    vtr::NdMatrix<T, 2> values_;
+    /// The value of each (domain, domain) pair
+    std::vector<T> same_domain_values_;
+
+    /// The value of each set pair whose launch and capture domains differ
+    std::map<DomainPair, T> cross_domain_values_;
 };
