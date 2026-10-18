@@ -334,30 +334,6 @@ void reset_path_costs(const std::vector<RRNodeId>& visited_rr_nodes) {
     }
 }
 
-/* Returns the congestion cost of using this rr-node plus that of any      *
- * non-configurably connected rr_nodes that must be used when it is used.  */
-float get_rr_cong_cost(RRNodeId inode, float pres_fac) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    float cost = get_single_rr_cong_cost(inode, pres_fac);
-
-    if (route_ctx.rr_node_route_inf[inode].in_non_config_node_set()) {
-        // Access unordered_map only when the node is part of a non-configurable set
-        auto itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
-        if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
-            for (RRNodeId node : device_ctx.rr_non_config_node_sets[itr->second]) {
-                if (node == inode) {
-                    continue; //Already included above
-                }
-
-                cost += get_single_rr_cong_cost(node, pres_fac);
-            }
-        }
-    }
-    return (cost);
-}
-
 //Calculates how many (and allocates space for) OPINs which must be reserved to
 //respect 'instance' equivalence.
 //
@@ -1131,18 +1107,4 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               const t_conn_cost_params& cost_params,
                               bool /*is_flat*/) {
     return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
-}
-
-float get_rr_node_delay_cost(RRNodeId to_node, RREdgeId connecting_edge) {
-    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
-    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf = rr_graph.rr_switch();
-
-    // Info for the switch connecting from_node to_node (i.e., to->index)
-    RRSwitchId iswitch = (RRSwitchId)rr_graph.edge_switch(connecting_edge);
-    t_rr_switch_cost_inf switch_inf(rr_switch_inf[iswitch]);
-
-    // To node info
-    t_rr_rc_data node_rc(rr_graph.node_R(to_node), rr_graph.node_C(to_node));
-
-    return compute_rr_node_delay(switch_inf, node_rc);
 }

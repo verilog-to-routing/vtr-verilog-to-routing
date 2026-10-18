@@ -9,6 +9,7 @@
 #include "physical_types_util.h"
 #include "place_and_route.h"
 #include "route_common.h"
+#include "rr_node_cost.h"
 #include "route_debug.h"
 #include "stats.h"
 

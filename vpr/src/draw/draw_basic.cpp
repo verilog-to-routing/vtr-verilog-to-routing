@@ -25,6 +25,7 @@
 #include "draw_global.h"
 #include "move_utils.h"
 #include "route_export.h"
+#include "rr_node_cost.h"
 #include "tatum/report/TimingPathCollector.hpp"
 #include "partial_placement.h"
 

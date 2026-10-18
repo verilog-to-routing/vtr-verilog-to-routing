@@ -23,6 +23,7 @@
 #include "globals.h"
 #include "route_common.h"
 #include "route_path_manager.h"
+#include "rr_node_cost.h"
 #include "rr_graph_storage.h"
 #include "router_lookahead.h"
 #include "route_tree.h"

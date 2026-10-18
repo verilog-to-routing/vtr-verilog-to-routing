@@ -9,6 +9,7 @@
 #include "route_common.h"
 #include "rr_graph_fwd.h"
 #include "rr_graph_view.h"
+#include "rr_node_cost.h"
 #include "rr_node_types.h"
 #include "vpr_context.h"
 #include "vtr_assert.h"
