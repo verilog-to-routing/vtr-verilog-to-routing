@@ -1082,10 +1082,12 @@ static bool is_route_mode_compatible(const t_lb_trace& rt,
         // Verify the edge cur_node -> child.current_node exists in the current mode.
         bool edge_exists = false;
         if (mode < lb_type_graph.num_modes(cur_node)) {
-            std::span<const LbTypeRrGraph::t_edge> edges = lb_type_graph.edges(cur_node, mode);
-            edge_exists = std::ranges::any_of(edges, [&](const LbTypeRrGraph::t_edge& edge) {
-                return edge.node_index == child.current_node;
-            });
+            for (const LbTypeRrGraph::t_edge& edge : lb_type_graph.edges(cur_node, mode)) {
+                if (edge.node_index == child.current_node) {
+                    edge_exists = true;
+                    break;
+                }
+            }
         }
         if (!edge_exists) return false;
         if (!is_route_mode_compatible(child, lb_type_graph, lb_rr_node_stats))
