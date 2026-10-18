@@ -89,6 +89,40 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         timing_arc_delays_[sink_pin_id] = delay;
     }
 
+    /**
+     * @brief Get the delay of a timing arc, identified by the sink pin that
+     *        it terminates at.
+     *
+     * This is the delay set by set_arc_delay; it is not necessarily the delay
+     * used for the arc if the arc is handled internally by this calculator.
+     */
+    float get_arc_delay(AtomPinId sink_pin_id) const {
+        VTR_ASSERT_SAFE_MSG(sink_pin_id.is_valid(),
+                            "Cannot get arc delay of invalid pin");
+
+        return timing_arc_delays_[sink_pin_id];
+    }
+
+    /**
+     * @brief Get the pb_graph pin that the given primitive pin is expected to
+     *        be implemented by (based on the lowest cost pb_graph node that
+     *        the prepacker expects its block to be packed into).
+     */
+    const t_pb_graph_pin* find_pb_graph_pin(const AtomPinId pin) const {
+        AtomBlockId blk = netlist_.pin_block(pin);
+
+        const t_pb_graph_node* pb_gnode = prepacker_.get_expected_lowest_cost_pb_gnode(blk);
+
+        AtomPortId port = netlist_.pin_port(pin);
+        const t_model_ports* model_port = netlist_.port_model(port);
+        int ipin = netlist_.pin_port_bit(pin);
+
+        const t_pb_graph_pin* gpin = get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
+        VTR_ASSERT(gpin);
+
+        return gpin;
+    }
+
     tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override {
         tatum::NodeId src_node = tg.edge_src_node(edge_id);
         tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
@@ -207,26 +241,6 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         VTR_ASSERT_MSG(time.valid(), "Found no primitive combinational delay for edge");
 
         return time;
-    }
-
-    /**
-     * @brief Get the pb_graph pin that the given primitive pin is expected to
-     *        be implemented by (based on the lowest cost pb_graph node that
-     *        the prepacker expects its block to be packed into).
-     */
-    const t_pb_graph_pin* find_pb_graph_pin(const AtomPinId pin) const {
-        AtomBlockId blk = netlist_.pin_block(pin);
-
-        const t_pb_graph_node* pb_gnode = prepacker_.get_expected_lowest_cost_pb_gnode(blk);
-
-        AtomPortId port = netlist_.pin_port(pin);
-        const t_model_ports* model_port = netlist_.port_model(port);
-        int ipin = netlist_.pin_port_bit(pin);
-
-        const t_pb_graph_pin* gpin = get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
-        VTR_ASSERT(gpin);
-
-        return gpin;
     }
 
     /**
