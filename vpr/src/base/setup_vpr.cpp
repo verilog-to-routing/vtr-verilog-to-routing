@@ -19,6 +19,7 @@
 #include "pb_type_graph.h"
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
+#include "lb_type_rr_graph_builder.h"
 #include "echo_arch.h"
 #include "read_options.h"
 #include "echo_files.h"
