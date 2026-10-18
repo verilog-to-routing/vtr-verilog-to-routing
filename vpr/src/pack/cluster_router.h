@@ -15,7 +15,7 @@
 #include <vector>
 #include "atom_netlist_fwd.h"
 #include "atom_pb_bimap.h"
-#include "pack_types.h"
+#include "lb_type_rr_graph.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "vtr_strong_id.h"
@@ -58,7 +58,7 @@ struct t_lb_rr_node_stats {
  * to other nodes.
  */
 struct t_lb_trace {
-    /// @brief The current t_lb_type_rr_node used by net.
+    /// @brief The current lb type rr node used by net.
     int current_node;
 
     /// @brief The index of previous edge that drives current node.
@@ -225,7 +225,7 @@ enum e_commit_remove { RT_COMMIT,
  *
  * Example usage:
  *      // Construct the router object.
- *      ClusterRouter cluster_router(&lb_type_rr_graphs[cluster_type->index], cluster_type);
+ *      ClusterRouter cluster_router(lb_type_rr_graphs[cluster_type->index], cluster_type, valid_feedback_pins);
  *
  *      // Add atoms as targets for the router.
  *      cluster_router.add_atom_as_target(blk_id1, atom_to_pb);
@@ -280,7 +280,7 @@ class ClusterRouter {
      *                              route before running pathfinder, reducing
      *                              the number of nets that need re-routing.
      */
-    ClusterRouter(const std::vector<t_lb_type_rr_node>* lb_type_graph,
+    ClusterRouter(const LbTypeRrGraph& lb_type_graph,
                   t_logical_block_type_ptr type,
                   const std::unordered_set<int>& valid_feedback_pins,
                   bool enable_hot_start = false);
@@ -545,7 +545,7 @@ class ClusterRouter {
     // =========================================================================
 
     /// @brief Pointer to physical intra-logic cluster_ctx.blocks type rr graph.
-    const std::vector<t_lb_type_rr_node>* lb_type_graph_;
+    const LbTypeRrGraph* lb_type_graph_;
 
     /// @brief Top-level output pins with Fc_out > 0 for this block type; pointer
     ///        into the map owned by ClusterLegalizer, valid for packing lifetime.
@@ -574,14 +574,14 @@ class ClusterRouter {
     // Logical-to-Physical Mapping Info
     // =========================================================================
 
-    /// @brief [0..lb_type_graph->size()-1] Stats for each logic cluster_ctx.blocks rr node instance.
+    /// @brief [0..lb_type_graph->num_nodes()-1] Stats for each logic cluster_ctx.blocks rr node instance.
     std::vector<t_lb_rr_node_stats> lb_rr_node_stats_;
 
     // =========================================================================
     // Stored State Info During Pathfinder Iterative Routing
     // =========================================================================
 
-    /// @brief [0..lb_type_graph->size()-1] Stores mode exploration and lb_traceback info for nodes.
+    /// @brief [0..lb_type_graph->num_nodes()-1] Stores mode exploration and lb_traceback info for nodes.
     std::vector<t_explored_node_tb> explored_node_tb_;
 
     /// @brief Used in conjunction with explored_node_tb_ to determine whether or not a location has been explored.

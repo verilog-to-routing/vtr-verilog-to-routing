@@ -62,7 +62,7 @@ static void reset_lb_net_rt(t_lb_trace& lb_trace);
  * If the net does not conflict with another net, then skip routing this net.
  */
 static bool is_skip_route_net(const t_lb_trace& rt,
-                              const std::vector<t_lb_type_rr_node>& lb_type_graph,
+                              const LbTypeRrGraph& lb_type_graph,
                               const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats);
 
 /**
@@ -92,13 +92,13 @@ static void load_trace_to_pb_route(t_pb_routes& pb_route,
  * @brief Debugging function used to find congested RR nodes in the lb type
  *        graph.
  */
-static std::vector<int> find_congested_rr_nodes(const std::vector<t_lb_type_rr_node>& lb_type_graph,
+static std::vector<int> find_congested_rr_nodes(const LbTypeRrGraph& lb_type_graph,
                                                 const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats);
 
 /**
  * @brief Debugging function used to find incoming RR nodes for the given dst node.
  */
-static std::vector<int> find_incoming_rr_nodes(int dst_node, const std::vector<t_lb_type_rr_node>& lb_rr_graph);
+static std::vector<int> find_incoming_rr_nodes(int dst_node, const LbTypeRrGraph& lb_rr_graph);
 
 /**
  * @brief Returns true if every edge in the route tree is reachable under the
@@ -106,26 +106,26 @@ static std::vector<int> find_incoming_rr_nodes(int dst_node, const std::vector<t
  *
  * Used at hot-start time to decide whether a saved route tree can be reused
  * without re-routing. An edge parent→child is valid only if child appears in
- * lb_type_graph[parent].outedges[mode], where mode is the current forced mode
- * of parent (defaulting to 0 when unconstrained).
+ * the edges of parent in mode, where mode is the current forced mode of
+ * parent (defaulting to 0 when unconstrained).
  */
 static bool is_route_mode_compatible(const t_lb_trace& rt,
-                                     const std::vector<t_lb_type_rr_node>& lb_type_graph,
+                                     const LbTypeRrGraph& lb_type_graph,
                                      const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats);
 
 /*****************************************************************************************
  * Constructor/Destructor functions
  ******************************************************************************************/
 
-ClusterRouter::ClusterRouter(const std::vector<t_lb_type_rr_node>* lb_type_graph,
+ClusterRouter::ClusterRouter(const LbTypeRrGraph& lb_type_graph,
                              t_logical_block_type_ptr type,
                              const std::unordered_set<int>& valid_feedback_pins,
                              bool enable_hot_start) {
-    lb_type_graph_ = lb_type_graph;
+    lb_type_graph_ = &lb_type_graph;
     lb_type_ = type;
     valid_feedback_pins_ = &valid_feedback_pins;
 
-    size_t size = lb_type_graph->size();
+    size_t size = lb_type_graph.num_nodes();
     lb_rr_node_stats_.resize(size);
     explored_node_tb_.resize(size);
 
@@ -183,11 +183,10 @@ bool ClusterRouter::is_saved_route_valid() const {
 }
 
 static bool route_has_conflict(const t_lb_trace& rt,
-                               const std::vector<t_lb_type_rr_node>& lb_type_graph) {
+                               const LbTypeRrGraph& lb_type_graph) {
     int cur_mode = -1;
     for (size_t i = 0; i < rt.next_nodes.size(); i++) {
-        int new_mode = get_lb_type_rr_graph_edge_mode(lb_type_graph,
-                                                      rt.current_node, rt.next_nodes[i].current_node);
+        int new_mode = lb_type_graph.edge_mode(rt.current_node, rt.next_nodes[i].current_node);
         if (cur_mode != -1 && cur_mode != new_mode) {
             return true;
         }
@@ -369,7 +368,7 @@ bool ClusterRouter::try_expand_nodes_(const t_intra_lb_net& lb_net,
     // back in" through inter-cluster routing (the feedback case). For a genuinely
     // external sink (terminals[itarget] == ext_sink_inode), the signal is supposed
     // to leave the cluster, so we do not impose the constraint.
-    const int ext_sink_inode = get_lb_type_rr_graph_ext_sink_index(lb_type_);
+    const int ext_sink_inode = lb_type_graph_->ext_sink_index();
     const bool target_is_internal_sink = (lb_net.terminals[itarget] != ext_sink_inode);
 
     do {
@@ -469,7 +468,7 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
     for (t_intra_lb_net& lb_net : intra_lb_nets_) {
         reset_lb_net_rt(lb_net.rt_tree);
     }
-    for (size_t inode = 0; inode < lb_type_graph_->size(); inode++) {
+    for (size_t inode = 0; inode < lb_type_graph_->num_nodes(); inode++) {
         lb_rr_node_stats_[inode].historical_usage = 0;
         lb_rr_node_stats_[inode].occ = 0;
     }
@@ -536,7 +535,7 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
                 explore_id_index_++;
                 if (explore_id_index_ > 2000000000) {
                     /* overflow protection */
-                    for (size_t id = 0; id < lb_type_graph_->size(); id++) {
+                    for (size_t id = 0; id < lb_type_graph_->num_nodes(); id++) {
                         explored_node_tb_[id].explored_id = UNDEFINED;
                         explored_node_tb_[id].enqueue_id = UNDEFINED;
                     }
@@ -657,7 +656,7 @@ static void reset_lb_net_rt(t_lb_trace& lb_trace) {
 
 IntraLbNetIdx ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
                                                       const AtomPBBimap& atom_to_pb) {
-    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const LbTypeRrGraph& lb_type_graph = *lb_type_graph_;
     IntraLbNetIdx ipos = IntraLbNetIdx::INVALID();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
@@ -700,20 +699,20 @@ IntraLbNetIdx ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
         /* Add terminals */
 
         //Default assumption is that the source is outside the current cluster (will be overridden later if required)
-        int source_terminal = get_lb_type_rr_graph_ext_source_index(lb_type_);
+        int source_terminal = lb_type_graph_->ext_source_index();
         intra_lb_nets_[ipos].terminals.push_back(source_terminal);
 
         AtomPinId net_driver_pin_id = atom_ctx.netlist().net_driver(net_id);
         intra_lb_nets_[ipos].atom_pins.push_back(net_driver_pin_id);
 
-        VTR_ASSERT_MSG(lb_type_graph[intra_lb_nets_[ipos].terminals[0]].type == LB_SOURCE, "Driver must be a source");
+        VTR_ASSERT_MSG(lb_type_graph.type(intra_lb_nets_[ipos].terminals[0]) == LB_SOURCE, "Driver must be a source");
     }
 
     VTR_ASSERT(intra_lb_nets_[ipos].atom_pins.size() == intra_lb_nets_[ipos].terminals.size());
 
     if (atom_ctx.netlist().port_type(port_id) == PortType::OUTPUT) {
         //The current pin is the net driver, overwrite the default driver at index 0
-        VTR_ASSERT_MSG(intra_lb_nets_[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type_), "Default driver must be external source");
+        VTR_ASSERT_MSG(intra_lb_nets_[ipos].terminals[0] == lb_type_graph_->ext_source_index(), "Default driver must be external source");
 
         VTR_ASSERT(atom_ctx.netlist().pin_type(pin_id) == PinType::DRIVER);
 
@@ -721,14 +720,14 @@ IntraLbNetIdx ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
         intra_lb_nets_[ipos].terminals[0] = pb_graph_pin->pin_count_in_cluster;
         intra_lb_nets_[ipos].atom_pins[0] = pin_id;
 
-        VTR_ASSERT_MSG(lb_type_graph[intra_lb_nets_[ipos].terminals[0]].type == LB_SOURCE, "Driver must be a source");
+        VTR_ASSERT_MSG(lb_type_graph.type(intra_lb_nets_[ipos].terminals[0]) == LB_SOURCE, "Driver must be a source");
 
         int sink_terminal = UNDEFINED;
         if (intra_lb_nets_[ipos].terminals.size() < atom_ctx.netlist().net_pins(net_id).size()) {
             //Not all of the pins are within the cluster
             if (intra_lb_nets_[ipos].terminals.size() == 1) {
                 //Only the source has been specified so far, must add cluster-external sink
-                sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type_);
+                sink_terminal = lb_type_graph_->ext_sink_index();
                 intra_lb_nets_[ipos].terminals.push_back(sink_terminal);
                 intra_lb_nets_[ipos].atom_pins.push_back(AtomPinId::INVALID());
             } else {
@@ -744,11 +743,11 @@ IntraLbNetIdx ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
                 intra_lb_nets_[ipos].atom_pins.push_back(sink_atom_pin);
 
                 //Create external sink at terminal 1
-                sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type_);
+                sink_terminal = lb_type_graph_->ext_sink_index();
                 intra_lb_nets_[ipos].terminals[1] = sink_terminal;
                 intra_lb_nets_[ipos].atom_pins[1] = AtomPinId::INVALID();
             }
-            VTR_ASSERT(lb_type_graph[intra_lb_nets_[ipos].terminals[1]].type == LB_SINK);
+            VTR_ASSERT(lb_type_graph.type(intra_lb_nets_[ipos].terminals[1]) == LB_SINK);
         }
     } else {
         //This is an input to a primitive
@@ -758,15 +757,15 @@ IntraLbNetIdx ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
 
         //Get the rr node index associated with the pin
         int pin_index = pb_graph_pin->pin_count_in_cluster;
-        VTR_ASSERT(lb_type_graph[pin_index].num_modes == 1);
-        VTR_ASSERT(lb_type_graph[pin_index].num_fanout[0] == 1);
+        VTR_ASSERT(lb_type_graph.num_modes(pin_index) == 1);
+        VTR_ASSERT(lb_type_graph.num_fanout(pin_index, 0) == 1);
 
         /* We actually route to the sink (to handle logically equivalent pins).
          * The sink is one past the primitive input pin */
-        int sink_index = lb_type_graph[pin_index].outedges[0][0].node_index;
-        VTR_ASSERT(lb_type_graph[sink_index].type == LB_SINK);
+        int sink_index = lb_type_graph.edges(pin_index, 0)[0].node_index;
+        VTR_ASSERT(lb_type_graph.type(sink_index) == LB_SINK);
 
-        if (intra_lb_nets_[ipos].terminals.size() == atom_ctx.netlist().net_pins(net_id).size() && intra_lb_nets_[ipos].terminals[1] == get_lb_type_rr_graph_ext_sink_index(lb_type_)) {
+        if (intra_lb_nets_[ipos].terminals.size() == atom_ctx.netlist().net_pins(net_id).size() && intra_lb_nets_[ipos].terminals[1] == lb_type_graph_->ext_sink_index()) {
             /* If all sinks of net are all contained in the logic block, then the net does
              * not need to route out of the logic block, so can replace the external sink
              * with this last sink terminal */
@@ -795,17 +794,17 @@ IntraLbNetIdx ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
         AtomPinId atom_pin = intra_lb_nets_[ipos].atom_pins[term_idx];
         if (term_idx == 0) {
             //Net driver
-            VTR_ASSERT_SAFE_MSG(lb_type_graph[inode].type == LB_SOURCE, "Driver must be a source RR node");
+            VTR_ASSERT_SAFE_MSG(lb_type_graph.type(inode) == LB_SOURCE, "Driver must be a source RR node");
             VTR_ASSERT_SAFE_MSG(atom_pin, "Driver have an associated atom pin");
             VTR_ASSERT_SAFE_MSG(atom_ctx.netlist().pin_type(atom_pin) == PinType::DRIVER, "Source RR must be associated with a driver pin in atom netlist");
-            if (inode == get_lb_type_rr_graph_ext_source_index(lb_type_)) {
+            if (inode == lb_type_graph_->ext_source_index()) {
                 ++num_extern_sources;
             }
         } else {
             //Net sink
-            VTR_ASSERT_SAFE_MSG(lb_type_graph[inode].type == LB_SINK, "Non-driver must be a sink");
+            VTR_ASSERT_SAFE_MSG(lb_type_graph.type(inode) == LB_SINK, "Non-driver must be a sink");
 
-            if (inode == get_lb_type_rr_graph_ext_sink_index(lb_type_)) {
+            if (inode == lb_type_graph_->ext_sink_index()) {
                 //External sink may have multiple potentially matching atom pins, so it's atom pin is left invalid
                 VTR_ASSERT_SAFE_MSG(!atom_pin, "Cluster external sink should have no valid atom pin");
                 ++num_extern_sinks;
@@ -825,7 +824,7 @@ IntraLbNetIdx ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
 void ClusterRouter::remove_pin_from_rt_terminals_(const AtomPinId pin_id,
                                                   const AtomPBBimap& atom_to_pb) {
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
-    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const LbTypeRrGraph& lb_type_graph = *lb_type_graph_;
 
     const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_netlist, atom_to_pb, pin_id);
 
@@ -857,10 +856,10 @@ void ClusterRouter::remove_pin_from_rt_terminals_(const AtomPinId pin_id,
         /* Net driver pin takes 0th position in terminals */
         int sink_terminal;
         VTR_ASSERT(intra_lb_nets_[ipos].terminals[0] == pb_graph_pin->pin_count_in_cluster);
-        intra_lb_nets_[ipos].terminals[0] = get_lb_type_rr_graph_ext_source_index(lb_type_);
+        intra_lb_nets_[ipos].terminals[0] = lb_type_graph_->ext_source_index();
 
         /* source terminal is now coming from outside logic block, do not need to route signal out of logic block */
-        sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type_);
+        sink_terminal = lb_type_graph_->ext_sink_index();
         if (intra_lb_nets_[ipos].terminals[1] == sink_terminal) {
             intra_lb_nets_[ipos].terminals[1] = intra_lb_nets_[ipos].terminals.back();
             intra_lb_nets_[ipos].terminals.pop_back();
@@ -875,10 +874,10 @@ void ClusterRouter::remove_pin_from_rt_terminals_(const AtomPinId pin_id,
         int pin_index = pb_graph_pin->pin_count_in_cluster;
         size_t term_idx;
 
-        VTR_ASSERT(lb_type_graph[pin_index].num_modes == 1);
-        VTR_ASSERT(lb_type_graph[pin_index].num_fanout[0] == 1);
-        int sink_index = lb_type_graph[pin_index].outedges[0][0].node_index;
-        VTR_ASSERT(lb_type_graph[sink_index].type == LB_SINK);
+        VTR_ASSERT(lb_type_graph.num_modes(pin_index) == 1);
+        VTR_ASSERT(lb_type_graph.num_fanout(pin_index, 0) == 1);
+        int sink_index = lb_type_graph.edges(pin_index, 0)[0].node_index;
+        VTR_ASSERT(lb_type_graph.type(sink_index) == LB_SINK);
 
         int target_index = -1;
         //Search for the sink
@@ -911,17 +910,17 @@ void ClusterRouter::remove_pin_from_rt_terminals_(const AtomPinId pin_id,
         intra_lb_nets_[ipos].atom_pins[term_idx] = intra_lb_nets_[ipos].atom_pins.back();
         intra_lb_nets_[ipos].atom_pins.pop_back();
 
-        if (intra_lb_nets_[ipos].terminals.size() == 1 && intra_lb_nets_[ipos].terminals[0] != get_lb_type_rr_graph_ext_source_index(lb_type_)) {
+        if (intra_lb_nets_[ipos].terminals.size() == 1 && intra_lb_nets_[ipos].terminals[0] != lb_type_graph_->ext_source_index()) {
             /* The removed sink must be driven by an atom found in the cluster, add in special sink outside of cluster to represent this */
-            intra_lb_nets_[ipos].terminals.push_back(get_lb_type_rr_graph_ext_sink_index(lb_type_));
+            intra_lb_nets_[ipos].terminals.push_back(lb_type_graph_->ext_sink_index());
             intra_lb_nets_[ipos].atom_pins.push_back(AtomPinId::INVALID());
         }
 
-        if (intra_lb_nets_[ipos].terminals.size() > 1 && intra_lb_nets_[ipos].terminals[1] != get_lb_type_rr_graph_ext_sink_index(lb_type_) && intra_lb_nets_[ipos].terminals[0] != get_lb_type_rr_graph_ext_source_index(lb_type_)) {
+        if (intra_lb_nets_[ipos].terminals.size() > 1 && intra_lb_nets_[ipos].terminals[1] != lb_type_graph_->ext_sink_index() && intra_lb_nets_[ipos].terminals[0] != lb_type_graph_->ext_source_index()) {
             /* The removed sink must be driven by an atom found in the cluster, add in special sink outside of cluster to represent this */
             int terminal = intra_lb_nets_[ipos].terminals[1];
             intra_lb_nets_[ipos].terminals.push_back(terminal);
-            intra_lb_nets_[ipos].terminals[1] = get_lb_type_rr_graph_ext_sink_index(lb_type_);
+            intra_lb_nets_[ipos].terminals[1] = lb_type_graph_->ext_sink_index();
 
             AtomPinId pin = intra_lb_nets_[ipos].atom_pins[1];
             intra_lb_nets_[ipos].atom_pins.push_back(pin);
@@ -930,7 +929,7 @@ void ClusterRouter::remove_pin_from_rt_terminals_(const AtomPinId pin_id,
     }
     VTR_ASSERT(intra_lb_nets_[ipos].atom_pins.size() == intra_lb_nets_[ipos].terminals.size());
 
-    if (intra_lb_nets_[ipos].terminals.size() == 1 && intra_lb_nets_[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type_)) {
+    if (intra_lb_nets_[ipos].terminals.size() == 1 && intra_lb_nets_[ipos].terminals[0] == lb_type_graph_->ext_source_index()) {
         /* This net is not routed, remove from list of nets in lb */
         intra_lb_nets_[ipos] = intra_lb_nets_.back();
         intra_lb_nets_.pop_back();
@@ -947,7 +946,7 @@ void ClusterRouter::fix_duplicate_equivalent_pins_(IntraLbNetIdx ilb_net, const 
     // are not 'missing' in the clustered netlist.
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
 
-    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const LbTypeRrGraph& lb_type_graph = *lb_type_graph_;
 
     t_intra_lb_net& lb_net = intra_lb_nets_[ilb_net];
     VTR_ASSERT(lb_net.atom_pins.size() == lb_net.terminals.size());
@@ -996,10 +995,10 @@ void ClusterRouter::fix_duplicate_equivalent_pins_(IntraLbNetIdx ilb_net, const 
             size_t(ilb_net), size_t(lb_net.atom_net_id), atom_netlist.net_name(lb_net.atom_net_id).c_str(),
             node, pin_index);
 
-        VTR_ASSERT(lb_type_graph[pin_index].type == LB_INTERMEDIATE);
-        VTR_ASSERT(lb_type_graph[pin_index].num_fanout[0] == 1);
-        int sink_index = lb_type_graph[pin_index].outedges[0][0].node_index;
-        VTR_ASSERT(lb_type_graph[sink_index].type == LB_SINK);
+        VTR_ASSERT(lb_type_graph.type(pin_index) == LB_INTERMEDIATE);
+        VTR_ASSERT(lb_type_graph.num_fanout(pin_index, 0) == 1);
+        int sink_index = lb_type_graph.edges(pin_index, 0)[0].node_index;
+        VTR_ASSERT(lb_type_graph.type(sink_index) == LB_SINK);
         VTR_ASSERT_MSG(sink_index == lb_net.terminals[term_idx], "Remapped pin must be connected to original sink");
 
         // Change the target.
@@ -1011,7 +1010,7 @@ void ClusterRouter::commit_remove_rt_(const t_lb_trace& rt,
                                       e_commit_remove op,
                                       std::unordered_map<const t_pb_graph_node*, const t_mode*>& mode_map,
                                       t_mode_selection_status* mode_status) {
-    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const LbTypeRrGraph& lb_type_graph = *lb_type_graph_;
 
     int inode = rt.current_node;
 
@@ -1019,8 +1018,8 @@ void ClusterRouter::commit_remove_rt_(const t_lb_trace& rt,
     int incr;
     if (op == RT_COMMIT) {
         incr = 1;
-        if (lb_rr_node_stats_[inode].occ >= lb_type_graph[inode].capacity) {
-            lb_rr_node_stats_[inode].historical_usage += (lb_rr_node_stats_[inode].occ - lb_type_graph[inode].capacity + 1); /* store historical overuse */
+        if (lb_rr_node_stats_[inode].occ >= lb_type_graph.capacity(inode)) {
+            lb_rr_node_stats_[inode].historical_usage += (lb_rr_node_stats_[inode].occ - lb_type_graph.capacity(inode) + 1); /* store historical overuse */
         }
     } else {
         incr = -1;
@@ -1030,8 +1029,7 @@ void ClusterRouter::commit_remove_rt_(const t_lb_trace& rt,
     lb_rr_node_stats_[inode].occ += incr;
     VTR_ASSERT(lb_rr_node_stats_[inode].occ >= 0);
 
-    const t_lb_type_rr_node& driver_node = lb_type_graph[inode];
-    t_pb_graph_pin* driver_pin = driver_node.pb_graph_pin;
+    const t_pb_graph_pin* driver_pin = lb_type_graph.pb_graph_pin(inode);
 
     /* Recursively update route tree */
     for (size_t i = 0; i < rt.next_nodes.size(); i++) {
@@ -1039,8 +1037,7 @@ void ClusterRouter::commit_remove_rt_(const t_lb_trace& rt,
         // A conflict is present if there are differing modes between a pb_graph_node
         // and its children.
         if (op == RT_COMMIT && mode_status->try_expand_all_modes) {
-            const t_lb_type_rr_node& node = lb_type_graph[rt.next_nodes[i].current_node];
-            t_pb_graph_pin* pin = node.pb_graph_pin;
+            const t_pb_graph_pin* pin = lb_type_graph.pb_graph_pin(rt.next_nodes[i].current_node);
 
             if (check_edge_for_route_conflicts(mode_map, driver_pin, pin)) {
                 mode_status->is_mode_conflict = true;
@@ -1052,13 +1049,13 @@ void ClusterRouter::commit_remove_rt_(const t_lb_trace& rt,
 }
 
 static bool is_skip_route_net(const t_lb_trace& rt,
-                              const std::vector<t_lb_type_rr_node>& lb_type_graph,
+                              const LbTypeRrGraph& lb_type_graph,
                               const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats) {
     /* Should net be skipped?  If the net does not conflict with another net, then skip routing this net */
     int inode = rt.current_node;
 
     /* Determine if node is overused */
-    if (lb_rr_node_stats[inode].occ > lb_type_graph[inode].capacity) {
+    if (lb_rr_node_stats[inode].occ > lb_type_graph.capacity(inode)) {
         /* Conflict between this net and another net at this node, reroute net */
         return false;
     }
@@ -1075,7 +1072,7 @@ static bool is_skip_route_net(const t_lb_trace& rt,
 }
 
 static bool is_route_mode_compatible(const t_lb_trace& rt,
-                                     const std::vector<t_lb_type_rr_node>& lb_type_graph,
+                                     const LbTypeRrGraph& lb_type_graph,
                                      const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats) {
     int cur_node = rt.current_node;
     int mode = lb_rr_node_stats[cur_node].mode;
@@ -1084,13 +1081,11 @@ static bool is_route_mode_compatible(const t_lb_trace& rt,
     for (const t_lb_trace& child : rt.next_nodes) {
         // Verify the edge cur_node -> child.current_node exists in the current mode.
         bool edge_exists = false;
-        if (mode < lb_type_graph[cur_node].num_modes) {
-            for (int iedge = 0; iedge < lb_type_graph[cur_node].num_fanout[mode]; iedge++) {
-                if (lb_type_graph[cur_node].outedges[mode][iedge].node_index == child.current_node) {
-                    edge_exists = true;
-                    break;
-                }
-            }
+        if (mode < lb_type_graph.num_modes(cur_node)) {
+            std::span<const LbTypeRrGraph::t_edge> edges = lb_type_graph.edges(cur_node, mode);
+            edge_exists = std::ranges::any_of(edges, [&](const LbTypeRrGraph::t_edge& edge) {
+                return edge.node_index == child.current_node;
+            });
         }
         if (!edge_exists) return false;
         if (!is_route_mode_compatible(child, lb_type_graph, lb_rr_node_stats))
@@ -1135,7 +1130,7 @@ void ClusterRouter::expand_edges_(int mode,
                                   float cur_cost,
                                   int net_fanout,
                                   bool target_is_internal_sink) {
-    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const LbTypeRrGraph& lb_type_graph = *lb_type_graph_;
     t_expansion_node enode;
 
     // Block feedback routing through Fc_out == 0 top-level output pins: such a
@@ -1143,7 +1138,7 @@ void ClusterRouter::expand_edges_(int mode,
     // loop back to an in-cluster sink. Only applied when the target sink is
     // inside this cluster; genuine external-sink targets are out of scope.
     if (target_is_internal_sink) {
-        const t_pb_graph_pin* pb_pin = lb_type_graph[cur_inode].pb_graph_pin;
+        const t_pb_graph_pin* pb_pin = lb_type_graph.pb_graph_pin(cur_inode);
         const bool is_top_level_output_pin = (pb_pin != nullptr
                                               && pb_pin->port != nullptr
                                               && pb_pin->port->type == OUT_PORT
@@ -1154,16 +1149,15 @@ void ClusterRouter::expand_edges_(int mode,
         }
     }
 
-    for (int iedge = 0; iedge < lb_type_graph[cur_inode].num_fanout[mode]; iedge++) {
+    for (const LbTypeRrGraph::t_edge& edge : lb_type_graph.edges(cur_inode, mode)) {
         /* Init new expansion node */
         enode.prev_index = cur_inode;
-        enode.node_index = lb_type_graph[cur_inode].outedges[mode][iedge].node_index;
+        enode.node_index = edge.node_index;
         enode.cost = cur_cost;
 
         /* Determine incremental cost of using expansion node */
-        int usage = lb_rr_node_stats_[enode.node_index].occ + 1 - lb_type_graph[enode.node_index].capacity;
-        float incr_cost = lb_type_graph[enode.node_index].intrinsic_cost;
-        incr_cost += lb_type_graph[cur_inode].outedges[mode][iedge].intrinsic_cost;
+        int usage = lb_rr_node_stats_[enode.node_index].occ + 1 - lb_type_graph.capacity(enode.node_index);
+        float incr_cost = edge.cost;
         incr_cost += params_.hist_fac * lb_rr_node_stats_[enode.node_index].historical_usage;
         if (usage > 0) {
             incr_cost *= (usage * pres_con_fac_);
@@ -1176,7 +1170,7 @@ void ClusterRouter::expand_edges_(int mode,
         if (next_mode == -1) {
             next_mode = 0;
         }
-        if (lb_type_graph[enode.node_index].num_fanout[next_mode] > 1) {
+        if (lb_type_graph.num_fanout(enode.node_index, next_mode) > 1) {
             fanout_factor = 0.85 + (0.25 / net_fanout);
         } else {
             fanout_factor = 1.15 - (0.25 / net_fanout);
@@ -1214,15 +1208,14 @@ void ClusterRouter::expand_node_(const t_expansion_node& exp_node,
 void ClusterRouter::expand_node_all_modes_(const t_expansion_node& exp_node,
                                            int net_fanout,
                                            bool target_is_internal_sink) {
-    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const LbTypeRrGraph& lb_type_graph = *lb_type_graph_;
 
     int cur_inode = exp_node.node_index;
     float cur_cost = exp_node.cost;
     int cur_mode = lb_rr_node_stats_[cur_inode].mode;
-    const t_lb_type_rr_node& node = lb_type_graph[cur_inode];
-    t_pb_graph_pin* pin = node.pb_graph_pin;
+    const t_pb_graph_pin* pin = lb_type_graph.pb_graph_pin(cur_inode);
 
-    for (int mode = 0; mode < lb_type_graph[cur_inode].num_modes; mode++) {
+    for (int mode = 0; mode < lb_type_graph.num_modes(cur_inode); mode++) {
         /* If a mode has been forced, only add edges from that mode, otherwise add edges from all modes. */
         if (cur_mode != -1 && mode != cur_mode) {
             continue;
@@ -1280,10 +1273,10 @@ bool ClusterRouter::add_to_rt_(t_lb_trace& rt, int node_index, IntraLbNetIdx irt
 }
 
 bool ClusterRouter::is_route_success_() {
-    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const LbTypeRrGraph& lb_type_graph = *lb_type_graph_;
 
-    for (size_t inode = 0; inode < lb_type_graph.size(); inode++) {
-        if (lb_rr_node_stats_[inode].occ > lb_type_graph[inode].capacity) {
+    for (size_t inode = 0; inode < lb_type_graph.num_nodes(); inode++) {
+        if (lb_rr_node_stats_[inode].occ > lb_type_graph.capacity(inode)) {
             return false;
         }
     }
@@ -1307,15 +1300,15 @@ static t_lb_trace* find_node_in_rt(t_lb_trace& rt, int rt_index) {
 
 void ClusterRouter::print_route_(const char* filename) {
     FILE* fp;
-    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const LbTypeRrGraph& lb_type_graph = *lb_type_graph_;
 
     fp = fopen(filename, "w");
     if (fp == nullptr) {
         VTR_LOG_WARN("Failed to open file '%s' for writing route.\n", filename);
         return;
     }
-    for (unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
-        fprintf(fp, "node %d occ %d cap %d\n", inode, lb_rr_node_stats_[inode].occ, lb_type_graph[inode].capacity);
+    for (unsigned int inode = 0; inode < lb_type_graph.num_nodes(); inode++) {
+        fprintf(fp, "node %d occ %d cap %d\n", inode, lb_rr_node_stats_[inode].occ, lb_type_graph.capacity(inode));
     }
 
     fprintf(fp, "\n\n----------------------------------------------------\n\n");
@@ -1351,7 +1344,7 @@ void ClusterRouter::print_trace_(FILE* fp, const t_lb_trace& trace) {
 }
 
 void ClusterRouter::reset_explored_node_tb_() {
-    for (unsigned int inode = 0; inode < lb_type_graph_->size(); inode++) {
+    for (unsigned int inode = 0; inode < lb_type_graph_->num_nodes(); inode++) {
         explored_node_tb_[inode].prev_index = UNDEFINED;
         explored_node_tb_[inode].explored_id = UNDEFINED;
         explored_node_tb_[inode].inet = IntraLbNetIdx::INVALID();
@@ -1375,14 +1368,11 @@ void ClusterRouter::save_and_reset_lb_route_() {
     }
 }
 
-static std::vector<int> find_congested_rr_nodes(const std::vector<t_lb_type_rr_node>& lb_type_graph,
+static std::vector<int> find_congested_rr_nodes(const LbTypeRrGraph& lb_type_graph,
                                                 const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats) {
     std::vector<int> congested_rr_nodes;
-    for (size_t inode = 0; inode < lb_type_graph.size(); ++inode) {
-        const t_lb_type_rr_node& rr_node = lb_type_graph[inode];
-        const t_lb_rr_node_stats& rr_node_stats = lb_rr_node_stats[inode];
-
-        if (rr_node_stats.occ > rr_node.capacity) {
+    for (size_t inode = 0; inode < lb_type_graph.num_nodes(); ++inode) {
+        if (lb_rr_node_stats[inode].occ > lb_type_graph.capacity(inode)) {
             congested_rr_nodes.push_back(inode);
         }
     }
@@ -1393,18 +1383,18 @@ static std::vector<int> find_congested_rr_nodes(const std::vector<t_lb_type_rr_n
 std::string ClusterRouter::describe_lb_type_rr_node_(int inode) {
     std::string description;
 
-    const t_lb_type_rr_node& rr_node = (*lb_type_graph_)[inode];
-    const t_pb_graph_pin* pb_graph_pin = rr_node.pb_graph_pin;
+    e_lb_rr_type type = lb_type_graph_->type(inode);
+    const t_pb_graph_pin* pb_graph_pin = lb_type_graph_->pb_graph_pin(inode);
 
     if (pb_graph_pin) {
         description += "'" + pb_graph_pin->to_string(false) + "'";
-    } else if (inode == get_lb_type_rr_graph_ext_source_index(lb_type_)) {
-        VTR_ASSERT(rr_node.type == LB_SOURCE);
+    } else if (inode == lb_type_graph_->ext_source_index()) {
+        VTR_ASSERT(type == LB_SOURCE);
         description = "cluster-external source (LB_SOURCE)";
-    } else if (inode == get_lb_type_rr_graph_ext_sink_index(lb_type_)) {
-        VTR_ASSERT(rr_node.type == LB_SINK);
+    } else if (inode == lb_type_graph_->ext_sink_index()) {
+        VTR_ASSERT(type == LB_SINK);
         description = "cluster-external sink (LB_SINK)";
-    } else if (rr_node.type == LB_SINK) {
+    } else if (type == LB_SINK) {
         description = "cluster-internal sink (LB_SINK accessible via architecture pins: ";
 
         //To account for equivalent pins multiple pins may route to a single sink.
@@ -1413,16 +1403,16 @@ std::string ClusterRouter::describe_lb_type_rr_node_(int inode) {
         std::vector<std::string> pin_descriptions;
         std::vector<int> pin_rrs = find_incoming_rr_nodes(inode, *lb_type_graph_);
         for (int pin_rr_idx : pin_rrs) {
-            const t_pb_graph_pin* pin_pb_gpin = (*lb_type_graph_)[pin_rr_idx].pb_graph_pin;
+            const t_pb_graph_pin* pin_pb_gpin = lb_type_graph_->pb_graph_pin(pin_rr_idx);
             pin_descriptions.push_back(pin_pb_gpin->to_string());
         }
 
         description += vtr::join(pin_descriptions, ", ");
         description += ")";
 
-    } else if (rr_node.type == LB_SOURCE) {
+    } else if (type == LB_SOURCE) {
         description = "cluster-internal source (LB_SOURCE)";
-    } else if (rr_node.type == LB_INTERMEDIATE) {
+    } else if (type == LB_INTERMEDIATE) {
         description = "cluster-internal intermediate?";
     } else {
         description = "<unknown lb_type_rr_node>";
@@ -1431,14 +1421,11 @@ std::string ClusterRouter::describe_lb_type_rr_node_(int inode) {
     return description;
 }
 
-static std::vector<int> find_incoming_rr_nodes(int dst_node, const std::vector<t_lb_type_rr_node>& lb_rr_graph) {
+static std::vector<int> find_incoming_rr_nodes(int dst_node, const LbTypeRrGraph& lb_rr_graph) {
     std::vector<int> incoming_rr_nodes;
-    for (size_t inode = 0; inode < lb_rr_graph.size(); ++inode) {
-        const t_lb_type_rr_node& rr_node = lb_rr_graph[inode];
-        for (int mode = 0; mode < rr_node.num_modes; mode++) {
-            for (int iedge = 0; iedge < rr_node.num_fanout[mode]; ++iedge) {
-                const t_lb_type_rr_node_edge& rr_edge = rr_node.outedges[mode][iedge];
-
+    for (size_t inode = 0; inode < lb_rr_graph.num_nodes(); ++inode) {
+        for (int mode = 0; mode < lb_rr_graph.num_modes(inode); mode++) {
+            for (const LbTypeRrGraph::t_edge& rr_edge : lb_rr_graph.edges(inode, mode)) {
                 if (rr_edge.node_index == dst_node) {
                     //The current node connects to the destination node
                     incoming_rr_nodes.push_back(inode);
@@ -1452,7 +1439,7 @@ static std::vector<int> find_incoming_rr_nodes(int dst_node, const std::vector<t
 std::string ClusterRouter::describe_congested_rr_nodes_(const std::vector<int>& congested_rr_nodes) {
     std::string description;
 
-    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const LbTypeRrGraph& lb_type_graph = *lb_type_graph_;
 
     std::multimap<size_t, AtomNetId> congested_rr_node_to_nets; //From rr_node to net
     for (const t_intra_lb_net& lb_net : intra_lb_nets_) {
@@ -1473,10 +1460,9 @@ std::string ClusterRouter::describe_congested_rr_nodes_(const std::vector<int>& 
             }
 
             int inode = curr->current_node;
-            const t_lb_type_rr_node& rr_node = lb_type_graph[inode];
             const t_lb_rr_node_stats& rr_node_stats = lb_rr_node_stats_[inode];
 
-            if (rr_node_stats.occ > rr_node.capacity) {
+            if (rr_node_stats.occ > lb_type_graph.capacity(inode)) {
                 //Congested
                 congested_rr_node_to_nets.insert({inode, atom_net});
             }
@@ -1487,13 +1473,12 @@ std::string ClusterRouter::describe_congested_rr_nodes_(const std::vector<int>& 
     VTR_ASSERT(!congested_rr_nodes.empty());
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     for (int inode : congested_rr_nodes) {
-        const t_lb_type_rr_node& rr_node = lb_type_graph[inode];
         const t_lb_rr_node_stats& rr_node_stats = lb_rr_node_stats_[inode];
         description += vtr::string_fmt("RR Node %d (%s) is congested (occ: %d > capacity: %d) with the following nets:\n",
                                        inode,
                                        describe_lb_type_rr_node_(inode).c_str(),
                                        rr_node_stats.occ,
-                                       rr_node.capacity);
+                                       lb_type_graph.capacity(inode));
         auto range = congested_rr_node_to_nets.equal_range(inode);
         for (auto itr = range.first; itr != range.second; ++itr) {
             AtomNetId net = itr->second;
@@ -1507,8 +1492,8 @@ std::string ClusterRouter::describe_congested_rr_nodes_(const std::vector<int>& 
 
 void ClusterRouter::reset_intra_lb_route() {
     VTR_ASSERT_MSG(!is_clean_ && is_valid_, "Cannot operate on a cleaned / invalid router.");
-    for (const t_lb_type_rr_node& node : *lb_type_graph_) {
-        t_pb_graph_pin* pin = node.pb_graph_pin;
+    for (size_t inode = 0; inode < lb_type_graph_->num_nodes(); inode++) {
+        const t_pb_graph_pin* pin = lb_type_graph_->pb_graph_pin(inode);
         if (pin == nullptr) {
             continue;
         }

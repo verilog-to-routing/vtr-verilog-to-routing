@@ -131,7 +131,7 @@ void SetupVPR(const t_options* options,
               t_noc_opts* nocOpts,
               t_server_opts* serverOpts,
               t_det_routing_arch& routingArch,
-              std::vector<std::vector<t_lb_type_rr_node>>* packerRRGraphs,
+              std::vector<LbTypeRrGraph>& lb_type_rr_graphs,
               std::vector<t_segment_inf>& segments,
               t_timing_inf* timing,
               bool* showGraphics,
@@ -359,7 +359,7 @@ void SetupVPR(const t_options* options,
     {
         vtr::ScopedStartFinishTimer t("Building complex block graph");
         alloc_and_load_all_pb_graphs(powerOpts->do_power, routerOpts->flat_routing);
-        *packerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
+        lb_type_rr_graphs = alloc_and_load_all_lb_type_rr_graph();
     }
 
     if (routerOpts->flat_routing) {
@@ -384,7 +384,7 @@ void SetupVPR(const t_options* options,
     }
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {
-        echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH), *packerRRGraphs);
+        echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH), lb_type_rr_graphs);
     }
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) {
