@@ -21,6 +21,7 @@
 
 #include "connection_router_interface.h"
 #include "globals.h"
+#include "route_common.h"
 #include "route_path_manager.h"
 #include "rr_graph_storage.h"
 #include "router_lookahead.h"
@@ -28,22 +29,6 @@
 #include "router_stats.h"
 #include "rr_graph_view.h"
 #include "spatial_route_tree_lookup.h"
-
-/// @brief The fields of a t_rr_switch_inf that the neighbour cost evaluation reads.
-/// A t_rr_switch_inf holds a std::string and spans two cache lines. This copy holds only
-/// the per-switch values read for every expanded edge and the two switch type tests.
-struct t_rr_switch_cost_inf {
-    /// Equivalent resistance of the switch.
-    float R = 0.;
-    /// Internal capacitance of the switch.
-    float Cinternal = 0.;
-    /// Intrinsic delay of the switch.
-    float Tdel = 0.;
-    /// True when the switch isolates its input from its output.
-    bool buffered = false;
-    /// True when the switch can be turned on or off.
-    bool configurable = true;
-};
 
 /**
  * @class ConnectionRouter defines the interface for the serial and parallel connection
@@ -87,12 +72,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     build_rr_switch_cost_inf(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf) {
         vtr::vector<RRSwitchId, t_rr_switch_cost_inf> cost_inf(rr_switch_inf.size());
         for (RRSwitchId switch_id : rr_switch_inf.keys()) {
-            const t_rr_switch_inf& switch_inf = rr_switch_inf[switch_id];
-            cost_inf[switch_id].R = switch_inf.R;
-            cost_inf[switch_id].Cinternal = switch_inf.Cinternal;
-            cost_inf[switch_id].Tdel = switch_inf.Tdel;
-            cost_inf[switch_id].buffered = switch_inf.buffered();
-            cost_inf[switch_id].configurable = switch_inf.configurable();
+            cost_inf[switch_id] = t_rr_switch_cost_inf(rr_switch_inf[switch_id]);
         }
         return cost_inf;
     }

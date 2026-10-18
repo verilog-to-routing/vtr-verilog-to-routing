@@ -8,7 +8,41 @@
 #include "globals.h"
 #include "rr_graph_fwd.h"
 #include "rr_graph_view.h"
+#include "rr_switch.h"
 #include "vtr_assert.h"
+
+/// @brief The fields of a t_rr_switch_inf that the neighbour cost evaluation reads.
+/// A t_rr_switch_inf holds a std::string and spans two cache lines. This copy holds only
+/// the per-switch values read for every expanded edge and the two switch type tests.
+struct t_rr_switch_cost_inf {
+    t_rr_switch_cost_inf() = default;
+
+    explicit t_rr_switch_cost_inf(const t_rr_switch_inf& switch_inf)
+        : R(switch_inf.R)
+        , Cinternal(switch_inf.Cinternal)
+        , Tdel(switch_inf.Tdel)
+        , buffered(switch_inf.buffered())
+        , configurable(switch_inf.configurable()) {}
+
+    /// Equivalent resistance of the switch.
+    float R = 0.;
+    /// Internal capacitance of the switch.
+    float Cinternal = 0.;
+    /// Intrinsic delay of the switch.
+    float Tdel = 0.;
+    /// True when the switch isolates its input from its output.
+    bool buffered = false;
+    /// True when the switch can be turned on or off.
+    bool configurable = true;
+};
+
+/// @brief Delay of an rr node driven through the given switch, ignoring upstream and downstream effects.
+/// Only half of the node's own resistance is charged against its capacitance.
+inline float compute_rr_node_delay(const t_rr_switch_cost_inf& switch_inf, t_rr_rc_data node_rc) {
+    float R_node_only = switch_inf.R + node_rc.R;
+    float Rdel = R_node_only - 0.5 * node_rc.R;
+    return switch_inf.Tdel + Rdel * node_rc.C;
+}
 
 /**
  * @brief Extra information about each rr_node needed only during routing

@@ -1139,17 +1139,10 @@ float get_rr_node_delay_cost(RRNodeId to_node, RREdgeId connecting_edge) {
 
     // Info for the switch connecting from_node to_node (i.e., to->index)
     RRSwitchId iswitch = (RRSwitchId)rr_graph.edge_switch(connecting_edge);
-    float switch_R = rr_switch_inf[iswitch].R;
-    float switch_Tdel = rr_switch_inf[iswitch].Tdel;
+    t_rr_switch_cost_inf switch_inf(rr_switch_inf[iswitch]);
 
     // To node info
-    float node_C = rr_graph.node_C(to_node);
-    float node_R = rr_graph.node_R(to_node);
+    t_rr_rc_data node_rc(rr_graph.node_R(to_node), rr_graph.node_C(to_node));
 
-    float R_upstream = switch_R + node_R;
-
-    // Calculate delay
-    float Rdel = R_upstream - 0.5 * node_R; // Only consider half node's resistance for delay
-    float Tdel = switch_Tdel + Rdel * node_C;
-    return Tdel;
+    return compute_rr_node_delay(switch_inf, node_rc);
 }
