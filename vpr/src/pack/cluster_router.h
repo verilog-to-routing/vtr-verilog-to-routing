@@ -59,7 +59,7 @@ struct t_lb_rr_node_stats {
  */
 struct t_lb_trace {
     /// @brief The current lb type rr node used by net.
-    int current_node;
+    LbRrNodeId current_node;
 
     /// @brief The index of previous edge that drives current node.
     std::vector<t_lb_trace> next_nodes;
@@ -74,7 +74,7 @@ struct t_intra_lb_net {
     AtomNetId atom_net_id;
 
     /// @brief The endpoints of the intra_lb_net, 0th position is the source, all others are sinks.
-    std::vector<int> terminals;
+    std::vector<LbRrNodeId> terminals;
 
     /// @brief The AtomPins associated with each terminal.
     std::vector<AtomPinId> atom_pins;
@@ -87,7 +87,7 @@ struct t_intra_lb_net {
 
     t_intra_lb_net() noexcept {
         atom_net_id = AtomNetId::INVALID();
-        rt_tree.current_node = UNDEFINED;
+        rt_tree.current_node = LbRrNodeId::INVALID();
     }
 };
 
@@ -106,16 +106,16 @@ struct t_lb_router_params {
  */
 struct t_expansion_node {
     /// @brief Index of logic cluster_ctx.blocks rr node this expansion node represents.
-    int node_index;
+    LbRrNodeId node_index;
 
     /// @brief Index of logic cluster_ctx.blocks rr node that drives this expansion node.
-    int prev_index;
+    LbRrNodeId prev_index;
 
     float cost;
 
     t_expansion_node() {
-        node_index = UNDEFINED;
-        prev_index = UNDEFINED;
+        node_index = LbRrNodeId::INVALID();
+        prev_index = LbRrNodeId::INVALID();
         cost = 0;
     }
 };
@@ -146,7 +146,7 @@ class compare_expansion_node {
  */
 struct t_explored_node_tb {
     /// @brief Previous node that drives this one.
-    int prev_index;
+    LbRrNodeId prev_index;
 
     /// @brief ID used to determine if this node has been explored.
     int explored_id;
@@ -161,7 +161,7 @@ struct t_explored_node_tb {
     float enqueue_cost;
 
     t_explored_node_tb() noexcept {
-        prev_index = UNDEFINED;
+        prev_index = LbRrNodeId::INVALID();
         explored_id = UNDEFINED;
         enqueue_id = UNDEFINED;
         inet = IntraLbNetIdx::INVALID();
@@ -418,7 +418,7 @@ class ClusterRouter {
      * @brief Recursive function used by expand_rt_ to expand all nodes in a
      *        route tree into the priority queue.
      */
-    void expand_rt_rec_(const t_lb_trace& rt, int prev_index, IntraLbNetIdx irt_net);
+    void expand_rt_rec_(const t_lb_trace& rt, LbRrNodeId prev_index, IntraLbNetIdx irt_net);
 
     /**
      * @brief Add new path from existing route tree to target sink.
@@ -426,7 +426,7 @@ class ClusterRouter {
      * This reads the result of the path search to traceback the path and then
      * adds the path to the route tree.
      */
-    bool add_to_rt_(t_lb_trace& rt, int node_index, IntraLbNetIdx irt_net);
+    bool add_to_rt_(t_lb_trace& rt, LbRrNodeId node_index, IntraLbNetIdx irt_net);
 
     /**
      * @brief Expand all nodes for a given lb_net.
@@ -483,7 +483,7 @@ class ClusterRouter {
      *                                   gates feedback through Fc_out==0 output pins.
      */
     void expand_edges_(int mode,
-                       int cur_inode,
+                       LbRrNodeId cur_inode,
                        float cur_cost,
                        int net_fanout,
                        bool target_is_internal_sink);
@@ -522,12 +522,12 @@ class ClusterRouter {
      * @brief Debugging function, used to print the description of the given
      *        lb-type RR node.
      */
-    std::string describe_lb_type_rr_node_(int inode);
+    std::string describe_lb_type_rr_node_(LbRrNodeId inode);
 
     /**
      * @brief Debugging function, used to print the given congested RR.
      */
-    std::string describe_congested_rr_nodes_(const std::vector<int>& congested_rr_nodes);
+    std::string describe_congested_rr_nodes_(const std::vector<LbRrNodeId>& congested_rr_nodes);
 
     /**
      * @brief Debugging function, used to print out the trace of a net.
@@ -574,15 +574,15 @@ class ClusterRouter {
     // Logical-to-Physical Mapping Info
     // =========================================================================
 
-    /// @brief [0..lb_type_graph->num_nodes()-1] Stats for each logic cluster_ctx.blocks rr node instance.
-    std::vector<t_lb_rr_node_stats> lb_rr_node_stats_;
+    /// @brief Stats for each logic cluster_ctx.blocks rr node instance.
+    vtr::vector<LbRrNodeId, t_lb_rr_node_stats> lb_rr_node_stats_;
 
     // =========================================================================
     // Stored State Info During Pathfinder Iterative Routing
     // =========================================================================
 
-    /// @brief [0..lb_type_graph->num_nodes()-1] Stores mode exploration and lb_traceback info for nodes.
-    std::vector<t_explored_node_tb> explored_node_tb_;
+    /// @brief Stores mode exploration and lb_traceback info for each rr node.
+    vtr::vector<LbRrNodeId, t_explored_node_tb> explored_node_tb_;
 
     /// @brief Used in conjunction with explored_node_tb_ to determine whether or not a location has been explored.
     ///        By using a unique identifier every route, I don't have to clear the previous route exploration.

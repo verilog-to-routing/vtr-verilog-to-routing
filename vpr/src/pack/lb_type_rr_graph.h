@@ -11,10 +11,15 @@
 #include <vector>
 
 #include "vtr_assert.h"
+#include "vtr_strong_id.h"
+#include "vtr_vector.h"
 
 class t_pb_graph_pin;
 class t_pb_graph_node;
 struct t_logical_block_type;
+
+/// @brief Index of a node in an LbTypeRrGraph.
+typedef vtr::StrongId<struct lb_rr_node_id_tag, int> LbRrNodeId;
 
 /// @brief Types of intra-logic block routing resource nodes.
 enum e_lb_rr_type {
@@ -64,12 +69,14 @@ class LbTypeRrGraph {
     /// @brief An out edge of a node.
     struct t_edge {
         /// @brief Node this edge drives.
-        int32_t node_index;
+        LbRrNodeId node_index;
 
         /// @brief Cost of using this edge.
         float cost;
     };
     static_assert(sizeof(t_edge) == 8, "t_edge is read in the router search and must stay small");
+
+    typedef vtr::vector<LbRrNodeId, t_node>::key_range node_range;
 
     /// @brief Builds an empty graph with no nodes.
     LbTypeRrGraph() = default;
@@ -79,48 +86,51 @@ class LbTypeRrGraph {
 
     size_t num_nodes() const { return nodes_.size(); }
 
-    int capacity(int node) const { return nodes_[node].capacity; }
+    /// @brief All node ids in increasing order.
+    node_range nodes() const { return nodes_.keys(); }
 
-    int num_modes(int node) const { return nodes_[node].num_modes; }
+    int capacity(LbRrNodeId node) const { return nodes_[node].capacity; }
+
+    int num_modes(LbRrNodeId node) const { return nodes_[node].num_modes; }
 
     /// @brief Out edges of node when it is in the given mode.
-    std::span<const t_edge> edges(int node, int mode) const {
+    std::span<const t_edge> edges(LbRrNodeId node, int mode) const {
         VTR_ASSERT_SAFE(mode >= 0 && mode < nodes_[node].num_modes);
         int32_t first = mode_edge_start_[nodes_[node].mode_start + mode];
         int32_t last = mode_edge_start_[nodes_[node].mode_start + mode + 1];
         return std::span<const t_edge>(edges_.data() + first, last - first);
     }
 
-    int num_fanout(int node, int mode) const { return (int)edges(node, mode).size(); }
+    int num_fanout(LbRrNodeId node, int mode) const { return (int)edges(node, mode).size(); }
 
-    e_lb_rr_type type(int node) const { return types_[node]; }
+    e_lb_rr_type type(LbRrNodeId node) const { return types_[node]; }
 
     /// @brief The pb graph pin of node, or nullptr for the external nodes and sinks.
-    const t_pb_graph_pin* pb_graph_pin(int node) const { return pb_graph_pins_[node]; }
+    const t_pb_graph_pin* pb_graph_pin(LbRrNodeId node) const { return pb_graph_pins_[node]; }
 
     /// @brief The lowest mode in which src has an edge to dst, or -1 if there is none.
-    int edge_mode(int src, int dst) const;
+    int edge_mode(LbRrNodeId src, LbRrNodeId dst) const;
 
-    int ext_source_index() const { return ext_source_index_; }
+    LbRrNodeId ext_source_node() const { return ext_source_node_; }
 
-    int ext_sink_index() const { return ext_sink_index_; }
+    LbRrNodeId ext_sink_node() const { return ext_sink_node_; }
 
   private:
     /// @brief Sets the data of node and opens its edge ranges. The caller then
     ///        calls begin_mode_() num_modes times and end_node_() once.
-    void begin_node_(int node, e_lb_rr_type type, int capacity, int num_modes, const t_pb_graph_pin* pin);
+    void begin_node_(LbRrNodeId node, e_lb_rr_type type, int capacity, int num_modes, const t_pb_graph_pin* pin);
 
     /// @brief Starts the edge range of the next mode of the node being built.
     void begin_mode_();
 
     /// @brief Appends an edge to the mode being built.
-    void add_edge_(int node_index, float cost);
+    void add_edge_(LbRrNodeId node_index, float cost);
 
     /// @brief Closes the edge ranges of node.
-    void end_node_(int node);
+    void end_node_(LbRrNodeId node);
 
-    /// @brief Appends a sink node with no edges and returns its index.
-    int add_sink_(int capacity);
+    /// @brief Appends a sink node with no edges and returns its id.
+    LbRrNodeId add_sink_(int capacity);
 
     /// @brief Appends an edge of the given cost to every top level input pin and then to every top level clock pin.
     void add_edges_to_top_level_input_pins_(const t_pb_graph_node* pb_graph_head, float cost);
@@ -132,12 +142,12 @@ class LbTypeRrGraph {
     void build_primitive_sink_pins_(t_pb_graph_pin* const* pins, int num_ports, const int* num_pins);
 
     /// @brief Builds the nodes of every pin of pb_graph_node and its children.
-    void build_pb_graph_node_(const t_pb_graph_node* pb_graph_node, int ext_rr_index);
+    void build_pb_graph_node_(const t_pb_graph_node* pb_graph_node, LbRrNodeId ext_rr_node);
 
     // Hot. Read by the router search.
 
-    /// @brief Per node data, indexed by node.
-    std::vector<t_node> nodes_;
+    /// @brief Per node data.
+    vtr::vector<LbRrNodeId, t_node> nodes_;
 
     /// @brief Index into edges_ of the first edge of each (node, mode), plus
     ///        one entry per node that ends the range of its last mode.
@@ -149,16 +159,16 @@ class LbTypeRrGraph {
     // Cold. Read by setup and diagnostics.
 
     /// @brief Type of each node.
-    std::vector<e_lb_rr_type> types_;
+    vtr::vector<LbRrNodeId, e_lb_rr_type> types_;
 
     /// @brief The pb graph pin of each node, or nullptr if it has none.
-    std::vector<const t_pb_graph_pin*> pb_graph_pins_;
+    vtr::vector<LbRrNodeId, const t_pb_graph_pin*> pb_graph_pins_;
 
     /// @brief Node that drives every top level input and clock pin.
-    int ext_source_index_ = -1;
+    LbRrNodeId ext_source_node_;
 
     /// @brief Node driven by every top level output pin.
-    int ext_sink_index_ = -1;
+    LbRrNodeId ext_sink_node_;
 };
 
 /// @brief Builds the graph of every logical block type, indexed by type index.
