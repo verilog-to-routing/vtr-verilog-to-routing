@@ -87,16 +87,3 @@ void print_rr_node_route_inf_dot();
 void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat);
 
 std::string describe_unrouteable_connection(RRNodeId source_node, RRNodeId sink_node, bool is_flat);
-
-/* If flat_routing isn't enabled, this function would simply pass from_node and to_node to the router_lookahead.
- * However, if flat_routing is enabled, we can not do the same. For the time being, router lookahead is not aware
- * of internal nodes, thus if we pass an intra-cluster node to it, it would raise an error. Thus, we choose one
- * node on the same tile of that internal node and pass it to the router lookahead.
- */
-float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
-                              const RRGraphView& rr_graph_view,
-                              RRNodeId from_node,
-                              RRNodeId to_node,
-                              float R_upstream,
-                              const t_conn_cost_params& cost_params,
-                              bool is_flat);

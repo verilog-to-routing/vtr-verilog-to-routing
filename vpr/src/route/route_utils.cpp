@@ -652,9 +652,7 @@ t_bb calc_current_bb(const RouteTree& tree) {
 void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                    const Netlist<>& net_list,
                                    const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
-                                   NetPinsMatrix<float>& net_delay,
-                                   const RRGraphView& rr_graph,
-                                   bool is_flat) {
+                                   NetPinsMatrix<float>& net_delay) {
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.; // Ensures lookahead returns delay value
 
@@ -666,13 +664,10 @@ void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
         for (size_t ipin = 1; ipin < net_list.net_pins(net_id).size(); ++ipin) {
             RRNodeId sink_rr = net_rr_terminals[net_id][ipin];
 
-            float est_delay = get_cost_from_lookahead(router_lookahead,
-                                                      rr_graph,
-                                                      source_rr,
-                                                      sink_rr,
-                                                      0.0f /* R_upstream */,
-                                                      cost_params,
-                                                      is_flat);
+            float est_delay = router_lookahead.get_expected_cost(source_rr,
+                                                                 sink_rr,
+                                                                 cost_params,
+                                                                 0.0f /* R_upstream */);
             VTR_ASSERT(std::isfinite(est_delay) && est_delay < std::numeric_limits<float>::max());
 
             net_delay[net_id][ipin] = est_delay;

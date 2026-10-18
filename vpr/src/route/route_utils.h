@@ -86,9 +86,7 @@ inline const vtr::optional<RouteTree>& get_route_tree_from_cluster_net_id(Cluste
 void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                    const Netlist<>& net_list,
                                    const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
-                                   NetPinsMatrix<float>& net_delay,
-                                   const RRGraphView& rr_graph,
-                                   bool is_flat);
+                                   NetPinsMatrix<float>& net_delay);
 
 bool is_better_quality_routing(const vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
                                const RoutingMetrics& best_routing_metrics,

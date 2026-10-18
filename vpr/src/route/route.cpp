@@ -203,9 +203,7 @@ bool route(const Netlist<>& net_list,
         init_net_delay_from_lookahead(*router_lookahead,
                                       net_list,
                                       route_ctx.net_rr_terminals,
-                                      net_delay,
-                                      device_ctx.rr_graph,
-                                      is_flat);
+                                      net_delay);
 
         // Run STA to get estimated criticalities
         if (hold_analysis_skippable) {

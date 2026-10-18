@@ -1098,13 +1098,3 @@ std::string describe_unrouteable_connection(RRNodeId source_node, RRNodeId sink_
 
     return msg;
 }
-
-float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
-                              const RRGraphView& /*rr_graph_view*/,
-                              RRNodeId from_node,
-                              RRNodeId to_node,
-                              float R_upstream,
-                              const t_conn_cost_params& cost_params,
-                              bool /*is_flat*/) {
-    return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
-}
