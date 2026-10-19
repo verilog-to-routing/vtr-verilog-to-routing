@@ -233,8 +233,11 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
                                                           float backwards_cong,
                                                           float R_upstream) {
     const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
-    const auto [expected_delay, expected_cong] = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, cost_params, R_upstream);
-
+    /* get delay using crit = 1, get cong using old congestion */
+    t_conn_cost_params delay_params = cost_params;
+    delay_params.criticality = 1.f;
+    const auto expected_delay = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, delay_params, R_upstream).first;
+    const auto expected_cong = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, cost_params, R_upstream).second;
     float expected_total_cong = expected_cong + backwards_cong;
     float expected_total_delay = expected_delay + backwards_delay;
 
@@ -246,7 +249,7 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
     // Normalization constant defined in RCV paper cited above
     constexpr float NORMALIZATION_CONSTANT = 100e-12;
 
-    float expected_total_delay_cost = expected_total_delay;
+    float expected_total_delay_cost = expected_total_delay * cost_params.criticality;
     expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - expected_total_delay);
     if (delay_budget->routing_budgets_algorithm == LOW_SKEW_CLOCK) {
         // Unlike the other budgeting algorithms, low-skew clock budgets set min == target == max for
@@ -369,7 +372,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_total_cost(RTExploredNode* t
     float total_cost = 0.;
 
     if (rcv_path_manager.is_enabled() && to->path_data != nullptr) {
-        to->path_data->backward_delay += cost_params.criticality * Tdel;
+        to->path_data->backward_delay += Tdel;
         float cong_cost = get_rr_cong_cost(to->index, cost_params.pres_fac);
         if (has_bus_muxes_) {
             // Keep the RCV congestion term consistent with the backward cost: add the control congestion.
