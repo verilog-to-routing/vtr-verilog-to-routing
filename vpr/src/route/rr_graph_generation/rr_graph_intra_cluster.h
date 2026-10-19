@@ -1,7 +1,10 @@
 
 #pragma once
 
+#include <optional>
 #include <vector>
+#include "bus_mux_route_types.h"
+#include "rr_graph_fwd.h"
 #include "rr_graph_type.h"
 
 class RRGraphBuilder;
@@ -37,3 +40,11 @@ void build_intra_cluster_rr_graph(e_graph_type graph_type,
  * in their final order.
  */
 void load_rr_bus_muxes(const RRSpatialLookup& node_lookup);
+
+/**
+ * @brief Return the bus mux and input set the rr edge from_node -> to_node implements a bit of.
+ *
+ * nullopt for every other edge. Looks up DeviceContext::rr_bus_mux_out_nodes, so it is cheap
+ * for nodes that are not bus-mux output pins and free when the architecture has no bus muxes.
+ */
+std::optional<t_bus_mux_edge> find_bus_mux_edge(RRNodeId from_node, RRNodeId to_node);

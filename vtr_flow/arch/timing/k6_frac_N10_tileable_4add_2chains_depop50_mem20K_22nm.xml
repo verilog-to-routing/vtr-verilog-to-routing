@@ -146,7 +146,10 @@
         <input name="datain" num_pins="74"/>
         <output name="dataout" num_pins="74"/>
         <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-        <pinlocations pattern="spread"/>
+        <!-- The tileable RR graph only connects pin sides that face a routing channel, so a tile
+             taller than one row must keep its pins on the perimeter: with "spread", the pins on the
+             interior top/bottom sides get no fanin and the tile cannot be used. -->
+        <pinlocations pattern="perimeter"/>
       </sub_tile>
     </tile>
     <tile name="memory" height="4">
@@ -162,7 +165,8 @@
         <output name="out" num_pins="40"/>
         <clock name="clk" num_pins="1"/>
         <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-        <pinlocations pattern="spread"/>
+        <!-- Perimeter for the same reason as mult_27 above. -->
+        <pinlocations pattern="perimeter"/>
       </sub_tile>
     </tile>
   </tiles>
