@@ -53,7 +53,7 @@ void LbTypeRrGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
     // Nodes [0, total_pb_pins) are the pb graph pins and the next three are the
     // external nodes. The sinks of primitive pins are appended as they are found.
     graph_.nodes_.resize(total_pb_pins + 3);
-    graph_.types_.resize(total_pb_pins + 3, NUM_LB_RR_TYPES);
+    graph_.types_.resize(total_pb_pins + 3, e_lb_rr_type::NUM_TYPES);
     graph_.pb_graph_pins_.resize(total_pb_pins + 3, nullptr);
     graph_.ext_source_node_ = LbRrNodeId(total_pb_pins);
     graph_.ext_sink_node_ = LbRrNodeId(total_pb_pins + 1);
@@ -61,14 +61,14 @@ void LbTypeRrGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
 
     // The external source drives every top level input and clock pin.
     int num_top_level_input_pins = pb_type->num_input_pins + pb_type->num_clock_pins;
-    begin_node_(graph_.ext_source_node_, LB_SOURCE, num_top_level_input_pins, 1, nullptr);
+    begin_node_(graph_.ext_source_node_, e_lb_rr_type::SOURCE, num_top_level_input_pins, 1, nullptr);
     begin_mode_();
     add_edges_to_top_level_input_pins_(pb_graph_head, 1);
     end_node_();
     VTR_ASSERT(graph_.num_fanout(graph_.ext_source_node_, 0) == num_top_level_input_pins);
 
     // The external sink is driven by every top level output pin and has no edges.
-    begin_node_(graph_.ext_sink_node_, LB_SINK, pb_type->num_output_pins, 1, nullptr);
+    begin_node_(graph_.ext_sink_node_, e_lb_rr_type::SINK, pb_type->num_output_pins, 1, nullptr);
     begin_mode_();
     end_node_();
 
@@ -76,7 +76,7 @@ void LbTypeRrGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
     // It leads to the external sink and, at a high cost, back to every top level
     // input and clock pin, so feedback through the external interconnect is
     // used only when nothing else routes.
-    begin_node_(ext_rr_node, LB_INTERMEDIATE, pb_type->num_output_pins, 1, nullptr);
+    begin_node_(ext_rr_node, e_lb_rr_type::INTERMEDIATE, pb_type->num_output_pins, 1, nullptr);
     begin_mode_();
     add_edge_(graph_.ext_sink_node_, 1);
     add_edges_to_top_level_input_pins_(pb_graph_head, 1000);
@@ -86,7 +86,7 @@ void LbTypeRrGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
 
     // Every pb graph pin must have been given a node.
     for (LbRrNodeId inode : graph_.nodes_.keys()) {
-        VTR_ASSERT(graph_.types_[inode] != NUM_LB_RR_TYPES);
+        VTR_ASSERT(graph_.types_[inode] != e_lb_rr_type::NUM_TYPES);
     }
 
     graph_.nodes_.shrink_to_fit();
@@ -98,7 +98,7 @@ void LbTypeRrGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
 
 void LbTypeRrGraphBuilder::begin_node_(LbRrNodeId node, e_lb_rr_type type, int capacity, int num_modes, const t_pb_graph_pin* pin) {
     VTR_ASSERT_MSG(!open_node_.is_valid(), "Previous node was not closed");
-    VTR_ASSERT_MSG(graph_.types_[node] == NUM_LB_RR_TYPES, "Node built twice");
+    VTR_ASSERT_MSG(graph_.types_[node] == e_lb_rr_type::NUM_TYPES, "Node built twice");
     VTR_ASSERT(num_modes >= 1 && num_modes <= std::numeric_limits<int16_t>::max());
     VTR_ASSERT(capacity >= 0 && capacity <= std::numeric_limits<int16_t>::max());
 
@@ -136,11 +136,11 @@ void LbTypeRrGraphBuilder::end_node_() {
 LbRrNodeId LbTypeRrGraphBuilder::add_sink_(int capacity) {
     LbRrNodeId sink_index = LbRrNodeId(graph_.nodes_.size());
     graph_.nodes_.emplace_back();
-    graph_.types_.push_back(NUM_LB_RR_TYPES);
+    graph_.types_.push_back(e_lb_rr_type::NUM_TYPES);
     graph_.pb_graph_pins_.push_back(nullptr);
 
     // A sink has one mode with no edges so that it can be expanded like any other node.
-    begin_node_(sink_index, LB_SINK, capacity, 1, nullptr);
+    begin_node_(sink_index, e_lb_rr_type::SINK, capacity, 1, nullptr);
     begin_mode_();
     end_node_();
     return sink_index;
@@ -196,7 +196,7 @@ void LbTypeRrGraphBuilder::build_primitive_sink_pins_(t_pb_graph_pin* const* pin
             }
 
             LbRrNodeId pin_index = LbRrNodeId(pb_pin->pin_count_in_cluster);
-            begin_node_(pin_index, LB_INTERMEDIATE, 1, 1, pb_pin);
+            begin_node_(pin_index, e_lb_rr_type::INTERMEDIATE, 1, 1, pb_pin);
             begin_mode_();
             add_edge_(sink_index, 1);
             end_node_();
@@ -215,7 +215,7 @@ void LbTypeRrGraphBuilder::build_pb_graph_node_(const t_pb_graph_node* pb_graph_
 
         for (int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
             for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
-                build_pb_pin_node_(&pb_graph_node->output_pins[iport][ipin], LB_SOURCE, parent_node->pb_type->num_modes);
+                build_pb_pin_node_(&pb_graph_node->output_pins[iport][ipin], e_lb_rr_type::SOURCE, parent_node->pb_type->num_modes);
             }
         }
 
@@ -235,7 +235,7 @@ void LbTypeRrGraphBuilder::build_pb_graph_node_(const t_pb_graph_node* pb_graph_
     // Input pins fan out according to the mode of this node.
     for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
-            build_pb_pin_node_(&pb_graph_node->input_pins[iport][ipin], LB_INTERMEDIATE, pb_type->num_modes);
+            build_pb_pin_node_(&pb_graph_node->input_pins[iport][ipin], e_lb_rr_type::INTERMEDIATE, pb_type->num_modes);
         }
     }
 
@@ -245,7 +245,7 @@ void LbTypeRrGraphBuilder::build_pb_graph_node_(const t_pb_graph_node* pb_graph_
             for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
                 const t_pb_graph_pin* pb_pin = &pb_graph_node->output_pins[iport][ipin];
                 LbRrNodeId pin_index = LbRrNodeId(pb_pin->pin_count_in_cluster);
-                begin_node_(pin_index, LB_INTERMEDIATE, 1, 1, pb_pin);
+                begin_node_(pin_index, e_lb_rr_type::INTERMEDIATE, 1, 1, pb_pin);
                 begin_mode_();
                 add_edge_(ext_rr_node, 1);
                 end_node_();
@@ -255,7 +255,7 @@ void LbTypeRrGraphBuilder::build_pb_graph_node_(const t_pb_graph_node* pb_graph_
         // Output pins of a sub cluster fan out according to the mode of the parent.
         for (int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
             for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
-                build_pb_pin_node_(&pb_graph_node->output_pins[iport][ipin], LB_INTERMEDIATE, parent_node->pb_type->num_modes);
+                build_pb_pin_node_(&pb_graph_node->output_pins[iport][ipin], e_lb_rr_type::INTERMEDIATE, parent_node->pb_type->num_modes);
             }
         }
     }
@@ -263,7 +263,7 @@ void LbTypeRrGraphBuilder::build_pb_graph_node_(const t_pb_graph_node* pb_graph_
     // Clock pins fan out according to the mode of this node.
     for (int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
-            build_pb_pin_node_(&pb_graph_node->clock_pins[iport][ipin], LB_INTERMEDIATE, pb_type->num_modes);
+            build_pb_pin_node_(&pb_graph_node->clock_pins[iport][ipin], e_lb_rr_type::INTERMEDIATE, pb_type->num_modes);
         }
     }
 }

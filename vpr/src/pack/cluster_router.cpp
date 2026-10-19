@@ -705,7 +705,7 @@ IntraLbNetIdx ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
         AtomPinId net_driver_pin_id = atom_ctx.netlist().net_driver(net_id);
         intra_lb_nets_[ipos].atom_pins.push_back(net_driver_pin_id);
 
-        VTR_ASSERT_MSG(lb_type_graph.type(intra_lb_nets_[ipos].terminals[0]) == LB_SOURCE, "Driver must be a source");
+        VTR_ASSERT_MSG(lb_type_graph.type(intra_lb_nets_[ipos].terminals[0]) == e_lb_rr_type::SOURCE, "Driver must be a source");
     }
 
     VTR_ASSERT(intra_lb_nets_[ipos].atom_pins.size() == intra_lb_nets_[ipos].terminals.size());
@@ -720,7 +720,7 @@ IntraLbNetIdx ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
         intra_lb_nets_[ipos].terminals[0] = LbRrNodeId(pb_graph_pin->pin_count_in_cluster);
         intra_lb_nets_[ipos].atom_pins[0] = pin_id;
 
-        VTR_ASSERT_MSG(lb_type_graph.type(intra_lb_nets_[ipos].terminals[0]) == LB_SOURCE, "Driver must be a source");
+        VTR_ASSERT_MSG(lb_type_graph.type(intra_lb_nets_[ipos].terminals[0]) == e_lb_rr_type::SOURCE, "Driver must be a source");
 
         LbRrNodeId sink_terminal = LbRrNodeId::INVALID();
         if (intra_lb_nets_[ipos].terminals.size() < atom_ctx.netlist().net_pins(net_id).size()) {
@@ -747,7 +747,7 @@ IntraLbNetIdx ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
                 intra_lb_nets_[ipos].terminals[1] = sink_terminal;
                 intra_lb_nets_[ipos].atom_pins[1] = AtomPinId::INVALID();
             }
-            VTR_ASSERT(lb_type_graph.type(intra_lb_nets_[ipos].terminals[1]) == LB_SINK);
+            VTR_ASSERT(lb_type_graph.type(intra_lb_nets_[ipos].terminals[1]) == e_lb_rr_type::SINK);
         }
     } else {
         //This is an input to a primitive
@@ -763,7 +763,7 @@ IntraLbNetIdx ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
         /* We actually route to the sink (to handle logically equivalent pins).
          * The sink is one past the primitive input pin */
         LbRrNodeId sink_index = lb_type_graph.edges(pin_index, 0)[0].node_index;
-        VTR_ASSERT(lb_type_graph.type(sink_index) == LB_SINK);
+        VTR_ASSERT(lb_type_graph.type(sink_index) == e_lb_rr_type::SINK);
 
         if (intra_lb_nets_[ipos].terminals.size() == atom_ctx.netlist().net_pins(net_id).size() && intra_lb_nets_[ipos].terminals[1] == lb_type_graph_->ext_sink_node()) {
             /* If all sinks of net are all contained in the logic block, then the net does
@@ -794,7 +794,7 @@ IntraLbNetIdx ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
         AtomPinId atom_pin = intra_lb_nets_[ipos].atom_pins[term_idx];
         if (term_idx == 0) {
             //Net driver
-            VTR_ASSERT_SAFE_MSG(lb_type_graph.type(inode) == LB_SOURCE, "Driver must be a source RR node");
+            VTR_ASSERT_SAFE_MSG(lb_type_graph.type(inode) == e_lb_rr_type::SOURCE, "Driver must be a source RR node");
             VTR_ASSERT_SAFE_MSG(atom_pin, "Driver have an associated atom pin");
             VTR_ASSERT_SAFE_MSG(atom_ctx.netlist().pin_type(atom_pin) == PinType::DRIVER, "Source RR must be associated with a driver pin in atom netlist");
             if (inode == lb_type_graph_->ext_source_node()) {
@@ -802,7 +802,7 @@ IntraLbNetIdx ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
             }
         } else {
             //Net sink
-            VTR_ASSERT_SAFE_MSG(lb_type_graph.type(inode) == LB_SINK, "Non-driver must be a sink");
+            VTR_ASSERT_SAFE_MSG(lb_type_graph.type(inode) == e_lb_rr_type::SINK, "Non-driver must be a sink");
 
             if (inode == lb_type_graph_->ext_sink_node()) {
                 //External sink may have multiple potentially matching atom pins, so it's atom pin is left invalid
@@ -877,7 +877,7 @@ void ClusterRouter::remove_pin_from_rt_terminals_(const AtomPinId pin_id,
         VTR_ASSERT(lb_type_graph.num_modes(pin_index) == 1);
         VTR_ASSERT(lb_type_graph.num_fanout(pin_index, 0) == 1);
         LbRrNodeId sink_index = lb_type_graph.edges(pin_index, 0)[0].node_index;
-        VTR_ASSERT(lb_type_graph.type(sink_index) == LB_SINK);
+        VTR_ASSERT(lb_type_graph.type(sink_index) == e_lb_rr_type::SINK);
 
         LbRrNodeId target_index = LbRrNodeId::INVALID();
         //Search for the sink
@@ -995,10 +995,10 @@ void ClusterRouter::fix_duplicate_equivalent_pins_(IntraLbNetIdx ilb_net, const 
             size_t(ilb_net), size_t(lb_net.atom_net_id), atom_netlist.net_name(lb_net.atom_net_id).c_str(),
             size_t(node), size_t(pin_index));
 
-        VTR_ASSERT(lb_type_graph.type(pin_index) == LB_INTERMEDIATE);
+        VTR_ASSERT(lb_type_graph.type(pin_index) == e_lb_rr_type::INTERMEDIATE);
         VTR_ASSERT(lb_type_graph.num_fanout(pin_index, 0) == 1);
         LbRrNodeId sink_index = lb_type_graph.edges(pin_index, 0)[0].node_index;
-        VTR_ASSERT(lb_type_graph.type(sink_index) == LB_SINK);
+        VTR_ASSERT(lb_type_graph.type(sink_index) == e_lb_rr_type::SINK);
         VTR_ASSERT_MSG(sink_index == lb_net.terminals[term_idx], "Remapped pin must be connected to original sink");
 
         // Change the target.
@@ -1391,12 +1391,12 @@ std::string ClusterRouter::describe_lb_type_rr_node_(LbRrNodeId inode) {
     if (pb_graph_pin) {
         description += "'" + pb_graph_pin->to_string(false) + "'";
     } else if (inode == lb_type_graph_->ext_source_node()) {
-        VTR_ASSERT(type == LB_SOURCE);
+        VTR_ASSERT(type == e_lb_rr_type::SOURCE);
         description = "cluster-external source (LB_SOURCE)";
     } else if (inode == lb_type_graph_->ext_sink_node()) {
-        VTR_ASSERT(type == LB_SINK);
+        VTR_ASSERT(type == e_lb_rr_type::SINK);
         description = "cluster-external sink (LB_SINK)";
-    } else if (type == LB_SINK) {
+    } else if (type == e_lb_rr_type::SINK) {
         description = "cluster-internal sink (LB_SINK accessible via architecture pins: ";
 
         //To account for equivalent pins multiple pins may route to a single sink.
@@ -1412,9 +1412,9 @@ std::string ClusterRouter::describe_lb_type_rr_node_(LbRrNodeId inode) {
         description += vtr::join(pin_descriptions, ", ");
         description += ")";
 
-    } else if (type == LB_SOURCE) {
+    } else if (type == e_lb_rr_type::SOURCE) {
         description = "cluster-internal source (LB_SOURCE)";
-    } else if (type == LB_INTERMEDIATE) {
+    } else if (type == e_lb_rr_type::INTERMEDIATE) {
         description = "cluster-internal intermediate?";
     } else {
         description = "<unknown lb_type_rr_node>";

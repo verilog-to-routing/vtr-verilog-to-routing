@@ -20,18 +20,18 @@ class t_pb_graph_pin;
 typedef vtr::StrongId<struct lb_rr_node_id_tag, int> LbRrNodeId;
 
 /// @brief Types of intra-logic block routing resource nodes.
-enum e_lb_rr_type {
-    LB_SOURCE = 0,
-    LB_SINK,
-    LB_INTERMEDIATE,
-    NUM_LB_RR_TYPES
+enum class e_lb_rr_type {
+    SOURCE = 0,
+    SINK,
+    INTERMEDIATE,
+    NUM_TYPES
 };
 
-/// @brief Names of each e_lb_rr_type, plus "INVALID" for NUM_LB_RR_TYPES.
-inline constexpr std::array<const char*, NUM_LB_RR_TYPES + 1> lb_rr_type_str{
-    "LB_SOURCE",
-    "LB_SINK",
-    "LB_INTERMEDIATE",
+/// @brief Names of each e_lb_rr_type, plus "INVALID" for NUM_TYPES.
+inline constexpr std::array<const char*, (size_t)e_lb_rr_type::NUM_TYPES + 1> lb_rr_type_str{
+    "SOURCE",
+    "SINK",
+    "INTERMEDIATE",
     "INVALID",
 };
 
