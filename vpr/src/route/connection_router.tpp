@@ -27,6 +27,8 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
     router_stats_ = &router_stats;
     conn_params_ = &conn_params;
 
+    register_route_tree_for_rcv(rt_root);
+
     bool retry = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box);
 
     if (!std::isinf(rr_node_route_inf_[sink_node].path_cost)) {
@@ -62,6 +64,8 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
     const ConnectionParameters& conn_params) {
     router_stats_ = &router_stats;
     conn_params_ = &conn_params;
+
+    register_route_tree_for_rcv(rt_root);
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
@@ -433,6 +437,19 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
         } else {
             add_route_tree_to_heap(child_node, target_node, cost_params, net_bb);
         }
+    }
+}
+
+template<typename Heap>
+void ConnectionRouter<Heap>::register_route_tree_for_rcv(const RouteTreeNode& rt_root) {
+    if (!rcv_path_manager.is_enabled())
+        return;
+
+    // Clear first so nodes from a previously routed net don't leak in
+    rcv_path_manager.empty_route_tree_nodes();
+    rcv_path_manager.mark_node_visited(rt_root.inode);
+    for (const RouteTreeNode& rt_node : rt_root.all_nodes()) {
+        rcv_path_manager.mark_node_visited(rt_node.inode);
     }
 }
 

@@ -43,6 +43,15 @@ class route_budgets {
      */
     bool should_use_rcv(ParentNetId net_id, int ipin) const;
 
+    /**
+     * @brief Enables RCV for every connection whose hold slack is negative,
+     *        and marks its net for rerouting. Connections are never disabled
+     *        once enabled, so a fixed connection is not rerouted back onto a
+     *        short path that violates hold again.
+     */
+    void enable_rcv_on_hold_violations(std::shared_ptr<SetupHoldTimingInfo> timing_info,
+                                       const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
+
     /*main loader function*/
     void load_route_budgets(NetPinsMatrix<float>& net_delay,
                             std::shared_ptr<SetupTimingInfo> timing_info,

@@ -127,6 +127,16 @@ void route_budgets::load_route_budgets(NetPinsMatrix<float>& net_delay,
 
         allocate_slack_using_weights(net_delay, netlist_pin_lookup, use_negative_hold_slacks);
         calculate_delay_targets();
+
+        // YOYO starts with RCV off everywhere; enable_rcv_on_hold_violations() turns it on per connection
+        if (router_opts.routing_budgets_algorithm == YOYO) {
+            for (auto net_id : net_list_.nets()) {
+                use_rcv[net_id][0] = false;
+                for (auto pin_id : net_list_.net_sinks(net_id)) {
+                    use_rcv[net_id][net_list_.pin_net_index(pin_id)] = false;
+                }
+            }
+        }
     } else if (router_opts.routing_budgets_algorithm == SCALE_DELAY) {
         allocate_slack_using_delays_and_criticalities(net_delay, timing_info, netlist_pin_lookup, router_opts);
     } else if (router_opts.routing_budgets_algorithm == LOW_SKEW_CLOCK) {
@@ -975,6 +985,27 @@ bool route_budgets::should_use_rcv(ParentNetId net_id, int ipin) const {
     if (!set) return false;
 
     return use_rcv[net_id][ipin];
+}
+
+void route_budgets::enable_rcv_on_hold_violations(std::shared_ptr<SetupHoldTimingInfo> timing_info,
+                                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
+    if (!set) return;
+
+    for (auto net_id : net_list_.nets()) {
+        // Don't do anything to global/ignored nets
+        if (net_list_.net_is_ignored(net_id)) continue;
+
+        for (auto pin_id : net_list_.net_sinks(net_id)) {
+            int ipin = net_list_.pin_net_index(pin_id);
+            AtomPinId atom_pin;
+            float hold_slack = calculate_clb_pin_slack(net_id, ipin, timing_info, netlist_pin_lookup, HOLD, atom_pin);
+
+            if (hold_slack < 0) {
+                use_rcv[net_id][ipin] = true;
+                set_should_reroute(net_id, true);
+            }
+        }
+    }
 }
 
 bool route_budgets::get_should_reroute(ParentNetId net_id) {
