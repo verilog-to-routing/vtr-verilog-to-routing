@@ -52,7 +52,7 @@ Pass 1 — placement_done barrier
    * - ``placement_critical_path_flylines_and_delays.png``
      - ``set_cpd 3``
    * - ``placement_block_internals.png``
-     - ``set_draw_block_internals 2``
+     - ``set_zoom 2; set_draw_block_internals 2``
 
 Pass 1 — routing_done barrier
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -2,9 +2,9 @@
 """Layer 5 — golden image comparison.
 
 Layer 5 is a **same-host** gate. VPR's offscreen rendering is bit-exact on a
-fixed host (42/42 outputs byte-identical across repeated runs) and the runner
-skips itself under CI, so the goldens are host-scoped by construction. That
-makes an exact pixel comparison both the simplest and the most sensitive gate
+fixed host (42/42 outputs byte-identical across repeated runs), and label fonts
+are pinned to a checked-in font, so immediate/deferred renders also match across
+hosts. That makes an exact pixel comparison both the simplest and the most sensitive gate
 available: it catches recolouring, a single wrong glyph in a block label, a
 deleted wire and a moved block alike.
 

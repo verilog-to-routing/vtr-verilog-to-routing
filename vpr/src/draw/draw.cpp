@@ -1779,6 +1779,19 @@ static void run_graphics_commands(const std::string& commands) {
                            "Expect draw state after 'set_draw_block_internals'");
             draw_state->show_blk_internal = vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->show_blk_internal);
+        } else if (cmd[0] == "set_zoom") {
+            VTR_ASSERT_MSG(cmd.size() == 2,
+                           "Expect zoom factor after 'set_zoom'");
+            double factor = vtr::atod(cmd[1]);
+            VTR_ASSERT_MSG(factor > 0., "Expect a positive zoom factor after 'set_zoom'");
+            double half_width = initial_world.width() / (2. * factor);
+            double half_height = initial_world.height() / (2. * factor);
+            ezgl::point2d center = initial_world.center();
+            application->get_canvas(application->get_main_canvas_id())
+                ->get_camera()
+                .set_world(ezgl::rectangle({center.x - half_width, center.y - half_height},
+                                           {center.x + half_width, center.y + half_height}));
+            VTR_LOG("%g\n", factor);
         } else if (cmd[0] == "set_draw_net_max_fanout") {
             VTR_ASSERT_MSG(cmd.size() == 2,
                            "Expect maximum fanout after 'set_draw_net_max_fanout'");

@@ -199,17 +199,15 @@ else
                 --threshold 0.0 --diff-out "${out_png}") || cmp_out="ERROR"
             ssim=$(printf '%s\n' "${cmp_out}" | awk '/^SSIM:/ {print $2}')
             ssim="${ssim:-?}"
-            # Match the runner's default SSIM threshold (0.98). Any case
-            # below that gets a [WARNING] tag in the leading column so a
-            # scan of the output surfaces real cross-renderer drift.
             if [[ "${ssim}" == "?" ]]; then
                 delta="?"
                 tag="[ERROR]   "
             else
                 delta=$(awk "BEGIN { printf \"%.6f\", 1 - ${ssim} }")
-                # Debug heuristic only -- deliberately looser than the gate, so cross-renderer
-# drift is flagged for a human without failing generation.
-if awk "BEGIN { exit !(${ssim} < 0.98) }"; then
+                # Debug heuristic only, unrelated to the layer-5 gate: flags
+                # large cross-renderer drift for a human without failing
+                # generation.
+                if awk "BEGIN { exit !(${ssim} < 0.98) }"; then
                     tag="[WARNING] "
                 else
                     tag="          "

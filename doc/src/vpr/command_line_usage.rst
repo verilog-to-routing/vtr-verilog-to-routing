@@ -205,6 +205,10 @@ Graphics Options
          Sets whether blocks have label text drawn on them
     * set_draw_block_internals <int>
          Sets the level to which block internals are drawn
+    * set_zoom <float>
+         Zooms the view about the centre of the device by the given factor relative to the full-device view
+         (``1`` = full device, ``2`` = half the width and height). Block internals too small on screen are not drawn,
+         so zoom in before saving them on all but the smallest devices
     * set_draw_net_max_fanout <int>
          Sets the maximum fanout for nets to be drawn (if fanout is beyond this value the net will not be drawn)
     * set_congestion <int>

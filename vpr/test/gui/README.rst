@@ -148,15 +148,26 @@ triptychs under ``golden/tmp/``) and commit only the intended updates.
 Only regenerate when the visual change is intentional — it invalidates all
 prior comparisons.
 
+To regenerate under a CI runner's rendering environment instead (offscreen
+Qt platform, Mesa software GL, no display server), use the wrapper, which
+takes the same arguments::
+
+    ./vpr/test/gui/generate_goldens_CI.sh
+
+Without a display QRhi gets no GL context, so the wrapper skips ``rhi`` and
+exits 2, leaving the ``rhi`` goldens untouched.
+
 Diff-write policy:
 
 .. note::
 
    **Layer 5 is a same-host gate, and gates exactly.** VPR's offscreen
    rendering is bit-exact on a fixed host (all 42 outputs byte-identical
-   across repeated runs), and the runner skips itself under ``CI=true``, so
-   the goldens are host-scoped by construction. ``compare_images.py``
-   therefore fails on the first differing pixel.
+   across repeated runs), and label text, the one input that otherwise varies
+   between hosts, is pinned to the checked-in font under ``fonts/`` via
+   ``FONTCONFIG_FILE``. immediate/deferred goldens generated on a developer
+   host therefore match a CI runner. ``compare_images.py`` fails on the first
+   differing pixel.
 
    A drift-tolerant metric was tried and rejected on measurement. Tolerating
    cross-host text rasterization costs ~9,000 differing pixels while a
@@ -240,6 +251,8 @@ Files
      - Layer 5: exact comparison against golden images
    * - ``generate_goldens.sh``
      - Layer 5: generate reference golden PNGs
+   * - ``generate_goldens_CI.sh``
+     - Layer 5: ``generate_goldens.sh`` under a CI runner's rendering environment
    * - ``compare_images.py``
      - Layer 5: image comparison tool (exact, SSIM reported for context)
    * - ``golden/``
