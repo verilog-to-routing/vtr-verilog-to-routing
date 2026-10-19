@@ -24,8 +24,18 @@
 #include "globals.h"
 #include "lb_type_rr_graph_builder.h"
 
+/// @brief Cost of every edge except the external feedback edges.
+static constexpr float DEFAULT_EDGE_COST = 1.f;
+
+/// @brief Cost of an edge from the external interconnect node back to a top
+///        level input or clock pin. It is high so that the router uses
+///        feedback through the external interconnect only when nothing else routes.
+static constexpr float EXT_FEEDBACK_EDGE_COST = 1000.f;
+
 /// @brief Cost of an edge that joins two pb graph pins.
-static float get_cost_of_pb_edge(const t_pb_graph_edge* edge);
+static float get_cost_of_pb_edge(const t_pb_graph_edge* /*edge*/) {
+    return DEFAULT_EDGE_COST;
+}
 
 std::vector<LbTypeRrGraph> alloc_and_load_all_lb_type_rr_graph() {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
@@ -63,7 +73,7 @@ void LbTypeRrGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
     int num_top_level_input_pins = pb_type->num_input_pins + pb_type->num_clock_pins;
     begin_node_(graph_.ext_source_node_, e_lb_rr_type::SOURCE, num_top_level_input_pins, 1, nullptr);
     begin_mode_();
-    add_edges_to_top_level_input_pins_(pb_graph_head, 1);
+    add_edges_to_top_level_input_pins_(pb_graph_head, DEFAULT_EDGE_COST);
     end_node_();
     VTR_ASSERT(graph_.num_fanout(graph_.ext_source_node_, 0) == num_top_level_input_pins);
 
@@ -78,8 +88,8 @@ void LbTypeRrGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
     // used only when nothing else routes.
     begin_node_(graph_.ext_interconnect_node_, e_lb_rr_type::INTERMEDIATE, pb_type->num_output_pins, 1, nullptr);
     begin_mode_();
-    add_edge_(graph_.ext_sink_node_, 1);
-    add_edges_to_top_level_input_pins_(pb_graph_head, 1000);
+    add_edge_(graph_.ext_sink_node_, DEFAULT_EDGE_COST);
+    add_edges_to_top_level_input_pins_(pb_graph_head, EXT_FEEDBACK_EDGE_COST);
     end_node_();
 
     build_pb_graph_node_(pb_graph_head);
@@ -198,7 +208,7 @@ void LbTypeRrGraphBuilder::build_primitive_sink_pins_(t_pb_graph_pin* const* pin
             LbRrNodeId pin_index = LbRrNodeId(pb_pin->pin_count_in_cluster);
             begin_node_(pin_index, e_lb_rr_type::INTERMEDIATE, 1, 1, pb_pin);
             begin_mode_();
-            add_edge_(sink_index, 1);
+            add_edge_(sink_index, DEFAULT_EDGE_COST);
             end_node_();
         }
     }
@@ -247,7 +257,7 @@ void LbTypeRrGraphBuilder::build_pb_graph_node_(const t_pb_graph_node* pb_graph_
                 LbRrNodeId pin_index = LbRrNodeId(pb_pin->pin_count_in_cluster);
                 begin_node_(pin_index, e_lb_rr_type::INTERMEDIATE, 1, 1, pb_pin);
                 begin_mode_();
-                add_edge_(graph_.ext_interconnect_node_, 1);
+                add_edge_(graph_.ext_interconnect_node_, DEFAULT_EDGE_COST);
                 end_node_();
             }
         }
@@ -266,8 +276,4 @@ void LbTypeRrGraphBuilder::build_pb_graph_node_(const t_pb_graph_node* pb_graph_
             build_pb_pin_node_(&pb_graph_node->clock_pins[iport][ipin], e_lb_rr_type::INTERMEDIATE, pb_type->num_modes);
         }
     }
-}
-
-static float get_cost_of_pb_edge(const t_pb_graph_edge* /*edge*/) {
-    return 1;
 }
