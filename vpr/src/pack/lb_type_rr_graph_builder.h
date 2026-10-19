@@ -56,7 +56,7 @@ class LbTypeRrGraphBuilder {
     void build_primitive_sink_pins_(t_pb_graph_pin* const* pins, int num_ports, const int* num_pins);
 
     /// @brief Builds the nodes of every pin of pb_graph_node and its children.
-    void build_pb_graph_node_(const t_pb_graph_node* pb_graph_node, LbRrNodeId ext_rr_node);
+    void build_pb_graph_node_(const t_pb_graph_node* pb_graph_node);
 
     /// @brief The graph being built.
     LbTypeRrGraph graph_;

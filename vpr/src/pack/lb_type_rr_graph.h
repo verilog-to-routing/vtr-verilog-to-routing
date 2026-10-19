@@ -121,6 +121,8 @@ class LbTypeRrGraph {
 
     LbRrNodeId ext_sink_node() const { return ext_sink_node_; }
 
+    LbRrNodeId ext_interconnect_node() const { return ext_interconnect_node_; }
+
   private:
     // Hot. Read by the router search.
 
@@ -147,6 +149,11 @@ class LbTypeRrGraph {
 
     /// @brief Node driven by every top level output pin.
     LbRrNodeId ext_sink_node_;
+
+    /// @brief Node that models the interconnect outside the block. It is driven
+    ///        by every top level output pin and drives the external sink and
+    ///        every top level input and clock pin.
+    LbRrNodeId ext_interconnect_node_;
 };
 
 /// @brief Writes every graph to filename.
