@@ -546,6 +546,7 @@ class RouteTree {
     prune_x(RouteTreeNode& rt_node,
             CBRR& connections_inf,
             bool force_prune,
+            bool has_bus_muxes,
             std::vector<int>* non_config_node_set_usage);
 
     void freeze_x(RouteTreeNode& rt_node);
