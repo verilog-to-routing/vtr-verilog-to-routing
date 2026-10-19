@@ -466,6 +466,10 @@ bool route(const Netlist<>& net_list,
             if (budgeting_inf.if_set()) {
                 bool rcv_finished = false;
 
+                // Pick up connections whose hold slack went negative in the last iteration
+                if (router_opts.routing_budgets_algorithm == YOYO)
+                    budgeting_inf.enable_rcv_on_hold_violations(timing_info, netlist_pin_lookup);
+
                 /* This constant represents how much extra delay the budget increaser adds to the minimum and maximum delay budgets
                  * Experimentally this value delivers fast hold slack resolution, while not overwhelming the router
                  * Increasing this will make it resolve hold faster, but could result in lower circuit quality */
@@ -529,6 +533,9 @@ bool route(const Netlist<>& net_list,
 
                 //load budgets using information from uncongested delay information
                 budgeting_inf.load_route_budgets(net_delay, timing_info, netlist_pin_lookup, router_opts);
+
+                if (router_opts.routing_budgets_algorithm == YOYO)
+                    budgeting_inf.enable_rcv_on_hold_violations(timing_info, netlist_pin_lookup);
 
                 // Budgets were not set at this iteration's timing update, so read hold TNS now that they are
                 if (budgeting_inf.if_set())
