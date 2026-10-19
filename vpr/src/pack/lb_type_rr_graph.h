@@ -38,12 +38,19 @@ inline constexpr std::array<const char*, (size_t)e_lb_rr_type::NUM_TYPES + 1> lb
 /**
  * @brief Routing resource graph of the interconnect within one logical block type.
  *
- * Node i < total_pb_pins is the pb graph pin whose pin_count_in_cluster is i.
- * Node total_pb_pins is the external source that drives every top level input
- * and clock pin. Node total_pb_pins + 1 is the external sink driven by every
- * top level output pin. Node total_pb_pins + 2 models the external interconnect
- * that feeds top level output pins back into the block. Every node after that
- * is a sink driven by the input or clock pins of one primitive.
+ * Nodes are laid out as follows:
+ *  - [0, total_pb_pins): the pb graph pin whose pin_count_in_cluster is the
+ *    node index. Capacity 1.
+ *  - total_pb_pins: the external source. It drives every top level input and
+ *    clock pin. Its capacity is the number of those pins.
+ *  - total_pb_pins + 1: the external sink. It is driven by every top level
+ *    output pin. Its capacity is the number of those pins.
+ *  - total_pb_pins + 2: the external interconnect. It is driven by every top
+ *    level output pin and feeds them to the external sink or back into the
+ *    block. Its capacity is the number of top level output pins.
+ *  - The rest: sinks driven by primitive input and clock pins. The pins of an
+ *    equivalent port share one sink whose capacity is the port size. Every
+ *    other pin has its own sink with capacity 1.
  *
  * Every node has at least one mode. The out edges of a node are stored
  * contiguously, grouped by mode in ascending order, and within one mode in the
@@ -80,7 +87,7 @@ class LbTypeRrGraph {
 
     typedef vtr::vector<LbRrNodeId, t_node>::key_range node_range;
 
-    /// @brief An empty graph with no nodes.
+    /// @brief Builds an empty graph with no nodes.
     LbTypeRrGraph() = default;
 
     size_t num_nodes() const { return nodes_.size(); }
