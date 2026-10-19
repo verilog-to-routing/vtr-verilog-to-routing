@@ -446,7 +446,7 @@ void ClusterRouter::hot_start_intra_lb_route_(
             continue;
 
         // Commit the saved route tree so pathfinder can skip this net.
-        commit_remove_rt_(saved_lb_net.rt_tree, RT_COMMIT, mode_map, mode_status);
+        commit_remove_rt_(saved_lb_net.rt_tree, e_commit_remove::COMMIT, mode_map, mode_status);
         intra_lb_nets_[inet].rt_tree = saved_lb_net.rt_tree;
     }
 }
@@ -491,7 +491,7 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
                 continue;
             }
             if (intra_lb_nets_[idx].rt_tree.current_node.is_valid()) {
-                commit_remove_rt_(intra_lb_nets_[idx].rt_tree, RT_REMOVE, mode_map, mode_status);
+                commit_remove_rt_(intra_lb_nets_[idx].rt_tree, e_commit_remove::REMOVE, mode_map, mode_status);
             }
             reset_lb_net_rt(intra_lb_nets_[idx].rt_tree);
             add_source_to_rt_(idx);
@@ -545,7 +545,7 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
 
             if (!is_impossible) {
                 VTR_ASSERT(intra_lb_nets_[idx].rt_tree.current_node.is_valid());
-                commit_remove_rt_(intra_lb_nets_[idx].rt_tree, RT_COMMIT, mode_map, mode_status);
+                commit_remove_rt_(intra_lb_nets_[idx].rt_tree, e_commit_remove::COMMIT, mode_map, mode_status);
                 if (mode_status->is_mode_conflict) {
                     is_impossible = true;
                 }
@@ -1016,7 +1016,7 @@ void ClusterRouter::commit_remove_rt_(const t_lb_trace& rt,
 
     /* Determine if node is being used or removed */
     int incr;
-    if (op == RT_COMMIT) {
+    if (op == e_commit_remove::COMMIT) {
         incr = 1;
         if (lb_rr_node_stats_[inode].occ >= lb_type_graph.capacity(inode)) {
             lb_rr_node_stats_[inode].historical_usage += (lb_rr_node_stats_[inode].occ - lb_type_graph.capacity(inode) + 1); /* store historical overuse */
@@ -1036,7 +1036,7 @@ void ClusterRouter::commit_remove_rt_(const t_lb_trace& rt,
         // Check to see if there is no mode conflict between previous nets.
         // A conflict is present if there are differing modes between a pb_graph_node
         // and its children.
-        if (op == RT_COMMIT && mode_status->try_expand_all_modes) {
+        if (op == e_commit_remove::COMMIT && mode_status->try_expand_all_modes) {
             const t_pb_graph_pin* pin = lb_type_graph.pb_graph_pin(rt.next_nodes[i].current_node);
 
             if (check_edge_for_route_conflicts(mode_map, driver_pin, pin)) {

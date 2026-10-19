@@ -186,8 +186,10 @@ struct t_mode_selection_status {
  * @brief Enumeration used by the commit_remove_rt_ method below to decide if
  *        we are committing or removing a route tree.
  */
-enum e_commit_remove { RT_COMMIT,
-                       RT_REMOVE };
+enum class e_commit_remove {
+    COMMIT,
+    REMOVE
+};
 
 /**
  * @brief Class for routing the connections within a cluster.
