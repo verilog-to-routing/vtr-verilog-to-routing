@@ -9,7 +9,6 @@
  */
 
 #include <cstdio>
-#include <queue>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -18,6 +17,7 @@
 #include "lb_type_rr_graph.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
+#include "vtr_priority_queue.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 
@@ -181,34 +181,6 @@ struct t_mode_selection_status {
         return is_mode_conflict || try_expand_all_modes;
     }
 };
-
-// TODO: check if this hacky class memory reserve thing is still necessary, if not, then delete
-/* Packing uses a priority queue that requires a large number of elements.  This backdoor
- * allows me to use a priority queue where I can pre-allocate the # of elements in the underlying container
- * for efficiency reasons.  Note: Must use vector with this */
-template<class T, class U, class V>
-class reservable_pq : public std::priority_queue<T, U, V> {
-  public:
-    typedef typename std::priority_queue<T>::size_type size_type;
-    reservable_pq(size_type capacity = 0) {
-        reserve(capacity);
-        cur_cap = capacity;
-    }
-    void reserve(size_type capacity) {
-        this->c.reserve(capacity);
-        cur_cap = capacity;
-    }
-    void clear() {
-        this->c.clear();
-        this->c.reserve(cur_cap);
-    }
-
-  private:
-    size_type cur_cap;
-};
-
-/// @brief The priority queue type used in the Cluster Router.
-typedef reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node> ClusterRouterPriorityQueue;
 
 /**
  * @brief Enumeration used by the commit_remove_rt_ method below to decide if
@@ -602,7 +574,7 @@ class ClusterRouter {
     float pres_con_fac_;
 
     /// @brief Priority queue used during path search.
-    ClusterRouterPriorityQueue pq_;
+    vtr::priority_queue<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node> pq_;
 
     /// @brief Flag that indicates if this object has been cleaned or not.
     bool is_clean_;
