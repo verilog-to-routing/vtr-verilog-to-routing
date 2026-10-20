@@ -190,13 +190,12 @@ else
             rhi_png="${GOLDEN_DIR}/rhi/${name}.png"
             cur_png="${GOLDEN_DIR}/${renderer}/${name}.png"
             out_png="${TMP_DIR}/${name}_${renderer}.png"
-            # --threshold 0.0 → always exit 0 so set -e doesn't kill us on
-            # unrelated SSIM-below-threshold differences; the triptych is
-            # always written when --diff-on-fail-only is omitted. Drop
-            # --quiet so we can extract the SSIM score and surface it
-            # alongside the case name.
+            # Renderers legitimately differ, so the exact gate exits 1 here;
+            # keep the output either way, and treat a missing SSIM line as the
+            # error. The triptych is always written when --diff-on-fail-only
+            # is omitted. No --quiet: the SSIM line is what gets reported.
             cmp_out=$("${PYTHON}" "${COMPARE}" "${rhi_png}" "${cur_png}" \
-                --threshold 0.0 --diff-out "${out_png}") || cmp_out="ERROR"
+                --diff-out "${out_png}") || true
             ssim=$(printf '%s\n' "${cmp_out}" | awk '/^SSIM:/ {print $2}')
             ssim="${ssim:-?}"
             if [[ "${ssim}" == "?" ]]; then
