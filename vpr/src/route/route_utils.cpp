@@ -432,7 +432,6 @@ void prune_unused_non_configurable_nets(CBRR& connections_inf,
 }
 
 vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_nets_choking_spots(const Netlist<>& net_list,
-                                                                                                const vtr::vector<ParentNetId, t_net_sink_groups>& net_sink_groups,
                                                                                                 bool router_opt_choke_points,
                                                                                                 bool is_flat) {
     vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> choking_spots(net_list.nets().size());
@@ -449,6 +448,9 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& route_ctx = g_vpr_ctx.routing();
     const auto& net_rr_terminal = route_ctx.net_rr_terminals;
+
+    // The sink groups are only needed here, to find each sink's choke points
+    vtr::vector<ParentNetId, t_net_sink_groups> net_sink_groups = load_net_sink_groups(rr_graph, net_list, net_rr_terminal, is_flat);
 
     for (const auto& net_id : net_list.nets()) {
         int pin_count = 0;

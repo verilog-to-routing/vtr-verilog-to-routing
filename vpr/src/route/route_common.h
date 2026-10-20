@@ -167,8 +167,31 @@ void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf
 
 void init_route_structs(const Netlist<>& net_list,
                         int bb_factor,
-                        bool has_choking_point,
                         bool is_flat);
+
+/**
+ * @brief Partition of a net's sink pins into groups, for flat routing on architectures with choke points.
+ *
+ * Sinks in the same cluster and in the same sub-block of it (see classes_in_same_block()) form a group;
+ * set_nets_choking_spots() uses the groups to find the intra-cluster choke points through which several sinks
+ * of the net are reached.
+ */
+struct t_net_sink_groups {
+    std::vector<std::vector<RRNodeId>> groups; ///< [group] -> SINK nodes of the group's pins
+    std::vector<int> pin_group;                ///< [net pin index] -> group of the pin (-1 for the source pin)
+};
+
+/**
+ * @brief Group the sinks of each net that are in the same cluster and in the same sub-block of it
+ *        (see classes_in_same_block()).
+ *
+ * @param net_rr_terminals [net][net pin index] -> SOURCE/SINK node of the pin
+ * @return [net] -> the net's sink groups
+ */
+vtr::vector<ParentNetId, t_net_sink_groups> load_net_sink_groups(const RRGraphView& rr_graph,
+                                                                 const Netlist<>& net_list,
+                                                                 const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
+                                                                 bool is_flat);
 
 void alloc_and_load_rr_node_route_structs(const t_router_opts& router_opts);
 

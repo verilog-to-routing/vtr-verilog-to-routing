@@ -1478,18 +1478,6 @@ struct t_noc_opts {
 };
 
 /**
- * @brief Partition of a net's sink pins into groups, for flat routing on architectures with choke points.
- *
- * Sinks in the same cluster and in the same sub-block of it (see classes_in_same_block()) form a group. The
- * groups are built by load_net_terminal_groups() (route_common.cpp) and used by set_nets_choking_spots() to find
- * the intra-cluster choke points through which several sinks of the net are reached.
- */
-struct t_net_sink_groups {
-    std::vector<std::vector<RRNodeId>> groups; ///< [group] -> SINK nodes of the group's pins
-    std::vector<int> pin_group;                ///< [net pin index] -> group of the pin (-1 for the source pin)
-};
-
-/**
  * @brief Defines the detailed routing architecture of the FPGA.
  *
  * Only important if the route_type is DETAILED.

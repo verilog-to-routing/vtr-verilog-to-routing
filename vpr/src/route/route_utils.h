@@ -133,12 +133,10 @@ void prune_unused_non_configurable_nets(CBRR& connections_inf,
  * and since the amount of congestion reduction is dependent on the number sinks reachable from that choke point, it also store the number of reachable sinks
  * for each choke point.
  * @param net_list
- * @param net_sink_groups [Net_id] -> the net's sink groups (see t_net_sink_groups)
  * @param router_opt_choke_points is true if the given architecture has choking spots inside the cluster
  * @param is_flat is true if flat_routing is enabled
  * @return [Net_id][pin_id] -> [choke_point_rr_node_id, number of sinks reachable by this choke point] */
 vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_nets_choking_spots(const Netlist<>& net_list,
-                                                                                                const vtr::vector<ParentNetId, t_net_sink_groups>& net_sink_groups,
                                                                                                 bool router_opt_choke_points,
                                                                                                 bool is_flat);
 

@@ -60,18 +60,6 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat);
 
-/**
- * @brief Group the sinks of each net that are in the same cluster and in the same sub-block of it
- *        (see classes_in_same_block()). Flat routing uses the groups to find the intra-cluster choke points
- *        through which several sinks of a net are reached.
- *
- * @return [net] -> the net's sink groups
- */
-static vtr::vector<ParentNetId, t_net_sink_groups> load_net_terminal_groups(const RRGraphView& rr_graph,
-                                                                            const Netlist<>& net_list,
-                                                                            const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
-                                                                            bool is_flat);
-
 static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(const RRGraphView& rr_graph,
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat);
@@ -312,7 +300,6 @@ void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_o
  * sets the list of rr_nodes touched to empty. */
 void init_route_structs(const Netlist<>& net_list,
                         int bb_factor,
-                        bool has_choking_point,
                         bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -336,13 +323,6 @@ void init_route_structs(const Netlist<>& net_list,
     route_ctx.net_status.resize(net_list.nets().size());
 
     route_ctx.is_flat = is_flat;
-
-    if (has_choking_point && is_flat) {
-        route_ctx.net_sink_groups = load_net_terminal_groups(device_ctx.rr_graph,
-                                                             net_list,
-                                                             route_ctx.net_rr_terminals,
-                                                             is_flat);
-    }
 }
 
 /* The routine sets the path_cost to HUGE_POSITIVE_FLOAT for  *
@@ -591,10 +571,10 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
     return net_rr_terminals;
 }
 
-static vtr::vector<ParentNetId, t_net_sink_groups> load_net_terminal_groups(const RRGraphView& rr_graph,
-                                                                            const Netlist<>& net_list,
-                                                                            const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
-                                                                            bool is_flat) {
+vtr::vector<ParentNetId, t_net_sink_groups> load_net_sink_groups(const RRGraphView& rr_graph,
+                                                                 const Netlist<>& net_list,
+                                                                 const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
+                                                                 bool is_flat) {
     vtr::vector<ParentNetId, t_net_sink_groups> net_sink_groups(net_list.nets().size());
 
     // A sink joins the first group (in creation order) whose block location equals its own and whose first
