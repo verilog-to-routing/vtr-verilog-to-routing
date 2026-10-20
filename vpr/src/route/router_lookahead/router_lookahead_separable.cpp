@@ -243,15 +243,20 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
                                 current.delay -= device_ctx.rr_indexed_data[cost_index].T_linear;
                                 current.congestion_upstream -= device_ctx.rr_indexed_data[cost_index].base_cost;
                             }
-                            auto [ipin_x, ipin_y] = util::get_adjusted_rr_position(curr_node);
-                            const int ipin_coord = profile_x ? ipin_x : ipin_y;
+                            // Key the target by its block's root location, which is the SINK's xlow/ylow queried during
+                            // routing. get_adjusted_rr_position() would shift LEFT/BOTTOM pins onto the adjacent channel.
                             int ipin_layer = rr_graph.node_layer_low(curr_node);
+                            const t_physical_tile_loc ipin_root_loc = grid.get_root_location({rr_graph.node_xlow(curr_node), rr_graph.node_ylow(curr_node), ipin_layer});
+                            const int ipin_root_coord = profile_x ? ipin_root_loc.x : ipin_root_loc.y;
 
-                            util::Cost_Entry& cost_entry = wire_cost_map[from_layer_num][ipin_layer][chan_index][segment_inf.seg_index][direction_index][start_coord][ipin_coord];
+                            util::Cost_Entry& cost_entry = wire_cost_map[from_layer_num][ipin_layer][chan_index][segment_inf.seg_index][direction_index][start_coord][ipin_root_coord];
                             if (!cost_entry.valid() || current.delay < cost_entry.delay) {
                                 cost_entry = util::Cost_Entry(current.delay, current.congestion_upstream);
                             }
+                        };
+
                         const t_bb sample_bb = adjust_sampling_bb_to_rr_node(bb, grid, axis, sample_node);
+                        run_dijkstra<true>(sample_node, dijkstra_data, sample_bb, record_cost);
                     }
                 }
             }
