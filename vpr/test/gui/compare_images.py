@@ -74,12 +74,27 @@ def _load(path: Path):
     return np.array(img.convert("RGB"))
 
 
+def _pad_to(img, height: int, width: int):
+    """Pad on the bottom/right with magenta, a colour absent from the goldens."""
+    _, np, _ = _deps()
+    out = np.empty((height, width, 3), dtype=np.uint8)
+    out[:] = (255, 0, 255)
+    out[: img.shape[0], : img.shape[1]] = img
+    return out
+
+
 def _write_diff_triptych(img_a, img_b, diff_out: Path) -> None:
     """Write a ``[golden | current | amplified-diff]`` triptych PNG.
 
     The diff channel is amplified 8x and clipped so sub-pixel drift is visible.
+    Images of different sizes are padded to the larger one so a size mismatch
+    still gets a triptych.
     """
     pil_image, np, _ = _deps()
+    height = max(img_a.shape[0], img_b.shape[0])
+    width = max(img_a.shape[1], img_b.shape[1])
+    img_a = _pad_to(img_a, height, width)
+    img_b = _pad_to(img_b, height, width)
     diff = np.clip(np.abs(img_a.astype(np.int16) - img_b.astype(np.int16)) * 8, 0, 255).astype(
         np.uint8
     )
@@ -185,6 +200,8 @@ def main() -> int:
     )
 
     if ndiff < 0:  # dimension mismatch, already reported on stderr
+        if args.diff_out is not None:
+            _write_diff_triptych(img_a, img_b, args.diff_out)
         return 1
 
     diff_ok = ndiff <= args.max_diff_pixels
