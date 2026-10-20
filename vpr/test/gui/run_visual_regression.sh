@@ -43,14 +43,6 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
-# The gate is exact, so a CI job opts in with VPR_GUI_VISUAL_IN_CI=1 only once
-# its runner is known to render like the golden host. Exit 2 is honoured by
-# ctest's SKIP_RETURN_CODE on test_vpr_gui_visual.
-if [[ "${CI:-}" == "true" && "${VPR_GUI_VISUAL_IN_CI:-0}" != "1" ]]; then
-    echo "SKIP: set VPR_GUI_VISUAL_IN_CI=1 to compare against the goldens under CI" >&2
-    exit 2
-fi
-
 VPR_ARG="${1:-${REPO_ROOT}/build/vpr/vpr}"
 ARCH_ARG="${2:-${REPO_ROOT}/vtr_flow/arch/timing}"
 BENCH_ARG="${3:-${REPO_ROOT}/vtr_flow/benchmarks/microbenchmarks}"

@@ -295,12 +295,10 @@ jobs:
     #   Layer 1 — test_vpr_gui_smoke      (headless P&R smoke, --disp off)
     #   Layer 3 — test_vpr_gui            (Catch2 widget tree + S8 unit tests)
     #   Layer 4 — test_vpr_gui_interactive (S6 mouse/key dispatch)
-    #   Layer 5 — test_vpr_gui_visual     (SSIM compare vs goldens)
+    #   Layer 5 — test_vpr_gui_visual     (exact pixel compare vs goldens)
     # Layer-5 labels use the font pinned in vpr/test/gui/fonts/, so the
     # immediate/deferred goldens match this runner; rhi is skipped (no QRhi).
     - name: Run GUI Test Layers 1 + 3 + 4 + 5
-      env:
-        VPR_GUI_VISUAL_IN_CI: '1'
       run: make CMAKE_PARAMS="-DVPR_USE_EZGL=on" gui-tests
 
     # The runner's layer-5 renders, in the golden/<renderer>/<case>.png
