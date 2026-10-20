@@ -170,11 +170,7 @@ void init_route_structs(const Netlist<>& net_list,
                         bool is_flat);
 
 /**
- * @brief Partition of a net's sink pins into groups, for flat routing on architectures with choke points.
- *
- * Sinks in the same cluster and in the same sub-block of it (see classes_in_same_block()) form a group;
- * set_nets_choking_spots() uses the groups to find the intra-cluster choke points through which several sinks
- * of the net are reached.
+ * @brief Allocate and initialize per-node routing state and non-configurable flags.
  */
 void alloc_and_load_rr_node_route_structs(const t_router_opts& router_opts);
 

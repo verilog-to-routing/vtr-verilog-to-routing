@@ -11,17 +11,21 @@
 #include "vtr_strong_id.h"
 
 struct net_sink_group_id_tag {};
-/// Identifies one group of a net's sinks (see t_net_sink_groups)
+/**
+ * @brief Identify a sink group within one net (see t_net_sink_groups).
+ */
 typedef vtr::StrongId<net_sink_group_id_tag> NetSinkGroupId;
 
+/**
+ * @brief Group a net's sinks by cluster and sub-block for choke point analysis.
+ */
 struct t_net_sink_groups {
-    vtr::vector<NetSinkGroupId, std::vector<RRNodeId>> groups; ///< [group] -> SINK nodes of the group's pins
-    std::vector<NetSinkGroupId> pin_group;                     ///< [net pin index] -> group of the pin (invalid for the source pin)
+    vtr::vector<NetSinkGroupId, std::vector<RRNodeId>> groups; ///< [group ID] -> SINK nodes in the group.
+    std::vector<NetSinkGroupId> pin_group;                     ///< [net pin index] -> group ID; invalid for the source.
 };
 
 /**
- * @return Return zero if the ref_sink_num is not reachable by pin_physical_num, otherwise return the number sinks in sink_grp
- * reachable by pin_physical_num
+ * @brief Count group sinks reachable from the pin, returning zero if ref_sink_num is unreachable.
  */
 static int get_num_reachable_sinks(t_physical_tile_type_ptr physical_tile,
                                    const int pin_physcial_num,
@@ -33,7 +37,6 @@ static int get_num_reachable_sinks(t_physical_tile_type_ptr physical_tile,
                                                    pin_physcial_num);
     const auto& connected_sinks = pb_pin->connected_sinks_ptc;
 
-    // If ref_sink_num is not reachable by pin_physical_num return 0
     if (!connected_sinks.contains(ref_sink_num)) {
         return 0;
     }
@@ -47,6 +50,9 @@ static int get_num_reachable_sinks(t_physical_tile_type_ptr physical_tile,
     return num_reachable_sinks;
 }
 
+/**
+ * @brief Return the sink class's pb_graph_node and its ancestors, ending at the cluster root.
+ */
 static std::vector<const t_pb_graph_node*> get_sink_hierarchical_parents(t_physical_tile_type_ptr physical_tile,
                                                                          int class_physical_num) {
     std::vector<const t_pb_graph_node*> pb_nodes;
@@ -65,19 +71,19 @@ static std::vector<const t_pb_graph_node*> get_sink_hierarchical_parents(t_physi
 }
 
 /**
- * @brief True if the two classes of a tile share at least two levels of the pb-graph hierarchy, i.e. are in the
- *        same sub-block of the cluster; always true when flat routing is off.
+ * @brief Return whether two pin classes share a sub-block within the cluster.
+ *
+ * Always returns true when flat routing is disabled.
  */
 static bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
                                   int first_class_ptc_num,
                                   int second_class_ptc_num,
                                   bool is_flat) {
-    // We don't do reachability analysis if flat-routing is not enabled
     if (!is_flat) {
         return true;
     }
 
-    // Two functions are considered to be in the same group if share at least two level of blocks
+    // Require a shared sub-block in addition to the cluster root.
     constexpr int NUM_SIMILAR_PB_NODE_THRESHOLD = 2;
     std::vector<int> first_class_pin_list = get_pin_list_from_class_physical_num(physical_tile, first_class_ptc_num);
     std::vector<int> second_class_pin_list = get_pin_list_from_class_physical_num(physical_tile, second_class_ptc_num);
@@ -111,21 +117,22 @@ static bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
     }
 }
 
-/// Same as above for the classes of blk_id's tile
+/**
+ * @brief Check classes_in_same_block() for the tile containing blk_id.
+ */
 static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat) {
     t_physical_tile_type_ptr physical_tile = physical_tile_type(blk_id, is_flat);
     return classes_in_same_block(physical_tile, first_class_ptc_num, second_class_ptc_num, is_flat);
 }
 
 /**
- * @brief Given the sink group, identify the pins which can reach both sink_ptc_num and at least one of the sinks,
- * in the grp.
- * @return Key is the pin number and value is the number of sinks, including sink_ptc_num, in the grp reachable by the pin
+ * @brief Find choke points for sink_ptc_num among the sinks in grp.
+ * @return Physical pin numbers mapped to reachable group sink counts, including sink_ptc_num.
  */
 static std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physical_tile,
                                                   int sink_ptc_num,
                                                   const std::vector<int>& grp) {
-    // There may be a choking point if there are at least two sinks in the group!
+    // A choke point must reach multiple sinks in the group.
     VTR_ASSERT(grp.size() > 1);
     std::map<int, int> choking_point;
     const t_sub_tile* sub_tile;
@@ -134,7 +141,7 @@ static std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physi
     auto logical_block = get_logical_block_from_class_physical_num(physical_tile, sink_ptc_num);
     auto sink_hierarchical_parents_node = get_sink_hierarchical_parents(physical_tile, sink_ptc_num);
     for (auto pb_graph_node : sink_hierarchical_parents_node) {
-        // We assume that choke points do not occur on the root-level pb_graph_node due to having a relatively populated crossbar
+        // Assume the cluster root's crossbar is well connected enough to avoid choke points.
         if (pb_graph_node->is_root()) {
             continue;
         }
@@ -147,10 +154,8 @@ static std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physi
         std::unordered_map<int, int> reachability_inf;
         bool has_unique_val = false;
         int prev_val = -1;
-        // Iterate over all of the block's IPINs, and check how many sinks in the group are reachable by each pin.
-        // If there are pins that the number of reachable sinks are different, we consider those pins as choke points
+        // Count group sinks reachable from each input pin that can reach sink_ptc_num.
         for (int pin_num = pb_pins.low; pin_num <= pb_pins.high; pin_num++) {
-            // Only choke points on IPINs are analyzed
             if (get_pin_type_from_pin_physical_num(physical_tile, pin_num) == e_pin_type::RECEIVER) {
                 int num_reachable_sinks = get_num_reachable_sinks(physical_tile,
                                                                   pin_num,
@@ -172,7 +177,7 @@ static std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physi
             }
         }
 
-        // Choke point happens if there is a discrepancy between the number of sinks reachable by the pins
+        // If counts differ, record pins that reach multiple group sinks.
         if (has_unique_val) {
             for (const auto& reachability_it : reachability_inf) {
                 choking_point.insert(std::make_pair(reachability_it.first, reachability_it.second));
@@ -184,11 +189,10 @@ static std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physi
 }
 
 /**
- * @brief Group the sinks of each net that are in the same cluster and in the same sub-block of it
- *        (see classes_in_same_block()).
+ * @brief Group each net's sinks by cluster and sub-block (see classes_in_same_block()).
  *
- * @param net_rr_terminals [net][net pin index] -> SOURCE/SINK node of the pin
- * @return [net] -> the net's sink groups
+ * @param net_rr_terminals SOURCE/SINK nodes indexed by net ID and net pin index.
+ * @return Sink groups indexed by net ID.
  */
 static vtr::vector<ParentNetId, t_net_sink_groups> load_net_sink_groups(const RRGraphView& rr_graph,
                                                                         const Netlist<>& net_list,
@@ -196,9 +200,8 @@ static vtr::vector<ParentNetId, t_net_sink_groups> load_net_sink_groups(const RR
                                                                         bool is_flat) {
     vtr::vector<ParentNetId, t_net_sink_groups> net_sink_groups(net_list.nets().size());
 
-    // A sink joins the first group (in creation order) whose block location equals its own and whose first
-    // sink is in the same sub-block. Only the groups at the sink's own location can match, so the groups of
-    // the current net are indexed by location; the table is reused across nets to avoid reallocating it.
+    // Search only groups at the sink's location, in creation order, to keep the first match.
+    // Reuse the map's buckets across nets.
     std::unordered_map<t_pl_loc, std::vector<NetSinkGroupId>> groups_at_loc;
 
     for (ParentNetId net_id : net_list.nets()) {
@@ -250,7 +253,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
         choking_spots[net_id].resize(net_list.net_pins(net_id).size());
     }
 
-    // Return if the architecture doesn't have any potential choke points or flat router is not enabled
+    // Choke point analysis requires flat routing and the choke point option.
     if (!router_opt_choke_points || !is_flat) {
         return choking_spots;
     }
@@ -260,11 +263,11 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
     const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminal = route_ctx.net_rr_terminals;
 
-    // The sink groups are only needed here, to find each sink's choke points
+    // Keep sink groups local to choke point analysis.
     vtr::vector<ParentNetId, t_net_sink_groups> net_sink_groups = load_net_sink_groups(rr_graph, net_list, net_rr_terminal, is_flat);
 
     for (ParentNetId net_id : net_list.nets()) {
-        // Global nets are not routed, thus we don't consider them.
+        // Global nets are not routed.
         if (net_list.net_is_global(net_id)) {
             continue;
         }
@@ -273,15 +276,13 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
             ParentBlockId block_id = net_list.pin_block(pin_id);
             t_block_loc blk_loc = get_block_loc(block_id, is_flat);
             NetSinkGroupId group_id = net_sink_groups[net_id].pin_group[pin_index];
-            // This is a group of sinks, including the current pin_id, which share a specific number of parent blocks.
-            // To determine the choke points of the current sink, pin_id, we only consider the sinks in this group for the
-            // run-time purpose
+            // Limit this sink's choke point analysis to its group.
             const std::vector<RRNodeId>& sink_grp_nodes = net_sink_groups[net_id].groups[group_id];
             VTR_ASSERT(sink_grp_nodes.size() >= 1);
             if (sink_grp_nodes.size() == 1) {
                 continue;
             } else {
-                // ptc numbers of the sinks in the group (what get_sink_choking_points() works with)
+                // Convert SINK node IDs to class PTC numbers for reachability analysis.
                 std::vector<int> sink_grp;
                 sink_grp.reserve(sink_grp_nodes.size());
                 for (RRNodeId sink_rr_node : sink_grp_nodes) {
@@ -293,11 +294,10 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                 grid_loc.y = blk_loc.loc.y;
                 grid_loc.layer_num = blk_loc.loc.layer;
                 t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type(grid_loc);
-                // Get the choke points of the sink corresponds to pin_id given the sink group
                 auto sink_choking_spots = get_sink_choking_points(physical_type,
                                                                   rr_graph.node_ptc_num(net_rr_terminal[net_id][pin_index]),
                                                                   sink_grp);
-                // Store choke points rr_node_id and the number reachable sinks
+                // Store each choke point's RR node ID and reachable group sink count.
                 for (const auto& choking_spot : sink_choking_spots) {
                     int pin_physical_num = choking_spot.first;
                     int num_reachable_sinks = choking_spot.second;
