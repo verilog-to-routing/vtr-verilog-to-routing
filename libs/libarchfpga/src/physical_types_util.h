@@ -352,6 +352,17 @@ std::tuple<std::vector<int>, std::vector<int>, std::vector<e_side>> get_pin_coor
                                                                                         int pin_physical_num,
                                                                                         const std::vector<e_side>& sides);
 
+/**
+ * @brief Same as the tuple-returning get_pin_coordinates(), but fills caller-provided vectors (cleared first) so
+ *        callers that look up many pins can reuse them instead of allocating three vectors per pin.
+ */
+void get_pin_coordinates(t_physical_tile_type_ptr physical_type,
+                         int pin_physical_num,
+                         const std::vector<e_side>& sides,
+                         std::vector<int>& x_offsets,
+                         std::vector<int>& y_offsets,
+                         std::vector<e_side>& pin_sides);
+
 int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num);
 
 bool is_primitive_pin(t_physical_tile_type_ptr physical_tile, int pin_physical_num);

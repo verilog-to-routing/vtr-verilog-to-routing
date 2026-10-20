@@ -46,13 +46,15 @@ void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                        t_physical_tile_type_ptr physical_type) {
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
     const RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
+    const std::vector<e_side> all_sides(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end());
+    // Reused for every pin so the coordinate lookup does not allocate per pin
+    std::vector<int> x_offset_vec;
+    std::vector<int> y_offset_vec;
+    std::vector<e_side> pin_sides_vec;
     for (int pin_num : pin_num_vec) {
         e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_type, pin_num);
         VTR_ASSERT(pin_type == e_pin_type::DRIVER || pin_type == e_pin_type::RECEIVER);
-        std::vector<int> x_offset_vec;
-        std::vector<int> y_offset_vec;
-        std::vector<e_side> pin_sides_vec;
-        std::tie(x_offset_vec, y_offset_vec, pin_sides_vec) = get_pin_coordinates(physical_type, pin_num, std::vector<e_side>(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end()));
+        get_pin_coordinates(physical_type, pin_num, all_sides, x_offset_vec, y_offset_vec, pin_sides_vec);
         VTR_ASSERT(!pin_sides_vec.empty());
         for (int pin_coord = 0; pin_coord < (int)pin_sides_vec.size(); pin_coord++) {
             int x_offset = x_offset_vec[pin_coord];
