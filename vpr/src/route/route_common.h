@@ -81,7 +81,7 @@ inline bool inside_bb(const RRGraphType& rr_graph, RRNodeId inode, const t_bb& b
     // A box that spans every layer of the device contains the node's layer,
     // so the layer array does not need to be read. This always holds on a single-layer device.
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-    if (bb.layer_min <= 0 && bb.layer_max >= num_layers - 1) {
+    if (bb.layer_min == 0 && bb.layer_max == num_layers - 1) {
         return true;
     }
 
