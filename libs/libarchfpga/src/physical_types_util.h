@@ -353,8 +353,9 @@ std::tuple<std::vector<int>, std::vector<int>, std::vector<e_side>> get_pin_coor
                                                                                         const std::vector<e_side>& sides);
 
 /**
- * @brief Same as the tuple-returning get_pin_coordinates(), but fills caller-provided vectors (cleared first) so
- *        callers that look up many pins can reuse them instead of allocating three vectors per pin.
+ * @brief Fill pin coordinates in reusable output vectors.
+ *
+ * Clears the vectors before filling them, retaining their capacity.
  */
 void get_pin_coordinates(t_physical_tile_type_ptr physical_type,
                          int pin_physical_num,

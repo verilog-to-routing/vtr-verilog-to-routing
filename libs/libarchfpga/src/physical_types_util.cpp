@@ -989,9 +989,8 @@ void get_pin_coordinates(t_physical_tile_type_ptr physical_type,
                          std::vector<int>& x_offsets,
                          std::vector<int>& y_offsets,
                          std::vector<e_side>& pin_sides) {
-    // For the pins which are on a tile, they may be located in multiple sides/locations to model a pin which is connected to multiple
-    // channels. However, in the case of internal pins, currently, they are only located on e_side::TOP and the root location of the
-    // tile.
+    // Tile pins may span multiple sides and offsets to connect to multiple channels.
+    // Internal pins use only the TOP side at the tile root.
     x_offsets.clear();
     y_offsets.clear();
     pin_sides.clear();

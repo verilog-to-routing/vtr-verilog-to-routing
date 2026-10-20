@@ -47,7 +47,7 @@ void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
     const RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
     const std::vector<e_side> all_sides(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end());
-    // Reused for every pin so the coordinate lookup does not allocate per pin
+    // Reuse coordinate vector capacity across pins.
     std::vector<int> x_offset_vec;
     std::vector<int> y_offset_vec;
     std::vector<e_side> pin_sides_vec;

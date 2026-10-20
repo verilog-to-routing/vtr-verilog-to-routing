@@ -274,7 +274,7 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
         }
     }
 
-    // Reused for every pin so the coordinate lookup does not allocate per pin
+    // Reuse coordinate vector capacity across pins.
     std::vector<int> x_offset;
     std::vector<int> y_offset;
     std::vector<e_side> pin_sides;

@@ -1699,15 +1699,13 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
     e_rr_type node_type = (pin_type == e_pin_type::DRIVER) ? e_rr_type::OPIN : e_rr_type::IPIN;
 
-    // Intra-cluster pins are only located at the tile's root location on the TOP side (see get_pin_coordinates())
+    // Internal pins use the TOP side at the tile root (see get_pin_coordinates()).
     if (!is_pin_on_tile(physical_tile, pin_physical_num)) {
         return rr_spatial_lookup.find_node(root_loc.layer_num, root_loc.x, root_loc.y, node_type, pin_physical_num, e_side::TOP);
     }
 
-    // A pin on the tile may be located on several sides/offsets (a pin connected to several channels). The sides
-    // specified in the architecture are a superset of the sides the pin was added to the RR graph with (that depends
-    // on the block's location), so the candidate locations are probed in the order get_pin_coordinates() lists them
-    // (side, then width, then height) and the first node found is returned.
+    // Search pin locations in get_pin_coordinates() order (side, width, height) without temporary vectors.
+    // The block's location may exclude some sides from the RR graph, so return the first valid node.
     bool pin_located = false;
     for (e_side side : TOTAL_2D_SIDES) {
         for (int width = 0; width < physical_tile->width; ++width) {
