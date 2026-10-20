@@ -30,7 +30,6 @@ Test Layers
      - Compares VPR-rendered PNGs against golden images, exactly.
        See the note under *Diff triptychs* for why the gate is a
        differing-pixel count and not SSIM.
-       Currently blocked by DEF-004.
 
 Quick Start
 -----------
@@ -246,7 +245,7 @@ Files
    * - ``test_qtgladeloader.cpp``
      - Layer 3: Glade XML → Qt widget loader tests
    * - ``run_headless_smoke.sh``
-     - Layer 1: 8 headless smoke tests (6 pass + 2 xfail DEF-004)
+     - Layer 1: headless smoke tests
    * - ``run_visual_regression.sh``
      - Layer 5: exact comparison against golden images
    * - ``generate_goldens.sh``
