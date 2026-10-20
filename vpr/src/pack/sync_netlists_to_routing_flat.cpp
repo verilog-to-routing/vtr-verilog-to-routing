@@ -19,17 +19,23 @@
 #include "bus_mux_route_types.h"
 #include <algorithm>
 #include <deque>
+#include <string>
 
 /* Static function decls (file-scope) */
 
 /**
- * @brief Check that every bus-based mux of a cluster uses one input set in its rebuilt pb_route.
+ * @brief Fail if a bus mux uses multiple input sets in a cluster's rebuilt pb_route.
  *
- * The flat router only accepts routings whose bus muxes use a single input set, so a
- * conflict here means the routing or the netlist rebuild is wrong, and the .net.post_routing
- * written from this pb_route could not be configured. Fatal on the first conflict.
+ * Conflicts make .net.post_routing unconfigurable.
  */
 static void check_cluster_bus_mux_selects(ClusterBlockId clb_blk_id, const t_pb_routes& pb_route);
+
+/**
+ * @brief Describe a bus mux pin for an error message: the pin, its net, and whether the net
+ *        was flat-routed or kept the packer's path (no route tree: ideal clocks and nets with
+ *        an ideal route model).
+ */
+static std::string describe_bus_mux_pin(const t_pb_graph_pin* pin, AtomNetId net);
 
 /** Get intra-cluster connections from a given RouteTree. Output <source, sink> pairs to \p out_connections . */
 static void get_intra_cluster_connections(const RouteTree& tree, std::vector<std::pair<RRNodeId, RRNodeId>>& out_connections);
@@ -445,35 +451,34 @@ static void fixup_atom_pb_graph_pin_mapping(void) {
     }
 }
 
-static void check_cluster_bus_mux_selects(ClusterBlockId clb_blk_id, const t_pb_routes& pb_route) {
-    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+static std::string describe_bus_mux_pin(const t_pb_graph_pin* pin, AtomNetId net) {
     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
-    // The input set each bus mux uses, with the first pin seen on it. A cluster has few bus
-    // muxes, so a vector with a linear search is enough.
-    struct t_mux_select {
-        t_bus_mux_key key;
-        int set;
-        const t_pb_graph_pin* pin;
-        AtomNetId net;
-    };
-    std::vector<t_mux_select> selects;
+    VTR_ASSERT(net);
+    return vtr::string_fmt("%s (net '%s', %s)", pin->to_string(false).c_str(), atom_nlist.net_name(net).c_str(),
+                           route_ctx.route_trees[net] ? "flat-routed" : "not routed, packer path kept");
+}
 
-    // Nets without a route tree (ideal clocks, nets with an ideal route model) keep the
-    // packer's path, which the flat router never saw; say so when they are involved.
-    auto describe = [&](const t_pb_graph_pin* pin, AtomNetId net) {
-        VTR_ASSERT(net);
-        return vtr::string_fmt("%s (net '%s', %s)", pin->to_string(false).c_str(), atom_nlist.net_name(net).c_str(),
-                               route_ctx.route_trees[net] ? "flat-routed" : "not routed, packer path kept");
+static void check_cluster_bus_mux_selects(ClusterBlockId clb_blk_id, const t_pb_routes& pb_route) {
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    /** @brief A bus mux's input set and first pin/net, used to report conflicts. */
+    struct t_mux_select {
+        t_bus_mux_key key;         ///< Bus mux instance.
+        int set;                   ///< Selected input set.
+        const t_pb_graph_pin* pin; ///< First pin using this mux.
+        AtomNetId net;             ///< Net at that pin.
     };
+    // Clusters have few bus muxes, so a linear search suffices.
+    std::vector<t_mux_select> selects;
 
     for (const auto& [pin_id, route] : pb_route) {
         if (route.driver_pb_pin_id == UNDEFINED || route.pb_graph_pin == nullptr) {
             continue;
         }
         const t_pb_graph_pin* pin = route.pb_graph_pin;
-        // Find the edge the route came in on; only one input edge has this driver.
+        // Match the incoming edge to the recorded driver pin.
         for (int iedge = 0; iedge < pin->num_input_edges; iedge++) {
             const t_pb_graph_edge* edge = pin->input_edges[iedge];
             if (edge->input_pins[0]->pin_count_in_cluster != route.driver_pb_pin_id) {
@@ -483,7 +488,6 @@ static void check_cluster_bus_mux_selects(ClusterBlockId clb_blk_id, const t_pb_
                 break;
             }
             const t_bus_mux_key key{edge->interconnect, edge->bus_mux_owner()};
-            // noexcept: the strict (-Werror) build rejects a non-noexcept lambda here because of -Wnoexcept.
             auto found = std::ranges::find_if(selects, [&key](const t_mux_select& entry) noexcept {
                 return entry.key == key;
             });
@@ -495,8 +499,8 @@ static void check_cluster_bus_mux_selects(ClusterBlockId clb_blk_id, const t_pb_
                                 "after routing: %s from set %d, but %s from set %d\n",
                                 clb_nlist.block_name(clb_blk_id).c_str(),
                                 key.interconnect->name.c_str(), key.owner->pb_type->name, key.owner->placement_index,
-                                describe(found->pin, found->net).c_str(), found->set,
-                                describe(pin, route.atom_net_id).c_str(), edge->driver_set);
+                                describe_bus_mux_pin(found->pin, found->net).c_str(), found->set,
+                                describe_bus_mux_pin(pin, route.atom_net_id).c_str(), edge->driver_set);
             }
             break;
         }
@@ -514,8 +518,7 @@ void sync_netlists_to_routing_flat(void) {
     sync_pb_routes_to_routing();
     fixup_atom_pb_graph_pin_mapping();
 
-    // The rebuilt pb_route is what .net.post_routing is written from; make sure it kept
-    // every bus mux on a single input set.
+    // Validate the rebuilt routes used to write .net.post_routing.
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     for (ClusterBlockId clb_blk_id : cluster_ctx.clb_nlist.blocks()) {
         if (cluster_ctx.clb_nlist.block_type(clb_blk_id)->has_bus_mux()) {
