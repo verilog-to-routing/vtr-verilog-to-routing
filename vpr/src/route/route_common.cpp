@@ -60,6 +60,13 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat);
 
+/**
+ * @brief Group the sinks of each net that are in the same cluster and in the same sub-block of it
+ *        (see classes_in_same_block()). Flat routing uses the groups to find the intra-cluster choke points
+ *        through which several sinks of a net are reached.
+ *
+ * @return [net][group] -> RR node ids of the group's sinks, and [net][pin] -> the pin's group (-1 for the source pin)
+ */
 static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>,
                   vtr::vector<ParentNetId, std::vector<int>>>
 load_net_terminal_groups(const RRGraphView& rr_graph,
@@ -598,36 +605,36 @@ load_net_terminal_groups(const RRGraphView& rr_graph,
     net_terminal_groups.resize(net_list.nets().size());
     net_terminal_group_num.resize(net_list.nets().size());
 
+    // A sink joins the first group (in creation order) whose block location equals its own and whose first
+    // sink is in the same sub-block. Only the groups at the sink's own location can match, so the groups of
+    // the current net are indexed by location; the table is reused across nets to avoid reallocating it.
+    std::unordered_map<t_pl_loc, std::vector<int>> groups_at_loc;
+
     for (auto net_id : net_list.nets()) {
-        net_terminal_groups[net_id].reserve(net_list.net_pins(net_id).size());
-        net_terminal_group_num[net_id].resize(net_list.net_pins(net_id).size(), -1);
-        std::vector<ParentBlockId> net_pin_blk_id(net_list.net_pins(net_id).size(), ParentBlockId::INVALID());
-        std::unordered_map<RRNodeId, int> rr_node_pin_num;
+        const auto& net_pins = net_list.net_pins(net_id);
+        net_terminal_groups[net_id].reserve(net_pins.size());
+        net_terminal_group_num[net_id].resize(net_pins.size(), -1);
+        groups_at_loc.clear();
         int pin_count = 0;
-        for (auto pin_id : net_list.net_pins(net_id)) {
+        for (auto pin_id : net_pins) {
             if (pin_count == 0) {
                 pin_count++;
                 continue;
             }
             RRNodeId rr_node_num = net_rr_terminals[net_id][pin_count];
-            auto block_id = net_list.pin_block(pin_id);
-            net_pin_blk_id[pin_count] = block_id;
-            rr_node_pin_num[rr_node_num] = pin_count;
+            ParentBlockId block_id = net_list.pin_block(pin_id);
+            int sink_ptc_num = rr_graph.node_ptc_num(rr_node_num);
 
-            t_block_loc blk_loc;
-            blk_loc = get_block_loc(block_id, is_flat);
+            std::vector<int>& candidate_groups = groups_at_loc[get_block_loc(block_id, is_flat).loc];
             int group_num = -1;
-            for (int curr_grp_num = 0; curr_grp_num < (int)net_terminal_groups[net_id].size(); curr_grp_num++) {
-                const auto& curr_grp = net_terminal_groups[net_id][curr_grp_num];
-                auto group_loc = get_block_loc(net_pin_blk_id[rr_node_pin_num.at(RRNodeId(curr_grp[0]))], is_flat);
-                if (blk_loc.loc == group_loc.loc) {
-                    if (classes_in_same_block(block_id,
-                                              rr_graph.node_ptc_num(RRNodeId(curr_grp[0])),
-                                              rr_graph.node_ptc_num(net_rr_terminals[net_id][pin_count]),
-                                              is_flat)) {
-                        group_num = curr_grp_num;
-                        break;
-                    }
+            for (int curr_grp_num : candidate_groups) {
+                const std::vector<int>& curr_grp = net_terminal_groups[net_id][curr_grp_num];
+                if (classes_in_same_block(block_id,
+                                          rr_graph.node_ptc_num(RRNodeId(curr_grp[0])),
+                                          sink_ptc_num,
+                                          is_flat)) {
+                    group_num = curr_grp_num;
+                    break;
                 }
             }
 
@@ -639,6 +646,7 @@ load_net_terminal_groups(const RRGraphView& rr_graph,
                 int new_group_num = net_terminal_groups[net_id].size();
                 net_terminal_groups[net_id].push_back(new_group);
                 net_terminal_group_num[net_id][pin_count] = new_group_num;
+                candidate_groups.push_back(new_group_num);
             } else {
                 net_terminal_groups[net_id][group_num].push_back(size_t(rr_node_num));
                 net_terminal_group_num[net_id][pin_count] = group_num;
