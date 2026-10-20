@@ -78,6 +78,9 @@ VISUAL_CASE_NAMES=(
 # set_nets : 0=off, 1=flylines (placement), 2=routed (routing).
 # set_cpd  : 0=off; bitmask 1|2|4 = flylines | delays | routed-wires.
 #            Bit 2 (routed-wire highlight) is only meaningful at routing.
+#            The placement_critical_path_* cases are expected to match
+#            placement_default: a placement loaded under --analysis carries
+#            no timing info, and set_cpd 2 draws nothing without flylines.
 PLACEMENT_ROUTING_CMDS="\
 wait_for_stage placement_done; \
 save_graphics placement_default.png; \
