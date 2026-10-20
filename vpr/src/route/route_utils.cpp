@@ -432,10 +432,7 @@ void prune_unused_non_configurable_nets(CBRR& connections_inf,
 }
 
 vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_nets_choking_spots(const Netlist<>& net_list,
-                                                                                                const vtr::vector<ParentNetId,
-                                                                                                                  std::vector<std::vector<int>>>& net_terminal_groups,
-                                                                                                const vtr::vector<ParentNetId,
-                                                                                                                  std::vector<int>>& net_terminal_group_num,
+                                                                                                const vtr::vector<ParentNetId, t_net_sink_groups>& net_sink_groups,
                                                                                                 bool router_opt_choke_points,
                                                                                                 bool is_flat) {
     vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> choking_spots(net_list.nets().size());
@@ -467,20 +464,22 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
             }
             auto block_id = net_list.pin_block(pin_id);
             auto blk_loc = get_block_loc(block_id, is_flat);
-            int group_num = net_terminal_group_num[net_id][pin_count];
+            int group_num = net_sink_groups[net_id].pin_group[pin_count];
             // This is a group of sinks, including the current pin_id, which share a specific number of parent blocks.
             // To determine the choke points of the current sink, pin_id, we only consider the sinks in this group for the
             // run-time purpose
-            std::vector<int> sink_grp = net_terminal_groups[net_id][group_num];
-            VTR_ASSERT((int)sink_grp.size() >= 1);
-            if (sink_grp.size() == 1) {
+            const std::vector<RRNodeId>& sink_grp_nodes = net_sink_groups[net_id].groups[group_num];
+            VTR_ASSERT(sink_grp_nodes.size() >= 1);
+            if (sink_grp_nodes.size() == 1) {
                 pin_count++;
                 continue;
             } else {
-                // get the ptc_number of the sinks in the group
-                std::ranges::for_each(sink_grp, [&rr_graph](int& sink_rr_num) {
-                    sink_rr_num = rr_graph.node_ptc_num(RRNodeId(sink_rr_num));
-                });
+                // ptc numbers of the sinks in the group (what get_sink_choking_points() works with)
+                std::vector<int> sink_grp;
+                sink_grp.reserve(sink_grp_nodes.size());
+                for (RRNodeId sink_rr_node : sink_grp_nodes) {
+                    sink_grp.push_back(rr_graph.node_ptc_num(sink_rr_node));
+                }
 
                 t_physical_tile_loc grid_loc;
                 grid_loc.x = blk_loc.loc.x;

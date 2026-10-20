@@ -65,14 +65,12 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
  *        (see classes_in_same_block()). Flat routing uses the groups to find the intra-cluster choke points
  *        through which several sinks of a net are reached.
  *
- * @return [net][group] -> RR node ids of the group's sinks, and [net][pin] -> the pin's group (-1 for the source pin)
+ * @return [net] -> the net's sink groups
  */
-static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>,
-                  vtr::vector<ParentNetId, std::vector<int>>>
-load_net_terminal_groups(const RRGraphView& rr_graph,
-                         const Netlist<>& net_list,
-                         const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
-                         bool is_flat);
+static vtr::vector<ParentNetId, t_net_sink_groups> load_net_terminal_groups(const RRGraphView& rr_graph,
+                                                                            const Netlist<>& net_list,
+                                                                            const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
+                                                                            bool is_flat);
 
 static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(const RRGraphView& rr_graph,
                                                                              const Netlist<>& net_list,
@@ -340,10 +338,10 @@ void init_route_structs(const Netlist<>& net_list,
     route_ctx.is_flat = is_flat;
 
     if (has_choking_point && is_flat) {
-        std::tie(route_ctx.net_terminal_groups, route_ctx.net_terminal_group_num) = load_net_terminal_groups(device_ctx.rr_graph,
-                                                                                                             net_list,
-                                                                                                             route_ctx.net_rr_terminals,
-                                                                                                             is_flat);
+        route_ctx.net_sink_groups = load_net_terminal_groups(device_ctx.rr_graph,
+                                                             net_list,
+                                                             route_ctx.net_rr_terminals,
+                                                             is_flat);
     }
 }
 
@@ -593,17 +591,11 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
     return net_rr_terminals;
 }
 
-static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>,
-                  vtr::vector<ParentNetId, std::vector<int>>>
-load_net_terminal_groups(const RRGraphView& rr_graph,
-                         const Netlist<>& net_list,
-                         const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
-                         bool is_flat) {
-    vtr::vector<ParentNetId, std::vector<std::vector<int>>> net_terminal_groups;
-    vtr::vector<ParentNetId, std::vector<int>> net_terminal_group_num;
-
-    net_terminal_groups.resize(net_list.nets().size());
-    net_terminal_group_num.resize(net_list.nets().size());
+static vtr::vector<ParentNetId, t_net_sink_groups> load_net_terminal_groups(const RRGraphView& rr_graph,
+                                                                            const Netlist<>& net_list,
+                                                                            const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
+                                                                            bool is_flat) {
+    vtr::vector<ParentNetId, t_net_sink_groups> net_sink_groups(net_list.nets().size());
 
     // A sink joins the first group (in creation order) whose block location equals its own and whose first
     // sink is in the same sub-block. Only the groups at the sink's own location can match, so the groups of
@@ -612,8 +604,9 @@ load_net_terminal_groups(const RRGraphView& rr_graph,
 
     for (auto net_id : net_list.nets()) {
         const auto& net_pins = net_list.net_pins(net_id);
-        net_terminal_groups[net_id].reserve(net_pins.size());
-        net_terminal_group_num[net_id].resize(net_pins.size(), -1);
+        t_net_sink_groups& sink_groups = net_sink_groups[net_id];
+        sink_groups.groups.reserve(net_pins.size());
+        sink_groups.pin_group.resize(net_pins.size(), -1);
         groups_at_loc.clear();
         int pin_count = 0;
         for (auto pin_id : net_pins) {
@@ -628,9 +621,9 @@ load_net_terminal_groups(const RRGraphView& rr_graph,
             std::vector<int>& candidate_groups = groups_at_loc[get_block_loc(block_id, is_flat).loc];
             int group_num = -1;
             for (int curr_grp_num : candidate_groups) {
-                const std::vector<int>& curr_grp = net_terminal_groups[net_id][curr_grp_num];
+                const std::vector<RRNodeId>& curr_grp = sink_groups.groups[curr_grp_num];
                 if (classes_in_same_block(block_id,
-                                          rr_graph.node_ptc_num(RRNodeId(curr_grp[0])),
+                                          rr_graph.node_ptc_num(curr_grp[0]),
                                           sink_ptc_num,
                                           is_flat)) {
                     group_num = curr_grp_num;
@@ -639,25 +632,21 @@ load_net_terminal_groups(const RRGraphView& rr_graph,
             }
 
             if (group_num == -1) {
-                /* TODO: net_terminal_groups cannot be fully RRNodeId - ified, because this code calls libarchfpga which
-                 * I think should not be aware of RRNodeIds. Fixing this requires some refactoring to lift the offending functions
-                 * into VPR. */
-                std::vector<int> new_group = {int(rr_node_num)};
-                int new_group_num = net_terminal_groups[net_id].size();
-                net_terminal_groups[net_id].push_back(new_group);
-                net_terminal_group_num[net_id][pin_count] = new_group_num;
+                int new_group_num = sink_groups.groups.size();
+                sink_groups.groups.push_back({rr_node_num});
+                sink_groups.pin_group[pin_count] = new_group_num;
                 candidate_groups.push_back(new_group_num);
             } else {
-                net_terminal_groups[net_id][group_num].push_back(size_t(rr_node_num));
-                net_terminal_group_num[net_id][pin_count] = group_num;
+                sink_groups.groups[group_num].push_back(rr_node_num);
+                sink_groups.pin_group[pin_count] = group_num;
             }
 
             pin_count++;
         }
-        net_terminal_groups[net_id].shrink_to_fit();
+        sink_groups.groups.shrink_to_fit();
     }
 
-    return std::make_tuple(net_terminal_groups, net_terminal_group_num);
+    return net_sink_groups;
 }
 
 /* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *

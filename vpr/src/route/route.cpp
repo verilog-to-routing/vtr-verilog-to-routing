@@ -83,8 +83,7 @@ bool route(const Netlist<>& net_list,
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.netlist(), intra_lb_pb_pin_lookup);
 
     auto choking_spots = set_nets_choking_spots(net_list,
-                                                route_ctx.net_terminal_groups,
-                                                route_ctx.net_terminal_group_num,
+                                                route_ctx.net_sink_groups,
                                                 router_opts.has_choke_point,
                                                 is_flat);
 
