@@ -245,13 +245,15 @@ static vtr::vector<ParentNetId, t_net_sink_groups> load_net_sink_groups(const RR
     return net_sink_groups;
 }
 
-vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_nets_choking_spots(const Netlist<>& net_list,
-                                                                                                bool router_opt_choke_points,
-                                                                                                bool is_flat) {
-    vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> choking_spots(net_list.nets().size());
-    for (ParentNetId net_id : net_list.nets()) {
-        choking_spots[net_id].resize(net_list.net_pins(net_id).size());
-    }
+const std::unordered_map<RRNodeId, int>& t_net_choke_points::sink_choke_points(int pin_index) const {
+    static const std::unordered_map<RRNodeId, int> no_choke_points;
+    return by_pin.empty() ? no_choke_points : by_pin[pin_index];
+}
+
+vtr::vector<ParentNetId, t_net_choke_points> set_nets_choking_spots(const Netlist<>& net_list,
+                                                                    bool router_opt_choke_points,
+                                                                    bool is_flat) {
+    vtr::vector<ParentNetId, t_net_choke_points> choking_spots(net_list.nets().size());
 
     // Choke point analysis requires flat routing and the choke point option.
     if (!router_opt_choke_points || !is_flat) {
@@ -306,7 +308,12 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                                                                  grid_loc,
                                                                  pin_physical_num);
                     if (pin_rr_node_id != RRNodeId::INVALID()) {
-                        choking_spots[net_id][pin_index].insert(std::make_pair(pin_rr_node_id, num_reachable_sinks));
+                        // Allocate per-pin maps only for nets with choke points.
+                        std::vector<std::unordered_map<RRNodeId, int>>& by_pin = choking_spots[net_id].by_pin;
+                        if (by_pin.empty()) {
+                            by_pin.resize(net_list.net_pins(net_id).size());
+                        }
+                        by_pin[pin_index].insert(std::make_pair(pin_rr_node_id, num_reachable_sinks));
                     }
                 }
             }
