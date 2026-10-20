@@ -10,6 +10,7 @@
 #include "rr_graph_fwd.h"
 #include "rr_graph_view.h"
 #include "vtr_assert.h"
+#include "vtr_strong_id.h"
 
 /**
  * @brief Extra information about each rr_node needed only during routing
@@ -176,9 +177,13 @@ void init_route_structs(const Netlist<>& net_list,
  * set_nets_choking_spots() uses the groups to find the intra-cluster choke points through which several sinks
  * of the net are reached.
  */
+struct net_sink_group_id_tag {};
+/// Identifies one group of a net's sinks (see t_net_sink_groups)
+typedef vtr::StrongId<net_sink_group_id_tag> NetSinkGroupId;
+
 struct t_net_sink_groups {
-    std::vector<std::vector<RRNodeId>> groups; ///< [group] -> SINK nodes of the group's pins
-    std::vector<int> pin_group;                ///< [net pin index] -> group of the pin (-1 for the source pin)
+    vtr::vector<NetSinkGroupId, std::vector<RRNodeId>> groups; ///< [group] -> SINK nodes of the group's pins
+    std::vector<NetSinkGroupId> pin_group;                     ///< [net pin index] -> group of the pin (invalid for the source pin)
 };
 
 /**

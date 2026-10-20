@@ -580,13 +580,13 @@ vtr::vector<ParentNetId, t_net_sink_groups> load_net_sink_groups(const RRGraphVi
     // A sink joins the first group (in creation order) whose block location equals its own and whose first
     // sink is in the same sub-block. Only the groups at the sink's own location can match, so the groups of
     // the current net are indexed by location; the table is reused across nets to avoid reallocating it.
-    std::unordered_map<t_pl_loc, std::vector<int>> groups_at_loc;
+    std::unordered_map<t_pl_loc, std::vector<NetSinkGroupId>> groups_at_loc;
 
     for (auto net_id : net_list.nets()) {
         const auto& net_pins = net_list.net_pins(net_id);
         t_net_sink_groups& sink_groups = net_sink_groups[net_id];
         sink_groups.groups.reserve(net_pins.size());
-        sink_groups.pin_group.resize(net_pins.size(), -1);
+        sink_groups.pin_group.resize(net_pins.size(), NetSinkGroupId::INVALID());
         groups_at_loc.clear();
         int pin_count = 0;
         for (auto pin_id : net_pins) {
@@ -598,27 +598,27 @@ vtr::vector<ParentNetId, t_net_sink_groups> load_net_sink_groups(const RRGraphVi
             ParentBlockId block_id = net_list.pin_block(pin_id);
             int sink_ptc_num = rr_graph.node_ptc_num(rr_node_num);
 
-            std::vector<int>& candidate_groups = groups_at_loc[get_block_loc(block_id, is_flat).loc];
-            int group_num = -1;
-            for (int curr_grp_num : candidate_groups) {
-                const std::vector<RRNodeId>& curr_grp = sink_groups.groups[curr_grp_num];
+            std::vector<NetSinkGroupId>& candidate_groups = groups_at_loc[get_block_loc(block_id, is_flat).loc];
+            NetSinkGroupId group_id = NetSinkGroupId::INVALID();
+            for (NetSinkGroupId curr_grp_id : candidate_groups) {
+                const std::vector<RRNodeId>& curr_grp = sink_groups.groups[curr_grp_id];
                 if (classes_in_same_block(block_id,
                                           rr_graph.node_ptc_num(curr_grp[0]),
                                           sink_ptc_num,
                                           is_flat)) {
-                    group_num = curr_grp_num;
+                    group_id = curr_grp_id;
                     break;
                 }
             }
 
-            if (group_num == -1) {
-                int new_group_num = sink_groups.groups.size();
+            if (!group_id.is_valid()) {
+                NetSinkGroupId new_group_id(sink_groups.groups.size());
                 sink_groups.groups.push_back({rr_node_num});
-                sink_groups.pin_group[pin_count] = new_group_num;
-                candidate_groups.push_back(new_group_num);
+                sink_groups.pin_group[pin_count] = new_group_id;
+                candidate_groups.push_back(new_group_id);
             } else {
-                sink_groups.groups[group_num].push_back(rr_node_num);
-                sink_groups.pin_group[pin_count] = group_num;
+                sink_groups.groups[group_id].push_back(rr_node_num);
+                sink_groups.pin_group[pin_count] = group_id;
             }
 
             pin_count++;

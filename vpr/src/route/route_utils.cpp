@@ -466,11 +466,11 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
             }
             auto block_id = net_list.pin_block(pin_id);
             auto blk_loc = get_block_loc(block_id, is_flat);
-            int group_num = net_sink_groups[net_id].pin_group[pin_count];
+            NetSinkGroupId group_id = net_sink_groups[net_id].pin_group[pin_count];
             // This is a group of sinks, including the current pin_id, which share a specific number of parent blocks.
             // To determine the choke points of the current sink, pin_id, we only consider the sinks in this group for the
             // run-time purpose
-            const std::vector<RRNodeId>& sink_grp_nodes = net_sink_groups[net_id].groups[group_num];
+            const std::vector<RRNodeId>& sink_grp_nodes = net_sink_groups[net_id].groups[group_id];
             VTR_ASSERT(sink_grp_nodes.size() >= 1);
             if (sink_grp_nodes.size() == 1) {
                 pin_count++;
