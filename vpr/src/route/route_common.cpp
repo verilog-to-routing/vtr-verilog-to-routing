@@ -582,19 +582,15 @@ vtr::vector<ParentNetId, t_net_sink_groups> load_net_sink_groups(const RRGraphVi
     // the current net are indexed by location; the table is reused across nets to avoid reallocating it.
     std::unordered_map<t_pl_loc, std::vector<NetSinkGroupId>> groups_at_loc;
 
-    for (auto net_id : net_list.nets()) {
-        const auto& net_pins = net_list.net_pins(net_id);
+    for (ParentNetId net_id : net_list.nets()) {
         t_net_sink_groups& sink_groups = net_sink_groups[net_id];
-        sink_groups.groups.reserve(net_pins.size());
-        sink_groups.pin_group.resize(net_pins.size(), NetSinkGroupId::INVALID());
+        size_t num_pins = net_list.net_pins(net_id).size();
+        sink_groups.groups.reserve(num_pins);
+        sink_groups.pin_group.resize(num_pins, NetSinkGroupId::INVALID());
         groups_at_loc.clear();
-        int pin_count = 0;
-        for (auto pin_id : net_pins) {
-            if (pin_count == 0) {
-                pin_count++;
-                continue;
-            }
-            RRNodeId rr_node_num = net_rr_terminals[net_id][pin_count];
+        for (ParentPinId pin_id : net_list.net_sinks(net_id)) {
+            int pin_index = net_list.pin_net_index(pin_id);
+            RRNodeId rr_node_num = net_rr_terminals[net_id][pin_index];
             ParentBlockId block_id = net_list.pin_block(pin_id);
             int sink_ptc_num = rr_graph.node_ptc_num(rr_node_num);
 
@@ -614,14 +610,12 @@ vtr::vector<ParentNetId, t_net_sink_groups> load_net_sink_groups(const RRGraphVi
             if (!group_id.is_valid()) {
                 NetSinkGroupId new_group_id(sink_groups.groups.size());
                 sink_groups.groups.push_back({rr_node_num});
-                sink_groups.pin_group[pin_count] = new_group_id;
+                sink_groups.pin_group[pin_index] = new_group_id;
                 candidate_groups.push_back(new_group_id);
             } else {
                 sink_groups.groups[group_id].push_back(rr_node_num);
-                sink_groups.pin_group[pin_count] = group_id;
+                sink_groups.pin_group[pin_index] = group_id;
             }
-
-            pin_count++;
         }
         sink_groups.groups.shrink_to_fit();
     }
