@@ -71,7 +71,7 @@ run_test() {
     else
         local rc=$?
         if [[ "${expect_fail}" == "xfail" ]]; then
-            echo "    XFAIL (exit ${rc}) — known issue, see defect log"
+            echo "    XFAIL (exit ${rc}) — known issue"
             (( XFAIL++ )) || true
         else
             echo "    FAIL (exit ${rc})"
@@ -110,7 +110,7 @@ check_file() {
         (( PASS++ )) || true
     else
         if [[ "${expect_fail}" == "xfail" ]]; then
-            echo "    XFAIL: ${filepath} missing — known issue (DEF-004)"
+            echo "    XFAIL: ${filepath} missing — known issue"
             (( XFAIL++ )) || true
         else
             echo "    FAIL: ${filepath} missing or empty"

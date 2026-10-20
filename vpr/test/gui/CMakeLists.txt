@@ -241,11 +241,9 @@ if(VTR_ENABLE_COVERAGE)
                 --html-details ${VTR_BINARY_DIR}/coverage_gui.html
                 --xml ${VTR_BINARY_DIR}/coverage_gui.xml
                 --txt ${VTR_BINARY_DIR}/coverage_gui.txt
-                # S8 regression gate (see DEF-014 in the discovered-defects
-                # log for the rationale: the plan §7.8 80%/70% target is
-                # unreachable from Layer 3 alone on the current renderer
-                # architecture, so we ship a regression-only gate set
-                # ~5pp below the measured baseline of 40.85% / 27.23%).
+                # Regression-only gate set ~5pp below the measured baseline
+                # of 40.85% / 27.23%: an 80%/70% target is unreachable from
+                # Layer 3 alone on the current renderer architecture.
                 --fail-under-line 35
                 --fail-under-branch 22
                 -f ${VTR_SOURCE_DIR}/vpr/src/draw

@@ -104,7 +104,7 @@ Architecture: ``k6_N10_40nm.xml``, seed: ``1``, display: ``--disp off``.
 
 .. warning::
 
-   Regenerating goldens invalidates all previous SSIM comparisons.
+   Regenerating goldens invalidates all previous comparisons.
    Only regenerate when an intentional visual change is made (e.g.,
    colour-scheme update, layout algorithm change) and commit the new
-   PNGs alongside an entry in the defect log explaining why.
+   PNGs with a commit message explaining why.

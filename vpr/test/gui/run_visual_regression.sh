@@ -128,12 +128,12 @@ for r in "${RENDERERS[@]}"; do
 done
 if [[ "${have_any_goldens}" -eq 0 ]]; then
     echo "WARNING: No golden images in ${GOLDEN_DIR}/{${RENDERERS[*]// /,}}/"
-    echo "Run generate_goldens.sh first (requires DEF-004 to be fixed)."
+    echo "Run generate_goldens.sh first."
     echo ""
     echo "=== Visual Regression Summary ==="
     echo "    Passed:  0"
     echo "    Failed:  0"
-    echo "    Skipped: ALL (no golden images — blocked by DEF-004)"
+    echo "    Skipped: ALL (no golden images)"
     echo "    RESULT: SKIP"
     exit 2
 fi

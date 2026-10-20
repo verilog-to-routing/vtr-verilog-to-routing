@@ -345,9 +345,9 @@ jobs:
   # GUICoverage — Plan §7.9 #5 — Linux-only (gcov toolchain stable on
   # Ubuntu; macOS uses xcrun llvm-cov gcov and isn't a stable CI target
   # for coverage yet). Runs the same `make gui-coverage` target the
-  # local flow uses; the wrapper script swallows DEF-010 (visual
-  # regression) so gcovr always emits its report and the regression
-  # gate (35 % line / 22 % branch — see DEF-014) is what gates this job.
+  # local flow uses; the wrapper script swallows a visual-regression
+  # failure so gcovr always emits its report, and the regression gate
+  # (35 % line / 22 % branch, below the measured baseline) gates this job.
   #
   # DISABLED (if: false): this job is a separate debug + coverage-instrumented
   # full rebuild of VTR in its own build tree (no ccache reuse from the release

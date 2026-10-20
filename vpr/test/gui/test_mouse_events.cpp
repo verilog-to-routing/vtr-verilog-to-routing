@@ -6,7 +6,7 @@
  *
  *   1. Direct dispatch — calls the file-local act_on_mouse_move/press/key_press
  *      functions in vpr/src/draw/draw.cpp via extern declarations. These
- *      exercise the DEF-005 symptom guard (S6 of the GUI test plan): under
+ *      exercise the null-application guard in act_on_mouse_move: under
  *      default state (window_point_1_collected=false, show_rr=false) the
  *      callbacks must early-return cleanly even with a null ezgl::application.
  *
@@ -15,16 +15,14 @@
  *      under QT_QPA_PLATFORM=offscreen. This is the substrate every future
  *      stage-aware Layer 4 case will build on.
  *
- * Per §1.A bug-discovery clause: any case that fails for a reason OTHER than
- * DEF-005 is filed as DEF-NNN in vpr_gui_defects_discovered.rst and the
- * failing case is xfailed; tests are NEVER rewritten to make a failure
- * disappear.
+ * Any case that fails is filed as an issue and the failing case is xfailed;
+ * tests are NEVER rewritten to make a failure disappear.
  *
  * Stage-aware coverage (4 stages × 6 event types = 24 cases) requires a
  * VPR run-stage fixture (pre-pack/post-pack/post-place/post-route) which is
  * not yet plumbed into the Catch2 unit-test surface. That fixture work is
  * deferred to a follow-up session and tracked alongside the larger Layer 4
- * scope; the current cases cover the symptom path that DEF-005 names.
+ * scope; the current cases cover the null-application path.
  *
  * Tag: [layer4][interactive][vpr_gui]
  */
@@ -53,10 +51,10 @@ extern void act_on_mouse_press(ezgl::application* app, QMouseEvent* event, doubl
 extern void act_on_mouse_move(ezgl::application* app, QMouseEvent* event, double x, double y);
 
 // ---------------------------------------------------------------------------
-// Group 1 — Direct dispatch / DEF-005 symptom guard
+// Group 1 — Direct dispatch / null-application guard
 // ---------------------------------------------------------------------------
 
-TEST_CASE("Mouse: act_on_mouse_move with null application returns cleanly (DEF-005 guard)",
+TEST_CASE("Mouse: act_on_mouse_move with null application returns cleanly (null-application guard)",
           "[layer4][interactive][vpr_gui]") {
     // Default state: show_rr=false, window_point_1_collected=false.
     // Pre-S6 this would still return early (show_rr branch), but the new top-of-

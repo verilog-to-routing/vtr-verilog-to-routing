@@ -55,7 +55,7 @@ endif()
 if (VPR_USE_EZGL STREQUAL "on")
     add_subdirectory(libezgl)
 
-    # DEF-013 fix — propagate coverage flags into the ezgl submodule so the
+    # Propagate coverage flags into the ezgl submodule so the
     # gcovr `-f libs/EXTERNAL/libezgl/src` filter picks up real instrumentation
     # data. We can't `add_compile_options(${ADDITIONAL_FLAGS})` at this
     # directory level because libezgl is a git submodule and we don't want

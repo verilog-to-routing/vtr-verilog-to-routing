@@ -2,12 +2,9 @@
  * @file test_search_null_guard.cpp
  * @brief GUI-T-019 — Search-subsystem null-guard symmetry (Layer 4).
  *
- * Closes the symmetric-guard gap recorded in
- * doc/src/dev/vpr_gui_defect_issues_log.rst alongside DEF-005 and DEF-012:
- *
- *   DEF-005 added a null-`app` early-return to `act_on_mouse_move`.
- *   DEF-012 named `act_on_key_press` and `act_on_mouse_press` as siblings
- *           that lack the same defensive guard.
+ * Closes a symmetric-guard gap: `act_on_mouse_move` has a null-`app`
+ * early-return, while its siblings `act_on_key_press` and
+ * `act_on_mouse_press` lack the same defensive guard.
  *
  * The search subsystem entry points are
  *   * search_and_highlight(widget, app)
@@ -26,14 +23,13 @@
  *     reason: the `app->find_line_edit("TextInput")` lookup misses and
  *     the existing `if (!searchBar) return;` triggers. No defect.
  *
- *   * `search_and_highlight(nullptr, nullptr)` — Previously SEGVd (DEF-013,
- *     now closed). Null-app and null-widget guards were added to
+ *   * `search_and_highlight(nullptr, nullptr)` — Previously SEGVd (now
+ *     fixed). Null-app and null-widget guards were added to
  *     search_and_highlight() and get_search_type() in search_bar.cpp.
  *     The function now returns cleanly when `app` is nullptr.
  *
- * Per §4 of the test plan we file the failure first and then assert the
- * contract. DEF-013 is now closed — the `[!shouldfail]` annotation has
- * been removed and the test is a positive-contract case.
+ * The crash is fixed, so the `[!shouldfail]` annotation has been removed
+ * and the test is a positive-contract case.
  *
  * The two non-crashing entry points get positive contract cases (no
  * `[!shouldfail]`) that pin today's behaviour: a future change that adds
@@ -126,7 +122,7 @@ ChildOutcome run_in_child(std::function<void()> body) {
 } // namespace
 
 // ---------------------------------------------------------------------------
-// search_and_highlight — DEF-013 (CLOSED). Null-app and null-widget guards
+// search_and_highlight — fixed. Null-app and null-widget guards
 // were added to search_and_highlight() and get_search_type() so the
 // function returns cleanly when app is nullptr. This is now a positive-
 // contract test identical to the enable_autocomplete and search_type_changed
@@ -134,9 +130,9 @@ ChildOutcome run_in_child(std::function<void()> body) {
 // ---------------------------------------------------------------------------
 
 TEST_CASE("Search: search_and_highlight(nullptr) returns cleanly "
-          "[symmetric-guard contract — DEF-013]",
+          "[symmetric-guard contract]",
           "[layer4][interactive][search][vpr_gui][GUI-T-019]") {
-    // DEF-013 — fixed: null guards added to search_bar.cpp.
+    // Fixed: null guards added to search_bar.cpp.
     ChildOutcome o = run_in_child([]() {
         search_and_highlight(/*widget=*/nullptr, /*app=*/nullptr);
     });

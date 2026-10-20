@@ -6,10 +6,9 @@
 # Regression guard that the graphics-command parser still accepts
 # `set_nets <0|1>` and `exit 0` and that VPR exits cleanly after
 # executing them. This task does NOT assert that the rendered
-# output is visually different — DEF-009 (state setters inert
-# under --disp off) makes that impossible today; that aspect is
-# tracked in vpr_gui_defects_discovered.rst. This task is a
-# regression guard against future graphics_command parser breakage.
+# output is visually different; the layer-5 visual tests
+# (vpr/test/gui) cover that. This task is a regression guard
+# against future graphics_command parser breakage.
 #
 # R7 mitigation: -start vpr (see gui_disp_off_smoke/config).
 # Offscreen Qt: caller exports QT_QPA_PLATFORM=offscreen.

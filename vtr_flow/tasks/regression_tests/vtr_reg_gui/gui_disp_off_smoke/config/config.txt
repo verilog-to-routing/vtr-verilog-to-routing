@@ -14,7 +14,7 @@
 # -------------
 # script_params_common pins -start vpr so VPR consumes the
 # pre-prepared .blif directly and the macOS parmys link failure
-# (DEF-008 / Risk R7 in the test plan) does not gate this suite.
+# does not gate this suite.
 #
 # Offscreen Qt
 # ------------
@@ -36,8 +36,8 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # -start vpr : skip parmys/odin (Risk R7)
-# -track_memory_usage false : DEF-006 belt-and-braces; gtime is preferred
+# -track_memory_usage false : belt-and-braces; gtime is preferred
 #                          on macOS but disabling avoids any host that
 #                          lacks GNU time entirely.
-# --disp off : DEF-008 — --disp on hangs under offscreen QPA.
+# --disp off : --disp on hangs under offscreen QPA.
 script_params_common=-start vpr -track_memory_usage false --pack --place --route --disp off

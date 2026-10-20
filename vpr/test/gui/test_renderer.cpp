@@ -16,7 +16,7 @@
  * stays the responsibility of Layer 1/5, where it already exists.
  *
  * Per §1.A: nothing here mocks a rendering surface to inflate Layer 3
- * numbers. If a value-type assertion fails, file DEF-NNN; do not soften.
+ * numbers. If a value-type assertion fails, file an issue; do not soften.
  *
  * Tag: [layer3][vpr_gui][renderer]
  */

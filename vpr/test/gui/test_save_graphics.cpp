@@ -144,7 +144,7 @@ class TmpDir {
 // cannot be caught. We therefore skip the tests that exercise the real
 // PNG/PDF/SVG writer when running under CI. Locally (developer
 // workstations and lab machines with a full Mesa install) the tests
-// still execute end-to-end. Tracked alongside DEF-016 / GUI-T-006.
+// still execute end-to-end.
 bool ci_render_unavailable() {
     const char* ci = std::getenv("CI");
     return ci && std::string(ci) == "true";

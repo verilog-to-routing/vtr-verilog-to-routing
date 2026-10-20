@@ -25,8 +25,8 @@
  *   * No placeholders. Every spec entry asserts a real lookup that
  *     production code performs.
  *   * On failure the test does NOT swallow the discrepancy — a missing or
- *     mistyped widget is a real defect that gets a DEF-NNN entry and a
- *     paired GitHub issue before any code change.
+ *     mistyped widget is a real defect that gets a GitHub issue before any
+ *     code change.
  *
  * Spec table maintenance: one row per find_* call site in production code.
  * The companion audit grep (doc/src/dev/vpr_gui_complete_test_plan.rst §12.4)

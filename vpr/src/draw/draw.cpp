@@ -1126,12 +1126,10 @@ void act_on_mouse_press(ezgl::application* app, QMouseEvent* event, double x, do
 }
 
 void act_on_mouse_move(ezgl::application* app, QMouseEvent* /* event */, double x, double y) {
-    // DEF-005 symptom guard — defends against ezgl mouse-move dispatch arriving
-    // outside an active VPR draw lifecycle (stale callback after teardown,
-    // pre-init dispatch from offscreen platform, etc.). Root cause is tracked
-    // separately under DEF-005 (ezgl mouse-dispatch); this guard keeps the VPR
-    // side crash-free while that investigation continues. See
-    // doc/src/dev/vpr_gui_test_implementation_plan.rst §7.6.
+    // Defends against ezgl mouse-move dispatch arriving outside an active VPR
+    // draw lifecycle (stale callback after teardown, pre-init dispatch from
+    // offscreen platform, etc.). The root cause is on the ezgl side; this
+    // guard keeps VPR crash-free regardless.
     if (app == nullptr) return;
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state == nullptr) return;
