@@ -207,7 +207,7 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
                     const int direction_index = static_cast<int>(direction);
 
                     // Sample each position along the profiling axis.
-                    for (int coord = 1; coord < (int)axis_dim_size; coord++) {
+                    for (int coord = 0; coord < (int)axis_dim_size; coord++) {
                         const int sample_x = profile_x ? coord : fixed_coord;
                         const int sample_y = profile_x ? fixed_coord : coord;
                         RRNodeId sample_node;
