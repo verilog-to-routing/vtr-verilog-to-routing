@@ -110,6 +110,8 @@
  * and CLK_2 (physical pin) from the BUFG (logical block) and CLOCK TILE (physical tile).
  */
 
+#include <span>
+
 #include "physical_types.h"
 
 ///@brief Returns true if the absolute physical pin index is an output of the given physical tile type
@@ -350,7 +352,7 @@ e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_
 
 std::tuple<std::vector<int>, std::vector<int>, std::vector<e_side>> get_pin_coordinates(t_physical_tile_type_ptr physical_type,
                                                                                         int pin_physical_num,
-                                                                                        const std::vector<e_side>& sides);
+                                                                                        std::span<const e_side> sides);
 
 /**
  * @brief Fill pin coordinates in reusable output vectors.
@@ -359,7 +361,7 @@ std::tuple<std::vector<int>, std::vector<int>, std::vector<e_side>> get_pin_coor
  */
 void get_pin_coordinates(t_physical_tile_type_ptr physical_type,
                          int pin_physical_num,
-                         const std::vector<e_side>& sides,
+                         std::span<const e_side> sides,
                          std::vector<int>& x_offsets,
                          std::vector<int>& y_offsets,
                          std::vector<e_side>& pin_sides);

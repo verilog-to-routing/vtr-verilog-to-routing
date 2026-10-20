@@ -503,7 +503,7 @@ void check_rr_node(const RRGraphView& rr_graph,
                                 "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
             }
             rr_graph_sides = rr_graph.node_sides(rr_node);
-            std::tie(std::ignore, std::ignore, arch_side_vec) = get_pin_coordinates(type, ptc_num, std::vector<e_side>(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end()));
+            std::tie(std::ignore, std::ignore, arch_side_vec) = get_pin_coordinates(type, ptc_num, TOTAL_2D_SIDES);
             // sides in the architecture are a superset of the sides for a pin in RR Graph. We iterate over the sides stored
             // in the RR Graph to ensure that all of them also exist in the architecture.
             for (size_t i = 0; i < rr_graph_sides.size(); i++) {
