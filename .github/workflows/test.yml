@@ -301,8 +301,11 @@ jobs:
     - name: Run GUI Test Layers 1 + 3 + 4 + 5
       run: make CMAKE_PARAMS="-DVPR_USE_EZGL=on" gui-tests
 
-    # The runner's layer-5 renders, in the golden/<renderer>/<case>.png
-    # layout, for inspecting a visual failure.
+    # A layer-5 failure logs only a differing-pixel count, and the runner's
+    # rendering is hard to reproduce locally, so keep what it actually drew:
+    # renders in the golden/<renderer>/<case>.png layout, plus the
+    # <renderer>/diff/ triptychs of failing cases. rhi is omitted because it
+    # falls back to immediate output here.
     - name: Upload layer-5 renders
       if: always()
       uses: actions/upload-artifact@v7
@@ -311,6 +314,8 @@ jobs:
         path: |
           build/vpr/test/gui/artifacts/immediate/*.png
           build/vpr/test/gui/artifacts/deferred/*.png
+          build/vpr/test/gui/artifacts/immediate/diff/*.png
+          build/vpr/test/gui/artifacts/deferred/diff/*.png
         if-no-files-found: ignore
         retention-days: 7
 
