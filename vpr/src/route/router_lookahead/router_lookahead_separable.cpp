@@ -112,6 +112,33 @@ static t_bb get_sampling_strip(const DeviceGrid& grid, e_profile_axis axis, int 
 }
 
 /**
+ * @brief Widen a sampling strip so it extends at least two tiles beyond a sample node on the axis
+ *        perpendicular to profiling.
+ *
+ * Without this, a wire longer than the strip is wide makes its switch block connections outside
+ * the strip, so a flood restricted to the strip reaches no IPIN.
+ *
+ * @param bb Sampling strip, as returned by get_sampling_strip().
+ * @param node Sample node the flood starts from.
+ * @return bb, widened on the perpendicular axis to cover the node's span plus the margin, clamped to the grid.
+ */
+static t_bb adjust_sampling_bb_to_rr_node(const t_bb& bb, const DeviceGrid& grid, e_profile_axis axis, RRNodeId node) {
+    constexpr int SAMPLE_NODE_BB_MARGIN = 2;
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+
+    t_bb sample_bb = bb;
+    if (axis == e_profile_axis::X) {
+        sample_bb.ymin = std::max(0, std::min(bb.ymin, (int)rr_graph.node_ylow(node) - SAMPLE_NODE_BB_MARGIN));
+        sample_bb.ymax = std::min((int)grid.height() - 1, std::max(bb.ymax, (int)rr_graph.node_yhigh(node) + SAMPLE_NODE_BB_MARGIN));
+    } else {
+        sample_bb.xmin = std::max(0, std::min(bb.xmin, (int)rr_graph.node_xlow(node) - SAMPLE_NODE_BB_MARGIN));
+        sample_bb.xmax = std::min((int)grid.width() - 1, std::max(bb.xmax, (int)rr_graph.node_xhigh(node) + SAMPLE_NODE_BB_MARGIN));
+    }
+
+    return sample_bb;
+}
+
+/**
  * @brief Profile wire costs along one axis using Dijkstra floods in a strip up to five tiles wide.
  * The strip is placed far from the device edges and interposer cuts (see get_sampling_strip()).
  * Each flood spans the full profiling axis.
@@ -225,8 +252,8 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
                                 cost_entry = util::Cost_Entry(current.delay, current.congestion_upstream);
                             }
                         };
-
-                        run_dijkstra<true>(sample_node, dijkstra_data, bb, record_cost);
+                        const t_bb sample_bb = adjust_sampling_bb_to_rr_node(bb, grid, axis, sample_node);
+                        run_dijkstra<true>(sample_node, dijkstra_data, sample_bb, record_cost);
                     }
                 }
             }
