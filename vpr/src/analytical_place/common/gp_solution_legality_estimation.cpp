@@ -1568,21 +1568,18 @@ void LegalityEstimator::apply_control_pin_rule(t_tile_state& tile) {
 
         // Evict the group with the fewest pins, with ties broken by the
         // smallest atom ID in the group.
-        const std::vector<AtomBlockId>* group_to_evict = nullptr;
-        int group_to_evict_pins = 0;
-        for (const auto& [net_class, group] : control_net_atoms) {
+        auto group_order = [&](const std::vector<AtomBlockId>& group) {
             int group_pins = 0;
             for (AtomBlockId atom : group)
                 group_pins += atom_num_pins_[atom];
-            if (group_to_evict == nullptr
-                || group_pins < group_to_evict_pins
-                || (group_pins == group_to_evict_pins && group.front() < group_to_evict->front())) {
-                group_to_evict = &group;
-                group_to_evict_pins = group_pins;
-            }
-        }
-        VTR_ASSERT(group_to_evict != nullptr);
-        for (AtomBlockId atom : *group_to_evict) {
+            return std::make_pair(group_pins, group.front());
+        };
+        VTR_ASSERT(!control_net_atoms.empty());
+        auto group_to_evict = std::min_element(control_net_atoms.begin(), control_net_atoms.end(),
+                                               [&](const auto& lhs, const auto& rhs) {
+                                                   return group_order(lhs.second) < group_order(rhs.second);
+                                               });
+        for (AtomBlockId atom : group_to_evict->second) {
             // An atom may be in more than one group (e.g. a RAM with two
             // clocks), but groups are rebuilt after every eviction, so every
             // atom in this group is still in the tile.
