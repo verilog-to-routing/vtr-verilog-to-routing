@@ -128,18 +128,6 @@ void print_router_criticality_histogram(const Netlist<>& net_list,
 void prune_unused_non_configurable_nets(CBRR& connections_inf,
                                         const Netlist<>& net_list);
 
-/** If flat_routing and router_opt_choke_points are true, there are some choke points inside the cluster which would increase the convergence time of routing.
- * To address this issue, the congestion cost of those choke points needs to decrease. This function identify those choke points for each net,
- * and since the amount of congestion reduction is dependent on the number sinks reachable from that choke point, it also store the number of reachable sinks
- * for each choke point.
- * @param net_list
- * @param router_opt_choke_points is true if the given architecture has choking spots inside the cluster
- * @param is_flat is true if flat_routing is enabled
- * @return [Net_id][pin_id] -> [choke_point_rr_node_id, number of sinks reachable by this choke point] */
-vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_nets_choking_spots(const Netlist<>& net_list,
-                                                                                                bool router_opt_choke_points,
-                                                                                                bool is_flat);
-
 /** Wrapper for create_rr_graph() with extra checks */
 void try_graph(int width_fac,
                const t_router_opts& router_opts,

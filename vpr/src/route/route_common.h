@@ -10,7 +10,6 @@
 #include "rr_graph_fwd.h"
 #include "rr_graph_view.h"
 #include "vtr_assert.h"
-#include "vtr_strong_id.h"
 
 /**
  * @brief Extra information about each rr_node needed only during routing
@@ -177,27 +176,6 @@ void init_route_structs(const Netlist<>& net_list,
  * set_nets_choking_spots() uses the groups to find the intra-cluster choke points through which several sinks
  * of the net are reached.
  */
-struct net_sink_group_id_tag {};
-/// Identifies one group of a net's sinks (see t_net_sink_groups)
-typedef vtr::StrongId<net_sink_group_id_tag> NetSinkGroupId;
-
-struct t_net_sink_groups {
-    vtr::vector<NetSinkGroupId, std::vector<RRNodeId>> groups; ///< [group] -> SINK nodes of the group's pins
-    std::vector<NetSinkGroupId> pin_group;                     ///< [net pin index] -> group of the pin (invalid for the source pin)
-};
-
-/**
- * @brief Group the sinks of each net that are in the same cluster and in the same sub-block of it
- *        (see classes_in_same_block()).
- *
- * @param net_rr_terminals [net][net pin index] -> SOURCE/SINK node of the pin
- * @return [net] -> the net's sink groups
- */
-vtr::vector<ParentNetId, t_net_sink_groups> load_net_sink_groups(const RRGraphView& rr_graph,
-                                                                 const Netlist<>& net_list,
-                                                                 const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
-                                                                 bool is_flat);
-
 void alloc_and_load_rr_node_route_structs(const t_router_opts& router_opts);
 
 void reset_rr_node_route_structs(const t_router_opts& route_opts);

@@ -72,8 +72,6 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
                                                            const LogicalModels& models,
                                                            bool is_flat);
 
-static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat);
-
 /**
  * @brief If a bounding box crosses an interposer cut, expand it to
  * at minimum span the bounds defined in device_ctx.[horz/vert]_interposer_cut_bounds_.
@@ -571,58 +569,6 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
     return net_rr_terminals;
 }
 
-vtr::vector<ParentNetId, t_net_sink_groups> load_net_sink_groups(const RRGraphView& rr_graph,
-                                                                 const Netlist<>& net_list,
-                                                                 const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
-                                                                 bool is_flat) {
-    vtr::vector<ParentNetId, t_net_sink_groups> net_sink_groups(net_list.nets().size());
-
-    // A sink joins the first group (in creation order) whose block location equals its own and whose first
-    // sink is in the same sub-block. Only the groups at the sink's own location can match, so the groups of
-    // the current net are indexed by location; the table is reused across nets to avoid reallocating it.
-    std::unordered_map<t_pl_loc, std::vector<NetSinkGroupId>> groups_at_loc;
-
-    for (ParentNetId net_id : net_list.nets()) {
-        t_net_sink_groups& sink_groups = net_sink_groups[net_id];
-        size_t num_pins = net_list.net_pins(net_id).size();
-        sink_groups.groups.reserve(num_pins);
-        sink_groups.pin_group.resize(num_pins, NetSinkGroupId::INVALID());
-        groups_at_loc.clear();
-        for (ParentPinId pin_id : net_list.net_sinks(net_id)) {
-            int pin_index = net_list.pin_net_index(pin_id);
-            RRNodeId rr_node_num = net_rr_terminals[net_id][pin_index];
-            ParentBlockId block_id = net_list.pin_block(pin_id);
-            int sink_ptc_num = rr_graph.node_ptc_num(rr_node_num);
-
-            std::vector<NetSinkGroupId>& candidate_groups = groups_at_loc[get_block_loc(block_id, is_flat).loc];
-            NetSinkGroupId group_id = NetSinkGroupId::INVALID();
-            for (NetSinkGroupId curr_grp_id : candidate_groups) {
-                const std::vector<RRNodeId>& curr_grp = sink_groups.groups[curr_grp_id];
-                if (classes_in_same_block(block_id,
-                                          rr_graph.node_ptc_num(curr_grp[0]),
-                                          sink_ptc_num,
-                                          is_flat)) {
-                    group_id = curr_grp_id;
-                    break;
-                }
-            }
-
-            if (!group_id.is_valid()) {
-                NetSinkGroupId new_group_id(sink_groups.groups.size());
-                sink_groups.groups.push_back({rr_node_num});
-                sink_groups.pin_group[pin_index] = new_group_id;
-                candidate_groups.push_back(new_group_id);
-            } else {
-                sink_groups.groups[group_id].push_back(rr_node_num);
-                sink_groups.pin_group[pin_index] = group_id;
-            }
-        }
-        sink_groups.groups.shrink_to_fit();
-    }
-
-    return net_sink_groups;
-}
-
 /* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *
  * in the FPGA.  Currently only the SOURCE rr_node values are used, and     *
  * they are used only to reserve pins for locally used OPINs in the router. *
@@ -688,11 +634,6 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
     }
 
     return is_clock_net;
-}
-
-static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat) {
-    t_physical_tile_type_ptr physical_tile = physical_tile_type(blk_id, is_flat);
-    return classes_in_same_block(physical_tile, first_class_ptc_num, second_class_ptc_num, is_flat);
 }
 
 static void expand_route_bb_to_interposer_cut_bounds(const DeviceContext& device_ctx,
