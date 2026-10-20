@@ -12,11 +12,13 @@
 #include <memory>
 #include <vector>
 #include "ap_draw_manager.h"
+#include "PreClusterDelayCalculator.h"
 #include "PreClusterTimingManager.h"
 #include "analytical_solver.h"
 #include "ap_flow_enums.h"
 #include "ap_netlist.h"
 #include "ap_netlist_fwd.h"
+#include "ap_timing_estimation.h"
 #include "atom_netlist.h"
 #include "device_grid.h"
 #include "flat_placement_bins.h"
@@ -141,17 +143,24 @@ static void print_placement_stats(const PartialPlacement& p_placement,
                                   const AtomNetlist& atom_netlist,
                                   const Prepacker& prepacker,
                                   FlatPlacementDensityManager& density_manager,
-                                  const PreClusterTimingManager& pre_cluster_timing_manager) {
+                                  PreClusterTimingManager& pre_cluster_timing_manager,
+                                  const PlaceDelayModel& place_delay_model) {
     // Print the placement HPWL
     VTR_LOG("\tPlacement objective HPWL: %f\n", p_placement.get_hpwl(ap_netlist));
     VTR_LOG("\tPlacement estimated wirelength: %g\n", estimate_post_routing_wire_usage(p_placement, ap_netlist, g_vpr_ctx.device().grid));
 
-    // Print the timing information.
+    // Print the estimated post-routing timing.
     if (pre_cluster_timing_manager.is_valid()) {
-        float cpd_ns = pre_cluster_timing_manager.get_timing_info().least_slack_critical_path().delay() * 1e9;
-        float stns_ns = pre_cluster_timing_manager.get_timing_info().setup_total_negative_slack() * 1e9;
-        VTR_LOG("\tPlacement estimated CPD: %f ns\n", cpd_ns);
-        VTR_LOG("\tPlacement estimated sTNS: %f ns\n", stns_ns);
+        FlatPlacementArcDelayEstimator arc_delay_estimator(ap_netlist,
+                                                           *pre_cluster_timing_manager.get_delay_calculator_ptr(),
+                                                           place_delay_model,
+                                                           g_vpr_ctx.device().grid);
+        t_ap_timing_estimate timing_estimate = estimate_post_routing_timing(p_placement,
+                                                                            arc_delay_estimator,
+                                                                            pre_cluster_timing_manager.get_delay_calculator_ptr());
+        VTR_LOG("\tPlacement estimated CPD: %f ns\n", timing_estimate.cpd * 1e9);
+        VTR_LOG("\tPlacement estimated sTNS: %f ns\n", timing_estimate.stns * 1e9);
+        VTR_LOG("\tPlacement estimated sWNS: %f ns\n", timing_estimate.swns * 1e9);
     }
 
     // Print the estimated legality of the placement.
@@ -533,7 +542,8 @@ PartialPlacement SimPLGlobalPlacer::place() {
                           atom_netlist_,
                           prepacker_,
                           *density_manager_,
-                          pre_cluster_timing_manager_);
+                          pre_cluster_timing_manager_,
+                          *place_delay_model_);
 
     // Return the placement from the final iteration.
     return best_p_placement;

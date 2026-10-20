@@ -1,0 +1,29 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/microbenchmarks
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+circuit_list_add=undriven_net.blif #Contains a net with a sink but no driver
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+# Script parameters
+script_params_common=-starting_stage vpr -track_memory_usage
+script_params_list_add=--sweep_dangling_nets on  # The undriven net is swept, VPR should succeed
+script_params_list_add=--sweep_dangling_nets off # The undriven net is kept, VPR should exit with an error (not crash)

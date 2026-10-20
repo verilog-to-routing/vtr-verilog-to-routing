@@ -157,6 +157,18 @@ class PreClusterTimingManager {
     }
 
     /**
+     * @brief Get a pointer to the delay calculator used by this manager.
+     *
+     * Any arc delays set on this calculator will be used by this manager the
+     * next time update_timing_info is called.
+     */
+    std::shared_ptr<PreClusterDelayCalculator> get_delay_calculator_ptr() {
+        VTR_ASSERT_SAFE_MSG(is_valid_,
+                            "Timing manager has not been initialized");
+        return clustering_delay_calc_;
+    }
+
+    /**
      * @brief Get the timing update type used when creating this manager object.
      *
      * This is useful since incremental timing updates require invalidation of

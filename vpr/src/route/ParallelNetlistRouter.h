@@ -12,6 +12,7 @@
 #include "netlist_routers.h"
 #include "vtr_optional.h"
 
+#include <tbb/enumerable_thread_specific.h>
 #include <tbb/task_group.h>
 
 /** Parallel impl for NetlistRouter.
