@@ -307,6 +307,7 @@ jobs:
     # <renderer>/diff/ triptychs of failing cases. rhi is omitted because it
     # falls back to immediate output here.
     - name: Upload layer-5 renders
+      id: gui-visual-renders
       if: always()
       uses: actions/upload-artifact@v7
       with:
@@ -318,6 +319,16 @@ jobs:
           build/vpr/test/gui/artifacts/deferred/diff/*.png
         if-no-files-found: ignore
         retention-days: 7
+
+    # Nothing in the failing log points at the artifact, so surface its link
+    # as an annotation and on the run summary page.
+    - name: Link layer-5 renders
+      if: failure() && steps.gui-visual-renders.outputs.artifact-url != ''
+      env:
+        ARTIFACT_URL: ${{ steps.gui-visual-renders.outputs.artifact-url }}
+      run: |
+        echo "::error title=Layer-5 renders::Renders and diff triptychs: ${ARTIFACT_URL}"
+        echo "Layer-5 renders and diff triptychs: ${ARTIFACT_URL}" >> "${GITHUB_STEP_SUMMARY}"
 
     # Plan §8.2 PR-merge exit criterion: `./run_reg_test.py vtr_reg_gui`
     # must be green. Reuses the EZGL build above (vpr binary already
