@@ -18,6 +18,7 @@
 #include "rr_spatial_lookup.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
+#include "vtr_assert.h"
 #include "vtr_time.h"
 
 /**
@@ -54,9 +55,66 @@ enum class e_profile_axis {
 };
 
 /**
- * @brief Profile wire costs along one axis using Dijkstra floods in a five-tile-wide strip.
- * The sample row is at two-thirds of the device height for x; the sample column is
- * at half the device width for y. Each flood spans the full profiling axis.
+ * @brief Pick the sampling strip on a layer as far as possible from the device edges and the
+ *        interposer cuts parallel to the profiling axis.
+ *
+ * Cuts parallel to the profiling axis (horizontal cuts for x, vertical cuts for y) split the
+ * perpendicular axis into die regions. The strip is centred in the widest region, so the
+ * sampled wires are not distorted by edge effects or by the extra cost of crossing a cut.
+ *
+ * @param strip_width Number of rows (x profiling) or columns (y profiling) in the strip. Must be positive.
+ *                    An odd width centres the strip on the region's centre; an even width places
+ *                    the extra row/column on the higher-coordinate side (e.g. width 4 spans centre-1 to centre+2).
+ * @return Bounding box of the strip: the full extent of the profiling axis, and up to strip_width
+ *         rows/columns around the centre of the widest region on the perpendicular axis, clamped
+ *         so it stays within that region.
+ */
+static t_bb get_sampling_strip(const DeviceGrid& grid, e_profile_axis axis, int layer, int strip_width) {
+    VTR_ASSERT_SAFE(strip_width > 0);
+    const bool profile_x = (axis == e_profile_axis::X);
+    const int perpendicular_dim_size = profile_x ? (int)grid.height() : (int)grid.width();
+
+    // A cut at c lies between c and c + 1.
+    std::vector<int> cuts = profile_x ? grid.get_horizontal_interposer_cuts()[layer]
+                                      : grid.get_vertical_interposer_cuts()[layer];
+
+    VTR_ASSERT_SAFE(std::ranges::is_sorted(cuts));
+    cuts.push_back(perpendicular_dim_size - 1);
+
+    int best_region_low = 0;
+    int best_region_high = perpendicular_dim_size - 1;
+    int best_region_size = -1;
+    int region_low = 0;
+    // Search for the widest region, place strip in middle of it
+    // In case there are multiple widest regions with the same width
+    // We choose the first/lowest one.
+    for (int region_high : cuts) {
+        if (region_high - region_low > best_region_size) {
+            best_region_size = region_high - region_low;
+            best_region_low = region_low;
+            best_region_high = region_high;
+        }
+        region_low = region_high + 1;
+    }
+
+    // Restrict the Dijkstra flood to a few rows/columns around the centre of the region (to keep
+    // the flood cheap), but the full extent of the profiling axis. The strip is clamped to the
+    // region so it does not cross a cut parallel to the profiling axis.
+    const int centre = (best_region_low + best_region_high) / 2;
+    const int strip_low = std::max(best_region_low, centre - (strip_width - 1) / 2);
+    const int strip_high = std::min(best_region_high, centre + strip_width / 2);
+
+    if (profile_x) {
+        return t_bb(0, grid.width() - 1, strip_low, strip_high, layer, layer);
+    } else {
+        return t_bb(strip_low, strip_high, 0, grid.height() - 1, layer, layer);
+    }
+}
+
+/**
+ * @brief Profile wire costs along one axis using Dijkstra floods in a strip up to five tiles wide.
+ * The strip is placed far from the device edges and interposer cuts (see get_sampling_strip()).
+ * Each flood spans the full profiling axis.
  */
 static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& segment_infs,
                                            e_profile_axis axis,
@@ -80,10 +138,6 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
     wire_cost_map.resize({num_layers, num_layers, chan_type_dim_size, segment_infs.size(),
                           direction_dim_size, axis_dim_size, axis_dim_size});
 
-    // TODO: Don't hardcode the fixed coord location, instead take the device edges + interposer cut lines into account
-    // And pick a location far from them.
-    const int fixed_coord = profile_x ? (int)(2 * grid.height() / 3) : (int)grid.width() / 2;
-
     util::t_dijkstra_data dijkstra_data;
 
     for (size_t from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
@@ -92,21 +146,10 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
             continue;
         }
 
-        // Restrict the Dijkstra flood to a few rows/columns around the sample line (to keep the flood
-        // cheap), but the full extent of the profiling axis.
-        t_bb bb;
-
-        // We make the boundinb box span 2 rows/columns away (on each side) from the fixed location.
-        constexpr int SAMPLING_SPAN = 2;
-        if (profile_x) {
-            bb = t_bb(0, grid.width() - 1,
-                      std::max(0, fixed_coord - SAMPLING_SPAN), std::min<int>(grid.height() - 1, fixed_coord + SAMPLING_SPAN),
-                      (int)from_layer_num, (int)from_layer_num);
-        } else {
-            bb = t_bb(std::max(0, fixed_coord - SAMPLING_SPAN), std::min<int>(grid.width() - 1, fixed_coord + SAMPLING_SPAN),
-                      0, grid.height() - 1,
-                      (int)from_layer_num, (int)from_layer_num);
-        }
+        constexpr int SAMPLING_STRIP_WIDTH = 5;
+        const t_bb bb = get_sampling_strip(grid, axis, (int)from_layer_num, SAMPLING_STRIP_WIDTH);
+        // Row (x profiling) or column (y profiling) that sample wires are driven from.
+        const int fixed_coord = profile_x ? (bb.ymin + bb.ymax) / 2 : (bb.xmin + bb.xmax) / 2;
 
         // Pick sample points from each segment type e.g. L4, L16
         for (const t_segment_inf& segment_inf : segment_infs) {
