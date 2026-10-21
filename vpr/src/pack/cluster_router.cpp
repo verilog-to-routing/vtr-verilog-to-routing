@@ -113,6 +113,10 @@ static bool is_route_mode_compatible(const t_lb_trace& rt,
                                      const LbTypeRrGraph& lb_type_graph,
                                      const vtr::vector<LbRrNodeId, t_lb_rr_node_stats>& lb_rr_node_stats);
 
+/// @brief Lower bound on the fanout factors applied in expand_edges_,
+///        0.85 + 0.25 / fanout and 1.15 - 0.25 / fanout.
+static constexpr float MIN_FANOUT_FACTOR = 0.85f;
+
 /*****************************************************************************************
  * Constructor/Destructor functions
  ******************************************************************************************/
@@ -120,10 +124,17 @@ static bool is_route_mode_compatible(const t_lb_trace& rt,
 ClusterRouter::ClusterRouter(const LbTypeRrGraph& lb_type_graph,
                              t_logical_block_type_ptr type,
                              const std::unordered_set<int>& valid_feedback_pins,
+                             ClusterRouterLookahead* lookahead,
                              bool enable_hot_start) {
     lb_type_graph_ = &lb_type_graph;
     lb_type_ = type;
     valid_feedback_pins_ = &valid_feedback_pins;
+    lookahead_ = lookahead;
+    target_hops_ = nullptr;
+    hop_cost_ = 0;
+    if (lookahead != nullptr) {
+        hop_cost_ = MIN_FANOUT_FACTOR * lookahead->min_edge_cost();
+    }
 
     size_t size = lb_type_graph.num_nodes();
     lb_rr_node_stats_.resize(size);
@@ -153,6 +164,7 @@ void ClusterRouter::clean_router_data() {
     intra_lb_nets_.shrink_to_fit();
     saved_lb_nets_.clear();
     saved_lb_nets_.shrink_to_fit();
+    target_hops_ = nullptr;
 
     is_clean_ = true;
     is_valid_ = false;
@@ -499,6 +511,9 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
             /* Route each sink of net */
             for (size_t itarget = 1; itarget < intra_lb_nets_[idx].terminals.size() && !is_impossible; itarget++) {
                 pq_.clear();
+                if (lookahead_ != nullptr) {
+                    target_hops_ = &lookahead_->hops_to(intra_lb_nets_[idx].terminals[itarget]);
+                }
                 /* Get lowest cost next node, repeat until a path is found or if it is impossible to route */
 
                 expand_rt_(idx);
@@ -1112,15 +1127,27 @@ void ClusterRouter::expand_rt_rec_(const t_lb_trace& rt, LbRrNodeId prev_index, 
     t_expansion_node enode;
 
     /* Perhaps should use a cost other than zero */
-    enode.cost = 0;
+    enode.path_cost = 0;
     enode.node_index = rt.current_node;
     enode.prev_index = prev_index;
-    pq_.push(enode);
     explored_node_tb_[enode.node_index].inet = irt_net;
     explored_node_tb_[enode.node_index].explored_id = UNDEFINED;
     explored_node_tb_[enode.node_index].enqueue_id = explore_id_index_;
     explored_node_tb_[enode.node_index].enqueue_cost = 0;
     explored_node_tb_[enode.node_index].prev_index = prev_index;
+
+    // Queue the node keyed by the lower bound on the cost to the target.
+    // A node with no path to the target is left out of the queue.
+    if (target_hops_ == nullptr) {
+        enode.cost = 0;
+        pq_.push(enode);
+    } else {
+        uint8_t hops = (*target_hops_)[enode.node_index];
+        if (hops != ClusterRouterLookahead::UNREACHABLE) {
+            enode.cost = hop_cost_ * hops;
+            pq_.push(enode);
+        }
+    }
 
     for (unsigned int i = 0; i < rt.next_nodes.size(); i++) {
         expand_rt_rec_(rt.next_nodes[i], rt.current_node, irt_net);
@@ -1151,11 +1178,23 @@ void ClusterRouter::expand_edges_(int mode,
         }
     }
 
+    const ClusterRouterLookahead::t_hop_table* target_hops = target_hops_;
+    const float hop_cost = hop_cost_;
+
     for (const LbTypeRrGraph::t_edge& edge : lb_type_graph.edges(cur_inode, mode)) {
         /* Init new expansion node */
         enode.prev_index = cur_inode;
         enode.node_index = edge.node_index;
-        enode.cost = cur_cost;
+
+        // Skip nodes with no path to the target.
+        float remaining_cost = 0;
+        if (target_hops != nullptr) {
+            uint8_t hops = (*target_hops)[enode.node_index];
+            if (hops == ClusterRouterLookahead::UNREACHABLE) {
+                continue;
+            }
+            remaining_cost = hop_cost * hops;
+        }
 
         /* Determine incremental cost of using expansion node */
         int usage = lb_rr_node_stats_[enode.node_index].occ + 1 - lb_type_graph.capacity(enode.node_index);
@@ -1179,16 +1218,17 @@ void ClusterRouter::expand_edges_(int mode,
         }
 
         incr_cost *= fanout_factor;
-        enode.cost = cur_cost + incr_cost;
+        enode.path_cost = cur_cost + incr_cost;
+        enode.cost = enode.path_cost + remaining_cost;
 
-        /* Add to queue if cost is lower than lowest cost path to this enode */
+        /* Add to queue if path cost is lower than lowest cost path to this enode */
         if (explored_node_tb_[enode.node_index].enqueue_id == explore_id_index_) {
-            if (enode.cost < explored_node_tb_[enode.node_index].enqueue_cost) {
+            if (enode.path_cost < explored_node_tb_[enode.node_index].enqueue_cost) {
                 pq_.push(enode);
             }
         } else {
             explored_node_tb_[enode.node_index].enqueue_id = explore_id_index_;
-            explored_node_tb_[enode.node_index].enqueue_cost = enode.cost;
+            explored_node_tb_[enode.node_index].enqueue_cost = enode.path_cost;
             pq_.push(enode);
         }
     }
@@ -1198,7 +1238,7 @@ void ClusterRouter::expand_node_(const t_expansion_node& exp_node,
                                  int net_fanout,
                                  bool target_is_internal_sink) {
     LbRrNodeId cur_node = exp_node.node_index;
-    float cur_cost = exp_node.cost;
+    float cur_cost = exp_node.path_cost;
     int mode = lb_rr_node_stats_[cur_node].mode;
     if (mode == -1) {
         mode = 0;
@@ -1213,7 +1253,7 @@ void ClusterRouter::expand_node_all_modes_(const t_expansion_node& exp_node,
     const LbTypeRrGraph& lb_type_graph = *lb_type_graph_;
 
     LbRrNodeId cur_inode = exp_node.node_index;
-    float cur_cost = exp_node.cost;
+    float cur_cost = exp_node.path_cost;
     int cur_mode = lb_rr_node_stats_[cur_inode].mode;
     const t_pb_graph_pin* pin = lb_type_graph.pb_graph_pin(cur_inode);
 

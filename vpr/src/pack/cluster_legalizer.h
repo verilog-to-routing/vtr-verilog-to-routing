@@ -109,6 +109,8 @@ struct LegalizationCluster {
      *  @param lb_type_rr_graphs         The RR-graphs for each cluster type.
      *  @param valid_feedback_pins       Pre-computed feedback-pin set for this type;
      *                                   owned by ClusterLegalizer, must outlive this cluster.
+     *  @param lookahead                 Hop counts to the targets of this type, or nullptr;
+     *                                   owned by ClusterLegalizer, must outlive this cluster.
      *  @param enable_router_hot_start   Forwarded to ClusterRouter; enables hot-start
      *                                   routing on each try_intra_lb_route call.
      */
@@ -116,6 +118,7 @@ struct LegalizationCluster {
                         int cluster_mode,
                         const std::vector<LbTypeRrGraph>& lb_type_rr_graphs,
                         const std::unordered_set<int>& valid_feedback_pins,
+                        ClusterRouterLookahead* lookahead,
                         bool enable_router_hot_start = false);
 
     /// @brief A list of the molecules in the cluster. By design, a cluster will
@@ -310,6 +313,9 @@ class ClusterLegalizer {
      *  @param enable_cluster_router_hot_start
      *          When true, each call to try_intra_lb_route seeds unchanged nets
      *          from the last successful route before running pathfinder.
+     *  @param cluster_router_lookahead
+     *          The estimate of the remaining cost to the target that orders
+     *          the cluster router search.
      *  @param models
      *  @param log_verbosity
      *          Controls how verbose the log messages will be within this class.
@@ -323,6 +329,7 @@ class ClusterLegalizer {
                      bool enable_pin_feasibility_filter,
                      bool memoize_cluster_packings,
                      bool enable_cluster_router_hot_start,
+                     e_cluster_router_lookahead cluster_router_lookahead,
                      const LogicalModels& models,
                      int log_verbosity);
 
@@ -652,6 +659,11 @@ class ClusterLegalizer {
     /// @brief Per-type set of top-level output pin indices with Fc_out > 0.
     ///        Indexed by t_logical_block_type::index.
     std::vector<std::unordered_set<int>> valid_feedback_pins_by_type_;
+
+    /// @brief Per-type hop counts to the targets of the rr graph, used by the
+    ///        cluster router. Empty when --cluster_router_lookahead is none.
+    ///        Indexed by t_logical_block_type::index.
+    std::vector<ClusterRouterLookahead> lookaheads_by_type_;
 
     /// @brief The current legalization strategy of the cluster legalizer.
     ClusterLegalizationStrategy cluster_legalization_strategy_;
