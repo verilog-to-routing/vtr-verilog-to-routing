@@ -54,8 +54,6 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , rr_graph_(rr_graph)
         , rr_rc_data_(rr_rc_data)
         , rr_switch_inf_(rr_switch_inf.data(), rr_switch_inf.size())
-        , net_terminal_groups(g_vpr_ctx.routing().net_terminal_groups)
-        , net_terminal_group_num(g_vpr_ctx.routing().net_terminal_group_num)
         , rr_node_route_inf_(rr_node_route_inf)
         , is_flat_(is_flat)
         , has_bus_muxes_(is_flat && !g_vpr_ctx.device().rr_bus_muxes.empty())
@@ -357,12 +355,6 @@ class ConnectionRouter : public ConnectionRouterInterface {
 
     /** RR switch data */
     std::span<const t_rr_switch_inf> rr_switch_inf_;
-
-    //@{
-    /** Net terminal groups */
-    const vtr::vector<ParentNetId, std::vector<std::vector<int>>>& net_terminal_groups;
-    const vtr::vector<ParentNetId, std::vector<int>>& net_terminal_group_num;
-    //@}
 
     /** RR node extra information needed during routing */
     vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_;
