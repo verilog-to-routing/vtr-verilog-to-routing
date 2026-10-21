@@ -3,7 +3,6 @@
 // Experimental separable lookahead.
 // TODO: Remove the dependency on the map lookahead for filling in unsampled elements in the table
 // TODO: Clean up the OPIN/SOURCE lookahead code
-// TODO: Fix the sampling strip logic to not hardcode the position
 // TODO: Add flat router support
 // TODO: Add writing/reading lookahead support
 // TODO: Make it more scalable in Z dimension

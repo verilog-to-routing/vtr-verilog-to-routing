@@ -1,5 +1,6 @@
 #include "device_grid.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <utility>
 #include <vector>
@@ -21,6 +22,10 @@ DeviceGrid::DeviceGrid(const t_grid_def& grid_def,
     , grid_(std::move(grid)) {
     vtr::FormulaParser p;
     std::tie(horizontal_interposer_cuts_, vertical_interposer_cuts_) = resolve_interposer_cut_locations(*this, grid_def, p);
+    for (size_t layer = 0; layer < horizontal_interposer_cuts_.size(); layer++) {
+        VTR_ASSERT_SAFE(std::ranges::is_sorted(horizontal_interposer_cuts_[layer]));
+        VTR_ASSERT_SAFE(std::ranges::is_sorted(vertical_interposer_cuts_[layer]));
+    }
     has_interposer_cuts_ = check_if_grid_has_interposer_cuts(*this);
 
     count_instances();

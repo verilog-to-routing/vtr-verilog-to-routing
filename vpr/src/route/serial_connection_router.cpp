@@ -249,7 +249,7 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExplor
     // BB-pruning
     // Disable BB-pruning if RCV is enabled, as this can make it harder for circuits with high negative hold slack to resolve this
     // TODO: Only disable pruning if the net has negative hold slack, maybe go off budgets
-    if (!inside_bb(to_node, bounding_box)
+    if (!inside_bb(this->rr_nodes_, to_node, bounding_box)
         && !this->rcv_path_manager.is_enabled()) {
         VTR_LOGV_DEBUG(this->router_debug_,
                        "      Pruned expansion of node %d edge %zu -> %d"
@@ -377,10 +377,10 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
         add_to_heap = best_back_cost > new_back_cost;
         // Only edges surviving the backward-cost prune pay for the lookahead
         if (add_to_heap) {
-            this->evaluate_timing_driven_total_cost(&next, cost_params, target_node, Tdel);
+            this->evaluate_timing_driven_total_cost(&next, cost_params, from_node, target_node, Tdel);
         }
     } else {
-        this->evaluate_timing_driven_total_cost(&next, cost_params, target_node, Tdel);
+        this->evaluate_timing_driven_total_cost(&next, cost_params, from_node, target_node, Tdel);
         add_to_heap = best_total_cost > next.total_cost;
     }
 
@@ -431,8 +431,8 @@ void SerialConnectionRouter<Heap>::add_route_tree_node_to_heap(
     float backward_path_cost = cost_params.criticality * rt_node.Tdel;
     float R_upstream = rt_node.R_upstream;
 
-    /* Don't push to heap if not in bounding box: no-op for serial router, important for parallel router */
-    if (!inside_bb(rt_node.inode, net_bb))
+    // Don't push to heap if not in bounding box: no-op for serial router, important for parallel router
+    if (!inside_bb(this->rr_nodes_, rt_node.inode, net_bb))
         return;
 
     // After budgets are loaded, calculate delay cost as described by RCV paper
