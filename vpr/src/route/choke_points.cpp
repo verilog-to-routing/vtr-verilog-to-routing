@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 #include "globals.h"
 #include "physical_types_util.h"
@@ -33,15 +35,15 @@ static int get_num_reachable_sinks(t_physical_tile_type_ptr physical_tile,
                                    const std::vector<int>& sink_grp) {
     int num_reachable_sinks = 0;
 
-    auto pb_pin = get_pb_pin_from_pin_physical_num(physical_tile,
-                                                   pin_physcial_num);
-    const auto& connected_sinks = pb_pin->connected_sinks_ptc;
+    const t_pb_graph_pin* pb_pin = get_pb_pin_from_pin_physical_num(physical_tile,
+                                                                    pin_physcial_num);
+    const std::unordered_set<int>& connected_sinks = pb_pin->connected_sinks_ptc;
 
     if (!connected_sinks.contains(ref_sink_num)) {
         return 0;
     }
 
-    for (auto sink_num : sink_grp) {
+    for (int sink_num : sink_grp) {
         if (connected_sinks.contains(sink_num)) {
             num_reachable_sinks++;
         }
@@ -88,11 +90,11 @@ static bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
     std::vector<int> first_class_pin_list = get_pin_list_from_class_physical_num(physical_tile, first_class_ptc_num);
     std::vector<int> second_class_pin_list = get_pin_list_from_class_physical_num(physical_tile, second_class_ptc_num);
 
-    auto first_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_tile, first_class_pin_list[0]);
-    auto second_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_tile, second_class_pin_list[0]);
+    const t_pb_graph_pin* first_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_tile, first_class_pin_list[0]);
+    const t_pb_graph_pin* second_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_tile, second_class_pin_list[0]);
 
     std::vector<const t_pb_graph_node*> first_pb_graph_node_chain;
-    auto curr_pb_graph_node = first_pb_graph_pin->parent_node;
+    const t_pb_graph_node* curr_pb_graph_node = first_pb_graph_pin->parent_node;
     while (curr_pb_graph_node != nullptr) {
         first_pb_graph_node_chain.push_back(curr_pb_graph_node);
         curr_pb_graph_node = curr_pb_graph_node->parent_pb_graph_node;
@@ -101,8 +103,7 @@ static bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
     int num_shared_pb_graph_node = 0;
     curr_pb_graph_node = second_pb_graph_pin->parent_node;
     while (curr_pb_graph_node != nullptr) {
-        auto find_res = std::ranges::find(first_pb_graph_node_chain, curr_pb_graph_node);
-        if (find_res != first_pb_graph_node_chain.end()) {
+        if (std::ranges::find(first_pb_graph_node_chain, curr_pb_graph_node) != first_pb_graph_node_chain.end()) {
             num_shared_pb_graph_node++;
             if (num_shared_pb_graph_node >= NUM_SIMILAR_PB_NODE_THRESHOLD)
                 break;
@@ -138,19 +139,19 @@ static std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physi
     const t_sub_tile* sub_tile;
     int sub_tile_rel_cap;
     std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_class_physical_num(physical_tile, sink_ptc_num);
-    auto logical_block = get_logical_block_from_class_physical_num(physical_tile, sink_ptc_num);
-    auto sink_hierarchical_parents_node = get_sink_hierarchical_parents(physical_tile, sink_ptc_num);
-    for (auto pb_graph_node : sink_hierarchical_parents_node) {
+    t_logical_block_type_ptr logical_block = get_logical_block_from_class_physical_num(physical_tile, sink_ptc_num);
+    std::vector<const t_pb_graph_node*> sink_hierarchical_parents_node = get_sink_hierarchical_parents(physical_tile, sink_ptc_num);
+    for (const t_pb_graph_node* pb_graph_node : sink_hierarchical_parents_node) {
         // Assume the cluster root's crossbar is well connected enough to avoid choke points.
         if (pb_graph_node->is_root()) {
             continue;
         }
 
-        auto pb_pins = get_pb_graph_node_pins(physical_tile,
-                                              sub_tile,
-                                              logical_block,
-                                              sub_tile_rel_cap,
-                                              pb_graph_node);
+        t_pin_range pb_pins = get_pb_graph_node_pins(physical_tile,
+                                                     sub_tile,
+                                                     logical_block,
+                                                     sub_tile_rel_cap,
+                                                     pb_graph_node);
         std::unordered_map<int, int> reachability_inf;
         bool has_unique_val = false;
         int prev_val = -1;
@@ -179,7 +180,7 @@ static std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physi
 
         // If counts differ, record pins that reach multiple group sinks.
         if (has_unique_val) {
-            for (const auto& reachability_it : reachability_inf) {
+            for (const std::pair<const int, int>& reachability_it : reachability_inf) {
                 choking_point.insert(std::make_pair(reachability_it.first, reachability_it.second));
             }
         }
@@ -296,11 +297,11 @@ vtr::vector<ParentNetId, t_net_choke_points> set_nets_choking_spots(const Netlis
                 grid_loc.y = blk_loc.loc.y;
                 grid_loc.layer_num = blk_loc.loc.layer;
                 t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type(grid_loc);
-                auto sink_choking_spots = get_sink_choking_points(physical_type,
-                                                                  rr_graph.node_ptc_num(net_rr_terminal[net_id][pin_index]),
-                                                                  sink_grp);
+                std::map<int, int> sink_choking_spots = get_sink_choking_points(physical_type,
+                                                                                rr_graph.node_ptc_num(net_rr_terminal[net_id][pin_index]),
+                                                                                sink_grp);
                 // Store each choke point's RR node ID and reachable group sink count.
-                for (const auto& choking_spot : sink_choking_spots) {
+                for (const std::pair<const int, int>& choking_spot : sink_choking_spots) {
                     int pin_physical_num = choking_spot.first;
                     int num_reachable_sinks = choking_spot.second;
                     RRNodeId pin_rr_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),
