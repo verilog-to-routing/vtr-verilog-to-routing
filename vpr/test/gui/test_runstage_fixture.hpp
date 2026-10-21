@@ -1,6 +1,6 @@
 /**
  * @file test_runstage_fixture.hpp
- * @brief GUI-T-017 — VPR run-stage Catch2 fixture.
+ * @brief VPR run-stage Catch2 fixture.
  *
  * Closes the structural blocker recorded in
  * doc/src/dev/vpr_gui_complete_test_plan.rst §12.3:
@@ -36,7 +36,7 @@
  * (T-001, T-008, T-013, T-014) ride this fixture in follow-up
  * commits and assert their own contracts.
  *
- * Tag: [layer3][fixture][vpr_gui][GUI-T-017]
+ * Tag: [layer3][fixture][vpr_gui]
  */
 
 #pragma once

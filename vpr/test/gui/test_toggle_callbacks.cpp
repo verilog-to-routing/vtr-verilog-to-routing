@@ -1,6 +1,6 @@
 /**
  * @file test_toggle_callbacks.cpp
- * @brief GUI-T-021 — draw_toggle_functions.cpp callback contracts (Layer 4).
+ * @brief draw_toggle_functions.cpp callback contracts (Layer 4).
  *
  * Locks the production callback functions wired to the View / Toggle
  * widgets in main.ui. Each callback is a free function in
@@ -35,7 +35,7 @@
  *   so the trailing ``find_widget`` and ``refresh_drawing`` calls run
  *   end-to-end.
  *
- * Tag: [layer4][toggle][callbacks][vpr_gui][GUI-T-021]
+ * Tag: [layer4][toggle][callbacks][vpr_gui]
  */
 
 #include <catch2/catch_test_macros.hpp>
@@ -73,7 +73,7 @@ void seed_spin(QSpinBox& sb, int v, int lo = -100, int hi = 100) {
 } // namespace
 
 TEST_CASE("ToggleCbk: toggle_draw_nets_cbk maps Routing/Flylines",
-          "[layer4][toggle][vpr_gui][GUI-T-021]") {
+          "[layer4][toggle][vpr_gui]") {
     EzglAppFixture fx;
     t_draw_state* ds = get_draw_state_vars();
 
@@ -93,7 +93,7 @@ TEST_CASE("ToggleCbk: toggle_draw_nets_cbk maps Routing/Flylines",
 }
 
 TEST_CASE("ToggleCbk: toggle_cong_cbk maps None/Congested/CongestedWithNets",
-          "[layer4][toggle][vpr_gui][GUI-T-021]") {
+          "[layer4][toggle][vpr_gui]") {
     EzglAppFixture fx;
     t_draw_state* ds = get_draw_state_vars();
 
@@ -118,7 +118,7 @@ TEST_CASE("ToggleCbk: toggle_cong_cbk maps None/Congested/CongestedWithNets",
 }
 
 TEST_CASE("ToggleCbk: toggle_cong_cost_cbk maps every routing-cost label",
-          "[layer4][toggle][vpr_gui][GUI-T-021]") {
+          "[layer4][toggle][vpr_gui]") {
     EzglAppFixture fx;
     t_draw_state* ds = get_draw_state_vars();
 
@@ -146,7 +146,7 @@ TEST_CASE("ToggleCbk: toggle_cong_cost_cbk maps every routing-cost label",
 }
 
 TEST_CASE("ToggleCbk: toggle_router_util_cbk maps every util label",
-          "[layer4][toggle][vpr_gui][GUI-T-021]") {
+          "[layer4][toggle][vpr_gui]") {
     EzglAppFixture fx;
     t_draw_state* ds = get_draw_state_vars();
 
@@ -171,7 +171,7 @@ TEST_CASE("ToggleCbk: toggle_router_util_cbk maps every util label",
 }
 
 TEST_CASE("ToggleCbk: toggle_blk_pin_util_cbk maps All/Inputs/Outputs",
-          "[layer4][toggle][vpr_gui][GUI-T-021]") {
+          "[layer4][toggle][vpr_gui]") {
     EzglAppFixture fx;
     t_draw_state* ds = get_draw_state_vars();
 
@@ -196,7 +196,7 @@ TEST_CASE("ToggleCbk: toggle_blk_pin_util_cbk maps All/Inputs/Outputs",
 }
 
 TEST_CASE("ToggleCbk: placement_macros_cbk None/On",
-          "[layer4][toggle][vpr_gui][GUI-T-021]") {
+          "[layer4][toggle][vpr_gui]") {
     EzglAppFixture fx;
     t_draw_state* ds = get_draw_state_vars();
 
@@ -215,7 +215,7 @@ TEST_CASE("ToggleCbk: placement_macros_cbk None/On",
 }
 
 TEST_CASE("ToggleCbk: toggle_blk_internal_cbk clamps at 0 and max_sub_blk_lvl",
-          "[layer4][toggle][vpr_gui][GUI-T-021]") {
+          "[layer4][toggle][vpr_gui]") {
     EzglAppFixture fx;
     t_draw_state* ds = get_draw_state_vars();
 
@@ -245,7 +245,7 @@ TEST_CASE("ToggleCbk: toggle_blk_internal_cbk clamps at 0 and max_sub_blk_lvl",
 }
 
 TEST_CASE("ToggleCbk: toggle_routing_bbox_cbk no-ops when route_bb is empty",
-          "[layer4][toggle][vpr_gui][GUI-T-021]") {
+          "[layer4][toggle][vpr_gui]") {
     // The early-return-on-empty branch is the only path safely
     // exercisable from a unit test (route_bb is empty until VPR has
     // routed a netlist). The canonical behaviour we lock is: do not
@@ -262,7 +262,7 @@ TEST_CASE("ToggleCbk: toggle_routing_bbox_cbk no-ops when route_bb is empty",
 
 TEST_CASE("ToggleCbk: set_net_max_fanout_cbk and set_net_alpha_value_cbk "
           "propagate spinbox values to draw_state",
-          "[layer4][toggle][vpr_gui][GUI-T-021]") {
+          "[layer4][toggle][vpr_gui]") {
     EzglAppFixture fx;
     t_draw_state* ds = get_draw_state_vars();
 
@@ -284,7 +284,7 @@ TEST_CASE("ToggleCbk: set_net_max_fanout_cbk and set_net_alpha_value_cbk "
 }
 
 TEST_CASE("ToggleCbk: toggle_expansion_cost_cbk None resets to default",
-          "[layer4][toggle][vpr_gui][GUI-T-021]") {
+          "[layer4][toggle][vpr_gui]") {
     EzglAppFixture fx;
     t_draw_state* ds = get_draw_state_vars();
 
@@ -295,7 +295,7 @@ TEST_CASE("ToggleCbk: toggle_expansion_cost_cbk None resets to default",
 }
 
 TEST_CASE("ToggleCbk: toggle_noc_cbk None branch resets draw_noc",
-          "[layer4][toggle][vpr_gui][GUI-T-021]") {
+          "[layer4][toggle][vpr_gui]") {
     EzglAppFixture fx;
     t_draw_state* ds = get_draw_state_vars();
 

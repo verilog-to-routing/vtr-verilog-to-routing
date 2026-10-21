@@ -1,6 +1,6 @@
 /**
  * @file test_search_null_guard.cpp
- * @brief GUI-T-019 — Search-subsystem null-guard symmetry (Layer 4).
+ * @brief Search-subsystem null-guard symmetry (Layer 4).
  *
  * Closes a symmetric-guard gap: `act_on_mouse_move` has a null-`app`
  * early-return, while its siblings `act_on_key_press` and
@@ -54,7 +54,7 @@
  *   platform-conditional code without adding test coverage — a regression
  *   in any of the three entry points will already fail on the POSIX build.
  *
- * Tag: [layer4][interactive][search][vpr_gui][GUI-T-019]
+ * Tag: [layer4][interactive][search][vpr_gui]
  */
 
 #include <catch2/catch_test_macros.hpp>
@@ -131,7 +131,7 @@ ChildOutcome run_in_child(std::function<void()> body) {
 
 TEST_CASE("Search: search_and_highlight(nullptr) returns cleanly "
           "[symmetric-guard contract]",
-          "[layer4][interactive][search][vpr_gui][GUI-T-019]") {
+          "[layer4][interactive][search][vpr_gui]") {
     // Fixed: null guards added to search_bar.cpp.
     ChildOutcome o = run_in_child([]() {
         search_and_highlight(/*widget=*/nullptr, /*app=*/nullptr);
@@ -152,7 +152,7 @@ TEST_CASE("Search: search_and_highlight(nullptr) returns cleanly "
 
 TEST_CASE("Search: enable_autocomplete(nullptr) returns cleanly "
           "[symmetric-guard contract]",
-          "[layer4][interactive][search][vpr_gui][GUI-T-019]") {
+          "[layer4][interactive][search][vpr_gui]") {
     ChildOutcome o = run_in_child([]() {
         enable_autocomplete(/*app=*/nullptr);
     });
@@ -170,7 +170,7 @@ TEST_CASE("Search: enable_autocomplete(nullptr) returns cleanly "
 
 TEST_CASE("Search: search_type_changed(combo, nullptr) returns cleanly "
           "[symmetric-guard contract]",
-          "[layer4][interactive][search][vpr_gui][GUI-T-019]") {
+          "[layer4][interactive][search][vpr_gui]") {
     ChildOutcome o = run_in_child([]() {
         QComboBox combo;
         combo.addItem("Block Name");
@@ -191,7 +191,7 @@ TEST_CASE("Search: search_type_changed(combo, nullptr) returns cleanly "
 
 TEST_CASE("Search: fork harness reports clean exit for a no-op body "
           "[positive control]",
-          "[layer4][interactive][search][vpr_gui][GUI-T-019]") {
+          "[layer4][interactive][search][vpr_gui]") {
     // The body intentionally constructs a std::string so gcc-13 cannot
     // prove the lambda is nothrow: a provably-nothrow lambda fed into
     // std::function<void()> trips -Werror=noexcept inside libstdc++'s

@@ -17,29 +17,29 @@ set(VPR_GUI_TEST_SOURCES
     test_mouse_events.cpp
     test_draw_state.cpp
     test_renderer.cpp
-    test_ui_contract.cpp        # GUI-T-018 — main.ui ↔ ui_setup.cpp contract
+    test_ui_contract.cpp        # main.ui ↔ ui_setup.cpp contract
     test_layout_contract.cpp    # layout geometry contract (grid slots, stretch, margins)
-    test_search_null_guard.cpp  # GUI-T-019 — search subsystem null-guard symmetry
-    test_runstage_fixture.cpp   # GUI-T-017 — VPR run-stage Catch2 fixture
-    test_ezgl_app_fixture.cpp   # GUI-T-017 — Layer-4 ezgl::application + main.ui fixture
-    test_stage_gating.cpp       # GUI-T-008 — stage-aware control gating
-    test_zoom_select.cpp        # GUI-T-013 — canvas zoom-select drag (rubber-band)
-    test_block_hit_test.cpp     # GUI-T-014 — block hit-test on canvas click
-    test_search_dispatch.cpp    # GUI-T-001 — search dispatcher behaviour
-    test_save_graphics.cpp      # GUI-T-003 — SaveGraphics dialog & writer
-    test_rr_click_highlight.cpp # GUI-T-005 — RR click highlight + toggle
-    test_keyboard_nav.cpp       # GUI-T-015 — keyboard navigation in toolbar
-    test_breakpoint_debug.cpp   # GUI-T-002 — debugger / breakpoint subsystem
-    test_manual_moves.cpp       # GUI-T-007 — manual moves form & cost summary
-    test_visual_render_smoke.cpp # GUI-T-006 — Layer-5 visual render smoke (draw_rr/noc)
-    test_buttons_and_camera.cpp # GUI-T-020 — buttons.cpp + ezgl::control camera helpers
-    test_toggle_callbacks.cpp   # GUI-T-021 — draw_toggle_functions.cpp callback contracts
+    test_search_null_guard.cpp  # search subsystem null-guard symmetry
+    test_runstage_fixture.cpp   # VPR run-stage Catch2 fixture
+    test_ezgl_app_fixture.cpp   # Layer-4 ezgl::application + main.ui fixture
+    test_stage_gating.cpp       # stage-aware control gating
+    test_zoom_select.cpp        # canvas zoom-select drag (rubber-band)
+    test_block_hit_test.cpp     # block hit-test on canvas click
+    test_search_dispatch.cpp    # search dispatcher behaviour
+    test_save_graphics.cpp      # SaveGraphics dialog & writer
+    test_rr_click_highlight.cpp # RR click highlight + toggle
+    test_keyboard_nav.cpp       # keyboard navigation in toolbar
+    test_breakpoint_debug.cpp   # debugger / breakpoint subsystem
+    test_manual_moves.cpp       # manual moves form & cost summary
+    test_visual_render_smoke.cpp # Layer-5 visual render smoke (draw_rr/noc)
+    test_buttons_and_camera.cpp # buttons.cpp + ezgl::control camera helpers
+    test_toggle_callbacks.cpp   # draw_toggle_functions.cpp callback contracts
     ${CMAKE_CURRENT_SOURCE_DIR}/../../vpr.qrc
 )
 
 add_executable(test_vpr_gui ${VPR_GUI_TEST_SOURCES})
 
-# GUI-T-017 — compile-time bench / arch resolution. Hardcoded relative to
+# Compile-time bench / arch resolution. Hardcoded relative to
 # the source tree so the fixture has no working-directory dependency
 # (it chdirs into a per-fixture temp dir at construction time).
 # VTR_SOURCE_DIR, not CMAKE_SOURCE_DIR: VTR may be built as a nested subproject.

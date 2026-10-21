@@ -1,6 +1,6 @@
 /**
  * @file test_runstage_fixture.cpp
- * @brief GUI-T-017 — VPR run-stage Catch2 fixture, implementation.
+ * @brief VPR run-stage Catch2 fixture, implementation.
  *
  * See test_runstage_fixture.hpp for the architectural rationale.
  */
@@ -208,7 +208,7 @@ using vpr_gui_test::Stage;
 using vpr_gui_test::VprRunStageFixture;
 
 TEST_CASE("Fixture: run_to(PostInit) populates options and arch",
-          "[layer3][fixture][vpr_gui][GUI-T-017]") {
+          "[layer3][fixture][vpr_gui]") {
     VprRunStageFixture fx;
     fx.run_to(Stage::PostInit);
     REQUIRE(fx.reached() == Stage::PostInit);
@@ -221,7 +221,7 @@ TEST_CASE("Fixture: run_to(PostInit) populates options and arch",
 }
 
 TEST_CASE("Fixture: run_to(PostPack) produces a non-empty cluster netlist",
-          "[layer3][fixture][vpr_gui][GUI-T-017]") {
+          "[layer3][fixture][vpr_gui]") {
     VprRunStageFixture fx;
     fx.run_to(Stage::PostPack);
     REQUIRE(fx.reached() == Stage::PostPack);
@@ -234,7 +234,7 @@ TEST_CASE("Fixture: run_to(PostPack) produces a non-empty cluster netlist",
 }
 
 TEST_CASE("Fixture: run_to(PostPlace) yields valid block locations",
-          "[layer3][fixture][vpr_gui][GUI-T-017]") {
+          "[layer3][fixture][vpr_gui]") {
     VprRunStageFixture fx;
     fx.run_to(Stage::PostPlace);
     REQUIRE(fx.reached() == Stage::PostPlace);
@@ -254,7 +254,7 @@ TEST_CASE("Fixture: run_to(PostPlace) yields valid block locations",
 }
 
 TEST_CASE("Fixture: run_to(PostRoute) completes and exposes a routed RR graph",
-          "[layer3][fixture][vpr_gui][GUI-T-017]") {
+          "[layer3][fixture][vpr_gui]") {
     VprRunStageFixture fx;
     fx.run_to(Stage::PostRoute);
     REQUIRE(fx.reached() == Stage::PostRoute);
@@ -268,7 +268,7 @@ TEST_CASE("Fixture: run_to(PostRoute) completes and exposes a routed RR graph",
 }
 
 TEST_CASE("Fixture: run_to refuses to run twice on the same instance",
-          "[layer3][fixture][vpr_gui][GUI-T-017]") {
+          "[layer3][fixture][vpr_gui]") {
     // Pinned contract: a fresh fixture is required per stage. Catching the
     // misuse explicitly (rather than letting the second vpr_init clobber
     // singleton state silently) is part of the substrate for Wave 2.

@@ -1,6 +1,6 @@
 /**
  * @file test_stage_gating.cpp
- * @brief GUI-T-008 — Stage-aware control gating across placement / routing.
+ * @brief Stage-aware control gating across placement / routing.
  *
  * Locks the contract of the two public widget-gating functions in
  * ``vpr/src/draw/ui_setup.cpp``:
@@ -35,7 +35,7 @@
  * touches ``g_vpr_ctx``. Layer-3 fixtures + a stub
  * ``setup_timing_info`` shared_ptr are sufficient.
  *
- * Tag: [layer4][stage-gating][vpr_gui][GUI-T-008]
+ * Tag: [layer4][stage-gating][vpr_gui]
  */
 
 #include <catch2/catch_test_macros.hpp>
@@ -106,7 +106,7 @@ int routing_item_count(QComboBox* cb) {
 // hide_crit_path_routing — the eight-cell truth table
 // =============================================================================
 TEST_CASE("hide_crit_path_routing: enabled iff timing && ROUTING && show_crit",
-          "[layer4][stage-gating][vpr_gui][GUI-T-008]") {
+          "[layer4][stage-gating][vpr_gui]") {
     EzglAppFixture fx;
     auto* app = fx.app();
 
@@ -161,7 +161,7 @@ TEST_CASE("hide_crit_path_routing: enabled iff timing && ROUTING && show_crit",
 // hide_draw_routing — Routing combo-item presence per stage
 // =============================================================================
 TEST_CASE("hide_draw_routing: PLACEMENT removes 'Routing' item",
-          "[layer4][stage-gating][vpr_gui][GUI-T-008]") {
+          "[layer4][stage-gating][vpr_gui]") {
     EzglAppFixture fx;
     auto* app = fx.app();
 
@@ -195,7 +195,7 @@ TEST_CASE("hide_draw_routing: PLACEMENT removes 'Routing' item",
 }
 
 TEST_CASE("hide_draw_routing: non-PLACEMENT stages keep/restore 'Routing' item",
-          "[layer4][stage-gating][vpr_gui][GUI-T-008]") {
+          "[layer4][stage-gating][vpr_gui]") {
     EzglAppFixture fx;
     auto* app = fx.app();
 
@@ -243,7 +243,7 @@ TEST_CASE("hide_draw_routing: non-PLACEMENT stages keep/restore 'Routing' item",
 // Cross-stage transition: PLACEMENT -> ROUTING -> PLACEMENT in one binary
 // =============================================================================
 TEST_CASE("hide_draw_routing: stage transitions toggle item presence",
-          "[layer4][stage-gating][vpr_gui][GUI-T-008]") {
+          "[layer4][stage-gating][vpr_gui]") {
     EzglAppFixture fx;
     auto* app = fx.app();
 

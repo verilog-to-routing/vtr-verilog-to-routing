@@ -1,6 +1,6 @@
 /**
  * @file test_search_dispatch.cpp
- * @brief GUI-T-001 — Search dispatcher behaviour (Layer 4).
+ * @brief Search dispatcher behaviour (Layer 4).
  *
  * Locks the contract of ``search_and_highlight`` in
  * ``vpr/src/draw/search_bar.cpp``, the slot bound to the toolbar
@@ -46,7 +46,7 @@
  *   5. ``ensure_main_canvas`` registers a canvas so
  *      ``refresh_drawing`` does not deref a null pointer.
  *
- * Tag: [layer4][interactive][search][vpr_gui][GUI-T-001]
+ * Tag: [layer4][interactive][search][vpr_gui]
  */
 
 #include <catch2/catch_test_macros.hpp>
@@ -187,7 +187,7 @@ bool any_block_selected() {
 // Block ID — valid path: dispatch highlights the targeted cluster block
 // =============================================================================
 TEST_CASE("Search: Block ID with a valid id selects that cluster block",
-          "[layer4][interactive][search][vpr_gui][GUI-T-001]") {
+          "[layer4][interactive][search][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture fx_vpr;
     fx_vpr.run_to(Stage::PostPlace);
@@ -223,7 +223,7 @@ TEST_CASE("Search: Block ID with a valid id selects that cluster block",
 // =============================================================================
 TEST_CASE("Search: Block ID with an out-of-range id deselects, "
           "leaves no block selected",
-          "[layer4][interactive][search][vpr_gui][GUI-T-001]") {
+          "[layer4][interactive][search][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture fx_vpr;
     fx_vpr.run_to(Stage::PostPlace);
@@ -255,7 +255,7 @@ TEST_CASE("Search: Block ID with an out-of-range id deselects, "
 // Block Name — valid: name lookup resolves to a cluster block
 // =============================================================================
 TEST_CASE("Search: Block Name with a real cluster name selects a cluster block",
-          "[layer4][interactive][search][vpr_gui][GUI-T-001]") {
+          "[layer4][interactive][search][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture fx_vpr;
     fx_vpr.run_to(Stage::PostPlace);
@@ -320,7 +320,7 @@ TEST_CASE("Search: Block Name with a real cluster name selects a cluster block",
 // Block Name — invalid: lookup misses both atom and cluster, no selection
 // =============================================================================
 TEST_CASE("Search: Block Name with an unknown name leaves no block selected",
-          "[layer4][interactive][search][vpr_gui][GUI-T-001]") {
+          "[layer4][interactive][search][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture fx_vpr;
     fx_vpr.run_to(Stage::PostPlace);
@@ -341,7 +341,7 @@ TEST_CASE("Search: Block Name with an unknown name leaves no block selected",
 // =============================================================================
 TEST_CASE("Search: Net ID before routing is a no-op "
           "(highlight_nets early-returns when route_trees is empty)",
-          "[layer4][interactive][search][vpr_gui][GUI-T-001]") {
+          "[layer4][interactive][search][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture fx_vpr;
     fx_vpr.run_to(Stage::PostPlace);
@@ -375,7 +375,7 @@ TEST_CASE("Search: Net ID before routing is a no-op "
 // Net ID — post-route: highlight_nets paints the chosen cluster net
 // =============================================================================
 TEST_CASE("Search: Net ID after routing colours that net MAGENTA",
-          "[layer4][interactive][search][vpr_gui][GUI-T-001]") {
+          "[layer4][interactive][search][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture fx_vpr;
     fx_vpr.run_to(Stage::PostRoute);

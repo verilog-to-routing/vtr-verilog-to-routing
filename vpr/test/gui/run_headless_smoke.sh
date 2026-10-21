@@ -82,7 +82,7 @@ run_test() {
 }
 
 # Inverse of run_test: PASS only when VPR exits non-zero. Used by negative
-# parser cases (GUI-T-004) where the contract is "the unknown-token branch in
+# parser cases where the contract is "the unknown-token branch in
 # run_graphics_commands raises VPR_ERROR_DRAW and aborts".
 run_test_expect_nonzero() {
     local name="$1"; shift
@@ -183,7 +183,7 @@ echo "    Checking PNG output..."
 check_file "smoke_route_save_file" "${WORK_DIR}/smoke_route_save_run/smoke_routing.png" "no"
 
 # ===========================================================================
-# GUI-T-004 — graphics_commands parser semantics
+# graphics_commands parser semantics
 #
 # Closes the "happy paths only" gap recorded in
 # doc/src/dev/vpr_gui_complete_test_plan.rst §12.2:

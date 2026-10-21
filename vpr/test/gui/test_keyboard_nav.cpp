@@ -1,6 +1,6 @@
 /**
  * @file test_keyboard_nav.cpp
- * @brief GUI-T-015 — Keyboard navigation in the toolbar (Layer 4).
+ * @brief Keyboard navigation in the toolbar (Layer 4).
  *
  * Locks the contract of ``act_on_key_press`` in
  * ``vpr/src/draw/draw.cpp``, the ezgl key-press dispatcher:
@@ -44,7 +44,7 @@
  * the ``key_name`` C-string is read. Tests pass ``nullptr`` for
  * the event safely.
  *
- * Tag: [layer4][interactive][keyboard][vpr_gui][GUI-T-015]
+ * Tag: [layer4][interactive][keyboard][vpr_gui]
  */
 
 #include <catch2/catch_test_macros.hpp>
@@ -165,7 +165,7 @@ QCompleter* install_sentinel_completer(QLineEdit* le) {
 // Escape: not focused → deselect_all clears highlighted blocks
 // =============================================================================
 TEST_CASE("KeyNav: Escape clears the highlighted block selection",
-          "[layer4][interactive][keyboard][vpr_gui][GUI-T-015]") {
+          "[layer4][interactive][keyboard][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture fx_vpr;
     fx_vpr.run_to(Stage::PostPlace);
@@ -191,7 +191,7 @@ TEST_CASE("KeyNav: Escape clears the highlighted block selection",
 // the completer the first time, then clears it the second time
 // =============================================================================
 TEST_CASE("KeyNav: justEnabled gate survives one keystroke, then clears completer",
-          "[layer4][interactive][keyboard][vpr_gui][GUI-T-015]") {
+          "[layer4][interactive][keyboard][vpr_gui]") {
     EzglAppFixture fx_app;
     DrawApplicationScope app_scope(fx_app.app());
     ensure_main_canvas(fx_app.app());
@@ -224,7 +224,7 @@ TEST_CASE("KeyNav: justEnabled gate survives one keystroke, then clears complete
 // Arrow / character keys are dispatched without throwing
 // =============================================================================
 TEST_CASE("KeyNav: arrow / character keys are dispatched without throwing",
-          "[layer4][interactive][keyboard][vpr_gui][GUI-T-015]") {
+          "[layer4][interactive][keyboard][vpr_gui]") {
     EzglAppFixture fx_app;
     DrawApplicationScope app_scope(fx_app.app());
     ensure_main_canvas(fx_app.app());
@@ -253,7 +253,7 @@ TEST_CASE("KeyNav: arrow / character keys are dispatched without throwing",
 // =============================================================================
 TEST_CASE("KeyNav: enable_autocomplete installs BlockNames completer for "
           "Block Name and is a no-op for Block ID",
-          "[layer4][interactive][keyboard][vpr_gui][GUI-T-015]") {
+          "[layer4][interactive][keyboard][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture fx_vpr;
     fx_vpr.run_to(Stage::PostPlace);

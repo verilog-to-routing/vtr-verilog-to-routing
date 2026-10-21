@@ -1,6 +1,6 @@
 /**
  * @file test_ui_contract.cpp
- * @brief GUI-T-018 — main.ui ↔ ui_setup.cpp widget-contract test (Layer 3).
+ * @brief main.ui ↔ ui_setup.cpp widget-contract test (Layer 3).
  *
  * Closes the gap recorded in
  * doc/src/dev/vpr_gui_complete_test_plan.rst §12.2 ("the current suite touches
@@ -32,7 +32,7 @@
  * The companion audit grep (doc/src/dev/vpr_gui_complete_test_plan.rst §12.4)
  * is the source of truth; keep this table aligned with it.
  *
- * Tag: [layer3][ui-contract][vpr_gui][GUI-T-018]
+ * Tag: [layer3][ui-contract][vpr_gui]
  */
 
 #include <catch2/catch_test_macros.hpp>
@@ -237,7 +237,7 @@ constexpr ComboContentSpec kComboContent[] = {
 // ---------------------------------------------------------------------------
 
 TEST_CASE("UiContract: every find_*() target exists in main.ui with correct Qt type",
-          "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
+          "[layer3][ui-contract][vpr_gui]") {
     auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
@@ -268,7 +268,7 @@ TEST_CASE("UiContract: every find_*() target exists in main.ui with correct Qt t
 // ---------------------------------------------------------------------------
 
 TEST_CASE("UiContract: menu combos have the contracted item counts",
-          "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
+          "[layer3][ui-contract][vpr_gui]") {
     auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
@@ -293,7 +293,7 @@ TEST_CASE("UiContract: menu combos have the contracted item counts",
 // ---------------------------------------------------------------------------
 
 TEST_CASE("UiContract: SearchType combo entries appear in the contracted order",
-          "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
+          "[layer3][ui-contract][vpr_gui]") {
     auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
@@ -321,7 +321,7 @@ TEST_CASE("UiContract: SearchType combo entries appear in the contracted order",
 // ---------------------------------------------------------------------------
 
 TEST_CASE("UiContract: top-level canvas and status surfaces are present",
-          "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
+          "[layer3][ui-contract][vpr_gui]") {
     auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
