@@ -17,7 +17,6 @@
 /// @brief Prints one graph to fp.
 static void print_lb_type_rr_graph(FILE* fp, const LbTypeRrGraph& lb_type_rr_graph);
 
-
 int LbTypeRrGraph::edge_mode(LbRrNodeId src, LbRrNodeId dst) const {
     for (int imode = 0; imode < num_modes(src); imode++) {
         for (const t_edge& edge : edges(src, imode)) {
@@ -45,7 +44,6 @@ void echo_lb_type_rr_graphs(char* filename, const std::vector<LbTypeRrGraph>& lb
 
     fclose(fp);
 }
-
 
 static void print_lb_type_rr_graph(FILE* fp, const LbTypeRrGraph& lb_type_rr_graph) {
     for (LbRrNodeId inode : lb_type_rr_graph.nodes()) {
