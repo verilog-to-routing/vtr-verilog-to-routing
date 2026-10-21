@@ -350,10 +350,6 @@ PortEquivalence get_port_equivalency_from_pin_physical_num(t_physical_tile_type_
 
 e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
-std::tuple<std::vector<int>, std::vector<int>, std::vector<e_side>> get_pin_coordinates(t_physical_tile_type_ptr physical_type,
-                                                                                        int pin_physical_num,
-                                                                                        std::span<const e_side> sides);
-
 /**
  * @brief Fill pin coordinates in reusable output vectors.
  *

@@ -917,16 +917,6 @@ e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_
     }
 }
 
-std::tuple<std::vector<int>, std::vector<int>, std::vector<e_side>> get_pin_coordinates(t_physical_tile_type_ptr physical_type,
-                                                                                        int pin_physical_num,
-                                                                                        std::span<const e_side> sides) {
-    std::vector<int> x_vec;
-    std::vector<int> y_vec;
-    std::vector<e_side> side_vec;
-    get_pin_coordinates(physical_type, pin_physical_num, sides, x_vec, y_vec, side_vec);
-    return std::make_tuple(x_vec, y_vec, side_vec);
-}
-
 void get_pin_coordinates(t_physical_tile_type_ptr physical_type,
                          int pin_physical_num,
                          std::span<const e_side> sides,

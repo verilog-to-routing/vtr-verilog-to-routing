@@ -306,12 +306,15 @@ void TileToClockConnection::create_switches(const ClockRRGraphBuilder& clock_gra
 
     // Gather the OPIN rr nodes for every (sub tile instance, pin) pair in range.
     std::vector<RRNodeId> pin_nodes;
+    std::vector<int> x_offsets;
+    std::vector<int> y_offsets;
+    std::vector<e_side> sides;
     for (int capacity = subtile_low; capacity <= subtile_high; capacity++) {
         for (int pin_in_port = pin_low; pin_in_port <= pin_high; pin_in_port++) {
             int relative_pin = port->absolute_first_pin_index + pin_in_port;
             int physical_pin = get_physical_pin_from_capacity_location(type, relative_pin, capacity);
 
-            auto [x_offsets, y_offsets, sides] = get_pin_coordinates(type, physical_pin, TOTAL_2D_SIDES);
+            get_pin_coordinates(type, physical_pin, TOTAL_2D_SIDES, x_offsets, y_offsets, sides);
             for (size_t i = 0; i < sides.size(); i++) {
                 RRNodeId node = node_lookup.find_node(location.layer_num,
                                                       location.x + x_offsets[i],
