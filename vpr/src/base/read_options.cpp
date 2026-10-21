@@ -998,6 +998,37 @@ struct ParseClusterSeed {
     }
 };
 
+struct ParseClusterRouterLookahead {
+    ConvertedValue<e_cluster_router_lookahead> from_str(const std::string& str) {
+        ConvertedValue<e_cluster_router_lookahead> conv_value;
+        if (str == "none") {
+            conv_value.set_value(e_cluster_router_lookahead::NONE);
+        } else if (str == "hops") {
+            conv_value.set_value(e_cluster_router_lookahead::HOPS);
+        } else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_cluster_router_lookahead (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_cluster_router_lookahead val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_cluster_router_lookahead::NONE) {
+            conv_value.set_value("none");
+        } else {
+            VTR_ASSERT(val == e_cluster_router_lookahead::HOPS);
+            conv_value.set_value("hops");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"none", "hops"};
+    }
+};
+
 struct ParseConstantNetMethod {
     ConvertedValue<e_constant_net_method> from_str(const std::string& str) {
         ConvertedValue<e_constant_net_method> conv_value;
@@ -2627,6 +2658,20 @@ static void add_packing_options(argparse::ArgumentParser& parser, t_options& arg
               "metrics like routed wirelength or critical path delay, though minor\n"
               "variations are possible.\n")
         .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    pack_grp.add_argument<e_cluster_router_lookahead, ParseClusterRouterLookahead>(args.cluster_router_lookahead, "--cluster_router_lookahead")
+        .help("Controls the estimate of the remaining cost to the target that\n"
+              "orders the intra-cluster router search during packing.\n"
+              "\n"
+              " * none: Order the search by the cost of the path so far only.\n"
+              " * hops: Add a lower bound computed from the fewest edges between\n"
+              "   each node and the target, and skip nodes with no path to it.\n"
+              "\n"
+              "The estimate never exceeds the real cost, so the router still finds\n"
+              "a lowest cost path. Which of several equal cost paths it finds first\n"
+              "can change, so circuit quality metrics may vary slightly.\n")
+        .default_value("none")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")

@@ -168,6 +168,14 @@ enum class e_cluster_seed {
     BLEND2
 };
 
+/// @brief Estimate of the remaining cost to the target that orders the cluster router search.
+enum class e_cluster_router_lookahead {
+    /// @brief Order by the cost of the path so far only.
+    NONE,
+    /// @brief Add a lower bound from the fewest edges to the target.
+    HOPS
+};
+
 struct t_ext_pin_util {
     t_ext_pin_util() = default;
     t_ext_pin_util(float in, float out)
@@ -790,6 +798,7 @@ struct t_packer_opts {
     bool use_ram_mapper;
     bool memoize_cluster_packings;
     bool cluster_router_hot_start;
+    e_cluster_router_lookahead cluster_router_lookahead;
     bool enable_pin_feasibility_filter;
     e_balance_block_type_util balance_block_type_utilization;
     std::vector<std::string> target_external_pin_util;
