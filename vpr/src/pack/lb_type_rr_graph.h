@@ -124,7 +124,9 @@ class LbTypeRrGraph {
     LbRrNodeId ext_interconnect_node() const { return ext_interconnect_node_; }
 
   private:
-    // Hot. Read by the router search.
+    // ========================================================================
+    //      Hot data. Read for every node expanded in the cluster router.
+    // ========================================================================
 
     /// @brief Per node data.
     vtr::vector<LbRrNodeId, t_node> nodes_;
@@ -136,7 +138,9 @@ class LbTypeRrGraph {
     /// @brief All edges, grouped by node and then by mode.
     std::vector<t_edge> edges_;
 
-    // Cold. Read by setup and diagnostics.
+    // ========================================================================
+    //      Cold data. Read by router setup and diagnostics
+    // ========================================================================
 
     /// @brief Type of each node.
     vtr::vector<LbRrNodeId, e_lb_rr_type> types_;
