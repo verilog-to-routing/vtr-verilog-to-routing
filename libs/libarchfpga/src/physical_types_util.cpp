@@ -917,34 +917,34 @@ e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_
     }
 }
 
-std::tuple<std::vector<int>, std::vector<int>, std::vector<e_side>> get_pin_coordinates(t_physical_tile_type_ptr physical_type,
-                                                                                        int pin_physical_num,
-                                                                                        const std::vector<e_side>& sides) {
-    // For the pins which are on a tile, they may be located in multiple sides/locations to model a pin which is connected to multiple
-    // channels. However, in the case of internal pins, currently, they are only located on e_side::TOP and the root location of the
-    // tile.
-    std::vector<int> x_vec;
-    std::vector<int> y_vec;
-    std::vector<e_side> side_vec;
+void get_pin_coordinates(t_physical_tile_type_ptr physical_type,
+                         int pin_physical_num,
+                         std::span<const e_side> sides,
+                         std::vector<int>& x_offsets,
+                         std::vector<int>& y_offsets,
+                         std::vector<e_side>& pin_sides) {
+    // Tile pins may span multiple sides and offsets to connect to multiple channels.
+    // Internal pins use only the TOP side at the tile root.
+    x_offsets.clear();
+    y_offsets.clear();
+    pin_sides.clear();
     if (is_pin_on_tile(physical_type, pin_physical_num)) {
         for (e_side side : sides) {
             for (int width = 0; width < physical_type->width; ++width) {
                 for (int height = 0; height < physical_type->height; ++height) {
                     if (physical_type->pinloc[width][height][side][pin_physical_num]) {
-                        x_vec.push_back(width);
-                        y_vec.push_back(height);
-                        side_vec.push_back(side);
+                        x_offsets.push_back(width);
+                        y_offsets.push_back(height);
+                        pin_sides.push_back(side);
                     }
                 }
             }
         }
     } else {
-        x_vec.push_back(0);
-        y_vec.push_back(0);
-        side_vec.push_back(e_side::TOP);
+        x_offsets.push_back(0);
+        y_offsets.push_back(0);
+        pin_sides.push_back(e_side::TOP);
     }
-
-    return std::make_tuple(x_vec, y_vec, side_vec);
 }
 
 int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num) {
