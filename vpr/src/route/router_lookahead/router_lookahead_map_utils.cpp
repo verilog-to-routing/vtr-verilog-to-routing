@@ -433,7 +433,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
                                 break;
                             }
                         }
-                        if (reachable_wire_found) {
+                        if (!reachable_wire_found) {
                             VTR_LOGV_DEBUG(f_router_debug, "Found no reachable wires from %s (%s) at (%d,%d,%d)\n",
                                            rr_node_typename[rr_type],
                                            rr_node_arch_name(node_id, is_flat).c_str(),
