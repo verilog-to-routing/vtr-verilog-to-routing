@@ -503,7 +503,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                               describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
                 }
 
-                if (tile_loc.layer_num < rr_graph.node_layer_low(inode) && tile_loc.layer_num > rr_graph.node_layer_high(inode)) {
+                if (tile_loc.layer_num < rr_graph.node_layer_low(inode) || tile_loc.layer_num > rr_graph.node_layer_high(inode)) {
                     VPR_ERROR(VPR_ERROR_ROUTE, "RR node layer does not match between rr_nodes and rr_node_indices (%s/%s): %s",
                               rr_node_typename[rr_graph.node_type(inode)],
                               rr_node_typename[rr_type],
