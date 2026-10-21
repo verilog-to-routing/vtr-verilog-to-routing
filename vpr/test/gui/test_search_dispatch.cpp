@@ -17,7 +17,7 @@
  *   * ``RR Node ID`` → ``highlight_rr_nodes`` + ``auto_zoom_rr_node``
  *
  * Why this is real, behaviour-relevant coverage rather than structural
- * noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * noise:
  *
  *   The dispatcher fans out into five distinct production code paths,
  *   each of which mutates ``t_draw_state`` in observable ways

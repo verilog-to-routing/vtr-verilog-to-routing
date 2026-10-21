@@ -79,7 +79,7 @@ set_tests_properties(test_vpr_gui PROPERTIES
 # ---------------------------------------------------------------------------
 # Layer 4 — Interactive (mouse/keyboard) tests
 # Same Catch2 binary, filtered by tag so we get a separate ctest entry with a
-# distinct label triple. S6 of vpr_gui_test_implementation_plan.
+# distinct label triple.
 # ---------------------------------------------------------------------------
 add_test(
     NAME test_vpr_gui_interactive
@@ -146,10 +146,10 @@ set_tests_properties(test_vpr_gui_compare_selftest PROPERTIES
 )
 
 # ---------------------------------------------------------------------------
-# Aggregate make targets (S2 of vpr_gui_test_implementation_plan)
+# Aggregate make targets
 #
 # Label-based selection — every GUI test carries LABELS "gui;<kind>;<layerN>"
-# so a future S6 layer-4 test joins the aggregate automatically.
+# so a future layer-4 test joins the aggregate automatically.
 # WORKING_DIRECTORY must be VTR's build dir so ctest sees the whole registry
 # (enable_testing() is called at VTR's top level); CMAKE_CURRENT_BINARY_DIR
 # would only see this subdir. Use VTR_BINARY_DIR, not CMAKE_BINARY_DIR: when
@@ -198,18 +198,13 @@ add_custom_target(gui-tests-interactive
 )
 
 # ---------------------------------------------------------------------------
-# S7 — GUI code-coverage report (measure only; no fail-under gate)
-#
-# Plan reference: doc/src/dev/vpr_gui_test_implementation_plan.rst §7.7
+# GUI code-coverage report, gated on a regression-only coverage floor
 #
 # Activated by `-DVTR_ENABLE_COVERAGE=on`, which the top-level CMakeLists.txt
 # turns into `-g -ftest-coverage -fprofile-arcs` for the whole tree (see
 # CMakeLists.txt:344-352). The target itself does NOT add per-file coverage
 # flags — it relies on the global flag set so that libvpr, ezgl, and the
 # test binary all emit .gcno/.gcda consistently.
-#
-# v1.1 of the plan deliberately omits any --fail-under-* flag here; that
-# gate is added by S8 once the test corpus is rich enough to clear it.
 # ---------------------------------------------------------------------------
 if(VTR_ENABLE_COVERAGE)
     if(APPLE)
@@ -224,8 +219,8 @@ if(VTR_ENABLE_COVERAGE)
     find_program(GCOVR_EXECUTABLE gcovr REQUIRED)
 
     # Wrapper script: runs the GUI ctest aggregate but always exits 0 so
-    # the downstream gcovr step still runs. S7 is measurement-only — see
-    # the comment block below the add_custom_target call.
+    # the downstream gcovr step still runs; gcovr's --fail-under-* floor is
+    # what gates the target.
     set(_gui_cov_wrapper "${CMAKE_CURRENT_BINARY_DIR}/run_gui_tests_for_coverage.sh")
     file(WRITE  "${_gui_cov_wrapper}" "#!/bin/sh\n")
     file(APPEND "${_gui_cov_wrapper}"

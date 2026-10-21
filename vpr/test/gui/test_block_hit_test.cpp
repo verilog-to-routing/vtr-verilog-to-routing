@@ -16,7 +16,7 @@
  *     layer must not surface a block from that layer.
  *
  * Why this is real, behaviour-relevant coverage rather than structural
- * noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * noise:
  *
  *   ``get_cluster_block_id_from_xy_loc`` traverses the device grid in
  *   reverse-layer order, calls ``get_absolute_clb_bbox`` for every

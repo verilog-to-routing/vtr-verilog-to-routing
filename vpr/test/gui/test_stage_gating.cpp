@@ -18,7 +18,7 @@
  * ``draw.cpp::on_stage_change_setup`` on every stage transition. A
  * silent regression here lets users mutate ``t_draw_state`` mid-flow
  * (the GUI looks fine but a control fails to disable) — exactly the
- * silent-regress class that the test plan §4 asks us to surface.
+ * silent-regress class these tests exist to surface.
  *
  * Why this is real, behaviour-relevant coverage:
  *

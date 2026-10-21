@@ -239,7 +239,7 @@ jobs:
         make test -j${{ steps.cpu-cores.outputs.count }}
 
 
-  # GUITests — Plan §7.9 — runs the full GUI test pyramid on ubuntu-24.04.
+  # GUITests — runs the full GUI test pyramid on ubuntu-24.04.
   # Builds with -DVPR_USE_EZGL=on so the local and CI command lines match:
   #
   #     make CMAKE_PARAMS="-DVPR_USE_EZGL=on" gui-tests
@@ -282,7 +282,7 @@ jobs:
       with:
         key: ${{ github.job }}
 
-    # Plan §7.9 #4 — local and CI command lines identical. Top-level
+    # Local and CI command lines are identical. Top-level
     # Makefile forwards `gui-tests` to the cmake-generated build dir.
     - name: Build GUI test binaries
       env:
@@ -293,8 +293,8 @@ jobs:
 
     # Drives all four registered GUI ctest entries:
     #   Layer 1 — test_vpr_gui_smoke      (headless P&R smoke, --disp off)
-    #   Layer 3 — test_vpr_gui            (Catch2 widget tree + S8 unit tests)
-    #   Layer 4 — test_vpr_gui_interactive (S6 mouse/key dispatch)
+    #   Layer 3 — test_vpr_gui            (Catch2 widget tree + unit tests)
+    #   Layer 4 — test_vpr_gui_interactive (mouse/key dispatch)
     #   Layer 5 — test_vpr_gui_visual     (exact pixel compare vs goldens)
     # Layer-5 labels use the font pinned in vpr/test/gui/fonts/, so the
     # immediate/deferred goldens match this runner; rhi is skipped (no QRhi).
@@ -330,8 +330,7 @@ jobs:
         echo "::error title=Layer-5 renders::Renders and diff triptychs: ${ARTIFACT_URL}"
         echo "Layer-5 renders and diff triptychs: ${ARTIFACT_URL}" >> "${GITHUB_STEP_SUMMARY}"
 
-    # Plan §8.2 PR-merge exit criterion: `./run_reg_test.py vtr_reg_gui`
-    # must be green. Reuses the EZGL build above (vpr binary already
+    # `./run_reg_test.py vtr_reg_gui` must be green to merge. Reuses the EZGL build above (vpr binary already
     # produced) and exercises the four gui_* tasks defined under
     # vtr_flow/tasks/regression_tests/vtr_reg_gui/.
     - name: Run vtr_reg_gui regression suite
@@ -353,7 +352,7 @@ jobs:
         retention-days: 7
 
 
-  # GUICoverage — Plan §7.9 #5 — Linux-only (gcov toolchain stable on
+  # GUICoverage — Linux-only (gcov toolchain stable on
   # Ubuntu; macOS uses xcrun llvm-cov gcov and isn't a stable CI target
   # for coverage yet). Runs the same `make gui-coverage` target the
   # local flow uses; the wrapper script swallows a visual-regression

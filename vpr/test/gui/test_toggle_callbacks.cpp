@@ -23,7 +23,7 @@
  * of the mapping against the *real* exported callbacks; no mocks.
  *
  * Why this is real, behaviour-relevant coverage rather than structural
- * noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * noise:
  *
  *   The toggle callbacks are the only seam between the View-menu Qt
  *   widgets and the renderer's ``draw_state`` enums. Production has no

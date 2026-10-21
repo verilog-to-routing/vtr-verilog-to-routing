@@ -17,7 +17,7 @@
  *     skips ``SOURCE``/``SINK`` nodes.
  *
  * Why this is real, behaviour-relevant coverage rather than
- * structural noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * structural noise:
  *
  *   The toggle semantics (first click selects, second click
  *   de-selects) is a contract the user depends on every time they

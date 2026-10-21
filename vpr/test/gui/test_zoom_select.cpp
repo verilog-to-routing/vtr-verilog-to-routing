@@ -22,7 +22,7 @@
  *     region``.
  *
  * Why this is real, behaviour-relevant coverage rather than structural
- * noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * noise:
  *
  *   The zoom-select state machine is process-global state spread across
  *   four file-scope variables in draw.cpp. Production has no

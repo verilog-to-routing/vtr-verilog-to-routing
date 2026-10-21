@@ -57,7 +57,7 @@ extern void act_on_mouse_move(ezgl::application* app, QMouseEvent* event, double
 TEST_CASE("Mouse: act_on_mouse_move with null application returns cleanly (null-application guard)",
           "[layer4][interactive][vpr_gui]") {
     // Default state: show_rr=false, window_point_1_collected=false.
-    // Pre-S6 this would still return early (show_rr branch), but the new top-of-
+    // This would return early via the show_rr branch anyway, but the top-of-
     // function `app == nullptr` check makes the guard explicit and survives
     // future state changes that might bypass the show_rr early-out.
     REQUIRE_NOTHROW(act_on_mouse_move(nullptr, nullptr, 0.0, 0.0));

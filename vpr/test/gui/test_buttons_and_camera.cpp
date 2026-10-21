@@ -26,7 +26,7 @@
  *      silent in production telemetry and must be locked here.
  *
  * Why this is real, behaviour-relevant coverage rather than structural
- * noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * noise:
  *
  *   We exercise the *actual* exported symbols against the *actual*
  *   ``ezgl::canvas`` registered on the singleton ``ezgl::application``.

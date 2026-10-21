@@ -24,7 +24,7 @@
  *     unconditionally **after** the gate).
  *
  * Why this is real, behaviour-relevant coverage rather than
- * structural noise (per section 4 of the vpr_gui_test_plan):
+ * structural noise:
  *
  *   ``draw_main_canvas`` is invoked on every ezgl repaint, panning
  *   gesture, and zoom step. If the gate at the top of either

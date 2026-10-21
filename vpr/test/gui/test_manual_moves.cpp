@@ -30,7 +30,7 @@
  *     guarantees the resulting top-level QWidgets are reaped).
  *
  * Why this is real, behaviour-relevant coverage rather than
- * structural noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * structural noise:
  *
  *   The manual-moves form is the only GUI-driven write path into
  *   the placer. A bug here either pretends to move a block but

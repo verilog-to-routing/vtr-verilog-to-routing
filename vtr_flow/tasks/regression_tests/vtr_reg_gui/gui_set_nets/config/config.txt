@@ -10,7 +10,7 @@
 # (vpr/test/gui) cover that. This task is a regression guard
 # against future graphics_command parser breakage.
 #
-# R7 mitigation: -start vpr (see gui_disp_off_smoke/config).
+# macOS parmys workaround: -start vpr (see gui_disp_off_smoke/config).
 # Offscreen Qt: caller exports QT_QPA_PLATFORM=offscreen.
 ##############################################
 
@@ -29,8 +29,8 @@ pass_requirements_file=pass_requirements.txt
 #   - The whole value is one shell word as far as the task framework
 #     is concerned; --graphics_commands "..." then becomes one
 #     argument to vpr because run_vtr_flow.py uses shlex when
-#     building argv. S0.1 verified the embedded semicolon survives
-#     the quoting pipeline.
+#     building argv. The embedded semicolon survives the quoting
+#     pipeline.
 # --route_chan_width 100 : `exit 0` in graphics_commands terminates vpr
 # early, so the binary search for minimum channel width never
 # completes; pinning a fixed channel width skips that search and

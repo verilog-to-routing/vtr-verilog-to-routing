@@ -31,7 +31,7 @@
  *     ``route_utils.cpp``: ``router_iter++``) survive across calls.
  *
  * Why this is real, behaviour-relevant coverage rather than
- * structural noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * structural noise:
  *
  *   The breakpoint subsystem is the GUI-side observability path the
  *   placer/router driver uses to pause execution. Silently dropping

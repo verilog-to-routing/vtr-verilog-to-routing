@@ -198,8 +198,8 @@ void VprRunStageFixture::run_to(Stage stage) {
 
 // ===========================================================================
 // Sentinel cases — assert the fixture itself works. These are the substrate
-// every Wave-2 ticket relies on; if any of these fails, no Wave-2 test can
-// be trusted. They are NOT placeholders for behavioural coverage.
+// every fixture user relies on; if any of these fails, no test built on the
+// fixture can be trusted. They are NOT placeholders for behavioural coverage.
 // ===========================================================================
 
 #include <catch2/catch_test_macros.hpp>
@@ -260,7 +260,7 @@ TEST_CASE("Fixture: run_to(PostRoute) completes and exposes a routed RR graph",
     REQUIRE(fx.reached() == Stage::PostRoute);
     // After routing the device's RR graph has nodes and the routing
     // context has trace data for at least one net. Both are
-    // preconditions the canvas-rendering tests (T-013, T-014) will
+    // preconditions canvas-rendering tests (e.g. test_block_hit_test.cpp)
     // depend on.
     const auto& device = g_vpr_ctx.device();
     INFO("rr_graph.num_nodes = " << device.rr_graph.num_nodes());
@@ -271,7 +271,7 @@ TEST_CASE("Fixture: run_to refuses to run twice on the same instance",
           "[layer3][fixture][vpr_gui]") {
     // Pinned contract: a fresh fixture is required per stage. Catching the
     // misuse explicitly (rather than letting the second vpr_init clobber
-    // singleton state silently) is part of the substrate for Wave 2.
+    // singleton state silently) keeps fixture users isolated.
     VprRunStageFixture fx;
     fx.run_to(Stage::PostPack);
     REQUIRE_THROWS_AS(fx.run_to(Stage::PostPlace), std::logic_error);

@@ -19,7 +19,7 @@
  *     line-edit, combo box, and Save/Cancel button-box.
  *
  * Why this is real, behaviour-relevant coverage rather than
- * structural noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * structural noise:
  *
  *   The user pushes one button and gets a file with the chosen
  *   extension, or no file plus a warning. A regression in the
