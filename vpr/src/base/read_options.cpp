@@ -2229,7 +2229,7 @@ static void add_netlist_options(argparse::ArgumentParser& parser, t_options& arg
     netlist_grp.add_argument<bool, ParseOnOff>(args.merge_constant_generators, "--merge_constant_generators")
         .help("Controls whether constant generators of the same value (e.g. the many LUTs tying"
               " signals to gnd / vcc) are merged into a single constant generator")
-        .default_value("off")
+        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     netlist_grp.add_argument<e_const_gen_inference, ParseConstGenInference>(args.const_gen_inference, "--const_gen_inference")
