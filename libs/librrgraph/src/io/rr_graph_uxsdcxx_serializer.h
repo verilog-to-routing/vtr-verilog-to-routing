@@ -828,7 +828,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      */
     inline int init_node_segment(int& inode, int segment_id) final {
         const auto& rr_graph = (*rr_graph_);
-        if (segment_id < 0 || static_cast<size_t>(segment_id) >= segment_inf_.size()) {
+        if (static_cast<size_t>(segment_id) >= segment_inf_.size()) {
             report_error(
                 "Specified segment %d is out of range for %zu known segments",
                 segment_id, segment_inf_.size());
