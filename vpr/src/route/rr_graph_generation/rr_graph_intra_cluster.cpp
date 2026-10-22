@@ -14,6 +14,7 @@
 #include "rr_graph_tile_nodes.h"
 #include "rr_graph_switch_utils.h"
 #include "check_rr_graph.h"
+#include "cluster_pin_map.h"
 
 /**
  * @brief Returns the list of pins (both cluster-level and intra-cluster-level) of the given cluster block.
@@ -76,14 +77,11 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
 /// @brief Connect the pins of the given t_pb to their drivers - It doesn't add the edges going in/out of pins on a chain
 static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          t_rr_edge_info_set& rr_edges_to_create,
-                         t_physical_tile_type_ptr physical_type,
-                         const t_sub_tile* sub_tile,
-                         t_logical_block_type_ptr logical_block,
+                         const ClusterPinMap& pin_map,
                          const t_pb* pb,
                          const t_cluster_pin_chain& nodes_to_collapse,
                          float R_minW_nmos,
                          float R_minW_pmos,
-                         int rel_cap,
                          const t_physical_tile_loc& root_loc,
                          bool switches_remapped);
 
@@ -418,6 +416,7 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
     VTR_ASSERT(rel_cap >= 0);
 
     std::vector<int> cluster_pins = get_cluster_block_pins(physical_type, cluster_blk_id, abs_cap);
+    ClusterPinMap pin_map(physical_type, sub_tile, rel_cap, logical_block);
 
     const t_pb* pb = cluster_net_list.block_pb(cluster_blk_id);
     std::list<const t_pb*> pb_q;
@@ -429,14 +428,11 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
 
         add_pb_edges(rr_graph_builder,
                      rr_edges_to_create,
-                     physical_type,
-                     sub_tile,
-                     logical_block,
+                     pin_map,
                      pb,
                      nodes_to_collapse,
                      R_minW_nmos,
                      R_minW_pmos,
-                     rel_cap,
                      root_loc,
                      load_rr_graph);
 
@@ -458,17 +454,15 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
 
 static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          t_rr_edge_info_set& rr_edges_to_create,
-                         t_physical_tile_type_ptr physical_type,
-                         const t_sub_tile* sub_tile,
-                         t_logical_block_type_ptr logical_block,
+                         const ClusterPinMap& pin_map,
                          const t_pb* pb,
                          const t_cluster_pin_chain& nodes_to_collapse,
                          float R_minW_nmos,
                          float R_minW_pmos,
-                         int rel_cap,
                          const t_physical_tile_loc& root_loc,
                          bool switches_remapped) {
-    t_pin_range pin_num_range = get_pb_pins(physical_type, sub_tile, logical_block, pb, rel_cap);
+    t_physical_tile_type_ptr physical_type = pin_map.physical_type();
+    t_pin_range pin_num_range = get_pb_pins(physical_type, pin_map.sub_tile(), pin_map.logical_block(), pb, pin_map.rel_cap());
 
     const std::vector<int>& chain_sinks = nodes_to_collapse.chain_sink;
     const std::vector<int>& pin_chain_idx = nodes_to_collapse.pin_chain_idx;
@@ -478,8 +472,9 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
         // If a pin is on tile or it is a primitive pin, then it is not collapsed. Hence, we need to add it's connections. The only connection
         // outgoing from these pins is the connection to the chain sink which will be added later
         int chain_num = pin_chain_idx[pin_physical_num];
-        bool primitive_pin = is_primitive_pin(physical_type, pin_physical_num);
+        const t_pb_graph_pin* pb_pin = pin_map.pb_pin(pin_physical_num);
         bool pin_on_tile = is_pin_on_tile(physical_type, pin_physical_num);
+        bool primitive_pin = !pin_on_tile && pb_pin->is_primitive_pin();
         if (chain_num != UNDEFINED && chain_sinks[chain_num] != pin_physical_num && !primitive_pin && !pin_on_tile) {
             continue;
         }
@@ -487,15 +482,13 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
         RRNodeId parent_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type, root_loc, pin_physical_num);
         VTR_ASSERT(parent_pin_node_id != RRNodeId::INVALID());
 
-        std::vector<int> conn_pins_physical_num = get_physical_pin_sink_pins(physical_type, logical_block, pin_physical_num);
-
-        for (int conn_pin_physical_num : conn_pins_physical_num) {
+        pin_map.for_each_sink_pin(pb_pin, [&](int conn_pin_physical_num, const t_pb_graph_pin* conn_pb_pin) {
             // The pin belongs to a chain - incoming edges to this pin will be added later unless it is the sink of the chain
             int conn_pin_chain_num = pin_chain_idx[conn_pin_physical_num];
-            primitive_pin = is_primitive_pin(physical_type, conn_pin_physical_num);
-            pin_on_tile = is_pin_on_tile(physical_type, conn_pin_physical_num);
-            if (conn_pin_chain_num != UNDEFINED && chain_sinks[conn_pin_chain_num] != conn_pin_physical_num && !primitive_pin && !pin_on_tile) {
-                continue;
+            bool conn_pin_on_tile = is_pin_on_tile(physical_type, conn_pin_physical_num);
+            bool conn_primitive_pin = !conn_pin_on_tile && conn_pb_pin->is_primitive_pin();
+            if (conn_pin_chain_num != UNDEFINED && chain_sinks[conn_pin_chain_num] != conn_pin_physical_num && !conn_primitive_pin && !conn_pin_on_tile) {
+                return;
             }
 
             RRNodeId conn_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type, root_loc, conn_pin_physical_num);
@@ -503,9 +496,9 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
             // If the node_id is INVALID it means that it belongs to a pin which is not added to the RR Graph. The pin is not added
             // since it belongs to a certain mode or block which is not used in clustered netlist
             if (conn_pin_node_id == RRNodeId::INVALID()) {
-                continue;
+                return;
             }
-            int sw_idx = get_edge_sw_arch_idx(physical_type, logical_block, pin_physical_num, conn_pin_physical_num);
+            int sw_idx = ClusterPinMap::edge(pb_pin, conn_pb_pin)->switch_type_idx;
 
             if (switches_remapped) {
                 std::map<int, t_arch_switch_inf>& all_sw_inf = g_vpr_ctx.mutable_device().all_sw_inf;
@@ -519,7 +512,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                                                                            delay);
             }
             rr_edges_to_create.emplace_back(parent_pin_node_id, conn_pin_node_id, sw_idx, switches_remapped);
-        }
+        });
     }
 }
 
