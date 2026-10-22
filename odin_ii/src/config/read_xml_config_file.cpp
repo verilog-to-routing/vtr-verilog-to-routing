@@ -48,6 +48,12 @@ void read_debug_switches(pugi::xml_node a_node, config_t* config, const pugiutil
 void read_optimizations(pugi::xml_node a_node, config_t* config, const pugiutil::loc_data& loc_data);
 void set_default_optimization_settings(config_t* config);
 
+/**
+ * @brief Returns the file type named by the given node's text. Throws an
+ *        XmlError if the name does not match any known file type.
+ */
+static file_type_e read_file_type(pugi::xml_node node, const pugiutil::loc_data& loc_data);
+
 extern HardSoftLogicMixer* mixer;
 
 /*-------------------------------------------------------------------------
@@ -98,6 +104,15 @@ void read_config_file(const char* file_name) {
     return;
 }
 
+static file_type_e read_file_type(pugi::xml_node node, const pugiutil::loc_data& loc_data) {
+    auto file_type_it = file_type_strmap.find(string_to_lower(node.child_value()));
+    if (file_type_it == file_type_strmap.end()) {
+        throw XmlError(std::string("Unknown file type '") + node.child_value() + "' in node '" + node.name() + "'",
+                       loc_data.filename(), loc_data.line(node));
+    }
+    return file_type_it->second;
+}
+
 /*-------------------------------------------------------------------------
  * (function: read_verilog_files)
  *-----------------------------------------------------------------------*/
@@ -107,7 +122,7 @@ void read_inputs(pugi::xml_node a_node, config_t* config, const pugiutil::loc_da
 
     child = get_single_child(a_node, "input_type", loc_data, OPTIONAL);
     if (child != NULL) {
-        config->input_file_type = file_type_strmap.find(string_to_lower(child.child_value()))->second;
+        config->input_file_type = read_file_type(child, loc_data);
     }
 
     child = get_first_child(a_node, "input_path_and_name", loc_data, OPTIONAL);
@@ -126,7 +141,7 @@ void read_outputs(pugi::xml_node a_node, config_t* config, const pugiutil::loc_d
 
     child = get_single_child(a_node, "output_type", loc_data, OPTIONAL);
     if (child != NULL) {
-        config->output_file_type = file_type_strmap.find(string_to_lower(child.child_value()))->second;
+        config->output_file_type = read_file_type(child, loc_data);
     }
 
     child = get_single_child(a_node, "output_path_and_name", loc_data, OPTIONAL);

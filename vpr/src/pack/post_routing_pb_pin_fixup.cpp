@@ -935,8 +935,14 @@ static void update_cluster_global_routing_traces_with_post_routing_results(const
                  pb_graph_pin->to_string().c_str());
 
         const t_pb_graph_pin* unused_pb_graph_pin = find_unused_pb_graph_pin_in_the_same_port(pb_graph_pin, new_pb_routes, global_atom_net_id);
-        /* Must find one */
-        VTR_ASSERT(nullptr != unused_pb_graph_pin);
+        /* Must find one. Checked explicitly (not with VTR_ASSERT) so the pin is
+         * still guarded when assertions are compiled out (VTR_ASSERT_LEVEL=0). */
+        if (nullptr == unused_pb_graph_pin) {
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "Could not find an unused pin in the same port as '%s' to remap global net '%s'.",
+                            pb_graph_pin->to_string().c_str(),
+                            atom_ctx.netlist().net_name(global_atom_net_id).c_str());
+        }
         /* Create a new pb_route and update sink pb_route */
         /* Remove the old pb_route and insert the new one */
         new_pb_routes.insert(std::make_pair(unused_pb_graph_pin->pin_count_in_cluster, t_pb_route()));

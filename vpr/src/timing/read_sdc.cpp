@@ -1546,11 +1546,13 @@ class SdcParseCallback : public sdcparse::Callback {
 
         if (object_type == sdcparse::ObjectType::Port) {
             auto it = object_to_port_id_.find(object_id);
-            VTR_ASSERT(it != object_to_port_id_.end());
+            if (it == object_to_port_id_.end())
+                VPR_FATAL_ERROR(VPR_ERROR_SDC, "Could not find port object in object_to_port_id_ map.");
             return it->second;
         } else if (object_type == sdcparse::ObjectType::Pin) {
             auto it = object_to_pin_id_.find(object_id);
-            VTR_ASSERT(it != object_to_pin_id_.end());
+            if (it == object_to_pin_id_.end())
+                VPR_FATAL_ERROR(VPR_ERROR_SDC, "Could not find pin object in object_to_pin_id_ map.");
             return it->second;
         } else {
             return AtomPinId::INVALID();

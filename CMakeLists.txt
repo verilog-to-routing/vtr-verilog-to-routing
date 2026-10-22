@@ -272,11 +272,12 @@ set(SANITIZE_FLAGS "")
 if(VTR_ENABLE_SANITIZE)
     #Enable sanitizers
     if(APPLE)
-        # macOS/Apple Clang: no -fuse-ld=gold, no -static-libasan, no leak sanitizer
+        # macOS/Apple Clang: no -static-libasan, no leak sanitizer
         set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=undefined")
     else()
-        # Linux/GCC: use gold linker and static libasan
-        set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fuse-ld=gold -static-libasan")
+        # Linux/GCC: use static libasan. The default linker is used since gold is
+        # deprecated and no longer shipped with binutils (e.g. Ubuntu 26.04).
+        set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -static-libasan")
     endif()
     message(STATUS "SANITIZE_FLAGS: ${SANITIZE_FLAGS}")
 endif()
