@@ -1,0 +1,36 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=tasks/regression_tests/vtr_reg_strong/strong_sdc/routed_generated_clock/config
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+circuit_list_add=basic_clock_divider.blif
+circuit_list_add=gen_clk_user_latency.blif
+circuit_list_add=gen_clk_master_latency.blif
+circuit_list_add=gen_clk_asymmetric_early_late.blif
+
+# Bind each circuit to its corresponding SDC file via circuit constraints.
+circuit_constraint_list_add=(basic_clock_divider.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/routed_generated_clock/config/basic_clock_divider.sdc)
+circuit_constraint_list_add=(gen_clk_user_latency.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/routed_generated_clock/config/gen_clk_user_latency.sdc)
+circuit_constraint_list_add=(gen_clk_master_latency.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/routed_generated_clock/config/gen_clk_master_latency.sdc)
+circuit_constraint_list_add=(gen_clk_asymmetric_early_late.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/routed_generated_clock/config/gen_clk_asymmetric_early_late.sdc)
+
+# Add architectures to list to sweep
+arch_list_add=k6_N10_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+# Script parameters
+script_params_common = -starting_stage vpr --timing_report_detail detailed --clock_modeling route

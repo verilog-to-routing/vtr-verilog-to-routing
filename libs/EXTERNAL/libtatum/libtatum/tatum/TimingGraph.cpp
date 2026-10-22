@@ -809,8 +809,10 @@ bool TimingGraph::validate_structure() const {
     }
 
     for(NodeId node : primary_inputs()) {
-        if(!node_in_edges(node).empty()) {
-            throw tatum::Error("Primary input nodes should have no incoming edges", node);
+        for(EdgeId edge : node_in_edges(node)) {
+            if(!edge_disabled(edge)) {
+                throw tatum::Error("Primary input nodes should have no incoming edges", node);
+            }
         }
 
         if(node_type(node) != NodeType::SOURCE) {

@@ -389,6 +389,64 @@ void TimingConstraints::set_clock_domain_source(const NodeId node_id, const Doma
     domain_sources_[domain_id] = node_id;
 }
 
+bool TimingConstraints::has_generated_clock_source_path(DomainId gen_domain) const {
+    return generated_clock_source_paths_late_.count(gen_domain) > 0;
+}
+
+const std::vector<TimingConstraints::GeneratedClockSourcePathElem>&
+TimingConstraints::generated_clock_source_path(DomainId gen_domain, ArrivalType arrival_type) const {
+    if (arrival_type == ArrivalType::EARLY) {
+        return generated_clock_source_paths_early_.at(gen_domain);
+    } else {
+        TATUM_ASSERT(arrival_type == ArrivalType::LATE);
+        return generated_clock_source_paths_late_.at(gen_domain);
+    }
+}
+
+Time TimingConstraints::user_source_latency(DomainId domain_id, ArrivalType arrival_type) const {
+    if (arrival_type == ArrivalType::EARLY) {
+        auto it = user_source_latencies_early_.find(domain_id);
+        if (it == user_source_latencies_early_.end()) return Time(0.);
+        return it->second;
+    } else {
+        TATUM_ASSERT(arrival_type == ArrivalType::LATE);
+        auto it = user_source_latencies_late_.find(domain_id);
+        if (it == user_source_latencies_late_.end()) return Time(0.);
+        return it->second;
+    }
+}
+
+DomainId TimingConstraints::generated_clock_master(const DomainId generated_domain) const {
+    auto iter = generated_clock_masters_.find(generated_domain);
+    if (iter == generated_clock_masters_.end()) {
+        return DomainId::INVALID();
+    }
+    return iter->second;
+}
+
+void TimingConstraints::set_generated_clock_master(const DomainId generated_domain, const DomainId master_domain) {
+    generated_clock_masters_[generated_domain] = master_domain;
+}
+
+void TimingConstraints::set_generated_clock_source_path(DomainId gen_domain, ArrivalType arrival_type,
+                                                         std::vector<GeneratedClockSourcePathElem> path) {
+    if (arrival_type == ArrivalType::EARLY) {
+        generated_clock_source_paths_early_[gen_domain] = std::move(path);
+    } else {
+        TATUM_ASSERT(arrival_type == ArrivalType::LATE);
+        generated_clock_source_paths_late_[gen_domain] = std::move(path);
+    }
+}
+
+void TimingConstraints::set_user_source_latency(DomainId domain_id, ArrivalType arrival_type, Time latency) {
+    if (arrival_type == ArrivalType::EARLY) {
+        user_source_latencies_early_[domain_id] = latency;
+    } else {
+        TATUM_ASSERT(arrival_type == ArrivalType::LATE);
+        user_source_latencies_late_[domain_id] = latency;
+    }
+}
+
 void TimingConstraints::set_constant_generator(const NodeId node_id, bool is_constant_generator) {
     if(is_constant_generator) {
         constant_generators_.insert(node_id);
@@ -453,6 +511,11 @@ void TimingConstraints::remap_nodes(const tatum::util::linear_map<NodeId,NodeId>
         remapped_min_output_constraints.insert(std::make_pair(new_node_id, kv.second));
     }
     min_output_constraints_ = std::move(remapped_min_output_constraints);
+
+    // Generated clock source paths hold NodeIds and EdgeIds that are now stale.
+    // They are recomputed by update_generated_clock_source_latencies() before the next STA run.
+    generated_clock_source_paths_late_.clear();
+    generated_clock_source_paths_early_.clear();
 }
 
 void TimingConstraints::print_constraints() const {
