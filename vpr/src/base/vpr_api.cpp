@@ -305,7 +305,6 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->NocOpts,
              &vpr_setup->ServerOpts,
              vpr_setup->RoutingArch,
-             vpr_setup->PackerRRGraph,
              vpr_setup->Segments,
              &vpr_setup->Timing,
              &vpr_setup->ShowGraphics,
@@ -769,7 +768,6 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     return try_pack(vpr_setup.PackerOpts,
                     vpr_setup.APOpts,
                     arch,
-                    vpr_setup.PackerRRGraph,
                     prepacker,
                     pre_cluster_timing_manager,
                     g_vpr_ctx.atom().flat_placement_info(),
@@ -1404,7 +1402,6 @@ static bool is_pack_only(const t_vpr_setup& vpr_setup) {
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
                                   t_vpr_setup& vpr_setup) {
-    vpr_setup.PackerRRGraph.clear();
     free_circuit();
     free_arch(&Arch);
     free_device(vpr_setup.RoutingArch);
@@ -1450,7 +1447,6 @@ void vpr_setup_vpr(t_options* Options,
                    t_noc_opts* NocOpts,
                    t_server_opts* ServerOpts,
                    t_det_routing_arch& RoutingArch,
-                   std::vector<LbTypeRRGraph>& lb_type_rr_graphs,
                    std::vector<t_segment_inf>& Segments,
                    t_timing_inf* Timing,
                    bool* ShowGraphics,
@@ -1475,7 +1471,6 @@ void vpr_setup_vpr(t_options* Options,
              NocOpts,
              ServerOpts,
              RoutingArch,
-             lb_type_rr_graphs,
              Segments,
              Timing,
              ShowGraphics,

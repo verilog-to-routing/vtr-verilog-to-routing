@@ -31,6 +31,7 @@
 #include "flat_placement_types.h"
 #include "globals.h"
 #include "initial_placement.h"
+#include "lb_type_rr_graph_builder.h"
 #include "load_flat_place.h"
 #include "logic_types.h"
 #include "noc_place_utils.h"
@@ -1003,11 +1004,12 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
     // strategy speeds up reconstruction by skipping intra-LB routing checks.
     std::vector<std::string> target_ext_pin_util = {"1.0"};
     t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
+    std::vector<LbTypeRRGraph> lb_type_rr_graphs = alloc_and_load_all_lb_type_rr_graph();
 
     ClusterLegalizer cluster_legalizer(
         atom_netlist_,
         prepacker_,
-        vpr_setup_.PackerRRGraph,
+        lb_type_rr_graphs,
         target_ext_pin_util,
         high_fanout_thresholds,
         ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
@@ -1044,9 +1046,10 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
     // FIXME: The legalization strategy is currently set to full. Should handle
     //        this better to make it faster.
     t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
+    std::vector<LbTypeRRGraph> lb_type_rr_graphs = alloc_and_load_all_lb_type_rr_graph();
     ClusterLegalizer cluster_legalizer(atom_netlist_,
                                        prepacker_,
-                                       vpr_setup_.PackerRRGraph,
+                                       lb_type_rr_graphs,
                                        vpr_setup_.PackerOpts.target_external_pin_util,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::FULL,
@@ -1285,7 +1288,6 @@ void APPack::legalize(const PartialPlacement& p_placement) {
         try_pack(vpr_setup_.PackerOpts,
                  vpr_setup_.APOpts,
                  arch_,
-                 vpr_setup_.PackerRRGraph,
                  prepacker_,
                  pre_cluster_timing_manager_,
                  flat_placement_info,

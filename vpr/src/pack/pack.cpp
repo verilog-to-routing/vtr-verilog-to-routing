@@ -14,6 +14,7 @@
 #include "flat_placement_types.h"
 #include "globals.h"
 #include "greedy_clusterer.h"
+#include "lb_type_rr_graph_builder.h"
 #include "partition_region.h"
 #include "prepack.h"
 #include "stats.h"
@@ -231,7 +232,6 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
 bool try_pack(const t_packer_opts& packer_opts,
               const t_ap_opts& ap_opts,
               const t_arch& arch,
-              const std::vector<LbTypeRRGraph>& lb_type_rr_graphs,
               const Prepacker& prepacker,
               const PreClusterTimingManager& pre_cluster_timing_manager,
               const FlatPlacementInfo& flat_placement_info,
@@ -314,6 +314,8 @@ bool try_pack(const t_packer_opts& packer_opts,
     } else if (packer_opts.balance_block_type_utilization == e_balance_block_type_util::OFF) {
         balance_block_type_util = false;
     }
+
+    std::vector<LbTypeRRGraph> lb_type_rr_graphs = alloc_and_load_all_lb_type_rr_graph();
 
     int pack_iteration = 1;
     // Initialize the cluster legalizer.

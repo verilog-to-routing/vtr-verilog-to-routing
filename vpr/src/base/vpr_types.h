@@ -33,7 +33,6 @@
 #include "constant_nets.h"
 #include "clock_modeling.h"
 #include "heap_type.h"
-#include "lb_type_rr_graph.h"
 
 #include "vtr_assert.h"
 #include "vtr_vector.h"
@@ -1648,7 +1647,6 @@ struct t_vpr_setup {
     t_noc_opts NocOpts;             ///<Options for the NoC
     t_server_opts ServerOpts;       ///<Server options
     t_det_routing_arch RoutingArch; ///<routing architecture
-    std::vector<LbTypeRRGraph> PackerRRGraph;
     std::vector<t_segment_inf> Segments; ///<wires in routing architecture
     t_timing_inf Timing;                 ///<timing information
     float constant_net_delay;            ///<timing information when place and route not run

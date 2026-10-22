@@ -22,6 +22,7 @@
 #include "vtr_assert.h"
 #include "physical_types.h"
 #include "globals.h"
+#include "echo_files.h"
 #include "lb_type_rr_graph_builder.h"
 
 /// @brief Cost of every edge except the external feedback edges.
@@ -46,6 +47,11 @@ std::vector<LbTypeRRGraph> alloc_and_load_all_lb_type_rr_graph() {
             lb_type_rr_graphs[type.index] = LbTypeRRGraphBuilder::build(type);
         }
     }
+
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {
+        echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH), lb_type_rr_graphs);
+    }
+
     return lb_type_rr_graphs;
 }
 

@@ -18,8 +18,6 @@
 #include "read_fpga_interchange_arch.h"
 #include "pb_type_graph.h"
 #include "pack_types.h"
-#include "lb_type_rr_graph.h"
-#include "lb_type_rr_graph_builder.h"
 #include "echo_arch.h"
 #include "read_options.h"
 #include "echo_files.h"
@@ -132,7 +130,6 @@ void SetupVPR(const t_options* options,
               t_noc_opts* nocOpts,
               t_server_opts* serverOpts,
               t_det_routing_arch& routingArch,
-              std::vector<LbTypeRRGraph>& lb_type_rr_graphs,
               std::vector<t_segment_inf>& segments,
               t_timing_inf* timing,
               bool* showGraphics,
@@ -360,7 +357,6 @@ void SetupVPR(const t_options* options,
     {
         vtr::ScopedStartFinishTimer t("Building complex block graph");
         alloc_and_load_all_pb_graphs(powerOpts->do_power, routerOpts->flat_routing);
-        lb_type_rr_graphs = alloc_and_load_all_lb_type_rr_graph();
     }
 
     if (routerOpts->flat_routing) {
@@ -382,10 +378,6 @@ void SetupVPR(const t_options* options,
 
     if ((options->clock_modeling == ROUTED_CLOCK) || (options->clock_modeling == DEDICATED_NETWORK)) {
         ClockModeling::treat_clock_pins_as_non_globals();
-    }
-
-    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {
-        echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH), lb_type_rr_graphs);
     }
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) {
