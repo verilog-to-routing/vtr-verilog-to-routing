@@ -1,15 +1,12 @@
-/*
- * Intra-logic block router determines if a candidate packing solution (or intermediate solution) can route.
+/**
+ * @file
+ * @brief Intra-logic block router determines whether the atoms assigned to one cluster can be
+ *        routed within that cluster's logical block type.
  *
- * Global Inputs: Architecture and netlist
- * Input arguments: clustering info for one cluster (t_pb info)
- * Working data set: t_routing_data contains intermediate work
- * Output: Routable? true/false.  If true, store/return the routed solution.
- *
- * Routing algorithm used is Pathfinder.
- *
- * Author: Jason Luu
- * Date: July 22, 2013
+ * The router is built for one logical block type from its lb type rr graph. Atoms are added to and
+ * removed from the routing targets one at a time, and try_intra_lb_route then runs Pathfinder
+ * negotiated congestion routing over the current targets. On success the routed solution is kept
+ * in the router and can be read out with alloc_and_load_pb_route.
  */
 
 #include <algorithm>
