@@ -37,25 +37,25 @@ static float get_cost_of_pb_edge(const t_pb_graph_edge* /*edge*/) {
     return DEFAULT_EDGE_COST;
 }
 
-std::vector<LbTypeRrGraph> alloc_and_load_all_lb_type_rr_graph() {
+std::vector<LbTypeRRGraph> alloc_and_load_all_lb_type_rr_graph() {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
-    std::vector<LbTypeRrGraph> lb_type_rr_graphs(device_ctx.logical_block_types.size());
+    std::vector<LbTypeRRGraph> lb_type_rr_graphs(device_ctx.logical_block_types.size());
     for (const t_logical_block_type& type : device_ctx.logical_block_types) {
         if (&type != device_ctx.EMPTY_LOGICAL_BLOCK_TYPE) {
-            lb_type_rr_graphs[type.index] = LbTypeRrGraphBuilder::build(type);
+            lb_type_rr_graphs[type.index] = LbTypeRRGraphBuilder::build(type);
         }
     }
     return lb_type_rr_graphs;
 }
 
-LbTypeRrGraph LbTypeRrGraphBuilder::build(const t_logical_block_type& lb_type) {
-    LbTypeRrGraphBuilder builder;
+LbTypeRRGraph LbTypeRRGraphBuilder::build(const t_logical_block_type& lb_type) {
+    LbTypeRRGraphBuilder builder;
     builder.build_graph_(lb_type);
     return std::move(builder.graph_);
 }
 
-void LbTypeRrGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
+void LbTypeRRGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
     const t_pb_type* pb_type = lb_type.pb_type;
     const t_pb_graph_node* pb_graph_head = lb_type.pb_graph_head;
     int total_pb_pins = pb_graph_head->total_pb_pins;
@@ -65,9 +65,9 @@ void LbTypeRrGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
     graph_.nodes_.resize(total_pb_pins + 3);
     graph_.types_.resize(total_pb_pins + 3, e_lb_rr_type::NUM_TYPES);
     graph_.pb_graph_pins_.resize(total_pb_pins + 3, nullptr);
-    graph_.ext_source_node_ = LbRrNodeId(total_pb_pins);
-    graph_.ext_sink_node_ = LbRrNodeId(total_pb_pins + 1);
-    graph_.ext_interconnect_node_ = LbRrNodeId(total_pb_pins + 2);
+    graph_.ext_source_node_ = LbRRNodeId(total_pb_pins);
+    graph_.ext_sink_node_ = LbRRNodeId(total_pb_pins + 1);
+    graph_.ext_interconnect_node_ = LbRRNodeId(total_pb_pins + 2);
 
     // The external source drives every top level input and clock pin.
     int num_top_level_input_pins = pb_type->num_input_pins + pb_type->num_clock_pins;
@@ -95,7 +95,7 @@ void LbTypeRrGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
     build_pb_graph_node_(pb_graph_head);
 
     // Every pb graph pin must have been given a node.
-    for (LbRrNodeId inode : graph_.nodes_.keys()) {
+    for (LbRRNodeId inode : graph_.nodes_.keys()) {
         VTR_ASSERT(graph_.types_[inode] != e_lb_rr_type::NUM_TYPES);
     }
 
@@ -106,7 +106,7 @@ void LbTypeRrGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
     graph_.pb_graph_pins_.shrink_to_fit();
 }
 
-void LbTypeRrGraphBuilder::begin_node_(LbRrNodeId node, e_lb_rr_type type, int capacity, int num_modes, const t_pb_graph_pin* pin) {
+void LbTypeRRGraphBuilder::begin_node_(LbRRNodeId node, e_lb_rr_type type, int capacity, int num_modes, const t_pb_graph_pin* pin) {
     VTR_ASSERT_MSG(!open_node_.is_valid(), "Previous node was not closed");
     VTR_ASSERT_MSG(graph_.types_[node] == e_lb_rr_type::NUM_TYPES, "Node built twice");
     VTR_ASSERT(num_modes >= 1 && num_modes <= std::numeric_limits<int16_t>::max());
@@ -122,7 +122,7 @@ void LbTypeRrGraphBuilder::begin_node_(LbRrNodeId node, e_lb_rr_type type, int c
     num_open_modes_ = 0;
 }
 
-void LbTypeRrGraphBuilder::begin_mode_() {
+void LbTypeRRGraphBuilder::begin_mode_() {
     VTR_ASSERT_MSG(open_node_.is_valid() && num_open_modes_ < graph_.nodes_[open_node_].num_modes,
                    "More modes opened than the node declared");
 
@@ -130,21 +130,21 @@ void LbTypeRrGraphBuilder::begin_mode_() {
     num_open_modes_++;
 }
 
-void LbTypeRrGraphBuilder::add_edge_(LbRrNodeId node_index, float cost) {
+void LbTypeRRGraphBuilder::add_edge_(LbRRNodeId node_index, float cost) {
     VTR_ASSERT_MSG(num_open_modes_ > 0, "Edge added outside a mode");
     graph_.edges_.push_back({node_index, cost});
 }
 
-void LbTypeRrGraphBuilder::end_node_() {
+void LbTypeRRGraphBuilder::end_node_() {
     VTR_ASSERT_MSG(open_node_.is_valid() && num_open_modes_ == graph_.nodes_[open_node_].num_modes,
                    "Number of modes built does not match the number declared");
 
     graph_.mode_edge_start_.push_back(graph_.edges_.size());
-    open_node_ = LbRrNodeId::INVALID();
+    open_node_ = LbRRNodeId::INVALID();
 }
 
-LbRrNodeId LbTypeRrGraphBuilder::add_sink_(int capacity) {
-    LbRrNodeId sink_index = LbRrNodeId(graph_.nodes_.size());
+LbRRNodeId LbTypeRRGraphBuilder::add_sink_(int capacity) {
+    LbRRNodeId sink_index = LbRRNodeId(graph_.nodes_.size());
     graph_.nodes_.emplace_back();
     graph_.types_.push_back(e_lb_rr_type::NUM_TYPES);
     graph_.pb_graph_pins_.push_back(nullptr);
@@ -156,22 +156,22 @@ LbRrNodeId LbTypeRrGraphBuilder::add_sink_(int capacity) {
     return sink_index;
 }
 
-void LbTypeRrGraphBuilder::add_edges_to_top_level_input_pins_(const t_pb_graph_node* pb_graph_head, float cost) {
+void LbTypeRRGraphBuilder::add_edges_to_top_level_input_pins_(const t_pb_graph_node* pb_graph_head, float cost) {
     for (int iport = 0; iport < pb_graph_head->num_input_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_head->num_input_pins[iport]; ipin++) {
-            add_edge_(LbRrNodeId(pb_graph_head->input_pins[iport][ipin].pin_count_in_cluster), cost);
+            add_edge_(LbRRNodeId(pb_graph_head->input_pins[iport][ipin].pin_count_in_cluster), cost);
         }
     }
 
     for (int iport = 0; iport < pb_graph_head->num_clock_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_head->num_clock_pins[iport]; ipin++) {
-            add_edge_(LbRrNodeId(pb_graph_head->clock_pins[iport][ipin].pin_count_in_cluster), cost);
+            add_edge_(LbRRNodeId(pb_graph_head->clock_pins[iport][ipin].pin_count_in_cluster), cost);
         }
     }
 }
 
-void LbTypeRrGraphBuilder::build_pb_pin_node_(const t_pb_graph_pin* pb_pin, e_lb_rr_type type, int num_modes) {
-    LbRrNodeId pin_index = LbRrNodeId(pb_pin->pin_count_in_cluster);
+void LbTypeRRGraphBuilder::build_pb_pin_node_(const t_pb_graph_pin* pb_pin, e_lb_rr_type type, int num_modes) {
+    LbRRNodeId pin_index = LbRRNodeId(pb_pin->pin_count_in_cluster);
     begin_node_(pin_index, type, 1, num_modes, pb_pin);
 
     // Each mode holds the edges whose interconnect belongs to that mode, in pb graph order.
@@ -185,17 +185,17 @@ void LbTypeRrGraphBuilder::build_pb_pin_node_(const t_pb_graph_pin* pb_pin, e_lb
             if (edge_mode != imode) {
                 continue;
             }
-            add_edge_(LbRrNodeId(edge->output_pins[0]->pin_count_in_cluster), get_cost_of_pb_edge(edge));
+            add_edge_(LbRRNodeId(edge->output_pins[0]->pin_count_in_cluster), get_cost_of_pb_edge(edge));
         }
     }
 
     end_node_();
 }
 
-void LbTypeRrGraphBuilder::build_primitive_sink_pins_(t_pb_graph_pin* const* pins, int num_ports, const int* num_pins) {
+void LbTypeRRGraphBuilder::build_primitive_sink_pins_(t_pb_graph_pin* const* pins, int num_ports, const int* num_pins) {
     for (int iport = 0; iport < num_ports; iport++) {
         // The pins of an equivalent port share one sink whose capacity is the size of the port.
-        LbRrNodeId sink_index = LbRrNodeId::INVALID();
+        LbRRNodeId sink_index = LbRRNodeId::INVALID();
         for (int ipin = 0; ipin < num_pins[iport]; ipin++) {
             const t_pb_graph_pin* pb_pin = &pins[iport][ipin];
             bool port_equivalent = pb_pin->port->equivalent != PortEquivalence::NONE;
@@ -205,7 +205,7 @@ void LbTypeRrGraphBuilder::build_primitive_sink_pins_(t_pb_graph_pin* const* pin
                 sink_index = add_sink_(port_equivalent ? pb_pin->port->num_pins : 1);
             }
 
-            LbRrNodeId pin_index = LbRrNodeId(pb_pin->pin_count_in_cluster);
+            LbRRNodeId pin_index = LbRRNodeId(pb_pin->pin_count_in_cluster);
             begin_node_(pin_index, e_lb_rr_type::INTERMEDIATE, 1, 1, pb_pin);
             begin_mode_();
             add_edge_(sink_index, DEFAULT_EDGE_COST);
@@ -214,7 +214,7 @@ void LbTypeRrGraphBuilder::build_primitive_sink_pins_(t_pb_graph_pin* const* pin
     }
 }
 
-void LbTypeRrGraphBuilder::build_pb_graph_node_(const t_pb_graph_node* pb_graph_node) {
+void LbTypeRRGraphBuilder::build_pb_graph_node_(const t_pb_graph_node* pb_graph_node) {
     const t_pb_type* pb_type = pb_graph_node->pb_type;
     const t_pb_graph_node* parent_node = pb_graph_node->parent_pb_graph_node;
 
@@ -254,7 +254,7 @@ void LbTypeRrGraphBuilder::build_pb_graph_node_(const t_pb_graph_node* pb_graph_
         for (int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
             for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
                 const t_pb_graph_pin* pb_pin = &pb_graph_node->output_pins[iport][ipin];
-                LbRrNodeId pin_index = LbRrNodeId(pb_pin->pin_count_in_cluster);
+                LbRRNodeId pin_index = LbRRNodeId(pb_pin->pin_count_in_cluster);
                 begin_node_(pin_index, e_lb_rr_type::INTERMEDIATE, 1, 1, pb_pin);
                 begin_mode_();
                 add_edge_(graph_.ext_interconnect_node_, DEFAULT_EDGE_COST);

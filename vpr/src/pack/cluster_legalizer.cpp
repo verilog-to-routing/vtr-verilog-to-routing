@@ -102,7 +102,7 @@ static void alloc_and_load_pb_stats(t_pb* pb) {
 
 LegalizationCluster::LegalizationCluster(t_logical_block_type_ptr cluster_type,
                                          int cluster_mode,
-                                         const std::vector<LbTypeRrGraph>& lb_type_rr_graphs,
+                                         const std::vector<LbTypeRRGraph>& lb_type_rr_graphs,
                                          const std::unordered_set<int>& valid_feedback_pins,
                                          bool enable_router_hot_start)
     : pb(new t_pb)
@@ -1454,7 +1454,7 @@ bool ClusterLegalizer::ensure_legal_final_routing(LegalizationClusterId cluster_
 
 ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    const Prepacker& prepacker,
-                                   const std::vector<LbTypeRrGraph>& lb_type_rr_graphs,
+                                   const std::vector<LbTypeRRGraph>& lb_type_rr_graphs,
                                    const std::vector<std::string>& target_external_pin_util_str,
                                    const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                                    ClusterLegalizationStrategy cluster_legalization_strategy,

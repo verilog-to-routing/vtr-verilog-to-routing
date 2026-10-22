@@ -8,7 +8,7 @@
 #include "logical_ram_infer.h"
 
 class AtomNetId;
-class LbTypeRrGraph;
+class LbTypeRRGraph;
 class FlatPlacementInfo;
 class PreClusterTimingManager;
 class Prepacker;
@@ -53,7 +53,7 @@ using t_logical_block_type_ptr = const t_logical_block_type*;
 bool try_pack(const t_packer_opts& packer_opts,
               const t_ap_opts& ap_opts,
               const t_arch& arch,
-              const std::vector<LbTypeRrGraph>& lb_type_rr_graphs,
+              const std::vector<LbTypeRRGraph>& lb_type_rr_graphs,
               const Prepacker& prepacker,
               const PreClusterTimingManager& pre_cluster_timing_manager,
               const FlatPlacementInfo& flat_placement_info,
