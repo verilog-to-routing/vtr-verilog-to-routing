@@ -156,12 +156,15 @@ module fifo
 // ******************************************************************
 // FIFO Logic
 // ******************************************************************
+
+/*
   initial begin
     if (INITIALIZE_FIFO == "yes") begin
       $readmemh(INIT, mem, 0, RAM_DEPTH-1);
     end
   end
-
+*/
+   
   always @ (r_fifo_count)
   begin : FIFO_STATUS
     empty   = (r_fifo_count == 0);
@@ -1588,7 +1591,8 @@ module axi_master
     .s_write_ready                  ( rd_req_buf_wr_ready            ), //output
     .s_write_data                   ( rd_req_buf_data_in             ), //input
     .almost_full                    ( rd_req_buf_almost_full         ), //output
-    .almost_empty                   ( rd_req_buf_almost_empty        )  //output
+    .almost_empty                   ( rd_req_buf_almost_empty        ), //output
+    .fifo_count                     (                                )  //output
   );
 //==============================================================================
 
@@ -1622,7 +1626,8 @@ module axi_master
     .s_write_ready                  ( rx_req_id_buf_wr_ready         ), //output
     .s_write_data                   ( rx_req_id_buf_data_in          ), //input
     .almost_full                    ( rx_req_id_buf_almost_full      ), //output
-    .almost_empty                   ( rx_req_id_buf_almost_empty     )  //output
+    .almost_empty                   ( rx_req_id_buf_almost_empty     ), //output
+    .fifo_count                     (                                )  //output
   );
 
 
@@ -1799,7 +1804,8 @@ module axi_master
     .s_write_ready                  ( wr_req_buf_wr_ready            ), //output
     .s_write_data                   ( wr_req_buf_data_in             ), //input
     .almost_full                    ( wr_req_buf_almost_full         ), //output
-    .almost_empty                   ( wr_req_buf_almost_empty        )  //output
+    .almost_empty                   ( wr_req_buf_almost_empty        ), //output
+    .fifo_count                     (                                )  //output
   );
 //==============================================================================
 
@@ -1899,7 +1905,8 @@ module axi_master
     .s_write_ready                  ( wdata_req_buf_wr_ready         ), //output
     .s_write_data                   ( wdata_req_buf_data_in          ), //input
     .almost_full                    ( wdata_req_buf_almost_full      ), //output
-    .almost_empty                   ( wdata_req_buf_almost_empty     )  //output
+    .almost_empty                   ( wdata_req_buf_almost_empty     ), //output
+    .fifo_count                     (                                )  //output
   );
 //==============================================================================
 
