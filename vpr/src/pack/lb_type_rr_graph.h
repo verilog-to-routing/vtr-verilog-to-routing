@@ -65,13 +65,13 @@ class LbTypeRRGraph {
     /// @brief Per node data read by the router search.
     struct t_node {
         /// @brief Index into mode_edge_start_ of the first mode of this node.
-        int32_t mode_start;
+        uint32_t mode_start;
 
         /// @brief Number of nets that can use this node at the same time.
-        int16_t capacity;
+        uint16_t capacity;
 
         /// @brief Number of modes this node has edge ranges for.
-        int16_t num_modes;
+        uint16_t num_modes;
     };
     static_assert(sizeof(t_node) == 8, "t_node is read in the router search and must stay small");
 
@@ -95,19 +95,19 @@ class LbTypeRRGraph {
     /// @brief All node ids in increasing order.
     node_range nodes() const { return nodes_.keys(); }
 
-    int capacity(LbRRNodeId node) const { return nodes_[node].capacity; }
+    uint16_t capacity(LbRRNodeId node) const { return nodes_[node].capacity; }
 
-    int num_modes(LbRRNodeId node) const { return nodes_[node].num_modes; }
+    uint16_t num_modes(LbRRNodeId node) const { return nodes_[node].num_modes; }
 
     /// @brief Out edges of node when it is in the given mode.
     std::span<const t_edge> edges(LbRRNodeId node, int mode) const {
         VTR_ASSERT_SAFE(mode >= 0 && mode < nodes_[node].num_modes);
-        int32_t first = mode_edge_start_[nodes_[node].mode_start + mode];
-        int32_t last = mode_edge_start_[nodes_[node].mode_start + mode + 1];
+        uint32_t first = mode_edge_start_[nodes_[node].mode_start + mode];
+        uint32_t last = mode_edge_start_[nodes_[node].mode_start + mode + 1];
         return std::span<const t_edge>(edges_.data() + first, last - first);
     }
 
-    int num_fanout(LbRRNodeId node, int mode) const { return (int)edges(node, mode).size(); }
+    size_t num_fanout(LbRRNodeId node, int mode) const { return edges(node, mode).size(); }
 
     e_lb_rr_type type(LbRRNodeId node) const { return types_[node]; }
 
@@ -133,7 +133,7 @@ class LbTypeRRGraph {
 
     /// @brief Index into edges_ of the first edge of each (node, mode), plus
     ///        one entry per node that ends the range of its last mode.
-    std::vector<int32_t> mode_edge_start_;
+    std::vector<uint32_t> mode_edge_start_;
 
     /// @brief All edges, grouped by node and then by mode.
     std::vector<t_edge> edges_;

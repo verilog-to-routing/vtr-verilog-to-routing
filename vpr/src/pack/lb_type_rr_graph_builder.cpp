@@ -75,7 +75,7 @@ void LbTypeRRGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
     begin_mode_();
     add_edges_to_top_level_input_pins_(pb_graph_head, DEFAULT_EDGE_COST);
     end_node_();
-    VTR_ASSERT(graph_.num_fanout(graph_.ext_source_node_, 0) == num_top_level_input_pins);
+    VTR_ASSERT(graph_.num_fanout(graph_.ext_source_node_, 0) == size_t(num_top_level_input_pins));
 
     // The external sink is driven by every top level output pin and has no edges.
     begin_node_(graph_.ext_sink_node_, e_lb_rr_type::SINK, pb_type->num_output_pins, 1, nullptr);
@@ -109,9 +109,9 @@ void LbTypeRRGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
 void LbTypeRRGraphBuilder::begin_node_(LbRRNodeId node, e_lb_rr_type type, int capacity, int num_modes, const t_pb_graph_pin* pin) {
     VTR_ASSERT_MSG(!open_node_.is_valid(), "Previous node was not closed");
     VTR_ASSERT_MSG(graph_.types_[node] == e_lb_rr_type::NUM_TYPES, "Node built twice");
-    VTR_ASSERT(num_modes >= 1 && num_modes <= std::numeric_limits<int16_t>::max());
-    VTR_ASSERT(capacity >= 0 && capacity <= std::numeric_limits<int16_t>::max());
-    VTR_ASSERT(graph_.mode_edge_start_.size() <= size_t(std::numeric_limits<int32_t>::max()));
+    VTR_ASSERT(num_modes >= 1 && num_modes <= std::numeric_limits<uint16_t>::max());
+    VTR_ASSERT(capacity >= 0 && capacity <= std::numeric_limits<uint16_t>::max());
+    VTR_ASSERT(graph_.mode_edge_start_.size() <= size_t(std::numeric_limits<uint32_t>::max()));
 
     graph_.nodes_[node].mode_start = graph_.mode_edge_start_.size();
     graph_.nodes_[node].capacity = capacity;
@@ -133,7 +133,7 @@ void LbTypeRRGraphBuilder::begin_mode_() {
 
 void LbTypeRRGraphBuilder::add_edge_(LbRRNodeId node_index, float cost) {
     VTR_ASSERT_MSG(num_open_modes_ > 0, "Edge added outside a mode");
-    VTR_ASSERT(graph_.edges_.size() < size_t(std::numeric_limits<int32_t>::max()));
+    VTR_ASSERT(graph_.edges_.size() < size_t(std::numeric_limits<uint32_t>::max()));
     graph_.edges_.push_back({node_index, cost});
 }
 
