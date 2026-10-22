@@ -181,9 +181,11 @@ void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf
 
 void init_route_structs(const Netlist<>& net_list,
                         int bb_factor,
-                        bool has_choking_point,
                         bool is_flat);
 
+/**
+ * @brief Allocate and initialize per-node routing state and non-configurable flags.
+ */
 void alloc_and_load_rr_node_route_structs(const t_router_opts& router_opts);
 
 void reset_rr_node_route_structs(const t_router_opts& route_opts);

@@ -60,13 +60,6 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat);
 
-static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>,
-                  vtr::vector<ParentNetId, std::vector<int>>>
-load_net_terminal_groups(const RRGraphView& rr_graph,
-                         const Netlist<>& net_list,
-                         const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
-                         bool is_flat);
-
 static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(const RRGraphView& rr_graph,
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat);
@@ -78,8 +71,6 @@ static void adjust_one_rr_occ_and_acc_cost(RRNodeId inode, int add_or_sub, float
 static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
                                                            const LogicalModels& models,
                                                            bool is_flat);
-
-static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat);
 
 /**
  * @brief If a bounding box crosses an interposer cut, expand it to
@@ -307,7 +298,6 @@ void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_o
  * sets the list of rr_nodes touched to empty. */
 void init_route_structs(const Netlist<>& net_list,
                         int bb_factor,
-                        bool has_choking_point,
                         bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -331,13 +321,6 @@ void init_route_structs(const Netlist<>& net_list,
     route_ctx.net_status.resize(net_list.nets().size());
 
     route_ctx.is_flat = is_flat;
-
-    if (has_choking_point && is_flat) {
-        std::tie(route_ctx.net_terminal_groups, route_ctx.net_terminal_group_num) = load_net_terminal_groups(device_ctx.rr_graph,
-                                                                                                             net_list,
-                                                                                                             route_ctx.net_rr_terminals,
-                                                                                                             is_flat);
-    }
 }
 
 /* The routine sets the path_cost to HUGE_POSITIVE_FLOAT for  *
@@ -586,72 +569,6 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
     return net_rr_terminals;
 }
 
-static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>,
-                  vtr::vector<ParentNetId, std::vector<int>>>
-load_net_terminal_groups(const RRGraphView& rr_graph,
-                         const Netlist<>& net_list,
-                         const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
-                         bool is_flat) {
-    vtr::vector<ParentNetId, std::vector<std::vector<int>>> net_terminal_groups;
-    vtr::vector<ParentNetId, std::vector<int>> net_terminal_group_num;
-
-    net_terminal_groups.resize(net_list.nets().size());
-    net_terminal_group_num.resize(net_list.nets().size());
-
-    for (auto net_id : net_list.nets()) {
-        net_terminal_groups[net_id].reserve(net_list.net_pins(net_id).size());
-        net_terminal_group_num[net_id].resize(net_list.net_pins(net_id).size(), -1);
-        std::vector<ParentBlockId> net_pin_blk_id(net_list.net_pins(net_id).size(), ParentBlockId::INVALID());
-        std::unordered_map<RRNodeId, int> rr_node_pin_num;
-        int pin_count = 0;
-        for (auto pin_id : net_list.net_pins(net_id)) {
-            if (pin_count == 0) {
-                pin_count++;
-                continue;
-            }
-            RRNodeId rr_node_num = net_rr_terminals[net_id][pin_count];
-            auto block_id = net_list.pin_block(pin_id);
-            net_pin_blk_id[pin_count] = block_id;
-            rr_node_pin_num[rr_node_num] = pin_count;
-
-            t_block_loc blk_loc;
-            blk_loc = get_block_loc(block_id, is_flat);
-            int group_num = -1;
-            for (int curr_grp_num = 0; curr_grp_num < (int)net_terminal_groups[net_id].size(); curr_grp_num++) {
-                const auto& curr_grp = net_terminal_groups[net_id][curr_grp_num];
-                auto group_loc = get_block_loc(net_pin_blk_id[rr_node_pin_num.at(RRNodeId(curr_grp[0]))], is_flat);
-                if (blk_loc.loc == group_loc.loc) {
-                    if (classes_in_same_block(block_id,
-                                              rr_graph.node_ptc_num(RRNodeId(curr_grp[0])),
-                                              rr_graph.node_ptc_num(net_rr_terminals[net_id][pin_count]),
-                                              is_flat)) {
-                        group_num = curr_grp_num;
-                        break;
-                    }
-                }
-            }
-
-            if (group_num == -1) {
-                /* TODO: net_terminal_groups cannot be fully RRNodeId - ified, because this code calls libarchfpga which
-                 * I think should not be aware of RRNodeIds. Fixing this requires some refactoring to lift the offending functions
-                 * into VPR. */
-                std::vector<int> new_group = {int(rr_node_num)};
-                int new_group_num = net_terminal_groups[net_id].size();
-                net_terminal_groups[net_id].push_back(new_group);
-                net_terminal_group_num[net_id][pin_count] = new_group_num;
-            } else {
-                net_terminal_groups[net_id][group_num].push_back(size_t(rr_node_num));
-                net_terminal_group_num[net_id][pin_count] = group_num;
-            }
-
-            pin_count++;
-        }
-        net_terminal_groups[net_id].shrink_to_fit();
-    }
-
-    return std::make_tuple(net_terminal_groups, net_terminal_group_num);
-}
-
 /* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *
  * in the FPGA.  Currently only the SOURCE rr_node values are used, and     *
  * they are used only to reserve pins for locally used OPINs in the router. *
@@ -717,11 +634,6 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
     }
 
     return is_clock_net;
-}
-
-static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat) {
-    t_physical_tile_type_ptr physical_tile = physical_tile_type(blk_id, is_flat);
-    return classes_in_same_block(physical_tile, first_class_ptc_num, second_class_ptc_num, is_flat);
 }
 
 static void expand_route_bb_to_interposer_cut_bounds(const DeviceContext& device_ctx,

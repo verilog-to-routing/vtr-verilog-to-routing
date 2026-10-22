@@ -654,9 +654,12 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
     When enabled, all constant-zero generators are merged into a single constant-zero generator, and all constant-one generators are merged into a single constant-one generator.
     The generator with the highest fanout of each value (e.g. ``gnd`` / ``vcc``) is kept, and the names of the removed nets are kept as aliases of the merged net.
 
+    Since constant nets are not routed by default (see :option:`--constant_net_method`), the constant generators are assumed to be available within each tile and do not need to be duplicated.
+    However, each constant generator is still implemented as a physical block and uses tile pin resources, so merging them avoids wasting these resources.
+
     Disabling merging can improve the matching between the input and post-synthesis netlist.
 
-    **Default**: ``off``
+    **Default**: ``on``
 
 .. option:: --const_gen_inference {none | comb | comb_seq}
 
