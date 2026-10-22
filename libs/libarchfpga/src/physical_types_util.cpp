@@ -78,20 +78,6 @@ static std::vector<int> get_pb_pin_src_pins(t_physical_tile_type_ptr physical_ty
                                             const t_pb_graph_pin* pin);
 
 /**
- * @param physical_type physical tile which pin belongs to
- * @param sub_tile  sub_tile in which physical tile located
- * @param logical_block logical block mapped to the sub_tile
- * @param relative_cap relative capacity of the sub_tile
- * @param pin
- * @return physical number of the pins derived by the given pin
- */
-static std::vector<int> get_pb_pin_sink_pins(t_physical_tile_type_ptr physical_type,
-                                             const t_sub_tile* sub_tile,
-                                             t_logical_block_type_ptr logical_block,
-                                             int relative_cap,
-                                             const t_pb_graph_pin* pin);
-
-/**
  *
  * @param physical_type
  * @param logical_block
@@ -287,47 +273,6 @@ static std::vector<int> get_pb_pin_src_pins(t_physical_tile_type_ptr physical_ty
     }
 
     return driving_pins;
-}
-
-static std::vector<int> get_pb_pin_sink_pins(t_physical_tile_type_ptr physical_type,
-                                             const t_sub_tile* sub_tile,
-                                             t_logical_block_type_ptr logical_block,
-                                             int relative_cap,
-                                             const t_pb_graph_pin* pin) {
-    std::vector<int> sink_pins;
-    const auto& edges = pin->output_edges;
-    int num_edges = pin->num_output_edges;
-    int num_pins = 0;
-
-    for (int edge_idx = 0; edge_idx < num_edges; edge_idx++) {
-        const t_pb_graph_edge* pb_graph_edge = edges[edge_idx];
-        num_pins += pb_graph_edge->num_output_pins;
-    }
-    sink_pins.reserve(num_pins);
-
-    for (int edge_idx = 0; edge_idx < num_edges; edge_idx++) {
-        const t_pb_graph_edge* pb_graph_edge = edges[edge_idx];
-        t_pb_graph_pin** connected_pins_ptr = pb_graph_edge->output_pins;
-        num_pins = pb_graph_edge->num_output_pins;
-
-        for (int pin_idx = 0; pin_idx < num_pins; pin_idx++) {
-            auto conn_pin = connected_pins_ptr[pin_idx];
-            if (conn_pin->is_root_block_pin()) {
-                sink_pins.push_back(get_physical_pin_at_sub_tile_location(physical_type,
-                                                                          logical_block,
-                                                                          sub_tile->capacity.low + relative_cap,
-                                                                          conn_pin->pin_count_in_cluster));
-            } else {
-                sink_pins.push_back(get_pb_pin_physical_num(physical_type,
-                                                            sub_tile,
-                                                            logical_block,
-                                                            relative_cap,
-                                                            conn_pin));
-            }
-        }
-    }
-
-    return sink_pins;
 }
 
 static const t_pb_graph_pin* get_tile_pin_pb_pin(t_physical_tile_type_ptr physical_type,
@@ -1087,25 +1032,6 @@ std::vector<int> get_physical_pin_src_pins(t_physical_tile_type_ptr physical_typ
                                pb_pin);
 }
 
-std::vector<int> get_physical_pin_sink_pins(t_physical_tile_type_ptr physical_type,
-                                            t_logical_block_type_ptr logical_block,
-                                            int pin_physical_num) {
-    const t_sub_tile* sub_tile;
-    int sub_tile_cap;
-    std::tie(sub_tile, sub_tile_cap) = get_sub_tile_from_pin_physical_num(physical_type,
-                                                                          pin_physical_num);
-
-    auto pb_pin = get_pb_pin_from_pin_physical_num(physical_type,
-                                                   logical_block,
-                                                   pin_physical_num);
-
-    return get_pb_pin_sink_pins(physical_type,
-                                sub_tile,
-                                logical_block,
-                                sub_tile_cap,
-                                pb_pin);
-}
-
 int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                             const t_sub_tile* sub_tile,
                             t_logical_block_type_ptr logical_block,
@@ -1204,23 +1130,6 @@ bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,
             return true;
         }
     }
-}
-
-float get_edge_delay(t_physical_tile_type_ptr physical_type,
-                     t_logical_block_type_ptr logical_block,
-                     int src_pin_physical_num,
-                     int sink_pin_physical_num) {
-    const t_pb_graph_pin* src_pb_pin = get_pb_pin_from_pin_physical_num(physical_type,
-                                                                        logical_block,
-                                                                        src_pin_physical_num);
-    const t_pb_graph_pin* sink_pb_pin = get_pb_pin_from_pin_physical_num(physical_type,
-                                                                         logical_block,
-                                                                         sink_pin_physical_num);
-
-    int edge_idx = src_pb_pin->sink_pin_edge_idx_map.at(sink_pb_pin);
-    float delay = src_pb_pin->output_edges[edge_idx]->delay_max;
-
-    return delay;
 }
 
 float get_pin_primitive_comb_delay(t_physical_tile_type_ptr physical_type,
