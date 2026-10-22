@@ -369,7 +369,7 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
                                               t_logical_block_type_ptr logical_block) {
     int sub_tile_index = ARCH_FPGA_UNDEFINED_VAL;
     for (const auto& sub_tile : physical_tile->sub_tiles) {
-        auto eq_sites = sub_tile.equivalent_sites;
+        const std::vector<t_logical_block_type_ptr>& eq_sites = sub_tile.equivalent_sites;
         auto it = std::ranges::find(eq_sites, logical_block);
         if (it != eq_sites.end()) {
             sub_tile_index = sub_tile.index;
@@ -405,7 +405,7 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
                                               int sub_tile_capacity) {
     int sub_tile_index = ARCH_FPGA_UNDEFINED_VAL;
     for (const auto& sub_tile : physical_tile->sub_tiles) {
-        auto eq_sites = sub_tile.equivalent_sites;
+        const std::vector<t_logical_block_type_ptr>& eq_sites = sub_tile.equivalent_sites;
         auto it = std::ranges::find(eq_sites, logical_block);
         if (it != eq_sites.end()
             && (sub_tile.capacity.is_in_range(sub_tile_capacity))) {
