@@ -111,6 +111,7 @@ void LbTypeRRGraphBuilder::begin_node_(LbRRNodeId node, e_lb_rr_type type, int c
     VTR_ASSERT_MSG(graph_.types_[node] == e_lb_rr_type::NUM_TYPES, "Node built twice");
     VTR_ASSERT(num_modes >= 1 && num_modes <= std::numeric_limits<int16_t>::max());
     VTR_ASSERT(capacity >= 0 && capacity <= std::numeric_limits<int16_t>::max());
+    VTR_ASSERT(graph_.mode_edge_start_.size() <= size_t(std::numeric_limits<int32_t>::max()));
 
     graph_.nodes_[node].mode_start = graph_.mode_edge_start_.size();
     graph_.nodes_[node].capacity = capacity;
@@ -132,6 +133,7 @@ void LbTypeRRGraphBuilder::begin_mode_() {
 
 void LbTypeRRGraphBuilder::add_edge_(LbRRNodeId node_index, float cost) {
     VTR_ASSERT_MSG(num_open_modes_ > 0, "Edge added outside a mode");
+    VTR_ASSERT(graph_.edges_.size() < size_t(std::numeric_limits<int32_t>::max()));
     graph_.edges_.push_back({node_index, cost});
 }
 
