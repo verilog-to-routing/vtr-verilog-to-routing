@@ -21,6 +21,7 @@
 #include "cluster_placement.h"
 #include "cluster_router.h"
 #include "globals.h"
+#include "lb_type_rr_graph_builder.h"
 #include "logic_types.h"
 #include "netlist_utils.h"
 #include "noc_aware_cluster_util.h"
@@ -1454,7 +1455,6 @@ bool ClusterLegalizer::ensure_legal_final_routing(LegalizationClusterId cluster_
 
 ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    const Prepacker& prepacker,
-                                   const std::vector<LbTypeRRGraph>& lb_type_rr_graphs,
                                    const std::vector<std::string>& target_external_pin_util_str,
                                    const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                                    ClusterLegalizationStrategy cluster_legalization_strategy,
@@ -1463,7 +1463,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    bool enable_cluster_router_hot_start,
                                    const LogicalModels& models,
                                    int log_verbosity)
-    : lb_type_rr_graphs_(lb_type_rr_graphs)
+    : lb_type_rr_graphs_(alloc_and_load_all_lb_type_rr_graph())
     , prepacker_(prepacker) {
     // Get the target external pin utilization
     // NOTE: Be careful with this constructor, it may throw a VPR_FATAL_ERROR.

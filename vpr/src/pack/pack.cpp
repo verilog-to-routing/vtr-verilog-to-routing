@@ -14,7 +14,6 @@
 #include "flat_placement_types.h"
 #include "globals.h"
 #include "greedy_clusterer.h"
-#include "lb_type_rr_graph_builder.h"
 #include "partition_region.h"
 #include "prepack.h"
 #include "stats.h"
@@ -315,13 +314,10 @@ bool try_pack(const t_packer_opts& packer_opts,
         balance_block_type_util = false;
     }
 
-    std::vector<LbTypeRRGraph> lb_type_rr_graphs = alloc_and_load_all_lb_type_rr_graph();
-
     int pack_iteration = 1;
     // Initialize the cluster legalizer.
     ClusterLegalizer cluster_legalizer(atom_ctx.netlist(),
                                        prepacker,
-                                       lb_type_rr_graphs,
                                        packer_opts.target_external_pin_util,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
