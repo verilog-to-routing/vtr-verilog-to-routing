@@ -20,7 +20,7 @@ class t_pb_graph_pin;
 typedef vtr::StrongId<struct lb_rr_node_id_tag, int> LbRRNodeId;
 
 /// @brief Types of intra-logic block routing resource nodes.
-enum class e_lb_rr_type {
+enum class e_lb_rr_type : uint8_t {
     SOURCE = 0,
     SINK,
     INTERMEDIATE,
