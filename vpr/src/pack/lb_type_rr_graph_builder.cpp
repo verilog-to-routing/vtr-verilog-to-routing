@@ -60,14 +60,16 @@ void LbTypeRRGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
     const t_pb_graph_node* pb_graph_head = lb_type.pb_graph_head;
     int total_pb_pins = pb_graph_head->total_pb_pins;
 
-    // Nodes [0, total_pb_pins) are the pb graph pins and the next three are the
-    // external nodes. The sinks of primitive pins are appended as they are found.
-    graph_.nodes_.resize(total_pb_pins + 3);
-    graph_.types_.resize(total_pb_pins + 3, e_lb_rr_type::NUM_TYPES);
-    graph_.pb_graph_pins_.resize(total_pb_pins + 3, nullptr);
-    graph_.ext_source_node_ = LbRRNodeId(total_pb_pins);
-    graph_.ext_sink_node_ = LbRRNodeId(total_pb_pins + 1);
-    graph_.ext_interconnect_node_ = LbRRNodeId(total_pb_pins + 2);
+    // Nodes [0, total_pb_pins) are the pb graph pins and the external nodes follow.
+    // The sinks of primitive pins are appended as they are found.
+    int num_nodes = total_pb_pins;
+    graph_.ext_source_node_ = LbRRNodeId(num_nodes++);
+    graph_.ext_sink_node_ = LbRRNodeId(num_nodes++);
+    graph_.ext_interconnect_node_ = LbRRNodeId(num_nodes++);
+
+    graph_.nodes_.resize(num_nodes);
+    graph_.types_.resize(num_nodes, e_lb_rr_type::NUM_TYPES);
+    graph_.pb_graph_pins_.resize(num_nodes, nullptr);
 
     // The external source drives every top level input and clock pin.
     int num_top_level_input_pins = pb_type->num_input_pins + pb_type->num_clock_pins;
