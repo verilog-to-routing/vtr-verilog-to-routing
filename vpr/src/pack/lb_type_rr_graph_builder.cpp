@@ -100,7 +100,7 @@ void LbTypeRRGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
     add_edges_to_top_level_input_pins_(pb_graph_head, EXT_FEEDBACK_EDGE_COST);
     end_node_();
 
-    build_pb_graph_node_(pb_graph_head);
+    build_nodes_and_edges_in_subtree_(pb_graph_head);
 
     // Every pb graph pin must have been given a node.
     for (LbRRNodeId inode : graph_.nodes_.keys()) {
@@ -139,10 +139,10 @@ void LbTypeRRGraphBuilder::begin_mode_() {
     num_open_modes_++;
 }
 
-void LbTypeRRGraphBuilder::add_edge_(LbRRNodeId node_index, float cost) {
+void LbTypeRRGraphBuilder::add_edge_(LbRRNodeId to_node, float cost) {
     VTR_ASSERT_MSG(num_open_modes_ > 0, "Edge added outside a mode");
     VTR_ASSERT(graph_.edges_.size() < size_t(std::numeric_limits<uint32_t>::max()));
-    graph_.edges_.push_back({node_index, cost});
+    graph_.edges_.push_back({to_node, cost});
 }
 
 void LbTypeRRGraphBuilder::end_node_() {
@@ -224,7 +224,7 @@ void LbTypeRRGraphBuilder::build_primitive_sink_pins_(t_pb_graph_pin* const* pin
     }
 }
 
-void LbTypeRRGraphBuilder::build_pb_graph_node_(const t_pb_graph_node* pb_graph_node) {
+void LbTypeRRGraphBuilder::build_nodes_and_edges_in_subtree_(const t_pb_graph_node* pb_graph_node) {
     const t_pb_type* pb_type = pb_graph_node->pb_type;
     const t_pb_graph_node* parent_node = pb_graph_node->parent_pb_graph_node;
 
@@ -247,7 +247,7 @@ void LbTypeRRGraphBuilder::build_pb_graph_node_(const t_pb_graph_node* pb_graph_
     for (int imode = 0; imode < pb_type->num_modes; imode++) {
         for (int ipb_type = 0; ipb_type < pb_type->modes[imode].num_pb_type_children; ipb_type++) {
             for (int ipb = 0; ipb < pb_type->modes[imode].pb_type_children[ipb_type].num_pb; ipb++) {
-                build_pb_graph_node_(&pb_graph_node->child_pb_graph_nodes[imode][ipb_type][ipb]);
+                build_nodes_and_edges_in_subtree_(&pb_graph_node->child_pb_graph_nodes[imode][ipb_type][ipb]);
             }
         }
     }
