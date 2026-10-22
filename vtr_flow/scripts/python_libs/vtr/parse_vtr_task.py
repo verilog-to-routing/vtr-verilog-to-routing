@@ -207,7 +207,7 @@ def parse_tasks(configs, jobs, alt_tasks_dir=None, num_procs=1):
     """
     queued_procs = []
     for config in configs:
-        config_jobs = [job for job in jobs if job.task_name() == config.task_name]
+        config_jobs = [job for job in jobs if job.config_dir() == config.config_dir]
         queued_procs.append((config, config_jobs, FIRST_PARSE_FILE, alt_tasks_dir))
 
     with Pool(processes=num_procs) as pool:
