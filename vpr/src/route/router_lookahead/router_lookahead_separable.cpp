@@ -112,27 +112,54 @@ static t_bb get_sampling_strip(const DeviceGrid& grid, e_profile_axis axis, int 
 }
 
 /**
- * @brief Widen a sampling strip so it extends at least two tiles beyond a sample node on the axis
- *        perpendicular to profiling.
+ * @brief Shift a sampling strip so it is centred on the far endpoint of a sample wire that runs
+ *        perpendicular to the profiling axis.
  *
  * Without this, a wire longer than the strip is wide makes its switch block connections outside
- * the strip, so a flood restricted to the strip reaches no IPIN.
+ * the strip, so a flood restricted to the strip reaches no IPIN. The far endpoint is the high end
+ * for INC and BIDIR wires and the low end for DEC wires.
  *
  * @param bb Sampling strip, as returned by get_sampling_strip().
  * @param node Sample node the flood starts from.
- * @return bb, widened on the perpendicular axis to cover the node's span plus the margin, clamped to the grid.
+ * @return bb unchanged if the node is not a wire perpendicular to the profiling axis. Otherwise bb,
+ *         keeping its width, shifted on the perpendicular axis to centre on the node's far endpoint
+ *         and kept inside the grid.
  */
 static t_bb adjust_sampling_bb_to_rr_node(const t_bb& bb, const DeviceGrid& grid, e_profile_axis axis, RRNodeId node) {
-    constexpr int SAMPLE_NODE_BB_MARGIN = 2;
     const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+    const e_rr_type node_type = rr_graph.node_type(node);
+    const bool profile_x = (axis == e_profile_axis::X);
+
+    // Only wires running along the perpendicular axis leave the strip.
+    const e_rr_type perpendicular_chan_type = profile_x ? e_rr_type::CHANY : e_rr_type::CHANX;
+    if (node_type != perpendicular_chan_type) {
+        return bb;
+    }
+
+    const int wire_low = profile_x ? rr_graph.node_ylow(node) : rr_graph.node_xlow(node);
+    const int wire_high = profile_x ? rr_graph.node_yhigh(node) : rr_graph.node_xhigh(node);
+    const int endpoint = (rr_graph.node_direction(node) == Direction::DEC) ? wire_low : wire_high;
+
+    const int strip_low = profile_x ? bb.ymin : bb.xmin;
+    const int strip_high = profile_x ? bb.ymax : bb.xmax;
+    const int dim_size = profile_x ? (int)grid.height() : (int)grid.width();
+
+    // Centre the strip on the endpoint. The strip extends (old_centre - strip_low) tiles below its
+    // centre and (strip_high - old_centre) tiles above it, so the centre is clamped that far inside
+    // [0, dim_size - 1] to keep the whole strip, not just itevaluas centre, inside the grid.
+    const int old_centre = (strip_low + strip_high) / 2;
+    const int new_centre = std::clamp(endpoint,
+                                      old_centre - strip_low,
+                                      (dim_size - 1) - (strip_high - old_centre));
+    const int shift = new_centre - old_centre;
 
     t_bb sample_bb = bb;
-    if (axis == e_profile_axis::X) {
-        sample_bb.ymin = std::max(0, std::min(bb.ymin, (int)rr_graph.node_ylow(node) - SAMPLE_NODE_BB_MARGIN));
-        sample_bb.ymax = std::min((int)grid.height() - 1, std::max(bb.ymax, (int)rr_graph.node_yhigh(node) + SAMPLE_NODE_BB_MARGIN));
+    if (profile_x) {
+        sample_bb.ymin += shift;
+        sample_bb.ymax += shift;
     } else {
-        sample_bb.xmin = std::max(0, std::min(bb.xmin, (int)rr_graph.node_xlow(node) - SAMPLE_NODE_BB_MARGIN));
-        sample_bb.xmax = std::min((int)grid.width() - 1, std::max(bb.xmax, (int)rr_graph.node_xhigh(node) + SAMPLE_NODE_BB_MARGIN));
+        sample_bb.xmin += shift;
+        sample_bb.xmax += shift;
     }
 
     return sample_bb;
