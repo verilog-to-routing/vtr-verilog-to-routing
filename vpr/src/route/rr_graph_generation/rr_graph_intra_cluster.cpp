@@ -472,23 +472,23 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
         RRNodeId parent_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type, root_loc, pin_physical_num);
         VTR_ASSERT(parent_pin_node_id != RRNodeId::INVALID());
 
-        pin_map.for_each_sink_pin(pb_pin, [&](int conn_pin_physical_num, const t_pb_graph_pin* conn_pb_pin) {
+        for (const ClusterPinMap::t_connected_pin& conn_pin : pin_map.sink_pins(pb_pin)) {
             // The pin belongs to a chain - incoming edges to this pin will be added later unless it is the sink of the chain
-            int conn_pin_chain_num = pin_chain_idx[conn_pin_physical_num];
-            bool conn_pin_on_tile = is_pin_on_tile(physical_type, conn_pin_physical_num);
-            bool conn_primitive_pin = !conn_pin_on_tile && conn_pb_pin->is_primitive_pin();
-            if (conn_pin_chain_num != UNDEFINED && chain_sinks[conn_pin_chain_num] != conn_pin_physical_num && !conn_primitive_pin && !conn_pin_on_tile) {
-                return;
+            int conn_pin_chain_num = pin_chain_idx[conn_pin.physical_num];
+            bool conn_pin_on_tile = is_pin_on_tile(physical_type, conn_pin.physical_num);
+            bool conn_primitive_pin = !conn_pin_on_tile && conn_pin.pb_pin->is_primitive_pin();
+            if (conn_pin_chain_num != UNDEFINED && chain_sinks[conn_pin_chain_num] != conn_pin.physical_num && !conn_primitive_pin && !conn_pin_on_tile) {
+                continue;
             }
 
-            RRNodeId conn_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type, root_loc, conn_pin_physical_num);
+            RRNodeId conn_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type, root_loc, conn_pin.physical_num);
 
             // If the node_id is INVALID it means that it belongs to a pin which is not added to the RR Graph. The pin is not added
             // since it belongs to a certain mode or block which is not used in clustered netlist
             if (conn_pin_node_id == RRNodeId::INVALID()) {
-                return;
+                continue;
             }
-            int sw_idx = ClusterPinMap::edge(pb_pin, conn_pb_pin)->switch_type_idx;
+            int sw_idx = ClusterPinMap::edge(pb_pin, conn_pin.pb_pin)->switch_type_idx;
 
             if (switches_remapped) {
                 std::map<int, t_arch_switch_inf>& all_sw_inf = g_vpr_ctx.mutable_device().all_sw_inf;
@@ -502,7 +502,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                                                                            delay);
             }
             rr_edges_to_create.emplace_back(parent_pin_node_id, conn_pin_node_id, sw_idx, switches_remapped);
-        });
+        }
     }
 }
 
@@ -689,30 +689,31 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
 
         } else {
             num_collapsed_pins++;
-            pin_map.for_each_src_pin(pin_map.pb_pin(pin_physical_num), [&](int src_pin, const t_pb_graph_pin* /*src_pb_pin*/) {
-                if (!cluster_pins.contains(src_pin)) {
-                    return;
+            for (const ClusterPinMap::t_connected_pin& src_pin : pin_map.src_pins(pin_map.pb_pin(pin_physical_num))) {
+                if (!cluster_pins.contains(src_pin.physical_num)) {
+                    continue;
                 }
                 // If the source pin is located on the current chain no edge should be added since the nodes should be collapsed.
-                if (pin_chain_idx[src_pin] != UNDEFINED) {
-                    if ((pin_chain_idx[src_pin] == chain_idx)) {
-                        return;
+                int src_pin_chain_num = pin_chain_idx[src_pin.physical_num];
+                if (src_pin_chain_num != UNDEFINED) {
+                    if (src_pin_chain_num == chain_idx) {
+                        continue;
                     } else {
                         // If it is located on other chain, src_pin should be the sink of that chain, otherwise the chain is not formed correctly.
-                        VTR_ASSERT(src_pin == nodes_to_collapse.chain_sink[pin_chain_idx[src_pin]]);
+                        VTR_ASSERT(src_pin.physical_num == nodes_to_collapse.chain_sink[src_pin_chain_num]);
                     }
                 }
                 float delay = get_min_delay_to_chain(pin_map,
                                                      cluster_pins,
                                                      chain_pins,
-                                                     src_pin,
+                                                     src_pin.physical_num,
                                                      sink_pin_num);
 
-                RRNodeId rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type, root_loc, src_pin);
+                RRNodeId rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type, root_loc, src_pin.physical_num);
                 VTR_ASSERT(rr_node_id != RRNodeId::INVALID());
 
                 src_node_edge_pair.insert(std::make_pair(rr_node_id, delay));
-            });
+            }
         }
 
         for (auto src_pair : src_node_edge_pair) {
@@ -782,18 +783,18 @@ static float get_min_delay_to_chain(const ClusterPinMap& pin_map,
     float min_delay = std::numeric_limits<float>::max();
     const t_pb_graph_pin* pb_pin = pin_map.pb_pin(pin_physical_num);
     bool sink_pin_found = false;
-    pin_map.for_each_sink_pin(pb_pin, [&](int sink_pin, const t_pb_graph_pin* sink_pb_pin) {
+    for (const ClusterPinMap::t_connected_pin& sink_pin : pin_map.sink_pins(pb_pin)) {
         // If the sink is not on the chain, then we do not need to consider it.
-        if (!cluster_pins.contains(sink_pin) || !chain_pins.contains(sink_pin)) {
-            return;
+        if (!cluster_pins.contains(sink_pin.physical_num) || !chain_pins.contains(sink_pin.physical_num)) {
+            continue;
         }
         sink_pin_found = true;
         // Delay to the sink is equal to the delay to chain + chain's delay
-        float delay = get_delay_directly_connected_pins(pin_map, cluster_pins, sink_pin, chain_sink_pin) + ClusterPinMap::edge(pb_pin, sink_pb_pin)->delay_max;
+        float delay = get_delay_directly_connected_pins(pin_map, cluster_pins, sink_pin.physical_num, chain_sink_pin) + ClusterPinMap::edge(pb_pin, sink_pin.pb_pin)->delay_max;
         if (delay < min_delay) {
             min_delay = delay;
         }
-    });
+    }
 
     // We assume that the given pin has a sink in the chain.
     VTR_ASSERT(sink_pin_found);
@@ -914,14 +915,17 @@ static int get_only_sink_pin_in_cluster(const ClusterPinMap& pin_map,
                                         const std::unordered_set<int>& pins_in_cluster,
                                         int pin_physical_num) {
     int only_sink_pin = UNDEFINED;
-    int num_sink_pins = 0;
-    pin_map.for_each_sink_pin(pin_map.pb_pin(pin_physical_num), [&](int sink_pin, const t_pb_graph_pin* /*sink_pb_pin*/) {
-        if (pins_in_cluster.contains(sink_pin)) {
-            only_sink_pin = sink_pin;
-            num_sink_pins++;
+    for (const ClusterPinMap::t_connected_pin& sink_pin : pin_map.sink_pins(pin_map.pb_pin(pin_physical_num))) {
+        if (!pins_in_cluster.contains(sink_pin.physical_num)) {
+            continue;
         }
-    });
-    return (num_sink_pins == 1) ? only_sink_pin : UNDEFINED;
+        // A second sink in the cluster, possibly the same pin through another edge
+        if (only_sink_pin != UNDEFINED) {
+            return UNDEFINED;
+        }
+        only_sink_pin = sink_pin.physical_num;
+    }
+    return only_sink_pin;
 }
 
 static int get_chain_idx(const std::vector<int>& pin_idx_vec, const std::vector<int>& pin_chain, int new_idx) {
