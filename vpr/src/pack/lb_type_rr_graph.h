@@ -2,6 +2,14 @@
 /**
  * @file
  * @brief Routing resource graph of the interconnect within one logical block type.
+ *
+ * Terms:
+ *  - node: one per pb graph pin, plus the external nodes and the sinks of
+ *    primitive pins.
+ *  - edge: connects two nodes in a specific mode.
+ *  - mode: a mode of the pb type. An edge can be used only while that pb type
+ *    is in the edge's mode.
+ *  - capacity: the number of nets that can use a node at once.
  */
 
 #include <array>
@@ -21,8 +29,11 @@ typedef vtr::StrongId<struct lb_rr_node_id_tag, int> LbRRNodeId;
 
 /// @brief Types of intra-logic block routing resource nodes.
 enum class e_lb_rr_type : uint8_t {
+    /// @brief A node where a net can start: a primitive output pin or the external source.
     SOURCE = 0,
+    /// @brief A node where a net ends: the sink of a primitive pin or the external sink.
     SINK,
+    /// @brief A node a net passes through on the way from a source to a sink.
     INTERMEDIATE,
     NUM_TYPES
 };

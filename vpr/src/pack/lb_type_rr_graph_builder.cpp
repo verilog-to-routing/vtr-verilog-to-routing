@@ -2,7 +2,7 @@
  * @file
  * @brief Builds the routing resource graph that represents the interconnect within a logic block type.
  *
- * Each pb_graph_pin is a node in this graph and is indexed by the pin number of the pb_graph pin.
+ * Each pb_graph_pin is a node in this graph and is indexed by the pin_count_in_cluster of the pb_graph pin.
  * External nets that drive into the logic block come from one source indexed by the total number of pins.
  * External nets that the logic block drives end at one sink indexed by the total number of pins + 1.
  * Each primitive input pin drives a sink. Since the input pin has its own node, the sink it drives
