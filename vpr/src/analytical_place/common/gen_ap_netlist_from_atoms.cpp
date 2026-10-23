@@ -10,6 +10,7 @@
 #include "ap_netlist.h"
 #include "atom_netlist.h"
 #include "atom_netlist_fwd.h"
+#include "atom_netlist_utils.h"
 #include "logical_ram_infer.h"
 #include "netlist_fwd.h"
 #include "logic_types.h"
@@ -323,11 +324,12 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
             continue;
         }
 
-        // Is the net a constant net (e.g. gnd / vcc) which will not be routed? If so,
-        // mark as ignored for AP. This matches how the clustered placer handles these
-        // nets (see process_constant_nets). That method is called after packing, so the
-        // atom netlist has not been annotated with these ignored nets at this point.
-        if (constant_net_method == CONSTANT_NET_GLOBAL && atom_netlist.net_is_constant(atom_net_id)) {
+        // Is the net driven by a constant generator (e.g. gnd / vcc) which will not
+        // be routed? If so, mark as ignored for AP. This matches how the clustered
+        // placer handles these nets (see process_constant_nets). That method is called
+        // after packing, so the atom netlist has not been annotated with these ignored
+        // nets at this point. Nets which were only inferred to be constant are routed.
+        if (constant_net_method == CONSTANT_NET_GLOBAL && is_constant_generator_net(atom_netlist, atom_net_id)) {
             ap_netlist.set_net_is_ignored(ap_net_id, true);
             continue;
         }
