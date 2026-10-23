@@ -674,9 +674,6 @@ void free_pb_graph_edges() {
         for (int i = 0; i < (intptr_t)cur_num->data_vptr; i++) {
             delete[] edges[i].input_pins;
             delete[] edges[i].output_pins;
-            if (edges[i].pack_pattern_indices) {
-                delete[] edges[i].pack_pattern_indices;
-            }
             // if (edges[i].pack_pattern_names) {
             // vtr::free(edges[i].pack_pattern_names);
             // }

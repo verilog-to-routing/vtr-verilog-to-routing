@@ -1524,7 +1524,7 @@ class t_pb_graph_edge {
     /* pack pattern info */
     int num_pack_patterns;
     std::vector<const char*> pack_pattern_names;
-    int* pack_pattern_indices;
+    std::vector<int> pack_pattern_indices;
     /* [0..num_pack_patterns-1] parallel to pack_pattern_names: true if the
      * pattern annotation on this edge is marked allow_multi_fanout */
     std::vector<bool> pack_pattern_allow_multi_fanout;
