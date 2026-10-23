@@ -7,12 +7,16 @@
  *          results of the prepacker to generate an APNetlist.
  */
 
+#include <vector>
+#include "constant_nets.h"
+
 // Forward declarations
 class APNetlist;
 class AtomNetlist;
 class Prepacker;
 class RamMapper;
 class UserPlaceConstraints;
+struct t_logical_block_type;
 
 /**
  * @brief Use the results from prepacking the atom netlist to generate an APNetlist.
@@ -27,8 +31,12 @@ class UserPlaceConstraints;
  *                               multiple molecule blocks for them in the AP netlist.
  *  @param constraints           The placement constraints on the Atom blocks, provided
  *                               by the user.
+ *  @param logical_block_types   The logical block types of the architecture. Used to
+ *                               find which nets will connect to global tile pins.
  *  @param high_fanout_threshold The threshold above which nets with higher fanout will
  *                               be ignored.
+ *  @param constant_net_method   How constant nets (e.g. gnd / vcc) will be handled. If
+ *                               these nets will not be routed, they will be ignored.
  *
  *  @return             An APNetlist object, generated from the prepacker results.
  */
@@ -36,4 +44,6 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                                     const Prepacker& prepacker,
                                     const RamMapper& ram_mapper,
                                     const UserPlaceConstraints& constraints,
-                                    int high_fanout_threshold);
+                                    const std::vector<t_logical_block_type>& logical_block_types,
+                                    int high_fanout_threshold,
+                                    e_constant_net_method constant_net_method);
