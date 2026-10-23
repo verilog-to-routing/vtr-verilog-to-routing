@@ -1477,6 +1477,9 @@ class t_pb_graph_pin {
     bool is_root_block_pin() const {
         return this->parent_node->is_root();
     }
+    // Returns the edge from this pin to sink_pin. Only valid when flat routing
+    // is enabled.
+    const t_pb_graph_edge* edge_to(const t_pb_graph_pin* sink_pin) const;
     // This function returns a string that contains the name of the pin
     // and the entire sequence of pb_types in the hierarchy from the block
     // of this pin back to the cluster-level (top-level) pb_type in the
@@ -1534,6 +1537,10 @@ class t_pb_graph_edge {
 
     // class member functions
   public:
+    // Returns the pin driving this edge.
+    const t_pb_graph_pin* input_pin() const;
+    // Returns the pin this edge drives.
+    const t_pb_graph_pin* output_pin() const;
     // Returns true if this edge implements one bit of a bus-based mux
     // (<mux bus="true">), whose single select drives every bit of its output bus.
     bool is_bus_mux() const;
