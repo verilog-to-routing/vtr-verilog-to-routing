@@ -25,6 +25,10 @@
 # different heuristics no longer move blocks/wires.
 readonly _VC_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly FIXTURES_DIR="${_VC_SCRIPT_DIR}/fixtures"
+
+# Labels are rasterized with the host's fontconfig default unless pinned, which
+# makes goldens host-specific. Pin them to the checked-in font.
+export FONTCONFIG_FILE="${_VC_SCRIPT_DIR}/fonts/fonts.conf"
 readonly CLEAN_NET="${FIXTURES_DIR}/clean/mult_4x4.net"
 readonly CLEAN_PLACE="${FIXTURES_DIR}/clean/mult_4x4.place"
 readonly CLEAN_ROUTE="${FIXTURES_DIR}/clean/mult_4x4.route"
@@ -74,6 +78,9 @@ VISUAL_CASE_NAMES=(
 # set_nets : 0=off, 1=flylines (placement), 2=routed (routing).
 # set_cpd  : 0=off; bitmask 1|2|4 = flylines | delays | routed-wires.
 #            Bit 2 (routed-wire highlight) is only meaningful at routing.
+#            The placement_critical_path_* cases are expected to match
+#            placement_default: a placement loaded under --analysis carries
+#            no timing info, and set_cpd 2 draws nothing without flylines.
 PLACEMENT_ROUTING_CMDS="\
 wait_for_stage placement_done; \
 save_graphics placement_default.png; \
@@ -81,7 +88,7 @@ set_nets 1; save_graphics placement_nets_flylines.png; set_nets 0; \
 set_cpd 1; save_graphics placement_critical_path_flylines.png; set_cpd 0; \
 set_cpd 2; save_graphics placement_critical_path_delays.png; set_cpd 0; \
 set_cpd 3; save_graphics placement_critical_path_flylines_and_delays.png; set_cpd 0; \
-set_draw_block_internals 2; save_graphics placement_block_internals.png; set_draw_block_internals 0; \
+set_zoom 2; set_draw_block_internals 2; save_graphics placement_block_internals.png; set_draw_block_internals 0; set_zoom 1; \
 wait_for_stage routing_done; \
 save_graphics routing_default.png; \
 set_nets 2; save_graphics routing_nets_routed.png; set_nets 0; \

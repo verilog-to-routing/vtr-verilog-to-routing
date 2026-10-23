@@ -8,7 +8,7 @@
 # for the routing_done congestion overlays) — passing --renderer <renderer>
 # explicitly each time — then compares each emitted PNG against the
 # matching per-renderer golden at vpr/test/gui/golden/<renderer>/<case>.png
-# using SSIM (compare_images.py).
+# with an exact pixel comparison (compare_images.py).
 #
 # Goldens stay valid across VPR versions because --analysis runs only the
 # analyzer (pack/place/route LOAD from disk), so different VPR heuristics
@@ -31,29 +31,17 @@
 #                  next to this script). Per-renderer goldens live under
 #                  golden/<renderer>/<case>.png. Missing goldens FAIL their
 #                  case (strict mode).
-#   [threshold]  = $VPR_GUI_SSIM_THRESHOLD, else compare_images.py's default.
-#                  Deliberately not duplicated here: a second default in this
-#                  file is how the runner drifted to 0.98 while ctest passed
-#                  0.999.
+#   [threshold]  = $VPR_GUI_SSIM_THRESHOLD, else unset. An optional SSIM
+#                  floor applied on top of the exact pixel gate; it never
+#                  loosens it.
 #
-# Exit: 0 if all comparisons pass, 1 otherwise.
+# Exit: 0 if every comparison ran and passed, 1 if any failed, 2 if any were
+#       skipped or nothing was compared (ctest SKIP_RETURN_CODE).
 
 set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
-
-# CI offscreen Mesa renders differ from goldens captured on developer hosts
-# (different GL implementation, AA, font hinting), so this layer has always
-# skipped on a runner -- which is how the goldens went three months stale
-# unnoticed. The comparison is now drift-tolerant (see compare_images.py), so
-# enabling it in CI should be viable; set VPR_GUI_VISUAL_IN_CI=1 to trial it on
-# a runner before flipping this default. Exit 2 is honoured by ctest's
-# SKIP_RETURN_CODE on test_vpr_gui_visual.
-if [[ "${CI:-}" == "true" && "${VPR_GUI_VISUAL_IN_CI:-0}" != "1" ]]; then
-    echo "SKIP: CI offscreen Mesa cannot be compared against developer-host goldens" >&2
-    exit 2
-fi
 
 VPR_ARG="${1:-${REPO_ROOT}/build/vpr/vpr}"
 ARCH_ARG="${2:-${REPO_ROOT}/vtr_flow/arch/timing}"
@@ -115,7 +103,7 @@ export QT_SCALE_FACTOR=1
 # previous session can't be mistaken for the current one.
 #
 # Diff-write policy:
-#   default              → diff written only when SSIM < threshold (FAIL).
+#   default              → diff written only when the case FAILs.
 #   VPR_GUI_DEBUG=1      → diff written for every case (PASS and FAIL),
 #                          set by `run_all_tests.sh --debug`.
 # REPO_ROOT is VTR's SOURCE root; under a nested build <src>/build is not the
@@ -140,12 +128,12 @@ for r in "${RENDERERS[@]}"; do
 done
 if [[ "${have_any_goldens}" -eq 0 ]]; then
     echo "WARNING: No golden images in ${GOLDEN_DIR}/{${RENDERERS[*]// /,}}/"
-    echo "Run generate_goldens.sh first (requires DEF-004 to be fixed)."
+    echo "Run generate_goldens.sh first."
     echo ""
     echo "=== Visual Regression Summary ==="
     echo "    Passed:  0"
     echo "    Failed:  0"
-    echo "    Skipped: ALL (no golden images — blocked by DEF-004)"
+    echo "    Skipped: ALL (no golden images)"
     echo "    RESULT: SKIP"
     exit 2
 fi
@@ -155,7 +143,7 @@ echo "    VPR:       ${VPR}"
 echo "    Bench:     ${BENCH}"
 echo "    Goldens:   ${GOLDEN_DIR}"
 echo "    Python:    ${PYTHON}"
-echo "    Threshold: ${THRESHOLD:-<compare_images.py default>}"
+echo "    Threshold: ${THRESHOLD:-none (exact pixel match only)}"
 echo "    Renderers: ${RENDERERS[*]}"
 echo "    Cases:     ${#VISUAL_CASE_NAMES[@]} × ${#RENDERERS[@]} = $(( ${#VISUAL_CASE_NAMES[@]} * ${#RENDERERS[@]} ))"
 echo ""

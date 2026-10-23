@@ -2,9 +2,9 @@
 """Layer 5 — golden image comparison.
 
 Layer 5 is a **same-host** gate. VPR's offscreen rendering is bit-exact on a
-fixed host (42/42 outputs byte-identical across repeated runs) and the runner
-skips itself under CI, so the goldens are host-scoped by construction. That
-makes an exact pixel comparison both the simplest and the most sensitive gate
+fixed host (42/42 outputs byte-identical across repeated runs), and label fonts
+are pinned to a checked-in font, so immediate/deferred renders also match across
+hosts. That makes an exact pixel comparison both the simplest and the most sensitive gate
 available: it catches recolouring, a single wrong glyph in a block label, a
 deleted wire and a moved block alike.
 
@@ -61,8 +61,8 @@ def _load(path: Path):
     try:
         img = pil_image.open(path)
         img.load()
-    # pylint: disable=broad-exception-caught
-    except Exception as exc:  # any decode failure is an infra fault, not a diff
+    # Any decode failure is an infra fault, not a diff.
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         print(f"ERROR: cannot read image {path}: {exc}", file=sys.stderr)
         sys.exit(2)
 
@@ -74,12 +74,27 @@ def _load(path: Path):
     return np.array(img.convert("RGB"))
 
 
+def _pad_to(img, height: int, width: int):
+    """Pad on the bottom/right with magenta, a colour absent from the goldens."""
+    _, np, _ = _deps()
+    out = np.empty((height, width, 3), dtype=np.uint8)
+    out[:] = (255, 0, 255)
+    out[: img.shape[0], : img.shape[1]] = img
+    return out
+
+
 def _write_diff_triptych(img_a, img_b, diff_out: Path) -> None:
     """Write a ``[golden | current | amplified-diff]`` triptych PNG.
 
     The diff channel is amplified 8x and clipped so sub-pixel drift is visible.
+    Images of different sizes are padded to the larger one so a size mismatch
+    still gets a triptych.
     """
     pil_image, np, _ = _deps()
+    height = max(img_a.shape[0], img_b.shape[0])
+    width = max(img_a.shape[1], img_b.shape[1])
+    img_a = _pad_to(img_a, height, width)
+    img_b = _pad_to(img_b, height, width)
     diff = np.clip(np.abs(img_a.astype(np.int16) - img_b.astype(np.int16)) * 8, 0, 255).astype(
         np.uint8
     )
@@ -94,27 +109,36 @@ def differing_pixels(a, b, intensity_tol: int = DEFAULT_INTENSITY_TOL) -> int:
     return int((delta > intensity_tol).sum())
 
 
+def compare_arrays(
+    a,
+    b,
+    name_a: str,
+    name_b: str,
+    intensity_tol: int = DEFAULT_INTENSITY_TOL,
+) -> Tuple[int, Optional[float]]:
+    """Return ``(differing pixel count, SSIM)``; count is -1 on a size mismatch."""
+    _, _, structural_similarity = _deps()
+
+    if a.shape != b.shape:
+        # Never resize to compare — that launders a resolution regression into
+        # a pass.
+        print(
+            f"ERROR: dimension mismatch: {name_a} is {a.shape[1]}x{a.shape[0]}, "
+            f"{name_b} is {b.shape[1]}x{b.shape[0]}",
+            file=sys.stderr,
+        )
+        return -1, None
+
+    return differing_pixels(a, b, intensity_tol), float(structural_similarity(a, b, channel_axis=2))
+
+
 def compare(
     path_a: Path,
     path_b: Path,
     intensity_tol: int = DEFAULT_INTENSITY_TOL,
 ) -> Tuple[int, Optional[float]]:
     """Return ``(differing pixel count, SSIM)``; count is -1 on a size mismatch."""
-    _, _, structural_similarity = _deps()
-    a = _load(path_a)
-    b = _load(path_b)
-
-    if a.shape != b.shape:
-        # Never resize to compare — that launders a resolution regression into
-        # a pass.
-        print(
-            f"ERROR: dimension mismatch: {path_a.name} is {a.shape[1]}x{a.shape[0]}, "
-            f"{path_b.name} is {b.shape[1]}x{b.shape[0]}",
-            file=sys.stderr,
-        )
-        return -1, None
-
-    return differing_pixels(a, b, intensity_tol), float(structural_similarity(a, b, channel_axis=2))
+    return compare_arrays(_load(path_a), _load(path_b), path_a.name, path_b.name, intensity_tol)
 
 
 def main() -> int:
@@ -169,9 +193,15 @@ def main() -> int:
             print(f"ERROR: File not found: {p}", file=sys.stderr)
             return 2
 
-    ndiff, score = compare(args.image_a, args.image_b, intensity_tol=args.intensity_tol)
+    img_a = _load(args.image_a)
+    img_b = _load(args.image_b)
+    ndiff, score = compare_arrays(
+        img_a, img_b, args.image_a.name, args.image_b.name, intensity_tol=args.intensity_tol
+    )
 
     if ndiff < 0:  # dimension mismatch, already reported on stderr
+        if args.diff_out is not None:
+            _write_diff_triptych(img_a, img_b, args.diff_out)
         return 1
 
     diff_ok = ndiff <= args.max_diff_pixels
@@ -185,7 +215,7 @@ def main() -> int:
 
     # Key the triptych off the actual verdict, not off SSIM.
     if args.diff_out is not None and (not args.diff_on_fail_only or not passed):
-        _write_diff_triptych(_load(args.image_a), _load(args.image_b), args.diff_out)
+        _write_diff_triptych(img_a, img_b, args.diff_out)
 
     if passed:
         print("PASS")

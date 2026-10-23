@@ -35,11 +35,11 @@ QT_QPA_PLATFORM=offscreen ./run_reg_test.py vtr_reg_gui
 
 `QT_QPA_PLATFORM=offscreen` must be exported before invoking
 `run_reg_test.py`; the task framework forwards the parent shell
-environment to each `vpr` invocation. S0 §S0.2 verified this
-propagation works (offscreen plugin shows up in `QT_DEBUG_PLUGINS=1`
+environment to each `vpr` invocation. This propagation was verified
+to work (offscreen plugin shows up in `QT_DEBUG_PLUGINS=1`
 output).
 
-## Risk-7 mitigation (macOS parmys)
+## macOS parmys workaround
 
 Every `config.txt` pins `script_params_common=-start vpr ...` so VPR
 consumes the prepared `.blif` directly and the front-end (parmys/odin)

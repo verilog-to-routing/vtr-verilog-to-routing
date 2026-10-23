@@ -1,6 +1,6 @@
 /**
  * @file test_save_graphics.cpp
- * @brief GUI-T-003 — SaveGraphics dialog & writer (Layer 4).
+ * @brief SaveGraphics dialog & writer (Layer 4).
  *
  * Locks the contract of the three public entry points in
  * ``vpr/src/draw/save_graphics.cpp``:
@@ -19,7 +19,7 @@
  *     line-edit, combo box, and Save/Cancel button-box.
  *
  * Why this is real, behaviour-relevant coverage rather than
- * structural noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * structural noise:
  *
  *   The user pushes one button and gets a file with the chosen
  *   extension, or no file plus a warning. A regression in the
@@ -44,7 +44,7 @@
  *   * Each case creates / cleans its own
  *     ``/tmp/vpr_gui_t003_<pid>_<n>`` directory.
  *
- * Tag: [layer4][interactive][save-graphics][vpr_gui][GUI-T-003]
+ * Tag: [layer4][interactive][save-graphics][vpr_gui]
  */
 
 #include <catch2/catch_test_macros.hpp>
@@ -144,7 +144,7 @@ class TmpDir {
 // cannot be caught. We therefore skip the tests that exercise the real
 // PNG/PDF/SVG writer when running under CI. Locally (developer
 // workstations and lab machines with a full Mesa install) the tests
-// still execute end-to-end. Tracked alongside DEF-016 / GUI-T-006.
+// still execute end-to-end.
 bool ci_render_unavailable() {
     const char* ci = std::getenv("CI");
     return ci && std::string(ci) == "true";
@@ -156,7 +156,7 @@ bool ci_render_unavailable() {
 // Positive: png / pdf / svg dispatch each write a non-empty file
 // =============================================================================
 TEST_CASE("SaveGraphics: png/pdf/svg extensions each write a non-empty file",
-          "[layer4][interactive][save-graphics][vpr_gui][GUI-T-003]") {
+          "[layer4][interactive][save-graphics][vpr_gui]") {
     if (ci_render_unavailable()) {
         SKIP("CI offscreen Mesa lacks a working GL context for QRhiGles2");
     }
@@ -182,7 +182,7 @@ TEST_CASE("SaveGraphics: png/pdf/svg extensions each write a non-empty file",
 // Positive: leading-dot extension is stripped ("png" and ".png" equivalent)
 // =============================================================================
 TEST_CASE("SaveGraphics: leading-dot extension is stripped before dispatch",
-          "[layer4][interactive][save-graphics][vpr_gui][GUI-T-003]") {
+          "[layer4][interactive][save-graphics][vpr_gui]") {
     if (ci_render_unavailable()) {
         SKIP("CI offscreen Mesa lacks a working GL context for QRhiGles2");
     }
@@ -201,7 +201,7 @@ TEST_CASE("SaveGraphics: leading-dot extension is stripped before dispatch",
 // Negative: invalid extension writes no file (warning_dialog branch)
 // =============================================================================
 TEST_CASE("SaveGraphics: invalid extension writes no file",
-          "[layer4][interactive][save-graphics][vpr_gui][GUI-T-003]") {
+          "[layer4][interactive][save-graphics][vpr_gui]") {
     EzglAppFixture fx_app;
     DrawApplicationScope app_scope(fx_app.app());
     ensure_main_canvas(fx_app.app());
@@ -226,7 +226,7 @@ TEST_CASE("SaveGraphics: invalid extension writes no file",
 // save_graphics_from_button: dispatches using widgets named by the dialog
 // =============================================================================
 TEST_CASE("SaveGraphics: save_graphics_from_button reads named widgets and writes",
-          "[layer4][interactive][save-graphics][vpr_gui][GUI-T-003]") {
+          "[layer4][interactive][save-graphics][vpr_gui]") {
     if (ci_render_unavailable()) {
         SKIP("CI offscreen Mesa lacks a working GL context for QRhiGles2");
     }
@@ -261,7 +261,7 @@ TEST_CASE("SaveGraphics: save_graphics_from_button reads named widgets and write
 // save_graphics_from_button: missing widgets is a no-op (defensive guard)
 // =============================================================================
 TEST_CASE("SaveGraphics: save_graphics_from_button is a no-op when widgets missing",
-          "[layer4][interactive][save-graphics][vpr_gui][GUI-T-003]") {
+          "[layer4][interactive][save-graphics][vpr_gui]") {
     EzglAppFixture fx_app;
     DrawApplicationScope app_scope(fx_app.app());
     ensure_main_canvas(fx_app.app());
@@ -279,7 +279,7 @@ TEST_CASE("SaveGraphics: save_graphics_from_button is a no-op when widgets missi
 // save_graphics_dialog_box: constructs a dialog with the contracted shape
 // =============================================================================
 TEST_CASE("SaveGraphics: dialog_box builds a Save/Cancel dialog with named widgets",
-          "[layer4][interactive][save-graphics][vpr_gui][GUI-T-003]") {
+          "[layer4][interactive][save-graphics][vpr_gui]") {
     EzglAppFixture fx_app;
     DrawApplicationScope app_scope(fx_app.app());
     ensure_main_canvas(fx_app.app());
