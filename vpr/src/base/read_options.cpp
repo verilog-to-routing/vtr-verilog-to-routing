@@ -1973,10 +1973,12 @@ static void add_general_options(argparse::ArgumentParser& parser, t_options& arg
 
     gen_grp.add_argument<e_constant_net_method, ParseConstantNetMethod>(args.constant_net_method, "--constant_net_method")
         .help(
-            "Specifies how constant nets (i.e. those driven to a constant\n"
-            "value) are handled:\n"
-            " * global: Treat constant nets as globals (not routed)\n"
-            " * route : Treat constant nets as normal nets (routed)\n")
+            "Specifies how constant nets (i.e. those driven by a constant\n"
+            "generator such as vcc/gnd) are handled:\n"
+            " * global: Treat constant nets as ignored (not routed)\n"
+            " * route : Treat constant nets as normal nets (routed)\n"
+            "Nets which are only inferred to be constant (e.g. the output\n"
+            "of a primitive whose inputs are all constant) are always routed.\n")
         .default_value("global")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2229,7 +2231,7 @@ static void add_netlist_options(argparse::ArgumentParser& parser, t_options& arg
     netlist_grp.add_argument<bool, ParseOnOff>(args.merge_constant_generators, "--merge_constant_generators")
         .help("Controls whether constant generators of the same value (e.g. the many LUTs tying"
               " signals to gnd / vcc) are merged into a single constant generator")
-        .default_value("off")
+        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     netlist_grp.add_argument<e_const_gen_inference, ParseConstGenInference>(args.const_gen_inference, "--const_gen_inference")
@@ -2260,7 +2262,7 @@ static void add_netlist_options(argparse::ArgumentParser& parser, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     netlist_grp.add_argument<bool, ParseOnOff>(args.sweep_constant_primary_outputs, "--sweep_constant_primary_outputs")
-        .help("Controls whether primary outputs driven by constant values are removed from the netlist")
+        .help("Controls whether primary outputs driven by constant generators (e.g. vcc/gnd) are removed from the netlist")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

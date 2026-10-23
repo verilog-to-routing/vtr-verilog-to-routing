@@ -1698,26 +1698,36 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                             int pin_physical_num) {
     e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
     e_rr_type node_type = (pin_type == e_pin_type::DRIVER) ? e_rr_type::OPIN : e_rr_type::IPIN;
-    std::vector<int> x_offset;
-    std::vector<int> y_offset;
-    std::vector<e_side> pin_sides;
-    std::tie(x_offset, y_offset, pin_sides) = get_pin_coordinates(physical_tile, pin_physical_num, std::vector<e_side>(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end()));
-    VTR_ASSERT(!x_offset.empty());
-    RRNodeId node_id = RRNodeId::INVALID();
-    // Pin sides from get_pin_coordinates are those specified in the architecture. However, when
-    // adding pins to the RR Graph, not all sides may be included (depending on the block’s location).
-    // Therefore, we iterate over all sides to find a valid node id.
-    for (int coord_idx = 0; coord_idx < (int)pin_sides.size(); coord_idx++) {
-        node_id = rr_spatial_lookup.find_node(root_loc.layer_num,
-                                              root_loc.x + x_offset[coord_idx],
-                                              root_loc.y + y_offset[coord_idx],
-                                              node_type,
-                                              pin_physical_num,
-                                              pin_sides[coord_idx]);
-        if (node_id != RRNodeId::INVALID())
-            break;
+
+    // Internal pins use the TOP side at the tile root (see get_pin_coordinates()).
+    if (!is_pin_on_tile(physical_tile, pin_physical_num)) {
+        return rr_spatial_lookup.find_node(root_loc.layer_num, root_loc.x, root_loc.y, node_type, pin_physical_num, e_side::TOP);
     }
-    return node_id;
+
+    // Search pin locations in get_pin_coordinates() order (side, width, height) without temporary vectors.
+    // The block's location may exclude some sides from the RR graph, so return the first valid node.
+    bool pin_located = false;
+    for (e_side side : TOTAL_2D_SIDES) {
+        for (int width = 0; width < physical_tile->width; ++width) {
+            for (int height = 0; height < physical_tile->height; ++height) {
+                if (!physical_tile->pinloc[width][height][side][pin_physical_num]) {
+                    continue;
+                }
+                pin_located = true;
+                RRNodeId node_id = rr_spatial_lookup.find_node(root_loc.layer_num,
+                                                               root_loc.x + width,
+                                                               root_loc.y + height,
+                                                               node_type,
+                                                               pin_physical_num,
+                                                               side);
+                if (node_id != RRNodeId::INVALID()) {
+                    return node_id;
+                }
+            }
+        }
+    }
+    VTR_ASSERT(pin_located);
+    return RRNodeId::INVALID();
 }
 
 RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
