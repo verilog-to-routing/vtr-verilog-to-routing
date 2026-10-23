@@ -1087,7 +1087,6 @@ static void alloc_and_load_complete_interc_edges(t_interconnect* interconnect,
 
                     edge.interconnect = interconnect;
                     edge.driver_set = i_inset;
-                    edge.driver_pin = i_inpin;
                 }
             }
         }
@@ -1171,7 +1170,6 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
 
             edge.interconnect = interconnect;
             edge.driver_set = 0;
-            edge.driver_pin = ipin;
             edge.infer_pattern = interconnect->infer_annotations;
         }
     }
@@ -1240,7 +1238,6 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
             edge.num_output_pins = 1;
             edge.interconnect = interconnect;
             edge.driver_set = i_inset;
-            edge.driver_pin = i_inpin;
 
             in_pin->output_edges[in_pin->num_output_edges] = &edge;
             in_pin->num_output_edges++;

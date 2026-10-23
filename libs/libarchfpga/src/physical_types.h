@@ -1519,12 +1519,10 @@ class t_pb_graph_edge {
     /* timing information */
     float delay_max;
     float delay_min;
-    float capacitance;
 
     /* who drives this edge */
     t_interconnect* interconnect;
     int driver_set;
-    int driver_pin;
 
     /* pack pattern info */
     int num_pack_patterns;
