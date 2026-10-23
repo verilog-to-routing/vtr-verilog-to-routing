@@ -33,6 +33,11 @@ void TracebackCompat::traceback_to_route_tree_x(t_trace* trace, RouteTree& tree,
     while (trace != nullptr) {
         RRNodeId inode = RRNodeId(trace->index);
 
+        // Every node below the root is reached through a switch. Without one, the
+        // traceback was mis-read, and reload_timing() would index rr_switch_inf with
+        // an invalid switch.
+        VTR_ASSERT_MSG(parent_switch.is_valid(), "Route tree node has no parent switch");
+
         RouteTreeNode* new_node = new RouteTreeNode(inode, parent_switch, parent);
         tree.add_node(parent, new_node);
         new_node->net_pin_index = trace->net_pin_index;
@@ -45,8 +50,10 @@ void TracebackCompat::traceback_to_route_tree_x(t_trace* trace, RouteTree& tree,
         else
             new_node->re_expand = true;
 
-        if (node_type == e_rr_type::SINK) {
-            /* The traceback returns to the previous branch point if there is more than one SINK, otherwise we are at the last SINK */
+        // A branch ends at a SINK, or at any node with no switch to a next node: a
+        // branch of non-configurable nodes can end at a wire that reaches no SINK.
+        if (node_type == e_rr_type::SINK || trace->iswitch == UNDEFINED) {
+            // The traceback returns to the previous branch point if there is another branch, otherwise this is the last branch end
             if (trace->next) {
                 RRNodeId next_rr_node = RRNodeId(trace->next->index);
                 RouteTreeNode* branch = tree._rr_node_to_rt_node.at(next_rr_node);

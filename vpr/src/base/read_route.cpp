@@ -124,6 +124,7 @@ static void format_pin_info(std::string& pb_name,
 static std::string format_name(std::string name);
 
 static bool check_rr_graph_connectivity(RRNodeId prev_node,
+                                        bool prev_ends_branch,
                                         RRNodeId node);
 
 void print_route(const Netlist<>& net_list,
@@ -385,7 +386,8 @@ static void process_nodes(const Netlist<>& net_list,
                 offset = 2;
 
                 /* Check for connectivity, this throws an exception when a dangling net is encountered in the routing file */
-                bool legal_node = check_rr_graph_connectivity(prev_node, rr_node);
+                bool prev_ends_branch = (tptr != nullptr && tptr->iswitch == UNDEFINED);
+                bool legal_node = check_rr_graph_connectivity(prev_node, prev_ends_branch, rr_node);
                 if (!legal_node) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno, "Dangling branch at net %lu, nodes %d -> %d: %s", inet, prev_node, inode, input.c_str());
                 }
@@ -397,7 +399,8 @@ static void process_nodes(const Netlist<>& net_list,
                 }
                 offset = 0;
 
-                bool legal_node = check_rr_graph_connectivity(prev_node, rr_node);
+                bool prev_ends_branch = (tptr != nullptr && tptr->iswitch == UNDEFINED);
+                bool legal_node = check_rr_graph_connectivity(prev_node, prev_ends_branch, rr_node);
                 prev_node = rr_node;
                 if (!legal_node) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno, "Dangling branch at net %lu, nodes %d -> %d: %s", inet, prev_node, inode, input.c_str());
@@ -634,8 +637,10 @@ static std::string format_name(std::string name) {
 
 /* Check for a discontinuity in the trace looking at the rr_graph
  * This is a check to ensure illegal dangling branches are caught before the program moves further
+ * prev_ends_branch is true when prev_node has no switch to a next node (UNDEFINED): it ends a branch,
+ * and node is the branch point the next branch starts from
  * @returns false if there is a discontinuity */
-static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
+static bool check_rr_graph_connectivity(RRNodeId prev_node, bool prev_ends_branch, RRNodeId node) {
     // Check if its the first node of the series
     if (prev_node == RRNodeId(-1)) return true;
 
@@ -644,8 +649,10 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    // If it's starting a new sub branch this is ok
-    if (rr_graph.node_type(prev_node) == e_rr_type::SINK) return true;
+    // If it's starting a new sub branch this is ok. A branch ends at a SINK, or at a
+    // node of a non-configurable set that reaches no SINK; validate_and_update_traceback()
+    // checks that the new branch starts from a node already in the net.
+    if (rr_graph.node_type(prev_node) == e_rr_type::SINK || prev_ends_branch) return true;
 
     for (RREdgeId edge : rr_graph.edge_range(prev_node)) {
         //If the sink node is reachable by previous node return true
