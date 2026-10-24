@@ -701,6 +701,11 @@ struct t_sub_tile {
     std::vector<std::unordered_map<t_logical_block_type_ptr, t_class_range>> primitive_class_range; // [rel_cap][logical_block_ptr] -> class_range
     std::vector<std::unordered_map<t_logical_block_type_ptr, t_pin_range>> intra_pin_range;         // [rel_cap][logical_block_ptr] -> intra_pin_range
 
+    // Physical number of each pb-graph pin of each logical block that can be placed in each instance of this
+    // sub-tile: [rel_cap][logical_block->index][pin_count_in_cluster].
+    // Only filled when flat routing is enabled.
+    std::vector<std::vector<std::vector<int>>> pb_pin_physical_nums;
+
     int num_phy_pins = 0;
 
     int index = -1;

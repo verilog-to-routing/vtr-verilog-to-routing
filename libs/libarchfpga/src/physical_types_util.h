@@ -388,8 +388,11 @@ std::vector<int> get_physical_pin_src_pins(t_physical_tile_type_ptr physical_typ
                                            t_logical_block_type_ptr logical_block,
                                            int pin_physical_num);
 
-int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
-                            const t_sub_tile* sub_tile,
+/**
+ * @brief Return the physical number of a pb-graph pin of a logical block placed in the given instance of a sub-tile.
+ *        Only valid when flat routing is enabled.
+ */
+int get_pb_pin_physical_num(const t_sub_tile* sub_tile,
                             t_logical_block_type_ptr logical_block,
                             int relative_cap,
                             const t_pb_graph_pin* pin);

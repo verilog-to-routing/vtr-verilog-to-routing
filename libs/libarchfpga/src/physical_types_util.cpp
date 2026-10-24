@@ -263,8 +263,7 @@ static std::vector<int> get_pb_pin_src_pins(t_physical_tile_type_ptr physical_ty
                                                                              sub_tile->capacity.low + relative_cap,
                                                                              conn_pin->pin_count_in_cluster));
             } else {
-                driving_pins.push_back(get_pb_pin_physical_num(physical_type,
-                                                               sub_tile,
+                driving_pins.push_back(get_pb_pin_physical_num(sub_tile,
                                                                logical_block,
                                                                relative_cap,
                                                                conn_pin));
@@ -1032,23 +1031,11 @@ std::vector<int> get_physical_pin_src_pins(t_physical_tile_type_ptr physical_typ
                                pb_pin);
 }
 
-int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
-                            const t_sub_tile* sub_tile,
+int get_pb_pin_physical_num(const t_sub_tile* sub_tile,
                             t_logical_block_type_ptr logical_block,
                             int relative_cap,
                             const t_pb_graph_pin* pin) {
-    int pin_physical_num = ARCH_FPGA_UNDEFINED_VAL;
-    if (pin->is_root_block_pin()) {
-        pin_physical_num = get_physical_pin_at_sub_tile_location(physical_tile,
-                                                                 logical_block,
-                                                                 sub_tile->capacity.low + relative_cap,
-                                                                 pin->pin_count_in_cluster);
-    } else {
-        int offset = sub_tile->intra_pin_range[relative_cap].at(logical_block).low;
-        pin_physical_num = pin->pin_count_in_cluster + offset;
-    }
-
-    return pin_physical_num;
+    return sub_tile->pb_pin_physical_nums[relative_cap][logical_block->index][pin->pin_count_in_cluster];
 }
 
 int get_edge_sw_arch_idx(t_physical_tile_type_ptr physical_tile,

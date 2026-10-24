@@ -1119,7 +1119,7 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
 
     // The rr node of a pb graph pin; INVALID if the pin's pb is not used by this cluster.
     auto rr_node_of = [&](const t_pb_graph_pin* pin) {
-        int pin_physical_num = get_pb_pin_physical_num(physical_type, sub_tile, logical_block, rel_cap, pin);
+        int pin_physical_num = get_pb_pin_physical_num(sub_tile, logical_block, rel_cap, pin);
         return get_pin_rr_node_id(node_lookup, physical_type, root_loc, pin_physical_num);
     };
 
