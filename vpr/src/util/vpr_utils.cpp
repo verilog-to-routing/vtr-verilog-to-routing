@@ -1122,7 +1122,7 @@ void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb
     pin_id_to_pb_mapping.clear();
 }
 
-std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id) {
+t_cluster_blk_physical_spec get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id) {
     auto& grid = g_vpr_ctx.device().grid;
     auto& block_locs = g_vpr_ctx.placement().block_locs();
     auto& loc = block_locs[cluster_blk_id].loc;
@@ -1137,7 +1137,7 @@ std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_typ
     VTR_ASSERT(rel_cap >= 0);
     auto logical_block = cluster_net_list.block_type(cluster_blk_id);
 
-    return std::make_tuple(physical_type, sub_tile, rel_cap, logical_block);
+    return {physical_type, sub_tile, rel_cap, logical_block};
 }
 
 std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
