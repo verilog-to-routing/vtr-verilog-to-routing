@@ -245,6 +245,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             bool hasPattern = false;
             for (int k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges; k++) {
                 t_pb_graph_edge* output_edge = pb_graph_node->input_pins[i][j].output_edges[k];
+                output_edge->pack_pattern_indices.resize(output_edge->num_pack_patterns);
                 for (int m = 0; m < output_edge->num_pack_patterns; m++) {
                     hasPattern = true;
                     // insert the found pattern name to the hash table. If this pattern is inserted
@@ -253,9 +254,6 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
                     // inserted element with the index given to that pattern
                     std::string pattern_name(output_edge->pack_pattern_names[m]);
                     int index = (pattern_names.insert({pattern_name, pattern_names.size()}).first)->second;
-                    if (!output_edge->pack_pattern_indices) {
-                        output_edge->pack_pattern_indices = new int[output_edge->num_pack_patterns];
-                    }
                     output_edge->pack_pattern_indices[m] = index;
                     // if this output edges belongs to a pack pattern. Expand forward starting from
                     // all its output pins to check if you need to infer pattern for direct connections
@@ -278,6 +276,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             bool hasPattern = false;
             for (int k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges; k++) {
                 t_pb_graph_edge* output_edge = pb_graph_node->output_pins[i][j].output_edges[k];
+                output_edge->pack_pattern_indices.resize(output_edge->num_pack_patterns);
                 for (int m = 0; m < output_edge->num_pack_patterns; m++) {
                     hasPattern = true;
                     // insert the found pattern name to the hash table. If this pattern is inserted
@@ -286,9 +285,6 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
                     // inserted element with the index given to that pattern
                     std::string pattern_name(output_edge->pack_pattern_names[m]);
                     int index = (pattern_names.insert({pattern_name, pattern_names.size()}).first)->second;
-                    if (!output_edge->pack_pattern_indices) {
-                        output_edge->pack_pattern_indices = new int[output_edge->num_pack_patterns];
-                    }
                     output_edge->pack_pattern_indices[m] = index;
                     // if this output edges belongs to a pack pattern. Expand forward starting from
                     // all its output pins to check if you need to infer pattern for direct connections
@@ -311,6 +307,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             bool hasPattern = false;
             for (int k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges; k++) {
                 t_pb_graph_edge* output_edge = pb_graph_node->clock_pins[i][j].output_edges[k];
+                output_edge->pack_pattern_indices.resize(output_edge->num_pack_patterns);
                 for (int m = 0; m < output_edge->num_pack_patterns; m++) {
                     hasPattern = true;
                     // insert the found pattern name to the hash table. If this pattern is inserted
@@ -319,9 +316,6 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
                     // inserted element with the index given to that pattern
                     std::string pattern_name(output_edge->pack_pattern_names[m]);
                     int index = (pattern_names.insert({pattern_name, pattern_names.size()}).first)->second;
-                    if (output_edge->pack_pattern_indices == nullptr) {
-                        output_edge->pack_pattern_indices = new int[output_edge->num_pack_patterns];
-                    }
                     output_edge->pack_pattern_indices[m] = index;
                     // if this output edges belongs to a pack pattern. Expand forward starting from
                     // all its output pins to check if you need to infer pattern for direct connections

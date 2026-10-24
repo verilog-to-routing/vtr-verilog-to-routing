@@ -966,33 +966,6 @@ bool is_primitive_pin(t_physical_tile_type_ptr physical_tile, int pin_physical_n
     }
 }
 
-int get_pb_graph_node_num_pins(const t_pb_graph_node* pb_graph_node) {
-    int num_pb_graph_pins = 0;
-    for (int port_type_idx = 0; port_type_idx < 3; port_type_idx++) {
-        int num_ports;
-        int* num_pins;
-
-        if (port_type_idx == 0) {
-            num_ports = pb_graph_node->num_input_ports;
-            num_pins = pb_graph_node->num_input_pins;
-
-        } else if (port_type_idx == 1) {
-            num_ports = pb_graph_node->num_output_ports;
-            num_pins = pb_graph_node->num_output_pins;
-        } else {
-            VTR_ASSERT(port_type_idx == 2);
-            num_ports = pb_graph_node->num_clock_ports;
-            num_pins = pb_graph_node->num_clock_pins;
-        }
-
-        for (int port_idx = 0; port_idx < num_ports; port_idx++) {
-            num_pb_graph_pins += num_pins[port_idx];
-        }
-    }
-
-    return num_pb_graph_pins;
-}
-
 std::vector<t_pb_graph_pin*> get_mutable_pb_graph_node_pb_pins(t_pb_graph_node* pb_graph_node) {
     std::vector<t_pb_graph_pin*> pins(pb_graph_node->num_pins());
     int num_added_pins = 0;

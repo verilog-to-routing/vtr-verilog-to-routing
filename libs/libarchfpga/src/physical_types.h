@@ -26,6 +26,7 @@
  */
 
 #include <cstdint>
+#include <deque>
 #include <functional>
 #include <utility>
 #include <vector>
@@ -901,6 +902,10 @@ struct t_logical_block_type {
     t_pb_type* pb_type = nullptr;
     t_pb_graph_node* pb_graph_head = nullptr;
 
+    /// All edges of the pb graph under pb_graph_head. Pins store pointers to
+    /// these edges, so the container must keep element addresses stable.
+    std::deque<t_pb_graph_edge> pb_graph_edges;
+
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
@@ -1514,17 +1519,15 @@ class t_pb_graph_edge {
     /* timing information */
     float delay_max;
     float delay_min;
-    float capacitance;
 
     /* who drives this edge */
     t_interconnect* interconnect;
     int driver_set;
-    int driver_pin;
 
     /* pack pattern info */
     int num_pack_patterns;
     std::vector<const char*> pack_pattern_names;
-    int* pack_pattern_indices;
+    std::vector<int> pack_pattern_indices;
     /* [0..num_pack_patterns-1] parallel to pack_pattern_names: true if the
      * pattern annotation on this edge is marked allow_multi_fanout */
     std::vector<bool> pack_pattern_allow_multi_fanout;
