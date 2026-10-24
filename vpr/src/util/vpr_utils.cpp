@@ -1122,7 +1122,7 @@ void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb
     pin_id_to_pb_mapping.clear();
 }
 
-std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id) {
+t_cluster_blk_physical_spec get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id) {
     auto& grid = g_vpr_ctx.device().grid;
     auto& block_locs = g_vpr_ctx.placement().block_locs();
     auto& loc = block_locs[cluster_blk_id].loc;
@@ -1137,7 +1137,7 @@ std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_typ
     VTR_ASSERT(rel_cap >= 0);
     auto logical_block = cluster_net_list.block_type(cluster_blk_id);
 
-    return std::make_tuple(physical_type, sub_tile, rel_cap, logical_block);
+    return {physical_type, sub_tile, rel_cap, logical_block};
 }
 
 std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
@@ -1556,7 +1556,7 @@ int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
     auto [physical_type, sub_tile, sub_tile_rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_block_id);
     auto pb_graph_pin = atom_look_up.atom_pin_pb_graph_pin(atom_pin_id);
     int pin_physical_num = -1;
-    pin_physical_num = get_pb_pin_physical_num(physical_type, sub_tile, logical_block, sub_tile_rel_cap, pb_graph_pin);
+    pin_physical_num = get_pb_pin_physical_num(sub_tile, logical_block, sub_tile_rel_cap, pb_graph_pin);
 
     return get_class_num_from_pin_physical_num(physical_type, pin_physical_num);
 }

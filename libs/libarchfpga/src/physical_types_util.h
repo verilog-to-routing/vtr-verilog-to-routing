@@ -388,12 +388,11 @@ std::vector<int> get_physical_pin_src_pins(t_physical_tile_type_ptr physical_typ
                                            t_logical_block_type_ptr logical_block,
                                            int pin_physical_num);
 
-std::vector<int> get_physical_pin_sink_pins(t_physical_tile_type_ptr physical_type,
-                                            t_logical_block_type_ptr logical_block,
-                                            int pin_physical_num);
-
-int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
-                            const t_sub_tile* sub_tile,
+/**
+ * @brief Return the physical number of a pb-graph pin of a logical block placed in the given instance of a sub-tile.
+ *        Only valid when flat routing is enabled.
+ */
+int get_pb_pin_physical_num(const t_sub_tile* sub_tile,
                             t_logical_block_type_ptr logical_block,
                             int relative_cap,
                             const t_pb_graph_pin* pin);
@@ -416,11 +415,6 @@ int get_tile_total_num_pin(t_physical_tile_type_ptr tile);
 bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,
                                 int pin_physical_num,
                                 int sink_physical_num);
-
-float get_edge_delay(t_physical_tile_type_ptr physical_type,
-                     t_logical_block_type_ptr logical_block,
-                     int src_pin_physical_num,
-                     int sink_pin_physical_num);
 
 // iterate over pin_timing_del_max of the pb_pin related to pin_physical_pin and return the minimum element
 float get_pin_primitive_comb_delay(t_physical_tile_type_ptr physical_type,

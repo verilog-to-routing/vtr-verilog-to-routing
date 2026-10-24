@@ -102,6 +102,13 @@ static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type);
 static void add_logical_pin_to_physical_tile(int physical_pin_offset,
                                              t_logical_block_type_ptr logical_block_ptr,
                                              t_physical_tile_type* physical_type);
+// Fill sub_tile.pb_pin_physical_nums for a logical block placed in one instance of the sub-tile. The pins inside the
+// block are numbered from physical_pin_offset; the pins of its root block are pins on the tile.
+static void load_pb_pin_physical_nums(const t_physical_tile_type& physical_type,
+                                      t_sub_tile& sub_tile,
+                                      int sub_tile_inst,
+                                      t_logical_block_type_ptr logical_block,
+                                      int physical_pin_offset);
 static void add_primitive_pin_to_physical_tile(const std::vector<int>& pin_list,
                                                int physical_class_num,
                                                t_physical_tile_type* physical_tile);
@@ -903,7 +910,9 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
         for (t_sub_tile& sub_tile : physical_type.sub_tiles) {
             sub_tile.primitive_class_range.resize(sub_tile.capacity.total());
             sub_tile.intra_pin_range.resize(sub_tile.capacity.total());
+            sub_tile.pb_pin_physical_nums.resize(sub_tile.capacity.total());
             for (int sub_tile_inst = 0; sub_tile_inst < sub_tile.capacity.total(); sub_tile_inst++) {
+                sub_tile.pb_pin_physical_nums[sub_tile_inst].resize(device_ctx.logical_block_types.size());
                 for (t_logical_block_type_ptr logic_block_ptr : sub_tile.equivalent_sites) {
                     int num_classes = (int)logic_block_ptr->primitive_logical_class_inf.size();
                     int num_pins = (int)logic_block_ptr->pin_logical_num_to_pb_pin_mapping.size();
@@ -918,6 +927,7 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
                         std::make_pair(logic_block_ptr, t_pin_range(physical_pin_offset,
                                                                     physical_pin_offset + num_pins - 1)));
                     add_logical_pin_to_physical_tile(physical_pin_offset, logic_block_ptr, &physical_type);
+                    load_pb_pin_physical_nums(physical_type, sub_tile, sub_tile_inst, logic_block_ptr, physical_pin_offset);
 
                     std::vector<t_class> logical_classes = logic_block_ptr->primitive_logical_class_inf;
                     // Change the pin numbers in a class pin list from logical number to physical number
@@ -991,6 +1001,28 @@ static void add_logical_pin_to_physical_tile(int physical_pin_offset,
         int pin_physical_num = pin_logical_num + physical_pin_offset;
         physical_type->pin_num_to_pb_pin.insert({pin_physical_num, pb_pin});
         physical_type->pb_pin_to_pin_num.insert({pb_pin, pin_physical_num});
+    }
+}
+
+static void load_pb_pin_physical_nums(const t_physical_tile_type& physical_type,
+                                      t_sub_tile& sub_tile,
+                                      int sub_tile_inst,
+                                      t_logical_block_type_ptr logical_block,
+                                      int physical_pin_offset) {
+    std::vector<int>& pin_physical_nums = sub_tile.pb_pin_physical_nums[sub_tile_inst][logical_block->index];
+    pin_physical_nums.resize(logical_block->pin_logical_num_to_pb_pin_mapping.size());
+    // The logical number of a pin is its pin_count_in_cluster
+    for (const auto& [pin_count_in_cluster, pb_pin] : logical_block->pin_logical_num_to_pb_pin_mapping) {
+        VTR_ASSERT(pin_count_in_cluster == pb_pin->pin_count_in_cluster);
+        VTR_ASSERT(pin_count_in_cluster < (int)pin_physical_nums.size());
+        if (pb_pin->is_root_block_pin()) {
+            pin_physical_nums[pin_count_in_cluster] = get_physical_pin_at_sub_tile_location(&physical_type,
+                                                                                            logical_block,
+                                                                                            sub_tile.capacity.low + sub_tile_inst,
+                                                                                            pin_count_in_cluster);
+        } else {
+            pin_physical_nums[pin_count_in_cluster] = physical_pin_offset + pin_count_in_cluster;
+        }
     }
 }
 
