@@ -118,6 +118,7 @@ void run_dijkstra(RRNodeId start_node,
     std::priority_queue<util::PQ_Entry>& pq = data.pq;
 
     // Clear priority queue if non-empty
+    // TODO: Try a vtr::priority_queue for t_dijkstra_data::pq and call clear() instead of this loop.
     while (!pq.empty()) {
         pq.pop();
     }
