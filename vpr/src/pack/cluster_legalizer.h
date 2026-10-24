@@ -18,6 +18,7 @@
 #include "cluster_legalizer_fwd.h"
 #include "cluster_pin_counter.h"
 #include "cluster_router.h"
+#include "lb_type_rr_graph.h"
 #include "noc_data_types.h"
 #include "partition_region.h"
 #include "prepack.h"
@@ -114,7 +115,7 @@ struct LegalizationCluster {
      */
     LegalizationCluster(t_logical_block_type_ptr cluster_type,
                         int cluster_mode,
-                        const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
+                        const std::vector<LbTypeRRGraph>& lb_type_rr_graphs,
                         const std::unordered_set<int>& valid_feedback_pins,
                         bool enable_router_hot_start = false);
 
@@ -289,10 +290,6 @@ class ClusterLegalizer {
      *          The prepacker object used to prepack the atoms into molecules.
      *          A reference to this object is stored internally to be used to
      *          lookup the molecules of atoms.
-     *  @param lb_type_rr_graphs
-     *          The routing resource graph internal to the different cluster
-     *          types. A reference is stored in the class to be used to allocate
-     *          and load the router data.
      *  @param target_external_pin_util_str
      *          A string used to initialize the target external pin utilization
      *          of each cluster type.
@@ -316,7 +313,6 @@ class ClusterLegalizer {
      */
     ClusterLegalizer(const AtomNetlist& atom_netlist,
                      const Prepacker& prepacker,
-                     const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
                      const std::vector<std::string>& target_external_pin_util_str,
                      const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                      ClusterLegalizationStrategy cluster_legalization_strategy,
@@ -607,6 +603,11 @@ class ClusterLegalizer {
     ///        Called once by the constructor.
     void init_feedback_pin_sets();
 
+    /// @brief The routing resource graph of each logical block type, indexed by
+    ///        type index. Declared before the clusters since their routers
+    ///        reference these graphs.
+    const std::vector<LbTypeRRGraph> lb_type_rr_graphs_;
+
     /// @brief A vector of the legalization cluster IDs. If any of them are
     ///        invalid, then that means that the cluster has been destroyed.
     vtr::vector_map<LegalizationClusterId, LegalizationClusterId> legalization_cluster_ids_;
@@ -644,10 +645,6 @@ class ClusterLegalizer {
     ///        chosen for each molecule atom. A member to avoid reallocating it
     ///        for every candidate molecule.
     std::vector<t_pb_graph_node*> primitives_list_;
-
-    /// @brief A vector of routing resource nodes within each logical block type
-    ///        [0 .. num_logical_block_types-1]
-    const std::vector<std::vector<t_lb_type_rr_node>>* lb_type_rr_graphs_ = nullptr;
 
     /// @brief Per-type set of top-level output pin indices with Fc_out > 0.
     ///        Indexed by t_logical_block_type::index.

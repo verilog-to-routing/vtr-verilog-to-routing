@@ -1024,6 +1024,8 @@ static void dijkstra_flood_to_wires(int itile,
         }
     };
 
+    // TODO: Try a vtr::priority_queue that is reused across calls and emptied
+    // with clear(), instead of a new queue for every SOURCE and OPIN.
     std::priority_queue<t_pq_entry> pq;
 
     t_pq_entry root;
@@ -1137,6 +1139,8 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
         }
     };
 
+    // TODO: Try a vtr::priority_queue that is reused across calls and emptied
+    // with clear(), instead of a new queue for every sampled wire.
     std::priority_queue<t_pq_entry> pq;
 
     t_pq_entry root;
@@ -1311,6 +1315,9 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
         }
     };
 
+    // TODO: Try a vtr::priority_queue passed in by the caller and emptied with
+    // clear(), like node_expanded and node_seen_cost, instead of a new queue
+    // for every starting pin.
     std::priority_queue<t_pq_entry, std::vector<t_pq_entry>, std::greater<t_pq_entry>> pq;
 
     t_pq_entry root;
