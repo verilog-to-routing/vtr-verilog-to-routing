@@ -9,6 +9,7 @@
 
 #include "atom_lookup.h"
 #include "atom_netlist.h"
+#include "atom_netlist_utils.h"
 #include "clustered_netlist.h"
 #include "physical_types_util.h"
 #include "vtr_assert.h"
@@ -20,9 +21,13 @@
 #include "echo_files.h"
 
 /**
- * @brief Determines whether a cluster net is constant.
+ * @brief Determines whether a cluster net is driven by a constant generator (e.g. gnd/vcc).
+ *
+ * Nets which were only inferred to be constant are not considered, since they are
+ * routed like any other net (see process_constant_nets).
+ *
  * @param clb_net The unique id of a cluster net.
- * @return True if the net is constant; otherwise false.
+ * @return True if the net is driven by a constant generator; otherwise false.
  */
 static bool is_constant_clb_net(ClusterNetId clb_net,
                                 const AtomLookup& atom_lookup,
@@ -656,7 +661,7 @@ static bool is_constant_clb_net(ClusterNetId clb_net,
                                 const AtomNetlist& atom_nlist) {
     AtomNetId atom_net = atom_lookup.atom_net(clb_net);
 
-    return atom_nlist.net_is_constant(atom_net);
+    return is_constant_generator_net(atom_nlist, atom_net);
 }
 
 bool PlaceMacros::is_net_direct_connection(ClusterNetId clb_net, int idirect, const ClusteredNetlist& clb_nlist) {

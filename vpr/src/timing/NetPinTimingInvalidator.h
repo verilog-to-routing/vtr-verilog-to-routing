@@ -28,8 +28,8 @@ class NetPinTimingInvalidator {
     /**
      * @brief Invalidates the connections affected by the specified block moves.
      *
-     * All the connections recorded in blocks_affected.affected_pins have different
-     * values for `proposed_connection_delay` and `connection_delay`.
+     * All the connections recorded in blocks_affected.affected_pins have a proposed
+     * delay that differs from their committed connection_delay.
      *
      * Invalidate all the timing graph edges associated with these connections via
      * the NetPinTimingInvalidator class.

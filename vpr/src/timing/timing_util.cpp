@@ -871,8 +871,8 @@ float calculate_clb_net_pin_setup_slack(const SetupTimingInfo& timing_info, cons
 //
 // Note that unlike in Wainberg, we calculate the relaxed criticality as a post-processing step.
 
-float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_req,
-                               const std::map<DomainPair, float>& domains_worst_slack,
+float calc_relaxed_criticality(const DomainPairTable<float>& domains_max_req,
+                               const DomainPairTable<float>& domains_worst_slack,
                                const tatum::TimingTags::tag_range tags) {
     //Allowable round-off tolerance during criticality calculation
     constexpr float CRITICALITY_ROUND_OFF_TOLERANCE = 5e-4;
@@ -886,13 +886,11 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
 
         auto domain_pair = DomainPair(tag.launch_clock_domain(), tag.capture_clock_domain());
 
-        auto iter = domains_max_req.find(domain_pair);
-        VTR_ASSERT_MSG(iter != domains_max_req.end(), "Require the maximum required time for clock domain pair");
-        float max_req = iter->second;
+        VTR_ASSERT_MSG(domains_max_req.contains(domain_pair), "Require the maximum required time for clock domain pair");
+        float max_req = domains_max_req[domain_pair];
 
-        iter = domains_worst_slack.find(domain_pair);
-        VTR_ASSERT_MSG(iter != domains_worst_slack.end(), "Require the worst slack for clock domain pair");
-        float worst_slack = iter->second;
+        VTR_ASSERT_MSG(domains_worst_slack.contains(domain_pair), "Require the worst slack for clock domain pair");
+        float worst_slack = domains_worst_slack[domain_pair];
 
         VTR_ASSERT_SAFE_MSG(!std::isnan(worst_slack), "Worst slack should not be nan");
         VTR_ASSERT_SAFE_MSG(std::isfinite(worst_slack), "Worst slack should not be infinite");

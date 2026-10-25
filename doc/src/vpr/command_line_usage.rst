@@ -122,6 +122,23 @@ instead of the default analytical placement flow, pass all four stage flags expl
 
     **Default:** ``off``
 
+.. option:: --global_place
+
+    Run only the Global Placement stage of the analytical placement flow (see :option:`--analytical_place`).
+    The flow stops right after global placement; full legalization and detailed placement are skipped, so no
+    clustered netlist or placement is produced.
+    After global placement, post-global placement quality metrics are reported.
+
+    If a flat placement is provided with :option:`--read_flat_place`, the global placer is not run; instead,
+    the flat placement is read and used as the global placement solution.
+
+    The global placement solution can be written to a file using :option:`--write_post_gp_flat_place`.
+
+    This option cannot be combined with :option:`--route` or :option:`--analysis`.
+    If :option:`--analytical_place` is also specified, the full analytical placement flow is run.
+
+    **Default:** ``off``
+
 .. option:: --route
 
     Run routing stage.
@@ -312,10 +329,21 @@ General Options
 
     **Default:**  ``on``
 
-.. option:: --echo_file {on | off}
+.. option:: --echo_file {on | off | <echo_file_name> [<echo_file_name> ...]}
 
     Generates echo files of key internal data structures.
     These files are generally used for debugging vpr, and typically end in ``.echo``
+
+    * ``off``: No echo files are generated.
+    * ``on``: All echo files are generated.
+    * ``<echo_file_name> [<echo_file_name> ...]``: Only the listed echo files are generated, identified by their default file names.
+      This is useful when only a few echo files are needed, since some echo files can be very large.
+
+    For example, the following generates only the timing graph analysis and clusters echo files:
+
+    .. code-block:: none
+
+        --echo_file timing_graph.analysis.echo clusters.echo
 
     **Default:** ``off``
 
@@ -349,10 +377,12 @@ General Options
 
 .. option:: --constant_net_method {global | route}
 
-    Specifies how constant nets (i.e. those driven to a constant value) are handled:
+    Specifies how constant nets (i.e. those driven by a constant generator such as vcc/gnd) are handled:
 
-     * ``global``: Treat constant nets as globals (not routed)
+     * ``global``: Treat constant nets as ignored (not routed)
      * ``route``: Treat constant nets as normal nets (routed)
+
+    Nets which are only inferred to be constant (e.g. the output of a primitive whose inputs are all constant, see :option:`--const_gen_inference`) are always routed, since the primitive driving them is still implemented.
 
      **Default:** ``global``
 
@@ -571,6 +601,17 @@ Use the options below to override this default naming behaviour.
 
     * The x, y, and sub_tile location of the cluster that contains this atom.
 
+.. option:: --write_post_gp_flat_place <file>
+
+    Writes the flat placement produced by Global Placement in the analytical
+    placement flow (see :option:`--analytical_place` and :option:`--global_place`)
+    into a flat placement file (see :ref:`flat placement file format <vpr_flat_place_file>`).
+
+    For each atom in the netlist, the (x, y, layer) position and sub_tile chosen by
+    the global placer are stored. Since the global placement has not been legalized
+    yet, these positions may be fractional (off-grid). This file can be read back in
+    using :option:`--read_flat_place`.
+
 .. option:: --flat_place_verbosity <int>
 
     Controls how much annotation is written into flat placement files
@@ -615,9 +656,12 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
     When enabled, all constant-zero generators are merged into a single constant-zero generator, and all constant-one generators are merged into a single constant-one generator.
     The generator with the highest fanout of each value (e.g. ``gnd`` / ``vcc``) is kept, and the names of the removed nets are kept as aliases of the merged net.
 
+    Since constant nets are not routed by default (see :option:`--constant_net_method`), the constant generators are assumed to be available within each tile and do not need to be duplicated.
+    However, each constant generator is still implemented as a physical block and uses tile pin resources, so merging them avoids wasting these resources.
+
     Disabling merging can improve the matching between the input and post-synthesis netlist.
 
-    **Default**: ``off``
+    **Default**: ``on``
 
 .. option:: --const_gen_inference {none | comb | comb_seq}
 
@@ -648,6 +692,10 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
     Controls whether dangling nets (i.e. those who do not drive, or are not driven by anything) are swept and removed from the netlist.
 
+    .. note:: VPR cannot implement nets which have sinks but no driver.
+              If such undriven nets are found when this option is ``off``, VPR reports them as an error.
+              Undriven nets usually indicate a problem in the design or in synthesis.
+
     **Default**: ``on``
 
 .. option:: --sweep_dangling_blocks {on | off}
@@ -658,7 +706,8 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
 .. option:: --sweep_constant_primary_outputs {on | off}
 
-    Controls whether primary outputs driven by constant values are swept and removed from the netlist.
+    Controls whether primary outputs driven by constant generators (e.g. vcc/gnd) are swept and removed from the netlist.
+    Primary outputs driven by nets which are only inferred to be constant (see :option:`--const_gen_inference`) are not swept.
 
     .. seealso:: :option:`--sweep_dangling_primary_ios`
 
@@ -2149,7 +2198,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``64``
 
-.. option:: --router_lookahead {classic | map | compressed_map | extended_map | simple}
+.. option:: --router_lookahead {classic | map | compressed_map | extended_map | separable | simple}
 
     Controls what lookahead the router uses to calculate cost of completing a connection.
 
@@ -2157,6 +2206,7 @@ The following options are only valid when the router is in timing-driven mode (t
      * ``map``: A more advanced lookahead which accounts for diverse wire types and their connectivity
      * ``compressed_map``: The algorithm is similar to map lookahead with the exception of sparse sampling of the chip to reduce the run-time to build the router lookahead and also its memory footprint.
      * ``extended_map``: A more advanced and extended lookahead which accounts for a more exhaustive node sampling method.
+     * ``separable``: An experimental lookahead which estimates delay and congestion by combining independently profiled costs along the x and y axes. It uses the map lookahead for SOURCE/OPIN estimates and as a fallback for unsampled wire costs. Flat routing and reading or writing lookahead files are currently unsupported.
      * ``simple``: A purely distance-based lookahead loaded from an external file using :option:`--read_router_lookahead`. This lookahead returns a cost estimate for channel nodes by querying a lookup table, while for any other node type it returns zero.
 
      **Default:** ``map``

@@ -18,7 +18,6 @@
 #include "read_fpga_interchange_arch.h"
 #include "pb_type_graph.h"
 #include "pack_types.h"
-#include "lb_type_rr_graph.h"
 #include "echo_arch.h"
 #include "read_options.h"
 #include "echo_files.h"
@@ -131,7 +130,6 @@ void SetupVPR(const t_options* options,
               t_noc_opts* nocOpts,
               t_server_opts* serverOpts,
               t_det_routing_arch& routingArch,
-              std::vector<std::vector<t_lb_type_rr_node>>* packerRRGraphs,
               std::vector<t_segment_inf>& segments,
               t_timing_inf* timing,
               bool* showGraphics,
@@ -172,6 +170,7 @@ void SetupVPR(const t_options* options,
     fileNameOpts->read_flat_place_file = options->read_flat_place_file;
     fileNameOpts->write_flat_place_file = options->write_flat_place_file;
     fileNameOpts->write_legalized_flat_place_file = options->write_legalized_flat_place_file;
+    fileNameOpts->write_post_gp_flat_place_file = options->write_post_gp_flat_place_file;
     fileNameOpts->flat_place_verbosity = options->flat_place_verbosity;
     fileNameOpts->write_block_usage = options->write_block_usage;
 
@@ -287,6 +286,7 @@ void SetupVPR(const t_options* options,
         && !options->do_legalize
         && !options->do_placement
         && !options->do_analytical_placement
+        && !options->do_global_placement
         && !options->do_routing
         && !options->do_analysis) {
         // If none specified, we do the AP flow.
@@ -329,6 +329,16 @@ void SetupVPR(const t_options* options,
             apOpts->doAP = e_stage_action::DO;
         }
 
+        if (options->do_global_placement && !options->do_analytical_placement) {
+            // Global placement is the first stage of the Analytical Placement
+            // flow. Run the AP flow, but stop it right after global placement.
+            // If the full AP flow was also requested, it takes precedence.
+            packerOpts->doPacking = e_stage_action::SKIP;
+            placerOpts->do_placement = e_stage_action::SKIP;
+            apOpts->doAP = e_stage_action::DO;
+            apOpts->stop_after_global_placement = true;
+        }
+
         if (options->do_packing) {
             packerOpts->doPacking = e_stage_action::DO;
         }
@@ -347,7 +357,6 @@ void SetupVPR(const t_options* options,
     {
         vtr::ScopedStartFinishTimer t("Building complex block graph");
         alloc_and_load_all_pb_graphs(powerOpts->do_power, routerOpts->flat_routing);
-        *packerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
     }
 
     if (routerOpts->flat_routing) {
@@ -369,10 +378,6 @@ void SetupVPR(const t_options* options,
 
     if ((options->clock_modeling == ROUTED_CLOCK) || (options->clock_modeling == DEDICATED_NETWORK)) {
         ClockModeling::treat_clock_pins_as_non_globals();
-    }
-
-    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {
-        echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH), *packerRRGraphs);
     }
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) {
@@ -628,6 +633,9 @@ static void setup_ap_opts(const t_options& options,
     apOpts.num_threads = options.num_workers.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
     apOpts.generate_mass_report = options.ap_generate_mass_report.value();
+    // This is set later, based on the stage options, if only global placement
+    // should be run.
+    apOpts.stop_after_global_placement = false;
 }
 
 void setup_packer_opts(const t_options& Options,

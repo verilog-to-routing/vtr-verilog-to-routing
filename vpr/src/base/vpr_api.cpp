@@ -61,7 +61,6 @@
 #include "read_sdc.h"
 #include "power.h"
 #include "pack_types.h"
-#include "lb_type_rr_graph.h"
 #include "read_activity.h"
 #include "net_delay.h"
 #include "concrete_timing_info.h"
@@ -259,7 +258,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     VTR_LOG("\n");
 
     /* Determine whether echo is on or off */
-    setEchoEnabled(options->CreateEchoFile);
+    init_echo_files_from_options(options->echo_file.value());
 
     /*
      * Initialize the functions names for which VPR_ERRORs
@@ -306,7 +305,6 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->NocOpts,
              &vpr_setup->ServerOpts,
              vpr_setup->RoutingArch,
-             &vpr_setup->PackerRRGraph,
              vpr_setup->Segments,
              &vpr_setup->Timing,
              &vpr_setup->ShowGraphics,
@@ -464,6 +462,13 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
             // TODO: Make this return a bool if the placement was successful or not.
             run_analytical_placement_flow(vpr_setup);
+
+            // If only global placement was requested, there is no clustering
+            // or placement for the rest of the flow to use; stop here.
+            if (vpr_setup.APOpts.stop_after_global_placement) {
+                vpr_close_graphics(vpr_setup);
+                return true;
+            }
 
             // Write out a flat placement file at the end of Analytical Placement
             // flow if the option is specified.
@@ -763,7 +768,6 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     return try_pack(vpr_setup.PackerOpts,
                     vpr_setup.APOpts,
                     arch,
-                    vpr_setup.PackerRRGraph,
                     prepacker,
                     pre_cluster_timing_manager,
                     g_vpr_ctx.atom().flat_placement_info(),
@@ -1398,7 +1402,6 @@ static bool is_pack_only(const t_vpr_setup& vpr_setup) {
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
                                   t_vpr_setup& vpr_setup) {
-    free_all_lb_type_rr_graph(vpr_setup.PackerRRGraph);
     free_circuit();
     free_arch(&Arch);
     free_device(vpr_setup.RoutingArch);
@@ -1444,7 +1447,6 @@ void vpr_setup_vpr(t_options* Options,
                    t_noc_opts* NocOpts,
                    t_server_opts* ServerOpts,
                    t_det_routing_arch& RoutingArch,
-                   std::vector<std::vector<t_lb_type_rr_node>>* PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
                    t_timing_inf* Timing,
                    bool* ShowGraphics,
@@ -1469,7 +1471,6 @@ void vpr_setup_vpr(t_options* Options,
              NocOpts,
              ServerOpts,
              RoutingArch,
-             PackerRRGraph,
              Segments,
              Timing,
              ShowGraphics,

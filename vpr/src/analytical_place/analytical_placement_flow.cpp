@@ -6,18 +6,23 @@
  */
 
 #include "analytical_placement_flow.h"
+#include <algorithm>
+#include <cmath>
 #include <memory>
 #include "PlacementDelayModelCreator.h"
+#include "PreClusterDelayCalculator.h"
 #include "PreClusterTimingManager.h"
 #include "analytical_solver.h"
 #include "ap_draw_manager.h"
 #include "ap_netlist.h"
+#include "ap_timing_estimation.h"
 #include "atom_netlist.h"
 #include "cluster_util.h"
 #include "detailed_placer.h"
 #include "device_size_estimate.h"
 #include "draw.h"
 #include "full_legalizer.h"
+#include "gp_solution_quality_estimation.h"
 #include "setup_grid.h"
 #include "logical_ram_infer.h"
 #include "gen_ap_netlist_from_atoms.h"
@@ -104,9 +109,15 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
                 float current_loc_y = flat_placement_info.blk_y_pos[atom_blk_id];
                 float current_loc_layer = flat_placement_info.blk_layer[atom_blk_id];
                 int current_loc_sub_tile = flat_placement_info.blk_sub_tile[atom_blk_id];
+                // Atoms without a location do not constrain the location of
+                // the block.
+                if (current_loc_x == -1 || current_loc_y == -1)
+                    continue;
                 if (found_valid_atom) {
-                    if (current_loc_x == -1 || current_loc_y == -1)
-                        continue;
+                    // The locations are compared as they appear in the flat
+                    // placement (i.e. before clamping and defaulting below),
+                    // so that atoms with the same location in the file always
+                    // agree.
                     if (current_loc_x != atom_loc_x || current_loc_y != atom_loc_y || current_loc_layer != atom_loc_layer || current_loc_sub_tile != atom_loc_sub_tile)
                         VPR_FATAL_ERROR(VPR_ERROR_AP,
                                         "AP block %s contains atom %s (ID: %zu) with a location (%g, %g, layer: %g, subtile: %d) "
@@ -116,22 +127,29 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
                                         current_loc_x, current_loc_y, current_loc_layer, current_loc_sub_tile,
                                         atom_loc_x, atom_loc_y, atom_loc_layer, atom_loc_sub_tile);
                 } else {
-                    if (current_loc_x != -1 && current_loc_y != -1) {
-                        atom_loc_x = std::clamp(current_loc_x, 0.0f,
-                                                static_cast<float>(g_vpr_ctx.device().grid.width() - 1));
-                        atom_loc_y = std::clamp(current_loc_y, 0.0f,
-                                                static_cast<float>(g_vpr_ctx.device().grid.height() - 1));
-                        // If current_loc_layer or current_loc_sub_tile are unset (-1), default to layer 0 and sub_tile 0.
-                        if (current_loc_layer == -1)
-                            current_loc_layer = 0;
-                        if (current_loc_sub_tile == -1)
-                            current_loc_sub_tile = 0;
-                        atom_loc_layer = current_loc_layer;
-                        atom_loc_sub_tile = current_loc_sub_tile;
-                        found_valid_atom = true;
-                    }
+                    atom_loc_x = current_loc_x;
+                    atom_loc_y = current_loc_y;
+                    atom_loc_layer = current_loc_layer;
+                    atom_loc_sub_tile = current_loc_sub_tile;
+                    found_valid_atom = true;
                 }
             }
+        }
+        if (found_valid_atom) {
+            // Clamp the location onto the device. A tile at x covers [x, x + 1),
+            // so the device covers [0, width); clamp to the largest float below
+            // the width so that off-grid positions within the last column / row
+            // are preserved.
+            const DeviceGrid& grid = g_vpr_ctx.device().grid;
+            atom_loc_x = std::clamp(atom_loc_x, 0.0f,
+                                    std::nextafter(static_cast<float>(grid.width()), 0.0f));
+            atom_loc_y = std::clamp(atom_loc_y, 0.0f,
+                                    std::nextafter(static_cast<float>(grid.height()), 0.0f));
+            // If the layer or sub_tile are unset (-1), default to layer 0 and sub_tile 0.
+            if (atom_loc_layer == -1)
+                atom_loc_layer = 0;
+            if (atom_loc_sub_tile == -1)
+                atom_loc_sub_tile = 0;
         }
         // If any atom in the block has a location assigned, use that location
         // for the entire AP block. Otherwise, assign the AP block to the center
@@ -199,6 +217,22 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
                                           ap_netlist,
                                           prepacker,
                                           p_placement);
+        VTR_LOG("\tPlacement estimated wirelength: %g\n", estimate_post_routing_wire_usage(p_placement, ap_netlist, device_ctx.grid));
+
+        // Print the estimated post-routing timing of the flat placement.
+        if (pre_cluster_timing_manager.is_valid()) {
+            FlatPlacementArcDelayEstimator arc_delay_estimator(ap_netlist,
+                                                               *pre_cluster_timing_manager.get_delay_calculator_ptr(),
+                                                               *place_delay_model,
+                                                               device_ctx.grid);
+            t_ap_timing_estimate timing_estimate = estimate_post_routing_timing(p_placement,
+                                                                                arc_delay_estimator,
+                                                                                pre_cluster_timing_manager.get_delay_calculator_ptr());
+            VTR_LOG("\tPlacement estimated CPD: %f ns\n", timing_estimate.cpd * 1e9);
+            VTR_LOG("\tPlacement estimated sTNS: %f ns\n", timing_estimate.stns * 1e9);
+            VTR_LOG("\tPlacement estimated sWNS: %f ns\n", timing_estimate.swns * 1e9);
+        }
+
         return p_placement;
     } else {
         // Run the Global Placer
@@ -325,12 +359,27 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                   device_height,
                                   device_ctx.grid.get_num_layers()));
 
+    // Write out the flat placement produced by global placement if the option
+    // is specified.
+    if (!vpr_setup.FileNameOpts.write_post_gp_flat_place_file.empty()) {
+        write_flat_placement(vpr_setup.FileNameOpts.write_post_gp_flat_place_file.c_str(),
+                             convert_partial_to_flat_placement(p_placement, ap_netlist, prepacker, atom_nlist),
+                             atom_nlist,
+                             vpr_setup.FileNameOpts.flat_place_verbosity);
+    }
+
     // Generate the pre-cluster timing report now that global placement has
     // updated the timing arc delays to reflect the flat placement.
     pre_cluster_timing_manager.generate_setup_timing_report(atom_nlist,
                                                             g_vpr_ctx.atom().lookup(),
                                                             *device_ctx.arch,
                                                             vpr_setup.AnalysisOpts);
+
+    // If only global placement was requested, stop the flow here.
+    if (ap_opts.stop_after_global_placement) {
+        VTR_LOG("Stopping the Analytical Placement flow after Global Placement as requested.\n");
+        return;
+    }
 
     // Run the Full Legalizer.
     std::unique_ptr<FullLegalizer> full_legalizer = make_full_legalizer(ap_opts.full_legalizer_type,

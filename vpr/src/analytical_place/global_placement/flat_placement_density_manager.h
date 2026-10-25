@@ -9,6 +9,7 @@
  * defines a bin that is "overfilled".
  */
 
+#include <span>
 #include <tuple>
 #include <unordered_set>
 #include <vector>
@@ -106,7 +107,7 @@ class FlatPlacementDensityManager {
      * @brief Returns the size of the placeable region, i.e. the region that
      *        contains all bins.
      */
-    inline std::tuple<double, double, double> get_overall_placeable_region_size() const {
+    inline std::tuple<size_t, size_t, size_t> get_overall_placeable_region_size() const {
         return std::make_tuple(bin_spatial_lookup_.dim_size(1),  // width
                                bin_spatial_lookup_.dim_size(2),  // height
                                bin_spatial_lookup_.dim_size(0)); // depth
@@ -126,6 +127,22 @@ class FlatPlacementDensityManager {
      * Like insertion, this maintains the utilization of bins.
      */
     void remove_block_from_bin(APBlockId blk_id, FlatPlacementBinId bin_id);
+
+    /**
+     * @brief Insert all of the given blocks into the given bin.
+     *
+     * The utilization, overfill, and underfill of the bin are updated once
+     * for the whole batch rather than once per block.
+     */
+    void insert_blocks_into_bin(std::span<const APBlockId> blk_ids, FlatPlacementBinId bin_id);
+
+    /**
+     * @brief Remove all of the given blocks from the given bin.
+     *
+     * The utilization, overfill, and underfill of the bin are updated once
+     * for the whole batch rather than once per block.
+     */
+    void remove_blocks_from_bin(std::span<const APBlockId> blk_ids, FlatPlacementBinId bin_id);
 
     /**
      * @brief Returns the current utilization of the given bin.
@@ -266,6 +283,13 @@ class FlatPlacementDensityManager {
     void generate_mass_report() const;
 
   private:
+    /**
+     * @brief Recompute the overfill and underfill of the given bin from its
+     *        current utilization and update its membership in the overfilled
+     *        bin set.
+     */
+    void update_bin_fill_(FlatPlacementBinId bin_id);
+
     /// @brief The AP netlist of blocks which are filling the bins.
     const APNetlist& ap_netlist_;
 

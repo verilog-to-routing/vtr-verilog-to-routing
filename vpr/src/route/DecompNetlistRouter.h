@@ -6,6 +6,7 @@
  * See "Parallel FPGA Routing with On-the-Fly Net Decomposition", FPT'24 */
 #include "netlist_routers.h"
 
+#include <tbb/enumerable_thread_specific.h>
 #include <tbb/task_group.h>
 
 /** Maximum number of iterations for net decomposition
@@ -36,7 +37,7 @@ class DecompNetlistRouter : public NetlistRouter {
         NetPinTimingInvalidator* pin_timing_invalidator,
         route_budgets& budgeting_inf,
         const RoutingPredictor& routing_predictor,
-        const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
+        const vtr::vector<ParentNetId, t_net_choke_points>& choking_spots,
         bool is_flat,
         int route_verbosity)
         : _routers_th(_make_router(router_lookahead, is_flat))
@@ -114,7 +115,7 @@ class DecompNetlistRouter : public NetlistRouter {
     NetPinTimingInvalidator* _pin_timing_invalidator;
     route_budgets& _budgeting_inf;
     const RoutingPredictor& _routing_predictor;
-    const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& _choking_spots;
+    const vtr::vector<ParentNetId, t_net_choke_points>& _choking_spots; ///< Choke points indexed by net ID.
     bool _is_flat;
     int _route_verbosity;
 

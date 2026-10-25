@@ -9,19 +9,24 @@
  */
 
 #include <cstdio>
-#include <queue>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include "atom_netlist_fwd.h"
 #include "atom_pb_bimap.h"
-#include "pack_types.h"
+#include "lb_type_rr_graph.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
+#include "vtr_priority_queue.h"
+#include "vtr_strong_id.h"
+#include "vtr_vector.h"
 
 /**************************************************************************
  * Intra-Logic Block Router Data Structures
  ***************************************************************************/
+
+/// @brief Index into ClusterRouter::intra_lb_nets_. Invalidated when a net is removed.
+typedef vtr::StrongId<struct intra_lb_net_idx_tag, size_t> IntraLbNetIdx;
 
 /**
  * @brief Describes the status of a logic cluster_ctx.blocks routing resource
@@ -53,8 +58,8 @@ struct t_lb_rr_node_stats {
  * to other nodes.
  */
 struct t_lb_trace {
-    /// @brief The current t_lb_type_rr_node used by net.
-    int current_node;
+    /// @brief The current lb type rr node used by net.
+    LbRRNodeId current_node;
 
     /// @brief The index of previous edge that drives current node.
     std::vector<t_lb_trace> next_nodes;
@@ -69,7 +74,7 @@ struct t_intra_lb_net {
     AtomNetId atom_net_id;
 
     /// @brief The endpoints of the intra_lb_net, 0th position is the source, all others are sinks.
-    std::vector<int> terminals;
+    std::vector<LbRRNodeId> terminals;
 
     /// @brief The AtomPins associated with each terminal.
     std::vector<AtomPinId> atom_pins;
@@ -82,7 +87,7 @@ struct t_intra_lb_net {
 
     t_intra_lb_net() noexcept {
         atom_net_id = AtomNetId::INVALID();
-        rt_tree.current_node = UNDEFINED;
+        rt_tree.current_node = LbRRNodeId::INVALID();
     }
 };
 
@@ -101,16 +106,16 @@ struct t_lb_router_params {
  */
 struct t_expansion_node {
     /// @brief Index of logic cluster_ctx.blocks rr node this expansion node represents.
-    int node_index;
+    LbRRNodeId node_index;
 
     /// @brief Index of logic cluster_ctx.blocks rr node that drives this expansion node.
-    int prev_index;
+    LbRRNodeId prev_index;
 
     float cost;
 
     t_expansion_node() {
-        node_index = UNDEFINED;
-        prev_index = UNDEFINED;
+        node_index = LbRRNodeId::INVALID();
+        prev_index = LbRRNodeId::INVALID();
         cost = 0;
     }
 };
@@ -141,13 +146,13 @@ class compare_expansion_node {
  */
 struct t_explored_node_tb {
     /// @brief Previous node that drives this one.
-    int prev_index;
+    LbRRNodeId prev_index;
 
     /// @brief ID used to determine if this node has been explored.
     int explored_id;
 
-    /// @brief Net index of route tree.
-    int inet;
+    /// @brief Net of route tree.
+    IntraLbNetIdx inet;
 
     /// @brief ID used to determine if this node has been pushed on exploration priority queue.
     int enqueue_id;
@@ -156,10 +161,10 @@ struct t_explored_node_tb {
     float enqueue_cost;
 
     t_explored_node_tb() noexcept {
-        prev_index = UNDEFINED;
+        prev_index = LbRRNodeId::INVALID();
         explored_id = UNDEFINED;
         enqueue_id = UNDEFINED;
-        inet = UNDEFINED;
+        inet = IntraLbNetIdx::INVALID();
         enqueue_cost = 0;
     }
 };
@@ -177,40 +182,14 @@ struct t_mode_selection_status {
     }
 };
 
-// TODO: check if this hacky class memory reserve thing is still necessary, if not, then delete
-/* Packing uses a priority queue that requires a large number of elements.  This backdoor
- * allows me to use a priority queue where I can pre-allocate the # of elements in the underlying container
- * for efficiency reasons.  Note: Must use vector with this */
-template<class T, class U, class V>
-class reservable_pq : public std::priority_queue<T, U, V> {
-  public:
-    typedef typename std::priority_queue<T>::size_type size_type;
-    reservable_pq(size_type capacity = 0) {
-        reserve(capacity);
-        cur_cap = capacity;
-    }
-    void reserve(size_type capacity) {
-        this->c.reserve(capacity);
-        cur_cap = capacity;
-    }
-    void clear() {
-        this->c.clear();
-        this->c.reserve(cur_cap);
-    }
-
-  private:
-    size_type cur_cap;
-};
-
-/// @brief The priority queue type used in the Cluster Router.
-typedef reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node> ClusterRouterPriorityQueue;
-
 /**
  * @brief Enumeration used by the commit_remove_rt_ method below to decide if
  *        we are committing or removing a route tree.
  */
-enum e_commit_remove { RT_COMMIT,
-                       RT_REMOVE };
+enum class e_commit_remove {
+    COMMIT,
+    REMOVE
+};
 
 /**
  * @brief Class for routing the connections within a cluster.
@@ -220,7 +199,7 @@ enum e_commit_remove { RT_COMMIT,
  *
  * Example usage:
  *      // Construct the router object.
- *      ClusterRouter cluster_router(&lb_type_rr_graphs[cluster_type->index], cluster_type);
+ *      ClusterRouter cluster_router(lb_type_rr_graphs[cluster_type->index], cluster_type, valid_feedback_pins);
  *
  *      // Add atoms as targets for the router.
  *      cluster_router.add_atom_as_target(blk_id1, atom_to_pb);
@@ -275,7 +254,7 @@ class ClusterRouter {
      *                              route before running pathfinder, reducing
      *                              the number of nets that need re-routing.
      */
-    ClusterRouter(const std::vector<t_lb_type_rr_node>* lb_type_graph,
+    ClusterRouter(const LbTypeRRGraph& lb_type_graph,
                   t_logical_block_type_ptr type,
                   const std::unordered_set<int>& valid_feedback_pins,
                   bool enable_hot_start = false);
@@ -363,9 +342,11 @@ class ClusterRouter {
      * @brief Given a pin of a net, assign route tree terminals for it.
      *
      * This assumes that the pin is not already assigned.
+     *
+     * @return The pin's net, or an invalid index if the pin has no net.
      */
-    void add_pin_to_rt_terminals_(const AtomPinId pin_id,
-                                  const AtomPBBimap& atom_to_pb);
+    IntraLbNetIdx add_pin_to_rt_terminals_(const AtomPinId pin_id,
+                                           const AtomPBBimap& atom_to_pb);
 
     /**
      * @brief Given a pin of a net, remove route tree terminal from it.
@@ -376,8 +357,11 @@ class ClusterRouter {
     /**
      * @brief Fixup duplicate connections to a net by a logically equivalent
      *        set of primitive pins.
+     *
+     * @param ilb_net The net to check.
+     * @param atom_to_pb Mapping from atoms to their placed pbs.
      */
-    void fix_duplicate_equivalent_pins_(const AtomPBBimap& atom_to_pb);
+    void fix_duplicate_equivalent_pins_(IntraLbNetIdx ilb_net, const AtomPBBimap& atom_to_pb);
 
     /**
      * @brief Reset the traceback information used in pathfinder.
@@ -395,20 +379,20 @@ class ClusterRouter {
     /**
      * @brief Add source node of net as the starting point to existing route tree.
      */
-    void add_source_to_rt_(int inet);
+    void add_source_to_rt_(IntraLbNetIdx inet);
 
     /**
      * @brief Expand all nodes found in route tree into the priority queue.
      *
-     *  @param inet     Index into the intra_lb_nets_ to expand to route tree for.
+     *  @param inet     The net to expand the route tree for.
      */
-    void expand_rt_(int inet);
+    void expand_rt_(IntraLbNetIdx inet);
 
     /**
      * @brief Recursive function used by expand_rt_ to expand all nodes in a
      *        route tree into the priority queue.
      */
-    void expand_rt_rec_(const t_lb_trace& rt, int prev_index, int irt_net);
+    void expand_rt_rec_(const t_lb_trace& rt, LbRRNodeId prev_index, IntraLbNetIdx irt_net);
 
     /**
      * @brief Add new path from existing route tree to target sink.
@@ -416,7 +400,7 @@ class ClusterRouter {
      * This reads the result of the path search to traceback the path and then
      * adds the path to the route tree.
      */
-    bool add_to_rt_(t_lb_trace& rt, int node_index, int irt_net);
+    bool add_to_rt_(t_lb_trace& rt, LbRRNodeId node_index, IntraLbNetIdx irt_net);
 
     /**
      * @brief Expand all nodes for a given lb_net.
@@ -473,7 +457,7 @@ class ClusterRouter {
      *                                   gates feedback through Fc_out==0 output pins.
      */
     void expand_edges_(int mode,
-                       int cur_inode,
+                       LbRRNodeId cur_inode,
                        float cur_cost,
                        int net_fanout,
                        bool target_is_internal_sink);
@@ -512,12 +496,12 @@ class ClusterRouter {
      * @brief Debugging function, used to print the description of the given
      *        lb-type RR node.
      */
-    std::string describe_lb_type_rr_node_(int inode);
+    std::string describe_lb_type_rr_node_(LbRRNodeId inode);
 
     /**
      * @brief Debugging function, used to print the given congested RR.
      */
-    std::string describe_congested_rr_nodes_(const std::vector<int>& congested_rr_nodes);
+    std::string describe_congested_rr_nodes_(const std::vector<LbRRNodeId>& congested_rr_nodes);
 
     /**
      * @brief Debugging function, used to print out the trace of a net.
@@ -535,7 +519,7 @@ class ClusterRouter {
     // =========================================================================
 
     /// @brief Pointer to physical intra-logic cluster_ctx.blocks type rr graph.
-    const std::vector<t_lb_type_rr_node>* lb_type_graph_;
+    const LbTypeRRGraph* lb_type_graph_;
 
     /// @brief Top-level output pins with Fc_out > 0 for this block type; pointer
     ///        into the map owned by ClusterLegalizer, valid for packing lifetime.
@@ -546,7 +530,7 @@ class ClusterRouter {
     // =========================================================================
 
     /// @brief Vector of intra logic cluster_ctx.blocks nets and their connections.
-    std::vector<t_intra_lb_net> intra_lb_nets_;
+    vtr::vector<IntraLbNetIdx, t_intra_lb_net> intra_lb_nets_;
 
     /// @brief Save vector of intra logic cluster_ctx.blocks nets and their connections.
     ///        This is used to save the solution for each successful route. This is used
@@ -564,15 +548,15 @@ class ClusterRouter {
     // Logical-to-Physical Mapping Info
     // =========================================================================
 
-    /// @brief [0..lb_type_graph->size()-1] Stats for each logic cluster_ctx.blocks rr node instance.
-    std::vector<t_lb_rr_node_stats> lb_rr_node_stats_;
+    /// @brief Stats for each logic cluster_ctx.blocks rr node instance.
+    vtr::vector<LbRRNodeId, t_lb_rr_node_stats> lb_rr_node_stats_;
 
     // =========================================================================
     // Stored State Info During Pathfinder Iterative Routing
     // =========================================================================
 
-    /// @brief [0..lb_type_graph->size()-1] Stores mode exploration and lb_traceback info for nodes.
-    std::vector<t_explored_node_tb> explored_node_tb_;
+    /// @brief Stores mode exploration and lb_traceback info for each rr node.
+    vtr::vector<LbRRNodeId, t_explored_node_tb> explored_node_tb_;
 
     /// @brief Used in conjunction with explored_node_tb_ to determine whether or not a location has been explored.
     ///        By using a unique identifier every route, I don't have to clear the previous route exploration.
@@ -592,7 +576,7 @@ class ClusterRouter {
     float pres_con_fac_;
 
     /// @brief Priority queue used during path search.
-    ClusterRouterPriorityQueue pq_;
+    vtr::priority_queue<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node> pq_;
 
     /// @brief Flag that indicates if this object has been cleaned or not.
     bool is_clean_;

@@ -1307,6 +1307,8 @@ struct ParseRouterLookahead {
             conv_value.set_value(e_router_lookahead::EXTENDED_MAP);
         else if (str == "simple")
             conv_value.set_value(e_router_lookahead::SIMPLE);
+        else if (str == "separable")
+            conv_value.set_value(e_router_lookahead::SEPARABLE);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '"
@@ -1328,6 +1330,8 @@ struct ParseRouterLookahead {
             conv_value.set_value("compressed_map");
         } else if (val == e_router_lookahead::SIMPLE) {
             conv_value.set_value("simple");
+        } else if (val == e_router_lookahead::SEPARABLE) {
+            conv_value.set_value("separable");
         } else {
             VTR_ASSERT(val == e_router_lookahead::EXTENDED_MAP);
             conv_value.set_value("extended_map");
@@ -1336,7 +1340,7 @@ struct ParseRouterLookahead {
     }
 
     std::vector<std::string> default_choices() {
-        return {"classic", "map", "compressed_map", "extended_map", "simple"};
+        return {"classic", "map", "compressed_map", "extended_map", "simple", "separable"};
     }
 };
 
@@ -1733,6 +1737,11 @@ static void add_stage_options(argparse::ArgumentParser& parser, t_options& args)
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 
+    stage_grp.add_argument<bool, ParseOnOff>(args.do_global_placement, "--global_place")
+        .help("Run only the Global Placement stage of the analytical placement flow. This stops the analytical placement flow after global placement (skipping full legalization and detailed placement) and reports post-global placement quality metrics. If --read_flat_place is provided, the flat placement is used as the global placement solution instead of running the global placer. Cannot be combined with --route or --analysis.")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
     stage_grp.add_argument<bool, ParseOnOff>(args.do_routing, "--route")
         .help("Run routing")
         .action(argparse::Action::STORE_TRUE)
@@ -1923,11 +1932,18 @@ static void add_general_options(argparse::ArgumentParser& parser, t_options& arg
         .default_value("auto")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    gen_grp.add_argument<bool, ParseOnOff>(args.CreateEchoFile, "--echo_file")
+    gen_grp.add_argument(args.echo_file, "--echo_file")
         .help(
             "Generate echo files of key internal data structures."
-            " Useful for debugging VPR, and typically end in .echo")
-        .default_value("off")
+            " Useful for debugging VPR, and typically end in .echo\n"
+            " * off: No echo files are generated\n"
+            " * on: All echo files are generated\n"
+            " * <echo_file_name> ...: Only the listed echo files are generated,\n"
+            "       identified by their default file names. Useful since some\n"
+            "       echo files can be very large.\n"
+            "       e.g. --echo_file timing_graph.analysis.echo clusters.echo")
+        .nargs('+')
+        .default_value({"off"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument<bool, ParseOnOff>(args.verify_file_digests, "--verify_file_digests")
@@ -1957,10 +1973,12 @@ static void add_general_options(argparse::ArgumentParser& parser, t_options& arg
 
     gen_grp.add_argument<e_constant_net_method, ParseConstantNetMethod>(args.constant_net_method, "--constant_net_method")
         .help(
-            "Specifies how constant nets (i.e. those driven to a constant\n"
-            "value) are handled:\n"
-            " * global: Treat constant nets as globals (not routed)\n"
-            " * route : Treat constant nets as normal nets (routed)\n")
+            "Specifies how constant nets (i.e. those driven by a constant\n"
+            "generator such as vcc/gnd) are handled:\n"
+            " * global: Treat constant nets as ignored (not routed)\n"
+            " * route : Treat constant nets as normal nets (routed)\n"
+            "Nets which are only inferred to be constant (e.g. the output\n"
+            "of a primitive whose inputs are all constant) are always routed.\n")
         .default_value("global")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2146,6 +2164,11 @@ static void add_file_options(argparse::ArgumentParser& parser, t_options& args) 
             "VPR's (or reconstructed external) placement solution after legalization and before anneal in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.write_post_gp_flat_place_file, "--write_post_gp_flat_place")
+        .help(
+            "Writes the flat placement produced by Global Placement in the analytical placement flow to the given file in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom. The coordinates may be fractional (off-grid), since the global placement has not been legalized yet.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument<int>(args.flat_place_verbosity, "--flat_place_verbosity")
         .help(
             "Controls how much annotation is written into flat placement files."
@@ -2208,7 +2231,7 @@ static void add_netlist_options(argparse::ArgumentParser& parser, t_options& arg
     netlist_grp.add_argument<bool, ParseOnOff>(args.merge_constant_generators, "--merge_constant_generators")
         .help("Controls whether constant generators of the same value (e.g. the many LUTs tying"
               " signals to gnd / vcc) are merged into a single constant generator")
-        .default_value("off")
+        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     netlist_grp.add_argument<e_const_gen_inference, ParseConstGenInference>(args.const_gen_inference, "--const_gen_inference")
@@ -2239,7 +2262,7 @@ static void add_netlist_options(argparse::ArgumentParser& parser, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     netlist_grp.add_argument<bool, ParseOnOff>(args.sweep_constant_primary_outputs, "--sweep_constant_primary_outputs")
-        .help("Controls whether primary outputs driven by constant values are removed from the netlist")
+        .help("Controls whether primary outputs driven by constant generators (e.g. vcc/gnd) are removed from the netlist")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -3493,6 +3516,8 @@ static void add_timing_driven_routing_options(argparse::ArgumentParser& parser, 
             " * extended_map: A more advanced and extended lookahead which accounts for a more\n"
             "                 exhaustive node sampling method\n"
             " * simple: A purely distance-based lookahead loaded from an external file\n"
+            " * separable: A lookahead which treats the x and y components of a route\n"
+            "              as separable\n"
             "\n"
             " The extended map differs from the map lookahead in the lookahead computation.\n"
             " It is better suited for architectures that have specialized routing for specific\n"
@@ -4125,9 +4150,9 @@ void set_conditional_defaults(t_options& args) {
         }
     }
 
-    // If MAP Router lookahead is not used, we cannot use simple place delay lookup
+    // If map or separable Router lookahead is not used, we cannot use simple place delay lookup
     if (args.place_delay_model.provenance() != Provenance::SPECIFIED) {
-        if (args.router_lookahead_type != e_router_lookahead::MAP) {
+        if (args.router_lookahead_type != e_router_lookahead::MAP && args.router_lookahead_type != e_router_lookahead::SEPARABLE) {
             args.place_delay_model.set(PlaceDelayModelType::DELTA, Provenance::INFERRED);
         }
     }

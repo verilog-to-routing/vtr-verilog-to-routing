@@ -31,11 +31,17 @@ constexpr bool INCR_UPDATE_ATOM_SLACK = true;
 constexpr bool INCR_UPDATE_ATOM_MAX_REQ_WORST_SLACK = true;
 constexpr bool INCR_UPDATE_ATOM_CRIT = true;
 
-SetupSlackCrit::SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& netlist_lookup)
+SetupSlackCrit::SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, size_t num_clock_domains)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
     , pin_slacks_(netlist_.pins().size(), NAN)
-    , pin_criticalities_(netlist_.pins().size(), NAN) {
+    , pin_criticalities_(netlist_.pins().size(), NAN)
+    , max_req_(num_clock_domains)
+    , worst_slack_(num_clock_domains)
+    , max_req_node_(num_clock_domains)
+    , worst_slack_node_(num_clock_domains)
+    , prev_max_req_(num_clock_domains)
+    , prev_worst_slack_(num_clock_domains) {
     //We are doing some kind of full (i.e. non-incremental updates), record
     //all the relevant timing graph nodes
     all_nodes_.reserve(netlist.pins().size());
@@ -237,10 +243,10 @@ bool SetupSlackCrit::incr_update_max_req_and_worst_slack(const tatum::TimingGrap
 
             float req = tag.time().value();
 
-            VTR_ASSERT_SAFE(max_req_.count(domain_pair));
+            VTR_ASSERT_SAFE(max_req_.contains(domain_pair));
             float prev_req = max_req_[domain_pair];
 
-            VTR_ASSERT_SAFE(max_req_node_.count(domain_pair));
+            VTR_ASSERT_SAFE(max_req_node_.contains(domain_pair));
             tatum::NodeId prev_node = max_req_node_[domain_pair];
 
             if (prev_node == node && prev_req > req) {
@@ -251,8 +257,8 @@ bool SetupSlackCrit::incr_update_max_req_and_worst_slack(const tatum::TimingGrap
             }
 
             if (max_req_[domain_pair] < req) {
-                max_req_[domain_pair] = req;
-                max_req_node_[domain_pair] = node;
+                max_req_.set(domain_pair, req);
+                max_req_node_.set(domain_pair, node);
             }
         }
 
@@ -264,10 +270,10 @@ bool SetupSlackCrit::incr_update_max_req_and_worst_slack(const tatum::TimingGrap
             VTR_ASSERT_SAFE_MSG(!std::isnan(slack), "Slack should not be nan");
             VTR_ASSERT_SAFE_MSG(std::isfinite(slack), "Slack should not be infinite");
 
-            VTR_ASSERT_SAFE(worst_slack_.count(domain_pair));
+            VTR_ASSERT_SAFE(worst_slack_.contains(domain_pair));
             float prev_slack = worst_slack_[domain_pair];
 
-            VTR_ASSERT_SAFE(worst_slack_node_.count(domain_pair));
+            VTR_ASSERT_SAFE(worst_slack_node_.contains(domain_pair));
             tatum::NodeId prev_node = worst_slack_node_[domain_pair];
 
             if (prev_node == node && slack > prev_slack) {
@@ -278,8 +284,8 @@ bool SetupSlackCrit::incr_update_max_req_and_worst_slack(const tatum::TimingGrap
             }
 
             if (slack < worst_slack_[domain_pair]) {
-                worst_slack_[domain_pair] = slack;
-                worst_slack_node_[domain_pair] = node;
+                worst_slack_.set(domain_pair, slack);
+                worst_slack_node_.set(domain_pair, node);
             }
         }
     }
@@ -309,9 +315,9 @@ void SetupSlackCrit::recompute_max_req_and_worst_slack(const tatum::TimingGraph&
             auto domain_pair = DomainPair(tag.launch_clock_domain(), tag.capture_clock_domain());
 
             float req = tag.time().value();
-            if (!max_req_.count(domain_pair) || max_req_[domain_pair] < req) {
-                max_req_[domain_pair] = req;
-                max_req_node_[domain_pair] = node; //Record dominant node to help later  incremental updates
+            if (!max_req_.contains(domain_pair) || max_req_[domain_pair] < req) {
+                max_req_.set(domain_pair, req);
+                max_req_node_.set(domain_pair, node); // Record dominant node to help later  incremental updates
             }
         }
 
@@ -323,9 +329,9 @@ void SetupSlackCrit::recompute_max_req_and_worst_slack(const tatum::TimingGraph&
             VTR_ASSERT_SAFE_MSG(!std::isnan(slack), "Slack should not be nan");
             VTR_ASSERT_SAFE_MSG(std::isfinite(slack), "Slack should not be infinite");
 
-            if (!worst_slack_.count(domain_pair) || slack < worst_slack_[domain_pair]) {
-                worst_slack_[domain_pair] = slack;
-                worst_slack_node_[domain_pair] = node; //Record dominant node to help later  incremental updates
+            if (!worst_slack_.contains(domain_pair) || slack < worst_slack_[domain_pair]) {
+                worst_slack_.set(domain_pair, slack);
+                worst_slack_node_.set(domain_pair, node); // Record dominant node to help later  incremental updates
             }
         }
     }
