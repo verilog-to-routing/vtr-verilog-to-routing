@@ -377,10 +377,12 @@ General Options
 
 .. option:: --constant_net_method {global | route}
 
-    Specifies how constant nets (i.e. those driven to a constant value) are handled:
+    Specifies how constant nets (i.e. those driven by a constant generator such as vcc/gnd) are handled:
 
-     * ``global``: Treat constant nets as globals (not routed)
+     * ``global``: Treat constant nets as ignored (not routed)
      * ``route``: Treat constant nets as normal nets (routed)
+
+    Nets which are only inferred to be constant (e.g. the output of a primitive whose inputs are all constant, see :option:`--const_gen_inference`) are always routed, since the primitive driving them is still implemented.
 
      **Default:** ``global``
 
@@ -654,9 +656,12 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
     When enabled, all constant-zero generators are merged into a single constant-zero generator, and all constant-one generators are merged into a single constant-one generator.
     The generator with the highest fanout of each value (e.g. ``gnd`` / ``vcc``) is kept, and the names of the removed nets are kept as aliases of the merged net.
 
+    Since constant nets are not routed by default (see :option:`--constant_net_method`), the constant generators are assumed to be available within each tile and do not need to be duplicated.
+    However, each constant generator is still implemented as a physical block and uses tile pin resources, so merging them avoids wasting these resources.
+
     Disabling merging can improve the matching between the input and post-synthesis netlist.
 
-    **Default**: ``off``
+    **Default**: ``on``
 
 .. option:: --const_gen_inference {none | comb | comb_seq}
 
@@ -701,7 +706,8 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
 .. option:: --sweep_constant_primary_outputs {on | off}
 
-    Controls whether primary outputs driven by constant values are swept and removed from the netlist.
+    Controls whether primary outputs driven by constant generators (e.g. vcc/gnd) are swept and removed from the netlist.
+    Primary outputs driven by nets which are only inferred to be constant (see :option:`--const_gen_inference`) are not swept.
 
     .. seealso:: :option:`--sweep_dangling_primary_ios`
 

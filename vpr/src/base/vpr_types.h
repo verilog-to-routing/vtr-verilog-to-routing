@@ -33,7 +33,6 @@
 #include "constant_nets.h"
 #include "clock_modeling.h"
 #include "heap_type.h"
-#include "lb_type_rr_node_types.h"
 
 #include "vtr_assert.h"
 #include "vtr_vector.h"
@@ -680,7 +679,7 @@ struct t_file_name_opts {
 struct t_netlist_opts {
     e_const_gen_inference const_gen_inference = e_const_gen_inference::COMB;
     bool absorb_buffer_luts = true;
-    bool merge_constant_generators = false;
+    bool merge_constant_generators = true;
     bool sweep_dangling_primary_ios = true;
     bool sweep_dangling_blocks = true;
     bool sweep_dangling_nets = true;
@@ -1636,19 +1635,18 @@ struct t_server_opts {
 
 ///@brief Store settings for VPR
 struct t_vpr_setup {
-    bool TimingEnabled;             ///<Is VPR timing enabled
-    t_file_name_opts FileNameOpts;  ///<File names
-    t_netlist_opts NetlistOpts;     ///<Options for packer
-    t_packer_opts PackerOpts;       ///<Options for packer
-    t_placer_opts PlacerOpts;       ///<Options for placer
-    t_ap_opts APOpts;               ///<Options for analytical placer
-    t_router_opts RouterOpts;       ///<router options
-    t_analysis_opts AnalysisOpts;   ///<Analysis options
-    t_crr_opts CRROpts;             ///<CRR options
-    t_noc_opts NocOpts;             ///<Options for the NoC
-    t_server_opts ServerOpts;       ///<Server options
-    t_det_routing_arch RoutingArch; ///<routing architecture
-    std::vector<std::vector<t_lb_type_rr_node>> PackerRRGraph;
+    bool TimingEnabled;                  ///<Is VPR timing enabled
+    t_file_name_opts FileNameOpts;       ///<File names
+    t_netlist_opts NetlistOpts;          ///<Options for packer
+    t_packer_opts PackerOpts;            ///<Options for packer
+    t_placer_opts PlacerOpts;            ///<Options for placer
+    t_ap_opts APOpts;                    ///<Options for analytical placer
+    t_router_opts RouterOpts;            ///<router options
+    t_analysis_opts AnalysisOpts;        ///<Analysis options
+    t_crr_opts CRROpts;                  ///<CRR options
+    t_noc_opts NocOpts;                  ///<Options for the NoC
+    t_server_opts ServerOpts;            ///<Server options
+    t_det_routing_arch RoutingArch;      ///<routing architecture
     std::vector<t_segment_inf> Segments; ///<wires in routing architecture
     t_timing_inf Timing;                 ///<timing information
     float constant_net_delay;            ///<timing information when place and route not run
