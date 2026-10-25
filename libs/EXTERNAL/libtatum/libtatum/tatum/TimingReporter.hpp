@@ -8,6 +8,7 @@
 #include "tatum/TimingGraphNameResolver.hpp"
 #include "tatum/report/TimingPath.hpp"
 #include "tatum/report/TimingPathCollector.hpp"
+#include "tatum/report/TimingPathCategory.hpp"
 #include "tatum/report/TimingReportTagRetriever.hpp"
 
 namespace tatum { namespace detail {
@@ -62,19 +63,19 @@ class TimingReporter {
                        float unit_scale=1e-9,
                        size_t precision=3);
     public:
-        void report_timing_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
-        void report_timing_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
-        void report_timing_setup(std::vector<tatum::TimingPath>& paths, std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
+        void report_timing_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS, const TimingPathCategoryFilter& category_filter=TimingPathCategoryFilter::all()) const;
+        void report_timing_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS, const TimingPathCategoryFilter& category_filter=TimingPathCategoryFilter::all()) const;
+        void report_timing_setup(std::vector<tatum::TimingPath>& paths, std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS, const TimingPathCategoryFilter& category_filter=TimingPathCategoryFilter::all()) const;
 
-        void report_timing_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
-        void report_timing_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
-        void report_timing_hold(std::vector<tatum::TimingPath>& paths, std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
+        void report_timing_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS, const TimingPathCategoryFilter& category_filter=TimingPathCategoryFilter::all()) const;
+        void report_timing_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS, const TimingPathCategoryFilter& category_filter=TimingPathCategoryFilter::all()) const;
+        void report_timing_hold(std::vector<tatum::TimingPath>& paths, std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS, const TimingPathCategoryFilter& category_filter=TimingPathCategoryFilter::all()) const;
 
-        void report_skew_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS) const;
-        void report_skew_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS) const;
+        void report_skew_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS, const TimingPathCategoryFilter& category_filter=TimingPathCategoryFilter::all()) const;
+        void report_skew_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS, const TimingPathCategoryFilter& category_filter=TimingPathCategoryFilter::all()) const;
 
-        void report_skew_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS) const;
-        void report_skew_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS) const;
+        void report_skew_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS, const TimingPathCategoryFilter& category_filter=TimingPathCategoryFilter::all()) const;
+        void report_skew_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS, const TimingPathCategoryFilter& category_filter=TimingPathCategoryFilter::all()) const;
 
         void report_unconstrained_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer) const;
         void report_unconstrained_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer) const;
@@ -96,13 +97,13 @@ class TimingReporter {
         };
 
     private:
-        void report_timing(std::ostream& os, const std::vector<TimingPath>& paths) const;
+        void report_timing(std::ostream& os, const std::vector<TimingPath>& paths, const TimingPathCategoryFilter& category_filter) const;
 
         void report_timing_path(std::ostream& os, const TimingPath& path) const;
 
         void report_unconstrained(std::ostream& os, const NodeType type, const detail::TagRetriever& tag_retriever) const;
 
-        void report_skew(std::ostream& os, const std::vector<SkewPath>& paths, TimingType timing_type) const;
+        void report_skew(std::ostream& os, const std::vector<SkewPath>& paths, TimingType timing_type, const TimingPathCategoryFilter& category_filter) const;
 
         void report_skew_path(std::ostream& os, const SkewPath& skew_path, TimingType timing_type) const;
 
