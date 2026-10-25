@@ -33,6 +33,11 @@ target_link_libraries(parmys
     pthread
     ${CMAKE_DL_LIBS}
 )
+# MacOS require specific linker settings
+if(APPLE)
+  target_link_options(parmys PRIVATE -undefined dynamic_lookup)
+endif()
+
 
 set_target_properties(parmys PROPERTIES PREFIX "") # Avoid extra 'lib' prefix
 set_target_properties(parmys PROPERTIES SUFFIX ".so") # Yosys expects the suffix to be '.so' even on macOS
