@@ -146,7 +146,7 @@ static t_bb adjust_sampling_bb_to_rr_node(const t_bb& bb, const DeviceGrid& grid
 
     // Centre the strip on the endpoint. The strip extends (old_centre - strip_low) tiles below its
     // centre and (strip_high - old_centre) tiles above it, so the centre is clamped that far inside
-    // [0, dim_size - 1] to keep the whole strip, not just itevaluas centre, inside the grid.
+    // [0, dim_size - 1] to keep the whole strip, not just its centre, inside the grid.
     const int old_centre = (strip_low + strip_high) / 2;
     const int new_centre = std::clamp(endpoint,
                                       old_centre - strip_low,
