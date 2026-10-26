@@ -150,7 +150,8 @@ struct LegalizationCluster {
     ///        for optimization.
     NocGroupId noc_grp_id;
 
-    t_cluster_relative_state rel_macro_state; ///< Relative placement group and long chain ownership.
+    /// @brief Relative placement group and long chain ownership of this cluster.
+    t_cluster_relative_state rel_macro_state;
 
     /// @brief The intra lb router used for this cluster.
     ///        Contains information about the atoms in the cluster and how they
@@ -657,7 +658,9 @@ class ClusterLegalizer {
     /// @brief The current legalization strategy of the cluster legalizer.
     ClusterLegalizationStrategy cluster_legalization_strategy_;
 
-    RelativeMacroPacker relative_macro_packer_; ///< Relative macro checks; skipped when no macros are defined.
+    /// @brief Enforces the relative placement macro rules. Its checks are
+    ///        skipped when no relative macros are defined.
+    RelativeMacroPacker relative_macro_packer_;
 
     /// @brief Controls whether the pin counting feasibility filter is used
     ///        during clustering. When enabled the clustering engine counts the
