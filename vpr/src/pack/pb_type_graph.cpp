@@ -1140,8 +1140,9 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
         }
     }
 
-    /* Allocate memory for edges */
-    t_pb_graph_edge* edges = new t_pb_graph_edge[pins_per_set * num_output_sets]();
+    // Allocate memory for edges.
+    int num_edges = pins_per_set * num_output_sets;
+    t_pb_graph_edge* edges = new t_pb_graph_edge[num_edges]();
     vtr::t_linked_vptr* cur = new vtr::t_linked_vptr;
     cur->next = edges_head;
     edges_head = cur;
@@ -1149,7 +1150,7 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
     cur = new vtr::t_linked_vptr;
     cur->next = num_edges_head;
     num_edges_head = cur;
-    cur->data_vptr = (void*)((intptr_t)num_input_ptrs[0]);
+    cur->data_vptr = (void*)((intptr_t)num_edges);
 
     /* Reallocate memory for pins and load connections between pins and record these updates in the edges */
     for (int ipin = 0; ipin < pins_per_set; ++ipin) {
