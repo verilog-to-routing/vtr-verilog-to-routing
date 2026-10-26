@@ -21,6 +21,7 @@
 #include "cluster_placement.h"
 #include "cluster_router.h"
 #include "globals.h"
+#include "lb_type_rr_graph_builder.h"
 #include "logic_types.h"
 #include "netlist_utils.h"
 #include "noc_aware_cluster_util.h"
@@ -102,14 +103,14 @@ static void alloc_and_load_pb_stats(t_pb* pb) {
 
 LegalizationCluster::LegalizationCluster(t_logical_block_type_ptr cluster_type,
                                          int cluster_mode,
-                                         const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
+                                         const std::vector<LbTypeRRGraph>& lb_type_rr_graphs,
                                          const std::unordered_set<int>& valid_feedback_pins,
                                          bool enable_router_hot_start)
     : pb(new t_pb)
     , type(cluster_type)
     , pr(PartitionRegion())
     , noc_grp_id(NocGroupId::INVALID())
-    , cluster_router(&lb_type_rr_graphs[cluster_type->index], cluster_type, valid_feedback_pins, enable_router_hot_start)
+    , cluster_router(lb_type_rr_graphs[cluster_type->index], cluster_type, valid_feedback_pins, enable_router_hot_start)
     , placement_stats(alloc_and_load_cluster_placement_stats(cluster_type, cluster_mode)) {
 
     pb->pb_graph_node = cluster_type->pb_graph_head;
@@ -1277,15 +1278,12 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
     VTR_ASSERT_DEBUG(cluster_mode < cluster_type->pb_graph_head->pb_type->num_modes);
     // Ensure that the molecule has not already been placed.
     VTR_ASSERT_SAFE(!molecule_cluster_[molecule_id].is_valid());
-    // Safety asserts to ensure that the API was initialized properly.
-    VTR_ASSERT_DEBUG(lb_type_rr_graphs_ != nullptr);
-
     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
 
     // Create the new cluster
     VTR_ASSERT_MSG(cluster_type->index < (int)valid_feedback_pins_by_type_.size(),
                    ("Logical block type not found in feedback pin map: " + std::string(cluster_type->name)).c_str());
-    LegalizationCluster new_cluster(cluster_type, cluster_mode, *lb_type_rr_graphs_,
+    LegalizationCluster new_cluster(cluster_type, cluster_mode, lb_type_rr_graphs_,
                                     valid_feedback_pins_by_type_[cluster_type->index],
                                     enable_cluster_router_hot_start_);
 
@@ -1331,9 +1329,6 @@ e_block_pack_status ClusterLegalizer::add_mol_to_cluster(PackMoleculeId molecule
     VTR_ASSERT(legalization_cluster_ids_[cluster_id].is_valid() && "Cannot add to a destroyed cluster");
     // Ensure that the molecule has not already been placed.
     VTR_ASSERT(!molecule_cluster_[molecule_id].is_valid());
-    // Safety asserts to ensure that the API was initialized properly.
-    VTR_ASSERT_DEBUG(lb_type_rr_graphs_ != nullptr);
-
     // Get the cluster.
     LegalizationCluster& cluster = legalization_clusters_[cluster_id];
     VTR_ASSERT(!cluster.cluster_router.is_clean() && cluster.placement_stats != nullptr
@@ -1485,7 +1480,6 @@ bool ClusterLegalizer::ensure_legal_final_routing(LegalizationClusterId cluster_
 
 ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    const Prepacker& prepacker,
-                                   const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
                                    const std::vector<std::string>& target_external_pin_util_str,
                                    const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                                    ClusterLegalizationStrategy cluster_legalization_strategy,
@@ -1494,7 +1488,8 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    bool enable_cluster_router_hot_start,
                                    const LogicalModels& models,
                                    int log_verbosity)
-    : prepacker_(prepacker) {
+    : lb_type_rr_graphs_(alloc_and_load_all_lb_type_rr_graph())
+    , prepacker_(prepacker) {
     // Get the target external pin utilization
     // NOTE: Be careful with this constructor, it may throw a VPR_FATAL_ERROR.
     target_external_pin_util_ = t_ext_pin_util_targets(target_external_pin_util_str);
@@ -1507,8 +1502,6 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     clustering_chain_info_.resize(prepacker_.get_num_molecule_chains());
     // Pre-compute the max size of any molecule.
     max_molecule_size_ = prepacker.get_max_molecule_size();
-    // Get a reference to the rr graphs.
-    lb_type_rr_graphs_ = &lb_type_rr_graphs;
     // Find all NoC router atoms.
     std::vector<AtomBlockId> noc_atoms = find_noc_router_atoms(atom_netlist, models);
     update_noc_reachability_partitions(noc_atoms,

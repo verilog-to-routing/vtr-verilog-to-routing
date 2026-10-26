@@ -8,13 +8,13 @@
 #include "logical_ram_infer.h"
 
 class AtomNetId;
+class LbTypeRRGraph;
 class FlatPlacementInfo;
 class PreClusterTimingManager;
 class Prepacker;
 struct t_analysis_opts;
 struct t_ap_opts;
 struct t_arch;
-struct t_lb_type_rr_node;
 struct t_packer_opts;
 struct t_logical_block_type;
 struct t_vpr_setup;
@@ -28,7 +28,6 @@ using t_logical_block_type_ptr = const t_logical_block_type*;
  *              Options passed by the user to configure the packing algorithm.
  *  @param arch
  *              The architecture to create clusters for.
- *  @param lb_type_rr_graphs
  *  @param prepacker
  *              The prepacker used to form atoms into molecules prior to packing.
  *  @param pre_cluster_timing_manager
@@ -53,7 +52,6 @@ using t_logical_block_type_ptr = const t_logical_block_type*;
 bool try_pack(const t_packer_opts& packer_opts,
               const t_ap_opts& ap_opts,
               const t_arch& arch,
-              const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
               const Prepacker& prepacker,
               const PreClusterTimingManager& pre_cluster_timing_manager,
               const FlatPlacementInfo& flat_placement_info,

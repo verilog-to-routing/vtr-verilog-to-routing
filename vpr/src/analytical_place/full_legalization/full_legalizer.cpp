@@ -1007,7 +1007,6 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
     ClusterLegalizer cluster_legalizer(
         atom_netlist_,
         prepacker_,
-        vpr_setup_.PackerRRGraph,
         target_ext_pin_util,
         high_fanout_thresholds,
         ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
@@ -1046,7 +1045,6 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
     t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
     ClusterLegalizer cluster_legalizer(atom_netlist_,
                                        prepacker_,
-                                       vpr_setup_.PackerRRGraph,
                                        vpr_setup_.PackerOpts.target_external_pin_util,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::FULL,
@@ -1285,7 +1283,6 @@ void APPack::legalize(const PartialPlacement& p_placement) {
         try_pack(vpr_setup_.PackerOpts,
                  vpr_setup_.APOpts,
                  arch_,
-                 vpr_setup_.PackerRRGraph,
                  prepacker_,
                  pre_cluster_timing_manager_,
                  flat_placement_info,
