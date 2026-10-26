@@ -111,6 +111,13 @@ static void draw_main_canvas(ezgl::renderer* g);
 static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::renderer* g);
 
 /**
+ * @brief Creates the main canvas over initial_world with the backend selected
+ * by --renderer. Called once per application, from init_graphics() or on the
+ * first update_screen() state change.
+ */
+static void add_main_canvas();
+
+/**
  * @brief Generalized callback function to setup the UI when the stage changes.
  */
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window);
@@ -121,6 +128,10 @@ static void set_block_text(bool checked);
 static void set_draw_partitions(bool checked);
 static void clip_routing_util(bool checked);
 static void run_graphics_commands(const std::string& commands);
+static void set_final_graphics_stage(const t_vpr_setup& vpr_setup);
+static void parse_wait_for_stage_arg(const std::string& arg,
+                                     e_pic_type& want,
+                                     bool& wait_for_done);
 
 /************************** File Scope Variables ****************************/
 
@@ -178,6 +189,12 @@ std::string rr_highlight_message;
 std::set<e_pic_type> initial_stages;
 std::set<e_pic_type> completed_stages;
 
+// Set once add_main_canvas() has created the main canvas of the current application.
+static bool main_canvas_added = false;
+
+// Last stage of the requested flow that is drawn; see set_final_graphics_stage().
+static e_pic_type final_stage = e_pic_type::NO_PICTURE;
+
 // Used for scripted graphics (rendered to files via --graphics_commands).
 // `exit N` from --graphics_commands is processed deferredly: the
 // interpreter sets these flags and breaks, then update_screen() honors
@@ -193,32 +210,28 @@ static int pending_graphics_exit_code = 0;
 
 /********************** Subroutine definitions ******************************/
 
-void init_graphics_state(bool show_graphics_val,
-                         int gr_automode_val,
-                         enum e_route_type route_type,
-                         bool save_graphics,
-                         std::string graphics_commands,
-                         std::string renderer_type,
-                         bool is_flat) {
+void init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
 
-    /* Sets the static show_graphics and gr_automode variables to the    *
+    /* Sets the static show_graphics and graphics_pause variables to the *
      * desired values.  They control if graphics are enabled and, if so, *
      * how often the user is prompted for input.                         */
 
-    draw_state->show_graphics = show_graphics_val;
-    draw_state->gr_automode = gr_automode_val;
-    draw_state->draw_route_type = route_type;
-    draw_state->save_graphics = save_graphics;
-    draw_state->graphics_commands = graphics_commands;
-    draw_state->renderer_type = renderer_type;
-    draw_state->is_flat = is_flat;
+    draw_state->show_graphics = vpr_setup.ShowGraphics;
+    draw_state->graphics_pause = vpr_setup.GraphPause;
+    draw_state->draw_route_type = vpr_setup.RouterOpts.route_type;
+    draw_state->save_graphics = vpr_setup.SaveGraphics;
+    draw_state->graphics_commands = vpr_setup.GraphicsCommands;
+    draw_state->renderer_type = vpr_setup.RendererType;
+    draw_state->is_flat = vpr_setup.RouterOpts.flat_routing;
+
+    set_final_graphics_stage(vpr_setup);
 
     // When --disp is off, force Qt into offscreen mode before QApplication is
     // created so it doesn't try to connect to an X11/Wayland display.
-    if (!show_graphics_val && !qEnvironmentVariableIsSet("QT_QPA_PLATFORM")) {
+    if (!vpr_setup.ShowGraphics && !qEnvironmentVariableIsSet("QT_QPA_PLATFORM")) {
         qputenv("QT_QPA_PLATFORM", "offscreen");
     }
 
@@ -229,15 +242,27 @@ void init_graphics_state(bool show_graphics_val,
         application = new ezgl::application(settings, argc, argv);
     }
 
+    if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty()) {
+        VTR_ASSERT(g_vpr_ctx.device().grid.width() > 0 && g_vpr_ctx.device().grid.height() > 0);
+        alloc_draw_structs(&arch);
+        init_draw_coords(vpr_setup.PlacerOpts.place_chan_width,
+                         g_vpr_ctx.placement().blk_loc_registry());
+    }
+
+    // Under --disp on, create the main canvas and build the GUI without showing
+    // it, so its widgets exist before the first update_screen() pause.
+    if (vpr_setup.ShowGraphics) {
+        if (!main_canvas_added) {
+            set_initial_world();
+            add_main_canvas();
+        }
+        application->build_ui();
+    }
+
 #else
     //Suppress unused parameter warnings
-    (void)show_graphics_val;
-    (void)gr_automode_val;
-    (void)route_type;
-    (void)save_graphics;
-    (void)graphics_commands;
-    (void)renderer_type;
-    (void)is_flat;
+    (void)vpr_setup;
+    (void)arch;
 #endif // NO_GRAPHICS
 }
 
@@ -251,8 +276,53 @@ void notify_stage_complete(e_pic_type stage) {
 
 #ifndef NO_GRAPHICS
 
+/**
+ * @brief Records the last drawn stage of the requested flow, derived from the
+ * stage actions (--pack, --place, --route, --analysis, ...).
+ *
+ * With --graphics_pause final_stage, update_screen() skips the interactive
+ * window, --save_graphics and --graphics_commands until that stage has been
+ * marked complete via notify_stage_complete(), then pauses once. Flows whose
+ * last stage is not routing or placement keep the old never-pause behaviour.
+ * A `wait_for_stage` on any other stage is a fatal error. Must run after
+ * graphics_pause is set in draw_state.
+ */
+static void set_final_graphics_stage(const t_vpr_setup& vpr_setup) {
+    if (vpr_setup.RouterOpts.doRouting != e_stage_action::SKIP) {
+        final_stage = e_pic_type::ROUTING;
+    } else if (vpr_setup.PlacerOpts.do_placement != e_stage_action::SKIP) {
+        final_stage = e_pic_type::PLACEMENT;
+    } else {
+        final_stage = e_pic_type::NO_PICTURE;
+    }
+
+    // Only the final stage is ever reached, so a barrier on any other stage
+    // would silently stop the script there.
+    if (get_draw_state_vars()->graphics_pause == e_graphics_pause::FINAL_STAGE && final_stage != e_pic_type::NO_PICTURE) {
+        for (const std::string& raw_cmd : vtr::StringToken(vpr_setup.GraphicsCommands).split(";")) {
+            std::vector<std::string> cmd = vtr::StringToken(raw_cmd).split(" \t\n");
+            if (cmd.size() != 2 || cmd[0] != "wait_for_stage")
+                continue;
+            e_pic_type want = e_pic_type::NO_PICTURE;
+            bool wait_for_done = false;
+            parse_wait_for_stage_arg(cmd[1], want, wait_for_done);
+            if (want != final_stage) {
+                VPR_FATAL_ERROR(VPR_ERROR_DRAW,
+                                "--graphics_commands 'wait_for_stage %s' can never be reached with "
+                                "--graphics_pause final_stage: only the final stage of this flow is drawn.\n",
+                                cmd[1].c_str());
+            }
+        }
+    }
+}
+
 static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
+
+    // init_graphics() builds the UI before any stage has set up a picture,
+    // and the immediate/deferred backends draw once while initializing the canvas.
+    if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE)
+        return;
 
     g->set_font_size(14);
 
@@ -408,6 +478,50 @@ static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::rende
     return true;
 }
 
+static void add_main_canvas() {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas, initial_world);
+    if (canvas != nullptr) {
+        ezgl::renderer_type rt = ezgl::renderer_type::rhi;
+        if (draw_state->renderer_type == "immediate")
+            rt = ezgl::renderer_type::immediate;
+        else if (draw_state->renderer_type == "deferred")
+            rt = ezgl::renderer_type::deferred;
+
+        // The QRhiWidget path (used only under --disp on) cannot
+        // acquire a QRhi from QPlatformBackingStore::rhi() under the
+        // offscreen QPA — the plugin returns nullptr. Headless
+        // (--disp off) is fine: render_to_image() creates an
+        // offscreen QRhi directly without QRhiWidget. So scope the
+        // fallback to the widget case only.
+        if (rt == ezgl::renderer_type::rhi
+            && draw_state->show_graphics
+            && qEnvironmentVariable("QT_QPA_PLATFORM") == "offscreen") {
+            VTR_LOG_WARN(
+                "QRhiWidget cannot run under QT_QPA_PLATFORM=offscreen "
+                "with --disp on; falling back to the immediate renderer.\n");
+            rt = ezgl::renderer_type::immediate;
+            draw_state->renderer_type = "immediate";
+        }
+
+        // Set the callback that helps rhi_backend::redraw_at_view_change() determine if
+        // the full redraw can be replaced by a camera-only redraw.
+        if (rt == ezgl::renderer_type::rhi) {
+            canvas->set_decide_reuse_geometry_callback(draw_can_reuse_geometry);
+        }
+
+        canvas->set_renderer_type(rt);
+
+        // Surface the renderer that actually got installed (which may
+        // differ from --renderer after the offscreen-QPA fallback
+        // above) so logs/tests can confirm the active backend.
+        VTR_LOG("EZGL: active renderer backend: %s\n",
+                ezgl::renderer_type_name(rt));
+    }
+    main_canvas_added = true;
+}
+
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
     // default setup for new window
     if (is_new_window) {
@@ -467,7 +581,7 @@ void update_screen(ScreenUpdatePriority priority,
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
     t_draw_state* draw_state = get_draw_state_vars();
 
-    // The application object is created lazily in vpr_init_graphics(), which is
+    // The application object is created lazily in init_graphics(), which is
     // called after the AP flow.  If we are called before that (e.g. from the
     // global placer's draw callbacks), bail out — there is nothing to draw.
     if (application == nullptr)
@@ -497,45 +611,8 @@ void update_screen(ScreenUpdatePriority priority,
             }
         }
 
-        if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
-            auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas, initial_world);
-            if (canvas != nullptr) {
-                ezgl::renderer_type rt = ezgl::renderer_type::rhi;
-                if (draw_state->renderer_type == "immediate")
-                    rt = ezgl::renderer_type::immediate;
-                else if (draw_state->renderer_type == "deferred")
-                    rt = ezgl::renderer_type::deferred;
-
-                // The QRhiWidget path (used only under --disp on) cannot
-                // acquire a QRhi from QPlatformBackingStore::rhi() under the
-                // offscreen QPA — the plugin returns nullptr. Headless
-                // (--disp off) is fine: render_to_image() creates an
-                // offscreen QRhi directly without QRhiWidget. So scope the
-                // fallback to the widget case only.
-                if (rt == ezgl::renderer_type::rhi
-                    && draw_state->show_graphics
-                    && qEnvironmentVariable("QT_QPA_PLATFORM") == "offscreen") {
-                    VTR_LOG_WARN(
-                        "QRhiWidget cannot run under QT_QPA_PLATFORM=offscreen "
-                        "with --disp on; falling back to the immediate renderer.\n");
-                    rt = ezgl::renderer_type::immediate;
-                    draw_state->renderer_type = "immediate";
-                }
-
-                // Set the callback that helps rhi_backend::redraw_at_view_change() determine if
-                // the full redraw can be replaced by a camera-only redraw.
-                if (rt == ezgl::renderer_type::rhi) {
-                    canvas->set_decide_reuse_geometry_callback(draw_can_reuse_geometry);
-                }
-
-                canvas->set_renderer_type(rt);
-
-                // Surface the renderer that actually got installed (which may
-                // differ from --renderer after the offscreen-QPA fallback
-                // above) so logs/tests can confirm the active backend.
-                VTR_LOG("EZGL: active renderer backend: %s\n",
-                        ezgl::renderer_type_name(rt));
-            }
+        if (!main_canvas_added) {
+            add_main_canvas();
         } else {
             // TODO: will this ever be null?
             auto canvas = application->get_canvas(application->get_main_canvas_id());
@@ -563,8 +640,16 @@ void update_screen(ScreenUpdatePriority priority,
 
     // When the priority associated with this screen update is higher than the level set in draw_state,
     // we need to pause at the current graphics view. This does not necessarily happen only at a state change.
-    // Check the definition of gr_automode in draw_state for more information.
-    bool pause_for_priority = int(priority) >= draw_state->gr_automode;
+    // Check the definition of graphics_pause in draw_state for more information.
+    bool pause_for_priority = int(priority) >= int(draw_state->graphics_pause);
+
+    // --graphics_pause final_stage: graphics act, and pause, only once the last requested stage completes.
+    const bool final_stage_only = draw_state->graphics_pause == e_graphics_pause::FINAL_STAGE && final_stage != e_pic_type::NO_PICTURE;
+    const bool at_final_stage = pic_on_screen_val == final_stage && completed_stages.count(final_stage) != 0;
+    const bool hide_intermediate = final_stage_only && !at_final_stage;
+    if (final_stage_only) {
+        pause_for_priority = at_final_stage;
+    }
 
     // If there was a state change, we must call ezgl::application::run() to update the buttons.
     // However, by default this causes graphics to pause for user interaction.
@@ -584,9 +669,10 @@ void update_screen(ScreenUpdatePriority priority,
     t_proceed_by_step& proceed_by_step = draw_state->proceed_by_step;
     bool steps_reached = proceed_by_step.enabled && (proceed_by_step.step_counter == proceed_by_step.steps_to_proceed);
 
-    if (state_change          // Must update buttons.
-        || pause_for_priority // The priority means graphics should pause at the current view for user interaction.
-        || steps_reached) {   // The number of steps set by the user is reached.
+    if (!hide_intermediate
+        && (state_change          // Must update buttons.
+            || pause_for_priority // The priority means graphics should pause at the current view for user interaction.
+            || steps_reached)) {  // The number of steps set by the user is reached.
 
         // Reset the step counter if Proceed by Step is on.
         // Note that, other causes that pause the graphics (e.g. a state change)
@@ -625,13 +711,13 @@ void update_screen(ScreenUpdatePriority priority,
         }
     }
 
-    if (draw_state->show_graphics) {
+    if (draw_state->show_graphics && !hide_intermediate) {
         application->update_message(msg);
         application->refresh_drawing();
         application->flush_drawing();
     }
 
-    if (draw_state->save_graphics) {
+    if (draw_state->save_graphics && !hide_intermediate) {
         std::string extension = "pdf";
         save_graphics(extension, draw_state->save_graphics_file_base);
     }
@@ -728,6 +814,7 @@ void free_draw_structs() {
 
     delete application;
     application = nullptr;
+    main_canvas_added = false;
 
 #else
     ;

@@ -38,7 +38,7 @@ class NestedNetlistRouter : public NetlistRouter {
         NetPinTimingInvalidator* pin_timing_invalidator,
         route_budgets& budgeting_inf,
         const RoutingPredictor& routing_predictor,
-        const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
+        const vtr::vector<ParentNetId, t_net_choke_points>& choking_spots,
         bool is_flat,
         int route_verbosity)
         : _net_list(net_list)
@@ -64,8 +64,6 @@ class NestedNetlistRouter : public NetlistRouter {
     /** Inform the PartitionTree of the nets with updated bounding boxes */
     void handle_bb_updated_nets(const std::vector<ParentNetId>& nets);
 
-    /** Set rcv_enabled for each ConnectionRouter this is managing */
-    void set_rcv_enabled(bool x);
     /** Set timing_info for each ConnectionRouter this is managing */
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
@@ -120,7 +118,7 @@ class NestedNetlistRouter : public NetlistRouter {
     NetPinTimingInvalidator* _pin_timing_invalidator;
     route_budgets& _budgeting_inf;
     const RoutingPredictor& _routing_predictor;
-    const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& _choking_spots;
+    const vtr::vector<ParentNetId, t_net_choke_points>& _choking_spots; ///< Choke points indexed by net ID.
     bool _is_flat;
     int _route_verbosity;
 

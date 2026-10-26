@@ -197,7 +197,7 @@ jobs:
       issues: write
     steps:
       - name: Create issue
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           MSYS2_RESULT: ${{ needs.Msys2Compatibility.result }}
           MSVC_RESULT: ${{ needs.MsvcCompatibility.result }}

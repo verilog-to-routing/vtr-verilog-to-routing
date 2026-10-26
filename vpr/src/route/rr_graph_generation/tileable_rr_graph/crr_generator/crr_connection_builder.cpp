@@ -296,14 +296,16 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const CompiledSegSpec& 
     int seg_length = spec.seg_len;
     int tap = spec.tap;
 
-    // V1 uses 1-indexed segment coordinates; V2 uses 0-indexed.
-    int coord_offset = (gsb_version_ == e_gsb_version::GSB_V1) ? 1 : 0;
-
     if (is_vertical) {
         switch (spec.side) {
             case e_sw_template_dir::LEFT:
-                x_high = x + seg_length - tap - 1 + coord_offset;
-                x_low = x - tap + coord_offset;
+                if (gsb_version_ == e_gsb_version::GSB_V1) {
+                    x_high = x + seg_length - tap;
+                    x_low = x - tap + 1;
+                } else {
+                    x_high = x + seg_length - tap - 1;
+                    x_low = x - tap;
+                }
                 y_high = y;
                 y_low = y;
                 break;
@@ -322,8 +324,13 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const CompiledSegSpec& 
             case e_sw_template_dir::BOTTOM:
                 x_high = x;
                 x_low = x;
-                y_high = y + seg_length - tap - 1 + coord_offset;
-                y_low = y - tap + coord_offset;
+                if (gsb_version_ == e_gsb_version::GSB_V1) {
+                    y_high = y + seg_length - tap;
+                    y_low = y - tap + 1;
+                } else {
+                    y_high = y + seg_length - tap - 1;
+                    y_low = y - tap;
+                }
                 break;
             default:
                 VTR_ASSERT_MSG(false, "Routing segment specs always carry a LEFT/RIGHT/TOP/BOTTOM side");
@@ -340,16 +347,26 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const CompiledSegSpec& 
                 y_low = y;
                 break;
             case e_sw_template_dir::RIGHT:
-                x_high = x + seg_length - 1 + coord_offset;
-                x_low = x + coord_offset;
+                if (gsb_version_ == e_gsb_version::GSB_V1) {
+                    x_high = x + seg_length + 1 - tap;
+                    x_low = x + 2 - tap;
+                } else {
+                    x_high = x + seg_length - 1;
+                    x_low = x;
+                }
                 y_high = y;
                 y_low = y;
                 break;
             case e_sw_template_dir::TOP:
                 x_high = x;
                 x_low = x;
-                y_high = y + seg_length - 1 + coord_offset;
-                y_low = y + coord_offset;
+                if (gsb_version_ == e_gsb_version::GSB_V1) {
+                    y_high = y + seg_length + 1 - tap;
+                    y_low = y + 2 - tap;
+                } else {
+                    y_high = y + seg_length - 1;
+                    y_low = y;
+                }
                 break;
             case e_sw_template_dir::BOTTOM:
                 x_high = x;

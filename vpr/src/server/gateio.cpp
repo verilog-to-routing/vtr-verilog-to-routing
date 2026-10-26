@@ -181,7 +181,7 @@ void GateIO::start(int port_num) {
         m_is_running.store(true);
         m_thread = std::thread(&GateIO::start_listening, this);
         // QApplication is guaranteed to exist by the time start() is called
-        // (vpr_init_graphics runs before vpr_init_server). Starting the timer
+        // (init_graphics runs before vpr_init_server). Starting the timer
         // here avoids the "Timers can only be used with threads started with
         // QThread" warning that firing it in the constructor would cause.
         m_updateTimer = std::make_unique<QTimer>();

@@ -279,16 +279,19 @@ void alloc_and_load_compressed_cluster_constraints() {
 
         const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
         auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
-        // Get the compressed grid for NoC
+        // Compressed grid of the block's type: range limits are expressed in its coordinates
         const auto& compressed_grid = place_ctx.compressed_block_grids[block_type->index];
+
+        // One compressed partition per layer, accumulating every rectangle of the partition
+        // that touches the layer. The move generators only clip the search range to a
+        // compressed partition with a single rectangle, so each rectangle must be kept.
+        std::vector<PartitionRegion> compressed_prs(n_layers);
 
         for (const Region& region : pr.get_regions()) {
             const auto [layer_low, layer_high] = region.get_layer_range();
             const vtr::Rect<int>& rect = region.get_rect();
 
             for (int l = layer_low; l <= layer_high; l++) {
-                PartitionRegion compressed_pr;
-
                 if (compressed_grid.compressed_to_grid_x[l].empty() || compressed_grid.compressed_to_grid_y[l].empty()) {
                     continue;
                 }
@@ -302,16 +305,17 @@ void alloc_and_load_compressed_cluster_constraints() {
                                          compressed_max_loc.x, compressed_max_loc.y, l);
                 compressed_region.set_sub_tile(region.get_sub_tile());
 
-                compressed_pr.add_to_part_region(compressed_region);
-
-                floorplanning_ctx.compressed_cluster_constraints[l][blk_id] = compressed_pr;
+                compressed_prs[l].add_to_part_region(compressed_region);
             }
         }
 
         for (int l = 0; l < n_layers; l++) {
-            if (floorplanning_ctx.compressed_cluster_constraints[l][blk_id].empty()) {
-                floorplanning_ctx.compressed_cluster_constraints[l][blk_id].add_to_part_region(Region{});
+            // A layer without rectangles gets one empty region, which the move generators
+            // read as "no legal location on this layer"
+            if (compressed_prs[l].empty()) {
+                compressed_prs[l].add_to_part_region(Region{});
             }
+            floorplanning_ctx.compressed_cluster_constraints[l][blk_id] = std::move(compressed_prs[l]);
         }
     }
 }

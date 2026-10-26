@@ -215,7 +215,8 @@ bool RoutingPredictor::should_abort_routing() const {
     }
 
     VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high"
-            " (abort threshold %.1f, %zu overused nodes, log-overuse slope %+.4g over iterations %zu-%zu).\n",
+            " (abort threshold %.1f, %zu overused nodes and bus-based muxes driven from more than one input set,"
+            " log-overuse slope %+.4g over iterations %zu-%zu).\n",
             last_estimate_, abort_iteration_threshold_, iteration_overused_rr_node_counts_.back(),
             last_fit_.slope, last_fit_.first_iteration, last_fit_.last_iteration);
     return true;

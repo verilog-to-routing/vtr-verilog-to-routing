@@ -61,7 +61,7 @@ std::vector<const char*> VprRunStageFixture::build_argv() {
         // graphics initialisation inside the fixture itself. Layer-4
         // tests that need an ezgl::application use EzglAppFixture
         // separately, which loads main.ui directly without going
-        // through vpr_init_graphics.
+        // through init_graphics.
         "--disp",
         "off",
     };
@@ -164,7 +164,7 @@ void VprRunStageFixture::run_to(Stage stage) {
 
     // ---- Stage::PostPlace --------------------------------------------------
     // Mirrors the step order in vpr_api.cpp::vpr_flow():
-    //   vpr_create_device -> vpr_init_graphics (skipped here, --disp off) ->
+    //   vpr_create_device -> init_graphics (skipped here, --disp off) ->
     //   vpr_place_flow
     vpr_create_device(vpr_setup_, arch_);
     {

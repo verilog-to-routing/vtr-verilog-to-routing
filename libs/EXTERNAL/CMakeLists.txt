@@ -23,6 +23,10 @@ add_subdirectory(libcatch2)
 
 # Don't build yaml-cpp command line tools since we don't use them
 set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+if(MSVC)
+    # yaml-cpp defaults to the static MSVC runtime (/MT) for static builds; match the rest of VTR (/MD)
+    set(YAML_MSVC_SHARED_RT ON CACHE BOOL "" FORCE)
+endif()
 add_subdirectory(yaml-cpp)
 # Treat yaml-cpp headers as system headers to suppress warnings
 if(TARGET yaml-cpp)

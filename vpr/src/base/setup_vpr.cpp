@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <vector>
 #include <list>
 
@@ -17,7 +18,6 @@
 #include "read_fpga_interchange_arch.h"
 #include "pb_type_graph.h"
 #include "pack_types.h"
-#include "lb_type_rr_graph.h"
 #include "echo_arch.h"
 #include "read_options.h"
 #include "echo_files.h"
@@ -130,11 +130,10 @@ void SetupVPR(const t_options* options,
               t_noc_opts* nocOpts,
               t_server_opts* serverOpts,
               t_det_routing_arch& routingArch,
-              std::vector<std::vector<t_lb_type_rr_node>>* packerRRGraphs,
               std::vector<t_segment_inf>& segments,
               t_timing_inf* timing,
               bool* showGraphics,
-              int* graphPause,
+              e_graphics_pause* graphPause,
               bool* saveGraphics,
               std::string* graphicsCommands,
               std::string* rendererType,
@@ -171,6 +170,7 @@ void SetupVPR(const t_options* options,
     fileNameOpts->read_flat_place_file = options->read_flat_place_file;
     fileNameOpts->write_flat_place_file = options->write_flat_place_file;
     fileNameOpts->write_legalized_flat_place_file = options->write_legalized_flat_place_file;
+    fileNameOpts->write_post_gp_flat_place_file = options->write_post_gp_flat_place_file;
     fileNameOpts->flat_place_verbosity = options->flat_place_verbosity;
     fileNameOpts->write_block_usage = options->write_block_usage;
 
@@ -286,6 +286,7 @@ void SetupVPR(const t_options* options,
         && !options->do_legalize
         && !options->do_placement
         && !options->do_analytical_placement
+        && !options->do_global_placement
         && !options->do_routing
         && !options->do_analysis) {
         // If none specified, we do the AP flow.
@@ -328,6 +329,16 @@ void SetupVPR(const t_options* options,
             apOpts->doAP = e_stage_action::DO;
         }
 
+        if (options->do_global_placement && !options->do_analytical_placement) {
+            // Global placement is the first stage of the Analytical Placement
+            // flow. Run the AP flow, but stop it right after global placement.
+            // If the full AP flow was also requested, it takes precedence.
+            packerOpts->doPacking = e_stage_action::SKIP;
+            placerOpts->do_placement = e_stage_action::SKIP;
+            apOpts->doAP = e_stage_action::DO;
+            apOpts->stop_after_global_placement = true;
+        }
+
         if (options->do_packing) {
             packerOpts->doPacking = e_stage_action::DO;
         }
@@ -346,7 +357,6 @@ void SetupVPR(const t_options* options,
     {
         vtr::ScopedStartFinishTimer t("Building complex block graph");
         alloc_and_load_all_pb_graphs(powerOpts->do_power, routerOpts->flat_routing);
-        *packerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
     }
 
     if (routerOpts->flat_routing) {
@@ -355,14 +365,19 @@ void SetupVPR(const t_options* options,
         // and t_pb_graph_edge are initialized
         alloc_and_load_intra_cluster_resources(routerOpts->has_choke_point);
         add_intra_tile_switches();
+    } else {
+        // Bus-based muxes are only tracked while building the intra-cluster rr graph, so
+        // without flat routing nothing checks that their bits share one input data line.
+        bool arch_has_bus_mux = std::ranges::any_of(device_ctx.logical_block_types, [](const t_logical_block_type& lb_type) {
+            return lb_type.has_bus_mux();
+        });
+        VTR_LOGV_WARN(arch_has_bus_mux,
+                      "Architecture has bus-based mux(es) (<mux bus=\"true\">), whose bits must all be driven from one "
+                      "input data line. That is only tracked with --flat_routing on, so the packed netlist may violate it.\n");
     }
 
     if ((options->clock_modeling == ROUTED_CLOCK) || (options->clock_modeling == DEDICATED_NETWORK)) {
         ClockModeling::treat_clock_pins_as_non_globals();
-    }
-
-    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {
-        echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH), *packerRRGraphs);
     }
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) {
@@ -566,6 +581,10 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
     RouterOpts->verify_route_file_switch_id = Options.verify_route_file_switch_id;
 
     RouterOpts->generate_router_lookahead_report = Options.generate_router_lookahead_report.value();
+
+    if (RouterOpts->routing_budgets_algorithm != DISABLE && RouterOpts->router_algorithm == e_router_algorithm::PARALLEL_DECOMP) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "--routing_budgets_algorithm is not supported with --router_algorithm parallel_decomp (net decomposition with RCV is not implemented).\n");
+    }
 }
 
 static void setup_anneal_sched(const t_options& Options,
@@ -600,6 +619,7 @@ static void setup_anneal_sched(const t_options& Options,
 static void setup_ap_opts(const t_options& options,
                           t_ap_opts& apOpts) {
     apOpts.analytical_solver_type = options.ap_analytical_solver.value();
+    apOpts.solver_threading = options.ap_solver_threading.value();
     apOpts.partial_legalizer_type = options.ap_partial_legalizer.value();
     apOpts.full_legalizer_type = options.ap_full_legalizer.value();
     apOpts.detailed_placer_type = options.ap_detailed_placer.value();
@@ -613,6 +633,9 @@ static void setup_ap_opts(const t_options& options,
     apOpts.num_threads = options.num_workers.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
     apOpts.generate_mass_report = options.ap_generate_mass_report.value();
+    // This is set later, based on the stage options, if only global placement
+    // should be run.
+    apOpts.stop_after_global_placement = false;
 }
 
 void setup_packer_opts(const t_options& Options,
@@ -652,6 +675,7 @@ void setup_packer_opts(const t_options& Options,
 static void setup_netlist_opts(const t_options& Options, t_netlist_opts& NetlistOpts) {
     NetlistOpts.const_gen_inference = Options.const_gen_inference;
     NetlistOpts.absorb_buffer_luts = Options.absorb_buffer_luts;
+    NetlistOpts.merge_constant_generators = Options.merge_constant_generators;
     NetlistOpts.sweep_dangling_primary_ios = Options.sweep_dangling_primary_ios;
     NetlistOpts.sweep_dangling_nets = Options.sweep_dangling_nets;
     NetlistOpts.sweep_dangling_blocks = Options.sweep_dangling_blocks;

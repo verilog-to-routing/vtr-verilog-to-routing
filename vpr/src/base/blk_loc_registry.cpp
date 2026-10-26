@@ -14,28 +14,29 @@ BlkLocRegistry::BlkLocRegistry()
 void BlkLocRegistry::init() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
-    auto& block_locs = mutable_block_locs();
-    auto& grid_blocks = mutable_grid_blocks();
+    vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = mutable_block_locs();
+    GridBlock& grid_blocks = mutable_grid_blocks();
 
-    /* Initialize the lookup of CLB block positions */
+    // Initialize the lookup of CLB block positions
     block_locs.clear();
     block_locs.resize(clb_nlist.blocks().size());
 
-    /* Initialize the reverse lookup of CLB block positions */
+    pin_locs_.clear();
+    pin_locs_.resize(clb_nlist.pins().size());
+
+    // Initialize the reverse lookup of CLB block positions
     grid_blocks.init_grid_blocks(device_grid);
 
-    /* Initialize the grid blocks to empty.
-     * Initialize all the blocks to unplaced.
-     */
+    // Initialize the grid blocks to empty and mark all blocks as unplaced
     clear_all_grid_locs();
 }
 
 void BlkLocRegistry::alloc_and_load_movable_blocks() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& logical_block_types = g_vpr_ctx.device().logical_block_types;
-    const auto& all_block_locs = block_locs();
-    auto& movable_blocks = mutable_movable_blocks();
-    auto& movable_blocks_per_type = mutable_movable_blocks_per_type();
+    const std::vector<t_logical_block_type>& logical_block_types = g_vpr_ctx.device().logical_block_types;
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& all_block_locs = block_locs();
+    std::vector<ClusterBlockId>& movable_blocks = mutable_movable_blocks();
+    std::vector<std::vector<ClusterBlockId>>& movable_blocks_per_type = mutable_movable_blocks_per_type();
 
     // TODO: Are these clears necessary?
     movable_blocks.clear();
@@ -84,7 +85,7 @@ int BlkLocRegistry::tile_pin_index(const ClusterPinId pin) const {
 }
 
 int BlkLocRegistry::net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     // Get the logical pin index of pin within its logical block type
     ClusterPinId pin_id = cluster_ctx.clb_nlist.net_pin(net_id, net_pin_index);
@@ -93,8 +94,8 @@ int BlkLocRegistry::net_pin_to_tile_pin_index(const ClusterNetId net_id, int net
 }
 
 void BlkLocRegistry::set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     const std::string& block_name = cluster_ctx.clb_nlist.block_name(blk_id);
 
@@ -109,8 +110,8 @@ void BlkLocRegistry::set_block_location(ClusterBlockId blk_id, const t_pl_loc& l
     block_locs_[blk_id].loc = location;
 
     // Check if block is at an illegal location
-    auto physical_tile = device_ctx.grid.get_physical_type({location.x, location.y, location.layer});
-    auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
+    t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({location.x, location.y, location.layer});
+    t_logical_block_type_ptr logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
 
     if (location.sub_tile >= physical_tile->capacity || location.sub_tile < 0) {
         VPR_THROW(VPR_ERROR_PLACE, "Block %s subtile number (%d) is out of range. \n", block_name.c_str(), location.sub_tile);
@@ -132,10 +133,10 @@ void BlkLocRegistry::set_block_location(ClusterBlockId blk_id, const t_pl_loc& l
 }
 
 void BlkLocRegistry::clear_all_grid_locs() {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     std::unordered_set<int> blk_types_to_be_cleared;
-    const auto& logical_block_types = device_ctx.logical_block_types;
+    const std::vector<t_logical_block_type>& logical_block_types = device_ctx.logical_block_types;
 
     // Insert all the logical block types into the set except the empty type
     // clear_block_type_grid_locs does not expect empty type to be among given types
@@ -149,8 +150,8 @@ void BlkLocRegistry::clear_all_grid_locs() {
 }
 
 void BlkLocRegistry::clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_blk_types_index) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     bool clear_all_block_types = false;
 
@@ -178,33 +179,40 @@ void BlkLocRegistry::clear_block_type_grid_locs(const std::unordered_set<int>& u
         int blk_type = cluster_ctx.clb_nlist.block_type(blk_id)->index;
         if (clear_all_block_types || unplaced_blk_types_index.count(blk_type)) {
             block_locs_[blk_id].loc = t_pl_loc();
+            for (ClusterPinId pin : cluster_ctx.clb_nlist.block_pins(blk_id)) {
+                pin_locs_[pin] = t_physical_tile_loc();
+            }
         }
     }
 }
 
 void BlkLocRegistry::place_sync_external_block_connections(ClusterBlockId iblk) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& clb_nlist = cluster_ctx.clb_nlist;
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteredNetlist& clb_nlist = cluster_ctx.clb_nlist;
 
     t_pl_loc block_loc = block_locs_[iblk].loc;
 
-    auto physical_tile = physical_tile_type(block_loc);
-    auto logical_block = clb_nlist.block_type(iblk);
+    t_physical_tile_type_ptr physical_tile = physical_tile_type(block_loc);
+    t_logical_block_type_ptr logical_block = clb_nlist.block_type(iblk);
 
     int sub_tile_index = get_sub_tile_index(iblk, block_locs_);
-    auto sub_tile = physical_tile->sub_tiles[sub_tile_index];
+    const t_sub_tile& sub_tile = physical_tile->sub_tiles[sub_tile_index];
 
     VTR_ASSERT(sub_tile.num_phy_pins % sub_tile.capacity.total() == 0);
 
     int max_num_block_pins = sub_tile.num_phy_pins / sub_tile.capacity.total();
-    /* Logical location and physical location is offset by z * max_num_block_pins */
-
     int rel_capacity = block_loc.sub_tile - sub_tile.capacity.low;
+
+    // The flat router can rebuild the clustered netlist with more pins than at init()
+    if (pin_locs_.size() < clb_nlist.pins().size()) {
+        pin_locs_.resize(clb_nlist.pins().size());
+    }
 
     for (ClusterPinId pin : clb_nlist.block_pins(iblk)) {
         int logical_pin_index = clb_nlist.pin_logical_index(pin);
         int sub_tile_pin_index = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_index);
 
+        // The pins of each block in the sub tile start at an offset of rel_capacity * max_num_block_pins
         int new_physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index + rel_capacity * max_num_block_pins];
 
         auto result = physical_pins_.find(pin);
@@ -214,10 +222,24 @@ void BlkLocRegistry::place_sync_external_block_connections(ClusterBlockId iblk) 
             physical_pins_.insert(pin, new_physical_pin_index);
         }
     }
+
+    update_pin_locs_(iblk, physical_tile);
+}
+
+void BlkLocRegistry::update_pin_locs_(ClusterBlockId blk_id, t_physical_tile_type_ptr tile) {
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const t_pl_loc& loc = block_locs_[blk_id].loc;
+
+    for (ClusterPinId pin : clb_nlist.block_pins(blk_id)) {
+        int tile_pin = physical_pins_[pin];
+        pin_locs_[pin] = {loc.x + tile->pin_width_offset[tile_pin],
+                          loc.y + tile->pin_height_offset[tile_pin],
+                          loc.layer};
+    }
 }
 
 void BlkLocRegistry::apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     VTR_ASSERT_DEBUG(expected_transaction_ == e_expected_transaction::APPLY);
 
@@ -240,6 +262,8 @@ void BlkLocRegistry::apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_aff
         // if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (old_type != new_type) {
             place_sync_external_block_connections(blk);
+        } else {
+            update_pin_locs_(blk, new_type);
         }
     }
 
@@ -270,7 +294,7 @@ void BlkLocRegistry::commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_af
 }
 
 void BlkLocRegistry::revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     VTR_ASSERT_DEBUG(expected_transaction_ == e_expected_transaction::COMMIT_REVERT);
 
@@ -292,6 +316,8 @@ void BlkLocRegistry::revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_af
         // if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (old_type != new_type) {
             place_sync_external_block_connections(blk);
+        } else {
+            update_pin_locs_(blk, old_type);
         }
 
         VTR_ASSERT_SAFE_MSG(grid_blocks_.block_at_location(old_loc) == blk,
@@ -299,19 +325,4 @@ void BlkLocRegistry::revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_af
     }
 
     expected_transaction_ = e_expected_transaction::APPLY;
-}
-
-t_physical_tile_loc BlkLocRegistry::get_coordinate_of_pin(ClusterPinId pin) const {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    int pnum = tile_pin_index(pin);
-    ClusterBlockId block = cluster_ctx.clb_nlist.pin_block(pin);
-
-    t_physical_tile_loc tile_loc;
-    t_pl_loc block_loc = block_locs()[block].loc;
-    tile_loc.x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
-    tile_loc.y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
-    tile_loc.layer_num = block_loc.layer;
-
-    return tile_loc;
 }

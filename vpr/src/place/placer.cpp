@@ -28,6 +28,12 @@
 #include "draw_global.h"
 #endif // NO_GRAPHICS
 
+/// @brief Returns true if the anneal or quench algorithm reads setup slacks.
+static bool placer_uses_setup_slacks(const t_placer_opts& placer_opts) {
+    return placer_opts.place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE
+           || placer_opts.place_quench_algorithm == e_place_algorithm::SLACK_TIMING_PLACE;
+}
+
 Placer::Placer(const Netlist<>& net_list,
                std::optional<std::reference_wrapper<const BlkLocRegistry>> init_place,
                const t_placer_opts& placer_opts,
@@ -44,7 +50,7 @@ Placer::Placer(const Netlist<>& net_list,
     , noc_opts_(noc_opts)
     , netlist_pin_lookup_(netlist_pin_lookup)
     , costs_(placer_opts.place_algorithm, noc_opts.noc)
-    , placer_state_(placer_opts.place_algorithm.is_timing_driven())
+    , placer_state_(placer_opts.place_algorithm.is_timing_driven(), placer_uses_setup_slacks(placer_opts))
     , rng_(placer_opts.seed)
     , net_cost_handler_(placer_state_,
                         placer_opts.place_algorithm,
@@ -175,17 +181,17 @@ Placer::Placer(const Netlist<>& net_list,
 
     annealer_ = std::make_unique<PlacementAnnealer>(placer_opts_, placer_state_, place_macros, costs_, net_cost_handler_, interposer_cost_handler_, noc_cost_handler_,
                                                     noc_opts_, rng_, std::move(move_generator), std::move(move_generator2), place_delay_model_.get(),
-                                                    placer_criticalities_.get(), placer_setup_slacks_.get(), timing_info_.get(), pin_timing_invalidator_.get(),
+                                                    placer_criticalities_.get(), placer_setup_slacks_, timing_info_.get(), pin_timing_invalidator_.get(),
                                                     anneal_auto_init_t_scale,
                                                     move_lim);
 }
 
 void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
                                             const t_analysis_opts& analysis_opts) {
-    const auto& atom_ctx = g_vpr_ctx.atom();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& timing_ctx = g_vpr_ctx.timing();
-    const auto& p_timing_ctx = placer_state_.timing();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const TimingContext& timing_ctx = g_vpr_ctx.timing();
+    const PlacerTimingContext& p_timing_ctx = placer_state_.timing();
 
     // Update the point-to-point delays from the initial placement
     comp_td_connection_delays(place_delay_model_.get(), placer_state_);
@@ -200,9 +206,12 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
 
     timing_info_ = make_setup_timing_info(placement_delay_calc_, placer_opts_.timing_update_type);
 
-    placer_setup_slacks_ = std::make_unique<PlacerSetupSlacks>(cluster_ctx.clb_nlist,
-                                                               netlist_pin_lookup_,
-                                                               timing_info_);
+    // Setup slacks are only read by the slack-driven placement algorithm.
+    if (placer_uses_setup_slacks(placer_opts_)) {
+        placer_setup_slacks_.emplace(cluster_ctx.clb_nlist,
+                                     netlist_pin_lookup_,
+                                     timing_info_);
+    }
 
     placer_criticalities_ = std::make_unique<PlacerCriticalities>(cluster_ctx.clb_nlist,
                                                                   netlist_pin_lookup_,
@@ -222,7 +231,7 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
     crit_params.crit_limit = placer_opts_.place_crit_limit;
 
     initialize_timing_info(crit_params, place_delay_model_.get(), placer_criticalities_.get(),
-                           placer_setup_slacks_.get(), pin_timing_invalidator_.get(),
+                           placer_setup_slacks_, pin_timing_invalidator_.get(),
                            timing_info_.get(), &costs_, placer_state_);
 
     critical_path_ = timing_info_->least_slack_critical_path();
@@ -417,7 +426,7 @@ void Placer::place() {
 
     if (placer_opts_.place_algorithm.is_timing_driven()) {
         perform_full_timing_update(crit_params, place_delay_model_.get(), placer_criticalities_.get(),
-                                   placer_setup_slacks_.get(), pin_timing_invalidator_.get(),
+                                   placer_setup_slacks_, pin_timing_invalidator_.get(),
                                    timing_info_.get(), &costs_, placer_state_);
 
         critical_path_ = timing_info_->least_slack_critical_path();

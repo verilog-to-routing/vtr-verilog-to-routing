@@ -62,6 +62,45 @@ struct ParseOnOff {
     }
 };
 
+struct ParseGraphicsPause {
+    ConvertedValue<e_graphics_pause> from_str(const std::string& str) {
+        ConvertedValue<e_graphics_pause> conv_value;
+        if (str == "every_update")
+            conv_value.set_value(e_graphics_pause::EVERY_UPDATE);
+        else if (str == "major")
+            conv_value.set_value(e_graphics_pause::MAJOR_UPDATES);
+        else if (str == "final_stage")
+            conv_value.set_value(e_graphics_pause::FINAL_STAGE);
+        else if (str == "never")
+            conv_value.set_value(e_graphics_pause::NEVER);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_graphics_pause (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_graphics_pause val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_graphics_pause::EVERY_UPDATE)
+            conv_value.set_value("every_update");
+        else if (val == e_graphics_pause::MAJOR_UPDATES)
+            conv_value.set_value("major");
+        else if (val == e_graphics_pause::FINAL_STAGE)
+            conv_value.set_value("final_stage");
+        else {
+            VTR_ASSERT(val == e_graphics_pause::NEVER);
+            conv_value.set_value("never");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"every_update", "major", "final_stage", "never"};
+    }
+};
+
 struct ParseArchFormat {
     ConvertedValue<e_arch_format> from_str(const std::string& str) {
         ConvertedValue<e_arch_format> conv_value;
@@ -252,6 +291,46 @@ struct ParseAPFullLegalizer {
 
     std::vector<std::string> default_choices() {
         return {"naive", "appack", "flat-recon"};
+    }
+};
+
+struct ParseAPSolverThreading {
+    ConvertedValue<e_ap_solver_threading> from_str(const std::string& str) {
+        ConvertedValue<e_ap_solver_threading> conv_value;
+        if (str == "auto")
+            conv_value.set_value(e_ap_solver_threading::Auto);
+        else if (str == "sequential")
+            conv_value.set_value(e_ap_solver_threading::Sequential);
+        else if (str == "concurrent")
+            conv_value.set_value(e_ap_solver_threading::Concurrent);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_ap_solver_threading (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_ap_solver_threading val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_ap_solver_threading::Auto:
+                conv_value.set_value("auto");
+                break;
+            case e_ap_solver_threading::Sequential:
+                conv_value.set_value("sequential");
+                break;
+            case e_ap_solver_threading::Concurrent:
+                conv_value.set_value("concurrent");
+                break;
+            default:
+                VTR_ASSERT(false);
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"auto", "sequential", "concurrent"};
     }
 };
 
@@ -1228,6 +1307,8 @@ struct ParseRouterLookahead {
             conv_value.set_value(e_router_lookahead::EXTENDED_MAP);
         else if (str == "simple")
             conv_value.set_value(e_router_lookahead::SIMPLE);
+        else if (str == "separable")
+            conv_value.set_value(e_router_lookahead::SEPARABLE);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '"
@@ -1249,6 +1330,8 @@ struct ParseRouterLookahead {
             conv_value.set_value("compressed_map");
         } else if (val == e_router_lookahead::SIMPLE) {
             conv_value.set_value("simple");
+        } else if (val == e_router_lookahead::SEPARABLE) {
+            conv_value.set_value("separable");
         } else {
             VTR_ASSERT(val == e_router_lookahead::EXTENDED_MAP);
             conv_value.set_value("extended_map");
@@ -1257,7 +1340,7 @@ struct ParseRouterLookahead {
     }
 
     std::vector<std::string> default_choices() {
-        return {"classic", "map", "compressed_map", "extended_map", "simple"};
+        return {"classic", "map", "compressed_map", "extended_map", "simple", "separable"};
     }
 };
 
@@ -1613,41 +1696,10 @@ struct ParseGsbVersion {
     }
 };
 
-argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args) {
-    std::string description =
-        "Implements the specified circuit onto the target FPGA architecture"
-        " by performing packing/placement/routing, and analyzes the result.\n"
-        "\n"
-        "Attempts to find the minimum routable channel width, unless a fixed"
-        " channel width is specified with --route_chan_width.";
-    auto parser = argparse::ArgumentParser(prog_name, description);
-
-    std::string epilog = vtr::replace_all(
-        "Usage Examples\n"
-        "--------------\n"
-        "   #Find the minimum routable channel width of my_circuit on my_arch\n"
-        "   {prog} my_arch.xml my_circuit.blif\n"
-        "\n"
-        "   #Show interactive graphics\n"
-        "   {prog} my_arch.xml my_circuit.blif --disp on\n"
-        "\n"
-        "   #Implement at a fixed channel width of 100\n"
-        "   {prog} my_arch.xml my_circuit.blif --route_chan_width 100\n"
-        "\n"
-        "   #Perform packing and placement only\n"
-        "   {prog} my_arch.xml my_circuit.blif --pack --place\n"
-        "\n"
-        "   #Generate post-implementation netlist\n"
-        "   {prog} my_arch.xml my_circuit.blif --gen_post_synthesis_netlist on\n"
-        "\n"
-        "   #Write routing-resource graph to a file\n"
-        "   {prog} my_arch.xml my_circuit.blif --write_rr_graph my_rr_graph.xml\n"
-        "\n"
-        "\n"
-        "For additional documentation see: https://docs.verilogtorouting.org",
-        "{prog}", parser.prog());
-    parser.epilog(epilog);
-
+/**
+ * @brief Adds the positional arguments to the given argument parser.
+ */
+static void add_positional_args(argparse::ArgumentParser& parser, t_options& args) {
     auto& pos_grp = parser.add_argument_group("positional arguments");
     pos_grp.add_argument(args.ArchFile, "architecture")
         .help(
@@ -1657,7 +1709,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     pos_grp.add_argument(args.CircuitName, "circuit")
         .help("Circuit file (or circuit name if --circuit_file specified)");
+}
 
+/**
+ * @brief Adds the stage options to the given argument parser.
+ */
+static void add_stage_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& stage_grp = parser.add_argument_group("stage options");
 
     stage_grp.add_argument<bool, ParseOnOff>(args.do_packing, "--pack")
@@ -1680,6 +1737,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 
+    stage_grp.add_argument<bool, ParseOnOff>(args.do_global_placement, "--global_place")
+        .help("Run only the Global Placement stage of the analytical placement flow. This stops the analytical placement flow after global placement (skipping full legalization and detailed placement) and reports post-global placement quality metrics. If --read_flat_place is provided, the flat placement is used as the global placement solution instead of running the global placer. Cannot be combined with --route or --analysis.")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
     stage_grp.add_argument<bool, ParseOnOff>(args.do_routing, "--route")
         .help("Run routing")
         .action(argparse::Action::STORE_TRUE)
@@ -1697,7 +1759,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         "\n"
         "If the implementation is illegal analysis can be forced by explicitly\n"
         "specifying the --analysis option.");
+}
 
+/**
+ * @brief Adds the graphics options to the given argument parser.
+ */
+static void add_graphics_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& gfx_grp = parser.add_argument_group("graphics options");
 
     gfx_grp.add_argument<bool, ParseOnOff>(args.show_graphics, "--disp")
@@ -1714,13 +1781,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " invoking VPR.")
         .default_value("off");
 
-    gfx_grp.add_argument(args.GraphPause, "--auto")
+    gfx_grp.add_argument<e_graphics_pause, ParseGraphicsPause>(args.GraphPause, "--graphics_pause")
         .help(
             "Controls how often VPR pauses for interactive"
-            " graphics (requiring Proceed to be clicked)."
-            " Higher values pause less frequently")
-        .default_value("1")
-        .choices({"0", "1", "2"})
+            " graphics (requiring Proceed to be clicked):"
+            " every_update pauses at every minor and major update;"
+            " major pauses at major updates;"
+            " final_stage skips graphics (window, --save_graphics and"
+            " --graphics_commands) until the last requested stage completes,"
+            " then pauses once; never does not pause.")
+        .default_value("major")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     gfx_grp.add_argument<bool, ParseOnOff>(args.save_graphics, "--save_graphics")
@@ -1798,11 +1868,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "   Note that drawing state is reset to its previous state after\n"
             "   these commands are invoked.\n"
             "\n"
-            "   Like the interactive graphics --disp option, the --auto\n"
-            "   option controls how often the commands specified with\n"
-            "   this option are invoked.\n")
+            "   Like the interactive graphics --disp option, the\n"
+            "   --graphics_pause option controls how often the commands\n"
+            "   specified with this option are invoked.\n")
         .default_value("");
+}
 
+/**
+ * @brief Adds the general options to the given argument parser.
+ */
+static void add_general_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& gen_grp = parser.add_argument_group("general options");
 
     gen_grp.add_argument(args.show_help, "--help", "-h")
@@ -1857,11 +1932,18 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("auto")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    gen_grp.add_argument<bool, ParseOnOff>(args.CreateEchoFile, "--echo_file")
+    gen_grp.add_argument(args.echo_file, "--echo_file")
         .help(
             "Generate echo files of key internal data structures."
-            " Useful for debugging VPR, and typically end in .echo")
-        .default_value("off")
+            " Useful for debugging VPR, and typically end in .echo\n"
+            " * off: No echo files are generated\n"
+            " * on: All echo files are generated\n"
+            " * <echo_file_name> ...: Only the listed echo files are generated,\n"
+            "       identified by their default file names. Useful since some\n"
+            "       echo files can be very large.\n"
+            "       e.g. --echo_file timing_graph.analysis.echo clusters.echo")
+        .nargs('+')
+        .default_value({"off"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument<bool, ParseOnOff>(args.verify_file_digests, "--verify_file_digests")
@@ -1891,10 +1973,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     gen_grp.add_argument<e_constant_net_method, ParseConstantNetMethod>(args.constant_net_method, "--constant_net_method")
         .help(
-            "Specifies how constant nets (i.e. those driven to a constant\n"
-            "value) are handled:\n"
-            " * global: Treat constant nets as globals (not routed)\n"
-            " * route : Treat constant nets as normal nets (routed)\n")
+            "Specifies how constant nets (i.e. those driven by a constant\n"
+            "generator such as vcc/gnd) are handled:\n"
+            " * global: Treat constant nets as ignored (not routed)\n"
+            " * route : Treat constant nets as normal nets (routed)\n"
+            "Nets which are only inferred to be constant (e.g. the output\n"
+            "of a primitive whose inputs are all constant) are always routed.\n")
         .default_value("global")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -1968,7 +2052,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "During final timing analysis after routing, if a negative slack anywhere is returned and this option is set, \n"
             "VPR_FATAL_ERROR is called and processing ends.")
         .default_value("off");
+}
 
+/**
+ * @brief Adds the file options to the given argument parser.
+ */
+static void add_file_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& file_grp = parser.add_argument_group("file options");
 
     file_grp.add_argument<e_arch_format, ParseArchFormat>(args.arch_format, "--arch_format")
@@ -2075,6 +2164,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "VPR's (or reconstructed external) placement solution after legalization and before anneal in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.write_post_gp_flat_place_file, "--write_post_gp_flat_place")
+        .help(
+            "Writes the flat placement produced by Global Placement in the analytical placement flow to the given file in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom. The coordinates may be fractional (off-grid), since the global placement has not been legalized yet.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument<int>(args.flat_place_verbosity, "--flat_place_verbosity")
         .help(
             "Controls how much annotation is written into flat placement files."
@@ -2121,11 +2215,22 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     file_grp.add_argument(args.write_block_usage, "--write_block_usage")
         .help("Writes the cluster-level block types usage summary to the specified JSON, XML or TXT file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
+}
 
+/**
+ * @brief Adds the netlist options to the given argument parser.
+ */
+static void add_netlist_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& netlist_grp = parser.add_argument_group("netlist options");
 
     netlist_grp.add_argument<bool, ParseOnOff>(args.absorb_buffer_luts, "--absorb_buffer_luts")
         .help("Controls whether LUTS programmed as buffers are absorbed by downstream logic")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    netlist_grp.add_argument<bool, ParseOnOff>(args.merge_constant_generators, "--merge_constant_generators")
+        .help("Controls whether constant generators of the same value (e.g. the many LUTs tying"
+              " signals to gnd / vcc) are merged into a single constant generator")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2157,7 +2262,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     netlist_grp.add_argument<bool, ParseOnOff>(args.sweep_constant_primary_outputs, "--sweep_constant_primary_outputs")
-        .help("Controls whether primary outputs driven by constant values are removed from the netlist")
+        .help("Controls whether primary outputs driven by constant generators (e.g. vcc/gnd) are removed from the netlist")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2169,7 +2274,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " Larger values produce more detail.")
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
+}
 
+/**
+ * @brief Adds the analytical placement options to the given argument parser.
+ */
+static void add_analytical_placement_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& ap_grp = parser.add_argument_group("analytical placement options");
 
     ap_grp.add_argument<e_ap_analytical_solver, ParseAPAnalyticalSolver>(args.ap_analytical_solver, "--ap_analytical_solver")
@@ -2179,6 +2289,15 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " * qp-hybrid: Solves for a placement that minimizes the quadratic HPWL of the flat placement using a hybrid clique/star net model.\n"
             " * lp-b2b: Solves for a placement that minimizes the linear HPWL of theflat placement using the Bound2Bound net model.")
         .default_value("lp-b2b")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument<e_ap_solver_threading, ParseAPSolverThreading>(args.ap_solver_threading, "--ap_solver_threading")
+        .help(
+            "Controls how the analytical solver uses the threads given by --num_workers when solving the x, y, and (on multi-layer devices) z linear systems.\n"
+            " * auto: Solve the systems concurrently when there are at least two threads per system, otherwise sequentially.\n"
+            " * sequential: Solve the systems one after the other, each using every thread.\n"
+            " * concurrent: Solve all systems at the same time, splitting the threads evenly between them. It is an error to use this mode with fewer threads than systems.")
+        .default_value("auto")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     ap_grp.add_argument<e_ap_partial_legalizer, ParseAPPartialLegalizer>(args.ap_partial_legalizer, "--ap_partial_legalizer")
@@ -2329,7 +2448,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "debugging the partial legalizer.")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
+}
 
+/**
+ * @brief Adds the packing options to the given argument parser.
+ */
+static void add_packing_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& pack_grp = parser.add_argument_group("packing options");
 
     pack_grp.add_argument<bool, ParseOnOff>(args.connection_driven_clustering, "--connection_driven_clustering")
@@ -2533,7 +2657,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
               "moveable unit rather than being grouped.\n")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
+}
 
+/**
+ * @brief Adds the placement options to the given argument parser.
+ */
+static void add_placement_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& place_grp = parser.add_argument_group("placement options");
 
     place_grp.add_argument(args.seed, "--seed")
@@ -2902,7 +3031,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     place_grp.add_argument(args.place_congestion_chan_util_threshold, "--congestion_chan_util_threshold")
         .help("Penalizes nets in placement whose average routing channel utilization within their bounding boxes exceeds this threshold.");
+}
 
+/**
+ * @brief Adds the timing-driven placement options to the given argument parser.
+ */
+static void add_timing_driven_placement_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
     place_timing_grp.add_argument(args.place_timing_tradeoff, "--timing_tradeoff")
@@ -3005,7 +3139,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "exclude specialized tiles from placer delay sampling.")
         .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
+}
 
+/**
+ * @brief Adds the routing options to the given argument parser.
+ */
+static void add_routing_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& route_grp = parser.add_argument_group("routing options");
 
     route_grp.add_argument(args.max_router_iterations, "--max_router_iterations")
@@ -3178,7 +3317,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
               " End users who are given fixed architecture and RR graph files can safely set this parameter to off.")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
+}
 
+/**
+ * @brief Adds the timing-driven routing options to the given argument parser.
+ */
+static void add_timing_driven_routing_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")
@@ -3372,6 +3516,8 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " * extended_map: A more advanced and extended lookahead which accounts for a more\n"
             "                 exhaustive node sampling method\n"
             " * simple: A purely distance-based lookahead loaded from an external file\n"
+            " * separable: A lookahead which treats the x and y components of a route\n"
+            "              as separable\n"
             "\n"
             " The extended map differs from the map lookahead in the lookahead computation.\n"
             " It is better suited for architectures that have specialized routing for specific\n"
@@ -3511,7 +3657,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Controls whether to check the rr graph when reading from disk.")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
+}
 
+/**
+ * @brief Adds the analysis options to the given argument parser.
+ */
+static void add_analysis_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& analysis_grp = parser.add_argument_group("analysis options");
 
     analysis_grp.add_argument<bool, ParseOnOff>(args.full_stats, "--full_stats")
@@ -3623,7 +3774,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "The report is saved as 'report_net_timing.csv'.")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
+}
 
+/**
+ * @brief Adds the CRR options to the given argument parser.
+ */
+static void add_crr_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& crr_grp = parser.add_argument_group("CRR options");
 
     crr_grp.add_argument(args.sb_maps, "--sb_maps")
@@ -3650,7 +3806,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Specifies which GSB version should be used for CRR switch block templates. Valid values are 1 or 2. Defaults to 1 when --sb_maps is set, otherwise no GSB version is assumed.")
         .default_value("none")
         .show_in(argparse::ShowIn::HELP_ONLY);
+}
 
+/**
+ * @brief Adds the power analysis options to the given argument parser.
+ */
+static void add_power_analysis_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& power_grp = parser.add_argument_group("power analysis options");
 
     power_grp.add_argument<bool, ParseOnOff>(args.do_power, "--power")
@@ -3666,7 +3827,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     power_grp.add_argument(args.ActFile, "--activity_file")
         .help("Signal activities file for all nets (see documentation).")
         .show_in(argparse::ShowIn::HELP_ONLY);
+}
 
+/**
+ * @brief Adds the NoC options to the given argument parser.
+ */
+static void add_noc_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& noc_grp = parser.add_argument_group("noc options");
 
     noc_grp.add_argument<bool, ParseOnOff>(args.noc, "--noc")
@@ -3801,8 +3967,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "The default name is 'vpr_noc_placement_output.txt'")
         .default_value("vpr_noc_placement_output.txt")
         .show_in(argparse::ShowIn::HELP_ONLY);
+}
 
 #ifndef NO_SERVER
+/**
+ * @brief Adds the server options to the given argument parser.
+ */
+static void add_server_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& server_grp = parser.add_argument_group("server options");
 
     server_grp.add_argument<bool, ParseOnOff>(args.is_server_mode_enabled, "--server")
@@ -3815,6 +3986,62 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Server port number.")
         .default_value("60555")
         .show_in(argparse::ShowIn::HELP_ONLY);
+}
+#endif /* NO_SERVER */
+
+argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args) {
+    std::string description =
+        "Implements the specified circuit onto the target FPGA architecture"
+        " by performing packing/placement/routing, and analyzes the result.\n"
+        "\n"
+        "Attempts to find the minimum routable channel width, unless a fixed"
+        " channel width is specified with --route_chan_width.";
+    auto parser = argparse::ArgumentParser(prog_name, description);
+
+    std::string epilog = vtr::replace_all(
+        "Usage Examples\n"
+        "--------------\n"
+        "   #Find the minimum routable channel width of my_circuit on my_arch\n"
+        "   {prog} my_arch.xml my_circuit.blif\n"
+        "\n"
+        "   #Show interactive graphics\n"
+        "   {prog} my_arch.xml my_circuit.blif --disp on\n"
+        "\n"
+        "   #Implement at a fixed channel width of 100\n"
+        "   {prog} my_arch.xml my_circuit.blif --route_chan_width 100\n"
+        "\n"
+        "   #Perform packing and placement only\n"
+        "   {prog} my_arch.xml my_circuit.blif --pack --place\n"
+        "\n"
+        "   #Generate post-implementation netlist\n"
+        "   {prog} my_arch.xml my_circuit.blif --gen_post_synthesis_netlist on\n"
+        "\n"
+        "   #Write routing-resource graph to a file\n"
+        "   {prog} my_arch.xml my_circuit.blif --write_rr_graph my_rr_graph.xml\n"
+        "\n"
+        "\n"
+        "For additional documentation see: https://docs.verilogtorouting.org",
+        "{prog}", parser.prog());
+    parser.epilog(epilog);
+
+    add_positional_args(parser, args);
+    add_stage_options(parser, args);
+    add_graphics_options(parser, args);
+    add_general_options(parser, args);
+    add_file_options(parser, args);
+    add_netlist_options(parser, args);
+    add_analytical_placement_options(parser, args);
+    add_packing_options(parser, args);
+    add_placement_options(parser, args);
+    add_timing_driven_placement_options(parser, args);
+    add_routing_options(parser, args);
+    add_timing_driven_routing_options(parser, args);
+    add_analysis_options(parser, args);
+    add_crr_options(parser, args);
+    add_power_analysis_options(parser, args);
+    add_noc_options(parser, args);
+#ifndef NO_SERVER
+    add_server_options(parser, args);
 #endif /* NO_SERVER */
 
     return parser;
@@ -3923,9 +4150,9 @@ void set_conditional_defaults(t_options& args) {
         }
     }
 
-    // If MAP Router lookahead is not used, we cannot use simple place delay lookup
+    // If map or separable Router lookahead is not used, we cannot use simple place delay lookup
     if (args.place_delay_model.provenance() != Provenance::SPECIFIED) {
-        if (args.router_lookahead_type != e_router_lookahead::MAP) {
+        if (args.router_lookahead_type != e_router_lookahead::MAP && args.router_lookahead_type != e_router_lookahead::SEPARABLE) {
             args.place_delay_model.set(PlaceDelayModelType::DELTA, Provenance::INFERRED);
         }
     }

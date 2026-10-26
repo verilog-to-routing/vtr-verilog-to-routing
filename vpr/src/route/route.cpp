@@ -1,3 +1,4 @@
+#include "choke_points.h"
 #include "concrete_timing_info.h"
 #include "connection_based_routing.h"
 #include "draw.h"
@@ -76,15 +77,12 @@ bool route(const Netlist<>& net_list,
 
     init_route_structs(net_list,
                        router_opts.bb_factor,
-                       router_opts.has_choke_point,
                        is_flat);
 
     IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.netlist(), intra_lb_pb_pin_lookup);
 
     auto choking_spots = set_nets_choking_spots(net_list,
-                                                route_ctx.net_terminal_groups,
-                                                route_ctx.net_terminal_group_num,
                                                 router_opts.has_choke_point,
                                                 is_flat);
 
@@ -309,7 +307,7 @@ bool route(const Netlist<>& net_list,
         }
 
         wirelength_info = calculate_wirelength_info(net_list, available_wirelength);
-        routing_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes);
+        routing_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes + overuse_info.control_congested_bus_muxes);
         float est_success_iteration = routing_predictor.estimate_success_iteration();
 
         //Update timing based on the new routing
@@ -335,6 +333,11 @@ bool route(const Netlist<>& net_list,
 
         //Output progress
         print_route_status(itry, iter_elapsed_time, pres_fac, num_net_bounding_boxes_updated, iter_results.stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
+        // Show mux conflicts only in verbose mode to keep the status table readable.
+        // print_overused_nodes_status() lists affected muxes if routing fails.
+        VTR_LOGV(router_opts.route_verbosity > 2 && overuse_info.control_congested_bus_muxes > 0,
+                 "  %zu bus-based mux(es) driven from more than one input set\n",
+                 overuse_info.control_congested_bus_muxes);
 
         prev_iter_cumm_time = iter_cumm_time;
 
@@ -523,9 +526,6 @@ bool route(const Netlist<>& net_list,
 
                 //load budgets using information from uncongested delay information
                 budgeting_inf.load_route_budgets(net_delay, timing_info, netlist_pin_lookup, router_opts);
-
-                if (router_opts.routing_budgets_algorithm == YOYO || router_opts.routing_budgets_algorithm == LOW_SKEW_CLOCK)
-                    netlist_router->set_rcv_enabled(true);
             } else {
                 bool stable_routing_configuration = true;
 

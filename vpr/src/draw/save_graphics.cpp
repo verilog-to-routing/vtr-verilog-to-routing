@@ -26,7 +26,7 @@ void save_graphics_from_button(QDialog* dialog) {
 
 void save_graphics(std::string extension, std::string file_name) {
     //Trim any leading '.' from the extension
-    if (vtr::starts_with(extension, ".")) {
+    if (extension.starts_with('.')) {
         extension = std::string(extension.begin() + 1, extension.end());
     }
 
