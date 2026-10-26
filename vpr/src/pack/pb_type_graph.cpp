@@ -1924,8 +1924,8 @@ static float calc_pb_graph_delay(const t_pb_graph_pin* start, bool forward, cons
         auto [cur_pin, cur_delay] = queue.front();
         queue.pop();
 
-        // forward searches downstream via output_edges/output_pins;
-        // !forward searches upstream via input_edges/input_pins.
+        // forward searches downstream via output_edges/output_pin();
+        // !forward searches upstream via input_edges/input_pin().
         size_t num_edges = forward ? cur_pin->output_edges.size() : cur_pin->input_edges.size();
         for (size_t ie = 0; ie < num_edges; ++ie) {
             const t_pb_graph_edge* edge = forward ? cur_pin->output_edges[ie] : cur_pin->input_edges[ie];
@@ -2070,8 +2070,9 @@ float calc_min_equivalent_pin_path_delay(const t_pb_graph_pin* src, const t_pb_g
             }
             for (const t_pb_graph_edge* edge : cur_pin->output_edges) {
                 const t_pb_graph_pin* next = edge->output_pin();
-                if (visited.insert(next).second)
+                if (visited.insert(next).second) {
                     queue.push({next, cur_delay + edge->delay_max});
+                }
             }
         }
     }
