@@ -1534,6 +1534,18 @@ class t_pb_graph_edge {
 
     // class member functions
   public:
+    /// @brief Returns the single pin that drives this edge.
+    t_pb_graph_pin* input_pin() const {
+        VTR_ASSERT(num_input_pins == 1);
+        return input_pins[0];
+    }
+
+    /// @brief Returns the single pin that this edge drives.
+    t_pb_graph_pin* output_pin() const {
+        VTR_ASSERT(num_output_pins == 1);
+        return output_pins[0];
+    }
+
     // Returns true if this edge implements one bit of a bus-based mux
     // (<mux bus="true">), whose single select drives every bit of its output bus.
     bool is_bus_mux() const;
