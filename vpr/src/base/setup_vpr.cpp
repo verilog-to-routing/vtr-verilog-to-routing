@@ -95,15 +95,15 @@ static void setup_power_opts(const t_options& Options, t_power_opts* power_opts,
  */
 static int find_ipin_cblock_switch_index(const t_arch& arch);
 
-// Fill the data structures used when flat_routing is enabled to speed-up routing
+/// Fill the data structures used when flat_routing is enabled to speed-up routing
 static void alloc_and_load_intra_cluster_resources(bool reachability_analysis);
 static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type);
-// Fill the pin_num to pb_pin map in physical_type
+/// Fill the pin_num to pb_pin map in physical_type
 static void add_logical_pin_to_physical_tile(int physical_pin_offset,
                                              t_logical_block_type_ptr logical_block_ptr,
                                              t_physical_tile_type* physical_type);
-// Fill sub_tile.pb_pin_physical_nums for a logical block placed in one instance of the sub-tile. The pins inside the
-// block are numbered from physical_pin_offset; the pins of its root block are pins on the tile.
+/// Fill sub_tile.pb_pin_physical_nums for a logical block placed in one instance of the sub-tile. The pins inside the
+/// block are numbered from physical_pin_offset; the pins of its root block are pins on the tile.
 static void load_pb_pin_physical_nums(const t_physical_tile_type& physical_type,
                                       t_sub_tile& sub_tile,
                                       int sub_tile_inst,
