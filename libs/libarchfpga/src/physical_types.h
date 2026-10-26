@@ -896,6 +896,14 @@ struct t_physical_tile_port {
  * A logical block must correspond to at least one physical tile.
  */
 struct t_logical_block_type {
+    t_logical_block_type() = default;
+
+    t_logical_block_type(const t_logical_block_type&) = delete;
+    t_logical_block_type& operator=(const t_logical_block_type&) = delete;
+
+    t_logical_block_type(t_logical_block_type&&) = default;
+    t_logical_block_type& operator=(t_logical_block_type&&) = default;
+
     std::string name;
 
     /* Clustering info */

@@ -138,20 +138,17 @@ std::string rr_node_arch_name(RRNodeId inode, bool is_flat);
 //Class for looking up pb graph pins from block pin indices
 class IntraLbPbPinLookup {
   public:
-    IntraLbPbPinLookup() = default;
     IntraLbPbPinLookup(const std::vector<t_logical_block_type>& block_types);
     IntraLbPbPinLookup(const IntraLbPbPinLookup& rhs);
-    IntraLbPbPinLookup& operator=(IntraLbPbPinLookup rhs);
+    IntraLbPbPinLookup& operator=(const IntraLbPbPinLookup&) = delete;
     ~IntraLbPbPinLookup();
 
     //Returns the pb graph pin associated with the specified type (index into block types array) and
     // pb pin index (index into block_pb().pb_route)
     const t_pb_graph_pin* pb_gpin(unsigned int itype, int ipin) const;
 
-    friend void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs);
-
   private:
-    std::vector<t_logical_block_type> block_types_;
+    const std::vector<t_logical_block_type>& block_types_;
 
     std::vector<t_pb_graph_pin**> intra_lb_pb_pin_lookup_;
 };

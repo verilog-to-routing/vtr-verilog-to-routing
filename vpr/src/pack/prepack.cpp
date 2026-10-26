@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <limits>
 #include <map>
 #include <queue>
 #include <unordered_map>
@@ -814,24 +815,29 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
 
 t_pb_graph_node* Prepacker::get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
                                                                               const std::vector<t_logical_block_type>& logical_block_types) const {
-    float cost, best_cost;
-    t_pb_graph_node *current, *best;
-
-    best_cost = UNDEFINED;
-    best = nullptr;
-    current = nullptr;
+    t_pb_graph_node* best = nullptr;
+    float best_cost = std::numeric_limits<float>::infinity();
     for (const t_logical_block_type& type : logical_block_types) {
-        cost = UNDEFINED;
-        current = get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, type.pb_graph_head, &cost);
-        if (cost != UNDEFINED) {
-            if (best_cost == UNDEFINED || best_cost > cost) {
-                best_cost = cost;
-                best = current;
-            }
+        t_pb_graph_node* primitive = get_expected_lowest_cost_primitive_for_atom_block(blk_id, type);
+        if (primitive == nullptr) {
+            continue;
+        }
+
+        // An earlier block type wins a tie.
+        float cost = compute_primitive_base_cost(primitive);
+        if (cost < best_cost) {
+            best_cost = cost;
+            best = primitive;
         }
     }
 
     return best;
+}
+
+t_pb_graph_node* Prepacker::get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
+                                                                              const t_logical_block_type& logical_block_type) const {
+    float cost = UNDEFINED;
+    return get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, logical_block_type.pb_graph_head, &cost);
 }
 
 /**
