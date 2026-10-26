@@ -409,11 +409,9 @@ bool t_pb_graph_edge::belongs_to_pattern(int pattern_index) const {
         // if not annotated check if its pattern should be inferred
     } else if (this->infer_pattern) {
         // if pattern should be inferred try to infer it from all connected output edges
-        for (int ipin = 0; ipin < this->num_output_pins; ipin++) {
-            for (int iedge = 0; iedge < this->output_pins[ipin]->num_output_edges; iedge++) {
-                if (this->output_pins[ipin]->output_edges[iedge]->belongs_to_pattern(pattern_index)) {
-                    return true;
-                }
+        for (const t_pb_graph_edge* out_edge : this->output_pin()->output_edges) {
+            if (out_edge->belongs_to_pattern(pattern_index)) {
+                return true;
             }
         }
     }
