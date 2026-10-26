@@ -1174,7 +1174,7 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
             if (!edge->is_bus_mux()) {
                 continue;
             }
-            RRNodeId in_node = rr_node_of(edge->input_pins[0]);
+            RRNodeId in_node = rr_node_of(edge->input_pin());
             if (!in_node.is_valid()) {
                 // The pb owning this input set is unused, so the edge is not in the rr graph
                 continue;

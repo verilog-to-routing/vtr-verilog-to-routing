@@ -379,8 +379,7 @@ bool t_pb_graph_edge::is_bus_mux() const {
 }
 
 const t_pb_graph_node* t_pb_graph_edge::bus_mux_owner() const {
-    VTR_ASSERT(num_output_pins == 1);
-    const t_pb_graph_node* out_node = output_pins[0]->parent_node;
+    const t_pb_graph_node* out_node = output_pin()->parent_node;
     const t_pb_type* owner_type = interconnect->parent_mode->parent_pb_type;
 
     // The mux output is either an output port of the owner itself or an input

@@ -245,8 +245,7 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(t_pb_graph
         && current_pb_graph_pin->parent_node->pb_type->depth > depth) {
         seen_pins.insert(current_pb_graph_pin);
         for (i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
-            VTR_ASSERT(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
-            expand_pb_graph_node_and_load_output_to_input_connections(current_pb_graph_pin->output_edges[i]->output_pins[0],
+            expand_pb_graph_node_and_load_output_to_input_connections(current_pb_graph_pin->output_edges[i]->output_pin(),
                                                                       reference_pin, depth,
                                                                       seen_pins);
         }
@@ -285,8 +284,7 @@ static void unmark_fanout_intermediate_nodes(t_pb_graph_pin* current_pb_graph_pi
     if (seen_pins.count(current_pb_graph_pin) != 0) {
         seen_pins.erase(current_pb_graph_pin);
         for (i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
-            VTR_ASSERT(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
-            unmark_fanout_intermediate_nodes(current_pb_graph_pin->output_edges[i]->output_pins[0],
+            unmark_fanout_intermediate_nodes(current_pb_graph_pin->output_edges[i]->output_pin(),
                                              seen_pins);
         }
     }
@@ -346,16 +344,14 @@ static size_t assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
             // Pin inside the subtree of provided pb_graph_node. Expand in both
             // directions (input and output edges) from that pin.
             for (int edge_idx = 0; edge_idx < pin->num_input_edges; edge_idx++) {
-                VTR_ASSERT(pin->input_edges[edge_idx]->num_input_pins == 1);
-                t_pb_graph_pin* neighbor_pin = pin->input_edges[edge_idx]->input_pins[0];
+                t_pb_graph_pin* neighbor_pin = pin->input_edges[edge_idx]->input_pin();
                 if (!visited.count(neighbor_pin)) {
                     visited.insert(neighbor_pin);
                     queue.push(neighbor_pin);
                 }
             }
             for (int edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
-                VTR_ASSERT(pin->output_edges[edge_idx]->num_output_pins == 1);
-                t_pb_graph_pin* neighbor_pin = pin->output_edges[edge_idx]->output_pins[0];
+                t_pb_graph_pin* neighbor_pin = pin->output_edges[edge_idx]->output_pin();
                 if (!visited.count(neighbor_pin)) {
                     visited.insert(neighbor_pin);
                     queue.push(neighbor_pin);
@@ -368,8 +364,7 @@ static size_t assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
                 // Expand using the output edges if this pin is an input or
                 // clock pin of the provided pb_graph_node.
                 for (int edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
-                    VTR_ASSERT(pin->output_edges[edge_idx]->num_output_pins == 1);
-                    t_pb_graph_pin* neighbor_pin = pin->output_edges[edge_idx]->output_pins[0];
+                    t_pb_graph_pin* neighbor_pin = pin->output_edges[edge_idx]->output_pin();
                     if (!visited.count(neighbor_pin)) {
                         visited.insert(neighbor_pin);
                         queue.push(neighbor_pin);
@@ -379,8 +374,7 @@ static size_t assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
                 // Expand using the input edges if this pin is an output pin of
                 // the provided pb_graph_node.
                 for (int edge_idx = 0; edge_idx < pin->num_input_edges; edge_idx++) {
-                    VTR_ASSERT(pin->input_edges[edge_idx]->num_input_pins == 1);
-                    t_pb_graph_pin* neighbor_pin = pin->input_edges[edge_idx]->input_pins[0];
+                    t_pb_graph_pin* neighbor_pin = pin->input_edges[edge_idx]->input_pin();
                     if (!visited.count(neighbor_pin)) {
                         visited.insert(neighbor_pin);
                         queue.push(neighbor_pin);
@@ -510,5 +504,5 @@ static bool is_forced_connection(const t_pb_graph_pin* pb_graph_pin) {
             return false;
         }
     }
-    return is_forced_connection(pb_graph_pin->output_edges[0]->output_pins[0]);
+    return is_forced_connection(pb_graph_pin->output_edges[0]->output_pin());
 }
