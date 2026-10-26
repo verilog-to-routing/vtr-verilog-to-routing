@@ -1035,6 +1035,7 @@ int get_pb_pin_physical_num(const t_sub_tile* sub_tile,
                             t_logical_block_type_ptr logical_block,
                             int relative_cap,
                             const t_pb_graph_pin* pin) {
+    VTR_ASSERT_SAFE(!sub_tile->pb_pin_physical_nums.empty());
     return sub_tile->pb_pin_physical_nums[relative_cap][logical_block->index][pin->pin_count_in_cluster];
 }
 
