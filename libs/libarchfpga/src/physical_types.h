@@ -1487,14 +1487,9 @@ class t_pb_graph_pin {
 
 /** Describes a pb graph edge
  *
- *  Note that this is a "fat" edge which supports bused based connections
+ *  An edge connects one input pin to one output pin.
  *
  *  Data members:
- *      input_pins: array of pb_type graph input pins ptrs entering this edge
- *      num_input_pins: Number of input pins entering this edge
- *      output_pins: array of pb_type graph output pins ptrs exiting this edge
- *      num_output_pins: Number of output pins exiting this edge
- *
  *      num_pack_patterns: number of pack patterns this edge belongs to
  *      pack_pattern_names: [0..num_pack_patterns-1] name of each pack pattern
  *      pack_pattern_indices: [0..num_pack_patterns-1] id of each pack pattern
@@ -1505,12 +1500,6 @@ class t_pb_graph_pin {
  */
 class t_pb_graph_edge {
   public:
-    /* edge connectivity */
-    t_pb_graph_pin** input_pins;
-    int num_input_pins;
-    t_pb_graph_pin** output_pins;
-    int num_output_pins;
-
     /* timing information */
     float delay_max;
     float delay_min;
@@ -1534,16 +1523,16 @@ class t_pb_graph_edge {
 
     // class member functions
   public:
-    /// @brief Returns the single pin that drives this edge.
-    t_pb_graph_pin* input_pin() const {
-        VTR_ASSERT(num_input_pins == 1);
-        return input_pins[0];
-    }
+    /// @brief Returns the pin that drives this edge.
+    t_pb_graph_pin* input_pin() const { return input_pin_; }
 
-    /// @brief Returns the single pin that this edge drives.
-    t_pb_graph_pin* output_pin() const {
-        VTR_ASSERT(num_output_pins == 1);
-        return output_pins[0];
+    /// @brief Returns the pin that this edge drives.
+    t_pb_graph_pin* output_pin() const { return output_pin_; }
+
+    /// @brief Connects this edge from input_pin to output_pin.
+    void set_pins(t_pb_graph_pin* input_pin, t_pb_graph_pin* output_pin) {
+        input_pin_ = input_pin;
+        output_pin_ = output_pin;
     }
 
     // Returns true if this edge implements one bit of a bus-based mux
@@ -1563,6 +1552,12 @@ class t_pb_graph_edge {
     // is inferred and a connected output edge is annotated with pattern_index
     //   pattern_index : index of the packing pattern
     bool belongs_to_pattern(int pattern_index) const;
+
+  private:
+    /// The pin that drives this edge
+    t_pb_graph_pin* input_pin_ = nullptr;
+    /// The pin that this edge drives
+    t_pb_graph_pin* output_pin_ = nullptr;
 };
 
 struct t_pb_graph_node_power {

@@ -181,9 +181,9 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
  *        as a pin on a CLB, IO, or DSP block.
  *
  * @param start    Pin to search from.
- * @param forward  If true, traverse output_edges/output_pins (search
+ * @param forward  If true, traverse output_edges/output_pin() (search
  *                 downstream of start). If false, traverse input_edges/
- *                 input_pins (search upstream of start).
+ *                 input_pin() (search upstream of start).
  * @param target   If non-null, search stops at this specific pin. If
  *                 nullptr, search stops at the nearest root-block pin.
  *
@@ -672,8 +672,6 @@ void free_pb_graph_edges() {
         cur_num = num_edges_head;
         edges = (t_pb_graph_edge*)cur->data_vptr;
         for (int i = 0; i < (intptr_t)cur_num->data_vptr; i++) {
-            delete[] edges[i].input_pins;
-            delete[] edges[i].output_pins;
             if (edges[i].pack_pattern_indices) {
                 delete[] edges[i].pack_pattern_indices;
             }
@@ -1105,13 +1103,7 @@ static void alloc_and_load_complete_interc_edges(t_interconnect* interconnect,
                     out_pin->input_edges[out_pin->num_input_edges] = &edges[i_edge];
                     out_pin->num_input_edges++;
 
-                    edges[i_edge].num_input_pins = 1;
-                    edges[i_edge].input_pins = new t_pb_graph_pin*[1];
-                    edges[i_edge].input_pins[0] = in_pin;
-                    edges[i_edge].num_output_pins = 1;
-                    edges[i_edge].output_pins = new t_pb_graph_pin*[1];
-                    edges[i_edge].output_pins[0] = out_pin;
-
+                    edges[i_edge].set_pins(in_pin, out_pin);
                     edges[i_edge].interconnect = interconnect;
                     edges[i_edge].driver_set = i_inset;
                     edges[i_edge].driver_pin = i_inpin;
@@ -1197,13 +1189,7 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
             t_pb_graph_pin* in_pin = input_pb_graph_node_pin_ptrs[0][ipin];
             t_pb_graph_pin* out_pin = output_pb_graph_node_pin_ptrs[iset][ipin];
 
-            edges[iedge].num_input_pins = 1;
-            edges[iedge].input_pins = new t_pb_graph_pin*[1];
-            edges[iedge].input_pins[0] = in_pin;
-            edges[iedge].num_output_pins = 1;
-            edges[iedge].output_pins = new t_pb_graph_pin*[1];
-            edges[iedge].output_pins[0] = out_pin;
-
+            edges[iedge].set_pins(in_pin, out_pin);
             edges[iedge].interconnect = interconnect;
             edges[iedge].driver_set = 0;
             edges[iedge].driver_pin = ipin;
@@ -1278,12 +1264,7 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
             t_pb_graph_pin* in_pin = input_pb_graph_node_pin_ptrs[i_inset][i_inpin];
             t_pb_graph_pin* out_pin = output_pb_graph_node_pin_ptrs[0][i_inpin];
 
-            edges[edge_idx].input_pins = new t_pb_graph_pin*[1];
-            edges[edge_idx].output_pins = new t_pb_graph_pin*[1];
-            edges[edge_idx].input_pins[0] = in_pin;
-            edges[edge_idx].output_pins[0] = out_pin;
-            edges[edge_idx].num_input_pins = 1;
-            edges[edge_idx].num_output_pins = 1;
+            edges[edge_idx].set_pins(in_pin, out_pin);
             edges[edge_idx].interconnect = interconnect;
             edges[edge_idx].driver_set = i_inset;
             edges[edge_idx].driver_pin = i_inpin;
