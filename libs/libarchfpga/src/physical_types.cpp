@@ -370,9 +370,23 @@ bool t_pb_graph_pin::is_bus_mux_output() const {
     return false;
 }
 
+const t_pb_graph_edge* t_pb_graph_pin::edge_to(const t_pb_graph_pin* sink_pin) const {
+    return output_edges[sink_pin_edge_idx_map.at(sink_pin)];
+}
+
 /*
  * t_pb_graph_edge
  */
+
+const t_pb_graph_pin* t_pb_graph_edge::input_pin() const {
+    VTR_ASSERT(num_input_pins == 1);
+    return input_pins[0];
+}
+
+const t_pb_graph_pin* t_pb_graph_edge::output_pin() const {
+    VTR_ASSERT(num_output_pins == 1);
+    return output_pins[0];
+}
 
 bool t_pb_graph_edge::is_bus_mux() const {
     return interconnect->type == MUX_INTERC && interconnect->bus;
