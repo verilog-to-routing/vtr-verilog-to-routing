@@ -310,25 +310,30 @@ void ClusterRouter::remove_atom_from_target(const AtomBlockId blk_id, const Atom
     atoms_added_.erase(blk_id);
 }
 
-void ClusterRouter::set_reset_pb_modes(const t_pb* pb, const bool set) {
-    VTR_ASSERT_MSG(!is_clean_ && is_valid_, "Cannot operate on a cleaned / invalid router.");
+/**
+ * @brief Call visit(inode) for every rr node whose mode is determined by the
+ *        mode of the given pb.
+ *
+ * These are the input and clock pins of the pb, and the output pins of its
+ * children in the pb's current mode.
+ */
+template<typename Visitor>
+static void for_each_pb_mode_rr_node(const t_pb* pb, Visitor&& visit) {
     int mode = pb->mode;
     VTR_ASSERT(mode >= 0);
 
-    t_pb_graph_node* pb_graph_node = pb->pb_graph_node;
-    t_pb_type* pb_type = pb_graph_node->pb_type;
+    const t_pb_graph_node* pb_graph_node = pb->pb_graph_node;
+    const t_pb_type* pb_type = pb_graph_node->pb_type;
 
     // Input and clock pin modes are based on current pb mode
     for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
-            LbRRNodeId inode = LbRRNodeId(pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster);
-            lb_rr_node_stats_[inode].mode = (set == true) ? mode : -1;
+            visit(LbRRNodeId(pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster));
         }
     }
     for (int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
-            LbRRNodeId inode = LbRRNodeId(pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster);
-            lb_rr_node_stats_[inode].mode = (set == true) ? mode : -1;
+            visit(LbRRNodeId(pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster));
         }
     }
 
@@ -337,16 +342,67 @@ void ClusterRouter::set_reset_pb_modes(const t_pb* pb, const bool set) {
     if (pb_type->num_modes != 0) {
         for (int ichild_type = 0; ichild_type < pb_type->modes[mode].num_pb_type_children; ichild_type++) {
             for (int ichild = 0; ichild < pb_type->modes[mode].pb_type_children[ichild_type].num_pb; ichild++) {
-                t_pb_graph_node* child_pb_graph_node = &pb_graph_node->child_pb_graph_nodes[mode][ichild_type][ichild];
+                const t_pb_graph_node* child_pb_graph_node = &pb_graph_node->child_pb_graph_nodes[mode][ichild_type][ichild];
                 for (int iport = 0; iport < child_pb_graph_node->num_output_ports; iport++) {
                     for (int ipin = 0; ipin < child_pb_graph_node->num_output_pins[iport]; ipin++) {
-                        LbRRNodeId inode = LbRRNodeId(child_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster);
-                        lb_rr_node_stats_[inode].mode = (set == true) ? mode : -1;
+                        visit(LbRRNodeId(child_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster));
                     }
                 }
             }
         }
     }
+}
+
+void ClusterRouter::set_reset_pb_modes(const t_pb* pb, const bool set) {
+    VTR_ASSERT_MSG(!is_clean_ && is_valid_, "Cannot operate on a cleaned / invalid router.");
+    int new_mode = set ? pb->mode : -1;
+    for_each_pb_mode_rr_node(pb, [&](LbRRNodeId inode) {
+        lb_rr_node_stats_[inode].mode = new_mode;
+    });
+}
+
+/**
+ * @brief Recursively record, in expected_modes, the rr node modes implied by
+ *        pb and every allocated pb below it.
+ */
+static void load_expected_pb_modes(const t_pb* pb,
+                                   const AtomPBBimap& atom_to_pb,
+                                   vtr::vector<LbRRNodeId, int>& expected_modes) {
+    auto record_mode = [&](LbRRNodeId inode) {
+        expected_modes[inode] = pb->mode;
+    };
+
+    if (pb->pb_graph_node->is_primitive()) {
+        // Primitive modes are set when its atom is added as a routing target.
+        if (atom_to_pb.pb_atom(pb).is_valid())
+            for_each_pb_mode_rr_node(pb, record_mode);
+        return;
+    }
+
+    // Non-primitive modes are set when the pb's children are allocated.
+    if (pb->child_pbs == nullptr)
+        return;
+    for_each_pb_mode_rr_node(pb, record_mode);
+
+    const t_mode& mode = pb->pb_graph_node->pb_type->modes[pb->mode];
+    for (int i = 0; i < mode.num_pb_type_children; i++) {
+        if (pb->child_pbs[i] == nullptr)
+            continue;
+        for (int j = 0; j < mode.pb_type_children[i].num_pb; j++)
+            load_expected_pb_modes(&pb->child_pbs[i][j], atom_to_pb, expected_modes);
+    }
+}
+
+bool ClusterRouter::pb_modes_match(const t_pb* root_pb, const AtomPBBimap& atom_to_pb) const {
+    VTR_ASSERT_MSG(!is_clean_ && is_valid_, "Cannot operate on a cleaned / invalid router.");
+    vtr::vector<LbRRNodeId, int> expected_modes(lb_rr_node_stats_.size(), -1);
+    load_expected_pb_modes(root_pb, atom_to_pb, expected_modes);
+
+    for (LbRRNodeId inode : lb_type_graph_->nodes()) {
+        if (lb_rr_node_stats_[inode].mode != expected_modes[inode])
+            return false;
+    }
+    return true;
 }
 
 bool ClusterRouter::try_expand_nodes_(const t_intra_lb_net& lb_net,

@@ -696,6 +696,25 @@ void ClusterLegalizer::reset_molecule_info(PackMoleculeId mol_id) {
     }
 }
 
+/**
+ * @brief Clear the router's rr-node modes for pb and every allocated pb below it.
+ *
+ * free_pb() frees a whole subtree, so the modes set by set_reset_pb_modes()
+ * for any descendant must be cleared first, not only those of pb itself.
+ */
+static void reset_pb_modes_recursive(const t_pb* pb, ClusterRouter& cluster_router) {
+    if (pb->child_pbs == nullptr)
+        return;
+    const t_mode* mode = &pb->pb_graph_node->pb_type->modes[pb->mode];
+    for (int i = 0; i < mode->num_pb_type_children; i++) {
+        if (pb->child_pbs[i] == nullptr)
+            continue;
+        for (int j = 0; j < mode->pb_type_children[i].num_pb; j++)
+            reset_pb_modes_recursive(&pb->child_pbs[i][j], cluster_router);
+    }
+    cluster_router.set_reset_pb_modes(pb, false);
+}
+
 /*
  * @brief Revert trial atom block iblock and free up memory space accordingly.
  */
@@ -729,7 +748,7 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
 
             if (pb->child_pbs != nullptr && pb->pb_stats != nullptr
                 && pb->pb_stats->num_child_blocks_in_pb == 0) {
-                cluster_router.set_reset_pb_modes(pb, false);
+                reset_pb_modes_recursive(pb, cluster_router);
                 if (next != nullptr) {
                     /* If the code gets here, then that means that placing the initial seed molecule
                      * failed, don't free the actual complex block itself as the seed needs to find
@@ -1234,6 +1253,12 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     // Reset the cluster placement stats after packing a molecule.
     // TODO: Not sure if this has to go here, but it makes sense to do it.
     reset_tried_but_unused_cluster_placements(cluster.placement_stats);
+
+    // Whether the molecule was packed or rolled back, the router's copy of the
+    // pb modes must match the pb tree. Stale modes left by freed pbs silently
+    // restrict later intra-cluster routes.
+    VTR_ASSERT_SAFE_MSG(cluster.cluster_router.pb_modes_match(cluster.pb, atom_pb_lookup()),
+                        "Cluster router pb modes are out of sync with the cluster's pb tree");
 
     return block_pack_status;
 }
