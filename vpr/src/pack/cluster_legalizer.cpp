@@ -1474,6 +1474,7 @@ bool ClusterLegalizer::ensure_legal_final_routing(LegalizationClusterId cluster_
 
 ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    const Prepacker& prepacker,
+                                   const UserRelativeMacros& relative_macros,
                                    const std::vector<std::string>& target_external_pin_util_str,
                                    const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                                    ClusterLegalizationStrategy cluster_legalization_strategy,
@@ -1483,7 +1484,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    const LogicalModels& models,
                                    int log_verbosity)
     : lb_type_rr_graphs_(alloc_and_load_all_lb_type_rr_graph())
-    , relative_macro_packer_(g_vpr_ctx.floorplanning().relative_macros, prepacker, atom_netlist)
+    , relative_macro_packer_(relative_macros, prepacker, atom_netlist)
     , prepacker_(prepacker) {
     // Get the target external pin utilization
     // NOTE: Be careful with this constructor, it may throw a VPR_FATAL_ERROR.

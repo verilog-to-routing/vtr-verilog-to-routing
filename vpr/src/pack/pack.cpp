@@ -241,6 +241,7 @@ bool try_pack(const t_packer_opts& packer_opts,
               const std::map<t_logical_block_type_ptr, size_t>& estimated_type_instance_counts) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
     // The clusterer modifies the device context by increasing the size of the
     // device if needed.
     DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
@@ -320,6 +321,7 @@ bool try_pack(const t_packer_opts& packer_opts,
     // Initialize the cluster legalizer.
     ClusterLegalizer cluster_legalizer(atom_ctx.netlist(),
                                        prepacker,
+                                       floorplanning_ctx.relative_macros,
                                        packer_opts.target_external_pin_util,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
@@ -405,7 +407,7 @@ bool try_pack(const t_packer_opts& packer_opts,
         // or as a warning if packing already failed.
         if (next_packer_state == e_packer_state::SUCCESS || next_packer_state == e_packer_state::FAILURE) {
             report_split_relative_groups(cluster_legalizer,
-                                         g_vpr_ctx.floorplanning().relative_macros,
+                                         floorplanning_ctx.relative_macros,
                                          atom_ctx.netlist(),
                                          next_packer_state == e_packer_state::SUCCESS);
         }

@@ -295,6 +295,9 @@ class ClusterLegalizer {
      *          The prepacker object used to prepack the atoms into molecules.
      *          A reference to this object is stored internally to be used to
      *          lookup the molecules of atoms.
+     *  @param relative_macros
+     *          The user-defined relative placement macros. A reference to this
+     *          object is stored internally to check the relative macro rules.
      *  @param target_external_pin_util_str
      *          A string used to initialize the target external pin utilization
      *          of each cluster type.
@@ -318,6 +321,7 @@ class ClusterLegalizer {
      */
     ClusterLegalizer(const AtomNetlist& atom_netlist,
                      const Prepacker& prepacker,
+                     const UserRelativeMacros& relative_macros,
                      const std::vector<std::string>& target_external_pin_util_str,
                      const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                      ClusterLegalizationStrategy cluster_legalization_strategy,
