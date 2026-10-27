@@ -338,7 +338,9 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb*
       const auto& route = pb_routes.at(wire_input_pin->pin_count_in_cluster);
 
       // Find the lut definition for the parent of this wire.
-      const int num_inputs = *route.pb_graph_pin->parent_node->num_input_pins;
+      const t_pb_graph_node* lut_node = route.pb_graph_pin->parent_node;
+      VTR_ASSERT(lut_node->num_input_ports == 1);
+      const int num_inputs = lut_node->num_input_pins[0];
       const auto *lut_definition = find_lut(route.pb_graph_pin->parent_node);
       if (lut_definition == nullptr)
           VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Could not find LUT definition for wire's parent node.");
@@ -670,7 +672,8 @@ void FasmWriterVisitor::check_for_lut(const t_pb* atom) {
     if (model_id == names_model_id) {
       VTR_ASSERT(atom->pb_graph_node != nullptr);
       const auto *lut_definition = find_lut(atom->pb_graph_node);
-      VTR_ASSERT(lut_definition->num_inputs == *atom->pb_graph_node->num_input_pins);
+      VTR_ASSERT(atom->pb_graph_node->num_input_ports == 1);
+      VTR_ASSERT(lut_definition->num_inputs == atom->pb_graph_node->num_input_pins[0]);
 
       const t_pb_routes &pb_route = find_pb_route(atom);
       LogicVec lut_mask = lut_outputs(atom, lut_definition->num_inputs, pb_route);
