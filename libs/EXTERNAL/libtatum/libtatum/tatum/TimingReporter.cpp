@@ -86,85 +86,95 @@ TimingReporter::TimingReporter(const TimingGraphNameResolver& name_resolver,
 
 void TimingReporter::report_timing_setup(std::string filename, 
                                          const SetupTimingAnalyzer& setup_analyzer,
-                                         size_t npaths) const {
+                                         size_t npaths,
+                                         const TimingPathCategoryFilter& category_filter) const {
     std::ofstream os(filename);
-    report_timing_setup(os, setup_analyzer, npaths);
+    report_timing_setup(os, setup_analyzer, npaths, category_filter);
 }
 
 void TimingReporter::report_timing_setup(std::ostream& os, 
                                          const SetupTimingAnalyzer& setup_analyzer,
-                                         size_t npaths) const {
-    auto paths = path_collector_.collect_worst_setup_timing_paths(timing_graph_, setup_analyzer, npaths);
+                                         size_t npaths,
+                                         const TimingPathCategoryFilter& category_filter) const {
+    auto paths = path_collector_.collect_worst_setup_timing_paths(timing_graph_, setup_analyzer, npaths, category_filter);
 
-    report_timing(os, paths);
+    report_timing(os, paths, category_filter);
 }
 
 void TimingReporter::report_timing_setup(std::vector<tatum::TimingPath>& paths,
                                          std::ostream& os,
                                          const SetupTimingAnalyzer& setup_analyzer,
-                                         size_t npaths) const {
-    paths = path_collector_.collect_worst_setup_timing_paths(timing_graph_, setup_analyzer, npaths);
+                                         size_t npaths,
+                                         const TimingPathCategoryFilter& category_filter) const {
+    paths = path_collector_.collect_worst_setup_timing_paths(timing_graph_, setup_analyzer, npaths, category_filter);
 
-    report_timing(os, paths);
+    report_timing(os, paths, category_filter);
 }
 
 void TimingReporter::report_timing_hold(std::string filename, 
                                          const HoldTimingAnalyzer& hold_analyzer,
-                                         size_t npaths) const {
+                                         size_t npaths,
+                                         const TimingPathCategoryFilter& category_filter) const {
     std::ofstream os(filename);
-    report_timing_hold(os, hold_analyzer, npaths);
+    report_timing_hold(os, hold_analyzer, npaths, category_filter);
 }
 
 void TimingReporter::report_timing_hold(std::ostream& os, 
                                          const HoldTimingAnalyzer& hold_analyzer,
-                                         size_t npaths) const {
-    auto paths = path_collector_.collect_worst_hold_timing_paths(timing_graph_, hold_analyzer, npaths);
+                                         size_t npaths,
+                                         const TimingPathCategoryFilter& category_filter) const {
+    auto paths = path_collector_.collect_worst_hold_timing_paths(timing_graph_, hold_analyzer, npaths, category_filter);
 
-    report_timing(os, paths);
+    report_timing(os, paths, category_filter);
 }
 
 void TimingReporter::report_timing_hold(std::vector<tatum::TimingPath>& paths,
                                          std::ostream& os,
                                          const HoldTimingAnalyzer& hold_analyzer,
-                                         size_t npaths) const {
-    paths = path_collector_.collect_worst_hold_timing_paths(timing_graph_, hold_analyzer, npaths);
+                                         size_t npaths,
+                                         const TimingPathCategoryFilter& category_filter) const {
+    paths = path_collector_.collect_worst_hold_timing_paths(timing_graph_, hold_analyzer, npaths, category_filter);
 
-    report_timing(os, paths);
+    report_timing(os, paths, category_filter);
 }
 
 void TimingReporter::report_skew_setup(std::string filename, 
                                          const SetupTimingAnalyzer& setup_analyzer,
-                                         size_t nworst) const {
+                                         size_t nworst,
+                                         const TimingPathCategoryFilter& category_filter) const {
     std::ofstream os(filename);
-    report_skew_setup(os, setup_analyzer, nworst);
+    report_skew_setup(os, setup_analyzer, nworst, category_filter);
 }
 
 void TimingReporter::report_skew_setup(std::ostream& os, 
                                          const SetupTimingAnalyzer& setup_analyzer,
-                                         size_t nworst) const {
-    auto paths = path_collector_.collect_worst_setup_skew_paths(timing_graph_, timing_constraints_, setup_analyzer, nworst);
+                                         size_t nworst,
+                                         const TimingPathCategoryFilter& category_filter) const {
+    auto paths = path_collector_.collect_worst_setup_skew_paths(timing_graph_, timing_constraints_, setup_analyzer, nworst, category_filter);
 
     os << "#Clock skew for setup timing startpoint/endpoint\n";
     os << "\n";
-    report_skew(os, paths, TimingType::SETUP);
+    report_skew(os, paths, TimingType::SETUP, category_filter);
     os << "#End of clock skew for setup timing startpoint/endpoint report\n";
 }
 
 void TimingReporter::report_skew_hold(std::string filename, 
                                          const HoldTimingAnalyzer& hold_analyzer,
-                                         size_t nworst) const {
+                                         size_t nworst,
+                                         const TimingPathCategoryFilter& category_filter) const {
     std::ofstream os(filename);
-    report_skew_hold(os, hold_analyzer, nworst);
+    report_skew_hold(os, hold_analyzer, nworst, category_filter);
 }
 
 void TimingReporter::report_skew_hold(std::ostream& os, 
                                          const HoldTimingAnalyzer& hold_analyzer,
-                                         size_t nworst) const {
-    auto paths = path_collector_.collect_worst_hold_skew_paths(timing_graph_, timing_constraints_, hold_analyzer, nworst);
+                                         size_t nworst,
+                                         const TimingPathCategoryFilter& category_filter) const {
+    auto paths = path_collector_.collect_worst_hold_skew_paths(timing_graph_, timing_constraints_, hold_analyzer, nworst, category_filter);
 
     os << "#Clock skew for hold timing startpoint/endpoint\n";
     os << "\n";
-    report_skew(os, paths, TimingType::HOLD);
+    report_skew(os, paths, TimingType::HOLD, category_filter);
     os << "#End of clock skew for hold timing startpoint/endpoint report\n";
 }
 
@@ -213,10 +223,14 @@ void TimingReporter::report_unconstrained_hold(std::ostream& os,
  */
 
 void TimingReporter::report_timing(std::ostream& os,
-                                   const std::vector<TimingPath>& paths) const {
+                                   const std::vector<TimingPath>& paths,
+                                   const TimingPathCategoryFilter& category_filter) const {
     tatum::OsFormatGuard flag_guard(os);
 
     os << "#Timing report of worst " << paths.size() << " path(s)\n";
+    if (!category_filter.accepts_all()) {
+        os << "# Path categories: " << category_filter.to_string() << "\n";
+    }
     os << "# Unit scale: " << std::setprecision(0) << std::scientific << unit_scale_ << " seconds\n";
     os << "# Output precision: " << precision_ << "\n";
     os << "\n";
@@ -251,6 +265,7 @@ void TimingReporter::report_timing_path(std::ostream& os, const TimingPath& timi
         TATUM_ASSERT_MSG(path_info.type() == TimingType::HOLD, "Expected path type SETUP or HOLD");
         os << "Path Type : hold" << "\n";
     }
+    os << "Category  : " << classify_timing_path(timing_graph_, path_info) << "\n";
 
     os << "\n";
 
@@ -382,8 +397,13 @@ void TimingReporter::report_unconstrained(std::ostream& os, const NodeType type,
     }
 }
 
-void TimingReporter::report_skew(std::ostream& os, const std::vector<SkewPath>& skew_paths, TimingType timing_type) const {
+void TimingReporter::report_skew(std::ostream& os, const std::vector<SkewPath>& skew_paths, TimingType timing_type, const TimingPathCategoryFilter& category_filter) const {
     tatum::OsFormatGuard flag_guard(os);
+
+    if (!category_filter.accepts_all()) {
+        os << "# Path categories: " << category_filter.to_string() << "\n";
+        os << "\n";
+    }
 
     int i = 1;
     for (const auto& skew_path : skew_paths) {
@@ -417,6 +437,7 @@ void TimingReporter::report_skew_path(std::ostream& os, const SkewPath& skew_pat
         TATUM_ASSERT_MSG(timing_type == TimingType::HOLD, "Expected path type SETUP or HOLD");
         os << "Path Type : hold" << "\n";
     }
+    os << "Category  : " << classify_skew_path(timing_graph_, skew_path) << "\n";
     os << "\n";
 
     std::string launch_name = name_resolver_.node_name(launch_node) 
