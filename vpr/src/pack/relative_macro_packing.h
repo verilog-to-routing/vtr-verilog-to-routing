@@ -19,6 +19,7 @@
 #include "user_relative_macros.h"
 
 class AtomNetlist;
+class ClusterLegalizer;
 
 /**
  * @brief Identifies a group in a relative placement macro.
@@ -175,3 +176,23 @@ class RelativeMacroPacker {
 
     std::map<MoleculeChainId, t_relative_group> chain_owners_; ///< Owning group of each chain with constrained atoms.
 };
+
+/**
+ * @brief Report relative placement groups whose atoms occupy multiple clusters.
+ *
+ * Call after the final packing pass. All atoms in each group must share a
+ * cluster so the group can become a single placement macro member.
+ *
+ * If packing otherwise succeeded, report split groups with a fatal error.
+ * If packing failed, log a warning and let the caller report the packing error.
+ * Do nothing if no groups are split.
+ *
+ *  @param cluster_legalizer     The cluster legalizer holding the final packing result.
+ *  @param relative_macros       User-defined relative placement macros.
+ *  @param atom_netlist          The atom netlist being packed.
+ *  @param clustering_succeeded  Whether the packing pass otherwise succeeded.
+ */
+void report_split_relative_groups(const ClusterLegalizer& cluster_legalizer,
+                                  const UserRelativeMacros& relative_macros,
+                                  const AtomNetlist& atom_netlist,
+                                  bool clustering_succeeded);

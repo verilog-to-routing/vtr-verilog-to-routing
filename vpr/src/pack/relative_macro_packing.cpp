@@ -5,9 +5,12 @@
 
 #include "relative_macro_packing.h"
 
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "atom_netlist.h"
+#include "cluster_legalizer.h"
 #include "vpr_error.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -212,5 +215,77 @@ void RelativeMacroPacker::commit_molecule(PackMoleculeId molecule_id,
     if (molecule.chain_id.is_valid() && prepacker_.get_molecule_chain_info(molecule.chain_id).is_long_chain) {
         cluster_state.has_long_chain_mols = true;
         cluster_state.long_chain_owner = chain_owner_(molecule.chain_id);
+    }
+}
+
+/**
+ * @brief Find relative placement groups whose atoms occupy multiple clusters.
+ *
+ * All atoms in a group must share a cluster so the group can become a single
+ * placement macro member.
+ */
+static std::vector<t_relative_group> find_split_relative_groups(const ClusterLegalizer& cluster_legalizer,
+                                                                const UserRelativeMacros& relative_macros) {
+    std::vector<t_relative_group> split_groups;
+
+    for (UserRelativeMacroId macro_id : relative_macros.macros()) {
+        const t_user_relative_macro& macro = relative_macros.get_macro(macro_id);
+
+        for (size_t igroup = 0; igroup < macro.groups.size(); igroup++) {
+            LegalizationClusterId group_cluster_id;
+            for (AtomBlockId blk_id : macro.groups[igroup].atoms) {
+                LegalizationClusterId cluster_id = cluster_legalizer.get_atom_cluster(blk_id);
+                // Final verification checks for unclustered atoms.
+                if (!cluster_id.is_valid())
+                    continue;
+                if (!group_cluster_id.is_valid()) {
+                    group_cluster_id = cluster_id;
+                } else if (cluster_id != group_cluster_id) {
+                    split_groups.push_back({macro_id, (int)igroup});
+                    break;
+                }
+            }
+        }
+    }
+
+    return split_groups;
+}
+
+void report_split_relative_groups(const ClusterLegalizer& cluster_legalizer,
+                                  const UserRelativeMacros& relative_macros,
+                                  const AtomNetlist& atom_netlist,
+                                  bool clustering_succeeded) {
+    std::vector<t_relative_group> split_groups = find_split_relative_groups(cluster_legalizer, relative_macros);
+    if (split_groups.empty())
+        return;
+
+    std::string report;
+    for (const t_relative_group& group : split_groups) {
+        const t_user_relative_macro& macro = relative_macros.get_macro(group.macro_id);
+        report += "  Relative macro '" + macro.name + "', group " + std::to_string(group.group_idx) + ":";
+        for (AtomBlockId blk_id : macro.groups[group.group_idx].atoms) {
+            LegalizationClusterId cluster_id = cluster_legalizer.get_atom_cluster(blk_id);
+            report += " '" + atom_netlist.block_name(blk_id) + "' ("
+                      + (cluster_id.is_valid() ? "cluster " + std::to_string((size_t)cluster_id)
+                                               : std::string("unclustered"))
+                      + ")";
+        }
+        report += "\n";
+    }
+
+    if (clustering_succeeded) {
+        VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                        "Failed to pack each relative placement group into a single cluster "
+                        "(%zu group(s) split):\n%s"
+                        "The group(s) may be too large to fit into one cluster or may conflict "
+                        "with pack patterns. Consider making the group(s) smaller.\n",
+                        split_groups.size(),
+                        report.c_str());
+    } else {
+        VTR_LOG_WARN("%zu relative placement group(s) are split across clusters:\n%s"
+                     "This is likely a symptom of the clustering not fitting the device "
+                     "(see the following error).\n",
+                     split_groups.size(),
+                     report.c_str());
     }
 }
