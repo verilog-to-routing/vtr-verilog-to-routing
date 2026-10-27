@@ -204,7 +204,15 @@ vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping();
 void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping);
 
-std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id);
+/// @brief Where a cluster block is placed: its tile type, sub-tile and sub-tile instance, and its logical block type.
+struct t_cluster_blk_physical_spec {
+    t_physical_tile_type_ptr physical_type; ///< Tile type the block is placed in
+    const t_sub_tile* sub_tile;             ///< Sub-tile of physical_type the block is placed in
+    int sub_tile_instance;                  ///< Which instance of sub_tile the block is placed in, counting from 0
+    t_logical_block_type_ptr logical_block; ///< Logical block type of the block
+};
+
+t_cluster_blk_physical_spec get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id);
 
 std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
                                                   ClusterBlockId cluster_block_id);

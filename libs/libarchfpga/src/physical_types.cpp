@@ -370,6 +370,10 @@ bool t_pb_graph_pin::is_bus_mux_output() const {
     return false;
 }
 
+const t_pb_graph_edge* t_pb_graph_pin::edge_to(const t_pb_graph_pin* sink_pin) const {
+    return output_edges[sink_pin_edge_idx_map.at(sink_pin)];
+}
+
 /*
  * t_pb_graph_edge
  */
