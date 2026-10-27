@@ -155,7 +155,6 @@ float calc_min_equivalent_pin_delay_from_root_pin(const t_pb_graph_pin* sink);
 
 void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat);
 void echo_pb_graph(char* filename);
-void free_pb_graph_edges();
 t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                                                            const t_pb_graph_node* pb_graph_parent_node,
                                                            t_pb_graph_node** pb_graph_children_nodes,

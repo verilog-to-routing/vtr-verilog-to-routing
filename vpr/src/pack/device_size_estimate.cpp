@@ -288,8 +288,7 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
         // if none qualifies (e.g. outpad atoms with no output pins).
         t_logical_block_type_ptr mapped_type = nullptr;
         for (t_logical_block_type_ptr cand : primitive_candidate_block_types[root_model_id]) {
-            std::vector<t_logical_block_type> candidate_logical_type = {*cand};
-            const t_pb_graph_node* current_type_prim = prepacker.get_expected_lowest_cost_primitive_for_atom_block(root_atom, candidate_logical_type);
+            const t_pb_graph_node* current_type_prim = prepacker.get_expected_lowest_cost_primitive_for_atom_block(root_atom, *cand);
             if (current_type_prim && primitive_has_external_output(current_type_prim)) {
                 mapped_type = cand;
                 break;
