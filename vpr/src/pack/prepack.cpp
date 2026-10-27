@@ -1005,7 +1005,7 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
     molecule.base_gain = 0.f;
     molecule.type = e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK;
     molecule.pack_pattern = pack_pattern;
-    molecule.atom_block_ids = std::vector<AtomBlockId>(pack_pattern->num_blocks); // Initialize all IDs as invalid.
+    molecule.atom_block_ids = std::vector<AtomBlockId>(pack_pattern->num_blocks, AtomBlockId::INVALID());
     molecule.root = pack_pattern->root_block->block_id;
     molecule.chain_id = MoleculeChainId::INVALID();
 
