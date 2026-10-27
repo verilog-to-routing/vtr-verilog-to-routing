@@ -1048,7 +1048,7 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
     // Keep non-chain molecules within one relative placement group.
     // Chains must stay connected through dedicated routing, so their group
     // conflicts are reported after prepacking. Invalid means no group found yet.
-    std::pair<UserRelativeMacroId, int> molecule_group = {UserRelativeMacroId::INVALID(), -1};
+    t_relative_group molecule_group;
 
     // Queue pattern positions with their candidate atoms.
     std::queue<std::pair<t_pack_pattern_block*, AtomBlockId>> pattern_block_queue;
@@ -1076,12 +1076,12 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
         }
 
         // Look up the atom's group only for non-chain molecules.
-        std::pair<UserRelativeMacroId, int> atom_group = {UserRelativeMacroId::INVALID(), -1};
+        t_relative_group atom_group;
         if (!molecule.pack_pattern->is_chain && block_id) {
             atom_group = relative_macros.get_atom_group(block_id);
         }
-        bool group_conflict = atom_group.first.is_valid()
-                              && molecule_group.first.is_valid()
+        bool group_conflict = atom_group.is_valid()
+                              && molecule_group.is_valid()
                               && atom_group != molecule_group;
 
         if (!block_id || !primitive_type_feasible(block_id, pattern_block->pb_type) || (molecule_atom_block_id && molecule_atom_block_id != block_id) || atom_molecules.find(block_id) != atom_molecules.end() || group_conflict) {
@@ -1098,7 +1098,7 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
         molecule.atom_block_ids[pattern_block->block_id] = block_id;
 
         // The first constrained atom sets the molecule's group.
-        if (!molecule_group.first.is_valid()) {
+        if (!molecule_group.is_valid()) {
             molecule_group = atom_group;
         }
 

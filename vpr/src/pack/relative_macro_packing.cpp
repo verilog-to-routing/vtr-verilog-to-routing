@@ -6,7 +6,6 @@
 #include "relative_macro_packing.h"
 
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "atom_netlist.h"
@@ -51,10 +50,9 @@ void RelativeMacroPacker::validate_molecule_groups_() {
             if (!blk_id.is_valid())
                 continue;
 
-            std::pair<UserRelativeMacroId, int> atom_pair = relative_macros_.get_atom_group(blk_id);
-            if (!atom_pair.first.is_valid())
+            t_relative_group atom_group = relative_macros_.get_atom_group(blk_id);
+            if (!atom_group.is_valid())
                 continue;
-            t_relative_group atom_group{atom_pair.first, atom_pair.second};
 
             if (!mol_group.is_valid()) {
                 mol_group = atom_group;
@@ -106,9 +104,9 @@ t_relative_group RelativeMacroPacker::molecule_group(PackMoleculeId molecule_id)
         if (!blk_id.is_valid())
             continue;
         // All constrained atoms share a group, so the first one identifies it.
-        std::pair<UserRelativeMacroId, int> group = relative_macros_.get_atom_group(blk_id);
-        if (group.first.is_valid())
-            return {group.first, group.second};
+        t_relative_group group = relative_macros_.get_atom_group(blk_id);
+        if (group.is_valid())
+            return group;
     }
     return {};
 }

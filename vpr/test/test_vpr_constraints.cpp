@@ -633,9 +633,9 @@ TEST_CASE("UserRelativeMacros", "[vpr]") {
     REQUIRE(relative_macros.get_num_macros() == 0);
 
     // An atom that belongs to no macro resolves to an invalid group
-    std::pair<UserRelativeMacroId, int> no_group = relative_macros.get_atom_group(AtomBlockId(42));
-    REQUIRE(!no_group.first.is_valid());
-    REQUIRE(no_group.second == -1);
+    t_relative_group no_group = relative_macros.get_atom_group(AtomBlockId(42));
+    REQUIRE(!no_group.is_valid());
+    REQUIRE(no_group.group_idx == -1);
 
     // Build a macro: reference group (2 atoms), one relative group (1 atom)
     t_user_relative_macro macro1;
@@ -666,9 +666,9 @@ TEST_CASE("UserRelativeMacros", "[vpr]") {
     REQUIRE(stored_macro.groups[1].offset == t_pl_offset(1, -2, 0, 0));
 
     // Reverse lookup: each atom maps to its (macro, group index)
-    REQUIRE(relative_macros.get_atom_group(AtomBlockId(0)) == std::make_pair(macro1_id, 0));
-    REQUIRE(relative_macros.get_atom_group(AtomBlockId(1)) == std::make_pair(macro1_id, 0));
-    REQUIRE(relative_macros.get_atom_group(AtomBlockId(2)) == std::make_pair(macro1_id, 1));
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(0)) == t_relative_group{macro1_id, 0});
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(1)) == t_relative_group{macro1_id, 0});
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(2)) == t_relative_group{macro1_id, 1});
 
     // A second macro gets a distinct id and its atoms resolve to it
     t_user_relative_macro macro2;
@@ -686,11 +686,11 @@ TEST_CASE("UserRelativeMacros", "[vpr]") {
     UserRelativeMacroId macro2_id = relative_macros.add_macro(macro2);
     REQUIRE(relative_macros.get_num_macros() == 2);
     REQUIRE(macro2_id != macro1_id);
-    REQUIRE(relative_macros.get_atom_group(AtomBlockId(3)) == std::make_pair(macro2_id, 0));
-    REQUIRE(relative_macros.get_atom_group(AtomBlockId(4)) == std::make_pair(macro2_id, 1));
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(3)) == t_relative_group{macro2_id, 0});
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(4)) == t_relative_group{macro2_id, 1});
 
     // Atoms of the first macro are unaffected
-    REQUIRE(relative_macros.get_atom_group(AtomBlockId(2)) == std::make_pair(macro1_id, 1));
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(2)) == t_relative_group{macro1_id, 1});
 
     // Atoms of macros authored without site information are unlocked
     REQUIRE(relative_macros.get_atom_locked_site_path(AtomBlockId(0)).empty());
@@ -840,10 +840,10 @@ TEST_CASE("RelativeMacroConstraintsLoader", "[vpr]") {
         REQUIRE(m2.groups[1].atoms == std::vector<AtomBlockId>{ff_b});
 
         // reverse lookups
-        REQUIRE(macros.get_atom_group(dsp0) == std::make_pair(m1_id, 0));
-        REQUIRE(macros.get_atom_group(lb_2) == std::make_pair(m1_id, 1));
-        REQUIRE(macros.get_atom_group(lb_3) == std::make_pair(m1_id, 2));
-        REQUIRE(macros.get_atom_group(ff_b) == std::make_pair(m2_id, 1));
+        REQUIRE(macros.get_atom_group(dsp0) == t_relative_group{m1_id, 0});
+        REQUIRE(macros.get_atom_group(lb_2) == t_relative_group{m1_id, 1});
+        REQUIRE(macros.get_atom_group(lb_3) == t_relative_group{m1_id, 2});
+        REQUIRE(macros.get_atom_group(ff_b) == t_relative_group{m2_id, 1});
         REQUIRE(macros.get_atom_locked_site_path(lb_3).empty());
     }
 
@@ -885,7 +885,7 @@ TEST_CASE("RelativeMacroConstraintsLoader", "[vpr]") {
         REQUIRE(macro.groups[1].offset == t_pl_offset(2, 0, 0, 0));
         REQUIRE(macro.groups[1].atoms == std::vector<AtomBlockId>{lb_1});
         // atoms of a dropped macro are left unconstrained
-        REQUIRE(!macros.get_atom_group(lb_2).first.is_valid());
+        REQUIRE(!macros.get_atom_group(lb_2).is_valid());
     }
 
     SECTION("malformed macros are rejected with a specific error") {

@@ -9,7 +9,6 @@
 #include <cstdio>
 #include <string>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "atom_netlist_fwd.h"
@@ -58,6 +57,21 @@ struct t_user_relative_macro {
 };
 
 /**
+ * @brief Identifies a group in a relative placement macro.
+ *
+ * The default, invalid value means "no group".
+ */
+struct t_relative_group {
+    UserRelativeMacroId macro_id; ///< Macro containing the group.
+
+    int group_idx = -1; ///< Index in t_user_relative_macro::groups; 0 is the reference group, -1 means no group.
+
+    inline bool is_valid() const { return macro_id.is_valid(); }
+
+    bool operator==(const t_relative_group& other) const = default;
+};
+
+/**
  * @brief Stores all user-defined relative placement macros.
  *
  * An atom may belong to at most one group across all macros.
@@ -89,11 +103,10 @@ class UserRelativeMacros {
     const t_user_relative_macro& get_macro(UserRelativeMacroId macro_id) const;
 
     /**
-     * @brief Return the (macro id, group index) an atom belongs to, or
-     *        (UserRelativeMacroId::INVALID(), -1) if the atom is not part of
-     *        any relative placement macro.
+     * @brief Return the group an atom belongs to, or an invalid group if the
+     *        atom is not part of any relative placement macro.
      */
-    std::pair<UserRelativeMacroId, int> get_atom_group(AtomBlockId blk_id) const;
+    t_relative_group get_atom_group(AtomBlockId blk_id) const;
 
     /**
      * @brief Return the hierarchical path of the primitive site the given atom

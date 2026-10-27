@@ -736,7 +736,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
                                                   + ". An atom may belong to at most one relative placement group.");
                 }
 
-                UserRelativeMacroId other_macro_id = constraints_.relative_macros().get_atom_group(blk_id).first;
+                UserRelativeMacroId other_macro_id = constraints_.relative_macros().get_atom_group(blk_id).macro_id;
                 if (other_macro_id.is_valid()) {
                     report_constraints_load_error("Atom '" + atom_ctx.netlist().block_name(blk_id)
                                                   + "' appears in relative macro '" + macro_name + "' and in relative macro '"

@@ -12,7 +12,6 @@
 #include "verify_clustering.h"
 #include <unordered_map>
 #include <unordered_set>
-#include <utility>
 #include "atom_lookup.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
@@ -450,7 +449,7 @@ static unsigned check_clustering_relative_group_consistency(const AtomNetlist& a
     unsigned num_errors = 0;
 
     // Track the group assigned to each cluster.
-    std::unordered_map<ClusterBlockId, std::pair<UserRelativeMacroId, int>> cluster_rel_group;
+    std::unordered_map<ClusterBlockId, t_relative_group> cluster_rel_group;
 
     for (UserRelativeMacroId macro_id : relative_macros.macros()) {
         const t_user_relative_macro& macro = relative_macros.get_macro(macro_id);
@@ -484,15 +483,15 @@ static unsigned check_clustering_relative_group_consistency(const AtomNetlist& a
                 }
 
                 // A cluster may host atoms of at most one group.
-                std::pair<UserRelativeMacroId, int> group = {macro_id, (int)igroup};
+                t_relative_group group = {macro_id, (int)igroup};
                 auto [seen_itr, first_time] = cluster_rel_group.insert({clb_blk_id, group});
                 if (!first_time && seen_itr->second != group) {
-                    const t_user_relative_macro& other_macro = relative_macros.get_macro(seen_itr->second.first);
+                    const t_user_relative_macro& other_macro = relative_macros.get_macro(seen_itr->second.macro_id);
                     VTR_LOG_ERROR(
                         "Cluster block %zu contains atoms of relative macro '%s' "
                         "group %zu and of relative macro '%s' group %d.\n",
                         size_t(clb_blk_id), macro.name.c_str(), igroup,
-                        other_macro.name.c_str(), seen_itr->second.second);
+                        other_macro.name.c_str(), seen_itr->second.group_idx);
                     num_errors++;
                 }
             }

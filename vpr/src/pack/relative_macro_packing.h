@@ -22,21 +22,6 @@ class AtomNetlist;
 class ClusterLegalizer;
 
 /**
- * @brief Identifies a group in a relative placement macro.
- *
- * The default, invalid value means "no group".
- */
-struct t_relative_group {
-    UserRelativeMacroId macro_id; ///< Macro containing the group.
-
-    int group_idx = -1; ///< Index in t_user_relative_macro::groups; 0 is the reference group, -1 means no group.
-
-    inline bool is_valid() const { return macro_id.is_valid(); }
-
-    bool operator==(const t_relative_group& other) const = default;
-};
-
-/**
  * @brief Relative placement state stored in LegalizationCluster.
  */
 struct t_cluster_relative_state {
