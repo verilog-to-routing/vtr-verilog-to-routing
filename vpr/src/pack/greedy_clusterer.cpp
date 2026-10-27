@@ -382,7 +382,7 @@ static void prioritize_pre_assigned_ram_type(AtomBlockId root_atom,
                                              const AtomNetlist& atom_netlist,
                                              std::vector<t_logical_block_type_ptr>& candidate_types) {
     const t_pb_graph_node* prim = prepacker.get_expected_lowest_cost_pb_gnode(root_atom);
-    if (!prim->pb_type->is_primitive() || prim->pb_type->class_type != MEMORY_CLASS)
+    if (!prim->pb_type->is_memory_primitive())
         return;
 
     const LogicalRamGroupId group_id = ram_mapper.group_id_of(root_atom);
