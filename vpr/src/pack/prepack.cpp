@@ -796,7 +796,6 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             }
         }
     }
-    }
 }
 
 t_pb_graph_node* Prepacker::get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
