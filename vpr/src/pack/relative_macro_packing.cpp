@@ -96,8 +96,7 @@ void RelativeMacroPacker::validate_molecule_groups_() {
 }
 
 UserRelativeGroupId RelativeMacroPacker::molecule_group(PackMoleculeId molecule_id) const {
-    if (!molecule_id.is_valid())
-        return UserRelativeGroupId::INVALID();
+    VTR_ASSERT_SAFE(molecule_id.is_valid());
 
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
     for (AtomBlockId blk_id : molecule.atom_block_ids) {
