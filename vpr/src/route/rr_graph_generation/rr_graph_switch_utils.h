@@ -35,7 +35,7 @@ class RRGraphBuilder;
  * @param arch_sw_inf        Map of architecture switch indices to their definitions.
  * @param arch_switch_idx    Index of the source architecture switch.
  * @param rr_switch_idx      Index of the destination rr_switch to fill.
- * @param fanin              Fan-in used to evaluate delay (e.g., Tdel(fanin)).
+ * @param fanin              Fan-in used to evaluate delay (e.g., Tdel_max(fanin)).
  * @param R_minW_nmos        Reference R for a minimum-width nMOS (for AUTO buf sizing).
  * @param R_minW_pmos        Reference R for a minimum-width pMOS (for AUTO buf sizing).
  */

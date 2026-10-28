@@ -1493,7 +1493,7 @@ void print_switch_usage() {
 
     for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
         for (const RRSwitchId rr_switch_id : inward_switch_inf[rr_id] | std::views::keys) {
-            float Tdel = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
+            float Tdel = rr_graph.rr_switch_inf(rr_switch_id).Tdel_max;
             const auto [arch_switch_id, fanin] = convert_switch_index(rr_switch_id);
             // convert_switch_index scans the full switch_fanin_remap, which is kept the
             // same size as all_sw_inf, so every in-use rr_switch maps to a valid index.
@@ -1937,7 +1937,7 @@ t_arch_switch_inf create_internal_arch_sw(float delay) {
     arch_switch_inf.R = 0.;
     arch_switch_inf.Cin = 0.;
     arch_switch_inf.Cout = 0;
-    arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, delay);
+    arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, delay, delay);
     arch_switch_inf.power_buffer_type = POWER_BUFFER_TYPE_NONE;
     arch_switch_inf.mux_trans_size = 0.;
     arch_switch_inf.buf_size_type = e_buffer_size::ABSOLUTE;

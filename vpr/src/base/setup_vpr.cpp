@@ -443,7 +443,7 @@ static void setup_switches(const t_arch& arch,
     device_ctx.arch_switch_inf[routing_arch.delayless_switch].R = 0.;
     device_ctx.arch_switch_inf[routing_arch.delayless_switch].Cin = 0.;
     device_ctx.arch_switch_inf[routing_arch.delayless_switch].Cout = 0.;
-    device_ctx.arch_switch_inf[routing_arch.delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
+    device_ctx.arch_switch_inf[routing_arch.delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0., 0.);
     device_ctx.arch_switch_inf[routing_arch.delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
     device_ctx.arch_switch_inf[routing_arch.delayless_switch].mux_trans_size = 0.;
     device_ctx.arch_switch_inf[routing_arch.delayless_switch].buf_size_type = e_buffer_size::ABSOLUTE;

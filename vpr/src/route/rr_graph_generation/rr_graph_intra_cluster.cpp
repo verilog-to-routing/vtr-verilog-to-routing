@@ -487,7 +487,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
 
             if (switches_remapped) {
                 std::map<int, t_arch_switch_inf>& all_sw_inf = g_vpr_ctx.mutable_device().all_sw_inf;
-                float delay = g_vpr_ctx.device().all_sw_inf.at(sw_idx).Tdel();
+                float delay = g_vpr_ctx.device().all_sw_inf.at(sw_idx).Tdel_max();
                 bool is_new_sw;
                 std::tie(is_new_sw, sw_idx) = find_create_intra_cluster_sw(rr_graph_builder,
                                                                            all_sw_inf,
@@ -552,7 +552,7 @@ static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_grap
         for (int rr_switch_id = 0; rr_switch_id < (int)rr_graph_switches.size(); rr_switch_id++) {
             const t_rr_switch_inf& rr_sw = rr_graph_switches[RRSwitchId(rr_switch_id)];
             if (rr_sw.intra_tile) {
-                if (rr_sw.Tdel == delay) {
+                if (rr_sw.Tdel_min == delay && rr_sw.Tdel_max == delay) {
                     return std::make_pair(false, rr_switch_id);
                 }
             }
@@ -569,7 +569,7 @@ static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_grap
         auto find_res = std::find_if(arch_sw_inf.begin(), arch_sw_inf.end(),
                                      [delay](const std::pair<int, t_arch_switch_inf>& sw_inf_pair) {
                                          const t_arch_switch_inf& sw_inf = std::get<1>(sw_inf_pair);
-                                         if (sw_inf.intra_tile && sw_inf.Tdel() == delay) {
+                                         if (sw_inf.intra_tile && sw_inf.Tdel_min() == delay && sw_inf.Tdel_max() == delay) {
                                              return true;
                                          } else {
                                              return false;

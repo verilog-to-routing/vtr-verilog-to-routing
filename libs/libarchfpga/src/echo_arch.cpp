@@ -220,8 +220,12 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
         fprintf(Echo, "\t\t\t\tR %e Cin %e Cout %e\n", arch->switches[i].R,
                 arch->switches[i].Cin, arch->switches[i].Cout);
         fprintf(Echo, "\t\t\t\t#Tdel values %d buf_size %e mux_trans_size %e\n",
-                (int)arch->switches[i].Tdel_map_.size(), arch->switches[i].buf_size,
+                (int)arch->switches[i].Tdel_max_map_.size(), arch->switches[i].buf_size,
                 arch->switches[i].mux_trans_size);
+        for (const auto& [num_inputs, Tdel_max] : arch->switches[i].Tdel_max_map_) {
+            fprintf(Echo, "\t\t\t\tTdel num_inputs %d min %e max %e\n",
+                    num_inputs, arch->switches[i].Tdel_min_map_.at(num_inputs), Tdel_max);
+        }
         if (arch->switches[i].power_buffer_type == POWER_BUFFER_TYPE_AUTO) {
             fprintf(Echo, "\t\t\t\tpower_buffer_size auto\n");
         } else {

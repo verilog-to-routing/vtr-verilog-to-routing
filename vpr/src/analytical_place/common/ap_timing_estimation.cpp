@@ -248,7 +248,7 @@ void FlatPlacementArcDelayEstimator::precompute_direct_arcs_(const PreClusterDel
                     float delay = 0.0f;
                     if (clb_direct.switch_index != DIRECT_DELAYLESS_SWITCH) {
                         const t_arch_switch_inf& direct_switch = device_ctx.arch_switch_inf[clb_direct.switch_index];
-                        delay = direct_switch.fixed_Tdel() ? direct_switch.Tdel() : direct_switch.Tdel(1);
+                        delay = direct_switch.fixed_Tdel() ? direct_switch.Tdel_max() : direct_switch.Tdel_max(1);
                     }
                     it->second.push_back({directs[idirect].x_offset, directs[idirect].y_offset, delay});
                     break;

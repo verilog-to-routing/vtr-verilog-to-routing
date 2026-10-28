@@ -2393,7 +2393,7 @@ struct ArchReader {
             as->Cin = Cin;
             as->Cout = Cout;
             as->Cinternal = Cint;
-            as->set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel);
+            as->set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel, Tdel);
 
             if (as->type() == e_switch_type::SHORT || as->type() == e_switch_type::PASS_GATE) {
                 as->buf_size_type = e_buffer_size::ABSOLUTE;

@@ -352,7 +352,33 @@ static std::vector<t_arch_switch_inf> process_switches(pugi::xml_node node,
                                                        const bool timing_enabled,
                                                        const pugiutil::loc_data& loc_data);
 
+/**
+ * @brief Processes the intrinsic delay (Tdel) of a <switch> and stores it in arch_switch.
+ *
+ * The delay can be given in one of these forms:
+ * - A Tdel attribute on the switch: a fixed delay, used as both the min and max delay.
+ * - A single <Tdel> child without num_inputs: a fixed delay (see process_switch_tdel_child_delays()).
+ * - One or more <Tdel num_inputs="..."> children: a delay that depends on the switch fan-in.
+ *
+ * It is an error to give both the Tdel attribute and <Tdel> children, to mix a <Tdel>
+ * child without num_inputs with any other <Tdel> child, or to give the same num_inputs twice.
+ */
 static void process_switch_tdel(pugi::xml_node node, const bool timing_enabled, t_arch_switch_inf& arch_switch, const pugiutil::loc_data& loc_data);
+
+/**
+ * @brief Reads the min and max delay of one <Tdel> child of a <switch>.
+ *
+ * Accepted forms:
+ * - delay="float": min = max = delay.
+ * - max="float": min = max.
+ * - min="float" max="float": separate min and max delays.
+ *
+ * It is an error to give delay together with min or max, to give min without max,
+ * to give a negative min, or to give a min larger than max.
+ *
+ * @return The (min, max) delay pair.
+ */
+static std::pair<float, float> process_switch_tdel_child_delays(pugi::xml_node tdel_node, const pugiutil::loc_data& loc_data);
 
 static std::vector<t_direct_inf> process_directs(pugi::xml_node Parent,
                                                  const std::vector<t_arch_switch_inf>& switches,
@@ -4532,69 +4558,96 @@ static std::vector<t_arch_switch_inf> process_switches(pugi::xml_node Parent,
     return switches;
 }
 
-/* Processes the switch delay. Switch delay can be specified in two ways.
- * First way: switch delay is specified as a constant via the property Tdel in the switch node.
- * Second way: switch delay is specified as a function of the switch fan-in. In this
- * case, multiple nodes in the form
- *
- * <Tdel num_inputs="1" delay="3e-11"/>
- *
- * are specified as children of the switch node. In this case, Tdel
- * is not included as a property of the switch node (first way). */
 static void process_switch_tdel(pugi::xml_node node, const bool timing_enabled, t_arch_switch_inf& arch_switch, const pugiutil::loc_data& loc_data) {
-    /* check if switch node has the Tdel property */
-    bool has_Tdel_prop = false;
-    float Tdel_prop_value = get_attribute(node, "Tdel", loc_data, ReqOpt::OPTIONAL).as_float(ARCH_FPGA_UNDEFINED_VAL);
-    if (Tdel_prop_value != ARCH_FPGA_UNDEFINED_VAL) {
-        has_Tdel_prop = true;
-    }
-
-    /* check if switch node has Tdel children */
-    bool has_Tdel_children = false;
+    pugi::xml_attribute Tdel_attr = get_attribute(node, "Tdel", loc_data, ReqOpt::OPTIONAL);
     int num_Tdel_children = count_children(node, "Tdel", loc_data, ReqOpt::OPTIONAL);
-    if (num_Tdel_children != 0) {
-        has_Tdel_children = true;
-    }
 
-    /* delay should not be specified as a Tdel property AND a Tdel child */
-    if (has_Tdel_prop && has_Tdel_children) {
+    // Delay should not be specified as a Tdel property AND a Tdel child
+    if (Tdel_attr && num_Tdel_children != 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
                        vtr::string_fmt("Switch delay should be specified as EITHER a Tdel property OR as a child of the switch node, not both").c_str());
     }
 
-    /* get pointer to the switch's Tdel map, then read-in delay data into this map */
-    if (has_Tdel_prop) {
-        /* delay specified as a constant */
-        arch_switch.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel_prop_value);
-    } else if (has_Tdel_children) {
-        /* Delay specified as a function of switch fan-in.
-         * Go through each Tdel child, read-in num_inputs and the delay value.
-         * Insert this info into the switch delay map */
-        pugi::xml_node Tdel_child = get_first_child(node, "Tdel", loc_data);
+    if (Tdel_attr) {
+        // Delay specified as a constant, used as both the min and max delay
+        float Tdel_value = Tdel_attr.as_float();
+        arch_switch.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel_value, Tdel_value);
+    } else if (num_Tdel_children != 0) {
+        // Delay specified by Tdel children. Either a single child without
+        // num_inputs (fixed delay), or one child per switch fan-in.
         std::set<int> seen_fanins;
-        for (int ichild = 0; ichild < num_Tdel_children; ichild++) {
-            int num_inputs = get_attribute(Tdel_child, "num_inputs", loc_data).as_int(0);
-            float Tdel_value = get_attribute(Tdel_child, "delay", loc_data).as_float(0.);
+        for (pugi::xml_node Tdel_child = get_first_child(node, "Tdel", loc_data); Tdel_child; Tdel_child = Tdel_child.next_sibling(Tdel_child.name())) {
+            expect_only_attributes(Tdel_child, {"num_inputs", "delay", "min", "max"}, loc_data);
+
+            int num_inputs = t_arch_switch_inf::UNDEFINED_FANIN;
+            pugi::xml_attribute num_inputs_attr = get_attribute(Tdel_child, "num_inputs", loc_data, ReqOpt::OPTIONAL);
+            if (num_inputs_attr) {
+                num_inputs = num_inputs_attr.as_int(0);
+            } else if (num_Tdel_children != 1) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Tdel_child),
+                               vtr::string_fmt("A Tdel node without num_inputs gives a fixed delay and must be the only Tdel node of the switch").c_str());
+            }
 
             if (seen_fanins.contains(num_inputs)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Tdel_child),
                                vtr::string_fmt("Tdel node specified num_inputs (%d) that has already been specified by another Tdel node", num_inputs).c_str());
-            } else {
-                arch_switch.set_Tdel(num_inputs, Tdel_value);
-                seen_fanins.insert(num_inputs);
             }
-            Tdel_child = Tdel_child.next_sibling(Tdel_child.name());
+            seen_fanins.insert(num_inputs);
+
+            const auto [Tdel_min, Tdel_max] = process_switch_tdel_child_delays(Tdel_child, loc_data);
+            arch_switch.set_Tdel(num_inputs, Tdel_min, Tdel_max);
         }
     } else {
-        /* No delay info specified for switch */
+        // No delay info specified for switch
         if (timing_enabled) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
                            vtr::string_fmt("Switch should contain intrinsic delay information if timing is enabled").c_str());
         } else {
-            /* set a default value */
-            arch_switch.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
+            // Set a default value
+            arch_switch.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0., 0.);
         }
     }
+}
+
+static std::pair<float, float> process_switch_tdel_child_delays(pugi::xml_node tdel_node, const pugiutil::loc_data& loc_data) {
+    pugi::xml_attribute delay_attr = get_attribute(tdel_node, "delay", loc_data, ReqOpt::OPTIONAL);
+    pugi::xml_attribute min_attr = get_attribute(tdel_node, "min", loc_data, ReqOpt::OPTIONAL);
+    pugi::xml_attribute max_attr = get_attribute(tdel_node, "max", loc_data, ReqOpt::OPTIONAL);
+
+    if (delay_attr) {
+        if (min_attr || max_attr) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(tdel_node),
+                           vtr::string_fmt("Tdel node should specify EITHER delay OR min/max, not both").c_str());
+        }
+        float delay = delay_attr.as_float();
+        return {delay, delay};
+    }
+
+    if (!max_attr) {
+        if (min_attr) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(tdel_node),
+                           vtr::string_fmt("Tdel node specifies min without max").c_str());
+        }
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(tdel_node),
+                       vtr::string_fmt("Tdel node should specify delay or max").c_str());
+    }
+
+    float max_delay = max_attr.as_float();
+    if (!min_attr) {
+        // Only the max delay is given, so the min delay is the same
+        return {max_delay, max_delay};
+    }
+
+    float min_delay = min_attr.as_float();
+    if (min_delay < 0.) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(tdel_node),
+                       vtr::string_fmt("Tdel node min (%g) should not be negative", min_delay).c_str());
+    }
+    if (min_delay > max_delay) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(tdel_node),
+                       vtr::string_fmt("Tdel node min (%g) should not be larger than max (%g)", min_delay, max_delay).c_str());
+    }
+    return {min_delay, max_delay};
 }
 
 static std::vector<t_direct_inf> process_directs(pugi::xml_node Parent,
