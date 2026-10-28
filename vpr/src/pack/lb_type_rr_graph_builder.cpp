@@ -207,16 +207,15 @@ void LbTypeRRGraphBuilder::build_primitive_sink_pins_(const std::vector<std::spa
         // The pins of an equivalent port share one sink whose capacity is the size of the port.
         LbRRNodeId sink_index = LbRRNodeId::INVALID();
         for (const t_pb_graph_pin& pin : port) {
-            const t_pb_graph_pin* pb_pin = &pin;
-            bool port_equivalent = pb_pin->port->equivalent != PortEquivalence::NONE;
+            bool port_equivalent = pin.port->equivalent != PortEquivalence::NONE;
 
             // The sink is appended before the pin node so that the pin's edge range stays contiguous.
             if (!port_equivalent || !sink_index.is_valid()) {
-                sink_index = add_sink_(port_equivalent ? pb_pin->port->num_pins : 1);
+                sink_index = add_sink_(port_equivalent ? pin.port->num_pins : 1);
             }
 
-            LbRRNodeId pin_index = LbRRNodeId(pb_pin->pin_count_in_cluster);
-            begin_node_(pin_index, e_lb_rr_type::INTERMEDIATE, 1, 1, pb_pin);
+            LbRRNodeId pin_index = LbRRNodeId(pin.pin_count_in_cluster);
+            begin_node_(pin_index, e_lb_rr_type::INTERMEDIATE, 1, 1, &pin);
             begin_mode_();
             add_edge_(sink_index, DEFAULT_EDGE_COST);
             end_node_();
