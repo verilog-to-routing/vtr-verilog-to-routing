@@ -329,6 +329,7 @@ bool try_pack(const t_packer_opts& packer_opts,
                                        packer_opts.memoize_cluster_packings,
                                        packer_opts.cluster_router_hot_start,
                                        arch.models,
+                                       device_ctx.logical_block_types,
                                        packer_opts.pack_verbosity);
     // Construct the APPack Context.
     APPackContext appack_ctx(flat_placement_info,

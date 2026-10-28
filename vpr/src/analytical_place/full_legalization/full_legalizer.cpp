@@ -1015,6 +1015,7 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
         false, // --memoize_cluster_packings is not yet supported for flat-recon
         vpr_setup_.PackerOpts.cluster_router_hot_start,
         arch_.models,
+        g_vpr_ctx.device().logical_block_types,
         vpr_setup_.PackerOpts.pack_verbosity);
 
     // Perform clustering using partial placement.
@@ -1054,6 +1055,7 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
                                        vpr_setup_.PackerOpts.memoize_cluster_packings,
                                        vpr_setup_.PackerOpts.cluster_router_hot_start,
                                        arch_.models,
+                                       g_vpr_ctx.device().logical_block_types,
                                        vpr_setup_.PackerOpts.pack_verbosity);
     // Create clusters for each tile.
     //  Start by giving each root tile a unique ID.

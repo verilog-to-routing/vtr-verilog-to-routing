@@ -316,6 +316,8 @@ class ClusterLegalizer {
      *          When true, each call to try_intra_lb_route seeds unchanged nets
      *          from the last successful route before running pathfinder.
      *  @param models
+     *  @param logical_block_types
+     *          The logical block types of the architecture.
      *  @param log_verbosity
      *          Controls how verbose the log messages will be within this class.
      */
@@ -329,6 +331,7 @@ class ClusterLegalizer {
                      bool memoize_cluster_packings,
                      bool enable_cluster_router_hot_start,
                      const LogicalModels& models,
+                     const std::vector<t_logical_block_type>& logical_block_types,
                      int log_verbosity);
 
     // This class allocates and deallocates memory within. This class should not
@@ -610,7 +613,7 @@ class ClusterLegalizer {
   private:
     /// @brief Build the per-type feedback-pin sets used by the intra-cluster router.
     ///        Called once by the constructor.
-    void init_feedback_pin_sets();
+    void init_feedback_pin_sets(const std::vector<t_logical_block_type>& logical_block_types);
 
     /// @brief The routing resource graph of each logical block type, indexed by
     ///        type index. Declared before the clusters since their routers

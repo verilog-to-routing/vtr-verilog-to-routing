@@ -1509,10 +1509,11 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    bool memoize_cluster_packings,
                                    bool enable_cluster_router_hot_start,
                                    const LogicalModels& models,
+                                   const std::vector<t_logical_block_type>& logical_block_types,
                                    int log_verbosity)
     : lb_type_rr_graphs_(alloc_and_load_all_lb_type_rr_graph())
     , prepacker_(prepacker)
-    , intra_lb_pb_pin_lookup_(g_vpr_ctx.device().logical_block_types) {
+    , intra_lb_pb_pin_lookup_(logical_block_types) {
     // Only check the relative macro rules when the design has relative macros.
     if (relative_macros.get_num_macros() != 0)
         relative_macro_packer_.emplace(relative_macros, prepacker, atom_netlist);
@@ -1549,13 +1550,12 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
         packing_signature_tree_.reset();
     }
 
-    init_feedback_pin_sets();
+    init_feedback_pin_sets(logical_block_types);
 }
 
-void ClusterLegalizer::init_feedback_pin_sets() {
-    const std::vector<t_logical_block_type>& lb_types = g_vpr_ctx.device().logical_block_types;
-    valid_feedback_pins_by_type_.resize(lb_types.size());
-    for (const t_logical_block_type& lb_type : lb_types) {
+void ClusterLegalizer::init_feedback_pin_sets(const std::vector<t_logical_block_type>& logical_block_types) {
+    valid_feedback_pins_by_type_.resize(logical_block_types.size());
+    for (const t_logical_block_type& lb_type : logical_block_types) {
         std::unordered_set<int>& valid_set = valid_feedback_pins_by_type_[lb_type.index];
         if (lb_type.pb_graph_head == nullptr || lb_type.equivalent_tiles.empty()) {
             continue; // empty set: router rejects all feedback pins (safe default)
