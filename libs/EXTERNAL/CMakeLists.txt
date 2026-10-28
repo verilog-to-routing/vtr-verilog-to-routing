@@ -18,6 +18,8 @@ add_subdirectory(libpugixml)
 add_subdirectory(libargparse)
 add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
+# Build Tatum's unit tests so they run with the rest of VTR's unit tests
+set(TATUM_BUILD_UNIT_TESTS ON CACHE BOOL "" FORCE)
 add_subdirectory(libtatum)
 add_subdirectory(libcatch2)
 

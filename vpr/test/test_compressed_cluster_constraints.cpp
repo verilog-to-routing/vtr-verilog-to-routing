@@ -16,30 +16,29 @@ namespace {
  * @brief Builds a 20x20 single-layer device with an IO ring and 1x1 "small" tiles inside,
  *        and loads it with its compressed grids into the global contexts.
  *
- * The tile and logical block type objects are owned by the caller so that the
- * pointers stored in the grid stay valid for the duration of the test.
+ * The tile objects are owned by the caller so that the pointers stored in the
+ * grid stay valid for the duration of the test. The logical block types live
+ * in the device context.
  */
 void build_small_tile_device(t_physical_tile_type& empty_tile,
                              t_physical_tile_type& io_tile,
-                             t_physical_tile_type& small_tile,
-                             t_logical_block_type& empty_logical_type,
-                             t_logical_block_type& io_logical_type,
-                             t_logical_block_type& small_logical_type) {
+                             t_physical_tile_type& small_tile) {
     const int grid_width = 20;
     const int grid_height = 20;
 
     DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
     std::vector<t_logical_block_type>& logical_block_types = device_ctx.logical_block_types;
     logical_block_types.clear();
+    // The tiles below point at elements of this vector, so it must not reallocate.
+    logical_block_types.reserve(3);
 
     empty_tile.name = "empty";
     empty_tile.height = 1;
     empty_tile.width = 1;
     empty_tile.sub_tiles.emplace_back();
-    empty_logical_type = get_empty_logical_type();
+    t_logical_block_type& empty_logical_type = logical_block_types.emplace_back(get_empty_logical_type());
     empty_logical_type.index = 0;
     empty_logical_type.equivalent_tiles.push_back(&empty_tile);
-    logical_block_types.push_back(empty_logical_type);
     device_ctx.EMPTY_PHYSICAL_TILE_TYPE = &empty_tile;
     empty_tile.sub_tiles.back().index = 0;
     empty_tile.sub_tiles.back().equivalent_sites.push_back(&empty_logical_type);
@@ -48,9 +47,9 @@ void build_small_tile_device(t_physical_tile_type& empty_tile,
     io_tile.height = 1;
     io_tile.width = 1;
     io_tile.sub_tiles.emplace_back();
+    t_logical_block_type& io_logical_type = logical_block_types.emplace_back();
     io_logical_type.index = 1;
     io_logical_type.equivalent_tiles.push_back(&io_tile);
-    logical_block_types.push_back(io_logical_type);
     io_tile.sub_tiles.back().index = 0;
     io_tile.sub_tiles.back().equivalent_sites.push_back(&io_logical_type);
 
@@ -58,9 +57,9 @@ void build_small_tile_device(t_physical_tile_type& empty_tile,
     small_tile.height = 1;
     small_tile.width = 1;
     small_tile.sub_tiles.emplace_back();
+    t_logical_block_type& small_logical_type = logical_block_types.emplace_back();
     small_logical_type.index = 2;
     small_logical_type.equivalent_tiles.push_back(&small_tile);
-    logical_block_types.push_back(small_logical_type);
     small_tile.sub_tiles.back().index = 0;
     small_tile.sub_tiles.back().equivalent_sites.push_back(&small_logical_type);
 
@@ -105,13 +104,9 @@ TEST_CASE("compressed_cluster_constraints_keep_every_rectangle", "[vpr_place_con
     t_physical_tile_type empty_tile;
     t_physical_tile_type io_tile;
     t_physical_tile_type small_tile;
-    t_logical_block_type empty_logical_type;
-    t_logical_block_type io_logical_type;
-    t_logical_block_type small_logical_type;
     // g_vpr_ctx keeps pointers to the stack objects above; clear it on exit so later tests do not use them.
     GlobalStateReset reset_global_state;
-    build_small_tile_device(empty_tile, io_tile, small_tile,
-                            empty_logical_type, io_logical_type, small_logical_type);
+    build_small_tile_device(empty_tile, io_tile, small_tile);
 
     ClusteringContext& cluster_ctx = g_vpr_ctx.mutable_clustering();
     cluster_ctx.clb_nlist = ClusteredNetlist("test_netlist");

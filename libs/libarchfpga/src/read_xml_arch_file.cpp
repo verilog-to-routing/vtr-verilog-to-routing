@@ -3791,7 +3791,7 @@ static void process_complex_blocks(pugi::xml_node node,
     // 1: empty pseudo-type
     t_logical_block_type EMPTY_LOGICAL_BLOCK_TYPE = get_empty_logical_type();
     EMPTY_LOGICAL_BLOCK_TYPE.index = 0;
-    logical_block_types.push_back(EMPTY_LOGICAL_BLOCK_TYPE);
+    logical_block_types.push_back(std::move(EMPTY_LOGICAL_BLOCK_TYPE));
 
     // Process the types
     int index = 1; // Skip over 'empty' type
@@ -3827,7 +3827,7 @@ static void process_complex_blocks(pugi::xml_node node,
         ++index;
 
         // Push newly created Types to corresponding vectors
-        logical_block_types.push_back(logical_block_type);
+        logical_block_types.push_back(std::move(logical_block_type));
 
         // Free this node and get its next sibling node
         cur_block_type = cur_block_type.next_sibling(cur_block_type.name());

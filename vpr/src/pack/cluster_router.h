@@ -278,6 +278,26 @@ class ClusterRouter {
     void set_reset_pb_modes(const t_pb* pb, const bool set);
 
     /**
+     * @brief Check that the mode stored on every rr node matches the modes
+     *        implied by the given pb tree.
+     *
+     * The router keeps its own copy of each pb's mode (see set_reset_pb_modes).
+     * Every pb with allocated children, and every primitive pb holding an atom,
+     * is expected to have its modes set; all other rr nodes are expected to be
+     * unset (-1). A pb that is freed without clearing its modes leaves stale
+     * modes behind, which silently restrict later intra-cluster routes.
+     *
+     * This walks the whole pb tree and rr graph, so it is only intended for
+     * use in expensive assertions.
+     *
+     *  @param root_pb     The top-level pb of the cluster being routed.
+     *  @param atom_to_pb  Map used to tell which primitive pbs hold an atom.
+     *
+     *  @return True if the router's modes are consistent with the pb tree.
+     */
+    bool pb_modes_match(const t_pb* root_pb, const AtomPBBimap& atom_to_pb) const;
+
+    /**
      * @brief Attempt to route routing driver/targets on the current architecture.
      *
      * Follows pathfinder negotiated congestion algorithm.

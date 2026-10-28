@@ -2251,7 +2251,7 @@ t_global_ports identify_primitive_global_pins(t_arch* /*arch*/, t_logical_block_
     }
     //Add the top level pb_types
     for(int top_pb_type_index = 0; top_pb_type_index < num_types; top_pb_type_index++) {
-        t_logical_block_type type = arch_types[top_pb_type_index];
+        const t_logical_block_type& type = arch_types[top_pb_type_index];
 
         t_pb_type* top_level_pb_type = type.pb_type;
 

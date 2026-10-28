@@ -98,20 +98,13 @@ IntraLbPbPinLookup::IntraLbPbPinLookup(const std::vector<t_logical_block_type>& 
     : block_types_(block_types)
     , intra_lb_pb_pin_lookup_(block_types.size(), nullptr) {
     for (unsigned int itype = 0; itype < block_types_.size(); ++itype) {
-        intra_lb_pb_pin_lookup_[itype] = alloc_and_load_pb_graph_pin_lookup_from_index(&block_types[itype]);
+        intra_lb_pb_pin_lookup_[itype] = alloc_and_load_pb_graph_pin_lookup_from_index(&block_types_[itype]);
     }
 }
 
 IntraLbPbPinLookup::IntraLbPbPinLookup(const IntraLbPbPinLookup& rhs)
     : IntraLbPbPinLookup(rhs.block_types_) {
     //nop
-}
-
-IntraLbPbPinLookup& IntraLbPbPinLookup::operator=(IntraLbPbPinLookup rhs) {
-    //Copy-swap idiom
-    swap(*this, rhs);
-
-    return *this;
 }
 
 IntraLbPbPinLookup::~IntraLbPbPinLookup() {
@@ -124,11 +117,6 @@ const t_pb_graph_pin* IntraLbPbPinLookup::pb_gpin(unsigned int itype, int ipin) 
     VTR_ASSERT(itype < block_types_.size());
 
     return intra_lb_pb_pin_lookup_[itype][ipin];
-}
-
-void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs) {
-    std::swap(lhs.block_types_, rhs.block_types_);
-    std::swap(lhs.intra_lb_pb_pin_lookup_, rhs.intra_lb_pb_pin_lookup_);
 }
 
 //Returns the set of pins which are connected to the top level clb pin
@@ -1122,7 +1110,7 @@ void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb
     pin_id_to_pb_mapping.clear();
 }
 
-std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id) {
+t_cluster_blk_physical_spec get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id) {
     auto& grid = g_vpr_ctx.device().grid;
     auto& block_locs = g_vpr_ctx.placement().block_locs();
     auto& loc = block_locs[cluster_blk_id].loc;
@@ -1137,7 +1125,7 @@ std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_typ
     VTR_ASSERT(rel_cap >= 0);
     auto logical_block = cluster_net_list.block_type(cluster_blk_id);
 
-    return std::make_tuple(physical_type, sub_tile, rel_cap, logical_block);
+    return {physical_type, sub_tile, rel_cap, logical_block};
 }
 
 std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
@@ -1556,7 +1544,7 @@ int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
     auto [physical_type, sub_tile, sub_tile_rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_block_id);
     auto pb_graph_pin = atom_look_up.atom_pin_pb_graph_pin(atom_pin_id);
     int pin_physical_num = -1;
-    pin_physical_num = get_pb_pin_physical_num(physical_type, sub_tile, logical_block, sub_tile_rel_cap, pb_graph_pin);
+    pin_physical_num = get_pb_pin_physical_num(sub_tile, logical_block, sub_tile_rel_cap, pb_graph_pin);
 
     return get_class_num_from_pin_physical_num(physical_type, pin_physical_num);
 }

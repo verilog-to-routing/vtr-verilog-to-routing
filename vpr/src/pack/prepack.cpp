@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <limits>
 #include <map>
 #include <queue>
 #include <unordered_map>
@@ -247,6 +248,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             bool hasPattern = false;
             for (int k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges; k++) {
                 t_pb_graph_edge* output_edge = pb_graph_node->input_pins[i][j].output_edges[k];
+                output_edge->pack_pattern_indices.resize(output_edge->num_pack_patterns);
                 for (int m = 0; m < output_edge->num_pack_patterns; m++) {
                     hasPattern = true;
                     // insert the found pattern name to the hash table. If this pattern is inserted
@@ -255,9 +257,6 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
                     // inserted element with the index given to that pattern
                     std::string pattern_name(output_edge->pack_pattern_names[m]);
                     int index = (pattern_names.insert({pattern_name, pattern_names.size()}).first)->second;
-                    if (!output_edge->pack_pattern_indices) {
-                        output_edge->pack_pattern_indices = new int[output_edge->num_pack_patterns];
-                    }
                     output_edge->pack_pattern_indices[m] = index;
                     // if this output edges belongs to a pack pattern. Expand forward starting from
                     // all its output pins to check if you need to infer pattern for direct connections
@@ -280,6 +279,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             bool hasPattern = false;
             for (int k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges; k++) {
                 t_pb_graph_edge* output_edge = pb_graph_node->output_pins[i][j].output_edges[k];
+                output_edge->pack_pattern_indices.resize(output_edge->num_pack_patterns);
                 for (int m = 0; m < output_edge->num_pack_patterns; m++) {
                     hasPattern = true;
                     // insert the found pattern name to the hash table. If this pattern is inserted
@@ -288,9 +288,6 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
                     // inserted element with the index given to that pattern
                     std::string pattern_name(output_edge->pack_pattern_names[m]);
                     int index = (pattern_names.insert({pattern_name, pattern_names.size()}).first)->second;
-                    if (!output_edge->pack_pattern_indices) {
-                        output_edge->pack_pattern_indices = new int[output_edge->num_pack_patterns];
-                    }
                     output_edge->pack_pattern_indices[m] = index;
                     // if this output edges belongs to a pack pattern. Expand forward starting from
                     // all its output pins to check if you need to infer pattern for direct connections
@@ -313,6 +310,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             bool hasPattern = false;
             for (int k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges; k++) {
                 t_pb_graph_edge* output_edge = pb_graph_node->clock_pins[i][j].output_edges[k];
+                output_edge->pack_pattern_indices.resize(output_edge->num_pack_patterns);
                 for (int m = 0; m < output_edge->num_pack_patterns; m++) {
                     hasPattern = true;
                     // insert the found pattern name to the hash table. If this pattern is inserted
@@ -321,9 +319,6 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
                     // inserted element with the index given to that pattern
                     std::string pattern_name(output_edge->pack_pattern_names[m]);
                     int index = (pattern_names.insert({pattern_name, pattern_names.size()}).first)->second;
-                    if (output_edge->pack_pattern_indices == nullptr) {
-                        output_edge->pack_pattern_indices = new int[output_edge->num_pack_patterns];
-                    }
                     output_edge->pack_pattern_indices[m] = index;
                     // if this output edges belongs to a pack pattern. Expand forward starting from
                     // all its output pins to check if you need to infer pattern for direct connections
@@ -822,24 +817,29 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
 
 t_pb_graph_node* Prepacker::get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
                                                                               const std::vector<t_logical_block_type>& logical_block_types) const {
-    float cost, best_cost;
-    t_pb_graph_node *current, *best;
-
-    best_cost = UNDEFINED;
-    best = nullptr;
-    current = nullptr;
+    t_pb_graph_node* best = nullptr;
+    float best_cost = std::numeric_limits<float>::infinity();
     for (const t_logical_block_type& type : logical_block_types) {
-        cost = UNDEFINED;
-        current = get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, type.pb_graph_head, &cost);
-        if (cost != UNDEFINED) {
-            if (best_cost == UNDEFINED || best_cost > cost) {
-                best_cost = cost;
-                best = current;
-            }
+        t_pb_graph_node* primitive = get_expected_lowest_cost_primitive_for_atom_block(blk_id, type);
+        if (primitive == nullptr) {
+            continue;
+        }
+
+        // An earlier block type wins a tie.
+        float cost = compute_primitive_base_cost(primitive);
+        if (cost < best_cost) {
+            best_cost = cost;
+            best = primitive;
         }
     }
 
     return best;
+}
+
+t_pb_graph_node* Prepacker::get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
+                                                                              const t_logical_block_type& logical_block_type) const {
+    float cost = UNDEFINED;
+    return get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, logical_block_type.pb_graph_head, &cost);
 }
 
 /**
