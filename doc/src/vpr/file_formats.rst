@@ -906,7 +906,7 @@ A ``switches`` tag contains all the switches and its information within the FPGA
     :req_param type:
         See :ref:`architecture switch description <arch_switches>`.
 
-.. rrgraph:tag:: <timing R="float" cin="float" Cout="float" Tdel="float/>
+.. rrgraph:tag:: <timing R="float" Cin="float" Cout="float" Tdel="float" Tdel_min="float" Tdel_max="float"/>
 
         This optional subtag contains information used for timing analysis. Without it, the program assumes all subtags to contain a value of 0.
 
@@ -915,6 +915,17 @@ A ``switches`` tag contains all the switches and its information within the FPGA
 
     :opt_param Tdel:
         Switch's intrinsic delay. It can be outlined that the delay through an unloaded switch is Tdel + R * Cout.
+        It is used as both the minimum and maximum intrinsic delay of the switch.
+
+        .. note:: Cannot be specified together with ``Tdel_min`` or ``Tdel_max``.
+
+    :opt_param Tdel_min, Tdel_max:
+        Switch's minimum and maximum intrinsic delay, for switches whose minimum and maximum delays differ.
+        ``Tdel_min`` must not be larger than ``Tdel_max``.
+        A missing value is 0, like the other timing values.
+
+        When writing an RR graph, VPR writes ``Tdel`` for switches whose minimum and maximum delays are equal, and ``Tdel_min`` / ``Tdel_max`` otherwise.
+        RR graphs of architectures that do not use separate minimum and maximum switch delays are therefore unchanged.
 
 .. rrgraph:tag:: <sizing mux_trans_size="int" buf_size="float"/>
 
@@ -1096,6 +1107,10 @@ An example of what a generated routing resource graph file would look like is sh
                 <timing R="100" Cin="1233-12" Cout="123e-12" Tdel="1e-9"/>
                 <sizing mux_trans_size="2.32" buf_size="23.54"/>
             </switch>
+            <switch id="1" name="my_min_max_switch" type="mux">
+                <timing R="100" Cin="1233-12" Cout="123e-12" Tdel_min="0.9e-9" Tdel_max="1e-9"/>
+                <sizing mux_trans_size="2.32" buf_size="23.54"/>
+            </switch>
         </switches>
         <segments>
             <segment id="0" name="L4">
@@ -1154,10 +1169,12 @@ To aid in handling large graphs, rr_graph files can also be :ref:`saved in <file
 
 .. _end:
 
+.. _rr_edge_override_file_format:
+
 RR Graph Edge Attribute Override File Format (.txt)
 ---------------------------------------------------
-This file lets users override attributes of specific edges in the RR graph. Currently, only the intrinsic delay (Tdel)
-can be changed. The expected format is:
+This file lets users override attributes of specific edges in the RR graph. Currently, only the intrinsic delay of
+the edge's switch (``Tdel``, or ``Tdel_min`` and ``Tdel_max``) can be changed. The expected format is:
 
 .. code-block:: none
 
@@ -1172,6 +1189,22 @@ can be changed. The expected format is:
 
 Lines starting with # are comments and ignored. Each other line should specify either: an edge ID and its new delay, or
 a source/sink node pair and its delay.
+
+A line can give either one delay or two delays:
+
+* One delay is used as both the minimum and maximum delay. It replaces both, even if the edge's switch had
+  different minimum and maximum delays.
+* Two delays are the minimum and maximum delay (``Tdel_min`` then ``Tdel_max``, in the same order as the
+  :ref:`RR graph <vpr_route_resource_file>` ``<timing>`` attributes). The minimum delay must not be larger than the maximum delay.
+
+.. code-block:: none
+
+    # edge    Tdel_min   Tdel_max
+    64812     5.6e-11    5.9e-11
+    9981      4.2e-11
+    (42, 64)  7.0e-11    7.3e-11
+
+Here edge ``9981`` has a single delay, so its minimum and maximum delay are both ``4.2e-11``.
 
 This allows more accurate modeling of switch delays in the RR graph without creating many switch types
 in the architecture file and limiting them to small regions. This can be useful for more detailed modeling of

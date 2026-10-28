@@ -828,7 +828,12 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
 
         The ‘switch’ includes both the mux and buffer ``mux`` type switches.
 
+        The ``Tdel`` attribute gives a single delay, which is used as both the minimum and maximum delay of the switch.
+        To give separate minimum and maximum delays, use a ``<Tdel>`` tag with ``min`` and ``max`` instead (see below).
+
         .. note:: Required if no ``<Tdel>`` tags are specified
+
+        .. note:: Cannot be specified together with ``<Tdel>`` tags.
 
         .. note:: A ``<switch>``'s resistance (``R``) and output capacitance (``Cout``) have no effect on delay when used for the input connection block, since VPR does not model the resistance/capacitance of block internal wires.
 
@@ -850,16 +855,47 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
 
     :opt_param power_buf_size: *Used for power estimation.* The size is the drive strength of the buffer, relative to a minimum-sized inverter.
 
-    .. arch:tag:: <Tdel num_inputs="int" delay="float"/>
+    .. arch:tag:: <Tdel num_inputs="int" delay="float" min="float" max="float"/>
 
-        Instead of specifying a single Tdel value, a list of Tdel values may be specified for different values of switch fan-in.
-        Delay is linearly extrapolated/interpolated for any unspecified fanins based on the two closest fanins.
+        Specifies the intrinsic delay of the switch as a child tag, instead of the ``Tdel`` attribute.
+        This allows separate minimum and maximum delays, and delays that depend on the switch fan-in.
 
+        A switch either has:
 
-        :req_param num_inputs: The number of switch inputs (fan-in)
-        :req_param delay: The intrinsic switch delay when the switch topology has the specified number of switch inputs
+        * a single ``<Tdel>`` tag without ``num_inputs``, giving a fixed delay, or
+        * one or more ``<Tdel>`` tags with ``num_inputs``, giving the delay for different values of switch fan-in.
+          Delay is linearly extrapolated/interpolated for any unspecified fanins based on the two closest fanins.
 
-        **Example:**
+        A ``<Tdel>`` tag without ``num_inputs`` cannot be mixed with other ``<Tdel>`` tags, and each ``num_inputs`` value can only be given once.
+
+        :opt_param num_inputs:
+            The number of switch inputs (fan-in) this delay applies to.
+            If omitted, the delay is fixed (does not depend on the fan-in), and this must be the only ``<Tdel>`` tag of the switch.
+
+        :opt_param delay:
+            The intrinsic switch delay, used as both the minimum and maximum delay.
+
+            .. note:: Cannot be specified together with ``min`` or ``max``.
+
+        :opt_param max:
+            The maximum intrinsic switch delay.
+
+            .. note:: Required if ``delay`` is not specified.
+
+        :opt_param min:
+            The minimum intrinsic switch delay.
+            Must be at least 0 and at most ``max``.
+
+            **Default:** the value of ``max``
+
+            .. note:: Cannot be specified without ``max``.
+
+        Exactly one of ``delay`` or ``max`` must be given.
+
+        The minimum delay only replaces the intrinsic delay: the switch resistance and capacitances (``R``, ``Cin``, ``Cout``, ``Cinternal``) are the same for the minimum and maximum delay.
+        When the minimum and maximum delays are extrapolated to an unspecified fan-in, the minimum delay is limited to be at least 0 and at most the maximum delay.
+
+        **Example:** Fan-in dependent delay
 
         .. code-block:: xml
 
@@ -867,6 +903,24 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
                 <Tdel num_inputs="12" delay="8.00e-11"/>
                 <Tdel num_inputs="15" delay="8.4e-11"/>
                 <Tdel num_inputs="20" delay="9.4e-11"/>
+            </switch>
+
+        **Example:** Fixed minimum and maximum delay
+
+        .. code-block:: xml
+
+            <switch type="mux" name="my_mux" R="551" Cin=".77e-15" Cout="4e-15" mux_trans_size="2.63" buf_size="27.6">
+                <Tdel min="56e-12" max="58e-12"/>
+            </switch>
+
+        **Example:** Fan-in dependent minimum and maximum delay
+
+        .. code-block:: xml
+
+            <switch type="mux" name="my_mux" R="522" Cin="3.1e-15" Cout="3e-15" Cinternal="5e-15" mux_trans_size="1.7" buf_size="23">
+                <Tdel num_inputs="12" min="7.5e-11" max="8.0e-11"/>
+                <Tdel num_inputs="15" min="7.9e-11" max="8.4e-11"/>
+                <Tdel num_inputs="20" min="8.8e-11" max="9.4e-11"/>
             </switch>
 
 
