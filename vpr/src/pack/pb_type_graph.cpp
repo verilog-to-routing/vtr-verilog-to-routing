@@ -414,7 +414,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
         pb_graph_node->child_pb_graph_nodes[i] = (t_pb_graph_node**)vtr::calloc(pb_type->modes[i].num_pb_type_children,
                                                                                 sizeof(t_pb_graph_node*));
         for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-            pb_graph_node->child_pb_graph_nodes[i][j] = (t_pb_graph_node*)vtr::calloc(pb_type->modes[i].pb_type_children[j].num_pb, sizeof(t_pb_graph_node));
+            pb_graph_node->child_pb_graph_nodes[i][j] = new t_pb_graph_node[pb_type->modes[i].pb_type_children[j].num_pb]();
             int num_children_of_type = pb_type->modes[i].pb_type_children[j].num_pb;
 
             for (k = 0; k < num_children_of_type; k++) {
