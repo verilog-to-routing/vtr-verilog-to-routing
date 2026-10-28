@@ -158,7 +158,7 @@ TEST_CASE("read_interchange_pb_types", "[vpr]") {
         {"CLK", PORTS::IN_PORT}};
 
     // Check that there are exactly the expected models
-    for (auto ltype : logical_block_types) {
+    for (const t_logical_block_type& ltype : logical_block_types) {
         std::string name = ltype.name;
         REQUIRE(ltypes.find(name) != ltypes.end());
         ltypes.erase(name);

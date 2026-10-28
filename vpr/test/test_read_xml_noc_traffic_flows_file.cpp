@@ -349,17 +349,15 @@ TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "
     // delete any previously created traffic flow info
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
 
-    // create the logical type of a noc router
+    // create the logical type of a noc router and add it to the device
     // there is a single logical type that is compatible with this subtile and it is a router
-    t_logical_block_type router_block;
+    t_logical_block_type& router_block = device_ctx.logical_block_types.emplace_back();
     char router[] = "router";
     router_block.name = router;
     t_logical_block_type_ptr router_ref = &router_block;
 
     //set the index of the logical type as 0 (its the only block type in this test device)
     router_block.index = 0;
-    // now add this logical type to the device
-    device_ctx.logical_block_types.push_back(router_block);
 
     //need to create the noc router physical type
     t_physical_tile_type noc_router;

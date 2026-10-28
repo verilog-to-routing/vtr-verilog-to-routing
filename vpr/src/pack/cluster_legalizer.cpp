@@ -1489,7 +1489,8 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    const LogicalModels& models,
                                    int log_verbosity)
     : lb_type_rr_graphs_(alloc_and_load_all_lb_type_rr_graph())
-    , prepacker_(prepacker) {
+    , prepacker_(prepacker)
+    , intra_lb_pb_pin_lookup_(g_vpr_ctx.device().logical_block_types) {
     // Get the target external pin utilization
     // NOTE: Be careful with this constructor, it may throw a VPR_FATAL_ERROR.
     target_external_pin_util_ = t_ext_pin_util_targets(target_external_pin_util_str);
@@ -1515,7 +1516,6 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     log_verbosity_ = log_verbosity;
     VTR_ASSERT(g_vpr_ctx.atom().lookup().atom_pb_bimap().is_empty());
     atom_pb_lookup_ = AtomPBBimap();
-    intra_lb_pb_pin_lookup_ = IntraLbPbPinLookup(g_vpr_ctx.device().logical_block_types);
 
     if (memoize_cluster_packings) {
         packing_signature_tree_.emplace(prepacker.molecules().size());

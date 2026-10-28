@@ -209,6 +209,8 @@ static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_desc
                 delete type.pb_graph_head;
             }
         }
+
+        type.pb_graph_edges.clear();
     }
 }
 
