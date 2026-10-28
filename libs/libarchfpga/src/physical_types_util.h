@@ -370,8 +370,6 @@ inline bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_
     return (physical_num < physical_tile->num_pins);
 }
 
-std::vector<t_pb_graph_pin*> get_mutable_pb_graph_node_pb_pins(t_pb_graph_node* pb_graph_node);
-
 t_pin_range get_pb_graph_node_pins(t_physical_tile_type_ptr physical_tile,
                                    const t_sub_tile* sub_tile,
                                    t_logical_block_type_ptr logical_block,

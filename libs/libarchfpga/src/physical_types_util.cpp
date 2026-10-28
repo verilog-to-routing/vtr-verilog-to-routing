@@ -910,23 +910,6 @@ bool is_primitive_pin(t_physical_tile_type_ptr physical_tile, int pin_physical_n
     }
 }
 
-std::vector<t_pb_graph_pin*> get_mutable_pb_graph_node_pb_pins(t_pb_graph_node* pb_graph_node) {
-    std::vector<t_pb_graph_pin*> pins;
-    pins.reserve(pb_graph_node->num_pins());
-
-    // Walk the input ports, then the output ports, then the clock ports. Callers number switches in this order.
-    for (const std::vector<std::span<t_pb_graph_pin>>* port_pins : {&pb_graph_node->input_pins, &pb_graph_node->output_pins, &pb_graph_node->clock_pins}) {
-        for (std::span<t_pb_graph_pin> port : *port_pins) {
-            for (t_pb_graph_pin& pin : port) {
-                pins.push_back(&pin);
-            }
-        }
-    }
-
-    VTR_ASSERT((int)pins.size() == pb_graph_node->num_pins());
-    return pins;
-}
-
 t_pin_range get_pb_graph_node_pins(t_physical_tile_type_ptr /*physical_tile*/,
                                    const t_sub_tile* sub_tile,
                                    t_logical_block_type_ptr logical_block,
