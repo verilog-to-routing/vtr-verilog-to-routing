@@ -19,6 +19,10 @@
 /// @brief A unique identifier for a user-defined relative placement macro.
 typedef vtr::StrongId<struct user_relative_macro_id_tag> UserRelativeMacroId;
 
+/// @brief A unique identifier for a group of a user-defined relative placement
+///        macro. Unique across all macros.
+typedef vtr::StrongId<struct user_relative_group_id_tag> UserRelativeGroupId;
+
 /**
  * @brief A group of atoms within a user-defined relative placement macro.
  *
@@ -27,6 +31,9 @@ typedef vtr::StrongId<struct user_relative_macro_id_tag> UserRelativeMacroId;
  * zero offset.
  */
 struct t_user_relative_group {
+    /// @brief The macro this group belongs to. Set by UserRelativeMacros::add_macro.
+    UserRelativeMacroId macro_id;
+
     /// @brief Atoms belonging to this group (resolved from the name patterns
     ///        in the constraints file).
     std::vector<AtomBlockId> atoms;
@@ -53,39 +60,28 @@ struct t_user_relative_macro {
     std::string name;
 
     /// @brief The macro's groups. groups[0] is the reference group.
-    std::vector<t_user_relative_group> groups;
+    std::vector<UserRelativeGroupId> groups;
 };
 
 /**
- * @brief Identifies a group in a relative placement macro.
- *
- * The default, invalid value means "no group".
- */
-struct t_relative_group {
-    UserRelativeMacroId macro_id; ///< Macro containing the group.
-
-    int group_idx = -1; ///< Index in t_user_relative_macro::groups; 0 is the reference group, -1 means no group.
-
-    inline bool is_valid() const { return macro_id.is_valid(); }
-
-    bool operator==(const t_relative_group& other) const = default;
-};
-
-/**
- * @brief Stores all user-defined relative placement macros.
+ * @brief Stores all user-defined relative placement macros and their groups.
  *
  * An atom may belong to at most one group across all macros.
  */
 class UserRelativeMacros {
   public:
     typedef vtr::vector<UserRelativeMacroId, t_user_relative_macro>::key_range macro_range;
+    typedef vtr::vector<UserRelativeGroupId, t_user_relative_group>::key_range group_range;
 
     /**
-     * @brief Store a macro and register its atoms in the reverse lookup.
+     * @brief Store a macro with the given groups and register its atoms in
+     *        the reverse lookup. groups[0] must be the reference group.
+     *
+     * The macro_id of the given groups is overwritten with the new macro's id.
      *
      * @return The id of the newly added macro.
      */
-    UserRelativeMacroId add_macro(t_user_relative_macro macro);
+    UserRelativeMacroId add_macro(const std::string& name, std::vector<t_user_relative_group> groups);
 
     /**
      * @brief Return the number of stored macros.
@@ -103,10 +99,25 @@ class UserRelativeMacros {
     const t_user_relative_macro& get_macro(UserRelativeMacroId macro_id) const;
 
     /**
-     * @brief Return the group an atom belongs to, or an invalid group if the
-     *        atom is not part of any relative placement macro.
+     * @brief Return the number of stored groups over all macros.
      */
-    t_relative_group get_atom_group(AtomBlockId blk_id) const;
+    size_t get_num_groups() const;
+
+    /**
+     * @brief Return the ids of all stored groups, for range-based iteration.
+     */
+    group_range groups() const;
+
+    /**
+     * @brief Return the group with the given id.
+     */
+    const t_user_relative_group& get_group(UserRelativeGroupId group_id) const;
+
+    /**
+     * @brief Return the id of the group an atom belongs to, or an invalid id
+     *        if the atom is not part of any relative placement macro.
+     */
+    UserRelativeGroupId get_atom_group(AtomBlockId blk_id) const;
 
     /**
      * @brief Return the hierarchical path of the primitive site the given atom
@@ -119,12 +130,10 @@ class UserRelativeMacros {
     const std::string& get_atom_locked_site_path(AtomBlockId blk_id) const;
 
   private:
-    /// @brief Where an atom sits inside the stored macros.
+    /// @brief Where an atom sits inside the stored groups.
     struct t_atom_location {
-        /// @brief The macro the atom belongs to.
-        UserRelativeMacroId macro_id;
-        /// @brief Index into t_user_relative_macro::groups.
-        size_t group_idx;
+        /// @brief The group the atom belongs to.
+        UserRelativeGroupId group_id;
         /// @brief Index into t_user_relative_group::atoms.
         size_t atom_idx;
     };
@@ -132,7 +141,10 @@ class UserRelativeMacros {
     /// @brief All user-defined relative placement macros.
     vtr::vector<UserRelativeMacroId, t_user_relative_macro> macros_;
 
-    /// @brief Reverse lookup: atom -> where it sits in macros_. Only atoms that
+    /// @brief The groups of all macros.
+    vtr::vector<UserRelativeGroupId, t_user_relative_group> groups_;
+
+    /// @brief Reverse lookup: atom -> where it sits in groups_. Only atoms that
     ///        belong to a group have an entry.
     std::unordered_map<AtomBlockId, t_atom_location> atom_locations_;
 };

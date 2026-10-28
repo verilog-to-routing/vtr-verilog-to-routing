@@ -25,11 +25,11 @@ class ClusterLegalizer;
  * @brief Relative placement state stored in LegalizationCluster.
  */
 struct t_cluster_relative_state {
-    t_relative_group group; ///< Group whose constrained atoms are in this cluster.
+    UserRelativeGroupId group; ///< Group whose constrained atoms are in this cluster.
 
     bool has_long_chain_mols = false; ///< Contains part of a chain that spans multiple clusters.
 
-    t_relative_group long_chain_owner; ///< Owner of the long chain; invalid if unconstrained or absent.
+    UserRelativeGroupId long_chain_owner; ///< Owner of the long chain; invalid if unconstrained or absent.
 };
 
 /**
@@ -52,10 +52,10 @@ struct t_cluster_relative_state {
  *  @return Whether the addition respects long chain ownership.
  */
 bool long_chain_ownership_allows(bool molecule_is_long_chain,
-                                 const t_relative_group& molecule_chain_owner,
-                                 const t_relative_group& cluster_group,
+                                 UserRelativeGroupId molecule_chain_owner,
+                                 UserRelativeGroupId cluster_group,
                                  bool cluster_has_long_chain,
-                                 const t_relative_group& cluster_long_chain_owner);
+                                 UserRelativeGroupId cluster_long_chain_owner);
 
 /**
  * @brief Result of checking whether a molecule can join a cluster.
@@ -66,7 +66,7 @@ bool long_chain_ownership_allows(bool molecule_is_long_chain,
 struct t_relative_macro_verdict {
     bool allowed = true; ///< Whether relative placement rules allow the addition.
 
-    t_relative_group cluster_group; ///< Cluster's group after adding the molecule.
+    UserRelativeGroupId cluster_group; ///< Cluster's group after adding the molecule.
 
     bool molecule_in_cluster_group = false; ///< Group member; bypass pin utilization target to keep the group together.
 };
@@ -101,7 +101,7 @@ class RelativeMacroPacker {
      * Prepacking and construction-time validation ensure its constrained atoms
      * share one group.
      */
-    t_relative_group molecule_group(PackMoleculeId molecule_id) const;
+    UserRelativeGroupId molecule_group(PackMoleculeId molecule_id) const;
 
     /**
      * @brief Decide whether a molecule may be added to a cluster.
@@ -141,13 +141,13 @@ class RelativeMacroPacker {
     /**
      * @brief Return the chain's owning group, or an invalid group if unconstrained.
      */
-    t_relative_group chain_owner_(MoleculeChainId chain_id) const;
+    UserRelativeGroupId chain_owner_(MoleculeChainId chain_id) const;
 
     /**
      * @brief Check long chain ownership and log any conflict.
      */
     bool check_long_chain_ownership_(PackMoleculeId molecule_id,
-                                     const t_relative_group& group,
+                                     UserRelativeGroupId group,
                                      const t_cluster_relative_state& cluster_state,
                                      int log_verbosity) const;
 
@@ -159,7 +159,7 @@ class RelativeMacroPacker {
 
     bool active_; ///< Cached flag indicating whether relative macros are present.
 
-    std::map<MoleculeChainId, t_relative_group> chain_owners_; ///< Owning group of each chain with constrained atoms.
+    std::map<MoleculeChainId, UserRelativeGroupId> chain_owners_; ///< Owning group of each chain with constrained atoms.
 };
 
 /**

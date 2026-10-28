@@ -449,51 +449,48 @@ static unsigned check_clustering_relative_group_consistency(const AtomNetlist& a
     unsigned num_errors = 0;
 
     // Track the group assigned to each cluster.
-    std::unordered_map<ClusterBlockId, t_relative_group> cluster_rel_group;
+    std::unordered_map<ClusterBlockId, UserRelativeGroupId> cluster_rel_group;
 
-    for (UserRelativeMacroId macro_id : relative_macros.macros()) {
-        const t_user_relative_macro& macro = relative_macros.get_macro(macro_id);
+    for (UserRelativeGroupId group_id : relative_macros.groups()) {
+        const t_user_relative_group& group = relative_macros.get_group(group_id);
+        const t_user_relative_macro& macro = relative_macros.get_macro(group.macro_id);
+        ClusterBlockId group_clb_id;
+        bool group_split_reported = false;
 
-        for (size_t igroup = 0; igroup < macro.groups.size(); igroup++) {
-            ClusterBlockId group_clb_id;
-            bool group_split_reported = false;
+        for (AtomBlockId atom_blk_id : group.atoms) {
+            ClusterBlockId clb_blk_id = atom_lookup.atom_clb(atom_blk_id);
+            if (!clb_blk_id.is_valid()) {
+                VTR_LOG_ERROR(
+                    "Atom block '%s' of relative macro '%s' group %zu is "
+                    "not clustered.\n",
+                    atom_nlist.block_name(atom_blk_id).c_str(),
+                    macro.name.c_str(), size_t(group_id));
+                num_errors++;
+                continue;
+            }
 
-            for (AtomBlockId atom_blk_id : macro.groups[igroup].atoms) {
-                ClusterBlockId clb_blk_id = atom_lookup.atom_clb(atom_blk_id);
-                if (!clb_blk_id.is_valid()) {
-                    VTR_LOG_ERROR(
-                        "Atom block '%s' of relative macro '%s' group %zu is "
-                        "not clustered.\n",
-                        atom_nlist.block_name(atom_blk_id).c_str(),
-                        macro.name.c_str(), igroup);
-                    num_errors++;
-                    continue;
-                }
+            // Report a split group only once.
+            if (!group_clb_id.is_valid()) {
+                group_clb_id = clb_blk_id;
+            } else if (clb_blk_id != group_clb_id && !group_split_reported) {
+                VTR_LOG_ERROR(
+                    "The atoms of relative macro '%s' group %zu are split "
+                    "across multiple clusters.\n",
+                    macro.name.c_str(), size_t(group_id));
+                num_errors++;
+                group_split_reported = true;
+            }
 
-                // Report a split group only once.
-                if (!group_clb_id.is_valid()) {
-                    group_clb_id = clb_blk_id;
-                } else if (clb_blk_id != group_clb_id && !group_split_reported) {
-                    VTR_LOG_ERROR(
-                        "The atoms of relative macro '%s' group %zu are split "
-                        "across multiple clusters.\n",
-                        macro.name.c_str(), igroup);
-                    num_errors++;
-                    group_split_reported = true;
-                }
-
-                // A cluster may host atoms of at most one group.
-                t_relative_group group = {macro_id, (int)igroup};
-                auto [seen_itr, first_time] = cluster_rel_group.insert({clb_blk_id, group});
-                if (!first_time && seen_itr->second != group) {
-                    const t_user_relative_macro& other_macro = relative_macros.get_macro(seen_itr->second.macro_id);
-                    VTR_LOG_ERROR(
-                        "Cluster block %zu contains atoms of relative macro '%s' "
-                        "group %zu and of relative macro '%s' group %d.\n",
-                        size_t(clb_blk_id), macro.name.c_str(), igroup,
-                        other_macro.name.c_str(), seen_itr->second.group_idx);
-                    num_errors++;
-                }
+            // A cluster may host atoms of at most one group.
+            auto [seen_itr, first_time] = cluster_rel_group.insert({clb_blk_id, group_id});
+            if (!first_time && seen_itr->second != group_id) {
+                const t_user_relative_macro& other_macro = relative_macros.get_macro(relative_macros.get_group(seen_itr->second).macro_id);
+                VTR_LOG_ERROR(
+                    "Cluster block %zu contains atoms of relative macro '%s' "
+                    "group %zu and of relative macro '%s' group %zu.\n",
+                    size_t(clb_blk_id), macro.name.c_str(), size_t(group_id),
+                    other_macro.name.c_str(), size_t(seen_itr->second));
+                num_errors++;
             }
         }
     }
