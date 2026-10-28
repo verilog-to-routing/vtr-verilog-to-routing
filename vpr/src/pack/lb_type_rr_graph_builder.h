@@ -51,7 +51,7 @@ class LbTypeRRGraphBuilder {
     void add_edges_to_top_level_input_pins_(const t_pb_graph_node* pb_graph_head, float cost);
 
     /// @brief Builds the node of a pb graph pin with one edge per output edge of the pin, grouped by mode.
-    void build_pb_pin_node_(const t_pb_graph_pin* pb_pin, e_lb_rr_type type, int num_modes);
+    void build_pb_pin_node_(const t_pb_graph_pin& pb_pin, e_lb_rr_type type, int num_modes);
 
     /// @brief Builds the nodes of the input or clock pins of a primitive and their sinks.
     void build_primitive_sink_pins_(const std::vector<std::span<t_pb_graph_pin>>& port_pins);

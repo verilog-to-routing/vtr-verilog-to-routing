@@ -180,15 +180,15 @@ void LbTypeRRGraphBuilder::add_edges_to_top_level_input_pins_(const t_pb_graph_n
     }
 }
 
-void LbTypeRRGraphBuilder::build_pb_pin_node_(const t_pb_graph_pin* pb_pin, e_lb_rr_type type, int num_modes) {
-    LbRRNodeId pin_index = LbRRNodeId(pb_pin->pin_count_in_cluster);
-    begin_node_(pin_index, type, 1, num_modes, pb_pin);
+void LbTypeRRGraphBuilder::build_pb_pin_node_(const t_pb_graph_pin& pb_pin, e_lb_rr_type type, int num_modes) {
+    LbRRNodeId pin_index = LbRRNodeId(pb_pin.pin_count_in_cluster);
+    begin_node_(pin_index, type, 1, num_modes, &pb_pin);
 
     // Each mode holds the edges whose interconnect belongs to that mode, in pb graph order.
     for (int imode = 0; imode < num_modes; imode++) {
         begin_mode_();
-        for (int iedge = 0; iedge < pb_pin->num_output_edges; iedge++) {
-            const t_pb_graph_edge* edge = pb_pin->output_edges[iedge];
+        for (int iedge = 0; iedge < pb_pin.num_output_edges; iedge++) {
+            const t_pb_graph_edge* edge = pb_pin.output_edges[iedge];
             VTR_ASSERT(edge->num_output_pins == 1);
             int edge_mode = edge->interconnect->parent_mode->index;
             VTR_ASSERT(edge_mode >= 0 && edge_mode < num_modes);
@@ -232,9 +232,9 @@ void LbTypeRRGraphBuilder::build_nodes_and_edges_in_subtree_(const t_pb_graph_no
         // sources whose edges depend on the mode of the parent.
         build_primitive_sink_pins_(pb_graph_node->input_pins);
 
-        for (int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
-            for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
-                build_pb_pin_node_(&pb_graph_node->output_pins[iport][ipin], e_lb_rr_type::SOURCE, parent_node->pb_type->num_modes);
+        for (std::span<t_pb_graph_pin> port : pb_graph_node->output_pins) {
+            for (const t_pb_graph_pin& pin : port) {
+                build_pb_pin_node_(pin, e_lb_rr_type::SOURCE, parent_node->pb_type->num_modes);
             }
         }
 
@@ -252,9 +252,9 @@ void LbTypeRRGraphBuilder::build_nodes_and_edges_in_subtree_(const t_pb_graph_no
     }
 
     // Input pins fan out according to the mode of this node.
-    for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
-        for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
-            build_pb_pin_node_(&pb_graph_node->input_pins[iport][ipin], e_lb_rr_type::INTERMEDIATE, pb_type->num_modes);
+    for (std::span<t_pb_graph_pin> port : pb_graph_node->input_pins) {
+        for (const t_pb_graph_pin& pin : port) {
+            build_pb_pin_node_(pin, e_lb_rr_type::INTERMEDIATE, pb_type->num_modes);
         }
     }
 
@@ -272,17 +272,17 @@ void LbTypeRRGraphBuilder::build_nodes_and_edges_in_subtree_(const t_pb_graph_no
         }
     } else {
         // Output pins of a sub cluster fan out according to the mode of the parent.
-        for (int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
-            for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
-                build_pb_pin_node_(&pb_graph_node->output_pins[iport][ipin], e_lb_rr_type::INTERMEDIATE, parent_node->pb_type->num_modes);
+        for (std::span<t_pb_graph_pin> port : pb_graph_node->output_pins) {
+            for (const t_pb_graph_pin& pin : port) {
+                build_pb_pin_node_(pin, e_lb_rr_type::INTERMEDIATE, parent_node->pb_type->num_modes);
             }
         }
     }
 
     // Clock pins fan out according to the mode of this node.
-    for (int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
-        for (int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
-            build_pb_pin_node_(&pb_graph_node->clock_pins[iport][ipin], e_lb_rr_type::INTERMEDIATE, pb_type->num_modes);
+    for (std::span<t_pb_graph_pin> port : pb_graph_node->clock_pins) {
+        for (const t_pb_graph_pin& pin : port) {
+            build_pb_pin_node_(pin, e_lb_rr_type::INTERMEDIATE, pb_type->num_modes);
         }
     }
 }
