@@ -27,29 +27,29 @@ class ClusterLegalizer;
 struct t_cluster_relative_state {
     UserRelativeGroupId group; ///< Group whose constrained atoms are in this cluster.
 
-    bool has_long_chain_mols = false; ///< Contains part of a chain that spans multiple clusters.
-
     UserRelativeGroupId long_chain_owner; ///< Owner of the long chain; invalid if unconstrained or absent.
 };
 
 /**
- * @brief Check whether adding a molecule respects long chain ownership.
+ * @brief Check if adding a molecule creates conflicting placement constraints.
  *
- * PlaceMacros joins a long chain's clusters into one placement macro. To preserve
- * user offsets, each cluster may contain constrained atoms only from the chain's
- * owning group. Long chains sharing a cluster must have the same owner.
+ * A long chain (e.g., a carry chain) can span multiple clusters. The placer
+ * treats these clusters as one placement macro with fixed offsets.
  *
- * Single-cluster chains have no ownership restriction. Unconstrained long chains
- * share an invalid owner and are compatible under this rule. The packer separately
- * limits each cluster to one long chain.
+ * If an RPM group shares a cluster with a long chain, their placement macros
+ * are merged. To avoid conflicting offsets, the long chain can only contain
+ * constrained atoms from one RPM group (its owner).
  *
- *  @param molecule_is_long_chain     Whether the molecule belongs to a long chain.
- *  @param molecule_chain_owner       The group owning that chain, if any.
- *  @param cluster_group              The group the cluster hosts after the addition.
- *  @param cluster_has_long_chain     Whether the cluster already holds long chain molecules.
- *  @param cluster_long_chain_owner   The group owning the cluster's long chain, if any.
+ * This check prevents mixing different RPM groups through a long chain.
+ * Chains that fit in one cluster and unconstrained chains are unaffected.
  *
- *  @return Whether the addition respects long chain ownership.
+ * @param molecule_is_long_chain    Whether the molecule belongs to a long chain.
+ * @param molecule_chain_owner      RPM group owning the molecule's chain, if any.
+ * @param cluster_group             RPM group in the cluster after adding the molecule.
+ * @param cluster_has_long_chain    Whether the cluster already contains a long chain.
+ * @param cluster_long_chain_owner  RPM group owning the cluster's long chain, if any.
+ *
+ * @return True if adding the molecule does not create conflicting constraints.
  */
 bool long_chain_ownership_allows(bool molecule_is_long_chain,
                                  UserRelativeGroupId molecule_chain_owner,
@@ -100,12 +100,14 @@ class RelativeMacroPacker {
      * Checks that the cluster contains at most one group and respects long chain
      * ownership.
      *
-     *  @param molecule_id    The molecule to add.
-     *  @param cluster_state  The cluster's current relative macro state.
-     *  @param log_verbosity  Packer log verbosity; > 3 logs group changes and conflicts.
+     *  @param molecule_id             The molecule to add.
+     *  @param cluster_state           The cluster's current relative macro state.
+     *  @param cluster_has_long_chain  Whether the cluster already holds part of a long chain.
+     *  @param log_verbosity           Packer log verbosity; > 3 logs group changes and conflicts.
      */
     t_relative_macro_verdict evaluate_molecule(PackMoleculeId molecule_id,
                                                const t_cluster_relative_state& cluster_state,
+                                               bool cluster_has_long_chain,
                                                int log_verbosity) const;
 
     /**
@@ -140,6 +142,7 @@ class RelativeMacroPacker {
     bool check_long_chain_ownership_(PackMoleculeId molecule_id,
                                      UserRelativeGroupId group,
                                      const t_cluster_relative_state& cluster_state,
+                                     bool cluster_has_long_chain,
                                      int log_verbosity) const;
 
     const UserRelativeMacros& relative_macros_; ///< User-defined relative placement macros.

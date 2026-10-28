@@ -919,7 +919,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     // Allow full pin utilization for group members to help keep the group together.
     t_ext_pin_util effective_external_pin_util = max_external_pin_util;
     if (relative_macro_packer_) {
-        rel_verdict = relative_macro_packer_->evaluate_molecule(molecule_id, cluster.rel_macro_state, log_verbosity_);
+        rel_verdict = relative_macro_packer_->evaluate_molecule(molecule_id, cluster.rel_macro_state, cluster.placement_stats->has_long_chain, log_verbosity_);
         if (!rel_verdict.allowed) {
             VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: relative placement macro conflict\n");
             return e_block_pack_status::BLK_FAILED_RELATIVE_GROUP;
@@ -1653,7 +1653,7 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
 
     // Reject relative macro conflicts before attempting to pack the molecule.
     if (relative_macro_packer_
-        && !relative_macro_packer_->evaluate_molecule(molecule_id, cluster.rel_macro_state, /*log_verbosity=*/0).allowed) {
+        && !relative_macro_packer_->evaluate_molecule(molecule_id, cluster.rel_macro_state, cluster.placement_stats->has_long_chain, /*log_verbosity=*/0).allowed) {
         return false;
     }
     for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {

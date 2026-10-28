@@ -142,6 +142,7 @@ bool long_chain_ownership_allows(bool molecule_is_long_chain,
 bool RelativeMacroPacker::check_long_chain_ownership_(PackMoleculeId molecule_id,
                                                       UserRelativeGroupId group,
                                                       const t_cluster_relative_state& cluster_state,
+                                                      bool cluster_has_long_chain,
                                                       int log_verbosity) const {
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
     const bool molecule_is_long_chain = molecule.chain_id.is_valid()
@@ -152,7 +153,7 @@ bool RelativeMacroPacker::check_long_chain_ownership_(PackMoleculeId molecule_id
     if (long_chain_ownership_allows(molecule_is_long_chain,
                                     molecule_chain_owner,
                                     group,
-                                    cluster_state.has_long_chain_mols,
+                                    cluster_has_long_chain,
                                     cluster_state.long_chain_owner)) {
         return true;
     }
@@ -166,6 +167,7 @@ bool RelativeMacroPacker::check_long_chain_ownership_(PackMoleculeId molecule_id
 
 t_relative_macro_verdict RelativeMacroPacker::evaluate_molecule(PackMoleculeId molecule_id,
                                                                 const t_cluster_relative_state& cluster_state,
+                                                                bool cluster_has_long_chain,
                                                                 int log_verbosity) const {
     t_relative_macro_verdict verdict;
     verdict.cluster_group = cluster_state.group;
@@ -189,7 +191,7 @@ t_relative_macro_verdict RelativeMacroPacker::evaluate_molecule(PackMoleculeId m
         verdict.molecule_in_cluster_group = true;
     }
 
-    if (!check_long_chain_ownership_(molecule_id, verdict.cluster_group, cluster_state, log_verbosity)) {
+    if (!check_long_chain_ownership_(molecule_id, verdict.cluster_group, cluster_state, cluster_has_long_chain, log_verbosity)) {
         verdict.allowed = false;
         return verdict;
     }
@@ -207,7 +209,6 @@ void RelativeMacroPacker::commit_molecule(PackMoleculeId molecule_id,
     // Record long chain ownership for checking later additions.
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
     if (molecule.chain_id.is_valid() && prepacker_.get_molecule_chain_info(molecule.chain_id).is_long_chain) {
-        cluster_state.has_long_chain_mols = true;
         cluster_state.long_chain_owner = chain_owner_(molecule.chain_id);
     }
 }
