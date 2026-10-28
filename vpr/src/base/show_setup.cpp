@@ -752,6 +752,7 @@ static void show_analysis_opts(const t_analysis_opts& analysis_opts) {
     VTR_LOG("analysis_opts.gen_post_implementation_sdc: %s\n", analysis_opts.gen_post_implementation_sdc ? "true" : "false");
     VTR_LOG("analysis_opts.timing_report_npaths: %d\n", analysis_opts.timing_report_npaths);
     VTR_LOG("analysis_opts.timing_report_skew: %s\n", analysis_opts.timing_report_skew ? "true" : "false");
+    VTR_LOG("analysis_opts.timing_report_path_categories: %s\n", analysis_opts.timing_report_path_categories.to_string().c_str());
     VTR_LOG("analysis_opts.echo_dot_timing_graph_node: %s\n", analysis_opts.echo_dot_timing_graph_node.c_str());
 
     VTR_LOG("analysis_opts.timing_report_detail: ");

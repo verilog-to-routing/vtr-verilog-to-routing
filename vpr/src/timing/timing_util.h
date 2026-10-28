@@ -11,6 +11,7 @@
 #include "tatum/analyzers/SetupTimingAnalyzer.hpp"
 #include "tatum/report/TimingPath.hpp"
 #include "tatum/report/SkewPath.hpp"
+#include "tatum/report/TimingPathCategory.hpp"
 #include "timing_info_fwd.h"
 #include "domain_pair.h"
 
@@ -38,7 +39,10 @@ float find_setup_worst_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
 
 //Returns the worst setup skew path for each clock domain pair (launch domain == capture domain
 //included), sorted worst-first. The first entry is therefore also the overall worst setup skew.
-std::vector<tatum::SkewPath> find_setup_worst_skew_per_domain_pair(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer);
+//Only paths in the categories accepted by category_filter (by default all paths) are considered.
+std::vector<tatum::SkewPath> find_setup_worst_skew_per_domain_pair(const tatum::TimingConstraints& constraints,
+                                                                   const tatum::SetupTimingAnalyzer& setup_analyzer,
+                                                                   const tatum::TimingPathCategoryFilter& category_filter = tatum::TimingPathCategoryFilter::all());
 
 //Returns the slack at a particular node for the specified clock domains (if found), otherwise NAN
 float find_node_setup_slack(const tatum::SetupTimingAnalyzer& setup_analyzer, tatum::NodeId node, tatum::DomainId launch_domain, tatum::DomainId capture_domain);
@@ -73,7 +77,10 @@ float find_hold_worst_slack(const tatum::HoldTimingAnalyzer& hold_analyzer, cons
 
 //Returns the worst hold skew path for each clock domain pair (launch domain == capture domain
 //included), sorted worst-first. The first entry is therefore also the overall worst hold skew.
-std::vector<tatum::SkewPath> find_hold_worst_skew_per_domain_pair(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer);
+//Only paths in the categories accepted by category_filter (by default all paths) are considered.
+std::vector<tatum::SkewPath> find_hold_worst_skew_per_domain_pair(const tatum::TimingConstraints& constraints,
+                                                                  const tatum::HoldTimingAnalyzer& hold_analyzer,
+                                                                  const tatum::TimingPathCategoryFilter& category_filter = tatum::TimingPathCategoryFilter::all());
 
 //Returns a setup slack histogram
 std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTimingAnalyzer& hold_analyzer, size_t num_bins = 10);

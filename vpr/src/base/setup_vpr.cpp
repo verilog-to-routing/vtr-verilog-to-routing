@@ -85,6 +85,14 @@ static void setup_switches(const t_arch& arch,
                            const std::vector<t_arch_switch_inf>& arch_switches);
 
 static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analysis_opts);
+
+/**
+ * @brief Converts the values given to --timing_report_path_categories into a timing path category filter.
+ *
+ *   @param category_names  Either "all", or the names of the categories to report (e.g. "reg2reg").
+ */
+static tatum::TimingPathCategoryFilter setup_timing_report_path_categories(const std::vector<std::string>& category_names);
+
 static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts, DeviceContext& device_ctx);
 static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 
@@ -798,6 +806,7 @@ static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analy
     analysis_opts.timing_report_npaths = Options.timing_report_npaths;
     analysis_opts.timing_report_detail = Options.timing_report_detail;
     analysis_opts.timing_report_skew = Options.timing_report_skew;
+    analysis_opts.timing_report_path_categories = setup_timing_report_path_categories(Options.timing_report_path_categories.value());
     analysis_opts.echo_dot_timing_graph_node = Options.echo_dot_timing_graph_node;
 
     analysis_opts.post_synth_netlist_unconn_input_handling = Options.post_synth_netlist_unconn_input_handling;
@@ -808,6 +817,43 @@ static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analy
     analysis_opts.write_timing_summary = Options.write_timing_summary;
     analysis_opts.skip_sync_clustering_and_routing_results = Options.skip_sync_clustering_and_routing_results;
     analysis_opts.generate_net_timing_report = Options.generate_net_timing_report;
+}
+
+static tatum::TimingPathCategoryFilter setup_timing_report_path_categories(const std::vector<std::string>& category_names) {
+    VTR_ASSERT(!category_names.empty());
+    if (category_names.size() == 1 && category_names[0] == "all") {
+        return tatum::TimingPathCategoryFilter::all();
+    }
+
+    tatum::TimingPathCategoryFilter category_filter = tatum::TimingPathCategoryFilter::none();
+    for (const std::string& category_name : category_names) {
+        if (category_name == "all") {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "--timing_report_path_categories 'all' cannot be combined with other values.\n");
+        }
+
+        // Find the category with this name
+        tatum::TimingPathCategory category = tatum::TimingPathCategory::NUM_CATEGORIES;
+        for (size_t icategory = 0; icategory < size_t(tatum::TimingPathCategory::NUM_CATEGORIES); icategory++) {
+            if (category_name == tatum::to_string(tatum::TimingPathCategory(icategory))) {
+                category = tatum::TimingPathCategory(icategory);
+            }
+        }
+        if (category == tatum::TimingPathCategory::NUM_CATEGORIES) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Unknown timing path category '%s' given to --timing_report_path_categories (expected 'all' or one or more of: %s).\n",
+                            category_name.c_str(), tatum::TimingPathCategoryFilter::all().to_string().c_str());
+        }
+
+        if (category_filter.contains(category)) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "--timing_report_path_categories '%s' was given more than once.\n",
+                            category_name.c_str());
+        }
+        category_filter.add(category);
+    }
+
+    return category_filter;
 }
 
 static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts, DeviceContext& device_ctx) {

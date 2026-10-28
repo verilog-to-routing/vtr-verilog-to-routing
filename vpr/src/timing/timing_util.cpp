@@ -91,13 +91,15 @@ float find_setup_worst_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
     return wns;
 }
 
-std::vector<tatum::SkewPath> find_setup_worst_skew_per_domain_pair(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
+std::vector<tatum::SkewPath> find_setup_worst_skew_per_domain_pair(const tatum::TimingConstraints& constraints,
+                                                                   const tatum::SetupTimingAnalyzer& setup_analyzer,
+                                                                   const tatum::TimingPathCategoryFilter& category_filter) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
     //Collect every setup skew path, sorted worst-first (most negative skew first), so the
     //first occurrence of each clock domain pair below is that pair's worst skew.
     auto skew_paths = tatum::TimingPathCollector().collect_worst_setup_skew_paths(*timing_ctx.graph, constraints, setup_analyzer,
-                                                                                  std::numeric_limits<size_t>::max());
+                                                                                  std::numeric_limits<size_t>::max(), category_filter);
 
     std::vector<tatum::SkewPath> worst_skew_per_domain_pair;
     std::set<std::pair<tatum::DomainId, tatum::DomainId>> seen_domain_pairs;
@@ -340,6 +342,13 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
     double setup_worst_skew = setup_worst_skew_paths.empty() ? std::numeric_limits<double>::quiet_NaN()
                                                              : sec_to_nanosec(setup_worst_skew_paths.front().clock_skew.value());
 
+    // The skew of in2reg/reg2out paths includes the full clock insertion delay of their register,
+    // so the worst reg2reg skew is reported separately as the skew between registers.
+    const tatum::TimingPathCategoryFilter reg2reg_only({tatum::TimingPathCategory::REG2REG});
+    std::vector<tatum::SkewPath> setup_worst_reg2reg_skew_paths = find_setup_worst_skew_per_domain_pair(constraints, setup_analyzer, reg2reg_only);
+    double setup_worst_reg2reg_skew = setup_worst_reg2reg_skew_paths.empty() ? std::numeric_limits<double>::quiet_NaN()
+                                                                             : sec_to_nanosec(setup_worst_reg2reg_skew_paths.front().clock_skew.value());
+
     //Skew between the critical path's own launch/capture clock domains, so users can tell how much
     //of the critical path's margin is attributable to clock skew rather than data-path delay.
     double critical_path_skew = find_skew_for_domain_pair(setup_worst_skew_paths, least_slack_cpd.launch_domain(), least_slack_cpd.capture_domain());
@@ -362,6 +371,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
     VTR_LOG("%ssetup Worst Negative Slack (sWNS): %g ns\n", prefix.data(), setup_worst_neg_slack);
     VTR_LOG("%ssetup Total Negative Slack (sTNS): %g ns\n", prefix.data(), setup_total_neg_slack);
     VTR_LOG("%ssetup Worst Skew (sWS): %g ns\n", prefix.data(), setup_worst_skew);
+    VTR_LOG("%ssetup Worst reg2reg Skew: %g ns\n", prefix.data(), setup_worst_reg2reg_skew);
     VTR_LOG("\n");
 
     VTR_LOG("%ssetup slack histogram:\n", prefix.data());
@@ -628,13 +638,15 @@ float find_hold_worst_slack(const tatum::HoldTimingAnalyzer& hold_analyzer, cons
     return worst_slack;
 }
 
-std::vector<tatum::SkewPath> find_hold_worst_skew_per_domain_pair(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer) {
+std::vector<tatum::SkewPath> find_hold_worst_skew_per_domain_pair(const tatum::TimingConstraints& constraints,
+                                                                  const tatum::HoldTimingAnalyzer& hold_analyzer,
+                                                                  const tatum::TimingPathCategoryFilter& category_filter) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
     //Collect every hold skew path, sorted worst-first (most positive skew first), so the
     //first occurrence of each clock domain pair below is that pair's worst skew.
     auto skew_paths = tatum::TimingPathCollector().collect_worst_hold_skew_paths(*timing_ctx.graph, constraints, hold_analyzer,
-                                                                                 std::numeric_limits<size_t>::max());
+                                                                                 std::numeric_limits<size_t>::max(), category_filter);
 
     std::vector<tatum::SkewPath> worst_skew_per_domain_pair;
     std::set<std::pair<tatum::DomainId, tatum::DomainId>> seen_domain_pairs;
@@ -715,9 +727,16 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints,
     double hold_worst_skew = hold_worst_skew_paths.empty() ? std::numeric_limits<double>::quiet_NaN()
                                                            : sec_to_nanosec(hold_worst_skew_paths.front().clock_skew.value());
 
+    // See print_setup_timing_summary() for why the worst reg2reg skew is reported separately.
+    const tatum::TimingPathCategoryFilter reg2reg_only({tatum::TimingPathCategory::REG2REG});
+    std::vector<tatum::SkewPath> hold_worst_reg2reg_skew_paths = find_hold_worst_skew_per_domain_pair(constraints, hold_analyzer, reg2reg_only);
+    double hold_worst_reg2reg_skew = hold_worst_reg2reg_skew_paths.empty() ? std::numeric_limits<double>::quiet_NaN()
+                                                                           : sec_to_nanosec(hold_worst_reg2reg_skew_paths.front().clock_skew.value());
+
     VTR_LOG("%shold Worst Negative Slack (hWNS): %g ns\n", prefix.data(), hold_worst_neg_slack);
     VTR_LOG("%shold Total Negative Slack (hTNS): %g ns\n", prefix.data(), hold_total_neg_slack);
     VTR_LOG("%shold Worst Skew (hWS): %g ns\n", prefix.data(), hold_worst_skew);
+    VTR_LOG("%shold Worst reg2reg Skew: %g ns\n", prefix.data(), hold_worst_reg2reg_skew);
 
     /*For testing*/
     //VTR_LOG("Hold Total Negative Slack within clbs: %g ns\n", sec_to_nanosec(find_total_negative_slack_within_clb_blocks(hold_analyzer)));

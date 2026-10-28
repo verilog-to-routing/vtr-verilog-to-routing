@@ -8,3 +8,5 @@ num_routed_nets;vpr.out;Number of routed nets \(nonglobal\): (.*)
 critical_path_skew;vpr.out;Final critical path skew: (.*) ns
 worst_setup_skew;vpr.out;Final setup Worst Skew \(sWS\): (.*) ns
 worst_hold_skew;vpr.out;Final hold Worst Skew \(hWS\): (.*) ns
+worst_setup_reg2reg_skew;vpr.out;Final setup Worst reg2reg Skew: (.*) ns
+worst_hold_reg2reg_skew;vpr.out;Final hold Worst reg2reg Skew: (.*) ns

@@ -41,6 +41,7 @@
 #include "rr_graph_fwd.h"
 #include "rr_graph_cost.h"
 #include "rr_graph_type.h"
+#include "tatum/report/TimingPathCategory.hpp"
 
 /*******************************************************************************
  * Global data types and constants
@@ -1430,6 +1431,8 @@ struct t_analysis_opts {
     int timing_report_npaths;
     e_timing_report_detail timing_report_detail;
     bool timing_report_skew;
+    /// @brief The categories of timing paths (e.g. reg2reg) included in the timing and skew reports.
+    tatum::TimingPathCategoryFilter timing_report_path_categories;
     std::string echo_dot_timing_graph_node;
     std::string write_timing_summary;
     bool generate_net_timing_report;
