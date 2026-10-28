@@ -189,13 +189,12 @@ void LbTypeRRGraphBuilder::build_pb_pin_node_(const t_pb_graph_pin& pb_pin, e_lb
         begin_mode_();
         for (int iedge = 0; iedge < pb_pin.num_output_edges; iedge++) {
             const t_pb_graph_edge* edge = pb_pin.output_edges[iedge];
-            VTR_ASSERT(edge->num_output_pins == 1);
             int edge_mode = edge->interconnect->parent_mode->index;
             VTR_ASSERT(edge_mode >= 0 && edge_mode < num_modes);
             if (edge_mode != imode) {
                 continue;
             }
-            add_edge_(LbRRNodeId(edge->output_pins[0]->pin_count_in_cluster), get_cost_of_pb_edge(edge));
+            add_edge_(LbRRNodeId(edge->output_pin()->pin_count_in_cluster), get_cost_of_pb_edge(edge));
         }
     }
 

@@ -210,11 +210,6 @@ static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_desc
             }
         }
 
-        // Each edge owns its pin pointer arrays
-        for (t_pb_graph_edge& edge : type.pb_graph_edges) {
-            delete[] edge.input_pins;
-            delete[] edge.output_pins;
-        }
         type.pb_graph_edges.clear();
     }
 }

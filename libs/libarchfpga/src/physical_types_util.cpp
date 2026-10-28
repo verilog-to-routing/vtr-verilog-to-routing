@@ -242,32 +242,20 @@ static std::vector<int> get_pb_pin_src_pins(t_physical_tile_type_ptr physical_ty
     std::vector<int> driving_pins;
     const auto& edges = pin->input_edges;
     int num_edges = pin->num_input_edges;
-    int num_pins = 0;
+    driving_pins.reserve(num_edges);
 
     for (int edge_idx = 0; edge_idx < num_edges; edge_idx++) {
-        const t_pb_graph_edge* pb_graph_edge = edges[edge_idx];
-        num_pins += pb_graph_edge->num_input_pins;
-    }
-    driving_pins.reserve(num_pins);
-
-    for (int edge_idx = 0; edge_idx < num_edges; edge_idx++) {
-        const t_pb_graph_edge* pb_graph_edge = edges[edge_idx];
-        t_pb_graph_pin** connected_pins_ptr = pb_graph_edge->input_pins;
-        num_pins = pb_graph_edge->num_input_pins;
-
-        for (int pin_idx = 0; pin_idx < num_pins; pin_idx++) {
-            auto conn_pin = connected_pins_ptr[pin_idx];
-            if (conn_pin->is_root_block_pin()) {
-                driving_pins.push_back(get_physical_pin_at_sub_tile_location(physical_type,
-                                                                             logical_block,
-                                                                             sub_tile->capacity.low + relative_cap,
-                                                                             conn_pin->pin_count_in_cluster));
-            } else {
-                driving_pins.push_back(get_pb_pin_physical_num(sub_tile,
-                                                               logical_block,
-                                                               relative_cap,
-                                                               conn_pin));
-            }
+        const t_pb_graph_pin* conn_pin = edges[edge_idx]->input_pin();
+        if (conn_pin->is_root_block_pin()) {
+            driving_pins.push_back(get_physical_pin_at_sub_tile_location(physical_type,
+                                                                         logical_block,
+                                                                         sub_tile->capacity.low + relative_cap,
+                                                                         conn_pin->pin_count_in_cluster));
+        } else {
+            driving_pins.push_back(get_pb_pin_physical_num(sub_tile,
+                                                           logical_block,
+                                                           relative_cap,
+                                                           conn_pin));
         }
     }
 

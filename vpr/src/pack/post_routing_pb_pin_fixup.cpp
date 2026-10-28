@@ -375,10 +375,10 @@ static const t_pb_graph_pin* find_unused_pb_graph_pin_in_the_same_port(const t_p
 }
 
 /********************************************************************
- * Identify if this pb_graph pin only drives 1 edge and the edge size is 1
+ * Identify if this pb_graph pin only drives 1 edge
  *******************************************************************/
 static bool is_single_fanout_pb_pin(const t_pb_graph_pin* pb_pin) {
-    return (1 == pb_pin->num_output_edges) && (1 == pb_pin->output_edges[0]->num_output_pins);
+    return 1 == pb_pin->num_output_edges;
 }
 
 /********************************************************************
@@ -394,10 +394,8 @@ static t_pb_graph_pin* find_used_sink_pb_pin(t_pb_graph_pin* driver_pb_pin,
         if (mode != driver_pb_pin->output_edges[iedge]->interconnect->parent_mode_index) {
             continue;
         }
-        for (int ipin = 0; ipin < driver_pb_pin->output_edges[iedge]->num_output_pins; ++ipin) {
-            sink_pb_pin = driver_pb_pin->output_edges[iedge]->output_pins[ipin];
-            num_cand_pins++;
-        }
+        sink_pb_pin = driver_pb_pin->output_edges[iedge]->output_pin();
+        num_cand_pins++;
     }
 
     /* If we see multiple pins, we should return null pointer, as we only expect 1 pin to be found! */
@@ -714,13 +712,11 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
         t_pb_graph_pin* sink_pb_pin_to_add = nullptr;
 
         for (int iedge = 0; iedge < pb_graph_pin->num_output_edges; ++iedge) {
-            for (int ipin = 0; ipin < pb_graph_pin->output_edges[iedge]->num_output_pins; ++ipin) {
-                sink_pb_pin_accessibility[pb_graph_pin->output_edges[iedge]->output_pins[ipin]->pin_count_in_cluster] = true;
-            }
+            sink_pb_pin_accessibility[pb_graph_pin->output_edges[iedge]->output_pin()->pin_count_in_cluster] = true;
         }
 
         if (is_single_fanout_pb_pin(const_cast<const t_pb_graph_pin*>(pb_graph_pin))) {
-            sink_pb_pin_to_add = pb_graph_pin->output_edges[0]->output_pins[0];
+            sink_pb_pin_to_add = pb_graph_pin->output_edges[0]->output_pin();
         }
 
         for (const int& sink_pb_route : pb->pb_route.at(pb_route_id).sink_pb_pin_ids) {

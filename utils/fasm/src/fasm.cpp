@@ -126,8 +126,7 @@ void FasmWriterVisitor::check_interconnect(const t_pb_routes &pb_routes, int ino
 
   int prev_edge;
   for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
-      VTR_ASSERT(prev_pin->output_edges[prev_edge]->num_output_pins == 1);
-      if(prev_pin->output_edges[prev_edge]->output_pins[0]->pin_count_in_cluster == inode) {
+      if(prev_pin->output_edges[prev_edge]->output_pin()->pin_count_in_cluster == inode) {
           break;
       }
   }
