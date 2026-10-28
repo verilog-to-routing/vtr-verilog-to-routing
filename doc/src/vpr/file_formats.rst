@@ -924,9 +924,6 @@ A ``switches`` tag contains all the switches and its information within the FPGA
         ``Tdel_min`` must not be larger than ``Tdel_max``.
         A missing value is 0, like the other timing values.
 
-        When writing an RR graph, VPR writes ``Tdel`` for switches whose minimum and maximum delays are equal, and ``Tdel_min`` / ``Tdel_max`` otherwise.
-        RR graphs of architectures that do not use separate minimum and maximum switch delays are therefore unchanged.
-
 .. rrgraph:tag:: <sizing mux_trans_size="int" buf_size="float"/>
 
         The sizing information contains all the information needed for area calculation.
