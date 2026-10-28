@@ -1148,9 +1148,11 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 // not need the check like the what the PR did above.
                 cluster.noc_grp_id = new_cluster_noc_grp_id;
 
-                // Update relative macro state after the molecule is accepted.
+                // Adopt the relative macro state evaluated for this molecule only now
+                // that placement and routing have passed; on failure the cluster
+                // must not claim a group whose atoms it does not contain.
                 if (relative_macro_packer_)
-                    relative_macro_packer_->commit_molecule(molecule_id, rel_verdict, cluster.rel_macro_state);
+                    cluster.rel_macro_state = rel_verdict.cluster_state;
 
                 for (size_t i = 0; i < molecule.atom_block_ids.size(); i++) {
                     AtomBlockId atom_blk_id = molecule.atom_block_ids[i];

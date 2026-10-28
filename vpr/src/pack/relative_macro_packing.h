@@ -66,7 +66,7 @@ bool long_chain_ownership_allows(bool molecule_is_long_chain,
 struct t_relative_macro_verdict {
     bool allowed = true; ///< Whether relative placement rules allow the addition.
 
-    UserRelativeGroupId cluster_group; ///< Cluster's group after adding the molecule.
+    t_cluster_relative_state cluster_state; ///< Cluster's state after adding the molecule; assign it to the cluster on success.
 
     bool molecule_in_cluster_group = false; ///< Group member; bypass pin utilization target to keep the group together.
 };
@@ -110,15 +110,6 @@ class RelativeMacroPacker {
                                                bool cluster_has_long_chain,
                                                int log_verbosity) const;
 
-    /**
-     * @brief Update the cluster's relative macro state after adding a molecule.
-     *
-     * Requires an allowed verdict from evaluate_molecule().
-     */
-    void commit_molecule(PackMoleculeId molecule_id,
-                         const t_relative_macro_verdict& verdict,
-                         t_cluster_relative_state& cluster_state) const;
-
   private:
     /**
      * @brief Reject molecules or chains spanning multiple groups and record chain ownership.
@@ -138,11 +129,13 @@ class RelativeMacroPacker {
 
     /**
      * @brief Check long chain ownership and log any conflict.
+     *
+     * new_state holds the cluster's group after adding the molecule. On success,
+     * if the molecule is part of a long chain, its owner is recorded in new_state.
      */
     bool check_long_chain_ownership_(PackMoleculeId molecule_id,
-                                     UserRelativeGroupId group,
-                                     const t_cluster_relative_state& cluster_state,
                                      bool cluster_has_long_chain,
+                                     t_cluster_relative_state& new_state,
                                      int log_verbosity) const;
 
     const UserRelativeMacros& relative_macros_; ///< User-defined relative placement macros.
