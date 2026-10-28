@@ -627,7 +627,7 @@ static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stat
 static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                                                      const t_pb_graph_pin* cur_pin,
                                                      const bool forward) {
-    int i, j, k;
+    int i, j;
     t_pb_graph_pin *temp_pin, *dest_pin;
     temp_pin = nullptr;
     dest_pin = nullptr;
@@ -635,16 +635,11 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
         for (i = 0; i < cur_pin->num_output_edges; i++) {
             /* one fanout assumption */
             if (cur_pin->output_edges[i]->infer_pattern) {
-                for (k = 0; k < cur_pin->output_edges[i]->num_output_pins;
-                     k++) {
-                    if (cur_pin->output_edges[i]->output_pins[k]->parent_node->pb_type->num_modes
-                        == 0) {
-                        temp_pin = cur_pin->output_edges[i]->output_pins[k];
-                    } else {
-                        temp_pin = expand_pack_molecule_pin_edge(pattern_id,
-                                                                 cur_pin->output_edges[i]->output_pins[k],
-                                                                 forward);
-                    }
+                t_pb_graph_pin* out_pin = cur_pin->output_edges[i]->output_pin();
+                if (out_pin->parent_node->pb_type->num_modes == 0) {
+                    temp_pin = out_pin;
+                } else {
+                    temp_pin = expand_pack_molecule_pin_edge(pattern_id, out_pin, forward);
                 }
                 if (temp_pin != nullptr) {
                     VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin || dest_pin->parent_node == temp_pin->parent_node);
@@ -655,17 +650,11 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                      j++) {
                     if (cur_pin->output_edges[i]->pack_pattern_indices[j]
                         == pattern_id) {
-                        for (k = 0;
-                             k < cur_pin->output_edges[i]->num_output_pins;
-                             k++) {
-                            if (cur_pin->output_edges[i]->output_pins[k]->parent_node->pb_type->num_modes
-                                == 0) {
-                                temp_pin = cur_pin->output_edges[i]->output_pins[k];
-                            } else {
-                                temp_pin = expand_pack_molecule_pin_edge(pattern_id,
-                                                                         cur_pin->output_edges[i]->output_pins[k],
-                                                                         forward);
-                            }
+                        t_pb_graph_pin* out_pin = cur_pin->output_edges[i]->output_pin();
+                        if (out_pin->parent_node->pb_type->num_modes == 0) {
+                            temp_pin = out_pin;
+                        } else {
+                            temp_pin = expand_pack_molecule_pin_edge(pattern_id, out_pin, forward);
                         }
                         if (temp_pin != nullptr) {
                             VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin || dest_pin->parent_node == temp_pin->parent_node);
@@ -679,15 +668,11 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
         for (i = 0; i < cur_pin->num_input_edges; i++) {
             /* one fanout assumption */
             if (cur_pin->input_edges[i]->infer_pattern) {
-                for (k = 0; k < cur_pin->input_edges[i]->num_input_pins; k++) {
-                    if (cur_pin->input_edges[i]->input_pins[k]->parent_node->pb_type->num_modes
-                        == 0) {
-                        temp_pin = cur_pin->input_edges[i]->input_pins[k];
-                    } else {
-                        temp_pin = expand_pack_molecule_pin_edge(pattern_id,
-                                                                 cur_pin->input_edges[i]->input_pins[k],
-                                                                 forward);
-                    }
+                t_pb_graph_pin* in_pin = cur_pin->input_edges[i]->input_pin();
+                if (in_pin->parent_node->pb_type->num_modes == 0) {
+                    temp_pin = in_pin;
+                } else {
+                    temp_pin = expand_pack_molecule_pin_edge(pattern_id, in_pin, forward);
                 }
                 if (temp_pin != nullptr) {
                     VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin || dest_pin->parent_node == temp_pin->parent_node);
@@ -698,16 +683,11 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                      j++) {
                     if (cur_pin->input_edges[i]->pack_pattern_indices[j]
                         == pattern_id) {
-                        for (k = 0; k < cur_pin->input_edges[i]->num_input_pins;
-                             k++) {
-                            if (cur_pin->input_edges[i]->input_pins[k]->parent_node->pb_type->num_modes
-                                == 0) {
-                                temp_pin = cur_pin->input_edges[i]->input_pins[k];
-                            } else {
-                                temp_pin = expand_pack_molecule_pin_edge(pattern_id,
-                                                                         cur_pin->input_edges[i]->input_pins[k],
-                                                                         forward);
-                            }
+                        t_pb_graph_pin* in_pin = cur_pin->input_edges[i]->input_pin();
+                        if (in_pin->parent_node->pb_type->num_modes == 0) {
+                            temp_pin = in_pin;
+                        } else {
+                            temp_pin = expand_pack_molecule_pin_edge(pattern_id, in_pin, forward);
                         }
                         if (temp_pin != nullptr) {
                             VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin || dest_pin->parent_node == temp_pin->parent_node);

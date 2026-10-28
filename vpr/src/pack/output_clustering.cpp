@@ -227,8 +227,7 @@ static std::string clustering_xml_interconnect_text(t_logical_block_type_ptr typ
         const t_pb_graph_pin* prev_pin = pb_graph_pin_lookup_from_index_by_type.pb_gpin(type->index, prev_node);
 
         for (prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
-            VTR_ASSERT(prev_pin->output_edges[prev_edge]->num_output_pins == 1);
-            if (prev_pin->output_edges[prev_edge]->output_pins[0]->pin_count_in_cluster == inode) {
+            if (prev_pin->output_edges[prev_edge]->output_pin()->pin_count_in_cluster == inode) {
                 break;
             }
         }
