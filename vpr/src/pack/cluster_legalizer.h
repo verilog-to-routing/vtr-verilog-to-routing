@@ -662,9 +662,9 @@ class ClusterLegalizer {
     /// @brief The current legalization strategy of the cluster legalizer.
     ClusterLegalizationStrategy cluster_legalization_strategy_;
 
-    /// @brief Enforces the relative placement macro rules. Its checks are
-    ///        skipped when no relative macros are defined.
-    RelativeMacroPacker relative_macro_packer_;
+    /// @brief Enforces the relative placement macro rules. Only created when
+    ///        the design has relative macros.
+    std::optional<RelativeMacroPacker> relative_macro_packer_;
 
     /// @brief Controls whether the pin counting feasibility filter is used
     ///        during clustering. When enabled the clustering engine counts the

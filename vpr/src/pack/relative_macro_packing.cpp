@@ -19,14 +19,12 @@ RelativeMacroPacker::RelativeMacroPacker(const UserRelativeMacros& relative_macr
                                          const AtomNetlist& atom_netlist)
     : relative_macros_(relative_macros)
     , prepacker_(prepacker)
-    , atom_netlist_(atom_netlist)
-    , active_(relative_macros.get_num_macros() != 0) {
-    if (active_)
-        validate_molecule_groups_();
+    , atom_netlist_(atom_netlist) {
+    VTR_ASSERT(relative_macros.get_num_macros() != 0);
+    validate_molecule_groups_();
 }
 
 void RelativeMacroPacker::validate_molecule_groups_() {
-    VTR_ASSERT(active_);
     VTR_ASSERT(chain_owners_.empty());
 
     // Check each molecule against its atoms' groups and any known chain owner.
@@ -98,7 +96,7 @@ void RelativeMacroPacker::validate_molecule_groups_() {
 }
 
 UserRelativeGroupId RelativeMacroPacker::molecule_group(PackMoleculeId molecule_id) const {
-    if (!active_ || !molecule_id.is_valid())
+    if (!molecule_id.is_valid())
         return UserRelativeGroupId::INVALID();
 
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
@@ -170,8 +168,6 @@ bool RelativeMacroPacker::check_long_chain_ownership_(PackMoleculeId molecule_id
 t_relative_macro_verdict RelativeMacroPacker::evaluate_molecule(PackMoleculeId molecule_id,
                                                                 const t_cluster_relative_state& cluster_state,
                                                                 int log_verbosity) const {
-    VTR_ASSERT_SAFE(active_);
-
     t_relative_macro_verdict verdict;
     verdict.cluster_group = cluster_state.group;
 
@@ -205,7 +201,7 @@ t_relative_macro_verdict RelativeMacroPacker::evaluate_molecule(PackMoleculeId m
 void RelativeMacroPacker::commit_molecule(PackMoleculeId molecule_id,
                                           const t_relative_macro_verdict& verdict,
                                           t_cluster_relative_state& cluster_state) const {
-    VTR_ASSERT_SAFE(active_ && verdict.allowed);
+    VTR_ASSERT_SAFE(verdict.allowed);
 
     cluster_state.group = verdict.cluster_group;
 

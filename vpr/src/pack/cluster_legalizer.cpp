@@ -918,8 +918,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     t_relative_macro_verdict rel_verdict;
     // Allow full pin utilization for group members to help keep the group together.
     t_ext_pin_util effective_external_pin_util = max_external_pin_util;
-    if (relative_macro_packer_.is_active()) {
-        rel_verdict = relative_macro_packer_.evaluate_molecule(molecule_id, cluster.rel_macro_state, log_verbosity_);
+    if (relative_macro_packer_) {
+        rel_verdict = relative_macro_packer_->evaluate_molecule(molecule_id, cluster.rel_macro_state, log_verbosity_);
         if (!rel_verdict.allowed) {
             VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: relative placement macro conflict\n");
             return e_block_pack_status::BLK_FAILED_RELATIVE_GROUP;
@@ -1149,8 +1149,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 cluster.noc_grp_id = new_cluster_noc_grp_id;
 
                 // Update relative macro state after the molecule is accepted.
-                if (relative_macro_packer_.is_active())
-                    relative_macro_packer_.commit_molecule(molecule_id, rel_verdict, cluster.rel_macro_state);
+                if (relative_macro_packer_)
+                    relative_macro_packer_->commit_molecule(molecule_id, rel_verdict, cluster.rel_macro_state);
 
                 for (size_t i = 0; i < molecule.atom_block_ids.size(); i++) {
                     AtomBlockId atom_blk_id = molecule.atom_block_ids[i];
@@ -1484,8 +1484,11 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    const LogicalModels& models,
                                    int log_verbosity)
     : lb_type_rr_graphs_(alloc_and_load_all_lb_type_rr_graph())
-    , relative_macro_packer_(relative_macros, prepacker, atom_netlist)
     , prepacker_(prepacker) {
+    // Only check the relative macro rules when the design has relative macros.
+    if (relative_macros.get_num_macros() != 0)
+        relative_macro_packer_.emplace(relative_macros, prepacker, atom_netlist);
+
     // Get the target external pin utilization
     // NOTE: Be careful with this constructor, it may throw a VPR_FATAL_ERROR.
     target_external_pin_util_ = t_ext_pin_util_targets(target_external_pin_util_str);
@@ -1649,8 +1652,8 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
 
     // Reject relative macro conflicts before attempting to pack the molecule.
-    if (relative_macro_packer_.is_active()
-        && !relative_macro_packer_.evaluate_molecule(molecule_id, cluster.rel_macro_state, /*log_verbosity=*/0).allowed) {
+    if (relative_macro_packer_
+        && !relative_macro_packer_->evaluate_molecule(molecule_id, cluster.rel_macro_state, /*log_verbosity=*/0).allowed) {
         return false;
     }
     for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {

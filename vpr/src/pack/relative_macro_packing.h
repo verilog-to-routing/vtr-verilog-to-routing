@@ -8,8 +8,8 @@
  *  - Each cluster may contain atoms from at most one group.
  *
  * RelativeMacroPacker validates chain ownership at construction and checks
- * these rules during cluster legalization. Callers skip the checks when
- * is_active() is false.
+ * these rules during cluster legalization. ClusterLegalizer creates one only
+ * when the design has relative macros.
  */
 
 #include <map>
@@ -73,9 +73,6 @@ struct t_relative_macro_verdict {
 
 /**
  * @brief Enforces the relative placement macro rules during packing.
- *
- * Owned by ClusterLegalizer. Callers must check is_active() before evaluating
- * or committing molecules.
  */
 class RelativeMacroPacker {
   public:
@@ -83,17 +80,11 @@ class RelativeMacroPacker {
      * @brief Initialize packing checks for the given relative macros and netlist.
      *
      * Rejects molecules and chains spanning multiple groups with a fatal error
-     * and records each chain's owning group. Does nothing when no relative
-     * macros are defined.
+     * and records each chain's owning group.
      */
     RelativeMacroPacker(const UserRelativeMacros& relative_macros,
                         const Prepacker& prepacker,
                         const AtomNetlist& atom_netlist);
-
-    /**
-     * @brief Whether the design has user-defined relative placement macros.
-     */
-    inline bool is_active() const { return active_; }
 
     /**
      * @brief Return the molecule's group, or an invalid group if unconstrained.
@@ -107,7 +98,7 @@ class RelativeMacroPacker {
      * @brief Decide whether a molecule may be added to a cluster.
      *
      * Checks that the cluster contains at most one group and respects long chain
-     * ownership. Requires is_active().
+     * ownership.
      *
      *  @param molecule_id    The molecule to add.
      *  @param cluster_state  The cluster's current relative macro state.
@@ -120,7 +111,7 @@ class RelativeMacroPacker {
     /**
      * @brief Update the cluster's relative macro state after adding a molecule.
      *
-     * Requires is_active() and an allowed verdict from evaluate_molecule().
+     * Requires an allowed verdict from evaluate_molecule().
      */
     void commit_molecule(PackMoleculeId molecule_id,
                          const t_relative_macro_verdict& verdict,
@@ -156,8 +147,6 @@ class RelativeMacroPacker {
     const Prepacker& prepacker_; ///< Prepacked molecules and chains.
 
     const AtomNetlist& atom_netlist_; ///< Atom netlist being packed.
-
-    bool active_; ///< Cached flag indicating whether relative macros are present.
 
     std::map<MoleculeChainId, UserRelativeGroupId> chain_owners_; ///< Owning group of each chain with constrained atoms.
 };
