@@ -251,6 +251,15 @@ class Prepacker {
     t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
                                                                        const std::vector<t_logical_block_type>& logical_block_types) const;
 
+    /**
+     * @brief Returns the lowest cost primitive in one block type that fits this atom block, or nullptr if none does.
+     *
+     * @param blk_id              Atom to find a primitive for.
+     * @param logical_block_type  Block type to search through.
+     */
+    t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
+                                                                       const t_logical_block_type& logical_block_type) const;
+
     /*
      * @brief Calculates molecule statistics for a single molecule.
      */

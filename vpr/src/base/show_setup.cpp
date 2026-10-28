@@ -73,7 +73,7 @@ void ClusteredNetlistStats::write_human_(std::ostream& output) const {
     output << "Cluster level netlist and block usage statistics\n";
     output << "Netlist num_nets: " << num_nets << "\n";
     output << "Netlist num_blocks: " << num_blocks << "\n";
-    for (const t_logical_block_type& type : logical_block_types) {
+    for (const t_logical_block_type& type : logical_block_types_) {
         output << "Netlist " << type.name << " blocks: " << num_blocks_type[type.index] << ".\n";
     }
 
@@ -91,9 +91,9 @@ void ClusteredNetlistStats::write_json_(std::ostream& output) const {
 
     output << "  \"blocks\": {\n";
 
-    for (const t_logical_block_type& type : logical_block_types) {
+    for (const t_logical_block_type& type : logical_block_types_) {
         output << "    \"" << type.name << "\": " << num_blocks_type[type.index];
-        if ((int)type.index < (int)logical_block_types.size() - 1)
+        if ((int)type.index < (int)logical_block_types_.size() - 1)
             output << ",\n";
         else
             output << "\n";
@@ -109,7 +109,7 @@ void ClusteredNetlistStats::write_xml_(std::ostream& output) const {
     output << "  <nets num=\"" << num_nets << "\"></nets>\n";
     output << "  <blocks num=\"" << num_blocks << "\">\n";
 
-    for (const t_logical_block_type& type : logical_block_types) {
+    for (const t_logical_block_type& type : logical_block_types_) {
         output << "    <block type=\"" << type.name << "\" usage=\"" << num_blocks_type[type.index] << "\"></block>\n";
     }
     output << "  </blocks>\n";
@@ -120,7 +120,8 @@ void ClusteredNetlistStats::write_xml_(std::ostream& output) const {
     output << "</block_usage_report>\n";
 }
 
-ClusteredNetlistStats::ClusteredNetlistStats() {
+ClusteredNetlistStats::ClusteredNetlistStats()
+    : logical_block_types_(g_vpr_ctx.device().logical_block_types) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -129,7 +130,6 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
     num_blocks_type = std::vector<int>(device_ctx.logical_block_types.size(), 0);
     num_nets = (int)cluster_ctx.clb_nlist.nets().size();
     num_blocks = (int)cluster_ctx.clb_nlist.blocks().size();
-    logical_block_types = device_ctx.logical_block_types;
 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         t_logical_block_type_ptr logical_block = cluster_ctx.clb_nlist.block_type(blk_id);

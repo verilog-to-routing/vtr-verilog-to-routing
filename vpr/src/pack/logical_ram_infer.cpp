@@ -88,10 +88,8 @@ group_ram_atoms(const AtomNetlist& atom_nlist, const Prepacker& prepacker) {
         LogicalRamGroup& ram_group = groups[group_id];
         ram_group.total_memory_slices = (int)ram_group.atoms.size();
         for (t_logical_block_type_ptr cand : ram_group.candidate_types) {
-            std::vector<t_logical_block_type> candidate_logical_type = {*cand};
             const t_pb_graph_node* candidate_prim =
-                prepacker.get_expected_lowest_cost_primitive_for_atom_block(
-                    ram_group.rep_blk, candidate_logical_type);
+                prepacker.get_expected_lowest_cost_primitive_for_atom_block(ram_group.rep_blk, *cand);
             ram_group.candidate_capacity[cand] = candidate_prim->total_primitive_count;
         }
     }

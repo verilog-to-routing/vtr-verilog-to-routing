@@ -1350,7 +1350,6 @@ static void free_complex_block_types() {
 
     free_type_descriptors(device_ctx.logical_block_types);
     free_type_descriptors(device_ctx.physical_tile_types);
-    free_pb_graph_edges();
 }
 
 void free_circuit() {
