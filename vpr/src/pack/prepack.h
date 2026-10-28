@@ -13,6 +13,7 @@
 #include <unordered_set>
 #include "atom_netlist_fwd.h"
 #include "pack_patterns.h"
+#include "user_relative_macros.h"
 #include "vtr_assert.h"
 #include "vtr_range.h"
 #include "vtr_strong_id.h"
@@ -202,10 +203,12 @@ class Prepacker {
      *  @param atom_nlist           The atom netlist to prepack.
      *  @param models
      *  @param logical_block_types  A list of the logical block types on the device.
+     *  @param relative_macros      User-defined relative placement macros.
      */
     Prepacker(const AtomNetlist& atom_nlist,
               const LogicalModels& models,
-              const std::vector<t_logical_block_type>& logical_block_types);
+              const std::vector<t_logical_block_type>& logical_block_types,
+              const UserRelativeMacros& relative_macros);
 
     /**
      * @brief A range of all prepacked molecules. Every atom should exist in one
@@ -348,7 +351,8 @@ class Prepacker {
     void alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
                                        const AtomNetlist& atom_nlist,
                                        const LogicalModels& models,
-                                       const std::vector<t_logical_block_type>& logical_block_types);
+                                       const std::vector<t_logical_block_type>& logical_block_types,
+                                       const UserRelativeMacros& relative_macros);
 
     /**
      * Given a pattern and an atom block to serve as the root block, determine if
@@ -366,7 +370,8 @@ class Prepacker {
     PackMoleculeId try_create_molecule(const int pack_pattern_index,
                                        AtomBlockId blk_id,
                                        std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
-                                       const AtomNetlist& atom_nlist);
+                                       const AtomNetlist& atom_nlist,
+                                       const UserRelativeMacros& relative_macros);
 
   private:
     /**

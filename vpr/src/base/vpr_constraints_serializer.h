@@ -78,9 +78,8 @@ struct VprConstraintsContextTypes : public uxsd::DefaultVprConstraintsContextTyp
     using AddLogicalBlockReadContext = t_logical_block_type_ptr;
     using PartitionReadContext = partition_info;
     using PartitionListReadContext = void*;
-    // (macro id, group index) pairs identify a group when writing out relative macros
-    using ReferenceGroupReadContext = std::pair<UserRelativeMacroId, int>;
-    using RelativeGroupReadContext = std::pair<UserRelativeMacroId, int>;
+    using ReferenceGroupReadContext = UserRelativeGroupId;
+    using RelativeGroupReadContext = UserRelativeGroupId;
     using RelativeMacroReadContext = UserRelativeMacroId;
     using RelativeMacroListReadContext = void*;
     using SetGlobalSignalReadContext = std::pair<std::string, RoutingScheme>;
@@ -533,11 +532,11 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         resolve_atoms_into_loaded_relative_group();
     }
 
-    virtual inline size_t num_reference_group_add_atom(std::pair<UserRelativeMacroId, int>& group_ctx) final {
-        return get_relative_group_from_ctx(group_ctx).atoms.size();
+    virtual inline size_t num_reference_group_add_atom(UserRelativeGroupId& group_id) final {
+        return constraints_.relative_macros().get_group(group_id).atoms.size();
     }
-    virtual inline AtomBlockId get_reference_group_add_atom(int n, std::pair<UserRelativeMacroId, int>& group_ctx) final {
-        return get_relative_group_from_ctx(group_ctx).atoms[n];
+    virtual inline AtomBlockId get_reference_group_add_atom(int n, UserRelativeGroupId& group_id) final {
+        return constraints_.relative_macros().get_group(group_id).atoms[n];
     }
 
     /** Generated for complex type "relative_group":
@@ -551,17 +550,17 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      *   <xs:attribute name="layer_offset" type="xs:int" default="0" />
      * </xs:complexType>
      */
-    virtual inline int get_relative_group_x_offset(std::pair<UserRelativeMacroId, int>& group_ctx) final {
-        return get_relative_group_from_ctx(group_ctx).offset.x;
+    virtual inline int get_relative_group_x_offset(UserRelativeGroupId& group_id) final {
+        return constraints_.relative_macros().get_group(group_id).offset.x;
     }
-    virtual inline int get_relative_group_y_offset(std::pair<UserRelativeMacroId, int>& group_ctx) final {
-        return get_relative_group_from_ctx(group_ctx).offset.y;
+    virtual inline int get_relative_group_y_offset(UserRelativeGroupId& group_id) final {
+        return constraints_.relative_macros().get_group(group_id).offset.y;
     }
-    virtual inline int get_relative_group_sub_tile_offset(std::pair<UserRelativeMacroId, int>& group_ctx) final {
-        return get_relative_group_from_ctx(group_ctx).offset.sub_tile;
+    virtual inline int get_relative_group_sub_tile_offset(UserRelativeGroupId& group_id) final {
+        return constraints_.relative_macros().get_group(group_id).offset.sub_tile;
     }
-    virtual inline int get_relative_group_layer_offset(std::pair<UserRelativeMacroId, int>& group_ctx) final {
-        return get_relative_group_from_ctx(group_ctx).offset.layer;
+    virtual inline int get_relative_group_layer_offset(UserRelativeGroupId& group_id) final {
+        return constraints_.relative_macros().get_group(group_id).offset.layer;
     }
 
     virtual inline void set_relative_group_layer_offset(int layer_offset, void*& /*ctx*/) final {
@@ -579,11 +578,11 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         resolve_atoms_into_loaded_relative_group();
     }
 
-    virtual inline size_t num_relative_group_add_atom(std::pair<UserRelativeMacroId, int>& group_ctx) final {
-        return get_relative_group_from_ctx(group_ctx).atoms.size();
+    virtual inline size_t num_relative_group_add_atom(UserRelativeGroupId& group_id) final {
+        return constraints_.relative_macros().get_group(group_id).atoms.size();
     }
-    virtual inline AtomBlockId get_relative_group_add_atom(int n, std::pair<UserRelativeMacroId, int>& group_ctx) final {
-        return get_relative_group_from_ctx(group_ctx).atoms[n];
+    virtual inline AtomBlockId get_relative_group_add_atom(int n, UserRelativeGroupId& group_id) final {
+        return constraints_.relative_macros().get_group(group_id).atoms[n];
     }
 
     /** Generated for complex type "relative_macro":
@@ -600,7 +599,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return temp_macro_string_.c_str();
     }
     virtual inline void set_relative_macro_name(const char* name, void*& /*ctx*/) final {
-        loaded_relative_macro_.name = name;
+        loaded_relative_macro_name_ = name;
     }
 
     virtual inline void* init_relative_macro_reference_group(void*& /*ctx*/) final {
@@ -614,13 +613,13 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         // (whether an empty reference group is an error is decided when the whole
         // macro has been read, see finish_relative_macro_list_relative_macro;
         // keep its failed patterns until then so the diagnostic can name them)
-        VTR_ASSERT(loaded_relative_macro_.groups.empty());
-        loaded_relative_macro_.groups.push_back(loaded_relative_group_);
+        VTR_ASSERT(loaded_relative_groups_.empty());
+        loaded_relative_groups_.push_back(loaded_relative_group_);
         loaded_reference_group_failed_patterns_ = loaded_relative_group_failed_patterns_;
     }
 
-    virtual inline std::pair<UserRelativeMacroId, int> get_relative_macro_reference_group(UserRelativeMacroId& macro_id) final {
-        return {macro_id, 0};
+    virtual inline UserRelativeGroupId get_relative_macro_reference_group(UserRelativeMacroId& macro_id) final {
+        return constraints_.relative_macros().get_macro(macro_id).groups[0];
     }
 
     virtual inline void preallocate_relative_macro_relative_group(void*& /*ctx*/, size_t /*size*/) final {}
@@ -638,27 +637,27 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         if (loaded_relative_group_.offset.layer != 0) {
             // cross-layer relative macros are not supported yet: no macro code path
             // exercises nonzero layer offsets, so reject them at load time
-            report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name
+            report_constraints_load_error("Relative macro '" + loaded_relative_macro_name_
                                           + "': layer_offset must be 0. Cross-layer relative macros are not supported.");
         }
 
         if (loaded_relative_group_.atoms.empty()) {
             VTR_LOG_WARN("Relative macro '%s': the relative_group at %s matched no atoms (failed name_pattern(s): %s), skipping the group.\n",
-                         loaded_relative_macro_.name.c_str(),
+                         loaded_relative_macro_name_.c_str(),
                          offset_description(loaded_relative_group_.offset).c_str(),
                          join_name_patterns(loaded_relative_group_failed_patterns_).c_str());
             return;
         }
 
-        loaded_relative_macro_.groups.push_back(loaded_relative_group_);
+        loaded_relative_groups_.push_back(loaded_relative_group_);
     }
 
     virtual inline size_t num_relative_macro_relative_group(UserRelativeMacroId& macro_id) final {
         // groups[0] is the reference group; the rest are the relative groups
         return constraints_.relative_macros().get_macro(macro_id).groups.size() - 1;
     }
-    virtual inline std::pair<UserRelativeMacroId, int> get_relative_macro_relative_group(int n, UserRelativeMacroId& macro_id) final {
-        return {macro_id, n + 1};
+    virtual inline UserRelativeGroupId get_relative_macro_relative_group(int n, UserRelativeMacroId& macro_id) final {
+        return constraints_.relative_macros().get_macro(macro_id).groups[n + 1];
     }
 
     /** Generated for complex type "relative_macro_list":
@@ -671,13 +670,14 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void preallocate_relative_macro_list_relative_macro(void*& /*ctx*/, size_t /*size*/) final {}
 
     virtual inline void* add_relative_macro_list_relative_macro(void*& /*ctx*/) final {
-        loaded_relative_macro_ = t_user_relative_macro();
+        loaded_relative_macro_name_.clear();
+        loaded_relative_groups_.clear();
         return nullptr;
     }
 
     virtual inline void finish_relative_macro_list_relative_macro(void*& /*ctx*/) final {
-        const std::string& macro_name = loaded_relative_macro_.name;
-        const std::vector<t_user_relative_group>& groups = loaded_relative_macro_.groups;
+        const std::string& macro_name = loaded_relative_macro_name_;
+        const std::vector<t_user_relative_group>& groups = loaded_relative_groups_;
         VTR_ASSERT(!groups.empty()); // the reference group is always present
 
         // macro names must be unique since they identify macros in error messages
@@ -736,8 +736,9 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
                                                   + ". An atom may belong to at most one relative placement group.");
                 }
 
-                UserRelativeMacroId other_macro_id = constraints_.relative_macros().get_atom_group(blk_id).first;
-                if (other_macro_id.is_valid()) {
+                UserRelativeGroupId other_group_id = constraints_.relative_macros().get_atom_group(blk_id);
+                if (other_group_id.is_valid()) {
+                    UserRelativeMacroId other_macro_id = constraints_.relative_macros().get_group(other_group_id).macro_id;
                     report_constraints_load_error("Atom '" + atom_ctx.netlist().block_name(blk_id)
                                                   + "' appears in relative macro '" + macro_name + "' and in relative macro '"
                                                   + constraints_.relative_macros().get_macro(other_macro_id).name
@@ -746,7 +747,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             }
         }
 
-        constraints_.mutable_relative_macros().add_macro(std::move(loaded_relative_macro_));
+        constraints_.mutable_relative_macros().add_macro(loaded_relative_macro_name_, std::move(loaded_relative_groups_));
     }
 
     virtual inline size_t num_relative_macro_list_relative_macro(void*& /*ctx*/) final {
@@ -970,7 +971,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         // constraints file does not have to come from them.
         if (site_path_present_
             && (site_path_.empty() || site_path_.find_first_of(" \t\n\v\f\r") != std::string::npos)) {
-            report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name + "', "
+            report_constraints_load_error("Relative macro '" + loaded_relative_macro_name_ + "', "
                                           + loaded_group_description()
                                           + ": the site_path of atom pattern '" + name_pattern_ + "' is '"
                                           + site_path_
@@ -992,7 +993,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
                 found = true;
             }
         } else { // the name pattern is a regex, look for all atoms matching the regex pattern
-            std::regex atom_name_regex = compile_atom_name_regex("Relative macro '" + loaded_relative_macro_.name + "'");
+            std::regex atom_name_regex = compile_atom_name_regex("Relative macro '" + loaded_relative_macro_name_ + "'");
             size_t num_matched = 0;
             for (AtomBlockId block_id : atom_ctx.netlist().blocks()) {
                 if (std::regex_search(atom_ctx.netlist().block_name(block_id), atom_name_regex)) {
@@ -1004,7 +1005,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             if (!site_path_.empty() && num_matched > 1) {
                 // every matched atom would be locked to the same primitive,
                 // which no two atoms can share
-                report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name
+                report_constraints_load_error("Relative macro '" + loaded_relative_macro_name_
                                               + "': name_pattern '" + name_pattern_ + "' with site_path '"
                                               + site_path_ + "' matched " + std::to_string(num_matched)
                                               + " atoms. A site_path locks one atom to one primitive, so a pattern "
@@ -1014,7 +1015,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
         if (!logical_block_location_.empty()) {
             VTR_LOG_WARN("Relative macro '%s': logical_block_location is not supported on relative macro atoms, ignoring it for atom pattern %s.\n",
-                         loaded_relative_macro_.name.c_str(), name_pattern_.c_str());
+                         loaded_relative_macro_name_.c_str(), name_pattern_.c_str());
         }
 
         if (!found) {
@@ -1022,7 +1023,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             // placement intent, so name the macro and the pattern; the pattern
             // is also referenced again if the whole group ends up empty.
             VTR_LOG_WARN("Relative macro '%s': no atom matched name_pattern '%s', skipping the pattern.\n",
-                         loaded_relative_macro_.name.c_str(), name_pattern_.c_str());
+                         loaded_relative_macro_name_.c_str(), name_pattern_.c_str());
             loaded_relative_group_failed_patterns_.push_back(name_pattern_);
         }
     }
@@ -1063,7 +1064,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         const AtomNetlist& netlist = g_vpr_ctx.atom().netlist();
 
         if (site != nullptr && !primitive_type_feasible(blk_id, site->pb_type)) {
-            report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name + "': atom '"
+            report_constraints_load_error("Relative macro '" + loaded_relative_macro_name_ + "': atom '"
                                           + netlist.block_name(blk_id) + "' (model '"
                                           + g_vpr_ctx.device().arch->models.model_name(netlist.block_model(blk_id))
                                           + "') cannot be placed on the primitive site '" + site_path_ + "' (a '"
@@ -1087,7 +1088,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         if (prev_site_path.empty()) {
             prev_site_path = site_path_;
         } else if (prev_site_path != site_path_) {
-            report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name
+            report_constraints_load_error("Relative macro '" + loaded_relative_macro_name_
                                           + "': atom '" + netlist.block_name(blk_id)
                                           + "' is matched twice in the same group with two different site paths ('"
                                           + prev_site_path + "' and '" + site_path_
@@ -1115,7 +1116,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
         auto itr = primitive_sites_.find(site_path_);
         if (itr == primitive_sites_.end()) {
-            report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name + "', "
+            report_constraints_load_error("Relative macro '" + loaded_relative_macro_name_ + "', "
                                           + loaded_group_description() + ": the site_path '" + site_path_
                                           + "' of atom pattern '" + name_pattern_
                                           + "' does not name a primitive of any logical block type. The site paths "
@@ -1194,17 +1195,10 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     std::string loaded_group_description() const {
         // the reference group is read first and pushed when finished, so the
         // macro has no group yet while it is being read
-        if (loaded_relative_macro_.groups.empty()) {
+        if (loaded_relative_groups_.empty()) {
             return "reference group";
         }
         return "relative_group at " + offset_description(loaded_relative_group_.offset);
-    }
-
-    /**
-     * @brief Return the group identified by a (macro id, group index) read context.
-     */
-    const t_user_relative_group& get_relative_group_from_ctx(const std::pair<UserRelativeMacroId, int>& group_ctx) const {
-        return constraints_.relative_macros().get_macro(group_ctx.first).groups[group_ctx.second];
     }
 
     //temp data for writes
@@ -1228,7 +1222,10 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     Partition loaded_partition;
     PartitionRegion loaded_part_region;
     std::pair<std::string, RoutingScheme> loaded_route_constraint;
-    t_user_relative_macro loaded_relative_macro_;
+    // name and groups of the relative macro being loaded; stored as one macro
+    // once the whole macro has been read and validated
+    std::string loaded_relative_macro_name_;
+    std::vector<t_user_relative_group> loaded_relative_groups_;
     t_user_relative_group loaded_relative_group_;
     // atom -> index into loaded_relative_group_.atoms, to merge an atom matched
     // by several patterns of the same group without a linear search
