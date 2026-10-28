@@ -1035,6 +1035,45 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
 }
 
 /**
+ * @brief Check whether an atom block can fill a position of a pack pattern.
+ *
+ *  @param block_id                The candidate atom block; may be invalid.
+ *  @param pattern_block           The pattern position to fill.
+ *  @param molecule_atom_block_id  The atom block already at that position, if any.
+ *  @param atom_molecules          Atom blocks that are already assigned to a molecule.
+ *  @param atom_group              The candidate's relative placement group; invalid if unconstrained.
+ *  @param molecule_group          The molecule's relative placement group so far; invalid if none.
+ */
+static bool can_atom_fill_pattern_block(AtomBlockId block_id,
+                                        const t_pack_pattern_block* pattern_block,
+                                        AtomBlockId molecule_atom_block_id,
+                                        const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
+                                        UserRelativeGroupId atom_group,
+                                        UserRelativeGroupId molecule_group) {
+    // this is an invalid atom block (nothing)
+    if (!block_id) {
+        return false;
+    }
+    // this atom block cannot fit in this primitive type
+    if (!primitive_type_feasible(block_id, pattern_block->pb_type)) {
+        return false;
+    }
+    // this primitive is occupied by another block
+    if (molecule_atom_block_id && molecule_atom_block_id != block_id) {
+        return false;
+    }
+    // this atom block is already used by another molecule
+    if (atom_molecules.find(block_id) != atom_molecules.end()) {
+        return false;
+    }
+    // this atom block belongs to a different relative placement group
+    if (atom_group.is_valid() && molecule_group.is_valid() && atom_group != molecule_group) {
+        return false;
+    }
+    return true;
+}
+
+/**
  * Determine if an atom block can match with the pattern to from a molecule.
  *
  * This function takes a molecule that represents a packing pattern. It also
@@ -1094,18 +1133,9 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
         if (!molecule.pack_pattern->is_chain && block_id) {
             atom_group = relative_macros.get_atom_group(block_id);
         }
-        bool group_conflict = atom_group.is_valid()
-                              && molecule_group.is_valid()
-                              && atom_group != molecule_group;
 
-        if (!block_id || !primitive_type_feasible(block_id, pattern_block->pb_type) || (molecule_atom_block_id && molecule_atom_block_id != block_id) || atom_molecules.find(block_id) != atom_molecules.end() || group_conflict) {
-            // Stopping conditions, if:
-            // 1) this is an invalid atom block (nothing)
-            // 2) this atom block cannot fit in this primitive type
-            // 3) this primitive is occupied by another block
-            // 4) this atom block is already used by another molecule
-            // 5) this atom block belongs to a different relative placement group
-            // then if the molecule cannot be formed without placing an atom
+        if (!can_atom_fill_pattern_block(block_id, pattern_block, molecule_atom_block_id, atom_molecules, atom_group, molecule_group)) {
+            // if the molecule cannot be formed without placing an atom
             // at that primitive position, then creating this molecule has failed
             // otherwise go to the next atom block and its corresponding pattern block
             if (!is_block_optional[pattern_block->block_id]) {
