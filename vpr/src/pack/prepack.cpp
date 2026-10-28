@@ -79,9 +79,6 @@ static int compare_pack_pattern(const t_pack_patterns* pattern_a, const t_pack_p
 
 static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list);
 
-/**
- * @brief Fill a molecule's pattern from blk_id; return false if a required position cannot be filled.
- */
 static bool try_expand_molecule(t_pack_molecule& molecule,
                                 const AtomBlockId blk_id,
                                 const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
@@ -1014,12 +1011,14 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
         return PackMoleculeId::INVALID();
     }
 
-    // Record chain membership before saving the molecule.
+    // Success! commit molecule
+
+    // update chain info for chain molecules
     if (molecule.pack_pattern->is_chain) {
         init_molecule_chain_info(blk_id, molecule, pack_molecules_, atom_molecules_multimap, chain_info_, atom_nlist);
     }
 
-    // Map each matched atom to the new molecule.
+    // update the atom_molcules with the atoms that are mapped to this molecule
     for (int i = 0; i < molecule.pack_pattern->num_blocks; i++) {
         AtomBlockId blk_id2 = molecule.atom_block_ids[i];
         if (!blk_id2) {
@@ -1035,14 +1034,29 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
     return new_molecule_id;
 }
 
+/**
+ * Determine if an atom block can match with the pattern to from a molecule.
+ *
+ * This function takes a molecule that represents a packing pattern. It also
+ * takes a (netlist) atom block represented by blk_id which matches the
+ * root primitive of this packing pattern. Using this atom block and the structure
+ * of the packing pattern, this function tries to fill all the available positions
+ * in the packing pattern. If all the non-optional primitive positions in the
+ * pattern are filled return true, return false otherwise.
+ *      molecule       : the molecule we are trying to expand
+ *      atom_molecules : map of atom block ids that are assigned a molecule and a pointer to this molecule
+ *      blk_id         : chosen to be the root of this molecule and the code is expanding from
+ *      relative_macros: user-defined relative placement macros; non-chain molecules may not span groups
+ */
 static bool try_expand_molecule(t_pack_molecule& molecule,
                                 const AtomBlockId blk_id,
                                 const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
                                 const AtomNetlist& atom_nlist,
                                 const UserRelativeMacros& relative_macros) {
-    // Start matching at the pattern's root block.
+    // root block of the pack pattern, which is the starting point of this pattern
     t_pack_pattern_block* const pattern_root_block = molecule.pack_pattern->root_block;
-    // True for pattern positions that may remain empty.
+    // bool array indicating whether a position in a pack pattern is optional or should
+    // be filled with an atom for legality
     const std::vector<bool>& is_block_optional = molecule.pack_pattern->is_block_optional;
 
     // Keep non-chain molecules within one relative placement group.
@@ -1050,9 +1064,9 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
     // conflicts are reported after prepacking. Invalid means no group found yet.
     UserRelativeGroupId molecule_group;
 
-    // Queue pattern positions with their candidate atoms.
+    // create a queue of pattern block and atom block id suggested for this block
     std::queue<std::pair<t_pack_pattern_block*, AtomBlockId>> pattern_block_queue;
-    // Start with the root position and atom.
+    // initialize the queue with the pattern root block and the matching atom block
     pattern_block_queue.push(std::make_pair(pattern_root_block, blk_id));
 
     // do breadth first search by walking through the pack pattern structure along
@@ -1085,16 +1099,22 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
                               && atom_group != molecule_group;
 
         if (!block_id || !primitive_type_feasible(block_id, pattern_block->pb_type) || (molecule_atom_block_id && molecule_atom_block_id != block_id) || atom_molecules.find(block_id) != atom_molecules.end() || group_conflict) {
-            // Reject missing or incompatible atoms, occupied primitives, atoms
-            // used by another molecule, and relative group conflicts.
-            // Skip optional positions; fail if the position is required.
+            // Stopping conditions, if:
+            // 1) this is an invalid atom block (nothing)
+            // 2) this atom block cannot fit in this primitive type
+            // 3) this primitive is occupied by another block
+            // 4) this atom block is already used by another molecule
+            // 5) this atom block belongs to a different relative placement group
+            // then if the molecule cannot be formed without placing an atom
+            // at that primitive position, then creating this molecule has failed
+            // otherwise go to the next atom block and its corresponding pattern block
             if (!is_block_optional[pattern_block->block_id]) {
                 return false;
             }
             continue;
         }
 
-        // Assign the atom to this pattern position.
+        // set this node in the molecule as visited
         molecule.atom_block_ids[pattern_block->block_id] = block_id;
 
         // The first constrained atom sets the molecule's group.
@@ -1102,23 +1122,28 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
             molecule_group = atom_group;
         }
 
-        // Queue neighboring pattern positions and their candidate atoms.
+        // add all the connections of this block to the queue
         for (const t_pack_pattern_connections& block_connection : pattern_block->connections) {
+            // this block is the driver of this connection
             if (block_connection.from_block == pattern_block) {
-                // Follow the connection to its sink.
+                // find the block this connection is driving and add it to the queue
                 AtomBlockId sink_blk_id = get_sink_block(block_id, block_connection, atom_nlist);
+                // add this sink block id with its corresponding pattern block to the queue
                 pattern_block_queue.push(std::make_pair(block_connection.to_block, sink_blk_id));
+                // this block is being driven by this connection
             } else if (block_connection.to_block == pattern_block) {
-                // Follow the connection to its driver.
+                // find the block that is driving this connection and it to the queue
                 AtomBlockId driver_blk_id = get_driving_block(block_id, block_connection, atom_nlist);
+                // add this driver block id with its corresponding pattern block to the queue
                 pattern_block_queue.push(std::make_pair(block_connection.from_block, driver_blk_id));
             }
 
-            // This block must be one end of the connection.
+            // this block should be either driving or driven by the connection
             VTR_ASSERT(block_connection.from_block == pattern_block || block_connection.to_block == pattern_block);
         }
     }
-    // All required pattern positions are filled.
+    // if all non-optional positions in the pack pattern have atoms
+    // mapped to them, then this molecule is valid
     return true;
 }
 
