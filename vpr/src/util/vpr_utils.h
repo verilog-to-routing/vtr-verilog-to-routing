@@ -334,7 +334,10 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_til
                                                             const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                             t_physical_tile_type_ptr physical_type);
 
-t_arch_switch_inf create_internal_arch_sw(float delay);
+/**
+ * @brief Creates the architecture switch used for edges inside a cluster, with a fixed (fan-in independent) delay.
+ */
+t_arch_switch_inf create_internal_arch_sw(float delay_min, float delay_max);
 
 void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb);
 

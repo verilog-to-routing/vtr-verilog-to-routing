@@ -106,7 +106,8 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
  * @param R_minW_pmos Needs to be passed to use create_rr_switch_from_arch_switch
  * @param is_rr_sw If it is true, the function would search in the data structure that store rr switches.
  *                  Otherwise, it would search in the data structure that store switches that are not rr switches.
- * @param delay
+ * @param delay_min Minimum delay of the switch. An existing switch is only reused if both its min and max delays match.
+ * @param delay_max Maximum delay of the switch.
  * @return
  */
 static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_graph,
@@ -114,7 +115,8 @@ static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_grap
                                                          float R_minW_nmos,
                                                          float R_minW_pmos,
                                                          bool is_rr_sw,
-                                                         float delay);
+                                                         float delay_min,
+                                                         float delay_max);
 
 static std::unordered_set<int> get_chain_pins(const std::vector<t_pin_chain_node>& chain);
 
@@ -487,14 +489,17 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
 
             if (switches_remapped) {
                 std::map<int, t_arch_switch_inf>& all_sw_inf = g_vpr_ctx.mutable_device().all_sw_inf;
-                float delay = g_vpr_ctx.device().all_sw_inf.at(sw_idx).Tdel_max();
+                const t_arch_switch_inf& pb_edge_sw = g_vpr_ctx.device().all_sw_inf.at(sw_idx);
+                float delay_min = pb_edge_sw.Tdel_min();
+                float delay_max = pb_edge_sw.Tdel_max();
                 bool is_new_sw;
                 std::tie(is_new_sw, sw_idx) = find_create_intra_cluster_sw(rr_graph_builder,
                                                                            all_sw_inf,
                                                                            R_minW_nmos,
                                                                            R_minW_pmos,
                                                                            switches_remapped,
-                                                                           delay);
+                                                                           delay_min,
+                                                                           delay_max);
             }
             rr_edges_to_create.emplace_back(parent_pin_node_id, conn_pin_node_id, sw_idx, switches_remapped);
         }
@@ -545,19 +550,20 @@ static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_grap
                                                          float R_minW_nmos,
                                                          float R_minW_pmos,
                                                          bool is_rr_sw,
-                                                         float delay) {
+                                                         float delay_min,
+                                                         float delay_max) {
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_graph_switches = rr_graph.rr_switch();
 
     if (is_rr_sw) {
         for (int rr_switch_id = 0; rr_switch_id < (int)rr_graph_switches.size(); rr_switch_id++) {
             const t_rr_switch_inf& rr_sw = rr_graph_switches[RRSwitchId(rr_switch_id)];
             if (rr_sw.intra_tile) {
-                if (rr_sw.Tdel_min == delay && rr_sw.Tdel_max == delay) {
+                if (rr_sw.Tdel_min == delay_min && rr_sw.Tdel_max == delay_max) {
                     return std::make_pair(false, rr_switch_id);
                 }
             }
         }
-        t_rr_switch_inf new_rr_switch_inf = create_rr_switch_from_arch_switch(create_internal_arch_sw(delay),
+        t_rr_switch_inf new_rr_switch_inf = create_rr_switch_from_arch_switch(create_internal_arch_sw(delay_min, delay_max),
                                                                               R_minW_nmos,
                                                                               R_minW_pmos);
         RRSwitchId rr_sw_id = rr_graph.add_rr_switch(new_rr_switch_inf);
@@ -567,9 +573,9 @@ static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_grap
     } else {
         // Check whether is there any other intra-tile edge with the same delay
         auto find_res = std::find_if(arch_sw_inf.begin(), arch_sw_inf.end(),
-                                     [delay](const std::pair<int, t_arch_switch_inf>& sw_inf_pair) {
+                                     [delay_min, delay_max](const std::pair<int, t_arch_switch_inf>& sw_inf_pair) {
                                          const t_arch_switch_inf& sw_inf = std::get<1>(sw_inf_pair);
-                                         if (sw_inf.intra_tile && sw_inf.Tdel_min() == delay && sw_inf.Tdel_max() == delay) {
+                                         if (sw_inf.intra_tile && sw_inf.Tdel_min() == delay_min && sw_inf.Tdel_max() == delay_max) {
                                              return true;
                                          } else {
                                              return false;
@@ -578,7 +584,7 @@ static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_grap
 
         // There isn't any other intra-tile edge with the same delay - Create a new one!
         if (find_res == arch_sw_inf.end()) {
-            t_arch_switch_inf arch_sw = create_internal_arch_sw(delay);
+            t_arch_switch_inf arch_sw = create_internal_arch_sw(delay_min, delay_max);
             int max_key_num = std::numeric_limits<int>::min();
             // Find the maximum edge index
             for (const auto& arch_sw_pair : arch_sw_inf) {
@@ -592,7 +598,7 @@ static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_grap
             // If this assumption proven to not be accurate, the implementation needs to be changed.
             VTR_ASSERT(arch_sw.fixed_Tdel());
 
-            t_rr_switch_inf new_rr_switch_inf = create_rr_switch_from_arch_switch(create_internal_arch_sw(delay),
+            t_rr_switch_inf new_rr_switch_inf = create_rr_switch_from_arch_switch(create_internal_arch_sw(delay_min, delay_max),
                                                                                   R_minW_nmos,
                                                                                   R_minW_pmos);
             RRSwitchId rr_switch_id = rr_graph.add_rr_switch(new_rr_switch_inf);
@@ -718,12 +724,15 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
             bool is_rr_sw_id = load_rr_graph;
             bool is_new_sw;
             int sw_id;
+            // TODO: The delay along the chain is a single value, so the collapsed edge gets min == max.
+            // Compute separate min and max delays along the chain once intra-cluster switches have them.
             std::tie(is_new_sw, sw_id) = find_create_intra_cluster_sw(rr_graph_builder,
                                                                       all_sw_inf,
                                                                       R_minW_nmos,
                                                                       R_minW_pmos,
                                                                       is_rr_sw_id,
-                                                                      delay);
+                                                                      /*delay_min=*/delay,
+                                                                      /*delay_max=*/delay);
 
             rr_edges_to_create.emplace_back(src_pair.first, sink_rr_node_id, sw_id, is_rr_sw_id);
         }

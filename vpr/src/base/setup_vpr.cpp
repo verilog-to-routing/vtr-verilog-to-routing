@@ -1065,7 +1065,10 @@ static void add_intra_tile_switches() {
                     if (pb_edge_delays.find(max_delay) == pb_edge_delays.end()) {
                         switch_type_id = (int)device_ctx.all_sw_inf.size();
                         pb_edge_delays.insert(std::make_pair(max_delay, switch_type_id));
-                        t_arch_switch_inf arch_switch_inf = create_internal_arch_sw(max_delay);
+                        // TODO: Only the max delay of pb graph edges is used, so intra-cluster switches have min == max
+                        // and hold analysis with flat routing is optimistic. Key pb_edge_delays on both delay_min and
+                        // delay_max, and pass pb_graph_edge->delay_min here.
+                        t_arch_switch_inf arch_switch_inf = create_internal_arch_sw(/*delay_min=*/max_delay, /*delay_max=*/max_delay);
                         // AM: In the function that arch_sw to rr_swith remapping takes place, we assumed that the delay of the intra-cluster
                         // switches is fixed, and it is not dependent on the fan-in.
                         VTR_ASSERT_MSG(arch_switch_inf.fixed_Tdel(), "Intra-cluster switch is expected to have a fixed delay");
