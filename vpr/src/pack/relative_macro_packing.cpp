@@ -21,27 +21,46 @@ RelativeMacroPacker::RelativeMacroPacker(const UserRelativeMacros& relative_macr
     , prepacker_(prepacker)
     , atom_netlist_(atom_netlist) {
     VTR_ASSERT(relative_macros.get_num_macros() != 0);
+    init_chain_owners_();
     validate_molecule_groups_();
 }
 
-void RelativeMacroPacker::validate_molecule_groups_() {
+void RelativeMacroPacker::init_chain_owners_() {
     VTR_ASSERT(chain_owners_.empty());
 
-    // Check each molecule against its atoms' groups and any known chain owner.
+    // A chain is owned by the group of its first constrained atom. Chains whose
+    // atoms span several groups are rejected by validate_molecule_groups_().
+    for (PackMoleculeId mol_id : prepacker_.molecules()) {
+        const t_pack_molecule& molecule = prepacker_.get_molecule(mol_id);
+        if (!molecule.chain_id.is_valid())
+            continue;
+
+        for (AtomBlockId blk_id : molecule.atom_block_ids) {
+            if (!blk_id.is_valid())
+                continue;
+
+            UserRelativeGroupId atom_group = relative_macros_.get_atom_group(blk_id);
+            if (atom_group.is_valid()) {
+                chain_owners_.emplace(molecule.chain_id, atom_group);
+                break;
+            }
+        }
+    }
+}
+
+void RelativeMacroPacker::validate_molecule_groups_() const {
+    // Check each molecule's atoms against each other and against its chain's owner.
     for (PackMoleculeId mol_id : prepacker_.molecules()) {
         const t_pack_molecule& molecule = prepacker_.get_molecule(mol_id);
 
         UserRelativeGroupId mol_group;
         AtomBlockId mol_group_atom;
-        // True if the group came from an earlier molecule in this chain.
+        // True if the group came from the molecule's chain rather than its own atoms.
         bool mol_group_from_chain = false;
 
         if (molecule.chain_id.is_valid()) {
-            auto chain_it = chain_owners_.find(molecule.chain_id);
-            if (chain_it != chain_owners_.end()) {
-                mol_group = chain_it->second;
-                mol_group_from_chain = true;
-            }
+            mol_group = chain_owner_(molecule.chain_id);
+            mol_group_from_chain = mol_group.is_valid();
         }
 
         for (AtomBlockId blk_id : molecule.atom_block_ids) {
@@ -59,7 +78,7 @@ void RelativeMacroPacker::validate_molecule_groups_() {
             }
 
             if (mol_group != atom_group) {
-                // Find an atom from the chain's earlier group for the error message.
+                // Find an atom of the chain's owning group for the error message.
                 if (mol_group_from_chain) {
                     for (AtomBlockId group_blk_id : relative_macros_.get_group(mol_group).atoms) {
                         PackMoleculeId group_mol_id = prepacker_.get_atom_molecule(group_blk_id);
@@ -87,10 +106,6 @@ void RelativeMacroPacker::validate_molecule_groups_() {
                                 size_t(atom_group),
                                 mol_group_from_chain ? "chain" : "molecule");
             }
-        }
-
-        if (molecule.chain_id.is_valid() && mol_group.is_valid()) {
-            chain_owners_.emplace(molecule.chain_id, mol_group);
         }
     }
 }

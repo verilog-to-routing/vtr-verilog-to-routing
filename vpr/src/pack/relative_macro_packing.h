@@ -112,7 +112,12 @@ class RelativeMacroPacker {
 
   private:
     /**
-     * @brief Reject molecules or chains spanning multiple groups and record chain ownership.
+     * @brief Record each chain's owning group: the group of its first constrained atom.
+     */
+    void init_chain_owners_();
+
+    /**
+     * @brief Reject molecules or chains spanning multiple groups with a fatal error.
      *
      * Prepacking prevents non-chain molecules from spanning groups, so only chains
      * can fail this check.
@@ -120,7 +125,7 @@ class RelativeMacroPacker {
      * Unconstrained chain atoms may share the group's cluster or extend into nearby
      * clusters. PlaceMacros merges those clusters with the group's placement macro.
      */
-    void validate_molecule_groups_();
+    void validate_molecule_groups_() const;
 
     /**
      * @brief Return the chain's owning group, or an invalid group if unconstrained.
