@@ -1932,7 +1932,7 @@ t_arch_switch_inf create_internal_arch_sw(float delay_min, float delay_max) {
     t_arch_switch_inf arch_switch_inf;
     arch_switch_inf.set_type(e_switch_type::MUX);
     std::ostringstream stream_obj;
-    stream_obj << delay_max << std::scientific;
+    stream_obj << std::scientific << delay_max;
     // Switches with the same max delay but different min delays need different names
     if (delay_min != delay_max) {
         stream_obj << "/min/" << delay_min;

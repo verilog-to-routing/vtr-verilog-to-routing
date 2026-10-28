@@ -370,10 +370,9 @@ static void process_switch_tdel(pugi::xml_node node, const bool timing_enabled, 
  *
  * Accepted forms:
  * - delay="float": min = max = delay.
- * - max="float": min = max.
  * - min="float" max="float": separate min and max delays.
  *
- * It is an error to give delay together with min or max, to give min without max,
+ * It is an error to give delay together with min or max, to give only one of min and max,
  * to give a negative min, or to give a min larger than max.
  *
  * @return The (min, max) delay pair.
@@ -4623,21 +4622,21 @@ static std::pair<float, float> process_switch_tdel_child_delays(pugi::xml_node t
         return {delay, delay};
     }
 
-    if (!max_attr) {
-        if (min_attr) {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(tdel_node),
-                           vtr::string_fmt("Tdel node specifies min without max").c_str());
-        }
+    if (!min_attr && !max_attr) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(tdel_node),
-                       vtr::string_fmt("Tdel node should specify delay or max").c_str());
+                       vtr::string_fmt("Tdel node should specify delay, or both min and max").c_str());
+    }
+    // A single delay is given with delay, so min and max must be given together
+    if (!max_attr) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(tdel_node),
+                       vtr::string_fmt("Tdel node specifies min without max").c_str());
+    }
+    if (!min_attr) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(tdel_node),
+                       vtr::string_fmt("Tdel node specifies max without min").c_str());
     }
 
     float max_delay = max_attr.as_float();
-    if (!min_attr) {
-        // Only the max delay is given, so the min delay is the same
-        return {max_delay, max_delay};
-    }
-
     float min_delay = min_attr.as_float();
     if (min_delay < 0.) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(tdel_node),

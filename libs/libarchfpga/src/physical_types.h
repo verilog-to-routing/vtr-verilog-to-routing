@@ -1911,6 +1911,9 @@ struct t_arch_switch_inf {
     void set_type(e_switch_type type_val);
 
   private:
+    /// Looks up the delay for the given fan-in in Tdel_map, interpolating or extrapolating if it isn't listed.
+    float lookup_Tdel(const std::map<int, double>& Tdel_map, int fanin) const;
+
     e_switch_type type_ = e_switch_type::INVALID;
 
     /**

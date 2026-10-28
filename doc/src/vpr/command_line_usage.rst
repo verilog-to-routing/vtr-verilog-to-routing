@@ -500,7 +500,7 @@ Use the options below to override this default naming behaviour.
 .. option:: --read_rr_edge_override <file>
 
     Reads a file that overrides the intrinsic delay of specific edges in RR graph.
-    The file can override the minimum and maximum delays separately; see the :ref:`file format <rr_edge_override_file_format>`.
+    See the :ref:`file format <rr_edge_override_file_format>`.
 
     This option should be used with both :option:`--read_rr_graph` and :option:`--write_rr_graph`. When used this way,
     VPR reads the RR graph, updates the delays of selected edges using :option:`--read_rr_edge_override`,

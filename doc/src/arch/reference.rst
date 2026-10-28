@@ -877,20 +877,19 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
 
             .. note:: Cannot be specified together with ``min`` or ``max``.
 
-        :opt_param max:
-            The maximum intrinsic switch delay.
-
-            .. note:: Required if ``delay`` is not specified.
-
         :opt_param min:
             The minimum intrinsic switch delay.
             Must be at least 0 and at most ``max``.
 
-            **Default:** the value of ``max``
+            .. note:: Must be specified together with ``max``.
 
-            .. note:: Cannot be specified without ``max``.
+        :opt_param max:
+            The maximum intrinsic switch delay.
 
-        Exactly one of ``delay`` or ``max`` must be given.
+            .. note:: Must be specified together with ``min``.
+
+        Either ``delay``, or both ``min`` and ``max``, must be given.
+        To give a single delay, use ``delay``.
 
         The minimum delay only replaces the intrinsic delay: the switch resistance and capacitances (``R``, ``Cin``, ``Cout``, ``Cinternal``) are the same for the minimum and maximum delay.
         When the minimum and maximum delays are extrapolated to an unspecified fan-in, the minimum delay is limited to be at least 0 and at most the maximum delay.

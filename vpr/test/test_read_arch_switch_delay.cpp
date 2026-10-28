@@ -111,14 +111,6 @@ TEST_CASE("read_arch_switch_delay", "[vpr]") {
         REQUIRE(sw.Tdel_max(15) == 8.4e-11f);
     }
 
-    SECTION("Max alone is used as both min and max") {
-        t_arch_switch_inf sw = read_arch_switch(R"(<switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15">
-                <Tdel max="58e-12"/>
-            </switch>)");
-        REQUIRE(sw.Tdel_min() == 58e-12f);
-        REQUIRE(sw.Tdel_max() == 58e-12f);
-    }
-
     SECTION("Error: min without max") {
         REQUIRE_THROWS_WITH(read_arch_switch(R"(<switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15">
                 <Tdel min="56e-12"/>
@@ -137,11 +129,18 @@ TEST_CASE("read_arch_switch_delay", "[vpr]") {
                             ContainsSubstring("EITHER delay OR min/max"));
     }
 
-    SECTION("Error: neither delay nor max") {
+    SECTION("Error: max without min") {
+        REQUIRE_THROWS_WITH(read_arch_switch(R"(<switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15">
+                <Tdel max="58e-12"/>
+            </switch>)"),
+                            ContainsSubstring("max without min"));
+    }
+
+    SECTION("Error: neither delay nor min and max") {
         REQUIRE_THROWS_WITH(read_arch_switch(R"(<switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15">
                 <Tdel num_inputs="12"/>
             </switch>)"),
-                            ContainsSubstring("should specify delay or max"));
+                            ContainsSubstring("should specify delay, or both min and max"));
     }
 
     SECTION("Error: min larger than max") {

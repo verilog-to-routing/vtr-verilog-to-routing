@@ -920,9 +920,27 @@ A ``switches`` tag contains all the switches and its information within the FPGA
         .. note:: Cannot be specified together with ``Tdel_min`` or ``Tdel_max``.
 
     :opt_param Tdel_min, Tdel_max:
-        Switch's minimum and maximum intrinsic delay, for switches whose minimum and maximum delays differ.
+        Switch's minimum and maximum intrinsic delay.
         ``Tdel_min`` must not be larger than ``Tdel_max``.
         A missing value is 0, like the other timing values.
+
+        .. warning::
+            Unlike ``<Tdel>`` in the architecture file, a missing ``Tdel_min`` is **not** taken to be equal to ``Tdel_max``.
+            A switch with only ``Tdel_max="X"`` has a minimum delay of 0 and a maximum delay of X.
+            To give a single delay, used as both the minimum and maximum delay, use ``Tdel``.
+
+        The delays of a switch are:
+
+        * ``Tdel="X"``: minimum and maximum delay X.
+        * ``Tdel_min="Y" Tdel_max="X"``: minimum delay Y and maximum delay X.
+        * ``Tdel_max="X"`` only: minimum delay 0 and maximum delay X.
+        * ``Tdel_min="Y"`` only: an error if Y is not 0, since the maximum delay is 0.
+        * None of them: minimum and maximum delay 0.
+
+        .. note::
+            When writing an RR graph, VPR leaves out timing values that are 0.
+            It writes ``Tdel`` when the minimum and maximum delays are equal, and ``Tdel_min`` and ``Tdel_max`` otherwise.
+            So a switch with a minimum delay of 0 and a non-zero maximum delay is written with only ``Tdel_max``.
 
 .. rrgraph:tag:: <sizing mux_trans_size="int" buf_size="float"/>
 
