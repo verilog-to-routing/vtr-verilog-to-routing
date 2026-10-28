@@ -202,12 +202,12 @@ void LbTypeRRGraphBuilder::build_pb_pin_node_(const t_pb_graph_pin* pb_pin, e_lb
     end_node_();
 }
 
-void LbTypeRRGraphBuilder::build_primitive_sink_pins_(t_pb_graph_pin* const* pins, int num_ports, const int* num_pins) {
-    for (int iport = 0; iport < num_ports; iport++) {
+void LbTypeRRGraphBuilder::build_primitive_sink_pins_(const std::vector<std::span<t_pb_graph_pin>>& port_pins) {
+    for (std::span<t_pb_graph_pin> port : port_pins) {
         // The pins of an equivalent port share one sink whose capacity is the size of the port.
         LbRRNodeId sink_index = LbRRNodeId::INVALID();
-        for (int ipin = 0; ipin < num_pins[iport]; ipin++) {
-            const t_pb_graph_pin* pb_pin = &pins[iport][ipin];
+        for (const t_pb_graph_pin& pin : port) {
+            const t_pb_graph_pin* pb_pin = &pin;
             bool port_equivalent = pb_pin->port->equivalent != PortEquivalence::NONE;
 
             // The sink is appended before the pin node so that the pin's edge range stays contiguous.
@@ -231,7 +231,7 @@ void LbTypeRRGraphBuilder::build_nodes_and_edges_in_subtree_(const t_pb_graph_no
     if (pb_type->is_primitive()) {
         // Input and clock pins of a primitive each drive a sink. Output pins are
         // sources whose edges depend on the mode of the parent.
-        build_primitive_sink_pins_(pb_graph_node->input_pins, pb_graph_node->num_input_ports, pb_graph_node->num_input_pins);
+        build_primitive_sink_pins_(pb_graph_node->input_pins);
 
         for (int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
             for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
@@ -239,7 +239,7 @@ void LbTypeRRGraphBuilder::build_nodes_and_edges_in_subtree_(const t_pb_graph_no
             }
         }
 
-        build_primitive_sink_pins_(pb_graph_node->clock_pins, pb_graph_node->num_clock_ports, pb_graph_node->num_clock_pins);
+        build_primitive_sink_pins_(pb_graph_node->clock_pins);
         return;
     }
 

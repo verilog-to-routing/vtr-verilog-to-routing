@@ -218,51 +218,19 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
     /*free all lists of connectable input pin pointer of pb_graph_node and it's children*/
     /*free_list_of_connectable_input_pin_ptrs (pb_graph_node);*/
 
-    /* Free ports for pb graph node */
-    for (int i = 0; i < pb_graph_node->num_input_ports; i++) {
-        for (int j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-            if (pb_graph_node->input_pins[i][j].parent_pin_class)
-                delete[] pb_graph_node->input_pins[i][j].parent_pin_class;
-        }
-        delete[] pb_graph_node->input_pins[i];
-    }
+    // Free the arrays that the feasibility filter attaches to primitive pins
+    for (t_pb_graph_pin& pin : pb_graph_node->mutable_pins()) {
+        delete[] pin.parent_pin_class;
 
-    for (int i = 0; i < pb_graph_node->num_output_ports; i++) {
-        for (int j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-            if (pb_graph_node->output_pins[i][j].parent_pin_class)
-                delete[] pb_graph_node->output_pins[i][j].parent_pin_class;
-
-            if (pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs) {
-                for (int k = 0; k < pb_graph_node->pb_type->depth; k++) {
-                    delete[] pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs[k];
-                }
-                delete[] pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs;
+        if (pin.list_of_connectable_input_pin_ptrs) {
+            for (int k = 0; k < pb_type->depth; k++) {
+                delete[] pin.list_of_connectable_input_pin_ptrs[k];
             }
-
-            if (pb_graph_node->output_pins[i][j].num_connectable_primitive_input_pins)
-                delete[] pb_graph_node->output_pins[i][j].num_connectable_primitive_input_pins;
+            delete[] pin.list_of_connectable_input_pin_ptrs;
         }
-        delete[] pb_graph_node->output_pins[i];
+
+        delete[] pin.num_connectable_primitive_input_pins;
     }
-
-    for (int i = 0; i < pb_graph_node->num_clock_ports; i++) {
-        for (int j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-            if (pb_graph_node->clock_pins[i][j].parent_pin_class)
-                delete[] pb_graph_node->clock_pins[i][j].parent_pin_class;
-        }
-        delete[] pb_graph_node->clock_pins[i];
-    }
-
-    delete[] pb_graph_node->input_pins;
-    delete[] pb_graph_node->output_pins;
-    delete[] pb_graph_node->clock_pins;
-
-    delete[] pb_graph_node->num_input_pins;
-    delete[] pb_graph_node->num_output_pins;
-    delete[] pb_graph_node->num_clock_pins;
-
-    std::vector<size_t>().swap(pb_graph_node->input_pin_class_sizes);
-    std::vector<size_t>().swap(pb_graph_node->output_pin_class_sizes);
 
     if (pb_graph_node->interconnect_pins) {
         for (int i = 0; i < pb_graph_node->pb_type->num_modes; i++) {

@@ -4,6 +4,7 @@
  * @brief Builds the routing resource graph of a logical block type from its pb graph.
  */
 
+#include <span>
 #include <vector>
 
 #include "lb_type_rr_graph.h"
@@ -53,7 +54,7 @@ class LbTypeRRGraphBuilder {
     void build_pb_pin_node_(const t_pb_graph_pin* pb_pin, e_lb_rr_type type, int num_modes);
 
     /// @brief Builds the nodes of the input or clock pins of a primitive and their sinks.
-    void build_primitive_sink_pins_(t_pb_graph_pin* const* pins, int num_ports, const int* num_pins);
+    void build_primitive_sink_pins_(const std::vector<std::span<t_pb_graph_pin>>& port_pins);
 
     /// @brief Builds the nodes and edges of every pin in the pb graph subtree rooted at pb_graph_node.
     void build_nodes_and_edges_in_subtree_(const t_pb_graph_node* pb_graph_node);

@@ -447,12 +447,12 @@ int get_sub_tile_index(ClusterBlockId blk) {
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node) {
     // Select the first pin in the pb_graph node.
     t_pb_graph_pin* first_pin = nullptr;
-    if (pb_graph_node->num_input_pins != nullptr) {
+    if (!pb_graph_node->input_pins.empty()) {
         first_pin = &(pb_graph_node->input_pins[0][0]);
-    } else if (pb_graph_node->num_output_pins != nullptr) {
+    } else if (!pb_graph_node->output_pins.empty()) {
         first_pin = &(pb_graph_node->output_pins[0][0]);
     } else {
-        VTR_ASSERT(pb_graph_node->num_clock_pins != nullptr);
+        VTR_ASSERT(!pb_graph_node->clock_pins.empty());
         first_pin = &(pb_graph_node->clock_pins[0][0]);
     }
 

@@ -289,24 +289,6 @@ bool t_pb_type::has_bus_mux() const {
  * t_pb_graph_node
  */
 
-int t_pb_graph_node::num_pins() const {
-    int npins = 0;
-
-    for (int iport = 0; iport < num_input_ports; ++iport) {
-        npins += num_input_pins[iport];
-    }
-
-    for (int iport = 0; iport < num_output_ports; ++iport) {
-        npins += num_output_pins[iport];
-    }
-
-    for (int iport = 0; iport < num_clock_ports; ++iport) {
-        npins += num_clock_pins[iport];
-    }
-
-    return npins;
-}
-
 std::string t_pb_graph_node::hierarchical_type_name() const {
     std::vector<std::string> names;
     std::string child_mode_name;
