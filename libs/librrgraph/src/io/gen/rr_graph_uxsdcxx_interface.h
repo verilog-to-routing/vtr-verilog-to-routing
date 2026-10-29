@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 4b2ef78f43cba03933974d33ee053c65
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/alex/vtr-switch-min-max-delay/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/alex/vtr-switch-min-max-delay/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: fc64388fa00da75640603bc9d9aa7416
  */
 
 #include <functional>
@@ -167,6 +167,9 @@ public:
 	 *   <xs:attribute name="Cinternal" type="xs:float" />
 	 *   <xs:attribute name="Cout" type="xs:float" />
 	 *   <xs:attribute name="Tdel" type="xs:float" />
+	 *   
+	 *   <xs:attribute name="Tdel_min" type="xs:float" />
+	 *   <xs:attribute name="Tdel_max" type="xs:float" />
 	 * </xs:complexType>
 	*/
 	virtual inline float get_timing_Cin(typename ContextTypes::TimingReadContext &ctx) = 0;
@@ -179,6 +182,10 @@ public:
 	virtual inline void set_timing_R(float R, typename ContextTypes::TimingWriteContext &ctx) = 0;
 	virtual inline float get_timing_Tdel(typename ContextTypes::TimingReadContext &ctx) = 0;
 	virtual inline void set_timing_Tdel(float Tdel, typename ContextTypes::TimingWriteContext &ctx) = 0;
+	virtual inline float get_timing_Tdel_max(typename ContextTypes::TimingReadContext &ctx) = 0;
+	virtual inline void set_timing_Tdel_max(float Tdel_max, typename ContextTypes::TimingWriteContext &ctx) = 0;
+	virtual inline float get_timing_Tdel_min(typename ContextTypes::TimingReadContext &ctx) = 0;
+	virtual inline void set_timing_Tdel_min(float Tdel_min, typename ContextTypes::TimingWriteContext &ctx) = 0;
 
 	/** Generated for complex type "sizing":
 	 * <xs:complexType name="sizing">

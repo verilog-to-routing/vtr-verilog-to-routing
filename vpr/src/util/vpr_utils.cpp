@@ -1493,7 +1493,7 @@ void print_switch_usage() {
 
     for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
         for (const RRSwitchId rr_switch_id : inward_switch_inf[rr_id] | std::views::keys) {
-            float Tdel = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
+            float Tdel = rr_graph.rr_switch_inf(rr_switch_id).Tdel_max;
             const auto [arch_switch_id, fanin] = convert_switch_index(rr_switch_id);
             // convert_switch_index scans the full switch_fanin_remap, which is kept the
             // same size as all_sw_inf, so every in-use rr_switch maps to a valid index.
@@ -1928,16 +1928,20 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_til
     return pin_num_vec;
 }
 
-t_arch_switch_inf create_internal_arch_sw(float delay) {
+t_arch_switch_inf create_internal_arch_sw(float delay_min, float delay_max) {
     t_arch_switch_inf arch_switch_inf;
     arch_switch_inf.set_type(e_switch_type::MUX);
     std::ostringstream stream_obj;
-    stream_obj << delay << std::scientific;
+    stream_obj << std::scientific << delay_max;
+    // Switches with the same max delay but different min delays need different names
+    if (delay_min != delay_max) {
+        stream_obj << "/min/" << delay_min;
+    }
     arch_switch_inf.name = (std::string(VPR_INTERNAL_SWITCH_NAME) + "/" + stream_obj.str());
     arch_switch_inf.R = 0.;
     arch_switch_inf.Cin = 0.;
     arch_switch_inf.Cout = 0;
-    arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, delay);
+    arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, delay_min, delay_max);
     arch_switch_inf.power_buffer_type = POWER_BUFFER_TYPE_NONE;
     arch_switch_inf.mux_trans_size = 0.;
     arch_switch_inf.buf_size_type = e_buffer_size::ABSOLUTE;

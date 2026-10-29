@@ -161,7 +161,7 @@ static float get_arch_switch_info(short switch_index, int switch_fanin, float& T
      * interpolate/extrapolate to get the delay at 'switch_fanin'. */
     auto& device_ctx = g_vpr_ctx.device();
 
-    Tdel_switch = device_ctx.arch_switch_inf[switch_index].Tdel(switch_fanin);
+    Tdel_switch = device_ctx.arch_switch_inf[switch_index].Tdel_max(switch_fanin);
     R_switch = device_ctx.arch_switch_inf[switch_index].R;
     Cout_switch = device_ctx.arch_switch_inf[switch_index].Cout;
 

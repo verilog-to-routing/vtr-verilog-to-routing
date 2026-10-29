@@ -210,7 +210,7 @@ void RouteTree::reload_timing_unlocked(vtr::optional<RouteTreeNode&> from_node) 
         /* TODO Just a note (no action needed for this PR): In future, we need to consider APIs that returns
          * the Tdel for a routing trace in RRGraphView.*/
         Tdel_start += rr_graph.rr_switch_inf(iswitch).R * unbuffered_subtree_rt_root.C_downstream;
-        Tdel_start += rr_graph.rr_switch_inf(iswitch).Tdel;
+        Tdel_start += rr_graph.rr_switch_inf(iswitch).Tdel_max;
     }
 
     load_route_tree_Tdel(unbuffered_subtree_rt_root, Tdel_start);
@@ -343,7 +343,7 @@ void RouteTree::load_route_tree_Tdel(RouteTreeNode& from_node, float Tarrival) {
         RRSwitchId iswitch = child.parent_switch;
 
         float Tchild = Tdel + rr_graph.rr_switch_inf(iswitch).R * child.C_downstream;
-        Tchild += rr_graph.rr_switch_inf(iswitch).Tdel; /* Intrinsic switch delay. */
+        Tchild += rr_graph.rr_switch_inf(iswitch).Tdel_max; /* Intrinsic switch delay. */
         load_route_tree_Tdel(child, Tchild);
     }
 }

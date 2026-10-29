@@ -1887,28 +1887,50 @@ struct t_arch_switch_inf {
     /// Returns whether the switch's directionality (e.g. BI_DIR, UNI_DIR)
     e_directionality directionality() const;
 
-    /// Returns the intrinsic delay of this switch
-    float Tdel(int fanin = UNDEFINED_FANIN) const;
+    /**
+     * @brief   Returns the maximum intrinsic delay of this switch.
+     * @details Used for setup analysis and by the router, placer and
+     *          router lookahead. If the delay depends on fan-in and
+     *          fanin is not listed, it is linearly interpolated or
+     *          extrapolated from the listed fan-ins.
+     */
+    float Tdel_max(int fanin = UNDEFINED_FANIN) const;
+
+    /**
+     * @brief   Returns the minimum intrinsic delay of this switch.
+     * @details Used for hold analysis. Looked up like Tdel_max(), then
+     *          clamped to be at least 0 and at most Tdel_max(fanin), since
+     *          extrapolating the min and max delays separately can otherwise
+     *          give a min delay larger than the max delay.
+     */
+    float Tdel_min(int fanin = UNDEFINED_FANIN) const;
 
     /// Returns true if the Tdel value is independent of fanout
     bool fixed_Tdel() const;
 
   public:
-    void set_Tdel(int fanin, float delay);
+    /// Sets the min and max intrinsic delay for the given fan-in (UNDEFINED_FANIN for a fixed delay).
+    void set_Tdel(int fanin, float Tdel_min, float Tdel_max);
     void set_type(e_switch_type type_val);
 
   private:
+    /// Looks up the delay for the given fan-in in Tdel_map, interpolating or extrapolating if it isn't listed.
+    float lookup_Tdel(const std::map<int, double>& Tdel_map, int fanin) const;
+
     e_switch_type type_ = e_switch_type::INVALID;
 
     /**
-     * @brief   Maps the number of inputs to a delay.
+     * @brief   Maps the number of inputs to a max delay.
      * @details A map where the key is the number of inputs and the entry
      *          is the corresponding delay. If there is only one entry at key
      *          UNDEFINED, then delay is a constant (doesn't vary with fan-in).
      *          A map saves us the trouble of sorting, and has lower access
      *          time for interpolation/extrapolation purposes
      */
-    std::map<int, double> Tdel_map_;
+    std::map<int, double> Tdel_max_map_;
+
+    /// Maps the number of inputs to a min delay. Always has the same keys as Tdel_max_map_.
+    std::map<int, double> Tdel_min_map_;
 
     friend void PrintArchInfo(FILE*, const t_arch*);
 };

@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "physical_types.h"
 #include "arch_types.h"
 #include "vtr_math.h"
@@ -26,23 +28,40 @@ e_directionality t_arch_switch_inf::directionality() const {
     return switch_type_directionality(type());
 }
 
-float t_arch_switch_inf::Tdel(int fanin) const {
+float t_arch_switch_inf::Tdel_max(int fanin) const {
+    return lookup_Tdel(Tdel_max_map_, fanin);
+}
+
+float t_arch_switch_inf::Tdel_min(int fanin) const {
+    float min_delay = lookup_Tdel(Tdel_min_map_, fanin);
+
+    // Extrapolating the min and max delays separately may give a negative min
+    // delay or a min delay above the max delay, so clamp it. Clamping to the
+    // max delay last keeps min == max for switches whose min and max delays
+    // are the same (even if the extrapolated max delay is negative).
+    min_delay = std::max(min_delay, 0.f);
+    return std::min(min_delay, Tdel_max(fanin));
+}
+
+float t_arch_switch_inf::lookup_Tdel(const std::map<int, double>& Tdel_map, int fanin) const {
     if (fixed_Tdel()) {
-        auto itr = Tdel_map_.find(UNDEFINED_FANIN);
-        VTR_ASSERT(itr != Tdel_map_.end());
+        auto itr = Tdel_map.find(UNDEFINED_FANIN);
+        VTR_ASSERT(itr != Tdel_map.end());
         return itr->second;
     } else {
         VTR_ASSERT(fanin >= 0);
-        return vtr::linear_interpolate_or_extrapolate(&Tdel_map_, fanin);
+        return vtr::linear_interpolate_or_extrapolate(&Tdel_map, fanin);
     }
 }
 
 bool t_arch_switch_inf::fixed_Tdel() const {
-    return Tdel_map_.size() == 1 && Tdel_map_.count(UNDEFINED_FANIN);
+    return Tdel_max_map_.size() == 1 && Tdel_max_map_.count(UNDEFINED_FANIN);
 }
 
-void t_arch_switch_inf::set_Tdel(int fanin, float delay) {
-    Tdel_map_[fanin] = delay;
+void t_arch_switch_inf::set_Tdel(int fanin, float Tdel_min, float Tdel_max) {
+    VTR_ASSERT_MSG(Tdel_min <= Tdel_max, "Switch min delay must not be larger than its max delay");
+    Tdel_min_map_[fanin] = Tdel_min;
+    Tdel_max_map_[fanin] = Tdel_max;
 }
 
 void t_arch_switch_inf::set_type(e_switch_type type_val) {

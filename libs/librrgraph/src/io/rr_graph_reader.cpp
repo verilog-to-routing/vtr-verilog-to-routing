@@ -19,9 +19,11 @@
 #include "rr_graph_uxsdcxx.h"
 
 #include <fstream>
+#include <tuple>
 #include <utility>
 
 #include "vtr_time.h"
+#include "vpr_error.h"
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 
@@ -36,14 +38,20 @@
  *
  * @details Expected formats:
  *          edge_id Tdel
+ *          edge_id Tdel_min Tdel_max
  *          (source_node_id, sink_node_id) Tdel
+ *          (source_node_id, sink_node_id) Tdel_min Tdel_max
+ *
+ *          With a single delay, it is used as both the min and max delay.
+ *          The second delay is optional: if no number follows the first
+ *          delay, the line has a single delay.
  *
  * @param line The line to parse.
  * @param rr_graph The RR graph for edge lookup using source-sink nodes.
- * @return A pair containing an RR edge and the overridden Tdel (intrinsic delay).
+ * @return A tuple containing the ID of the RR edge and its overridden Tdel_min and Tdel_max (intrinsic delays).
  */
-static std::pair<RREdgeId, float> process_rr_edge_override(const std::string& line,
-                                                           const RRGraphView& rr_graph);
+static std::tuple<RREdgeId, float, float> process_rr_edge_override(const std::string& line,
+                                                                   const RRGraphView& rr_graph);
 
 /************************ Subroutine definitions ****************************/
 /* loads the given RR_graph file into the appropriate data structures
@@ -151,8 +159,8 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
     }
 }
 
-static std::pair<RREdgeId, float> process_rr_edge_override(const std::string& line,
-                                                           const RRGraphView& rr_graph) {
+static std::tuple<RREdgeId, float, float> process_rr_edge_override(const std::string& line,
+                                                                   const RRGraphView& rr_graph) {
     std::istringstream iss(line);
     char ch;
     RREdgeId edge_id;
@@ -186,7 +194,13 @@ static std::pair<RREdgeId, float> process_rr_edge_override(const std::string& li
         VTR_LOG_ERROR("Couldn't parse the overridden delay in this line:  %s\n", line.c_str());
     }
 
-    return {edge_id, overridden_Tdel};
+    // An optional second delay gives separate min and max delays
+    float overridden_Tdel_max;
+    if (iss >> overridden_Tdel_max) {
+        return {edge_id, overridden_Tdel, overridden_Tdel_max};
+    }
+
+    return {edge_id, overridden_Tdel, overridden_Tdel};
 }
 
 void load_rr_edge_delay_overrides(std::string_view filename,
@@ -201,18 +215,28 @@ void load_rr_edge_delay_overrides(std::string_view filename,
     }
 
     std::string line;
+    int line_num = 0;
 
     while (std::getline(file, line)) {
+        line_num++;
         if (line[0] == '#') {
             continue; // Ignore lines starting with '#'
         }
 
         if (!line.empty()) {
-            const auto [edge_id, overridden_Tdel] = process_rr_edge_override(line, rr_graph);
+            const auto [edge_id, overridden_Tdel_min, overridden_Tdel_max] = process_rr_edge_override(line, rr_graph);
+            if (overridden_Tdel_min > overridden_Tdel_max) {
+                vpr_throw(VPR_ERROR_ROUTE, filename.data(), line_num,
+                          "Overridden Tdel_min (%g) should not be larger than Tdel_max (%g)\n",
+                          overridden_Tdel_min, overridden_Tdel_max);
+            }
+
             RRSwitchId curr_switch_id = (RRSwitchId)rr_graph.edge_switch(edge_id);
             t_rr_switch_inf switch_override_info = rr_graph.rr_switch_inf(curr_switch_id);
 
-            switch_override_info.Tdel = overridden_Tdel;
+            // A single delay replaces both the min and max delay of the switch
+            switch_override_info.Tdel_min = overridden_Tdel_min;
+            switch_override_info.Tdel_max = overridden_Tdel_max;
 
             RRSwitchId new_switch_id;
             auto it = unique_switch_info.find(switch_override_info);
