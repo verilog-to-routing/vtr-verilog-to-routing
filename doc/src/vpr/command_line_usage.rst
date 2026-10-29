@@ -2645,6 +2645,37 @@ Analysis Options
 
     **Default:** ``off``
 
+.. option:: --timing_report_path_categories {all | <category> [<category> ...]}
+
+    Controls which categories of timing paths are included in the timing reports (``report_timing.setup.rpt`` and ``report_timing.hold.rpt``) and the clock skew reports (see :option:`--timing_report_skew`).
+
+    A timing path is categorized by its startpoint and endpoint, where a register is any clocked primitive (e.g. a flip-flop or the clocked ports of a RAM):
+
+    * ``in2reg``: From a primary input to a register.
+    * ``reg2reg``: From a register to a register.
+    * ``reg2out``: From a register to a primary output.
+    * ``in2out``: From a primary input to a primary output (i.e. purely combinational).
+
+    The values can be:
+
+    * ``all``: All timing paths are reported.
+    * ``<category> [<category> ...]``: Only the timing paths in the listed categories are reported.
+
+    The paths are filtered before choosing the worst :option:`--timing_report_npaths` paths, and filtered reports state which categories they contain.
+    This option only filters the reported paths; it does not affect the slack or criticality calculations (and hence the optimization), or the timing summary printed to the log.
+
+    For example, the following reports only the register to register paths, which is useful when looking at the clock skew between registers:
+
+    .. code-block:: none
+
+        --timing_report_skew on --timing_report_path_categories reg2reg
+
+    .. note:: Only the worst path into each endpoint (for each pair of launch and capture clock domains) is considered, so each endpoint is categorized by its worst path.
+              For example, a register whose worst incoming path starts at a primary input is not included in a ``reg2reg`` report, even if it is also reached from other registers.
+              Constraining the primary inputs and outputs on their own (virtual) clock in the SDC file separates these paths, so that both are reported.
+
+    **Default:** ``all``
+
 
 .. _power_estimation_options:
 

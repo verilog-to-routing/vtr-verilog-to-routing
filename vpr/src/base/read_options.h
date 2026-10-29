@@ -306,6 +306,7 @@ struct t_options {
     argparse::ArgValue<int> timing_report_npaths;
     argparse::ArgValue<e_timing_report_detail> timing_report_detail;
     argparse::ArgValue<bool> timing_report_skew;
+    argparse::ArgValue<std::vector<std::string>> timing_report_path_categories;
     argparse::ArgValue<std::string> echo_dot_timing_graph_node;
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_input_handling;
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_output_handling;

@@ -3714,6 +3714,26 @@ static void add_analysis_options(argparse::ArgumentParser& parser, t_options& ar
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    analysis_grp.add_argument(args.timing_report_path_categories, "--timing_report_path_categories")
+        .help(
+            "Controls which categories of timing paths are included in the timing and skew reports:\n"
+            " * all: All timing paths are reported\n"
+            " * <category> ...: Only the listed categories of timing paths are reported"
+            " (e.g. --timing_report_path_categories in2reg reg2reg), where the categories are:\n"
+            "    * in2reg: Primary input to register\n"
+            "    * reg2reg: Register to register\n"
+            "    * reg2out: Register to primary output\n"
+            "    * in2out: Primary input to primary output\n"
+            "Only the worst path into each endpoint (for each clock domain pair) is considered,"
+            " so a register whose worst path comes from a primary input is not included in a"
+            " reg2reg report. Constraining the primary I/Os on their own (virtual) clock in the"
+            " SDC file avoids this. This only filters the reported paths; it does not affect"
+            " the slack or criticality calculations.")
+        .nargs('+')
+        .metavar("CATEGORY")
+        .default_value({"all"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     analysis_grp.add_argument(args.echo_dot_timing_graph_node, "--echo_dot_timing_graph_node")
         .help(
             "Controls how the timing graph echo file in DOT/GraphViz format is created when\n"
