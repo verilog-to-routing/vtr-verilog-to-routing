@@ -48,7 +48,7 @@
  *
  * @param line The line to parse.
  * @param rr_graph The RR graph for edge lookup using source-sink nodes.
- * @return A tuple containing an RR edge and the overridden Tdel_min and Tdel_max (intrinsic delays).
+ * @return A tuple containing the ID of the RR edge and its overridden Tdel_min and Tdel_max (intrinsic delays).
  */
 static std::tuple<RREdgeId, float, float> process_rr_edge_override(const std::string& line,
                                                                    const RRGraphView& rr_graph);
