@@ -1432,6 +1432,7 @@ struct t_analysis_opts {
     e_timing_report_detail timing_report_detail;
     bool timing_report_skew;
     /// @brief The categories of timing paths (e.g. reg2reg) included in the timing and skew reports.
+    ///        This only filters the reported paths; it does not affect the slack or criticality calculations.
     tatum::TimingPathCategoryFilter timing_report_path_categories;
     std::string echo_dot_timing_graph_node;
     std::string write_timing_summary;

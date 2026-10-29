@@ -2662,7 +2662,7 @@ Analysis Options
     * ``<category> [<category> ...]``: Only the timing paths in the listed categories are reported.
 
     The paths are filtered before choosing the worst :option:`--timing_report_npaths` paths, and filtered reports state which categories they contain.
-    This option does not affect the timing summary printed to the log.
+    This option only filters the reported paths; it does not affect the slack or criticality calculations (and hence the optimization), or the timing summary printed to the log.
 
     For example, the following reports only the register to register paths, which is useful when looking at the clock skew between registers:
 

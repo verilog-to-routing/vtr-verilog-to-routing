@@ -3727,7 +3727,8 @@ static void add_analysis_options(argparse::ArgumentParser& parser, t_options& ar
             "Only the worst path into each endpoint (for each clock domain pair) is considered,"
             " so a register whose worst path comes from a primary input is not included in a"
             " reg2reg report. Constraining the primary I/Os on their own (virtual) clock in the"
-            " SDC file avoids this.")
+            " SDC file avoids this. This only filters the reported paths; it does not affect"
+            " the slack or criticality calculations.")
         .nargs('+')
         .metavar("CATEGORY")
         .default_value({"all"})
