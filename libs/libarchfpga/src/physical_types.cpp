@@ -378,23 +378,12 @@ const t_pb_graph_edge* t_pb_graph_pin::edge_to(const t_pb_graph_pin* sink_pin) c
  * t_pb_graph_edge
  */
 
-const t_pb_graph_pin* t_pb_graph_edge::input_pin() const {
-    VTR_ASSERT(num_input_pins == 1);
-    return input_pins[0];
-}
-
-const t_pb_graph_pin* t_pb_graph_edge::output_pin() const {
-    VTR_ASSERT(num_output_pins == 1);
-    return output_pins[0];
-}
-
 bool t_pb_graph_edge::is_bus_mux() const {
     return interconnect->type == MUX_INTERC && interconnect->bus;
 }
 
 const t_pb_graph_node* t_pb_graph_edge::bus_mux_owner() const {
-    VTR_ASSERT(num_output_pins == 1);
-    const t_pb_graph_node* out_node = output_pins[0]->parent_node;
+    const t_pb_graph_node* out_node = output_pin()->parent_node;
     const t_pb_type* owner_type = interconnect->parent_mode->parent_pb_type;
 
     // The mux output is either an output port of the owner itself or an input
@@ -424,11 +413,9 @@ bool t_pb_graph_edge::belongs_to_pattern(int pattern_index) const {
         // if not annotated check if its pattern should be inferred
     } else if (this->infer_pattern) {
         // if pattern should be inferred try to infer it from all connected output edges
-        for (int ipin = 0; ipin < this->num_output_pins; ipin++) {
-            for (int iedge = 0; iedge < this->output_pins[ipin]->num_output_edges; iedge++) {
-                if (this->output_pins[ipin]->output_edges[iedge]->belongs_to_pattern(pattern_index)) {
-                    return true;
-                }
+        for (const t_pb_graph_edge* out_edge : this->output_pin()->output_edges) {
+            if (out_edge->belongs_to_pattern(pattern_index)) {
+                return true;
             }
         }
     }
