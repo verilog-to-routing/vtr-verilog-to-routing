@@ -65,9 +65,9 @@
  * For Block 3, block_pin_nets_ of pin 0 returns 2 (or 1), non-zero as it is also a receiver.
  *
  * The block_pin_nets_ data structure exists for quick indexing, rather than using a linear search
- * with the available functions from the base Netlist, into the net_delay_ structure in the
- * PostClusterDelayCalculator of inter_cluster_delay(). net_delay_ is a 2D array, where the indexing
- * scheme is [net_id] followed by [pin_index on net].
+ * with the available functions from the base Netlist, into the net_delay_min_ and net_delay_max_
+ * structures in the PostClusterDelayCalculator of inter_cluster_delay(). They are 2D arrays, where the
+ * indexing scheme is [net_id] followed by [pin_index on net].
  *
  * Pins
  * ----
