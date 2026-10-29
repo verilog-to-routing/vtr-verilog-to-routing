@@ -34,8 +34,10 @@
 #include <string>
 #include <map>
 #include <limits>
+#include <span>
 #include <unordered_set>
 
+#include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_bimap.h"
 #include "vtr_string_interning.h"
@@ -1332,6 +1334,12 @@ struct t_mode_power {
  */
 class t_pb_graph_node {
   public:
+    t_pb_graph_node() = default;
+    /// Pins, edges and child nodes point at a node,
+    /// and its port views point into its own pins. It is never copied.
+    t_pb_graph_node(const t_pb_graph_node&) = delete;
+    t_pb_graph_node& operator=(const t_pb_graph_node&) = delete;
+
     t_pb_type* pb_type;
 
     int placement_index;
@@ -1364,17 +1372,29 @@ class t_pb_graph_node {
 
     t_pin_range pin_num_range;
 
-    t_pb_graph_pin** input_pins;  /* [0..num_input_ports-1] [0..num_port_pins-1]*/
-    t_pb_graph_pin** output_pins; /* [0..num_output_ports-1] [0..num_port_pins-1]*/
-    t_pb_graph_pin** clock_pins;  /* [0..num_clock_ports-1] [0..num_port_pins-1]*/
+    /// Pins of each input port, as views into pins().
+    /// [0..num_input_ports-1][0..num_port_pins-1]
+    std::vector<std::span<t_pb_graph_pin>> pins_by_input_port;
+    /// Pins of each output port, as views into pins().
+    /// [0..num_output_ports-1][0..num_port_pins-1]
+    std::vector<std::span<t_pb_graph_pin>> pins_by_output_port;
+    /// Pins of each clock port, as views into pins().
+    /// [0..num_clock_ports-1][0..num_port_pins-1]
+    std::vector<std::span<t_pb_graph_pin>> pins_by_clock_port;
 
     int num_input_ports;
     int num_output_ports;
     int num_clock_ports;
 
-    int* num_input_pins;  /* [0..num_input_ports - 1] */
-    int* num_output_pins; /* [0..num_output_ports - 1] */
-    int* num_clock_pins;  /* [0..num_clock_ports - 1] */
+    /// Number of pins of each input port.
+    /// [0..num_input_ports-1]
+    std::vector<int> num_input_pins;
+    /// Number of pins of each output port.
+    /// [0..num_output_ports-1]
+    std::vector<int> num_output_pins;
+    /// Number of pins of each clock port.
+    /// [0..num_clock_ports-1]
+    std::vector<int> num_clock_pins;
 
     t_pb_graph_node*** child_pb_graph_nodes; /* [0..num_modes-1][0..num_pb_type_in_mode-1][0..num_pb-1] */
     t_pb_graph_node* parent_pb_graph_node;
@@ -1399,11 +1419,25 @@ class t_pb_graph_node {
     bool is_root() const { return this->parent_pb_graph_node == nullptr; }
 
     /// Returns the number of pins on this graph node
-    ///  Note this is the total for all ports on this node excluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)
+    /// Note this is the total for all ports on this node excluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)
     int num_pins() const;
+
+    /// All pins of this node in pin_count_in_cluster order, which follows
+    /// the port order of pb_type.
+    std::span<const t_pb_graph_pin> pins() const;
+    std::span<t_pb_graph_pin> mutable_pins();
+
+    /// Creates the pins of this node. Called once by the builder,
+    /// since the port views and the edges point into the storage.
+    void alloc_pins(int num_pins);
+
     /// Returns a string containing the hierarchical type name of the pb_graph_node
     /// Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
     std::string hierarchical_type_name() const;
+
+  private:
+    /// Storage of all pins of this node.
+    std::vector<t_pb_graph_pin> pins_;
 };
 
 /* Identify pb pin type for timing purposes */
@@ -1430,6 +1464,11 @@ enum e_pb_graph_pin_type {
  */
 class t_pb_graph_pin {
   public:
+    t_pb_graph_pin() = default;
+    /// Edges and lookup tables point at a pin, so it is never copied.
+    t_pb_graph_pin(const t_pb_graph_pin&) = delete;
+    t_pb_graph_pin& operator=(const t_pb_graph_pin&) = delete;
+
     t_port* port = nullptr;
     int pin_number = 0;
     std::vector<t_pb_graph_edge*> input_edges; /* [0..num_input_edges] */
@@ -1504,6 +1543,19 @@ class t_pb_graph_pin {
     /// if full_description is set to false it will only return lut6[0].in[0]
     std::string to_string(const bool full_description = true) const;
 };
+
+// These members touch the pin storage, so they are defined
+// once t_pb_graph_pin is complete.
+inline int t_pb_graph_node::num_pins() const { return (int)pins_.size(); }
+
+inline std::span<const t_pb_graph_pin> t_pb_graph_node::pins() const { return pins_; }
+
+inline std::span<t_pb_graph_pin> t_pb_graph_node::mutable_pins() { return pins_; }
+
+inline void t_pb_graph_node::alloc_pins(int num_pins) {
+    VTR_ASSERT(pins_.empty());
+    pins_ = std::vector<t_pb_graph_pin>(num_pins);
+}
 
 /** Describes a pb graph edge
  *

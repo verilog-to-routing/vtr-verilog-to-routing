@@ -244,7 +244,7 @@ static const t_pb_graph_pin* get_wire_input_pin(const t_pb_routes &top_pb_route,
     const t_pb_graph_pin* wire_input_pin = nullptr;
     for(int port_index = 0; port_index < pb_graph_node->num_input_ports; ++port_index) {
         for(int pin_index = 0; pin_index < pb_graph_node->num_input_pins[port_index]; ++pin_index) {
-            const t_pb_graph_pin* pin = &pb_graph_node->input_pins[port_index][pin_index];
+            const t_pb_graph_pin* pin = &pb_graph_node->pins_by_input_port[port_index][pin_index];
             if (is_pin_used(pin, top_pb_route)) {
                 VTR_ASSERT_MSG(wire_input_pin == nullptr,
                                "Wire found with more than 1 used input");
@@ -270,7 +270,7 @@ static bool is_wire_used(const t_pb_routes &top_pb_route, const t_pb_graph_node*
     const t_pb_graph_pin* wire_output_pin = nullptr;
     for(int port_index = 0; port_index < pb_graph_node->num_output_ports; ++port_index) {
         for(int pin_index = 0; pin_index < pb_graph_node->num_output_pins[port_index]; ++pin_index) {
-            const t_pb_graph_pin* pin = &pb_graph_node->output_pins[port_index][pin_index];
+            const t_pb_graph_pin* pin = &pb_graph_node->pins_by_output_port[port_index][pin_index];
             if (is_pin_used(pin, top_pb_route)) {
                 VTR_ASSERT_MSG(wire_output_pin == nullptr,
                                "Wire found with more than 1 used output");
@@ -337,7 +337,9 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb*
       const auto& route = pb_routes.at(wire_input_pin->pin_count_in_cluster);
 
       // Find the lut definition for the parent of this wire.
-      const int num_inputs = *route.pb_graph_pin->parent_node->num_input_pins;
+      const t_pb_graph_node* lut_node = route.pb_graph_pin->parent_node;
+      VTR_ASSERT(lut_node->num_input_ports == 1);
+      const int num_inputs = lut_node->num_input_pins[0];
       const auto *lut_definition = find_lut(route.pb_graph_pin->parent_node);
       if (lut_definition == nullptr)
           VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Could not find LUT definition for wire's parent node.");
@@ -360,7 +362,7 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb*
       continue;
     }
     for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
-      int inode = pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
+      int inode = pb->pb_graph_node->pins_by_input_port[port_index][j].pin_count_in_cluster;
       check_interconnect(pb_routes, inode);
     }
     port_index += 1;
@@ -372,7 +374,7 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb*
       continue;
     }
     for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
-      int inode = pb->pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
+      int inode = pb->pb_graph_node->pins_by_clock_port[port_index][j].pin_count_in_cluster;
       check_interconnect(pb_routes, inode);
     }
     port_index += 1;
@@ -384,7 +386,7 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb*
       continue;
     }
     for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
-      int inode = pb->pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
+      int inode = pb->pb_graph_node->pins_by_output_port[port_index][j].pin_count_in_cluster;
       check_interconnect(pb_routes, inode);
     }
     port_index += 1;
@@ -398,7 +400,7 @@ void FasmWriterVisitor::visit_route_through_impl(const t_pb* atom) {
 
 static AtomNetId _find_atom_input_logical_net(const t_pb* atom, const t_pb_routes &pb_route, int atom_input_idx) {
     const t_pb_graph_node* pb_node = atom->pb_graph_node;
-    const int cluster_pin_idx = pb_node->input_pins[0][atom_input_idx].pin_count_in_cluster;
+    const int cluster_pin_idx = pb_node->pins_by_input_port[0][atom_input_idx].pin_count_in_cluster;
     if(pb_route.count(cluster_pin_idx) > 0) {
         return pb_route[cluster_pin_idx].atom_net_id;
     } else {
@@ -444,7 +446,7 @@ static LogicVec lut_outputs(const t_pb* atom_pb, size_t num_inputs, const t_pb_r
         const AtomNetId impl_input_net_id = _find_atom_input_logical_net(atom_pb, pb_route, ipin);
 
         //Find the original pin index
-        const t_pb_graph_pin* gpin = &gnode->input_pins[0][ipin];
+        const t_pb_graph_pin* gpin = &gnode->pins_by_input_port[0][ipin];
         const BitIndex orig_index = atom_pb->atom_pin_bit_index(gpin);
 
         if(impl_input_net_id) {
@@ -669,7 +671,8 @@ void FasmWriterVisitor::check_for_lut(const t_pb* atom) {
     if (model_id == names_model_id) {
       VTR_ASSERT(atom->pb_graph_node != nullptr);
       const auto *lut_definition = find_lut(atom->pb_graph_node);
-      VTR_ASSERT(lut_definition->num_inputs == *atom->pb_graph_node->num_input_pins);
+      VTR_ASSERT(atom->pb_graph_node->num_input_ports == 1);
+      VTR_ASSERT(lut_definition->num_inputs == atom->pb_graph_node->num_input_pins[0]);
 
       const t_pb_routes &pb_route = find_pb_route(atom);
       LogicVec lut_mask = lut_outputs(atom, lut_definition->num_inputs, pb_route);

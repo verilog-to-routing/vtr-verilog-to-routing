@@ -474,21 +474,21 @@ static void inferr_unspecified_pb_graph_node_delays(t_pb_graph_node* pb_graph_no
 
     for (int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
         for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ++ipin) {
-            t_pb_graph_pin* pin = &pb_graph_node->input_pins[iport][ipin];
+            t_pb_graph_pin* pin = &pb_graph_node->pins_by_input_port[iport][ipin];
             inferr_unspecified_pb_graph_pin_delays(pin);
         }
     }
 
     for (int iport = 0; iport < pb_graph_node->num_output_ports; ++iport) {
         for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ++ipin) {
-            t_pb_graph_pin* pin = &pb_graph_node->output_pins[iport][ipin];
+            t_pb_graph_pin* pin = &pb_graph_node->pins_by_output_port[iport][ipin];
             inferr_unspecified_pb_graph_pin_delays(pin);
         }
     }
 
     for (int iport = 0; iport < pb_graph_node->num_clock_ports; ++iport) {
         for (int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ++ipin) {
-            t_pb_graph_pin* pin = &pb_graph_node->clock_pins[iport][ipin];
+            t_pb_graph_pin* pin = &pb_graph_node->pins_by_clock_port[iport][ipin];
             inferr_unspecified_pb_graph_pin_delays(pin);
         }
     }
@@ -554,12 +554,12 @@ static t_pb_graph_pin* find_clock_pin(t_pb_graph_node* gnode, std::string_view c
     for (int iport = 0; iport < gnode->num_clock_ports; ++iport) {
         VTR_ASSERT(gnode->num_clock_pins[iport] == 1);
 
-        if (clock == gnode->clock_pins[iport][0].port->name) {
+        if (clock == gnode->pins_by_clock_port[iport][0].port->name) {
             if (clock_pin != nullptr) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                           "Found duplicate clock-pin match");
             }
-            clock_pin = &gnode->clock_pins[iport][0];
+            clock_pin = &gnode->pins_by_clock_port[iport][0];
         }
     }
 

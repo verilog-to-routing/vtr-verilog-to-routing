@@ -542,7 +542,7 @@ static const t_pb_graph_pin* find_mapped_equivalent_pb_pin_by_net(t_pb* pb,
     const t_pb_graph_pin* found_pb_pin = nullptr;
 
     for (int ipin = 0; ipin < eq_port->num_pins; ++ipin) {
-        const t_pb_graph_pin* cand_pb_pin = &(pb_graph_node->input_pins[eq_port->port_index_by_type][ipin]);
+        const t_pb_graph_pin* cand_pb_pin = &(pb_graph_node->pins_by_input_port[eq_port->port_index_by_type][ipin]);
         VTR_ASSERT(eq_port == cand_pb_pin->port);
         auto pb_route_result = pb->pb_route.find(cand_pb_pin->pin_count_in_cluster);
         if (pb->pb_route.end() == pb_route_result) {

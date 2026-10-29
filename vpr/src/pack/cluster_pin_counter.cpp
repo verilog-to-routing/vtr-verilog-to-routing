@@ -343,7 +343,7 @@ static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const Atom
         if (prim_port.type == OUT_PORT) {
             if (prim_port.model_port == driver_model_port) {
                 // Get the output pb_graph_pin driving this input net.
-                return &(driver_pb->pb_graph_node->output_pins[output_port][atom_netlist.pin_port_bit(driver_pin_id)]);
+                return &(driver_pb->pb_graph_node->pins_by_output_port[output_port][atom_netlist.pin_port_bit(driver_pin_id)]);
             }
             output_port++;
         }

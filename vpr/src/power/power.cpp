@@ -155,7 +155,7 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
         }
 
         for (pin_idx = 0; pin_idx < LUT_size; pin_idx++) {
-            t_pb_graph_pin* pin = &pb_graph_node->input_pins[0][pin_idx];
+            t_pb_graph_pin* pin = &pb_graph_node->pins_by_input_port[0][pin_idx];
 
             input_probabilities[pin_idx] = pin_prob(pb, pin, iblk);
             input_densities[pin_idx] = pin_dens(pb, pin, iblk);
@@ -177,8 +177,8 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
     } else if (strcmp(pb_graph_node->pb_type->blif_model, LogicalModels::MODEL_LATCH) == 0) {
         /* Flip-Flop */
 
-        t_pb_graph_pin* D_pin = &pb_graph_node->input_pins[0][0];
-        t_pb_graph_pin* Q_pin = &pb_graph_node->output_pins[0][0];
+        t_pb_graph_pin* D_pin = &pb_graph_node->pins_by_input_port[0][0];
+        t_pb_graph_pin* Q_pin = &pb_graph_node->pins_by_output_port[0][0];
 
         float D_dens = 0.;
         float D_prob = 0.;
@@ -273,7 +273,7 @@ static void power_usage_local_buffers_and_wires(t_power_usage* power_usage,
         for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
              pin_idx++) {
             power_usage_local_pin_buffer_and_wire(&pin_power, pb,
-                                                  &pb_node->input_pins[port_idx][pin_idx], iblk);
+                                                  &pb_node->pins_by_input_port[port_idx][pin_idx], iblk);
             power_add_usage(power_usage, &pin_power);
         }
     }
@@ -283,7 +283,7 @@ static void power_usage_local_buffers_and_wires(t_power_usage* power_usage,
         for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx];
              pin_idx++) {
             power_usage_local_pin_buffer_and_wire(&pin_power, pb,
-                                                  &pb_node->output_pins[port_idx][pin_idx], iblk);
+                                                  &pb_node->pins_by_output_port[port_idx][pin_idx], iblk);
             power_add_usage(power_usage, &pin_power);
         }
     }
@@ -293,7 +293,7 @@ static void power_usage_local_buffers_and_wires(t_power_usage* power_usage,
         for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx];
              pin_idx++) {
             power_usage_local_pin_buffer_and_wire(&pin_power, pb,
-                                                  &pb_node->clock_pins[port_idx][pin_idx], iblk);
+                                                  &pb_node->pins_by_clock_port[port_idx][pin_idx], iblk);
             power_add_usage(power_usage, &pin_power);
         }
     }
@@ -369,7 +369,7 @@ static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node
                 for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
                      pin_idx++) {
                     dens_avg += pin_dens(pb,
-                                         &pb_node->input_pins[port_idx][pin_idx], iblk);
+                                         &pb_node->pins_by_input_port[port_idx][pin_idx], iblk);
                     num_pins++;
                 }
             }
@@ -399,7 +399,7 @@ static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node
                      pin_idx++) {
                     t_power_usage pin_power;
                     power_usage_local_pin_toggle(&pin_power, pb,
-                                                 &pb_node->input_pins[port_idx][pin_idx], iblk);
+                                                 &pb_node->pins_by_input_port[port_idx][pin_idx], iblk);
                     power_add_usage(&power_usage_pin_toggle, &pin_power);
                 }
             }
@@ -410,7 +410,7 @@ static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node
                      pin_idx++) {
                     t_power_usage pin_power;
                     power_usage_local_pin_toggle(&pin_power, pb,
-                                                 &pb_node->output_pins[port_idx][pin_idx], iblk);
+                                                 &pb_node->pins_by_output_port[port_idx][pin_idx], iblk);
                     power_add_usage(&power_usage_pin_toggle, &pin_power);
                 }
             }
@@ -421,7 +421,7 @@ static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node
                      pin_idx++) {
                     t_power_usage pin_power;
                     power_usage_local_pin_toggle(&pin_power, pb,
-                                                 &pb_node->clock_pins[port_idx][pin_idx], iblk);
+                                                 &pb_node->pins_by_clock_port[port_idx][pin_idx], iblk);
                     power_add_usage(&power_usage_pin_toggle, &pin_power);
                 }
             }
@@ -1049,16 +1049,16 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin* pin) {
 
         found = false;
         for (port_idx = 0; port_idx < node->num_input_ports; port_idx++) {
-            if (node->input_pins[port_idx][0].port == port_to_find) {
-                pin->pin_power->scaled_by_pin = &node->input_pins[port_idx][pin->port->port_power->scaled_by_port_pin_idx];
+            if (node->pins_by_input_port[port_idx][0].port == port_to_find) {
+                pin->pin_power->scaled_by_pin = &node->pins_by_input_port[port_idx][pin->port->port_power->scaled_by_port_pin_idx];
                 found = true;
                 break;
             }
         }
         if (!found) {
             for (port_idx = 0; port_idx < node->num_output_ports; port_idx++) {
-                if (node->output_pins[port_idx][0].port == port_to_find) {
-                    pin->pin_power->scaled_by_pin = &node->output_pins[port_idx][pin->port->port_power->scaled_by_port_pin_idx];
+                if (node->pins_by_output_port[port_idx][0].port == port_to_find) {
+                    pin->pin_power->scaled_by_pin = &node->pins_by_output_port[port_idx][pin->port->port_power->scaled_by_port_pin_idx];
                     found = true;
                     break;
                 }
@@ -1066,8 +1066,8 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin* pin) {
         }
         if (!found) {
             for (port_idx = 0; port_idx < node->num_clock_ports; port_idx++) {
-                if (node->clock_pins[port_idx][0].port == port_to_find) {
-                    pin->pin_power->scaled_by_pin = &node->clock_pins[port_idx][pin->port->port_power->scaled_by_port_pin_idx];
+                if (node->pins_by_clock_port[port_idx][0].port == port_to_find) {
+                    pin->pin_power->scaled_by_pin = &node->pins_by_clock_port[port_idx][pin->port->port_power->scaled_by_port_pin_idx];
                     found = true;
                     break;
                 }
@@ -1093,19 +1093,19 @@ void power_init_pb_pins_rec(t_pb_graph_node* pb_node) {
 
     for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
         for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx]; pin_idx++) {
-            power_alloc_and_init_pb_pin(&pb_node->input_pins[port_idx][pin_idx]);
+            power_alloc_and_init_pb_pin(&pb_node->pins_by_input_port[port_idx][pin_idx]);
         }
     }
 
     for (port_idx = 0; port_idx < pb_node->num_output_ports; port_idx++) {
         for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx]; pin_idx++) {
-            power_alloc_and_init_pb_pin(&pb_node->output_pins[port_idx][pin_idx]);
+            power_alloc_and_init_pb_pin(&pb_node->pins_by_output_port[port_idx][pin_idx]);
         }
     }
 
     for (port_idx = 0; port_idx < pb_node->num_clock_ports; port_idx++) {
         for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx]; pin_idx++) {
-            power_alloc_and_init_pb_pin(&pb_node->clock_pins[port_idx][pin_idx]);
+            power_alloc_and_init_pb_pin(&pb_node->pins_by_clock_port[port_idx][pin_idx]);
         }
     }
 
@@ -1127,19 +1127,19 @@ void power_uninit_pb_pins_rec(t_pb_graph_node* pb_node) {
 
     for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
         for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx]; pin_idx++) {
-            power_uninit_pb_pin(&pb_node->input_pins[port_idx][pin_idx]);
+            power_uninit_pb_pin(&pb_node->pins_by_input_port[port_idx][pin_idx]);
         }
     }
 
     for (port_idx = 0; port_idx < pb_node->num_output_ports; port_idx++) {
         for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx]; pin_idx++) {
-            power_uninit_pb_pin(&pb_node->output_pins[port_idx][pin_idx]);
+            power_uninit_pb_pin(&pb_node->pins_by_output_port[port_idx][pin_idx]);
         }
     }
 
     for (port_idx = 0; port_idx < pb_node->num_clock_ports; port_idx++) {
         for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx]; pin_idx++) {
-            power_uninit_pb_pin(&pb_node->clock_pins[port_idx][pin_idx]);
+            power_uninit_pb_pin(&pb_node->pins_by_clock_port[port_idx][pin_idx]);
         }
     }
 

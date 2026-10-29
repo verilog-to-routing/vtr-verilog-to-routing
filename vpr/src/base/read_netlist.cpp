@@ -687,9 +687,9 @@ static void process_ports(pugi::xml_node Parent,
                     //Set rr_node_index to the pb_route for the appropriate port
                     const t_pb_graph_pin* pb_gpin = nullptr;
                     if (0 == strcmp(Parent.name(), "inputs")) {
-                        pb_gpin = &pb->pb_graph_node->input_pins[in_port][i];
+                        pb_gpin = &pb->pb_graph_node->pins_by_input_port[in_port][i];
                     } else {
-                        pb_gpin = &pb->pb_graph_node->clock_pins[clock_port][i];
+                        pb_gpin = &pb->pb_graph_node->pins_by_clock_port[clock_port][i];
                     }
 
                     VTR_ASSERT(pb_gpin != nullptr);
@@ -740,9 +740,9 @@ static void process_ports(pugi::xml_node Parent,
 
                     const t_pb_graph_pin* pb_gpin = nullptr;
                     if (0 == strcmp(Parent.name(), "inputs")) {
-                        pb_gpin = &pb->pb_graph_node->input_pins[in_port][i];
+                        pb_gpin = &pb->pb_graph_node->pins_by_input_port[in_port][i];
                     } else {
-                        pb_gpin = &pb->pb_graph_node->clock_pins[clock_port][i];
+                        pb_gpin = &pb->pb_graph_node->pins_by_clock_port[clock_port][i];
                     }
                     VTR_ASSERT(pb_gpin != nullptr);
                     int rr_node_index = pb_gpin->pin_count_in_cluster;
@@ -777,7 +777,7 @@ static void process_ports(pugi::xml_node Parent,
             if (pb->pb_graph_node->is_primitive()) {
                 /* primitives are drivers of nets */
                 for (int i = 0; i < num_tokens; i++) {
-                    const t_pb_graph_pin* pb_gpin = &pb->pb_graph_node->output_pins[out_port][i];
+                    const t_pb_graph_pin* pb_gpin = &pb->pb_graph_node->pins_by_output_port[out_port][i];
                     int rr_node_index = pb_gpin->pin_count_in_cluster;
                     if (strcmp(pins[i].c_str(), "open") != 0) {
                         AtomNetId net_id = atom_netlist.find_net(pins[i].c_str());
@@ -816,12 +816,12 @@ static void process_ports(pugi::xml_node Parent,
                         pin_name.c_str(), &num_ptrs, &num_sets, true,
                         true);
                     VTR_ASSERT(num_sets == 1 && num_ptrs[0] == 1);
-                    int rr_node_index = pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
+                    int rr_node_index = pb->pb_graph_node->pins_by_output_port[out_port][i].pin_count_in_cluster;
 
                     //Why does this not use the output pin used to determine the rr node index?
                     pb_route.insert(std::make_pair(rr_node_index, t_pb_route()));
                     pb_route[rr_node_index].driver_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
-                    pb_route[rr_node_index].pb_graph_pin = &pb->pb_graph_node->output_pins[out_port][i];
+                    pb_route[rr_node_index].pb_graph_pin = &pb->pb_graph_node->pins_by_output_port[out_port][i];
 
                     bool found = false;
                     for (int j = 0; j < pin_node[0][0]->num_output_edges; j++) {
@@ -922,7 +922,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist,
         for (int j = 0; j < num_input_ports; j++) {
             ClusterPortId input_port_id = clb_nlist.find_port(blk_id, block_type->pb_type->ports[j].name);
             for (int k = 0; k < pb->pb_graph_node->num_input_pins[j]; k++) {
-                t_pb_graph_pin* pb_graph_pin = &pb->pb_graph_node->input_pins[j][k];
+                t_pb_graph_pin* pb_graph_pin = &pb->pb_graph_node->pins_by_input_port[j][k];
                 VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
 
                 if (pb->pb_route.count(pb_graph_pin->pin_count_in_cluster)) {
@@ -941,7 +941,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist,
         for (int j = 0; j < num_output_ports; j++) {
             ClusterPortId output_port_id = clb_nlist.find_port(blk_id, block_type->pb_type->ports[j + num_input_ports].name);
             for (int k = 0; k < pb->pb_graph_node->num_output_pins[j]; k++) {
-                t_pb_graph_pin* pb_graph_pin = &pb->pb_graph_node->output_pins[j][k];
+                t_pb_graph_pin* pb_graph_pin = &pb->pb_graph_node->pins_by_output_port[j][k];
                 VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
 
                 if (pb->pb_route.count(pb_graph_pin->pin_count_in_cluster)) {
@@ -966,7 +966,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist,
         for (int j = 0; j < num_clock_ports; j++) {
             ClusterPortId clock_port_id = clb_nlist.find_port(blk_id, block_type->pb_type->ports[j + num_input_ports + num_output_ports].name);
             for (int k = 0; k < pb->pb_graph_node->num_clock_pins[j]; k++) {
-                t_pb_graph_pin* pb_graph_pin = &pb->pb_graph_node->clock_pins[j][k];
+                t_pb_graph_pin* pb_graph_pin = &pb->pb_graph_node->pins_by_clock_port[j][k];
                 VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
 
                 if (pb->pb_route.count(pb_graph_pin->pin_count_in_cluster)) {
@@ -1096,7 +1096,7 @@ static size_t mark_constant_generators_rec(const t_pb* pb, const t_pb_routes& pb
         bool const_gen = true;
         for (int i = 0; i < pb->pb_graph_node->num_input_ports && const_gen == true; i++) {
             for (int j = 0; j < pb->pb_graph_node->num_input_pins[i] && const_gen == true; j++) {
-                int cluster_pin_idx = pb->pb_graph_node->input_pins[i][j].pin_count_in_cluster;
+                int cluster_pin_idx = pb->pb_graph_node->pins_by_input_port[i][j].pin_count_in_cluster;
                 if (!pb_route.count(cluster_pin_idx)) continue;
                 if (pb_route[cluster_pin_idx].atom_net_id) {
                     const_gen = false;
@@ -1105,7 +1105,7 @@ static size_t mark_constant_generators_rec(const t_pb* pb, const t_pb_routes& pb
         }
         for (int i = 0; i < pb->pb_graph_node->num_clock_ports && const_gen == true; i++) {
             for (int j = 0; j < pb->pb_graph_node->num_clock_pins[i] && const_gen == true; j++) {
-                int cluster_pin_idx = pb->pb_graph_node->clock_pins[i][j].pin_count_in_cluster;
+                int cluster_pin_idx = pb->pb_graph_node->pins_by_clock_port[i][j].pin_count_in_cluster;
                 if (!pb_route.count(cluster_pin_idx)) continue;
                 if (pb_route[cluster_pin_idx].atom_net_id) {
                     const_gen = false;
@@ -1117,10 +1117,10 @@ static size_t mark_constant_generators_rec(const t_pb* pb, const t_pb_routes& pb
             const_gen_count++;
             for (int i = 0; i < pb->pb_graph_node->num_output_ports; i++) {
                 for (int j = 0; j < pb->pb_graph_node->num_output_pins[i]; j++) {
-                    int cluster_pin_idx = pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster;
+                    int cluster_pin_idx = pb->pb_graph_node->pins_by_output_port[i][j].pin_count_in_cluster;
                     if (!pb_route.count(cluster_pin_idx)) continue;
                     if (pb_route[cluster_pin_idx].atom_net_id) {
-                        AtomNetId net_id = pb_route[pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster].atom_net_id;
+                        AtomNetId net_id = pb_route[pb->pb_graph_node->pins_by_output_port[i][j].pin_count_in_cluster].atom_net_id;
                         AtomPinId driver_pin_id = atom_netlist.net_driver(net_id);
                         VTR_ASSERT(atom_netlist.pin_is_constant(driver_pin_id));
                     }
@@ -1175,11 +1175,11 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist) {
         for (int iport = 0; iport < gnode->num_input_ports; iport++) {
             if (gnode->num_input_pins[iport] <= 0) continue;
 
-            const AtomPortId port = atom_netlist.find_atom_port(blk, gnode->input_pins[iport][0].port->model_port);
+            const AtomPortId port = atom_netlist.find_atom_port(blk, gnode->pins_by_input_port[iport][0].port->model_port);
             if (!port) continue;
 
             for (int ipin = 0; ipin < gnode->num_input_pins[iport]; ipin++) {
-                const t_pb_graph_pin* gpin = &gnode->input_pins[iport][ipin];
+                const t_pb_graph_pin* gpin = &gnode->pins_by_input_port[iport][ipin];
                 VTR_ASSERT(gpin);
 
                 set_atom_pin_mapping(clb_nlist, blk, port, gpin);
@@ -1189,11 +1189,11 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist) {
         for (int iport = 0; iport < gnode->num_output_ports; iport++) {
             if (gnode->num_output_pins[iport] <= 0) continue;
 
-            const AtomPortId port = atom_netlist.find_atom_port(blk, gnode->output_pins[iport][0].port->model_port);
+            const AtomPortId port = atom_netlist.find_atom_port(blk, gnode->pins_by_output_port[iport][0].port->model_port);
             if (!port) continue;
 
             for (int ipin = 0; ipin < gnode->num_output_pins[iport]; ipin++) {
-                const t_pb_graph_pin* gpin = &gnode->output_pins[iport][ipin];
+                const t_pb_graph_pin* gpin = &gnode->pins_by_output_port[iport][ipin];
                 VTR_ASSERT(gpin);
 
                 set_atom_pin_mapping(clb_nlist, blk, port, gpin);
@@ -1203,11 +1203,11 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist) {
         for (int iport = 0; iport < gnode->num_clock_ports; iport++) {
             if (gnode->num_clock_pins[iport] <= 0) continue;
 
-            const AtomPortId port = atom_netlist.find_atom_port(blk, gnode->clock_pins[iport][0].port->model_port);
+            const AtomPortId port = atom_netlist.find_atom_port(blk, gnode->pins_by_clock_port[iport][0].port->model_port);
             if (!port) continue;
 
             for (int ipin = 0; ipin < gnode->num_clock_pins[iport]; ++ipin) {
-                const t_pb_graph_pin* gpin = &gnode->clock_pins[iport][ipin];
+                const t_pb_graph_pin* gpin = &gnode->pins_by_clock_port[iport][ipin];
                 VTR_ASSERT(gpin);
 
                 set_atom_pin_mapping(clb_nlist, blk, port, gpin);
