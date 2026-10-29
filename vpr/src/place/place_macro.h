@@ -239,6 +239,11 @@ class PlaceMacros {
                              const std::vector<t_physical_tile_type>& physical_tile_types,
                              const ClusteredNetlist& clb_nlist) const;
 
+    /// @brief Writes the macro list, the first part of write_place_macros_'s output, to an open file.
+    static void write_macro_list_(FILE* f,
+                                  const std::vector<t_pl_macro>& macros,
+                                  const ClusteredNetlist& clb_nlist);
+
     /** 
      * @brief Checks if a net is a direct connection, both driver and receiver should match the direclist specified in the architecture file
      * 
