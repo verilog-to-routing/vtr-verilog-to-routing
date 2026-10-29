@@ -169,13 +169,13 @@ LbRRNodeId LbTypeRRGraphBuilder::add_sink_(int capacity) {
 void LbTypeRRGraphBuilder::add_edges_to_top_level_input_pins_(const t_pb_graph_node* pb_graph_head, float cost) {
     for (int iport = 0; iport < pb_graph_head->num_input_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_head->num_input_pins[iport]; ipin++) {
-            add_edge_(LbRRNodeId(pb_graph_head->input_pins[iport][ipin].pin_count_in_cluster), cost);
+            add_edge_(LbRRNodeId(pb_graph_head->pins_by_input_port[iport][ipin].pin_count_in_cluster), cost);
         }
     }
 
     for (int iport = 0; iport < pb_graph_head->num_clock_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_head->num_clock_pins[iport]; ipin++) {
-            add_edge_(LbRRNodeId(pb_graph_head->clock_pins[iport][ipin].pin_count_in_cluster), cost);
+            add_edge_(LbRRNodeId(pb_graph_head->pins_by_clock_port[iport][ipin].pin_count_in_cluster), cost);
         }
     }
 }
@@ -229,15 +229,15 @@ void LbTypeRRGraphBuilder::build_nodes_and_edges_in_subtree_(const t_pb_graph_no
     if (pb_type->is_primitive()) {
         // Input and clock pins of a primitive each drive a sink. Output pins are
         // sources whose edges depend on the mode of the parent.
-        build_primitive_sink_pins_(pb_graph_node->input_pins);
+        build_primitive_sink_pins_(pb_graph_node->pins_by_input_port);
 
-        for (std::span<t_pb_graph_pin> port : pb_graph_node->output_pins) {
+        for (std::span<t_pb_graph_pin> port : pb_graph_node->pins_by_output_port) {
             for (const t_pb_graph_pin& pin : port) {
                 build_pb_pin_node_(pin, e_lb_rr_type::SOURCE, parent_node->pb_type->num_modes);
             }
         }
 
-        build_primitive_sink_pins_(pb_graph_node->clock_pins);
+        build_primitive_sink_pins_(pb_graph_node->pins_by_clock_port);
         return;
     }
 
@@ -251,7 +251,7 @@ void LbTypeRRGraphBuilder::build_nodes_and_edges_in_subtree_(const t_pb_graph_no
     }
 
     // Input pins fan out according to the mode of this node.
-    for (std::span<t_pb_graph_pin> port : pb_graph_node->input_pins) {
+    for (std::span<t_pb_graph_pin> port : pb_graph_node->pins_by_input_port) {
         for (const t_pb_graph_pin& pin : port) {
             build_pb_pin_node_(pin, e_lb_rr_type::INTERMEDIATE, pb_type->num_modes);
         }
@@ -261,7 +261,7 @@ void LbTypeRRGraphBuilder::build_nodes_and_edges_in_subtree_(const t_pb_graph_no
         // Top level output pins leave the block through the external interconnect node.
         for (int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
             for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
-                const t_pb_graph_pin* pb_pin = &pb_graph_node->output_pins[iport][ipin];
+                const t_pb_graph_pin* pb_pin = &pb_graph_node->pins_by_output_port[iport][ipin];
                 LbRRNodeId pin_index = LbRRNodeId(pb_pin->pin_count_in_cluster);
                 begin_node_(pin_index, e_lb_rr_type::INTERMEDIATE, 1, 1, pb_pin);
                 begin_mode_();
@@ -271,7 +271,7 @@ void LbTypeRRGraphBuilder::build_nodes_and_edges_in_subtree_(const t_pb_graph_no
         }
     } else {
         // Output pins of a sub cluster fan out according to the mode of the parent.
-        for (std::span<t_pb_graph_pin> port : pb_graph_node->output_pins) {
+        for (std::span<t_pb_graph_pin> port : pb_graph_node->pins_by_output_port) {
             for (const t_pb_graph_pin& pin : port) {
                 build_pb_pin_node_(pin, e_lb_rr_type::INTERMEDIATE, parent_node->pb_type->num_modes);
             }
@@ -279,7 +279,7 @@ void LbTypeRRGraphBuilder::build_nodes_and_edges_in_subtree_(const t_pb_graph_no
     }
 
     // Clock pins fan out according to the mode of this node.
-    for (std::span<t_pb_graph_pin> port : pb_graph_node->clock_pins) {
+    for (std::span<t_pb_graph_pin> port : pb_graph_node->pins_by_clock_port) {
         for (const t_pb_graph_pin& pin : port) {
             build_pb_pin_node_(pin, e_lb_rr_type::INTERMEDIATE, pb_type->num_modes);
         }

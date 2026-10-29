@@ -435,13 +435,13 @@ int get_sub_tile_index(ClusterBlockId blk) {
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node) {
     // Select the first pin in the pb_graph node.
     t_pb_graph_pin* first_pin = nullptr;
-    if (!pb_graph_node->input_pins.empty()) {
-        first_pin = &(pb_graph_node->input_pins[0][0]);
-    } else if (!pb_graph_node->output_pins.empty()) {
-        first_pin = &(pb_graph_node->output_pins[0][0]);
+    if (!pb_graph_node->pins_by_input_port.empty()) {
+        first_pin = &(pb_graph_node->pins_by_input_port[0][0]);
+    } else if (!pb_graph_node->pins_by_output_port.empty()) {
+        first_pin = &(pb_graph_node->pins_by_output_port[0][0]);
     } else {
-        VTR_ASSERT(!pb_graph_node->clock_pins.empty());
-        first_pin = &(pb_graph_node->clock_pins[0][0]);
+        VTR_ASSERT(!pb_graph_node->pins_by_clock_port.empty());
+        first_pin = &(pb_graph_node->pins_by_clock_port[0][0]);
     }
 
     // Use the pin count of the first pin in the cluster as the node id.
@@ -806,9 +806,9 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
     if (model_port->dir == IN_PORT) {
         if (!model_port->is_clock) {
             for (int i = 0; i < pb_graph_node->num_input_ports; i++) {
-                if (pb_graph_node->input_pins[i][0].port->model_port == model_port) {
+                if (pb_graph_node->pins_by_input_port[i][0].port->model_port == model_port) {
                     if (pb_graph_node->num_input_pins[i] > model_pin) {
-                        return &pb_graph_node->input_pins[i][model_pin];
+                        return &pb_graph_node->pins_by_input_port[i][model_pin];
                     } else {
                         return nullptr;
                     }
@@ -816,9 +816,9 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
             }
         } else {
             for (int i = 0; i < pb_graph_node->num_clock_ports; i++) {
-                if (pb_graph_node->clock_pins[i][0].port->model_port == model_port) {
+                if (pb_graph_node->pins_by_clock_port[i][0].port->model_port == model_port) {
                     if (pb_graph_node->num_clock_pins[i] > model_pin) {
-                        return &pb_graph_node->clock_pins[i][model_pin];
+                        return &pb_graph_node->pins_by_clock_port[i][model_pin];
                     } else {
                         return nullptr;
                     }
@@ -828,9 +828,9 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
     } else {
         VTR_ASSERT(model_port->dir == OUT_PORT);
         for (int i = 0; i < pb_graph_node->num_output_ports; i++) {
-            if (pb_graph_node->output_pins[i][0].port->model_port == model_port) {
+            if (pb_graph_node->pins_by_output_port[i][0].port->model_port == model_port) {
                 if (pb_graph_node->num_output_pins[i] > model_pin) {
-                    return &pb_graph_node->output_pins[i][model_pin];
+                    return &pb_graph_node->pins_by_output_port[i][model_pin];
                 } else {
                     return nullptr;
                 }
@@ -903,7 +903,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_gra
             if (count - pb_graph_node->num_input_pins[i] >= 0) {
                 count -= pb_graph_node->num_input_pins[i];
             } else {
-                return &pb_graph_node->input_pins[i][count];
+                return &pb_graph_node->pins_by_input_port[i][count];
             }
         }
     } else if (ipin < pb_type->num_input_pins + pb_type->num_output_pins) {
@@ -912,7 +912,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_gra
             if (count - pb_graph_node->num_output_pins[i] >= 0) {
                 count -= pb_graph_node->num_output_pins[i];
             } else {
-                return &pb_graph_node->output_pins[i][count];
+                return &pb_graph_node->pins_by_output_port[i][count];
             }
         }
     } else {
@@ -921,7 +921,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_gra
             if (count - pb_graph_node->num_clock_pins[i] >= 0) {
                 count -= pb_graph_node->num_clock_pins[i];
             } else {
-                return &pb_graph_node->clock_pins[i][count];
+                return &pb_graph_node->pins_by_clock_port[i][count];
             }
         }
     }
@@ -949,7 +949,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
     for (int iport = 0; iport < pb_gnode->num_input_ports; iport++) {
         if (pb_gnode->num_input_pins[iport] < index) continue;
 
-        const t_pb_graph_pin* gpin = &pb_gnode->input_pins[iport][index];
+        const t_pb_graph_pin* gpin = &pb_gnode->pins_by_input_port[iport][index];
 
         if (gpin->port->name == port_name) {
             return gpin;
@@ -958,7 +958,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
     for (int iport = 0; iport < pb_gnode->num_output_ports; iport++) {
         if (pb_gnode->num_output_pins[iport] < index) continue;
 
-        const t_pb_graph_pin* gpin = &pb_gnode->output_pins[iport][index];
+        const t_pb_graph_pin* gpin = &pb_gnode->pins_by_output_port[iport][index];
 
         if (gpin->port->name == port_name) {
             return gpin;
@@ -967,7 +967,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
     for (int iport = 0; iport < pb_gnode->num_clock_ports; iport++) {
         if (pb_gnode->num_clock_pins[iport] < index) continue;
 
-        const t_pb_graph_pin* gpin = &pb_gnode->clock_pins[iport][index];
+        const t_pb_graph_pin* gpin = &pb_gnode->pins_by_clock_port[iport][index];
 
         if (gpin->port->name == port_name) {
             return gpin;
@@ -982,21 +982,21 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
 static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node) {
     for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
-            t_pb_graph_pin* pb_pin = &pb_graph_node->input_pins[iport][ipin];
+            t_pb_graph_pin* pb_pin = &pb_graph_node->pins_by_input_port[iport][ipin];
             VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == nullptr);
             pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
         }
     }
     for (int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
-            t_pb_graph_pin* pb_pin = &pb_graph_node->output_pins[iport][ipin];
+            t_pb_graph_pin* pb_pin = &pb_graph_node->pins_by_output_port[iport][ipin];
             VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == nullptr);
             pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
         }
     }
     for (int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
-            t_pb_graph_pin* pb_pin = &pb_graph_node->clock_pins[iport][ipin];
+            t_pb_graph_pin* pb_pin = &pb_graph_node->pins_by_clock_port[iport][ipin];
             VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == nullptr);
             pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
         }
@@ -1074,17 +1074,17 @@ static void load_pin_id_to_pb_mapping_rec(t_pb* cur_pb, t_pb** pin_id_to_pb_mapp
 
     for (int i = 0; i < pb_graph_node->num_input_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-            pin_id_to_pb_mapping[pb_graph_node->input_pins[i][j].pin_count_in_cluster] = cur_pb;
+            pin_id_to_pb_mapping[pb_graph_node->pins_by_input_port[i][j].pin_count_in_cluster] = cur_pb;
         }
     }
     for (int i = 0; i < pb_graph_node->num_output_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-            pin_id_to_pb_mapping[pb_graph_node->output_pins[i][j].pin_count_in_cluster] = cur_pb;
+            pin_id_to_pb_mapping[pb_graph_node->pins_by_output_port[i][j].pin_count_in_cluster] = cur_pb;
         }
     }
     for (int i = 0; i < pb_graph_node->num_clock_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-            pin_id_to_pb_mapping[pb_graph_node->clock_pins[i][j].pin_count_in_cluster] = cur_pb;
+            pin_id_to_pb_mapping[pb_graph_node->pins_by_clock_port[i][j].pin_count_in_cluster] = cur_pb;
         }
     }
 

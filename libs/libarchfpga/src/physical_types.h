@@ -1374,13 +1374,13 @@ class t_pb_graph_node {
 
     /// Pins of each input port, as views into pins().
     /// [0..num_input_ports-1][0..num_port_pins-1]
-    std::vector<std::span<t_pb_graph_pin>> input_pins;
+    std::vector<std::span<t_pb_graph_pin>> pins_by_input_port;
     /// Pins of each output port, as views into pins().
     /// [0..num_output_ports-1][0..num_port_pins-1]
-    std::vector<std::span<t_pb_graph_pin>> output_pins;
+    std::vector<std::span<t_pb_graph_pin>> pins_by_output_port;
     /// Pins of each clock port, as views into pins().
     /// [0..num_clock_ports-1][0..num_port_pins-1]
-    std::vector<std::span<t_pb_graph_pin>> clock_pins;
+    std::vector<std::span<t_pb_graph_pin>> pins_by_clock_port;
 
     int num_input_ports;
     int num_output_ports;
