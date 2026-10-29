@@ -63,7 +63,7 @@ static int add_port_logical_classes(t_logical_block_type* logical_block,
                                     const std::vector<std::span<t_pb_graph_pin>>& pb_graph_pins);
 
 static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_node,
-                                             t_pb_graph_node** pb_graph_children_nodes,
+                                             const std::vector<std::vector<t_pb_graph_node>>& pb_graph_children_nodes,
                                              const t_mode* mode,
                                              bool load_power_structures,
                                              std::deque<t_pb_graph_edge>& pb_graph_edges);
@@ -72,7 +72,7 @@ static void store_pin_sinks_edge_id(t_pb_graph_node* pb_graph_node);
 
 static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                                                       const t_pb_graph_node* pb_graph_parent_node,
-                                                      t_pb_graph_node** pb_graph_children_nodes,
+                                                      const std::vector<std::vector<t_pb_graph_node>>& pb_graph_children_nodes,
                                                       const bool interconnect_error_check,
                                                       const bool is_input_to_interc,
                                                       const Tokens& tokens,
@@ -414,13 +414,13 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 
     /* Allocate and load child nodes for each mode and create interconnect in each mode */
 
-    pb_graph_node->child_pb_graph_nodes = (t_pb_graph_node***)vtr::calloc(pb_type->num_modes, sizeof(t_pb_graph_node**));
+    // Size each level once. Nothing resizes them after this.
+    pb_graph_node->child_pb_graph_nodes = std::vector<std::vector<std::vector<t_pb_graph_node>>>(pb_type->num_modes);
     for (i = 0; i < pb_type->num_modes; i++) {
-        pb_graph_node->child_pb_graph_nodes[i] = (t_pb_graph_node**)vtr::calloc(pb_type->modes[i].num_pb_type_children,
-                                                                                sizeof(t_pb_graph_node*));
+        pb_graph_node->child_pb_graph_nodes[i] = std::vector<std::vector<t_pb_graph_node>>(pb_type->modes[i].num_pb_type_children);
         for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-            pb_graph_node->child_pb_graph_nodes[i][j] = new t_pb_graph_node[pb_type->modes[i].pb_type_children[j].num_pb]();
             int num_children_of_type = pb_type->modes[i].pb_type_children[j].num_pb;
+            pb_graph_node->child_pb_graph_nodes[i][j] = std::vector<t_pb_graph_node>(num_children_of_type);
 
             for (k = 0; k < num_children_of_type; k++) {
                 alloc_and_load_pb_graph(&pb_graph_node->child_pb_graph_nodes[i][j][k],
@@ -753,7 +753,7 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
  * mode: mode of operation
  */
 static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_node,
-                                             t_pb_graph_node** pb_graph_children_nodes,
+                                             const std::vector<std::vector<t_pb_graph_node>>& pb_graph_children_nodes,
                                              const t_mode* mode,
                                              bool load_power_structures,
                                              std::deque<t_pb_graph_edge>& pb_graph_edges) {
@@ -858,7 +858,7 @@ static void store_pin_sinks_edge_id(t_pb_graph_node* pb_graph_node) {
  */
 t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                                                            const t_pb_graph_node* pb_graph_parent_node,
-                                                           t_pb_graph_node** pb_graph_children_nodes,
+                                                           const std::vector<std::vector<t_pb_graph_node>>& pb_graph_children_nodes,
                                                            std::string_view port_string,
                                                            int** num_ptrs,
                                                            int* num_sets,
@@ -1157,7 +1157,7 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
  */
 static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                                                       const t_pb_graph_node* pb_graph_parent_node,
-                                                      t_pb_graph_node** pb_graph_children_nodes,
+                                                      const std::vector<std::vector<t_pb_graph_node>>& pb_graph_children_nodes,
                                                       const bool interconnect_error_check,
                                                       const bool is_input_to_interc,
                                                       const Tokens& tokens,
@@ -1175,7 +1175,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
     int max_pb_node_array = 0;
 
     t_mode* mode = nullptr;
-    if (pb_graph_children_nodes) {
+    if (!pb_graph_children_nodes.empty()) {
         mode = pb_graph_children_nodes[0][0].pb_type->parent_mode;
     }
 
@@ -1239,7 +1239,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
             for (int i = 0; i < mode->num_pb_type_children; i++) {
                 VTR_ASSERT(&mode->pb_type_children[i] == pb_graph_children_nodes[i][0].pb_type);
                 if (mode->pb_type_children[i].name == tokens[*token_index].data) {
-                    pb_node_array = pb_graph_children_nodes[i];
+                    pb_node_array = pb_graph_children_nodes[i].data();
                     max_pb_node_array = mode->pb_type_children[i].num_pb;
                     found = true;
                     (*token_index)++;

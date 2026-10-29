@@ -197,7 +197,7 @@ const t_pb_graph_node* LbHierPathParser::find_matching_pb_graph_node(const t_pb_
         return root;
     }
 
-    if (root->is_primitive() || root->child_pb_graph_nodes == nullptr) {
+    if (root->is_primitive() || root->child_pb_graph_nodes.empty()) {
         return nullptr;
     }
 

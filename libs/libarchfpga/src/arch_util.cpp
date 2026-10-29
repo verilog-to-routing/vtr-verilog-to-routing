@@ -267,11 +267,8 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
             for (int k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {
                 free_pb_graph(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
             }
-            delete[] pb_graph_node->child_pb_graph_nodes[i][j];
         }
-        vtr::free((void*)pb_graph_node->child_pb_graph_nodes[i]);
     }
-    vtr::free((void*)pb_graph_node->child_pb_graph_nodes);
 }
 
 static void free_pb_type(t_pb_type* pb_type) {

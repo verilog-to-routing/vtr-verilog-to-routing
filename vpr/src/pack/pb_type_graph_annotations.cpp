@@ -133,9 +133,7 @@ static void load_pack_pattern_annotations(const int line_num,
                                           std::string_view value,
                                           bool allow_multi_fanout) {
     int *num_in_ptrs, *num_out_ptrs, num_in_sets, num_out_sets;
-    t_pb_graph_node** children = nullptr;
-
-    children = pb_graph_node->child_pb_graph_nodes[mode];
+    const std::vector<std::vector<t_pb_graph_node>>& children = pb_graph_node->child_pb_graph_nodes[mode];
     t_pb_graph_pin*** in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children,
                                                                          annot_in_pins, &num_in_ptrs, &num_in_sets, false, false);
     t_pb_graph_pin*** out_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children,
@@ -195,7 +193,6 @@ static void load_delay_annotations(const int line_num,
     int i, j, k;
     t_pb_graph_pin ***in_port, ***out_port;
     int *num_in_ptrs, *num_out_ptrs, num_in_sets, num_out_sets;
-    t_pb_graph_node** children = nullptr;
 
     int num_inputs, num_outputs;
     int num_entries_in_matrix;
@@ -222,11 +219,10 @@ static void load_delay_annotations(const int line_num,
 
     /* Determine what pins to read based on delay type */
     num_inputs = num_outputs = 0;
-    if (mode == UNDEFINED) {
-        children = nullptr;
-    } else {
-        children = pb_graph_node->child_pb_graph_nodes[mode];
-    }
+
+    VTR_ASSERT(pb_graph_node->is_primitive() == (mode == UNDEFINED));
+    const std::vector<std::vector<t_pb_graph_node>> no_children;
+    const std::vector<std::vector<t_pb_graph_node>>& children = pb_graph_node->is_primitive() ? no_children : pb_graph_node->child_pb_graph_nodes[mode];
     if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN

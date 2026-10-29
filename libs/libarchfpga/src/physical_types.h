@@ -1396,7 +1396,9 @@ class t_pb_graph_node {
     /// [0..num_clock_ports-1]
     std::vector<int> num_clock_pins;
 
-    t_pb_graph_node*** child_pb_graph_nodes; /* [0..num_modes-1][0..num_pb_type_in_mode-1][0..num_pb-1] */
+    /// Child nodes of each mode, by child pb_type and then by instance.
+    /// [0..num_modes-1][0..num_pb_type_in_mode-1][0..num_pb-1]
+    std::vector<std::vector<std::vector<t_pb_graph_node>>> child_pb_graph_nodes;
     t_pb_graph_node* parent_pb_graph_node;
 
     int total_pb_pins; /* only valid for top-level */

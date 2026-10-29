@@ -289,7 +289,7 @@ t_pb_type* identify_le_block_type(t_logical_block_type_ptr logic_block_type) {
     // search down the hierarchy starting from the pb_graph_head
     auto pb_graph_node = logic_block_type->pb_graph_head;
 
-    while (pb_graph_node->child_pb_graph_nodes) {
+    while (!pb_graph_node->child_pb_graph_nodes.empty()) {
         // if this pb_graph_node has more than one mode or more than one pb_type in the default mode return
         // nullptr since the logic block of this architecture is not a CLB-like logic block
         if (pb_graph_node->pb_type->num_modes > 1 || pb_graph_node->pb_type->modes[0].num_pb_type_children > 1)
