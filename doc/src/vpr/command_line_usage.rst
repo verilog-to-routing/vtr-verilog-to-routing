@@ -973,6 +973,13 @@ For people not working on CAD, you can probably leave all the options to their d
     readable (JSON or XML) or human readable (TXT) format. Format is selected
     based on the extension of <file>.
 
+.. option:: --write_device_grid <file>
+
+    Writes the device grid to <file> once it is built: every tile type with its sub-tiles, their capacity and the
+    logical block types they host, then the layer, location and type of every tile's root location. External tools
+    can count the sites of a block type inside any area of the device from this file without rebuilding the grid
+    from the architecture.
+
 .. _placer_options:
 
 Placer Options

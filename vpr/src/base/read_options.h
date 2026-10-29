@@ -51,6 +51,7 @@ struct t_options {
     argparse::ArgValue<std::string> read_intra_cluster_router_lookahead;
 
     argparse::ArgValue<std::string> write_block_usage;
+    argparse::ArgValue<std::string> write_device_grid;
 
     // Stage Options
     argparse::ArgValue<bool> do_packing;
