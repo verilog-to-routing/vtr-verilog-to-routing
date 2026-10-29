@@ -1419,20 +1419,17 @@ class t_pb_graph_node {
     bool is_root() const { return this->parent_pb_graph_node == nullptr; }
 
     /// Returns the number of pins on this graph node
-    ///  Note this is the total for all ports on this node excluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)
-    int num_pins() const { return (int)pins_.size(); }
+    /// Note this is the total for all ports on this node excluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)
+    int num_pins() const;
 
     /// All pins of this node in pin_count_in_cluster order, which follows
     /// the port order of pb_type.
-    std::span<const t_pb_graph_pin> pins() const { return pins_; }
-    std::span<t_pb_graph_pin> mutable_pins() { return pins_; }
+    std::span<const t_pb_graph_pin> pins() const;
+    std::span<t_pb_graph_pin> mutable_pins();
 
     /// Creates the pins of this node. Called once by the builder,
     /// since the port views and the edges point into the storage.
-    void alloc_pins(int num_pins) {
-        VTR_ASSERT(pins_.empty());
-        pins_ = std::vector<t_pb_graph_pin>(num_pins);
-    }
+    void alloc_pins(int num_pins);
 
     /// Returns a string containing the hierarchical type name of the pb_graph_node
     /// Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
@@ -1546,6 +1543,19 @@ class t_pb_graph_pin {
     /// if full_description is set to false it will only return lut6[0].in[0]
     std::string to_string(const bool full_description = true) const;
 };
+
+// These members touch the pin storage, so they are defined
+// once t_pb_graph_pin is complete.
+inline int t_pb_graph_node::num_pins() const { return (int)pins_.size(); }
+
+inline std::span<const t_pb_graph_pin> t_pb_graph_node::pins() const { return pins_; }
+
+inline std::span<t_pb_graph_pin> t_pb_graph_node::mutable_pins() { return pins_; }
+
+inline void t_pb_graph_node::alloc_pins(int num_pins) {
+    VTR_ASSERT(pins_.empty());
+    pins_ = std::vector<t_pb_graph_pin>(num_pins);
+}
 
 /** Describes a pb graph edge
  *
