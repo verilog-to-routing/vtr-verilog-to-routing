@@ -174,12 +174,9 @@ static std::set<t_tile_pin> find_connected_tile_pins(const t_pb_graph_pin* pin,
 
             const std::vector<t_pb_graph_edge*>& edges = forward ? cur_pin->output_edges : cur_pin->input_edges;
             for (const t_pb_graph_edge* edge : edges) {
-                int num_pins = forward ? edge->num_output_pins : edge->num_input_pins;
-                for (int ipin = 0; ipin < num_pins; ipin++) {
-                    const t_pb_graph_pin* next_pin = forward ? edge->output_pins[ipin] : edge->input_pins[ipin];
-                    if (visited.insert(next_pin).second)
-                        stack.push_back(next_pin);
-                }
+                const t_pb_graph_pin* next_pin = forward ? edge->output_pin() : edge->input_pin();
+                if (visited.insert(next_pin).second)
+                    stack.push_back(next_pin);
             }
         }
     }

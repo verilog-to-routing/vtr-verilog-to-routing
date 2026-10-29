@@ -148,7 +148,7 @@ static void load_pack_pattern_annotations(const int line_num,
                 for (int n = 0; n < num_out_ptrs[m]; n++) {
                     int iedge;
                     for (iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
-                        if (in_port[i][j]->output_edges[iedge]->output_pins[0] == out_port[m][n]) {
+                        if (in_port[i][j]->output_edges[iedge]->output_pin() == out_port[m][n]) {
                             break;
                         }
                     }
@@ -323,7 +323,7 @@ static void load_delay_annotations(const int line_num,
                     int p = 0;
                     for (int iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
                         t_pb_graph_edge* pb_edge = in_port[i][j]->output_edges[iedge];
-                        if (out_pins.contains(pb_edge->output_pins[0])) {
+                        if (out_pins.contains(pb_edge->output_pin())) {
                             if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX) {
                                 if (pb_edge->delay_max != 0) {
                                     vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,

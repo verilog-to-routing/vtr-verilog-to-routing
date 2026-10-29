@@ -1,6 +1,7 @@
 
 #include "pack.h"
 
+#include <map>
 #include <unordered_set>
 #include "PreClusterTimingManager.h"
 #include "device_grid.h"
@@ -17,6 +18,7 @@
 #include "partition_region.h"
 #include "prepack.h"
 #include "stats.h"
+#include "relative_macro_packing.h"
 #include "verify_flat_placement.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
@@ -239,6 +241,7 @@ bool try_pack(const t_packer_opts& packer_opts,
               const std::map<t_logical_block_type_ptr, size_t>& estimated_type_instance_counts) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
     // The clusterer modifies the device context by increasing the size of the
     // device if needed.
     DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
@@ -318,6 +321,7 @@ bool try_pack(const t_packer_opts& packer_opts,
     // Initialize the cluster legalizer.
     ClusterLegalizer cluster_legalizer(atom_ctx.netlist(),
                                        prepacker,
+                                       floorplanning_ctx.relative_macros,
                                        packer_opts.target_external_pin_util,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
@@ -325,6 +329,7 @@ bool try_pack(const t_packer_opts& packer_opts,
                                        packer_opts.memoize_cluster_packings,
                                        packer_opts.cluster_router_hot_start,
                                        arch.models,
+                                       device_ctx.logical_block_types,
                                        packer_opts.pack_verbosity);
     // Construct the APPack Context.
     APPackContext appack_ctx(flat_placement_info,
@@ -397,6 +402,16 @@ bool try_pack(const t_packer_opts& packer_opts,
                                                                  cluster_legalizer.get_target_external_pin_util(),
                                                                  packer_opts,
                                                                  appack_ctx);
+
+        // On the final packing pass, check that all atoms in each relative placement
+        // group share a cluster. Report split groups as an error if packing succeeded,
+        // or as a warning if packing already failed.
+        if (next_packer_state == e_packer_state::SUCCESS || next_packer_state == e_packer_state::FAILURE) {
+            report_split_relative_groups(cluster_legalizer,
+                                         floorplanning_ctx.relative_macros,
+                                         atom_ctx.netlist(),
+                                         next_packer_state == e_packer_state::SUCCESS);
+        }
 
         // Set up for the options used for the next packer state.
         // NOTE: This must be done here (and not at the start of the next packer
