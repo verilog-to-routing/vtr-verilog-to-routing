@@ -1512,12 +1512,14 @@ class t_pb_graph_pin {
     int pin_class = 0;
 
     /// The grouping of pins that this particular pin belongs to.
-    /// @note Applies to pins of primitive only. 
+    /// @note Applies to pins of primitive only.
     /// [0..depth-1]
     std::vector<int> parent_pin_class;
-    /* Applies to output pins of primitives only */
-    t_pb_graph_pin*** list_of_connectable_input_pin_ptrs = nullptr; /* [0..depth-1][0..num_connectable_primitive_input_pins-1] what input pins this output can connect to without exiting cluster at given depth */
-    int* num_connectable_primitive_input_pins = nullptr;            /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
+    /// What input pins this output can connect to without exiting cluster at given depth.
+    /// @note Applies to output pins of primitives only.
+    /// [0..depth-1][0..num_connectable_primitive_input_pins-1]
+    std::vector<std::vector<t_pb_graph_pin*>> list_of_connectable_input_pin_ptrs;
+    int* num_connectable_primitive_input_pins = nullptr; /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
 
     bool is_forced_connection = false; /* This output pin connects to one and only one input pin */
 
