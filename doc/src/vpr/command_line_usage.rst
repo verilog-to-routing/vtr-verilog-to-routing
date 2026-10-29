@@ -980,6 +980,12 @@ For people not working on CAD, you can probably leave all the options to their d
     can count the sites of a block type inside any area of the device from this file without rebuilding the grid
     from the architecture.
 
+.. option:: --write_placement_macros <file>
+
+    Writes the placement macros (carry chains) to <file> when placement starts, or when a placement is loaded:
+    each macro's member blocks with their x, y and sub-tile offsets from the macro head. The file holds the macro
+    list of the ``place_macros.echo`` echo file without that file's table of direct connections.
+
 .. _placer_options:
 
 Placer Options

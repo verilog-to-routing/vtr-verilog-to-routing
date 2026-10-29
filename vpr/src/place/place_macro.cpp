@@ -604,6 +604,12 @@ void PlaceMacros::alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>
     }
 }
 
+void PlaceMacros::write_macros(const std::string& filename, const ClusteredNetlist& clb_nlist) const {
+    FILE* f = vtr::fopen(filename.c_str(), "w");
+    write_macro_list_(f, pl_macros_, clb_nlist);
+    fclose(f);
+}
+
 void PlaceMacros::write_macro_list_(FILE* f,
                                     const std::vector<t_pl_macro>& macros,
                                     const ClusteredNetlist& clb_nlist) {

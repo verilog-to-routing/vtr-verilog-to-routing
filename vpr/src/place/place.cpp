@@ -51,6 +51,9 @@ void try_place(const Netlist<>& net_list,
 
     // Initialize the variables in the placement context.
     mutable_placement.init_placement_context(directs);
+    if (!placer_opts.write_placement_macros.empty()) {
+        mutable_placement.place_macros->write_macros(placer_opts.write_placement_macros, cluster_ctx.clb_nlist);
+    }
 
     // Re-initialize cluster constraints if erased by a previous placement run.
     // This ensures constraints are available when iterating to find the minimum channel width.

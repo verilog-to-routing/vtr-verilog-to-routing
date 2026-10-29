@@ -189,6 +189,7 @@ void SetupVPR(const t_options* options,
     fileNameOpts->flat_place_verbosity = options->flat_place_verbosity;
     fileNameOpts->write_block_usage = options->write_block_usage;
     fileNameOpts->write_device_grid = options->write_device_grid;
+    fileNameOpts->write_placement_macros = options->write_placement_macros;
 
     fileNameOpts->verify_file_digests = options->verify_file_digests;
 
@@ -762,6 +763,7 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
 
     PlacerOpts->write_placement_delay_lookup = Options.write_placement_delay_lookup;
     PlacerOpts->read_placement_delay_lookup = Options.read_placement_delay_lookup;
+    PlacerOpts->write_placement_macros = Options.write_placement_macros;
 
     PlacerOpts->allowed_tiles_for_delay_model = Options.allowed_tiles_for_delay_model;
 

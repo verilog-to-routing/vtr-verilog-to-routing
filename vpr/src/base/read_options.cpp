@@ -2222,6 +2222,12 @@ static void add_file_options(argparse::ArgumentParser& parser, t_options& args) 
             "sub-tiles, their capacity and the logical block types they host, then the root location of every "
             "tile. External tools can count the sites of a block type inside any area of the device from it.")
         .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_placement_macros, "--write_placement_macros")
+        .help(
+            "Writes the placement macros (carry chains) to the specified text file when placement starts or a "
+            "placement is loaded: each macro's member blocks with their offsets from the macro head.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 }
 
 /**
