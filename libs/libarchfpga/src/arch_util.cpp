@@ -222,8 +222,6 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
 
     // Free the arrays that the feasibility filter attaches to primitive pins
     for (t_pb_graph_pin& pin : pb_graph_node->mutable_pins()) {
-        delete[] pin.parent_pin_class;
-
         if (pin.list_of_connectable_input_pin_ptrs) {
             for (int k = 0; k < pb_type->depth; k++) {
                 delete[] pin.list_of_connectable_input_pin_ptrs[k];
