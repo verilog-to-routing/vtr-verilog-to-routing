@@ -8,7 +8,7 @@
 # for the routing_done congestion overlays) — passing --renderer <renderer>
 # explicitly each time — then compares each emitted PNG against the
 # matching per-renderer golden at vpr/test/gui/golden/<renderer>/<case>.png
-# using SSIM (compare_images.py).
+# with an exact pixel comparison (compare_images.py).
 #
 # Goldens stay valid across VPR versions because --analysis runs only the
 # analyzer (pack/place/route LOAD from disk), so different VPR heuristics
@@ -31,28 +31,17 @@
 #                  next to this script). Per-renderer goldens live under
 #                  golden/<renderer>/<case>.png. Missing goldens FAIL their
 #                  case (strict mode).
-#   [threshold]  = $VPR_GUI_SSIM_THRESHOLD or 0.98
-#                  0.98 catches real regressions while tolerating sub-pixel
-#                  drift between Qt minor versions / platforms. Override
-#                  via env var or positional arg when running locally
-#                  against a single-platform corpus (e.g. 0.999 for a
-#                  same-host self-comparison).
+#   [threshold]  = $VPR_GUI_SSIM_THRESHOLD, else unset. An optional SSIM
+#                  floor applied on top of the exact pixel gate; it never
+#                  loosens it.
 #
-# Exit: 0 if all comparisons pass, 1 otherwise.
+# Exit: 0 if every comparison ran and passed, 1 if any failed, 2 if any were
+#       skipped or nothing was compared (ctest SKIP_RETURN_CODE).
 
 set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
-
-# CI offscreen Mesa renders differ from goldens captured on developer hosts
-# (different GL implementation, AA, font hinting). Skip under CI=true so
-# the SSIM regression gate only runs against same-host goldens. Exit 2 is
-# honoured by ctest's SKIP_RETURN_CODE on test_vpr_gui_visual.
-if [[ "${CI:-}" == "true" ]]; then
-    echo "SKIP: CI offscreen Mesa cannot be compared against developer-host goldens" >&2
-    exit 2
-fi
 
 VPR_ARG="${1:-${REPO_ROOT}/build/vpr/vpr}"
 ARCH_ARG="${2:-${REPO_ROOT}/vtr_flow/arch/timing}"
@@ -63,7 +52,9 @@ readonly ARCH_DIR="$(cd "${ARCH_ARG}" && pwd)"
 readonly BENCH_DIR="$(cd "${BENCH_ARG}" && pwd)"
 
 readonly GOLDEN_DIR="${4:-${SCRIPT_DIR}/golden}"
-readonly THRESHOLD="${5:-${VPR_GUI_SSIM_THRESHOLD:-0.98}}"
+# Unset by default so compare_images.py owns the value. Hard-coding it here
+# is how the runner drifted to 0.98 while ctest passed 0.999.
+readonly THRESHOLD="${5:-${VPR_GUI_SSIM_THRESHOLD:-}}"
 readonly ARCH="${ARCH_DIR}/k6_N10_40nm.xml"
 readonly BENCH="${BENCH_DIR}/mult_4x4.blif"
 readonly COMPARE="${SCRIPT_DIR}/compare_images.py"
@@ -95,28 +86,11 @@ require_file "compare_images.py" "${COMPARE}"
 # Prefer (in order): $VPR_GUI_PYTHON, repo .venv, an env-active VIRTUAL_ENV,
 # any python3/python on PATH that can import skimage. Fail fast with one
 # actionable message if none works.
-resolve_python() {
-    local candidates=()
-    [[ -n "${VPR_GUI_PYTHON:-}" ]] && candidates+=("${VPR_GUI_PYTHON}")
-    [[ -x "${REPO_ROOT}/.venv/bin/python3" ]] && candidates+=("${REPO_ROOT}/.venv/bin/python3")
-    [[ -n "${VIRTUAL_ENV:-}" && -x "${VIRTUAL_ENV}/bin/python3" ]] && candidates+=("${VIRTUAL_ENV}/bin/python3")
-    candidates+=(python3 python)
-    for cand in "${candidates[@]}"; do
-        local resolved
-        resolved="$(command -v "${cand}" 2>/dev/null || true)"
-        [[ -z "${resolved}" ]] && continue
-        if "${resolved}" -c 'import skimage, PIL, numpy' >/dev/null 2>&1; then
-            echo "${resolved}"
-            return 0
-        fi
-    done
-    return 1
-}
-if ! PYTHON="$(resolve_python)"; then
+# shellcheck source=find_gui_python.sh
+source "${SCRIPT_DIR}/find_gui_python.sh"
+if ! PYTHON="$(resolve_gui_python)"; then
     echo "ERROR: No Python interpreter with scikit-image / Pillow / numpy found." >&2
-    echo "       Tried: \$VPR_GUI_PYTHON, ${REPO_ROOT}/.venv/bin/python3, \$VIRTUAL_ENV, python3, python." >&2
-    echo "       Install with:  python3 -m pip install scikit-image Pillow numpy" >&2
-    echo "       Or point at one explicitly:  VPR_GUI_PYTHON=/path/to/python make gui-tests" >&2
+    gui_python_hint
     exit 2
 fi
 readonly PYTHON
@@ -129,10 +103,13 @@ export QT_SCALE_FACTOR=1
 # previous session can't be mistaken for the current one.
 #
 # Diff-write policy:
-#   default              → diff written only when SSIM < threshold (FAIL).
+#   default              → diff written only when the case FAILs.
 #   VPR_GUI_DEBUG=1      → diff written for every case (PASS and FAIL),
 #                          set by `run_all_tests.sh --debug`.
-readonly TEST_OUTDIR="${REPO_ROOT}/build/vpr/test/gui/artifacts"
+# REPO_ROOT is VTR's SOURCE root; under a nested build <src>/build is not the
+# build tree, and this dir gets rm -rf'd below.
+# CMake passes the real one; the default only serves a standalone build.
+readonly TEST_OUTDIR="${VPR_GUI_ARTIFACT_DIR:-${REPO_ROOT}/build/vpr/test/gui/artifacts}"
 rm -rf "${TEST_OUTDIR}"
 
 PASS=0
@@ -151,12 +128,12 @@ for r in "${RENDERERS[@]}"; do
 done
 if [[ "${have_any_goldens}" -eq 0 ]]; then
     echo "WARNING: No golden images in ${GOLDEN_DIR}/{${RENDERERS[*]// /,}}/"
-    echo "Run generate_goldens.sh first (requires DEF-004 to be fixed)."
+    echo "Run generate_goldens.sh first."
     echo ""
     echo "=== Visual Regression Summary ==="
     echo "    Passed:  0"
     echo "    Failed:  0"
-    echo "    Skipped: ALL (no golden images — blocked by DEF-004)"
+    echo "    Skipped: ALL (no golden images)"
     echo "    RESULT: SKIP"
     exit 2
 fi
@@ -166,7 +143,7 @@ echo "    VPR:       ${VPR}"
 echo "    Bench:     ${BENCH}"
 echo "    Goldens:   ${GOLDEN_DIR}"
 echo "    Python:    ${PYTHON}"
-echo "    Threshold: ${THRESHOLD}"
+echo "    Threshold: ${THRESHOLD:-none (exact pixel match only)}"
 echo "    Renderers: ${RENDERERS[*]}"
 echo "    Cases:     ${#VISUAL_CASE_NAMES[@]} × ${#RENDERERS[@]} = $(( ${#VISUAL_CASE_NAMES[@]} * ${#RENDERERS[@]} ))"
 echo ""
@@ -187,10 +164,42 @@ for renderer in "${RENDERERS[@]}"; do
         --renderer "${renderer}"
 done
 
+# A host without QRhi support (no GPU, older Mesa) silently falls back to the
+# immediate rasterizer, so --renderer rhi yields immediate output. Comparing
+# that against an rhi golden is meaningless in both directions: it hides real
+# rhi regressions, and regenerating from it overwrites the rhi baseline with
+# immediate pixels. Detect the fallback and skip the renderer instead.
+# Detect by output identity, not by log text: the Qt diagnostic differs per
+# backend ("QRhi is not supported", "QRhiGles2: Failed to create context", ...)
+# and EZGL still reports "active renderer backend: rhi" after a failed context.
+# If rhi rendered the same bytes as immediate, it fell back. A false positive is
+# harmless -- identical output means the rhi comparison adds nothing anyway.
+# Probe several cases, not one: the simplest scene could coincide across
+# backends, and a single match would then silently retire all 14 rhi
+# comparisons. Require every probe to agree, and refuse to judge on empty files
+# (cmp -s calls two empty files identical, which would mask a render failure as
+# a fallback).
+rhi_fell_back() {
+    local case_name probe_rhi probe_imm
+    for case_name in "${VISUAL_CASE_NAMES[@]:0:3}"; do
+        probe_rhi="${TEST_OUTDIR}/rhi/${case_name}.png"
+        probe_imm="${TEST_OUTDIR}/immediate/${case_name}.png"
+        [[ -s "${probe_rhi}" && -s "${probe_imm}" ]] || return 1
+        cmp -s "${probe_rhi}" "${probe_imm}" || return 1
+    done
+    return 0
+}
+
 # --- Compare each (renderer, case) pair against its per-renderer golden ------
 echo ""
 echo "--- Comparing ${#VISUAL_CASE_NAMES[@]} cases × ${#RENDERERS[@]} renderers"
 for renderer in "${RENDERERS[@]}"; do
+    if [[ "${renderer}" == "rhi" ]] && rhi_fell_back; then
+        echo "--- [VISUAL rhi] SKIP: QRhi unsupported here; renders came from the"
+        echo "                 immediate fallback and cannot be judged against rhi goldens."
+        (( SKIP += ${#VISUAL_CASE_NAMES[@]} )) || true
+        continue
+    fi
     R_OUTDIR="${TEST_OUTDIR}/${renderer}"
     R_GOLDEN="${GOLDEN_DIR}/${renderer}"
     R_DIFF="${R_OUTDIR}/diff"
@@ -216,9 +225,9 @@ for renderer in "${RENDERERS[@]}"; do
 
         compare_args=(
             "${local_golden}" "${local_current}"
-            --threshold "${THRESHOLD}"
             --diff-out "${R_DIFF}/${name}.png"
         )
+        [[ -n "${THRESHOLD}" ]] && compare_args+=(--threshold "${THRESHOLD}")
         if [[ "${VPR_GUI_DEBUG:-0}" != "1" ]]; then
             # Default: only write the triptych on FAIL — keeps passing runs cheap.
             # --debug flips this off so passing cases also produce diffs.
@@ -252,6 +261,21 @@ fi
 if [[ "${FAIL}" -gt 0 ]]; then
     echo "    RESULT: FAIL"
     exit 1
+fi
+
+# A run that compared nothing is not a pass. Guard this explicitly: the whole
+# reason the goldens went stale for three months is that a layer reporting
+# success without executing looks identical to one that worked.
+if [[ "${PASS}" -eq 0 ]]; then
+    echo "    RESULT: SKIP (nothing was compared)"
+    exit 2
+fi
+
+# Partial skips (e.g. an rhi fallback retiring 14 of 42) must not read as a
+# clean pass either -- exit 2 so ctest reports Skipped, not Passed.
+if [[ "${SKIP}" -gt 0 ]]; then
+    echo "    RESULT: SKIP (${PASS} compared, ${SKIP} skipped -- see above)"
+    exit 2
 fi
 
 echo "    RESULT: PASS"
