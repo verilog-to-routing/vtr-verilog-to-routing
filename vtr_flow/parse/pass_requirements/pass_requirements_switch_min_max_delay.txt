@@ -1,0 +1,31 @@
+#Pass requirements for the strong_switch_min_max_delay test.
+#This test checks that the minimum intrinsic delays of routing switches are used by the
+#final hold timing analysis, and by nothing else. So, unlike the standard fixed channel width
+#requirements, it checks the hold slack, and checks the routing and setup timing more tightly:
+#if the minimum delays were also used by the router or the setup analysis, the routed
+#wirelength and the setup TNS would change by more than these ranges allow.
+
+#Common VPR status metrics
+%include "common/pass_requirements.vpr_status.txt"
+
+#Packing and placement metrics
+%include "timing/pass_requirements.vpr_pack_place.txt"
+
+#Area, run-time and memory metrics
+%include "common/pass_requirements.vpr_route_fixed_chan_width.txt"
+
+#VTR benchmark metrics
+%include "common/pass_requirements.vtr_benchmarks.txt"
+
+#Routing
+routed_wirelength;Range(0.95,1.05)
+
+#Setup timing
+critical_path_delay;Range(0.95,1.05)
+setup_TNS;Range(0.95,1.05)
+setup_WNS;Range(0.95,1.05)
+
+#Hold timing. With the minimum switch delays, hold_WNS and hold_TNS are 1.5x and 2.8x those of
+#the same architecture without them, so these ranges catch the minimum delays not being used.
+hold_TNS;Range(0.80,1.25)
+hold_WNS;Range(0.80,1.25)

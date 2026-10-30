@@ -1053,7 +1053,11 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
         std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
         if (vpr_setup.Timing.timing_analysis_enabled) {
             auto& atom_ctx = g_vpr_ctx.atom();
-            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay, is_flat);
+            // The router only computes the max net delays (the min delays are computed after
+            // routing, in the analysis stage), so they are also used as the min delays here.
+            // TODO: For hold-aware routing (RCV), the router's timing analysis should use the
+            //       min net delays. This requires the router to also compute the min delays.
+            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay, net_delay, is_flat);
             timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
 #ifndef NO_SERVER
             if (g_vpr_ctx.server().gate_io.is_running()) {
@@ -1578,11 +1582,12 @@ void vpr_analysis(const Netlist<>& net_list,
     if (vpr_setup.TimingEnabled) {
         //Load the net delays
 
-        NetPinsMatrix<float> net_delay = make_net_pins_matrix<float>(net_list);
-        load_net_delay_from_routing(net_list, net_delay);
+        NetPinsMatrix<float> net_delay_min = make_net_pins_matrix<float>(net_list);
+        NetPinsMatrix<float> net_delay_max = make_net_pins_matrix<float>(net_list);
+        load_net_delay_from_routing(net_list, net_delay_min, net_delay_max);
 
         //Do final timing analysis
-        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay, vpr_setup.RouterOpts.flat_routing);
+        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay_min, net_delay_max, vpr_setup.RouterOpts.flat_routing);
         auto timing_info = make_setup_hold_timing_info(analysis_delay_calc, vpr_setup.AnalysisOpts.timing_update_type);
         timing_info->update();
 

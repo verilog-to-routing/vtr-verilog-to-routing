@@ -1,7 +1,11 @@
 #include "VprTimingGraphResolver.h"
+
+#include <optional>
+
 #include "atom_netlist.h"
 #include "atom_lookup.h"
 #include "logic_types.h"
+#include "vpr_error.h"
 
 VprTimingGraphResolver::VprTimingGraphResolver(const AtomNetlist& netlist,
                                                const AtomLookup& netlist_lookup,
@@ -211,7 +215,7 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
             sink_net_pin_index = cluster_ctx.clb_nlist.pin_net_index((ClusterPinId&)sink_pin);
         }
 
-        tatum::Time net_delay = tatum::Time(delay_calc_.inter_cluster_delay(src_net, 0, sink_net_pin_index));
+        tatum::Time net_delay = tatum::Time(delay_calc_.inter_cluster_delay(src_net, 0, sink_net_pin_index, delay_type));
 
         VTR_ASSERT(driver_clb_delay.valid());
         VTR_ASSERT(net_delay.valid());
@@ -250,7 +254,7 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
                 // the route tree exists, so we find the path of the net from source to sink.
                 // Note that the previously declared interblock_component will not be added to the
                 // vector of net components.
-                get_detailed_interconnect_components(components, src_net, sink_pin);
+                get_detailed_interconnect_components(components, src_net, sink_pin, delay_type);
             } else {
                 // this is an unrouted net as part of global routing.
                 // We add the tag global net, and push the interblock into the vector of net components.
@@ -285,11 +289,11 @@ void VprTimingGraphResolver::set_detail_level(e_timing_report_detail report_deta
     detail_level_ = report_detail;
 }
 
-void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<tatum::DelayComponent>& components, ParentNetId net_id, ParentPinId sink_pin) const {
+void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<tatum::DelayComponent>& components, ParentNetId net_id, ParentPinId sink_pin, DelayType delay_type) const {
     /* This routine obtains the interconnect components such as: OPIN, CHANX, CHANY, IPIN which join
-     * two intra-block clusters in two parts. In part one, we construct the route tree
-     * from the traceback and computes its value for R, C, and Tdel. Next, we find the pointer to
-     * the route tree sink which corresponds to the sink_pin. In part two, we call the helper function,
+     * two intra-block clusters in two parts. In part one, we take the route tree of the net (for
+     * the min delays, a copy of it with its timing reloaded with the min delays), and find the
+     * route tree sink which corresponds to the sink_pin. In part two, we call the helper function,
      * which walks the route tree from the sink to the source. Along the way, we process each node
      * and construct net_components that are added to the vector of components. */
 
@@ -301,11 +305,32 @@ void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<ta
     auto& netlist = is_flat_ ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
 
     int ipin = netlist.pin_net_index(sink_pin);
-    RRNodeId sink_rr_inode = RRNodeId(route_ctx.net_rr_terminals[net_id][ipin]); //obtain the value of the routing resource sink
 
-    auto rt_sink = route_ctx.route_trees[net_id].value().find_by_rr_id(sink_rr_inode);
+    // The route tree holds the max delays computed by the router. For the min delays, use a copy
+    // of the route tree with its timing reloaded with the min delays, so the components add up
+    // to the min net delay of the edge.
+    const RouteTree& tree = route_ctx.route_trees[net_id].value();
+    std::optional<RouteTree> min_delay_tree;
+    if (delay_calc_.routing_delay_type(delay_type) == DelayType::MIN) {
+        min_delay_tree.emplace(tree);
+        min_delay_tree->reload_timing(vtr::nullopt, DelayType::MIN);
+    }
+    const RouteTree& timing_tree = min_delay_tree ? *min_delay_tree : tree;
 
-    get_detailed_interconnect_components_helper(components, rt_sink.value()); //from sink, walk up to source and add net components
+    // Find the sink of this net pin by its net pin index. This is the same sink whose delay is the
+    // net delay of the edge (see load_net_delay_from_routing()). find_by_rr_id() can return another
+    // pin's sink when a SINK rr node is in the route tree more than once, and find_by_isink() can't
+    // be used on route trees read from a .route file, which have no net id.
+    for (const RouteTreeNode& rt_node : timing_tree.all_nodes()) {
+        if (rt_node.net_pin_index == ipin) {
+            get_detailed_interconnect_components_helper(components, rt_node); //from sink, walk up to source and add net components
+            return;
+        }
+    }
+
+    VPR_FATAL_ERROR(VPR_ERROR_TIMING,
+                    "Could not find the sink of pin %d of net %zu in its route tree.\n",
+                    ipin, size_t(net_id));
 }
 
 void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::vector<tatum::DelayComponent>& components, const RouteTreeNode& node) const {
