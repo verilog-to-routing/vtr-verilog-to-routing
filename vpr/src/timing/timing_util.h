@@ -150,7 +150,7 @@ struct TimingStats {
     void writeXML(std::ostream& output) const;
 
   public:
-    TimingStats(std::string prefix, double least_slack_cpd_delay, double fmax, double setup_worst_neg_slack, double setup_total_neg_slack, double setup_worst_skew, double critical_path_skew);
+    TimingStats(std::string prefix, double least_slack_cpd_delay, double fmax, double setup_worst_neg_slack, double setup_total_neg_slack, double setup_worst_skew, double critical_path_skew, std::string critical_path_category);
 
     enum OutputFormat {
         HumanReadable,
@@ -164,6 +164,8 @@ struct TimingStats {
     double setup_total_neg_slack;
     double setup_worst_skew;
     double critical_path_skew;
+    /// @brief The category (e.g. reg2reg) of the critical path, or empty if it has no clock skew.
+    std::string critical_path_category;
     std::string prefix;
 
     void write(OutputFormat fmt, std::ostream& output) const;

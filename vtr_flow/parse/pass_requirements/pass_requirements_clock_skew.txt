@@ -1,0 +1,6 @@
+%include "pass_requirements_clock_modeling.txt"
+
+# The skew on the critical path (and its category) must match, so that the critical path skew keeps
+# tracking the critical path itself rather than e.g. the worst skew of its clock domain pair
+critical_path_category;Equal()
+critical_path_skew;RangeAbs(0.90,1.10,0.05)

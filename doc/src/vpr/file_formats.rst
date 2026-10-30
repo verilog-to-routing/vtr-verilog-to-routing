@@ -1410,12 +1410,17 @@ This file is generated after the routing step with option: `--write_timing_summa
 It can be saved as a human readable text file or in XML or JSON file to provide
 machine readable output. Format is selected based on the extension of the `<filename>`.
 
-The summary consists of 4 parameters:
+The summary consists of 7 parameters:
 
 * `Critical Path Delay (cpd) [ns]`
 * `Max Circuit Frequency (Fmax) [MHz]`
+* `Critical Path Skew (cpd_skew) [ns]`: The clock skew on the critical path.
+* `Critical Path Category (cpd_category)`: The category of the critical path (``in2reg``, ``reg2reg``, ``reg2out`` or ``in2out``; see :option:`--timing_report_path_categories`).
+  The skew of an ``in2reg`` or ``reg2out`` critical path includes the full clock insertion delay of its register.
+  It is empty if the critical path has no clock skew (e.g. it is launched by a constant generator).
 * `setup Worst Negative Slack (sWNS) [ns]`
 * `setup Total Negative Slack (sTNS) [ns]`
+* `setup Worst Skew (sWS) [ns]`
 
 TXT
 ~~~
@@ -1427,8 +1432,10 @@ Presents the information in human readable format, the same as in log output:
     :linenos:
 
     Final critical path delay (least slack): <double> ns, Fmax: <double> MHz
+    Final critical path skew: <double> ns (<category>)
     Final setup Worst Negative Slack (sWNS): <double> ns
     Final setup Total Negative Slack (sTNS): <double> ns
+    Final setup Worst Skew (sWS): <double> ns
 
 .. _end:
 
@@ -1444,8 +1451,11 @@ One of two available machine readable formats. The information is written as fol
     {
       "cpd": <double>,
       "fmax": <double>,
+      "cpd_skew": <double>,
+      "cpd_category": "<category>",
       "swns": <double>,
-      "stns": <double>
+      "stns": <double>,
+      "sws": <double>
     }
 
 .. _end:
@@ -1463,8 +1473,11 @@ Second machine readable format. The information is written as follows:
     <timing_summary_report>
       <cpd value="<double>" unit="ns" description="Final critical path delay"></nets>
       <fmax value="<double>" unit="MHz" description="Max circuit frequency"></fmax>
+      <cpd_skew value="<double>" unit="ns" description="Clock skew on the critical path"></cpd_skew>
+      <cpd_category value="<category>" description="Category of the critical path (e.g. reg2reg)"></cpd_category>
       <swns value="<double>" unit="ns" description="setup Worst Negative Slack (sWNS)"></swns>
       <stns value="<double>" unit="ns" description="setup Total Negative Slack (sTNS)"></stns>
+      <sws value="<double>" unit="ns" description="setup Worst Skew (sWS)"></sws>
     </block_usage_report>
 
 .. _end:
