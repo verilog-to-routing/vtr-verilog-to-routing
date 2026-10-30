@@ -48,6 +48,10 @@ set_target_properties(mosaic PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/share/yosys/plugins
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/share/yosys/plugins
 )
+# MacOS require specific linker settings
+if(APPLE)
+  target_link_options(mosaic PRIVATE -undefined dynamic_lookup)
+endif()
 
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/share/yosys/plugins)
 install(TARGETS mosaic DESTINATION ${CMAKE_BINARY_DIR}/share/yosys/plugins)
