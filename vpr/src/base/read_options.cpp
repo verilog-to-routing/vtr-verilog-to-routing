@@ -2215,13 +2215,6 @@ static void add_file_options(argparse::ArgumentParser& parser, t_options& args) 
     file_grp.add_argument(args.write_block_usage, "--write_block_usage")
         .help("Writes the cluster-level block types usage summary to the specified JSON, XML or TXT file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
-
-    file_grp.add_argument(args.write_device_grid, "--write_device_grid")
-        .help(
-            "Writes the device grid to the specified text file once it is built: every tile type with its "
-            "sub-tiles, their capacity and the logical block types they host, then the root location of every "
-            "tile. External tools can count the sites of a block type inside any area of the device from it.")
-        .show_in(argparse::ShowIn::HELP_ONLY);
 }
 
 /**

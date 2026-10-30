@@ -671,7 +671,6 @@ struct t_file_name_opts {
     std::string write_legalized_flat_place_file;
     std::string write_post_gp_flat_place_file;
     std::string write_block_usage;
-    std::string write_device_grid;
     bool verify_file_digests;
     ///@brief How much annotation to write into flat placement files.
     int flat_place_verbosity;

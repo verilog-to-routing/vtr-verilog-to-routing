@@ -188,7 +188,6 @@ void SetupVPR(const t_options* options,
     fileNameOpts->write_post_gp_flat_place_file = options->write_post_gp_flat_place_file;
     fileNameOpts->flat_place_verbosity = options->flat_place_verbosity;
     fileNameOpts->write_block_usage = options->write_block_usage;
-    fileNameOpts->write_device_grid = options->write_device_grid;
 
     fileNameOpts->verify_file_digests = options->verify_file_digests;
 

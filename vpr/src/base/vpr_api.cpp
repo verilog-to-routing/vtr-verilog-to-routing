@@ -616,8 +616,8 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     }
 
     report_device_grid_stats(device_ctx.grid);
-    if (!vpr_setup.FileNameOpts.write_device_grid.empty()) {
-        write_device_grid(vpr_setup.FileNameOpts.write_device_grid.c_str(), device_ctx.grid);
+    if (isEchoFileEnabled(E_ECHO_DEVICE_GRID)) {
+        write_device_grid(getEchoFileName(E_ECHO_DEVICE_GRID), device_ctx.grid);
     }
 }
 
