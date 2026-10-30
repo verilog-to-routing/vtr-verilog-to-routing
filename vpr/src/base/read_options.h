@@ -52,7 +52,6 @@ struct t_options {
 
     argparse::ArgValue<std::string> write_block_usage;
     argparse::ArgValue<std::string> write_device_grid;
-    argparse::ArgValue<std::string> write_placement_macros;
 
     // Stage Options
     argparse::ArgValue<bool> do_packing;

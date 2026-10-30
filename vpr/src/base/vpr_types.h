@@ -672,7 +672,6 @@ struct t_file_name_opts {
     std::string write_post_gp_flat_place_file;
     std::string write_block_usage;
     std::string write_device_grid;
-    std::string write_placement_macros;
     bool verify_file_digests;
     ///@brief How much annotation to write into flat placement files.
     int flat_place_verbosity;
@@ -1108,9 +1107,6 @@ struct t_placer_opts {
 
     std::string write_placement_delay_lookup;
     std::string read_placement_delay_lookup;
-
-    ///@brief File the placement macros are written to when placement starts; empty: none.
-    std::string write_placement_macros;
 
     vtr::vector<e_move_type, float> place_static_move_prob;
 

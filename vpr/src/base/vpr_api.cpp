@@ -999,9 +999,6 @@ void vpr_load_placement(t_vpr_setup& vpr_setup,
                                                            g_vpr_ctx.clustering().clb_nlist,
                                                            g_vpr_ctx.atom().netlist(),
                                                            g_vpr_ctx.atom().lookup());
-    if (!filename_opts.write_placement_macros.empty()) {
-        place_ctx.place_macros->write_macros(filename_opts.write_placement_macros, g_vpr_ctx.clustering().clb_nlist);
-    }
 
     // Load an existing placement from a file
     place_ctx.placement_id = read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(),

@@ -188,13 +188,6 @@ class PlaceMacros {
     const std::vector<t_pl_macro>& macros() const;
 
     /**
-     * @brief Writes the macros to a text file: for each macro, its member blocks with their
-     *        x, y and sub-tile offsets from the macro head. The text is the macro list of the
-     *        place_macros echo file, without that file's table of direct connections.
-     */
-    void write_macros(const std::string& filename, const ClusteredNetlist& clb_nlist) const;
-
-    /**
      * @brief Returns the placement macro associated with a macro index.
      * @param idx An index specifying a macro. get_imacro_from_iblk() can
      * be called to find out a the macro index of the placement macro a
@@ -245,11 +238,6 @@ class PlaceMacros {
                              const std::vector<t_pl_macro>& macros,
                              const std::vector<t_physical_tile_type>& physical_tile_types,
                              const ClusteredNetlist& clb_nlist) const;
-
-    /// @brief Writes the macro list, the first part of write_place_macros_'s output, to an open file.
-    static void write_macro_list_(FILE* f,
-                                  const std::vector<t_pl_macro>& macros,
-                                  const ClusteredNetlist& clb_nlist);
 
     /** 
      * @brief Checks if a net is a direct connection, both driver and receiver should match the direclist specified in the architecture file
