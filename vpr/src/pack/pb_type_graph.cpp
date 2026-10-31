@@ -1530,19 +1530,18 @@ static void echo_pb_rec(const t_pb_graph_node* pb_graph_node, const int level, F
 }
 
 static void echo_pb_pins(const std::vector<std::span<t_pb_graph_pin>>& pb_graph_pins, const int level, FILE* fp) {
-    int i, j, k, m;
     t_port* port;
 
     print_tabs(fp, level);
 
-    for (i = 0; i < (int)pb_graph_pins.size(); i++) {
+    for (int i = 0; i < (int)pb_graph_pins.size(); i++) {
         port = pb_graph_pins[i][0].port;
         print_tabs(fp, level);
         fprintf(fp, "Port \"%s\": num_pins %d type %d parent name \"%s\"\n",
                 port->name, port->num_pins, port->type,
                 port->parent_pb_type->name);
 
-        for (j = 0; j < port->num_pins; j++) {
+        for (int j = 0; j < port->num_pins; j++) {
             print_tabs(fp, level + 1);
             VTR_ASSERT(j == pb_graph_pins[i][j].pin_number);
             VTR_ASSERT(pb_graph_pins[i][j].port == port);
@@ -1557,30 +1556,30 @@ static void echo_pb_pins(const std::vector<std::span<t_pb_graph_pin>>& pb_graph_
             print_tabs(fp, level + 2);
             if (pb_graph_pins[i][j].is_primitive_pin()) {
                 fprintf(fp, "pin class (depth, pin class): ");
-                for (k = 0; k < pb_graph_pins[i][j].parent_node->pb_type->depth; k++) {
+                for (int k = 0; k < pb_graph_pins[i][j].parent_node->pb_type->depth; k++) {
                     fprintf(fp, "(%d %d), ", k,
                             pb_graph_pins[i][j].parent_pin_class[k]);
                 }
                 fprintf(fp, "\n");
                 if (pb_graph_pins[i][j].port->type == OUT_PORT) {
-                    for (k = 0; k < pb_graph_pins[i][j].parent_node->pb_type->depth; k++) {
+                    for (int k = 0; k < pb_graph_pins[i][j].parent_node->pb_type->depth; k++) {
                         print_tabs(fp, level + 2);
-                        fprintf(fp, "connectable input pins within depth %d: %d\n",
-                                k, pb_graph_pins[i][j].num_connectable_primitive_input_pins[k]);
-                        for (m = 0; m < pb_graph_pins[i][j].num_connectable_primitive_input_pins[k]; m++) {
+                        fprintf(fp, "connectable input pins within depth %d: %zu\n",
+                                k, pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k].size());
+                        for (const t_pb_graph_pin* connectable_pin : pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k]) {
                             print_tabs(fp, level + 3);
                             fprintf(fp, "pb_graph_node %s[%d].%s[%d] \n",
-                                    pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k][m]->parent_node->pb_type->name,
-                                    pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k][m]->parent_node->placement_index,
-                                    pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k][m]->port->name,
-                                    pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k][m]->pin_number);
+                                    connectable_pin->parent_node->pb_type->name,
+                                    connectable_pin->parent_node->placement_index,
+                                    connectable_pin->port->name,
+                                    connectable_pin->pin_number);
                         }
                     }
                 }
             } else {
                 fprintf(fp, "pin class %d \n", pb_graph_pins[i][j].pin_class);
             }
-            for (k = 0; k < pb_graph_pins[i][j].num_input_edges; k++) {
+            for (int k = 0; k < pb_graph_pins[i][j].num_input_edges; k++) {
                 const t_pb_graph_edge* edge = pb_graph_pins[i][j].input_edges[k];
                 print_tabs(fp, level + 2);
                 fprintf(fp, "Input edge %d\n", k);
@@ -1600,7 +1599,7 @@ static void echo_pb_pins(const std::vector<std::span<t_pb_graph_pin>>& pb_graph_
                         edge->output_pin()->parent_node->pb_type->name,
                         edge->output_pin()->parent_node->placement_index);
             }
-            for (k = 0; k < pb_graph_pins[i][j].num_output_edges; k++) {
+            for (int k = 0; k < pb_graph_pins[i][j].num_output_edges; k++) {
                 const t_pb_graph_edge* edge = pb_graph_pins[i][j].output_edges[k];
                 print_tabs(fp, level + 2);
                 fprintf(fp, "Output edge %d\n", k);

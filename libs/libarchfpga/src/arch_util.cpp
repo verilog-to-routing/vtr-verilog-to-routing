@@ -217,14 +217,6 @@ static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_desc
 static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
     const t_pb_type* pb_type = pb_graph_node->pb_type;
 
-    /*free all lists of connectable input pin pointer of pb_graph_node and it's children*/
-    /*free_list_of_connectable_input_pin_ptrs (pb_graph_node);*/
-
-    // Free the arrays that the feasibility filter attaches to primitive pins
-    for (t_pb_graph_pin& pin : pb_graph_node->mutable_pins()) {
-        delete[] pin.num_connectable_primitive_input_pins;
-    }
-
     if (pb_graph_node->interconnect_pins) {
         for (int i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
             if (pb_graph_node->interconnect_pins[i] == nullptr) continue;
