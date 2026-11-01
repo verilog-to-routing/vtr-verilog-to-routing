@@ -781,7 +781,7 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
 
                         if (hold_slack <= 0)
                             update_budget = true;
-                            
+
                     } else {
                         for (auto& atom_pin : netlist_pin_lookup.connected_atom_pins(convert_to_cluster_pin_id(pin_id))) {
                             float hold_slack = timing_info->hold_pin_slack(atom_pin);
