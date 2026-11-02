@@ -15,6 +15,7 @@
 #include <cstring>
 #include <deque>
 #include <queue>
+#include <span>
 #include <unordered_set>
 #include <vector>
 
@@ -1171,8 +1172,11 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
     int add_or_subtract_pb, add_or_subtract_pin;
 
     VTR_ASSERT(tokens[*token_index].type == e_token_type::STRING);
-    const t_pb_graph_node* pb_node_array = nullptr;
-    int max_pb_node_array = 0;
+
+    // The pb graph nodes named by the token.
+    std::span<const t_pb_graph_node> pb_nodes;
+    // True when the token names the parent node.
+    bool matched_parent = false;
 
     t_mode* mode = nullptr;
     if (!pb_graph_children_nodes.empty()) {
@@ -1186,8 +1190,8 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
     bool found = false;
     if (pb_graph_parent_node->pb_type->name == tokens[*token_index].data) {
         // Parent pb_type
-        pb_node_array = pb_graph_parent_node;
-        max_pb_node_array = 1;
+        pb_nodes = std::span<const t_pb_graph_node>(pb_graph_parent_node, 1);
+        matched_parent = true;
         pb_msb = pb_lsb = 0;
         found = true;
         (*token_index)++;
@@ -1239,8 +1243,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
             for (int i = 0; i < mode->num_pb_type_children; i++) {
                 VTR_ASSERT(&mode->pb_type_children[i] == pb_graph_children_nodes[i][0].pb_type);
                 if (mode->pb_type_children[i].name == tokens[*token_index].data) {
-                    pb_node_array = pb_graph_children_nodes[i].data();
-                    max_pb_node_array = mode->pb_type_children[i].num_pb;
+                    pb_nodes = pb_graph_children_nodes[i];
                     found = true;
                     (*token_index)++;
 
@@ -1272,13 +1275,14 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                             (*token_index)++;
                         }
                         // Check range of children pb
-                        if (pb_lsb < 0 || pb_lsb >= max_pb_node_array || pb_msb < 0 || pb_msb >= max_pb_node_array) {
+                        int num_pb_nodes = static_cast<int>(pb_nodes.size());
+                        if (pb_lsb < 0 || pb_lsb >= num_pb_nodes || pb_msb < 0 || pb_msb >= num_pb_nodes) {
                             vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                                       "Mode '%s' -> pb '%s' [%d,%d] out of range [%d,%d]", mode->name,
-                                      mode->pb_type_children[i].name, pb_msb, pb_lsb, max_pb_node_array - 1, 0);
+                                      mode->pb_type_children[i].name, pb_msb, pb_lsb, num_pb_nodes - 1, 0);
                         }
                     } else {
-                        pb_msb = pb_node_array[0].pb_type->num_pb - 1;
+                        pb_msb = static_cast<int>(pb_nodes.size()) - 1;
                         pb_lsb = 0;
                     }
                     break; // found pb_type_children, no need to keep traversing
@@ -1313,7 +1317,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
     const char* port_name = tokens[*token_index].data.c_str();
     (*token_index)++;
 
-    if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb], 0) == nullptr) {
+    if (get_pb_graph_pin_from_name(port_name, &pb_nodes[pb_lsb], 0) == nullptr) {
         vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                   "Failed to find port name %s", port_name);
     }
@@ -1346,7 +1350,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
             (*token_index)++;
         }
     } else {
-        iport = get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb], 0)->port;
+        iport = get_pb_graph_pin_from_name(port_name, &pb_nodes[pb_lsb], 0)->port;
         pin_msb = iport->num_pins - 1;
         pin_lsb = 0;
     }
@@ -1386,11 +1390,11 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
         j = 0;
         while (ipin != pin_msb + add_or_subtract_pin) {
             int idx = prev_num_pins + i * (abs(pin_msb - pin_lsb) + 1) + j;
-            (*pb_graph_pins)[idx] = get_pb_graph_pin_from_name(port_name, &pb_node_array[ipb], ipin);
+            (*pb_graph_pins)[idx] = get_pb_graph_pin_from_name(port_name, &pb_nodes[ipb], ipin);
             if ((*pb_graph_pins)[idx] == nullptr) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                           "Pin %s.%s[%d] cannot be found",
-                          pb_node_array[ipb].pb_type->name, port_name, ipin);
+                          pb_nodes[ipb].pb_type->name, port_name, ipin);
             }
             iport = (*pb_graph_pins)[idx]->port;
             if (!iport) {
@@ -1399,7 +1403,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
             // Error checking before assignment
             if (interconnect_error_check) {
-                if (pb_node_array == pb_graph_parent_node) {
+                if (matched_parent) {
                     if (is_input_to_interc) {
                         if (iport->type != IN_PORT) {
                             vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
