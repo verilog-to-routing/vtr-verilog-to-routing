@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <ranges>
 
 #include "physical_types.h"
 #include "arch_types.h"
@@ -307,6 +308,25 @@ bool t_pb_type::has_bus_mux() const {
 /*
  * t_pb_graph_node
  */
+
+t_pb_graph_node::SubtreeIterator::SubtreeIterator(const t_pb_graph_node* root) {
+    if (root != nullptr)
+        to_visit_.push_back(root);
+}
+
+t_pb_graph_node::SubtreeIterator& t_pb_graph_node::SubtreeIterator::operator++() {
+    const t_pb_graph_node* node = to_visit_.back();
+    to_visit_.pop_back();
+
+    // Push the children in reverse so they are visited in index order.
+    for (const std::vector<std::vector<t_pb_graph_node>>& mode_children : std::views::reverse(node->child_pb_graph_nodes)) {
+        for (const std::vector<t_pb_graph_node>& type_children : std::views::reverse(mode_children)) {
+            for (const t_pb_graph_node& child : std::views::reverse(type_children))
+                to_visit_.push_back(&child);
+        }
+    }
+    return *this;
+}
 
 std::string t_pb_graph_node::hierarchical_type_name() const {
     std::vector<std::string> names;

@@ -25,9 +25,12 @@
  * Authors: Jason Luu and Kenneth Kent
  */
 
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <iterator>
+#include <ranges>
 #include <utility>
 #include <vector>
 #include <unordered_map>
@@ -1436,6 +1439,46 @@ class t_pb_graph_node {
     /// Returns a string containing the hierarchical type name of the pb_graph_node
     /// Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
     std::string hierarchical_type_name() const;
+
+    /**
+     * @brief Input iterator over a pb graph subtree in depth-first pre-order.
+     *
+     * Visits each node before its children, with modes, child types, and
+     * instances in index order. Uses an explicit stack to avoid deep recursion.
+     * The end of the walk compares equal to std::default_sentinel.
+     */
+    class SubtreeIterator {
+      public:
+        using iterator_category = std::input_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = t_pb_graph_node;
+        using pointer = const t_pb_graph_node*;
+        using reference = const t_pb_graph_node&;
+
+        SubtreeIterator() = default;
+        explicit SubtreeIterator(const t_pb_graph_node* root);
+
+        reference operator*() const { return *to_visit_.back(); }
+        pointer operator->() const { return to_visit_.back(); }
+
+        SubtreeIterator& operator++();
+        void operator++(int) { ++*this; }
+
+        bool operator==(std::default_sentinel_t) const { return to_visit_.empty(); }
+
+      private:
+        std::vector<const t_pb_graph_node*> to_visit_; ///< Nodes still to visit; the current node is at the back.
+    };
+
+    /**
+     * @brief Return this node and all of its descendants in depth-first pre-order.
+     *
+     * Example:
+     *   for (const t_pb_graph_node& node : type->pb_graph_head->subtree()) { ... }
+     */
+    std::ranges::subrange<SubtreeIterator, std::default_sentinel_t> subtree() const {
+        return {SubtreeIterator(this), std::default_sentinel};
+    }
 
   private:
     /// Storage of all pins of this node.
