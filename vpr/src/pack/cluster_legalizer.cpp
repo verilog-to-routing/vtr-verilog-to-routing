@@ -951,8 +951,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
             RelativeMacroPacker::t_locked_site locked_site = relative_macro_packer_->resolve_locked_site(molecule_id, cluster.type);
             if (locked_site.status == RelativeMacroPacker::e_locked_site::NOT_IN_TYPE) {
-                // Reject this type so start_new_cluster() can try one that has
-                // the required site.
+                // Reject this type so GreedyClusterer::start_new_cluster_() can
+                // try one that has the required site.
                 relative_macro_packer_->report_unsatisfiable_locked_site(molecule_id,
                                                                          cluster,
                                                                          atom_pb_lookup_,

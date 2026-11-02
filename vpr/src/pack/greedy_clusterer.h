@@ -160,16 +160,16 @@ class GreedyClusterer {
      * legalizer for each molecule added. This cannot fail (assuming the seed
      * can exist in a cluster), so it will always return a valid cluster ID.
      */
-    LegalizationClusterId try_grow_cluster(PackMoleculeId seed_mol_id,
-                                           GreedyCandidateSelector& candidate_selector,
-                                           ClusterLegalizationStrategy strategy,
-                                           ClusterLegalizer& cluster_legalizer,
-                                           const Prepacker& prepacker,
-                                           const RamMapper& ram_mapper,
-                                           bool balance_block_type_utilization,
-                                           AttractionInfo& attraction_groups,
-                                           std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
-                                           DeviceContext& mutable_device_ctx);
+    LegalizationClusterId try_grow_cluster_(PackMoleculeId seed_mol_id,
+                                            GreedyCandidateSelector& candidate_selector,
+                                            ClusterLegalizationStrategy strategy,
+                                            ClusterLegalizer& cluster_legalizer,
+                                            const Prepacker& prepacker,
+                                            const RamMapper& ram_mapper,
+                                            bool balance_block_type_utilization,
+                                            AttractionInfo& attraction_groups,
+                                            std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+                                            DeviceContext& mutable_device_ctx);
 
     /**
      * @brief Given a seed molecule, starts a new cluster by trying to find a
@@ -185,23 +185,23 @@ class GreedyClusterer {
      * device grid if it finds that more clusters of specific logical block
      * types have been created than the device can support.
      */
-    LegalizationClusterId start_new_cluster(PackMoleculeId seed_mol_id,
-                                            ClusterLegalizer& cluster_legalizer,
-                                            const Prepacker& prepacker,
-                                            const RamMapper& ram_mapper,
-                                            bool balance_block_type_utilization,
-                                            std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
-                                            DeviceContext& mutable_device_ctx);
+    LegalizationClusterId start_new_cluster_(PackMoleculeId seed_mol_id,
+                                             ClusterLegalizer& cluster_legalizer,
+                                             const Prepacker& prepacker,
+                                             const RamMapper& ram_mapper,
+                                             bool balance_block_type_utilization,
+                                             std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+                                             DeviceContext& mutable_device_ctx);
 
     /**
      * @brief Try to add the given candidate molecule to the given cluster.
      *        Returns true if the molecule was clustered successfully, false
      *        otherwise.
      */
-    bool try_add_candidate_mol_to_cluster(PackMoleculeId candidate_mol_id,
-                                          LegalizationClusterId legalization_cluster_id,
-                                          ClusterLegalizer& cluster_legalizer,
-                                          const Prepacker& prepacker);
+    bool try_add_candidate_mol_to_cluster_(PackMoleculeId candidate_mol_id,
+                                           LegalizationClusterId legalization_cluster_id,
+                                           ClusterLegalizer& cluster_legalizer,
+                                           const Prepacker& prepacker);
 
     /**
      * @brief Try to pack the seed's relative placement group before adding
@@ -226,7 +226,7 @@ class GreedyClusterer {
      * @brief Log the physical block usage of the logic element in the
      *        architecture (if it has one).
      */
-    void report_le_physical_block_usage(const ClusterLegalizer& cluster_legalizer);
+    void report_le_physical_block_usage_(const ClusterLegalizer& cluster_legalizer);
 
     /*
      * When attraction groups are created, the purpose is to pack more densely by adding more molecules

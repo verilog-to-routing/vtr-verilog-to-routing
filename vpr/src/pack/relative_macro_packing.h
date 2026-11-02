@@ -229,7 +229,7 @@ class RelativeMacroPacker {
     /**
      * @brief Site failures for a seed molecule, grouped by candidate cluster type.
      *
-     * GreedyClusterer::start_new_cluster() includes these details when no block
+     * GreedyClusterer::start_new_cluster_() includes these details when no block
      * type can place the seed. Different types may fail for different reasons.
      */
     struct t_unsatisfiable_locked_site {
