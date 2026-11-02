@@ -32,25 +32,21 @@ struct t_cluster_relative_state {
 };
 
 /**
- * @brief Check if adding a molecule creates conflicting placement constraints.
+ * @brief Check that adding a molecule to a cluster respects long chain ownership.
  *
- * A long chain (e.g., a carry chain) can span multiple clusters. The placer
- * treats these clusters as one placement macro with fixed offsets.
- *
- * If an RPM group shares a cluster with a long chain, their placement macros
- * are merged. To avoid conflicting offsets, the long chain can only contain
- * constrained atoms from one RPM group (its owner).
- *
- * This check prevents mixing different RPM groups through a long chain.
- * Chains that fit in one cluster and unconstrained chains are unaffected.
+ * A long chain spans clusters that move together as one placement macro. If a
+ * relative placement group shares a cluster with the chain, their macros are
+ * merged. The group must own the chain to avoid conflicting placement offsets.
+ * Long chains sharing a cluster must have the same owner. These checks do not
+ * apply to chains that fit in one cluster.
  *
  * @param molecule_is_long_chain    Whether the molecule belongs to a long chain.
- * @param molecule_chain_owner      RPM group owning the molecule's chain, if any.
- * @param cluster_group             RPM group in the cluster after adding the molecule.
+ * @param molecule_chain_owner      Group owning the molecule's chain, if any.
+ * @param cluster_group             Group in the cluster after adding the molecule.
  * @param cluster_has_long_chain    Whether the cluster already contains a long chain.
- * @param cluster_long_chain_owner  RPM group owning the cluster's long chain, if any.
+ * @param cluster_long_chain_owner  Group owning the cluster's long chain, if any.
  *
- * @return True if adding the molecule does not create conflicting constraints.
+ * @return True if the addition respects long chain ownership.
  */
 bool long_chain_ownership_allows(bool molecule_is_long_chain,
                                  UserRelativeGroupId molecule_chain_owner,
@@ -67,9 +63,9 @@ bool long_chain_ownership_allows(bool molecule_is_long_chain,
 struct t_relative_macro_verdict {
     bool allowed = true; ///< Whether relative placement rules allow the addition.
 
-    t_cluster_relative_state cluster_state; ///< Cluster's state after adding the molecule; assign it to the cluster on success.
+    t_cluster_relative_state cluster_state; ///< Proposed cluster state; apply only if packing succeeds.
 
-    bool molecule_in_cluster_group = false; ///< Group member; bypass pin utilization target to keep the group together.
+    bool molecule_in_cluster_group = false; ///< Group member allowed full pin utilization to help keep the group together.
 };
 
 /**
