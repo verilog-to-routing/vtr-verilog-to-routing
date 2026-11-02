@@ -252,8 +252,8 @@ bool route(const Netlist<>& net_list,
     // Reset router iteration in the current route attempt.
     get_bp_state_globals()->get_glob_breakpoint_state()->router_iter = 0;
 #endif
-// Hold TNS of the most recent routing while budgets are set, 0 otherwise.
-float worst_negative_slack = 0;
+    // Hold TNS of the most recent routing while budgets are set, 0 otherwise.
+    float worst_negative_slack = 0;
 
     for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
         /* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */

@@ -236,8 +236,8 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
                                                           float backwards_delay,
                                                           float backwards_cong,
                                                           float R_upstream) {
-    const t_conn_delay_budget* delay_budget = cost_params.delay_budget;                                                       
-    const auto [expected_delay,expected_cong] = router_lookahead_.get_expected_pure_delay_and_scaled_cong(to_node, target_node, cost_params, R_upstream);
+    const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
+    const auto [expected_delay, expected_cong] = router_lookahead_.get_expected_pure_delay_and_scaled_cong(to_node, target_node, cost_params, R_upstream);
     float expected_total_cong = expected_cong + backwards_cong;
     float expected_total_delay = expected_delay + backwards_delay;
 

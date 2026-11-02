@@ -123,13 +123,12 @@ std::pair<float, float> ClassicLookahead::calculate_delay_and_cong(bool scale_de
 }
 
 std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
-   return calculate_delay_and_cong(/*scale_delay*/true, node, target_node, params, R_upstream);
+    return calculate_delay_and_cong(/*scale_delay*/ true, node, target_node, params, R_upstream);
 }
 
 std::pair<float, float> ClassicLookahead::get_expected_pure_delay_and_scaled_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
-   return calculate_delay_and_cong(/*scale_delay*/false, node, target_node, params, R_upstream);
+    return calculate_delay_and_cong(/*scale_delay*/ false, node, target_node, params, R_upstream);
 }
-
 
 float NoOpLookahead::get_expected_cost(RRNodeId /*current_node*/, RRNodeId /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
     return 0.;

@@ -125,7 +125,7 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(bool scale_delay
 
             float this_delay = reachable_wire_inf.delay + cost_entry.delay;
             float this_cong = reachable_wire_inf.congestion + cost_entry.congestion;
-            
+
             float this_delay_cost = scale_delay ? (1. - params.criticality) * this_delay : this_delay;
             float this_cong_cost = scale_delay ? params.criticality * this_cong : (1. - params.criticality) * this_cong;
 

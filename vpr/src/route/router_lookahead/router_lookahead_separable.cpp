@@ -444,7 +444,7 @@ std::pair<float, float> SeparableLookahead::calculate_delay_and_cong(bool scale_
         if (scale_delay)
             return map_lookahead_->get_expected_delay_and_cong(from_node, to_node, params, R_upstream);
         else
-            return map_lookahead_->get_expected_pure_delay_and_scaled_cong(from_node, to_node, params, R_upstream); 
+            return map_lookahead_->get_expected_pure_delay_and_scaled_cong(from_node, to_node, params, R_upstream);
     }
     if (from_type == e_rr_type::IPIN) {
         return {0.f, device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost};
@@ -497,7 +497,7 @@ std::pair<float, float> SeparableLookahead::calculate_delay_and_cong(bool scale_
         else
             return map_lookahead_->get_expected_pure_delay_and_scaled_cong(from_node, to_node, params, R_upstream);
     }
-    if(scale_delay)
+    if (scale_delay)
         expected_delay_cost *= params.criticality;
     expected_cong_cost *= (1.0f - params.criticality);
 
@@ -521,11 +521,11 @@ float SeparableLookahead::get_expected_cost(RRNodeId current_node, RRNodeId targ
 }
 
 std::pair<float, float> SeparableLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const {
-    return calculate_delay_and_cong(/*scale_delay*/true, from_node, to_node, params, R_upstream);
+    return calculate_delay_and_cong(/*scale_delay*/ true, from_node, to_node, params, R_upstream);
 }
 
 std::pair<float, float> SeparableLookahead::get_expected_pure_delay_and_scaled_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const {
-    return calculate_delay_and_cong(/*scale_delay*/false, from_node, to_node, params, R_upstream);
+    return calculate_delay_and_cong(/*scale_delay*/ false, from_node, to_node, params, R_upstream);
 }
 
 void SeparableLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
