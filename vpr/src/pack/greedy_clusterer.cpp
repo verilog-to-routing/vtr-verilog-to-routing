@@ -148,7 +148,8 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                      max_molecule_stats,
                                      arch_.models,
                                      pre_cluster_timing_manager_,
-                                     ram_mapper);
+                                     ram_mapper,
+                                     cluster_legalizer.relative_macro_packer());
 
     // Pick the first seed molecule.
     PackMoleculeId seed_mol_id = seed_selector.get_next_seed(cluster_legalizer);

@@ -586,6 +586,15 @@ class ClusterLegalizer {
         cluster_legalization_strategy_ = strategy;
     }
 
+    /**
+     * @brief Return the relative macro packer, or std::nullopt if there are no macros.
+     *
+     * The clusterer and seed selector use it to choose and order group molecules.
+     */
+    inline const std::optional<RelativeMacroPacker>& relative_macro_packer() const {
+        return relative_macro_packer_;
+    }
+
     /*
      * @brief Set how verbose the log messages should be for the cluster legalizer.
      *
