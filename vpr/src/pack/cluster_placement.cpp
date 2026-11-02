@@ -244,7 +244,8 @@ static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placeme
 LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_primitive_candidate_queue(t_intra_cluster_placement_stats* cluster_placement_stats,
                                                                                                           PackMoleculeId molecule_id,
                                                                                                           std::vector<t_pb_graph_node*>& primitives_list,
-                                                                                                          const Prepacker& prepacker) {
+                                                                                                          const Prepacker& prepacker,
+                                                                                                          const t_pb_graph_node* force_site_node) {
     LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> primitives_alive;
     if (cluster_placement_stats->curr_molecule != molecule_id) {
         // New block, requeue tried primitives and in-flight primitives
@@ -279,6 +280,25 @@ LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_
     float cost = std::numeric_limits<float>::max();
     int encounter_order = 0;
     const t_pack_molecule& molecule = prepacker.get_molecule(molecule_id);
+
+    // A locked molecule has one possible root primitive. Look it up directly
+    // rather than scanning the cluster's primitives.
+    if (force_site_node != nullptr) {
+        t_cluster_placement_primitive* placement_primitive = cluster_placement_stats->get_pb_graph_node_placement_primitive(force_site_node);
+        if (placement_primitive->valid
+            && primitive_type_feasible(molecule.atom_block_ids[molecule.root], force_site_node->pb_type)) {
+            cost = try_place_molecule(cluster_placement_stats,
+                                      molecule_id,
+                                      placement_primitive->pb_graph_node,
+                                      primitives_list,
+                                      prepacker);
+            if (cost < std::numeric_limits<float>::max()) {
+                primitives_alive.push(placement_primitive->pb_graph_node,
+                                      std::make_tuple(-cost, force_site_node->total_primitive_count, 0));
+            }
+        }
+        return primitives_alive;
+    }
 
     // Iterate over each primitive block type in the current cluster_placement_stats
     for (int i = 0; i < cluster_placement_stats->num_pb_types; i++) {
