@@ -156,8 +156,8 @@ t_intra_cluster_placement_stats* alloc_and_load_cluster_placement_stats(t_logica
     //       stats.
     if (!is_empty_type(cluster_type)) {
         cluster_placement_stats->curr_molecule = PackMoleculeId::INVALID();
-        load_cluster_placement_stats_for_pb_graph_node(cluster_placement_stats,
-                                                       cluster_type->pb_graph_head);
+        for (t_pb_graph_node& pb_graph_node : cluster_type->pb_graph_head->subtree())
+            load_cluster_placement_stats_for_pb_graph_node(cluster_placement_stats, &pb_graph_node);
     }
     reset_cluster_placement_stats(cluster_placement_stats);
     set_mode_cluster_placement_stats(cluster_placement_stats,
@@ -397,12 +397,11 @@ static void reset_cluster_placement_stats(t_intra_cluster_placement_stats* clust
 }
 
 /**
- * Add any primitives found in pb_graph_nodes to cluster_placement_stats
+ * Add pb_graph_node to cluster_placement_stats if it is a primitive
  * Adds backward link from pb_graph_node to cluster_placement_primitive
  */
 static void load_cluster_placement_stats_for_pb_graph_node(t_intra_cluster_placement_stats* cluster_placement_stats,
                                                            t_pb_graph_node* pb_graph_node) {
-    int i, j, k;
     t_cluster_placement_primitive* placement_primitive;
     const t_pb_type* pb_type = pb_graph_node->pb_type;
     //if pb_graph_node is primitive
@@ -439,17 +438,6 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_intra_cluster_place
             cluster_placement_stats->valid_primitives.emplace_back();
             cluster_placement_stats->valid_primitives[cluster_placement_stats->valid_primitives.size() - 1].insert({0, placement_primitive});
             cluster_placement_stats->num_pb_types++;
-        }
-
-    } else { // not a primitive, recursively call the function for all its children
-        for (i = 0; i < pb_type->num_modes; i++) {
-            for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-                for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb;
-                     k++) {
-                    load_cluster_placement_stats_for_pb_graph_node(cluster_placement_stats,
-                                                                   &pb_graph_node->child_pb_graph_nodes[i][j][k]);
-                }
-            }
         }
     }
 }
