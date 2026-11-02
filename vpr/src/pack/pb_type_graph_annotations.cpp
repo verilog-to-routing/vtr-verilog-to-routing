@@ -43,7 +43,17 @@ static void inferr_unspecified_pb_graph_edge_delays(t_pb_graph_edge* pb_graph_pi
 
 static t_pb_graph_pin* find_clock_pin(t_pb_graph_node* gnode, std::string_view clock, int line_num);
 
+static void load_pb_graph_node_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node);
+
 void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
+    for (t_pb_graph_node& node : pb_graph_node->subtree())
+        load_pb_graph_node_pin_to_pin_annotations(&node);
+}
+
+/**
+ * @brief Load the pin-to-pin annotations of a single pb_graph_node.
+ */
+static void load_pb_graph_node_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
     const t_pb_type* pb_type = pb_graph_node->pb_type;
 
     /* Load primitive critical path delays */
@@ -111,15 +121,6 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
     }
 
     inferr_unspecified_pb_graph_node_delays(pb_graph_node);
-
-    //Recursively annotate child pb's
-    for (int i = 0; i < pb_type->num_modes; i++) {
-        for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-            for (int k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                load_pb_graph_pin_to_pin_annotations(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
-            }
-        }
-    }
 }
 
 /*
