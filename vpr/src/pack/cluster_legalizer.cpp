@@ -953,6 +953,11 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             if (locked_site.status == RelativeMacroPacker::e_locked_site::NOT_IN_TYPE) {
                 // Reject this type so start_new_cluster() can try one that has
                 // the required site.
+                relative_macro_packer_->report_unsatisfiable_locked_site(molecule_id,
+                                                                         cluster,
+                                                                         atom_pb_lookup_,
+                                                                         /*resolved_site=*/nullptr,
+                                                                         log_verbosity_);
                 return e_block_pack_status::BLK_FAILED_FEASIBLE;
             }
             force_site_node = locked_site.node;
@@ -970,6 +975,16 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
         if (primitives_alive.empty()) {
+            if (force_site_node != nullptr) {
+                // The required site failed; no other primitive is allowed.
+                relative_macro_packer_->report_unsatisfiable_locked_site(molecule_id,
+                                                                         cluster,
+                                                                         atom_pb_lookup_,
+                                                                         force_site_node,
+                                                                         log_verbosity_);
+                block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
+                break;
+            }
             VTR_LOGV(log_verbosity_ > 3, "\t\tFAILED No candidate primitives available\n");
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
             break; /* no more candidate primitives available, this molecule will not pack, return fail */

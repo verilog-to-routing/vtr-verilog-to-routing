@@ -478,18 +478,25 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
     }
 
     if (!success) {
-        //Explored all candidates
+        // Include site-specific failures in the error if the seed is locked.
+        std::string locked_site_reason;
+        if (cluster_legalizer.relative_macro_packer())
+            locked_site_reason = cluster_legalizer.relative_macro_packer()->describe_unsatisfiable_locked_site(seed_mol_id);
+
+        // All candidate block types and modes have failed.
         if (seed_mol.type == e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK) {
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "Can not find any logic block that can implement molecule.\n"
-                            "\tPattern %s %s\n",
+                            "\tPattern %s %s\n%s",
                             seed_mol.pack_pattern->name.c_str(),
-                            root_atom_name.c_str());
+                            root_atom_name.c_str(),
+                            locked_site_reason.c_str());
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "Can not find any logic block that can implement molecule.\n"
-                            "\tAtom %s (%s)\n",
-                            root_atom_name.c_str(), arch_.models.model_name(root_model_id).c_str());
+                            "\tAtom %s (%s)\n%s",
+                            root_atom_name.c_str(), arch_.models.model_name(root_model_id).c_str(),
+                            locked_site_reason.c_str());
         }
     }
 

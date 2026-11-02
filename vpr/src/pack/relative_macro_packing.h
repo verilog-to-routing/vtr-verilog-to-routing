@@ -16,6 +16,7 @@
 #include <map>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "atom_netlist_fwd.h"
 #include "physical_types.h"
@@ -24,7 +25,9 @@
 #include "vtr_vector.h"
 
 class AtomNetlist;
+class AtomPBBimap;
 class ClusterLegalizer;
+struct LegalizationCluster;
 
 /**
  * @brief Relative placement state stored in LegalizationCluster.
@@ -149,7 +152,73 @@ class RelativeMacroPacker {
      */
     bool molecule_is_locked_to_site(PackMoleculeId molecule_id) const;
 
+    /**
+     * @brief Log a locked-site failure and record it if the cluster is empty.
+     *
+     * Only seed failures are saved for describe_unsatisfiable_locked_site().
+     * Failures in populated clusters, such as an occupied site, do not explain
+     * why the molecule could not seed a new cluster.
+     *
+     * During ClusterLegalizer::start_new_cluster(), the cluster has not yet
+     * been stored, so it is passed by reference.
+     *
+     *  @param molecule_id     The locked molecule that was rejected.
+     *  @param cluster         The cluster that rejected it.
+     *  @param atom_pb_lookup  Maps the cluster's atoms to their primitives.
+     *  @param resolved_site   The primitive the molecule is locked to in this
+     *                         cluster type, or nullptr if the required site is absent.
+     *  @param log_verbosity   Packer log verbosity; > 2 logs the reason.
+     */
+    void report_unsatisfiable_locked_site(PackMoleculeId molecule_id,
+                                          const LegalizationCluster& cluster,
+                                          const AtomPBBimap& atom_pb_lookup,
+                                          const t_pb_graph_node* resolved_site,
+                                          int log_verbosity);
+
+    /**
+     * @brief Describe recorded site failures for an error about the given seed.
+     *
+     * @return The failure details, or an empty string if this seed has no record.
+     */
+    std::string describe_unsatisfiable_locked_site(PackMoleculeId seed_molecule_id) const;
+
   private:
+    /**
+     * @brief Reason a locked molecule could not be placed in a cluster type.
+     */
+    enum class e_locked_site_failure {
+        NOT_IN_TYPE,           ///< The type has no primitive with the required path.
+        SITE_OCCUPIED,         ///< Another atom occupies the required primitive.
+        MOLECULE_DOES_NOT_FIT, ///< The site is unoccupied, but the molecule cannot be placed there.
+    };
+
+    /**
+     * @brief Locked-site failure for one candidate cluster type.
+     */
+    struct t_locked_site_failure {
+        t_logical_block_type_ptr cluster_type = nullptr; ///< The cluster type that was tried.
+
+        e_locked_site_failure reason = e_locked_site_failure::NOT_IN_TYPE; ///< Reason the placement attempt failed.
+
+        AtomBlockId occupying_atom; ///< Atom occupying the site; valid only for SITE_OCCUPIED.
+    };
+
+    /**
+     * @brief Site failures for a seed molecule, grouped by candidate cluster type.
+     *
+     * GreedyClusterer::start_new_cluster() includes these details when no block
+     * type can place the seed. Different types may fail for different reasons.
+     */
+    struct t_unsatisfiable_locked_site {
+        AtomBlockId atom; ///< Root atom whose site failed; invalid if there is no record.
+
+        UserRelativeGroupId group; ///< The group the atom belongs to.
+
+        std::string site_path; ///< The hierarchical path of the site the atom is locked to.
+
+        std::vector<t_locked_site_failure> failures; ///< One entry per cluster type tried, in the order tried.
+    };
+
     /**
      * @brief Record each chain's owning group: the group of its first constrained atom.
      */
@@ -213,6 +282,8 @@ class RelativeMacroPacker {
     vtr::vector<MoleculeChainId, UserRelativeGroupId> chain_owners_; ///< Owning group of each chain; invalid if the chain has no constrained atoms.
 
     std::map<t_logical_block_type_ptr, std::unordered_map<std::string, const t_pb_graph_node*>> site_tables_; ///< Cached primitive paths and nodes for each cluster type.
+
+    t_unsatisfiable_locked_site last_unsatisfiable_locked_site_; ///< Site failures for the most recently rejected locked seed.
 };
 
 /**
