@@ -1894,7 +1894,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 }
                 input_port_conns[port->name].push_back(net);
 
-                if (pin->type == PB_PIN_SEQUENTIAL && (!std::isnan(pin->tsu) || !std::isnan(pin->thld))) {
+                if (pin->type == e_pb_graph_pin_type::SEQUENTIAL && (!std::isnan(pin->tsu) || !std::isnan(pin->thld))) {
                     if (!std::isnan(pin->tsu)) {
                         DelayTriple delay_triple(pin->tsu, pin->tsu, pin->tsu);
                         su_timing_arcs.emplace_back(port->name,
@@ -2048,7 +2048,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 }
 
                 output_port_conns[port->name].push_back(net);
-                if (pin->type == PB_PIN_SEQUENTIAL && !std::isnan(pin->tco_max)) {
+                if (pin->type == e_pb_graph_pin_type::SEQUENTIAL && !std::isnan(pin->tco_max)) {
                     DelayTriple delay_triple = get_pin_tco_delay_triple(*pin);
                     cq_timing_arcs.emplace_back(pin->associated_clock_pin->port->name,
                                                 pin->associated_clock_pin->pin_number,

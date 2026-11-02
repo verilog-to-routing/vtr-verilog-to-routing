@@ -170,7 +170,7 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         VTR_ASSERT(sink_pin);
 
         const t_pb_graph_pin* gpin = find_pb_graph_pin(sink_pin);
-        VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
+        VTR_ASSERT(gpin->type == e_pb_graph_pin_type::SEQUENTIAL);
 
         return tatum::Time(gpin->tsu);
     }
@@ -199,7 +199,7 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         VTR_ASSERT(sink_pin);
 
         const t_pb_graph_pin* gpin = find_pb_graph_pin(sink_pin);
-        VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
+        VTR_ASSERT(gpin->type == e_pb_graph_pin_type::SEQUENTIAL);
 
         //Clock-to-q delay marked on the SOURCE node (the sink node of this edge)
         auto tco = tatum::Time(gpin->tco_max);

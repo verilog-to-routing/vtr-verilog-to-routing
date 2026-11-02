@@ -150,14 +150,14 @@ class t_pb_graph_node {
     std::vector<t_pb_graph_pin> pins_;
 };
 
-/* Identify pb pin type for timing purposes */
-enum e_pb_graph_pin_type {
-    PB_PIN_NORMAL = 0,
-    PB_PIN_SEQUENTIAL,
-    PB_PIN_INPAD,
-    PB_PIN_OUTPAD,
-    PB_PIN_TERMINAL,
-    PB_PIN_CLOCK
+/// @brief Identify pb pin type for timing purposes
+enum class e_pb_graph_pin_type {
+    NORMAL = 0,
+    SEQUENTIAL,
+    INPAD,
+    OUTPAD,
+    TERMINAL,
+    CLOCK
 };
 
 /** Describes a pb graph pin
@@ -192,7 +192,8 @@ class t_pb_graph_pin {
     t_pb_graph_node* parent_node = nullptr;
     int pin_count_in_cluster = 0;
 
-    enum e_pb_graph_pin_type type = PB_PIN_NORMAL; /* The type of this pin (sequential, i/o etc.) */
+    /// The type of this pin (sequential, i/o etc.)
+    e_pb_graph_pin_type type = e_pb_graph_pin_type::NORMAL;
 
     /* sequential timing information */
     float tsu = std::numeric_limits<float>::quiet_NaN();     /* For sequential logic elements the setup time */
