@@ -937,6 +937,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     t_relative_macro_verdict rel_verdict;
     // Allow full pin utilization for group members to help keep the group together.
     t_ext_pin_util effective_external_pin_util = max_external_pin_util;
+    // A null site leaves the molecule free to use any compatible primitive.
+    const t_pb_graph_node* force_site_node = nullptr;
     if (relative_macro_packer_) {
         rel_verdict = relative_macro_packer_->evaluate_molecule(molecule_id, cluster.rel_macro_state, cluster.placement_stats->has_long_chain, log_verbosity_);
         if (!rel_verdict.allowed) {
@@ -944,8 +946,17 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             return e_block_pack_status::BLK_FAILED_RELATIVE_GROUP;
         }
 
-        if (rel_verdict.molecule_in_cluster_group)
+        if (rel_verdict.molecule_in_cluster_group) {
             effective_external_pin_util = t_ext_pin_util(1.f, 1.f);
+
+            RelativeMacroPacker::t_locked_site locked_site = relative_macro_packer_->resolve_locked_site(molecule_id, cluster.type);
+            if (locked_site.status == RelativeMacroPacker::e_locked_site::NOT_IN_TYPE) {
+                // Reject this type so start_new_cluster() can try one that has
+                // the required site.
+                return e_block_pack_status::BLK_FAILED_FEASIBLE;
+            }
+            force_site_node = locked_site.node;
+        }
     }
 
     // Reuse the member scratch vector to avoid a heap allocation per candidate molecule.
@@ -954,7 +965,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> primitives_alive = build_primitive_candidate_queue(cluster.placement_stats,
                                                                                                                                  molecule_id,
                                                                                                                                  primitives_list_,
-                                                                                                                                 prepacker_);
+                                                                                                                                 prepacker_,
+                                                                                                                                 force_site_node);
 
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
         if (primitives_alive.empty()) {
