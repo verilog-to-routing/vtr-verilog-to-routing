@@ -1471,13 +1471,13 @@ Second machine readable format. The information is written as follows:
 
     <?xml version="1.0" encoding="UTF-8"?>
     <timing_summary_report>
-      <cpd value="<double>" unit="ns" description="Final critical path delay"></nets>
+      <cpd value="<double>" unit="ns" description="Final critical path delay"></cpd>
       <fmax value="<double>" unit="MHz" description="Max circuit frequency"></fmax>
       <cpd_skew value="<double>" unit="ns" description="Clock skew on the critical path"></cpd_skew>
       <cpd_category value="<category>" description="Category of the critical path (e.g. reg2reg)"></cpd_category>
       <swns value="<double>" unit="ns" description="setup Worst Negative Slack (sWNS)"></swns>
       <stns value="<double>" unit="ns" description="setup Total Negative Slack (sTNS)"></stns>
       <sws value="<double>" unit="ns" description="setup Worst Skew (sWS)"></sws>
-    </block_usage_report>
+    </timing_summary_report>
 
 .. _end:

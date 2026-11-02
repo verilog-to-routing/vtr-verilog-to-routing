@@ -15,6 +15,27 @@
 #include "tatum/report/graphviz_dot_writer.hpp"
 #include "tatum/report/TimingPathCollector.hpp"
 
+/**
+ * @brief Returns the first (i.e. worst) skew path of each clock domain pair.
+ *
+ *   @param skew_paths  The skew paths to search, which must be sorted worst-first.
+ *   @return            The worst skew path of each clock domain pair, in the same (worst-first) order.
+ */
+static std::vector<tatum::SkewPath> keep_worst_skew_per_domain_pair(const std::vector<tatum::SkewPath>& skew_paths);
+
+/**
+ * @brief Returns the skew path of the given critical path.
+ *
+ * There is a single tag per clock domain pair at each endpoint, so the skew path ending at the critical
+ * path's endpoint with the same clock domain pair is the critical path's own skew.
+ *
+ *   @param skew_paths     All the skew paths (as collected by the TimingPathCollector).
+ *   @param critical_path  The critical path, whose endpoint and clock domains must be set.
+ *   @return               The critical path's skew path, or nullptr if it has none (e.g. it is
+ *                         launched by a constant generator).
+ */
+static const tatum::SkewPath* find_critical_path_skew_path(const std::vector<tatum::SkewPath>& skew_paths, const tatum::TimingPathInfo& critical_path);
+
 double sec_to_nanosec(double seconds) {
     return 1e9 * seconds;
 }
@@ -91,7 +112,6 @@ float find_setup_worst_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
     return wns;
 }
 
-//Returns the first (i.e. worst) skew path of each clock domain pair from skew_paths, which must be sorted worst-first.
 static std::vector<tatum::SkewPath> keep_worst_skew_per_domain_pair(const std::vector<tatum::SkewPath>& skew_paths) {
     std::vector<tatum::SkewPath> worst_skew_per_domain_pair;
     std::set<std::pair<tatum::DomainId, tatum::DomainId>> seen_domain_pairs;
@@ -110,17 +130,14 @@ std::vector<tatum::SkewPath> find_setup_worst_skew_per_domain_pair(const tatum::
                                                                    const tatum::TimingPathCategoryFilter& category_filter) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
-    //Collect every setup skew path, sorted worst-first (most negative skew first), so the
-    //first occurrence of each clock domain pair below is that pair's worst skew.
+    // Collect every setup skew path, sorted worst-first (most negative skew first), so the
+    // first occurrence of each clock domain pair is that pair's worst skew.
     auto skew_paths = tatum::TimingPathCollector().collect_worst_setup_skew_paths(*timing_ctx.graph, constraints, setup_analyzer,
                                                                                   std::numeric_limits<size_t>::max(), category_filter);
 
     return keep_worst_skew_per_domain_pair(skew_paths);
 }
 
-//Returns the skew path of the given critical path, or nullptr if it has none (e.g. it is launched by a
-//constant generator). Since there is a single tag per clock domain pair at each endpoint, the skew path
-//ending at the critical path's endpoint with the same clock domain pair is the critical path's own skew.
 static const tatum::SkewPath* find_critical_path_skew_path(const std::vector<tatum::SkewPath>& skew_paths, const tatum::TimingPathInfo& critical_path) {
     for (const auto& skew_path : skew_paths) {
         if (skew_path.data_capture_node == critical_path.endpoint()
@@ -274,7 +291,7 @@ void TimingStats::writeXML(std::ostream& output) const {
     output << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
     output << "<timing_summary_report>\n";
 
-    output << "  <cpd value=\"" << least_slack_cpd_delay << "\" unit=\"ns\" description=\"Final critical path delay\"></nets>\n";
+    output << "  <cpd value=\"" << least_slack_cpd_delay << "\" unit=\"ns\" description=\"Final critical path delay\"></cpd>\n";
     output << "  <fmax value=\"" << fmax << "\" unit=\"MHz\" description=\"Max circuit frequency\"></fmax>\n";
     output << "  <cpd_skew value=\"" << critical_path_skew << "\" unit=\"ns\" description=\"Clock skew on the critical path\"></cpd_skew>\n";
     output << "  <cpd_category value=\"" << critical_path_category << "\" description=\"Category of the critical path (e.g. reg2reg)\"></cpd_category>\n";
@@ -282,7 +299,7 @@ void TimingStats::writeXML(std::ostream& output) const {
     output << "  <stns value=\"" << setup_total_neg_slack << "\" unit=\"ns\" description=\"setup Total Negative Slack (sTNS)\"></stns>\n";
     output << "  <sws value=\"" << setup_worst_skew << "\" unit=\"ns\" description=\"setup Worst Skew (sWS)\"></sws>\n";
 
-    output << "</block_usage_report>\n";
+    output << "</timing_summary_report>\n";
 }
 
 TimingStats::TimingStats(std::string pref, double cpd, double f_max, double swns, double stns, double sws, double cpd_skew, std::string cpd_category) {
@@ -351,7 +368,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
     double setup_worst_neg_slack = sec_to_nanosec(find_setup_worst_negative_slack(setup_analyzer));
     double setup_total_neg_slack = sec_to_nanosec(find_setup_total_negative_slack(setup_analyzer));
 
-    //Every setup skew path (one per endpoint and clock domain pair), sorted worst-first
+    // Every setup skew path (one per endpoint and clock domain pair), sorted worst-first
     std::vector<tatum::SkewPath> setup_skew_paths = tatum::TimingPathCollector().collect_worst_setup_skew_paths(*timing_ctx.graph, constraints, setup_analyzer,
                                                                                                                 std::numeric_limits<size_t>::max());
     std::vector<tatum::SkewPath> setup_worst_skew_paths = keep_worst_skew_per_domain_pair(setup_skew_paths);
@@ -365,9 +382,9 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
     double setup_worst_reg2reg_skew = setup_worst_reg2reg_skew_paths.empty() ? std::numeric_limits<double>::quiet_NaN()
                                                                              : sec_to_nanosec(setup_worst_reg2reg_skew_paths.front().clock_skew.value());
 
-    //Clock skew on the critical path itself, so users can tell how much of the critical path's margin is
-    //attributable to clock skew rather than data-path delay. Its category is also reported, since the skew
-    //of an in2reg/reg2out critical path includes the full clock insertion delay of its register.
+    // Clock skew on the critical path itself, so users can tell how much of the critical path's margin is
+    // attributable to clock skew rather than data-path delay. Its category is also reported, since the skew
+    // of an in2reg/reg2out critical path includes the full clock insertion delay of its register.
     double critical_path_skew = std::numeric_limits<double>::quiet_NaN();
     std::string critical_path_category;
     const tatum::SkewPath* critical_skew_path = find_critical_path_skew_path(setup_skew_paths, least_slack_cpd);
