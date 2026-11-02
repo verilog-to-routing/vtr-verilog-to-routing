@@ -161,30 +161,18 @@ static void alloc_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node) {
         /* allocate space */
         for (i = 0; i < pb_graph_node->num_input_ports; i++) {
             for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-                pb_graph_node->pins_by_input_port[i][j].parent_pin_class = new int[pb_graph_node->pb_type->depth];
-                for (k = 0; k < pb_graph_node->pb_type->depth; k++) {
-                    pb_graph_node->pins_by_input_port[i][j].parent_pin_class[k] = UNDEFINED;
-                }
+                pb_graph_node->pins_by_input_port[i][j].parent_pin_class = std::vector<int>(pb_graph_node->pb_type->depth, UNDEFINED);
             }
         }
         for (i = 0; i < pb_graph_node->num_output_ports; i++) {
             for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-                pb_graph_node->pins_by_output_port[i][j].parent_pin_class = new int[pb_graph_node->pb_type->depth];
-                pb_graph_node->pins_by_output_port[i][j].list_of_connectable_input_pin_ptrs = new t_pb_graph_pin**[pb_graph_node->pb_type->depth];
-                pb_graph_node->pins_by_output_port[i][j].num_connectable_primitive_input_pins = new int[pb_graph_node->pb_type->depth];
-                for (k = 0; k < pb_graph_node->pb_type->depth; k++) {
-                    pb_graph_node->pins_by_output_port[i][j].list_of_connectable_input_pin_ptrs[k] = nullptr;
-                    pb_graph_node->pins_by_output_port[i][j].num_connectable_primitive_input_pins[k] = 0;
-                    pb_graph_node->pins_by_output_port[i][j].parent_pin_class[k] = UNDEFINED;
-                }
+                pb_graph_node->pins_by_output_port[i][j].parent_pin_class = std::vector<int>(pb_graph_node->pb_type->depth, UNDEFINED);
+                pb_graph_node->pins_by_output_port[i][j].list_of_connectable_input_pin_ptrs = std::vector<std::vector<t_pb_graph_pin*>>(pb_graph_node->pb_type->depth);
             }
         }
         for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
             for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-                pb_graph_node->pins_by_clock_port[i][j].parent_pin_class = new int[pb_graph_node->pb_type->depth];
-                for (k = 0; k < pb_graph_node->pb_type->depth; k++) {
-                    pb_graph_node->pins_by_clock_port[i][j].parent_pin_class[k] = UNDEFINED;
-                }
+                pb_graph_node->pins_by_clock_port[i][j].parent_pin_class = std::vector<int>(pb_graph_node->pb_type->depth, UNDEFINED);
             }
         }
     } else {
@@ -249,28 +237,8 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(t_pb_graph
                                                                       reference_pin, depth,
                                                                       seen_pins);
         }
-        if (current_pb_graph_pin->is_primitive_pin()
-            && current_pb_graph_pin->port->type == IN_PORT) {
-            reference_pin->num_connectable_primitive_input_pins[depth]++;
-
-            if (reference_pin->num_connectable_primitive_input_pins[depth] - 1 > 0) {
-                std::vector<t_pb_graph_pin*> temp(reference_pin->list_of_connectable_input_pin_ptrs[depth],
-                                                  reference_pin->list_of_connectable_input_pin_ptrs[depth] + reference_pin->num_connectable_primitive_input_pins[depth] - 1);
-
-                delete[] reference_pin->list_of_connectable_input_pin_ptrs[depth];
-                reference_pin->list_of_connectable_input_pin_ptrs[depth] = new t_pb_graph_pin*[reference_pin->num_connectable_primitive_input_pins[depth]];
-                for (i = 0; i < reference_pin->num_connectable_primitive_input_pins[depth] - 1; i++)
-                    reference_pin->list_of_connectable_input_pin_ptrs[depth][i] = temp[i];
-
-                reference_pin->list_of_connectable_input_pin_ptrs[depth][reference_pin->num_connectable_primitive_input_pins[depth]
-                                                                         - 1] = current_pb_graph_pin;
-            }
-
-            else {
-                reference_pin->list_of_connectable_input_pin_ptrs[depth] = new t_pb_graph_pin*[reference_pin->num_connectable_primitive_input_pins[depth]];
-            }
-            reference_pin->list_of_connectable_input_pin_ptrs[depth][reference_pin->num_connectable_primitive_input_pins[depth]
-                                                                     - 1] = current_pb_graph_pin;
+        if (current_pb_graph_pin->is_primitive_pin() && current_pb_graph_pin->port->type == IN_PORT) {
+            reference_pin->list_of_connectable_input_pin_ptrs[depth].push_back(current_pb_graph_pin);
         }
     }
 }

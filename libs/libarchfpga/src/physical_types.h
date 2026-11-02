@@ -1396,7 +1396,9 @@ class t_pb_graph_node {
     /// [0..num_clock_ports-1]
     std::vector<int> num_clock_pins;
 
-    t_pb_graph_node*** child_pb_graph_nodes; /* [0..num_modes-1][0..num_pb_type_in_mode-1][0..num_pb-1] */
+    /// Child nodes of each mode, by child pb_type and then by instance.
+    /// [0..num_modes-1][0..num_pb_type_in_mode-1][0..num_pb-1]
+    std::vector<std::vector<std::vector<t_pb_graph_node>>> child_pb_graph_nodes;
     t_pb_graph_node* parent_pb_graph_node;
 
     int total_pb_pins; /* only valid for top-level */
@@ -1509,11 +1511,14 @@ class t_pb_graph_pin {
     /* Applies to clusters only */
     int pin_class = 0;
 
-    /* Applies to pins of primitive only */
-    int* parent_pin_class = nullptr; /* [0..depth-1] the grouping of pins that this particular pin belongs to */
-    /* Applies to output pins of primitives only */
-    t_pb_graph_pin*** list_of_connectable_input_pin_ptrs = nullptr; /* [0..depth-1][0..num_connectable_primitive_input_pins-1] what input pins this output can connect to without exiting cluster at given depth */
-    int* num_connectable_primitive_input_pins = nullptr;            /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
+    /// The grouping of pins that this particular pin belongs to.
+    /// @note Applies to pins of primitive only.
+    /// [0..depth-1]
+    std::vector<int> parent_pin_class;
+    /// What input pins this output can connect to without exiting cluster at given depth.
+    /// @note Applies to output pins of primitives only.
+    /// [0..depth-1][0..num_connectable_input_pins-1]
+    std::vector<std::vector<t_pb_graph_pin*>> list_of_connectable_input_pin_ptrs;
 
     bool is_forced_connection = false; /* This output pin connects to one and only one input pin */
 
