@@ -1577,9 +1577,9 @@ inline void t_pb_graph_node::alloc_pins(int num_pins) {
  */
 class t_pb_graph_edge {
   public:
-    /* timing information */
-    float delay_max;
-    float delay_min;
+    /* timing information (NaN until loaded from the architecture's delay annotations) */
+    float delay_max = std::numeric_limits<float>::quiet_NaN();
+    float delay_min = std::numeric_limits<float>::quiet_NaN();
 
     /* who drives this edge */
     t_interconnect* interconnect;
