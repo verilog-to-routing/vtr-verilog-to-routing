@@ -1106,9 +1106,14 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      */
     const t_pb_graph_node* find_primitive_site_or_error() {
         if (!primitive_sites_built_) {
+            // Record every primitive under its hierarchical type name, which
+            // is the form site paths are written in.
             for (const t_logical_block_type& lb_type : g_vpr_ctx.device().logical_block_types) {
-                if (lb_type.pb_graph_head != nullptr) {
-                    collect_primitive_sites(lb_type.pb_graph_head, primitive_sites_);
+                if (lb_type.pb_graph_head == nullptr)
+                    continue;
+                for (const t_pb_graph_node& node : lb_type.pb_graph_head->subtree()) {
+                    if (node.is_primitive())
+                        primitive_sites_.emplace(node.hierarchical_type_name(), &node);
                 }
             }
             primitive_sites_built_ = true;
@@ -1125,27 +1130,6 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             return nullptr;
         }
         return itr->second;
-    }
-
-    /**
-     * @brief Record every primitive below a pb_graph node under its hierarchical
-     *        type name, which is the form site paths are written in.
-     */
-    static void collect_primitive_sites(const t_pb_graph_node* node, std::unordered_map<std::string, const t_pb_graph_node*>& sites) {
-        if (node->is_primitive()) {
-            sites.emplace(node->hierarchical_type_name(), node);
-            return;
-        }
-
-        const t_pb_type* pb_type = node->pb_type;
-        for (int imode = 0; imode < pb_type->num_modes; imode++) {
-            const t_mode& mode = pb_type->modes[imode];
-            for (int ichild = 0; ichild < mode.num_pb_type_children; ichild++) {
-                for (int ipb = 0; ipb < mode.pb_type_children[ichild].num_pb; ipb++) {
-                    collect_primitive_sites(&node->child_pb_graph_nodes[imode][ichild][ipb], sites);
-                }
-            }
-        }
     }
 
     /**
