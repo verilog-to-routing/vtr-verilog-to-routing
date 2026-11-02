@@ -21,6 +21,7 @@ struct APPackContext;
 class AtomNetId;
 class AtomNetlist;
 class AttractionInfo;
+struct ClusterGainStats;
 struct DeviceContext;
 class GreedyCandidateSelector;
 class PreClusterTimingManager;
@@ -201,6 +202,25 @@ class GreedyClusterer {
                                           LegalizationClusterId legalization_cluster_id,
                                           ClusterLegalizer& cluster_legalizer,
                                           const Prepacker& prepacker);
+
+    /**
+     * @brief Try to pack the seed's relative placement group before adding
+     *        other molecules, updating gain statistics for each success.
+     *
+     * Rejected molecules remain available to the candidate selector. The
+     * end-of-pass check reports any group that could not be packed together.
+     *
+     * Does nothing when the seed belongs to no group.
+     *
+     *  @param cluster_gain_stats  The gain stats of the cluster being grown.
+     */
+    void pack_relative_group_into_cluster_(PackMoleculeId seed_mol_id,
+                                           LegalizationClusterId legalization_cluster_id,
+                                           ClusterLegalizer& cluster_legalizer,
+                                           const Prepacker& prepacker,
+                                           GreedyCandidateSelector& candidate_selector,
+                                           ClusterGainStats& cluster_gain_stats,
+                                           AttractionInfo& attraction_groups);
 
     /**
      * @brief Log the physical block usage of the logic element in the

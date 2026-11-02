@@ -9,8 +9,9 @@
  *  - An atom may be locked to a particular primitive site in its cluster.
  *
  * RelativeMacroPacker validates chain ownership and site constraints at
- * construction and checks additions to clusters. ClusterLegalizer creates one
- * when the design has relative macros.
+ * construction, checks additions to clusters, and orders group molecules for
+ * the greedy clusterer. ClusterLegalizer creates one when the design has
+ * relative macros.
  */
 
 #include <map>
@@ -19,6 +20,7 @@
 #include <vector>
 
 #include "atom_netlist_fwd.h"
+#include "cluster_legalizer_fwd.h"
 #include "physical_types.h"
 #include "prepack.h"
 #include "user_relative_macros.h"
@@ -181,6 +183,27 @@ class RelativeMacroPacker {
      * @return The failure details, or an empty string if this seed has no record.
      */
     std::string describe_unsatisfiable_locked_site(PackMoleculeId seed_molecule_id) const;
+
+    /**
+     * @brief Return unclustered group molecules in the order to try adding them.
+     *
+     * Locked molecules go first, in constraints-file order, so unlocked
+     * molecules cannot take their sites. Unlocked molecules follow in descending
+     * atom count because larger molecules are harder to place as the cluster fills.
+     *
+     *  @param seed_molecule_id   The molecule the cluster was seeded with.
+     *  @param cluster_id         The cluster being grown.
+     *  @param cluster_legalizer  Used to skip molecules already clustered.
+     *  @param log_verbosity      Packer log verbosity; > 1 reports a group that
+     *                            an earlier cluster already split.
+     *
+     *  @return The molecules to offer, or an empty vector if the seed belongs
+     *          to no group.
+     */
+    std::vector<PackMoleculeId> group_molecules_to_pack(PackMoleculeId seed_molecule_id,
+                                                        LegalizationClusterId cluster_id,
+                                                        const ClusterLegalizer& cluster_legalizer,
+                                                        int log_verbosity) const;
 
   private:
     /**

@@ -37,8 +37,10 @@
  */
 
 #include "greedy_clusterer.h"
+#include <algorithm>
 #include <cstdio>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 #include "appack_context.h"
@@ -52,6 +54,7 @@
 #include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
+#include "relative_macro_packing.h"
 #include "logical_ram_infer.h"
 #include "vpr_context.h"
 #include "vtr_math.h"
@@ -70,6 +73,28 @@ struct t_cluster_progress_stats {
     // logged.
     int mols_since_last_print = 0;
 };
+
+/**
+ * @brief Return a packing status name for log messages.
+ */
+const char* block_pack_status_name(e_block_pack_status status) {
+    switch (status) {
+        case e_block_pack_status::BLK_PASSED:
+            return "PASSED";
+        case e_block_pack_status::BLK_FAILED_FEASIBLE:
+            return "FAILED_FEASIBILITY_CHECK";
+        case e_block_pack_status::BLK_FAILED_ROUTE:
+            return "FAILED_ROUTE";
+        case e_block_pack_status::BLK_FAILED_FLOORPLANNING:
+            return "FAILED_FLOORPLANNING_CHECK";
+        case e_block_pack_status::BLK_FAILED_NOC_GROUP:
+            return "FAILED_NOC_GROUP_CHECK";
+        case e_block_pack_status::BLK_FAILED_RELATIVE_GROUP:
+            return "FAILED_RELATIVE_GROUP_CHECK";
+        default:
+            return "UNDEFINED";
+    }
+}
 
 } // namespace
 
@@ -263,6 +288,15 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(PackMoleculeId seed_mol_
                                                                                        legalization_cluster_id,
                                                                                        cluster_legalizer,
                                                                                        attraction_groups);
+
+    // Try the seed's group before adding molecules chosen by packing gain.
+    pack_relative_group_into_cluster_(seed_mol_id,
+                                      legalization_cluster_id,
+                                      cluster_legalizer,
+                                      prepacker,
+                                      candidate_selector,
+                                      cluster_gain_stats,
+                                      attraction_groups);
 
     // Select the first candidate molecule to try to add to this cluster.
     PackMoleculeId candidate_mol_id = candidate_selector.get_next_candidate_for_cluster(
@@ -587,6 +621,43 @@ bool GreedyClusterer::try_add_candidate_mol_to_cluster(PackMoleculeId candidate_
     }
 
     return pack_status == e_block_pack_status::BLK_PASSED;
+}
+
+void GreedyClusterer::pack_relative_group_into_cluster_(PackMoleculeId seed_mol_id,
+                                                        LegalizationClusterId legalization_cluster_id,
+                                                        ClusterLegalizer& cluster_legalizer,
+                                                        const Prepacker& prepacker,
+                                                        GreedyCandidateSelector& candidate_selector,
+                                                        ClusterGainStats& cluster_gain_stats,
+                                                        AttractionInfo& attraction_groups) {
+    const std::optional<RelativeMacroPacker>& relative_macro_packer = cluster_legalizer.relative_macro_packer();
+    if (!relative_macro_packer)
+        return;
+
+    std::vector<PackMoleculeId> group_mols = relative_macro_packer->group_molecules_to_pack(seed_mol_id,
+                                                                                            legalization_cluster_id,
+                                                                                            cluster_legalizer,
+                                                                                            log_verbosity_);
+    for (PackMoleculeId mol_id : group_mols) {
+        e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(mol_id, legalization_cluster_id);
+        if (pack_status == e_block_pack_status::BLK_PASSED) {
+            // Update gains and attraction groups as for any other added molecule.
+            candidate_selector.update_cluster_gain_stats_candidate_success(cluster_gain_stats,
+                                                                           mol_id,
+                                                                           legalization_cluster_id,
+                                                                           cluster_legalizer,
+                                                                           attraction_groups);
+            continue;
+        }
+
+        // Keep the original failure in the log. A later unlocked molecule may
+        // occupy this site before the candidate selector retries the molecule.
+        VTR_LOGV(log_verbosity_ > 2,
+                 "\tRelative placement group molecule of atom '%s' was not admitted to cluster %zu on this pass (%s)\n",
+                 atom_netlist_.block_name(prepacker.get_molecule_root_atom(mol_id)).c_str(),
+                 (size_t)legalization_cluster_id,
+                 block_pack_status_name(pack_status));
+    }
 }
 
 void GreedyClusterer::report_le_physical_block_usage(const ClusterLegalizer& cluster_legalizer) {

@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -470,6 +471,61 @@ std::string RelativeMacroPacker::describe_unsatisfiable_locked_site(PackMolecule
     }
 
     return message;
+}
+
+std::vector<PackMoleculeId> RelativeMacroPacker::group_molecules_to_pack(PackMoleculeId seed_molecule_id,
+                                                                         LegalizationClusterId cluster_id,
+                                                                         const ClusterLegalizer& cluster_legalizer,
+                                                                         int log_verbosity) const {
+    std::vector<PackMoleculeId> order;
+
+    const UserRelativeGroupId group = molecule_group(seed_molecule_id);
+    if (!group.is_valid())
+        return order;
+
+    // Collect unclustered group molecules, excluding the seed. Molecules in
+    // other clusters cannot be moved here; count them for the split-group log.
+    // The end-of-pass check reports any split as an error.
+    std::unordered_set<PackMoleculeId> seen = {seed_molecule_id};
+    size_t num_elsewhere = 0;
+    AtomBlockId first_elsewhere;
+    for (AtomBlockId blk_id : relative_macros_.get_group(group).atoms) {
+        PackMoleculeId mol_id = prepacker_.get_atom_molecule(blk_id);
+        if (!seen.insert(mol_id).second)
+            continue;
+
+        if (!cluster_legalizer.is_mol_clustered(mol_id)) {
+            order.push_back(mol_id);
+        } else if (cluster_legalizer.get_atom_cluster(blk_id) != cluster_id) {
+            num_elsewhere++;
+            if (!first_elsewhere.is_valid())
+                first_elsewhere = blk_id;
+        }
+    }
+
+    // Summarize the split once per attempt instead of logging every atom.
+    VTR_LOGV(log_verbosity > 1 && num_elsewhere > 0,
+             "\tRelative macro '%s' group %zu is split: %zu of its molecules are already in other clusters "
+             "(first: atom '%s' in cluster %zu) while cluster %zu is being seeded with the same group.\n",
+             relative_macros_.get_macro(relative_macros_.get_group(group).macro_id).name.c_str(), size_t(group),
+             num_elsewhere,
+             atom_netlist_.block_name(first_elsewhere).c_str(),
+             size_t(cluster_legalizer.get_atom_cluster(first_elsewhere)),
+             size_t(cluster_id));
+
+    // Reserve locked sites first, preserving constraints-file order. Try larger
+    // unlocked molecules before smaller ones.
+    std::stable_sort(order.begin(), order.end(), [&](PackMoleculeId lhs, PackMoleculeId rhs) {
+        bool lhs_locked = molecule_is_locked_to_site(lhs);
+        bool rhs_locked = molecule_is_locked_to_site(rhs);
+        if (lhs_locked != rhs_locked)
+            return lhs_locked;
+        if (lhs_locked)
+            return false;
+        return prepacker_.get_molecule_num_valid_atoms(lhs) > prepacker_.get_molecule_num_valid_atoms(rhs);
+    });
+
+    return order;
 }
 
 /**
