@@ -30,9 +30,16 @@ class ExtendedMapLookahead final : public RouterLookahead {
      * @param delta_x x delta value that is the distance between the current node to the target node
      * @param delta_y y delta value that is the distance between the current node to the target node
      * @param criticality_fac criticality of the current connection between 0 (all congestion) and 1 (all timing)
+     * @param scale_delay if false, the delay is returned unscaled by criticality
      * @return expected cost to get to the destination
      */
-    std::pair<float, float> get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, int to_layer_num, const t_conn_cost_params& params) const;
+    std::pair<float, float> get_src_opin_cost(bool scale_delay, RRNodeId from_node, int delta_x, int delta_y, int to_layer_num, const t_conn_cost_params& params) const;
+
+    /**
+     * @brief (delay, congestion) cost from from_node to the to_node SINK. Congestion is scaled by (1 - criticality);
+     *        delay is scaled by criticality only when scale_delay is true, otherwise it is the unscaled delay.
+     */
+    std::pair<float, float> calculate_delay_and_cong(bool scale_delay, RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params) const;
 
     /**
      * @brief Returns the CHAN -> IPIN delay that gets added to the final expected delay
@@ -69,10 +76,15 @@ class ExtendedMapLookahead final : public RouterLookahead {
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
 
     /**
-     * @brief Returns a pair of expected delay and congestion
+     * @brief Returns a pair of expected criticality-scaled delay and congestion
      */
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId inode, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
-
+    
+    /**
+     * @brief Returns a pair of expected unscaled delay and criticality-scaled congestion
+     */
+    std::pair<float, float> get_expected_pure_delay_and_scaled_cong(RRNodeId inode, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    
     /**
      * @brief Computes the extended lookahead map
      */

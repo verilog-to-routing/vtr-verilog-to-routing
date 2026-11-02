@@ -63,7 +63,7 @@ static std::pair<float, int> run_dijkstra(RRNodeId start_node,
                                           std::vector<util::Search_Path>* paths,
                                           util::RoutingCosts* routing_costs);
 
-std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, int to_layer_num, const t_conn_cost_params& params) const {
+std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(bool scale_delay, RRNodeId from_node, int delta_x, int delta_y, int to_layer_num, const t_conn_cost_params& params) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 
@@ -123,8 +123,11 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
                 cost_entry = cost_map_.find_cost(reachable_wire_inf.wire_seg_index, delta_x, delta_y);
             }
 
-            float this_delay_cost = (1. - params.criticality) * (reachable_wire_inf.delay + cost_entry.delay);
-            float this_cong_cost = (params.criticality) * (reachable_wire_inf.congestion + cost_entry.congestion);
+            float this_delay = reachable_wire_inf.delay + cost_entry.delay;
+            float this_cong = reachable_wire_inf.congestion + cost_entry.congestion;
+            
+            float this_delay_cost = scale_delay ? (1. - params.criticality) * this_delay : this_delay;
+            float this_cong_cost = scale_delay ? params.criticality * this_cong : (1. - params.criticality) * this_cong;
 
             expected_delay_cost = std::min(expected_delay_cost, this_delay_cost);
             expected_cong_cost = std::min(expected_cong_cost, this_cong_cost);
@@ -186,6 +189,14 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
 //  The from_node can be of one of the following types: CHANX, CHANY, SOURCE, OPIN
 //  The to_node is always a SINK
 std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
+    return calculate_delay_and_cong(/*scale_delay=*/true, from_node, to_node, params);
+}
+
+std::pair<float, float> ExtendedMapLookahead::get_expected_pure_delay_and_scaled_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
+    return calculate_delay_and_cong(/*scale_delay=*/false, from_node, to_node, params);
+}
+
+std::pair<float, float> ExtendedMapLookahead::calculate_delay_and_cong(bool scale_delay, RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params) const {
     if (from_node == to_node) {
         return std::make_pair(0., 0.);
     }
@@ -206,7 +217,7 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
 
     e_rr_type from_type = rr_graph.node_type(from_node);
     if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::OPIN) {
-        return this->get_src_opin_cost(from_node, dx, dy, to_layer_num, params);
+        return this->get_src_opin_cost(scale_delay, from_node, dx, dy, to_layer_num, params);
     } else if (from_type == e_rr_type::IPIN) {
         return std::make_pair(0., 0.);
     }
@@ -240,7 +251,7 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     float site_pin_delay = this->get_chan_ipin_delays(to_node);
     expected_delay += site_pin_delay;
 
-    float expected_delay_cost = params.criticality * expected_delay;
+    float expected_delay_cost = scale_delay ? params.criticality * expected_delay : expected_delay;
     float expected_cong_cost = (1.0 - params.criticality) * expected_congestion;
 
     float expected_cost = expected_delay_cost + expected_cong_cost;

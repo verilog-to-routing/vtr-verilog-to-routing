@@ -52,13 +52,7 @@ static void write_router_lookahead(const std::string& file);
 
 /******** Interface class member function definitions ********/
 
-float SimpleLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
-    // Get the total cost using the combined delay and congestion costs
-    auto [delay_cost, cong_cost] = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
-    return delay_cost + cong_cost;
-}
-
-std::pair<float, float> SimpleLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
+std::pair<float, float> SimpleLookahead::calculate_delay_and_cong(bool scale_delay, RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 
@@ -86,11 +80,28 @@ std::pair<float, float> SimpleLookahead::get_expected_delay_and_cong(RRNodeId fr
         float expected_delay = cost_entry.delay;
         float expected_cong = cost_entry.congestion;
 
-        expected_delay_cost = params.criticality * expected_delay;
+        if (scale_delay)
+            expected_delay_cost = params.criticality * expected_delay;
+        else 
+            expected_delay_cost = expected_delay;
         expected_cong_cost = (1.0 - params.criticality) * expected_cong;
     }
 
     return std::make_pair(expected_delay_cost, expected_cong_cost);
+}
+
+float SimpleLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
+    // Get the total cost using the combined delay and congestion costs
+    auto [delay_cost, cong_cost] = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
+    return delay_cost + cong_cost;
+}
+
+std::pair<float, float> SimpleLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
+    return calculate_delay_and_cong(/*scale_delay*/true, from_node, to_node, params);
+}
+
+std::pair<float, float> SimpleLookahead::get_expected_pure_delay_and_scaled_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
+    return calculate_delay_and_cong(/*scale_delay*/false, from_node, to_node, params);
 }
 
 void SimpleLookahead::read(const std::string& file) {

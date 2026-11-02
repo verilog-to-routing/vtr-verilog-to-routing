@@ -27,23 +27,27 @@ class MapLookahead final : public RouterLookahead {
 
   private:
     float get_expected_cost_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const;
+    // The helpers below return (delay, congestion) costs. Congestion is always scaled by (1 - criticality);
+    // delay is scaled by criticality only when scale_delay is true, otherwise it is the unscaled delay (RCV needs this).
     //Same as get_expected_cost_flat_router(), but returns the delay and congestion costs separately
-    //instead of their sum (RCV requires this). It is called by get_expected_delay_and_cong() when is_flat_ is true.
-    std::pair<float, float> get_expected_delay_and_cong_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const;
+    //instead of their sum (RCV requires this). Called by get_expected_delay_and_cong() and
+    //get_expected_pure_delay_and_scaled_cong() when is_flat_ is true.
+    std::pair<float, float> get_expected_delay_and_cong_flat_router(bool scale_delay, RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const;
     //The original non-flat routing delay/congestion lookup.
-    //Called directly by get_expected_delay_and_cong_flat_router() and by get_expected_delay_and_cong() when !is_flat_.
-    std::pair<float, float> get_expected_delay_and_cong_global(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const;
+    //Called by get_expected_delay_and_cong_flat_router(), and by get_expected_delay_and_cong() and
+    //get_expected_pure_delay_and_scaled_cong() when is_flat_ is false.
+    std::pair<float, float> get_expected_delay_and_cong_global(bool scale_delay, RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const;
     /**
      * @brief Add the intra-cluster cost from the target tile's root-level IPINs to the target SINK to a
      *        (delay, congestion) cost that only reaches the root-level pins.
      */
-    std::pair<float, float> add_target_sink_cost(std::pair<float, float> root_pin_cost, RRNodeId target_node, const t_conn_cost_params& params) const;
+    std::pair<float, float> add_target_sink_cost(bool scale_delay, std::pair<float, float> root_pin_cost, RRNodeId target_node, const t_conn_cost_params& params) const;
     /**
      * @brief Cost from a node inside a cluster to a SINK in another tile: the cheapest wire cost over the
      *        (dx, dy) distance plus the intra-cluster cost into the target. The cost of leaving the current
      *        cluster is unknown and not included.
      */
-    std::pair<float, float> cost_to_sink_in_other_tile(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params) const;
+    std::pair<float, float> cost_to_sink_in_other_tile(bool scale_delay, RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params) const;
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
     util::t_src_opin_delays src_opin_delays;
     /// Intra-cluster cost from each pin of the tile (root-level and intra-cluster) to each primitive sink
@@ -70,7 +74,7 @@ class MapLookahead final : public RouterLookahead {
   protected:
     float get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
-
+    std::pair<float, float> get_expected_pure_delay_and_scaled_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
     void compute(const std::vector<t_segment_inf>& segment_inf) override;
     void compute_intra_tile() override;
     void read(const std::string& file) override;
