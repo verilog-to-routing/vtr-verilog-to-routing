@@ -190,30 +190,9 @@ bool LbHierPathParser::matches_hierarchical_type(const std::string& hierarchical
 }
 
 const t_pb_graph_node* LbHierPathParser::find_matching_pb_graph_node(const t_pb_graph_node* root) const {
-    if (root == nullptr) {
-        return nullptr;
-    }
-    if (matches_hierarchical_type(root->hierarchical_type_name())) {
-        return root;
-    }
-
-    if (root->is_primitive() || root->child_pb_graph_nodes == nullptr) {
-        return nullptr;
-    }
-
-    for (int imode = 0; imode < root->pb_type->num_modes; ++imode) {
-        const t_mode& mode = root->pb_type->modes[imode];
-        for (int ipb_type = 0; ipb_type < mode.num_pb_type_children; ++ipb_type) {
-            for (int ipb = 0; ipb < mode.pb_type_children[ipb_type].num_pb; ++ipb) {
-                const t_pb_graph_node& child = root->child_pb_graph_nodes[imode][ipb_type][ipb];
-                if (const t_pb_graph_node* match = find_matching_pb_graph_node(&child); match) {
-                    return match;
-                }
-            }
-        }
-    }
-
-    return nullptr;
+    return find_pb_graph_node_if(root, [this](const t_pb_graph_node& node) {
+        return matches_hierarchical_type(node.hierarchical_type_name());
+    });
 }
 
 void LbHierPathParser::validate_logical_block_types(const std::vector<t_logical_block_type>& logical_block_types) {
