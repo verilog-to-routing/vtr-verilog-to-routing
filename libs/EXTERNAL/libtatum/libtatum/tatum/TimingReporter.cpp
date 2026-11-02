@@ -504,7 +504,10 @@ Time TimingReporter::report_timing_clock_launch_subpath(std::ostream& os,
         path_helper.update_print_path(os, point, path);
     }
 
-    return report_timing_clock_subpath(os, path_helper, subpath, domain, timing_type, path, Time(0.));
+    // Setup clock launches late, hold clock launches early
+    ArrivalType latency_type = (timing_type == TimingType::SETUP) ? ArrivalType::LATE : ArrivalType::EARLY;
+
+    return report_timing_clock_subpath(os, path_helper, subpath, domain, timing_type, latency_type, path, Time(0.));
 }
 
 Time TimingReporter::report_timing_clock_capture_subpath(std::ostream& os,
@@ -537,7 +540,12 @@ Time TimingReporter::report_timing_clock_capture_subpath(std::ostream& os,
         path_helper.update_print_path(os, point, path);
     }
 
-    path = report_timing_clock_subpath(os, path_helper, subpath, capture_domain, timing_type, path, offset);
+    // Setup clock captures early, hold clock captures late (matches the analyzer's capture_source_latency()).
+    // This matters when the capture subpath is empty (e.g. primary outputs), since the source latency
+    // is then not overwritten by the analyzer's clock tag times.
+    ArrivalType latency_type = (timing_type == TimingType::SETUP) ? ArrivalType::EARLY : ArrivalType::LATE;
+
+    path = report_timing_clock_subpath(os, path_helper, subpath, capture_domain, timing_type, latency_type, path, offset);
 
     {
         //Uncertainty
@@ -560,19 +568,12 @@ Time TimingReporter::report_timing_clock_subpath(std::ostream& os,
                                                  const TimingSubPath& subpath,
                                                  DomainId domain,
                                                  TimingType timing_type,
+                                                 ArrivalType latency_type,
                                                  Time path,
                                                  Time offset) const {
     {
-        //Launch clock latency
-        Time latency;
-        if (timing_type == TimingType::SETUP) {
-            //Setup clock launches late
-            latency = Time(timing_constraints_.source_latency(domain, ArrivalType::LATE));
-        } else {
-            TATUM_ASSERT(timing_type == TimingType::HOLD);
-            //Hold clock launches early
-            latency = Time(timing_constraints_.source_latency(domain, ArrivalType::EARLY));
-        }
+        // Clock source latency
+        Time latency = Time(timing_constraints_.source_latency(domain, latency_type));
         path += latency;
         std::string point = "clock source latency";
         path_helper.update_print_path(os, point, path);
