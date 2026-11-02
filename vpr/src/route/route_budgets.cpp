@@ -745,9 +745,15 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
                                                        std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                                        float worst_neg_slack,
                                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
+    constexpr float IMPROVEMENT_THRES_PER = 0.005;
+    constexpr float IMPROVEMENT_THRES_VAL = 5e-12;
     // RCV made no progress if hold slack didn't improve on the best seen so far
-    bool hold_slack_improved = worst_neg_slack > best_hold_slack;
-    if (hold_slack_improved) best_hold_slack = worst_neg_slack;
+    // The gain must beat both a percentage of the best slack and a fixed value, in case the negative hold slack is really small.
+    // On the first call best_hold_slack is -inf, so the gain is +inf and counts as an improvement
+    float hold_slack_gain = worst_neg_slack - best_hold_slack_;
+    bool hold_slack_improved = hold_slack_gain >= std::abs(best_hold_slack_) * IMPROVEMENT_THRES_PER
+                               && hold_slack_gain >= IMPROVEMENT_THRES_VAL;
+    if (hold_slack_improved) best_hold_slack_ = worst_neg_slack;
 
     // Keep a history of previous neg slacks
     // Instead track number of hold violating nets being resolved in the future?
@@ -796,7 +802,7 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
 
                     // If the hold_slack on this pin is less than zero, decrement by a constant amount
                     if (update_budget) {
-                        // Don't do anything to global/ignored nets
+                        // Don't do anything to ignored nets
                         if (net_list_.net_is_ignored(net_id)) {
                             continue;
                         }
