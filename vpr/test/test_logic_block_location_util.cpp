@@ -38,28 +38,30 @@ TEST_CASE("FindPbGraphNodeIf", "[vpr]") {
     root_type.modes = root_modes;
     root_type.num_modes = 2;
 
-    t_pb_graph_node a[2]{};
-    t_pb_graph_node b[1]{};
-    t_pb_graph_node c[2]{};
+    // child_pb_graph_nodes is indexed [mode][child pb type][instance]. Nodes
+    // cannot be copied, so each level is built in place.
     t_pb_graph_node root{};
+    root.pb_type = &root_type;
+    root.child_pb_graph_nodes = std::vector<std::vector<std::vector<t_pb_graph_node>>>(2);
+    root.child_pb_graph_nodes[0] = std::vector<std::vector<t_pb_graph_node>>(1);
+    root.child_pb_graph_nodes[0][0] = std::vector<t_pb_graph_node>(2);
+    root.child_pb_graph_nodes[1] = std::vector<std::vector<t_pb_graph_node>>(1);
+    root.child_pb_graph_nodes[1][0] = std::vector<t_pb_graph_node>(1);
+
+    t_pb_graph_node& b = root.child_pb_graph_nodes[1][0][0];
+    b.pb_type = &type_b;
+    b.child_pb_graph_nodes = std::vector<std::vector<std::vector<t_pb_graph_node>>>(1);
+    b.child_pb_graph_nodes[0] = std::vector<std::vector<t_pb_graph_node>>(1);
+    b.child_pb_graph_nodes[0][0] = std::vector<t_pb_graph_node>(2);
+
+    std::vector<t_pb_graph_node>& a = root.child_pb_graph_nodes[0][0];
+    std::vector<t_pb_graph_node>& c = b.child_pb_graph_nodes[0][0];
     for (t_pb_graph_node& node : a)
         node.pb_type = &prim_a;
     for (t_pb_graph_node& node : c)
         node.pb_type = &prim_c;
-    b[0].pb_type = &type_b;
-    root.pb_type = &root_type;
 
-    // child_pb_graph_nodes is indexed [mode][child pb type][instance].
-    t_pb_graph_node* b_mode0_children[1] = {c};
-    t_pb_graph_node** b_children[1] = {b_mode0_children};
-    b[0].child_pb_graph_nodes = b_children;
-
-    t_pb_graph_node* root_mode0_children[1] = {a};
-    t_pb_graph_node* root_mode1_children[1] = {b};
-    t_pb_graph_node** root_children[2] = {root_mode0_children, root_mode1_children};
-    root.child_pb_graph_nodes = root_children;
-
-    const std::vector<const t_pb_graph_node*> pre_order = {&root, &a[0], &a[1], &b[0], &c[0], &c[1]};
+    const std::vector<const t_pb_graph_node*> pre_order = {&root, &a[0], &a[1], &b, &c[0], &c[1]};
 
     SECTION("a null root visits nothing") {
         size_t num_visited = 0;

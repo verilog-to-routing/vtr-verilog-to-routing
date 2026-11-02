@@ -32,7 +32,7 @@ const t_pb_graph_node* find_pb_graph_node_if(const t_pb_graph_node* root, Predic
         if (pred(*node))
             return node;
 
-        if (node->is_primitive() || node->child_pb_graph_nodes == nullptr)
+        if (node->is_primitive() || node->child_pb_graph_nodes.empty())
             continue;
 
         // Push the children in reverse so they are visited in index order.
