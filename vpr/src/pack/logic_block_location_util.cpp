@@ -190,9 +190,17 @@ bool LbHierPathParser::matches_hierarchical_type(const std::string& hierarchical
 }
 
 const t_pb_graph_node* LbHierPathParser::find_matching_pb_graph_node(const t_pb_graph_node* root) const {
-    return find_pb_graph_node_if(root, [this](const t_pb_graph_node& node) {
-        return matches_hierarchical_type(node.hierarchical_type_name());
-    });
+    if (root == nullptr) {
+        return nullptr;
+    }
+
+    for (const t_pb_graph_node& node : root->subtree()) {
+        if (matches_hierarchical_type(node.hierarchical_type_name())) {
+            return &node;
+        }
+    }
+
+    return nullptr;
 }
 
 void LbHierPathParser::validate_logical_block_types(const std::vector<t_logical_block_type>& logical_block_types) {

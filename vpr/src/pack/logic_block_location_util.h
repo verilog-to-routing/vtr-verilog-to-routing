@@ -6,49 +6,6 @@
 #include "physical_types.h"
 
 /**
- * @brief Search a pb graph depth first and return the first node matching pred.
- *
- * Visits each node before its children, with modes, child types, and instances
- * in index order. Uses an explicit stack to avoid deep recursion.
- *
- * To collect multiple nodes, have pred record matches and always return false.
- *
- *  @param root  Node to start from (typically t_logical_block_type::pb_graph_head).
- *               A null root visits nothing.
- *  @param pred  Called with each visited node; returning true stops the search.
- *
- *  @return The first node accepted by the predicate, or nullptr if there is none.
- */
-template<typename Predicate>
-const t_pb_graph_node* find_pb_graph_node_if(const t_pb_graph_node* root, Predicate pred) {
-    if (root == nullptr)
-        return nullptr;
-
-    std::vector<const t_pb_graph_node*> to_visit = {root};
-    while (!to_visit.empty()) {
-        const t_pb_graph_node* node = to_visit.back();
-        to_visit.pop_back();
-
-        if (pred(*node))
-            return node;
-
-        if (node->is_primitive() || node->child_pb_graph_nodes.empty())
-            continue;
-
-        // Push the children in reverse so they are visited in index order.
-        for (int imode = node->pb_type->num_modes - 1; imode >= 0; imode--) {
-            const t_mode& mode = node->pb_type->modes[imode];
-            for (int ichild = mode.num_pb_type_children - 1; ichild >= 0; ichild--) {
-                for (int ipb = mode.pb_type_children[ichild].num_pb - 1; ipb >= 0; ipb--)
-                    to_visit.push_back(&node->child_pb_graph_nodes[imode][ichild][ipb]);
-            }
-        }
-    }
-
-    return nullptr;
-}
-
-/**
  * @brief One hierarchy step parsed from a logical_block_location constraint string.
  *
  * LbHierPathParser splits the '.'-separated path into a vector of these tokens.

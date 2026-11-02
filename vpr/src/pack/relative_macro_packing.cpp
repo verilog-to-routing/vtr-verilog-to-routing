@@ -15,7 +15,6 @@
 #include "atom_netlist.h"
 #include "atom_pb_bimap.h"
 #include "cluster_legalizer.h"
-#include "logic_block_location_util.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
 #include "vtr_assert.h"
@@ -288,11 +287,10 @@ const std::unordered_map<std::string, const t_pb_graph_node*>& RelativeMacroPack
         // Cache each primitive by its full hierarchical path, using the same
         // names as the constraints loader.
         std::unordered_map<std::string, const t_pb_graph_node*> table;
-        find_pb_graph_node_if(cluster_type->pb_graph_head, [&table](const t_pb_graph_node& node) {
+        for (const t_pb_graph_node& node : cluster_type->pb_graph_head->subtree()) {
             if (node.is_primitive())
                 table.emplace(node.hierarchical_type_name(), &node);
-            return false;
-        });
+        }
         table_itr = site_tables_.emplace(cluster_type, std::move(table)).first;
     }
     return table_itr->second;
@@ -412,13 +410,12 @@ std::string RelativeMacroPacker::describe_unsatisfiable_locked_site(PackMolecule
                 any_not_in_type = true;
                 // Find compatible site examples for the fatal error message.
                 std::vector<std::string> available_paths;
-                find_pb_graph_node_if(failure.cluster_type->pb_graph_head, [&](const t_pb_graph_node& candidate) {
-                    if (!candidate.is_primitive() || !primitive_type_feasible(record.atom, candidate.pb_type))
-                        return false;
-                    if (available_paths.size() < MAX_REPORTED_SITE_PATHS)
+                for (const t_pb_graph_node& candidate : failure.cluster_type->pb_graph_head->subtree()) {
+                    if (available_paths.size() == MAX_REPORTED_SITE_PATHS)
+                        break;
+                    if (candidate.is_primitive() && primitive_type_feasible(record.atom, candidate.pb_type))
                         available_paths.push_back(candidate.hierarchical_type_name());
-                    return false;
-                });
+                }
                 std::string examples;
                 for (const std::string& path : available_paths)
                     examples += " '" + path + "'";
