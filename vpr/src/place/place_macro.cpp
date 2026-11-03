@@ -446,11 +446,11 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
     // Go through directs and find pins with possible direct connections
     for (size_t idirect = 0; idirect < directs.size(); idirect++) {
         // Parse out the pb_type and port name, possibly pin_indices from from_pin
-        auto [from_end_pin_index, from_start_pin_index, from_pb_type_name, from_port_name] = parse_direct_pin_name(directs[idirect].from_pin,
+        auto [from_start_pin_index, from_end_pin_index, from_pb_type_name, from_port_name] = parse_direct_pin_name(directs[idirect].from_pin,
                                                                                                                    directs[idirect].line);
 
         // Parse out the pb_type and port name, possibly pin_indices from to_pin
-        auto [to_end_pin_index, to_start_pin_index, to_pb_type_name, to_port_name] = parse_direct_pin_name(directs[idirect].to_pin,
+        auto [to_start_pin_index, to_end_pin_index, to_pb_type_name, to_port_name] = parse_direct_pin_name(directs[idirect].to_pin,
                                                                                                            directs[idirect].line);
 
         /* Now I have all the data that I need, I could go through all the block pins
