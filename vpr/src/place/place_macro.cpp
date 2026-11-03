@@ -493,7 +493,7 @@ static void mark_direct_of_ports(int idirect,
                         int num_port_pins = ports[iport].num_pins;
 
                         // Check whether the end_pin_index is valid
-                        if (pin_spec.end_pin_index > num_port_pins) {
+                        if (pin_spec.end_pin_index >= num_port_pins) {
                             VTR_LOG_ERROR(
                                 "[LINE %d] Invalid pin - %s, the end_pin_index in "
                                 "[end_pin_index:start_pin_index] should "
