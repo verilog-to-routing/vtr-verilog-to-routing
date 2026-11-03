@@ -61,10 +61,25 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
                                int latest_macro);
 
 /**
- * @brief Go through all the ports in all the blocks to find the port named by pin_spec.
+ * @brief Records which pins belong to one end of a direct connection.
  *
- * If pin_spec gives a pin range, mark down the pins from start_pin_index to
- * end_pin_index, inclusive. Otherwise, mark down all the pins in that port.
+ * Finds the tile type and port named in pin_spec, checking each subtile for a match.
+ * Passes the specified pin range, or the whole port if no range is given, to
+ * mark_direct_of_pins(). Reports an error if the range extends past the port and
+ * warns about pins shared with another direct.
+ *
+ * @param idirect Index of this direct in the architecture's direct list.
+ * @param direct_type DRIVER for from_pin, RECEIVER for to_pin.
+ * @param pin_spec Parsed tile name, port name, and optional pin range.
+ * @param src_string Original pin specification, used in error and warning messages.
+ * @param line Line number of the direct in the architecture file.
+ * @param idirect_from_blk_pin Table of direct indices, indexed by tile type and block pin.
+ *                            UNDEFINED means the pin has no assigned direct.
+ * @param direct_type_from_blk_pin Table of DRIVER/RECEIVER roles, indexed by tile type and
+ *                                block pin. OPEN means the pin has no assigned direct.
+ * @param shared_pins Receives shared pins as (tile type index, block pin index) pairs.
+ * @param physical_tile_types Physical tile types in the device.
+ * @param port_pin_to_block_pin Converts port pin indices to block pin indices.
  */
 static void mark_direct_of_ports(int idirect,
                                  e_pin_type direct_type,
@@ -78,14 +93,31 @@ static void mark_direct_of_ports(int idirect,
                                  const PortPinToBlockPinConverter& port_pin_to_block_pin);
 
 /**
- * @brief Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in
- * direct_type_from_blk_pin with direct_type from start_pin_index to end_pin_index.
+ * @brief Records a direct connection for a range of pins in one port.
  *
- * A pin that is already part of another direct is left as it is and appended to
- * shared_pins as a (type index, block pin index) pair, so that the caller can drop it
- * once all directs have been processed.
+ * Records each pin's direct index and DRIVER/RECEIVER role. Only includes pins with
+ * Fc = 0 for every routing segment, since pins with access to general routing do not
+ * require a placement macro.
  *
- * @return The number of pins in the range that were already part of another direct
+ * If a pin already belongs to another direct, leaves its entries unchanged and adds
+ * it to shared_pins. The caller clears these pins from the tables after processing
+ * all directs, so they cannot be used to form placement macros.
+ *
+ * @param start_pin_index First pin in the range, indexed within the port.
+ * @param end_pin_index Last pin in the range (inclusive), indexed within the port.
+ * @param itype Index of the physical tile type.
+ * @param isub_tile Index of the subtile within the tile type.
+ * @param iport Index of the port within the subtile.
+ * @param idirect_from_blk_pin Table of direct indices, indexed by tile type and block pin.
+ *                            UNDEFINED means the pin has no assigned direct.
+ * @param idirect Index of this direct in the architecture's direct list.
+ * @param direct_type_from_blk_pin Table of DRIVER/RECEIVER roles, indexed by tile type and
+ *                                block pin. OPEN means the pin has no assigned direct.
+ * @param direct_type DRIVER for from_pin, RECEIVER for to_pin.
+ * @param shared_pins Receives shared pins as (tile type index, block pin index) pairs.
+ * @param physical_tile_types Physical tile types in the device.
+ * @param port_pin_to_block_pin Converts port pin indices to block pin indices.
+ * @return Number of eligible pins that already belonged to another direct.
  */
 static int mark_direct_of_pins(int start_pin_index,
                                int end_pin_index,
