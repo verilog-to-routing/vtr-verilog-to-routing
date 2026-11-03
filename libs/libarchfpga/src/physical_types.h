@@ -31,6 +31,7 @@
 #include <functional>
 #include <iterator>
 #include <ranges>
+#include <type_traits>
 #include <utility>
 #include <vector>
 #include <unordered_map>
@@ -1444,31 +1445,61 @@ class t_pb_graph_node {
      * @brief Input iterator over a pb graph subtree in depth-first pre-order.
      *
      * Visits each node before its children, with modes, child types, and
-     * instances in index order. Uses an explicit stack to avoid deep recursion.
-     * The end of the walk compares equal to std::default_sentinel.
+     * instances in index order. This is the order of a recursive walk that
+     * handles a node and then recurses into
+     * child_pb_graph_nodes[mode][type][instance]. Uses an explicit stack to
+     * avoid deep recursion. The end of the walk compares equal to
+     * std::default_sentinel.
+     *
+     * @tparam Node  t_pb_graph_node, or const t_pb_graph_node for read-only walks.
      */
-    class SubtreeIterator {
+    template<typename Node>
+    class PbGraphSubtreeIterator {
+        // The template parameter only selects const or mutable access; this
+        // iterator walks t_pb_graph_node trees and nothing else.
+        static_assert(std::is_same_v<std::remove_const_t<Node>, t_pb_graph_node>);
+
       public:
         using iterator_category = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using value_type = t_pb_graph_node;
-        using pointer = const t_pb_graph_node*;
-        using reference = const t_pb_graph_node&;
+        using pointer = Node*;
+        using reference = Node&;
 
-        SubtreeIterator() = default;
-        explicit SubtreeIterator(const t_pb_graph_node* root);
+        PbGraphSubtreeIterator() = default;
+
+        /// Start a walk at root. A null root gives an empty walk.
+        explicit PbGraphSubtreeIterator(Node* root) {
+            if (root != nullptr)
+                to_visit_.push_back(root);
+        }
 
         reference operator*() const { return *to_visit_.back(); }
         pointer operator->() const { return to_visit_.back(); }
 
-        SubtreeIterator& operator++();
+        PbGraphSubtreeIterator& operator++() {
+            Node* node = to_visit_.back();
+            to_visit_.pop_back();
+
+            // Push the children in reverse so they are visited in index order.
+            for (auto& mode_children : std::views::reverse(node->child_pb_graph_nodes)) {
+                for (auto& type_children : std::views::reverse(mode_children)) {
+                    for (Node& child : std::views::reverse(type_children))
+                        to_visit_.push_back(&child);
+                }
+            }
+            return *this;
+        }
         void operator++(int) { ++*this; }
 
         bool operator==(std::default_sentinel_t) const { return to_visit_.empty(); }
 
       private:
-        std::vector<const t_pb_graph_node*> to_visit_; ///< Nodes still to visit; the current node is at the back.
+        std::vector<Node*> to_visit_; ///< Nodes still to visit; the current node is at the back.
     };
+
+    using SubtreeIterator = PbGraphSubtreeIterator<const t_pb_graph_node>;
+    using MutableSubtreeIterator = PbGraphSubtreeIterator<t_pb_graph_node>;
 
     /**
      * @brief Return this node and all of its descendants in depth-first pre-order.
@@ -1478,6 +1509,11 @@ class t_pb_graph_node {
      */
     std::ranges::subrange<SubtreeIterator, std::default_sentinel_t> subtree() const {
         return {SubtreeIterator(this), std::default_sentinel};
+    }
+    /// Mutable traversal. Nodes may be modified, but changing the tree structure
+    /// (modes, child types, or instances) invalidates the iterator.
+    std::ranges::subrange<MutableSubtreeIterator, std::default_sentinel_t> subtree() {
+        return {MutableSubtreeIterator(this), std::default_sentinel};
     }
 
   private:
@@ -1620,9 +1656,9 @@ inline void t_pb_graph_node::alloc_pins(int num_pins) {
  */
 class t_pb_graph_edge {
   public:
-    /* timing information */
-    float delay_max;
-    float delay_min;
+    /* timing information (NaN until loaded from the architecture's delay annotations) */
+    float delay_max = std::numeric_limits<float>::quiet_NaN();
+    float delay_min = std::numeric_limits<float>::quiet_NaN();
 
     /* who drives this edge */
     t_interconnect* interconnect;

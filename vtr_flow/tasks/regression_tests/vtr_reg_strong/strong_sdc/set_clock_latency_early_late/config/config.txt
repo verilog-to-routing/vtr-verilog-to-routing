@@ -1,0 +1,32 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/blif/multiclock
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+# This circuit contains in2reg, reg2reg, reg2out and in2out timing paths
+circuit_list_add=multiclock.blif
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+# Script parameters
+# The timing and skew reports check their arrival, required and skew values against the analyzer's,
+# including on the clock capture paths of primary outputs
+script_params_common = -starting_stage vpr --timing_report_skew on
+script_params_list_add = -sdc_file tasks/regression_tests/vtr_reg_strong/strong_sdc/set_clock_latency_early_late/config/io_on_netlist_clock.sdc
+script_params_list_add = -sdc_file tasks/regression_tests/vtr_reg_strong/strong_sdc/set_clock_latency_early_late/config/io_on_virtual_clock.sdc

@@ -140,23 +140,26 @@ static bool is_forced_connection(const t_pb_graph_pin* pb_graph_pin);
 
 void load_pin_classes_in_pb_graph_head(t_pb_graph_node* pb_graph_node) {
     // Allocate memory for primitives
-    alloc_pin_classes_in_pb_graph_node(pb_graph_node);
+    for (t_pb_graph_node& node : pb_graph_node->subtree())
+        alloc_pin_classes_in_pb_graph_node(&node);
 
     // Assign pin classes at every level of the pb_graph hierarchy.
-    load_pin_classes_in_pb_graph_node(pb_graph_node);
+    for (t_pb_graph_node& node : pb_graph_node->subtree())
+        load_pin_classes_in_pb_graph_node(&node);
 
     // Load internal output-to-input connections within each cluster
-    load_list_of_connectable_input_pin_ptrs(pb_graph_node);
-    discover_all_forced_connections(pb_graph_node);
+    for (t_pb_graph_node& node : pb_graph_node->subtree())
+        load_list_of_connectable_input_pin_ptrs(&node);
+    for (t_pb_graph_node& node : pb_graph_node->subtree())
+        discover_all_forced_connections(&node);
 }
 
 /**
- * Recursive function to allocate memory space for pin classes in primitives
+ * Allocate memory space for pin classes if the node is a primitive
  */
 static void alloc_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node) {
-    int i, j, k;
+    int i, j;
 
-    /* If primitive, allocate space, else go to primitive */
     if (pb_graph_node->is_primitive()) {
         /* allocate space */
         for (i = 0; i < pb_graph_node->num_input_ports; i++) {
@@ -175,19 +178,11 @@ static void alloc_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node) {
                 pb_graph_node->pins_by_clock_port[i][j].parent_pin_class = std::vector<int>(pb_graph_node->pb_type->depth, UNDEFINED);
             }
         }
-    } else {
-        for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-            for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-                for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                    alloc_pin_classes_in_pb_graph_node(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
-                }
-            }
-        }
     }
 }
 
 /**
- * Load internal output-to-input connections within each cluster
+ * Load the internal output-to-input connections of a primitive's output pins
  */
 static void load_list_of_connectable_input_pin_ptrs(t_pb_graph_node* pb_graph_node) {
     int i, j, k;
@@ -207,14 +202,6 @@ static void load_list_of_connectable_input_pin_ptrs(t_pb_graph_node* pb_graph_no
                     unmark_fanout_intermediate_nodes(&pb_graph_node->pins_by_output_port[i][j],
                                                      seen_pins);
                 }
-            }
-        }
-    }
-    /* Expand down to primitives */
-    for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-        for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-            for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                load_list_of_connectable_input_pin_ptrs(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
             }
         }
     }
@@ -425,33 +412,18 @@ static void load_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node) {
             }
         }
     }
-
-    // Recurse into children so every level of the hierarchy is processed.
-    for (int mode_idx = 0; mode_idx < pb_graph_node->pb_type->num_modes; mode_idx++)
-        for (int pb_type_idx = 0; pb_type_idx < pb_graph_node->pb_type->modes[mode_idx].num_pb_type_children; pb_type_idx++)
-            for (int pb_num_idx = 0; pb_num_idx < pb_graph_node->pb_type->modes[mode_idx].pb_type_children[pb_type_idx].num_pb; pb_num_idx++)
-                load_pin_classes_in_pb_graph_node(&pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_num_idx]);
 }
 
-/* Recursively visit all pb_graph_pins and determine primitive output pins that
- * connect to nothing else than one primitive input pin. If a net maps to this
- * output pin, then the primitive corresponding to that input must be used */
+/* If the node is a primitive, determine its output pins that connect to
+ * nothing else than one primitive input pin. If a net maps to this output pin,
+ * then the primitive corresponding to that input must be used */
 static void discover_all_forced_connections(t_pb_graph_node* pb_graph_node) {
-    int i, j, k;
+    int i, j;
 
-    /* If primitive, allocate space, else go to primitive */
     if (pb_graph_node->is_primitive()) {
         for (i = 0; i < pb_graph_node->num_output_ports; i++) {
             for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
                 pb_graph_node->pins_by_output_port[i][j].is_forced_connection = is_forced_connection(&pb_graph_node->pins_by_output_port[i][j]);
-            }
-        }
-    } else {
-        for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-            for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-                for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                    discover_all_forced_connections(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
-                }
             }
         }
     }

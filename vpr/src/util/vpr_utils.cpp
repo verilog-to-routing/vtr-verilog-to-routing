@@ -32,7 +32,7 @@ const std::regex REGISTER_MODEL_REGEX("(.subckt\\s+)?.*(latch|dff).*", std::rege
 const std::regex LOGIC_MODEL_REGEX("(.subckt\\s+)?.*(lut|names|lcell).*", std::regex::icase);
 
 /******************** Subroutine declarations ********************************/
-static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node);
+static void load_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node);
 
 static void load_pin_id_to_pb_mapping_rec(t_pb* cur_pb, t_pb** pin_id_to_pb_mapping);
 
@@ -978,8 +978,8 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
     return nullptr;
 }
 
-/* Recursively visit through all pb_graph_nodes to populate pb_graph_pin_lookup_from_index */
-static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node) {
+/* Populate pb_graph_pin_lookup_from_index with the pins of a pb_graph_node */
+static void load_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node) {
     for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
             t_pb_graph_pin* pb_pin = &pb_graph_node->pins_by_input_port[iport][ipin];
@@ -999,14 +999,6 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pi
             t_pb_graph_pin* pb_pin = &pb_graph_node->pins_by_clock_port[iport][ipin];
             VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == nullptr);
             pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
-        }
-    }
-
-    for (int imode = 0; imode < pb_graph_node->pb_type->num_modes; imode++) {
-        for (int ipb_type = 0; ipb_type < pb_graph_node->pb_type->modes[imode].num_pb_type_children; ipb_type++) {
-            for (int ipb = 0; ipb < pb_graph_node->pb_type->modes[imode].pb_type_children[ipb_type].num_pb; ipb++) {
-                load_pb_graph_pin_lookup_from_index_rec(pb_graph_pin_lookup_from_index, &pb_graph_node->child_pb_graph_nodes[imode][ipb_type][ipb]);
-            }
         }
     }
 }
@@ -1030,7 +1022,8 @@ t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_t
 
     VTR_ASSERT(pb_graph_pin_lookup_from_type);
 
-    load_pb_graph_pin_lookup_from_index_rec(pb_graph_pin_lookup_from_type, pb_graph_head);
+    for (t_pb_graph_node& pb_graph_node : pb_graph_head->subtree())
+        load_pb_graph_pin_lookup_from_index(pb_graph_pin_lookup_from_type, &pb_graph_node);
 
     for (int id = 0; id < num_pins; id++) {
         VTR_ASSERT(pb_graph_pin_lookup_from_type[id] != nullptr);
@@ -1622,21 +1615,9 @@ void print_timing_stats(const std::string& name,
 
 std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_graph_node* pb_graph_node) {
     std::vector<const t_pb_graph_node*> primitives;
-    if (pb_graph_node->is_primitive()) {
-        primitives.push_back(pb_graph_node);
-        return primitives;
-    }
-
-    auto pb_type = pb_graph_node->pb_type;
-    for (int mode_idx = 0; mode_idx < pb_graph_node->pb_type->num_modes; mode_idx++) {
-        for (int pb_type_idx = 0; pb_type_idx < (pb_type->modes[mode_idx]).num_pb_type_children; pb_type_idx++) {
-            int num_pb = pb_type->modes[mode_idx].pb_type_children[pb_type_idx].num_pb;
-            for (int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
-                const t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
-                auto tmp_primitives = get_all_pb_graph_node_primitives(child_pb_graph_node);
-                primitives.insert(std::end(primitives), std::begin(tmp_primitives), std::end(tmp_primitives));
-            }
-        }
+    for (const t_pb_graph_node& node : pb_graph_node->subtree()) {
+        if (node.is_primitive())
+            primitives.push_back(&node);
     }
     return primitives;
 }
