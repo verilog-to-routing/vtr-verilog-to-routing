@@ -193,23 +193,10 @@ const t_pb_graph_node* LbHierPathParser::find_matching_pb_graph_node(const t_pb_
     if (root == nullptr) {
         return nullptr;
     }
-    if (matches_hierarchical_type(root->hierarchical_type_name())) {
-        return root;
-    }
 
-    if (root->is_primitive() || root->child_pb_graph_nodes.empty()) {
-        return nullptr;
-    }
-
-    for (int imode = 0; imode < root->pb_type->num_modes; ++imode) {
-        const t_mode& mode = root->pb_type->modes[imode];
-        for (int ipb_type = 0; ipb_type < mode.num_pb_type_children; ++ipb_type) {
-            for (int ipb = 0; ipb < mode.pb_type_children[ipb_type].num_pb; ++ipb) {
-                const t_pb_graph_node& child = root->child_pb_graph_nodes[imode][ipb_type][ipb];
-                if (const t_pb_graph_node* match = find_matching_pb_graph_node(&child); match) {
-                    return match;
-                }
-            }
+    for (const t_pb_graph_node& node : root->subtree()) {
+        if (matches_hierarchical_type(node.hierarchical_type_name())) {
+            return &node;
         }
     }
 

@@ -112,7 +112,7 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
                                             const int* num_output_ptrs,
                                             std::deque<t_pb_graph_edge>& pb_graph_edges);
 
-static void echo_pb_rec(const t_pb_graph_node* pb, const int level, FILE* fp);
+static void echo_pb_node(const t_pb_graph_node* pb_graph_node, const int level, FILE* fp);
 static void echo_pb_pins(const std::vector<std::span<t_pb_graph_pin>>& pb_graph_pins, const int level, FILE* fp);
 
 static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
@@ -133,7 +133,7 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
  *
  * @param pb_graph_node Pointer to the pb_graph_node to start the traversal from.
  */
-static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node);
+static void check_pb_node(const t_pb_graph_node* pb_graph_node);
 
 /**
  * @brief Checks for repeated edges connected to a single pb_graph_pin.
@@ -252,8 +252,10 @@ void echo_pb_graph(char* filename) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     for (const t_logical_block_type& type : device_ctx.logical_block_types) {
         fprintf(fp, "type %s\n", type.name.c_str());
-        if (type.pb_graph_head)
-            echo_pb_rec(type.pb_graph_head, 1, fp);
+        if (type.pb_graph_head) {
+            for (const t_pb_graph_node& pb_graph_node : type.pb_graph_head->subtree())
+                echo_pb_node(&pb_graph_node, pb_graph_node.pb_type->depth + 1, fp);
+        }
     }
 
     fclose(fp);
@@ -274,7 +276,8 @@ static int check_pb_graph() {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     for (const t_logical_block_type& type : device_ctx.logical_block_types) {
         if (type.pb_type) {
-            check_pb_node_rec(type.pb_graph_head);
+            for (const t_pb_graph_node& pb_graph_node : type.pb_graph_head->subtree())
+                check_pb_node(&pb_graph_node);
         }
     }
     return num_errors;
@@ -461,61 +464,17 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 }
 
 static void alloc_and_load_pb_graph_pin_sinks(t_pb_graph_node* pb_graph_node) {
-    std::queue<t_pb_graph_node*> pb_graph_node_q;
-
-    pb_graph_node_q.push(pb_graph_node);
-
-    while (!pb_graph_node_q.empty()) {
-        t_pb_graph_node* curr_pb_graph_node = pb_graph_node_q.front();
-        pb_graph_node_q.pop();
-        store_pin_sinks_edge_id(curr_pb_graph_node);
-
-        for (int mode_num = 0; mode_num < curr_pb_graph_node->pb_type->num_modes; mode_num++) {
-            for (int child_pb_type_num = 0; child_pb_type_num < curr_pb_graph_node->pb_type->modes[mode_num].num_pb_type_children; child_pb_type_num++) {
-                for (int child_pb_num = 0; child_pb_num < curr_pb_graph_node->pb_type->modes[mode_num].pb_type_children[child_pb_type_num].num_pb; child_pb_num++) {
-                    pb_graph_node_q.push(&curr_pb_graph_node->child_pb_graph_nodes[mode_num][child_pb_type_num][child_pb_num]);
-                }
-            }
-        }
-    }
+    for (t_pb_graph_node& curr_pb_graph_node : pb_graph_node->subtree())
+        store_pin_sinks_edge_id(&curr_pb_graph_node);
 }
 
 static void set_pins_logical_num(t_logical_block_type* logical_block) {
-    /* Index of the pins located on the root-level block starts from 0 -
-     * For other pins it starts from the roo_level pb_type.num_pins */
-    t_pb_graph_node* root_pb_graph_node = logical_block->pb_graph_head;
-    std::queue<t_pb_graph_node*> pb_graph_node_to_set_pin_index_q;
-
     std::unordered_map<int, t_pb_graph_pin*>& pb_pin_idx_map = logical_block->pin_logical_num_to_pb_pin_mapping;
-    int offset = 0;
 
-    pb_graph_node_to_set_pin_index_q.push(root_pb_graph_node);
-    /* Iterated over all sub-blocks from the root-level block down to primitives */
-    while (!pb_graph_node_to_set_pin_index_q.empty()) {
-        t_pb_graph_node* curr_pb_graph_node = pb_graph_node_to_set_pin_index_q.front();
-        pb_graph_node_to_set_pin_index_q.pop();
-        t_pb_type* curr_pb_type = curr_pb_graph_node->pb_type;
-
-        for (t_pb_graph_pin& curr_pb_graph_pin : curr_pb_graph_node->mutable_pins()) {
-            pb_pin_idx_map.insert(std::make_pair(curr_pb_graph_pin.pin_count_in_cluster, &curr_pb_graph_pin));
-        }
-        /* logical indices for the next block should be shifted by the number of pins seen so far. As a result, the given logical index will be unique in the logical_block level*/
-        offset += curr_pb_type->num_pins;
-
-        if (curr_pb_graph_node->is_root()) {
-            VTR_ASSERT(offset == curr_pb_graph_node->pb_type->num_pins);
-        }
-
-        /* Push sub-blocks to the queue */
-        for (int mode_idx = 0; mode_idx < curr_pb_type->num_modes; mode_idx++) {
-            t_mode* curr_mode = &curr_pb_type->modes[mode_idx];
-            for (int pb_type_idx = 0; pb_type_idx < curr_mode->num_pb_type_children; pb_type_idx++) {
-                int num_pb = curr_mode->pb_type_children[pb_type_idx].num_pb;
-                for (int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
-                    t_pb_graph_node* child_pb_graph_node = &(curr_pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
-                    pb_graph_node_to_set_pin_index_q.push(child_pb_graph_node);
-                }
-            }
+    // The logical number of a pin is its pin_count_in_cluster, which is unique within the logical block.
+    for (t_pb_graph_node& pb_graph_node : logical_block->pb_graph_head->subtree()) {
+        for (t_pb_graph_pin& pb_graph_pin : pb_graph_node.mutable_pins()) {
+            pb_pin_idx_map.insert(std::make_pair(pb_graph_pin.pin_count_in_cluster, &pb_graph_pin));
         }
     }
 }
@@ -1479,9 +1438,7 @@ static t_pb_graph_pin* get_pb_graph_pin_from_name(const char* port_name,
     return nullptr;
 }
 
-static void echo_pb_rec(const t_pb_graph_node* pb_graph_node, const int level, FILE* fp) {
-    int i, j, k;
-
+static void echo_pb_node(const t_pb_graph_node* pb_graph_node, const int level, FILE* fp) {
     print_tabs(fp, level);
     fprintf(fp, "Physical Block: type \"%s\"  index %d  num_children %d\n",
             pb_graph_node->pb_type->name, pb_graph_node->placement_index,
@@ -1522,14 +1479,6 @@ static void echo_pb_rec(const t_pb_graph_node* pb_graph_node, const int level, F
     if (!pb_graph_node->pb_type->is_primitive()) {
         print_tabs(fp, level);
         fprintf(fp, "Children:\n");
-    }
-    for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-        for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-            for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                echo_pb_rec(&pb_graph_node->child_pb_graph_nodes[i][j][k],
-                            level + 1, fp);
-            }
-        }
     }
 }
 
@@ -1626,7 +1575,7 @@ static void echo_pb_pins(const std::vector<std::span<t_pb_graph_pin>>& pb_graph_
     }
 }
 
-static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node) {
+static void check_pb_node(const t_pb_graph_node* pb_graph_node) {
     int line_num = 0;
     std::map<int, int> logic_equivalent_pins_map;
 
@@ -1657,14 +1606,6 @@ static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node) {
     for (int i = 0; i < pb_graph_node->num_clock_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
             check_repeated_edges_at_pb_pin(&pb_graph_node->pins_by_clock_port[i][j]);
-        }
-    }
-
-    for (int i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-        for (int j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-            for (int k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                check_pb_node_rec(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
-            }
         }
     }
 }
@@ -1865,28 +1806,12 @@ std::vector<const t_pb_graph_pin*> find_equivalent_pb_graph_pins(const t_pb_grap
     // Search every primitive in the cluster (in every mode) for primitives
     // implementing the same model as the pin's primitive.
     LogicalModelId target_model_id = pin->parent_node->pb_type->model_id;
-    std::vector<const t_pb_graph_node*> stack = {root};
-    while (!stack.empty()) {
-        const t_pb_graph_node* node = stack.back();
-        stack.pop_back();
-
-        if (node->pb_type->is_primitive()) {
-            if (node->pb_type->model_id != target_model_id)
-                continue;
-            const t_pb_graph_pin* equivalent_pin = find_equivalent_pin_in_primitive(node, pin);
-            if (equivalent_pin != nullptr)
-                equivalent_pins.push_back(equivalent_pin);
+    for (const t_pb_graph_node& node : root->subtree()) {
+        if (!node.pb_type->is_primitive() || node.pb_type->model_id != target_model_id)
             continue;
-        }
-
-        for (int imode = 0; imode < node->pb_type->num_modes; imode++) {
-            const t_mode& mode = node->pb_type->modes[imode];
-            for (int ichild = 0; ichild < mode.num_pb_type_children; ichild++) {
-                for (int inst = 0; inst < mode.pb_type_children[ichild].num_pb; inst++) {
-                    stack.push_back(&node->child_pb_graph_nodes[imode][ichild][inst]);
-                }
-            }
-        }
+        const t_pb_graph_pin* equivalent_pin = find_equivalent_pin_in_primitive(&node, pin);
+        if (equivalent_pin != nullptr)
+            equivalent_pins.push_back(equivalent_pin);
     }
 
     return equivalent_pins;

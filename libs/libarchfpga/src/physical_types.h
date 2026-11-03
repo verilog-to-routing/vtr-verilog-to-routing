@@ -25,9 +25,13 @@
  * Authors: Jason Luu and Kenneth Kent
  */
 
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <iterator>
+#include <ranges>
+#include <type_traits>
 #include <utility>
 #include <vector>
 #include <unordered_map>
@@ -1436,6 +1440,81 @@ class t_pb_graph_node {
     /// Returns a string containing the hierarchical type name of the pb_graph_node
     /// Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
     std::string hierarchical_type_name() const;
+
+    /**
+     * @brief Input iterator over a pb graph subtree in depth-first pre-order.
+     *
+     * Visits each node before its children, with modes, child types, and
+     * instances in index order. This is the order of a recursive walk that
+     * handles a node and then recurses into
+     * child_pb_graph_nodes[mode][type][instance]. Uses an explicit stack to
+     * avoid deep recursion. The end of the walk compares equal to
+     * std::default_sentinel.
+     *
+     * @tparam Node  t_pb_graph_node, or const t_pb_graph_node for read-only walks.
+     */
+    template<typename Node>
+    class PbGraphSubtreeIterator {
+        // The template parameter only selects const or mutable access; this
+        // iterator walks t_pb_graph_node trees and nothing else.
+        static_assert(std::is_same_v<std::remove_const_t<Node>, t_pb_graph_node>);
+
+      public:
+        using iterator_category = std::input_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = t_pb_graph_node;
+        using pointer = Node*;
+        using reference = Node&;
+
+        PbGraphSubtreeIterator() = default;
+
+        /// Start a walk at root. A null root gives an empty walk.
+        explicit PbGraphSubtreeIterator(Node* root) {
+            if (root != nullptr)
+                to_visit_.push_back(root);
+        }
+
+        reference operator*() const { return *to_visit_.back(); }
+        pointer operator->() const { return to_visit_.back(); }
+
+        PbGraphSubtreeIterator& operator++() {
+            Node* node = to_visit_.back();
+            to_visit_.pop_back();
+
+            // Push the children in reverse so they are visited in index order.
+            for (auto& mode_children : std::views::reverse(node->child_pb_graph_nodes)) {
+                for (auto& type_children : std::views::reverse(mode_children)) {
+                    for (Node& child : std::views::reverse(type_children))
+                        to_visit_.push_back(&child);
+                }
+            }
+            return *this;
+        }
+        void operator++(int) { ++*this; }
+
+        bool operator==(std::default_sentinel_t) const { return to_visit_.empty(); }
+
+      private:
+        std::vector<Node*> to_visit_; ///< Nodes still to visit; the current node is at the back.
+    };
+
+    using SubtreeIterator = PbGraphSubtreeIterator<const t_pb_graph_node>;
+    using MutableSubtreeIterator = PbGraphSubtreeIterator<t_pb_graph_node>;
+
+    /**
+     * @brief Return this node and all of its descendants in depth-first pre-order.
+     *
+     * Example:
+     *   for (const t_pb_graph_node& node : type->pb_graph_head->subtree()) { ... }
+     */
+    std::ranges::subrange<SubtreeIterator, std::default_sentinel_t> subtree() const {
+        return {SubtreeIterator(this), std::default_sentinel};
+    }
+    /// Mutable traversal. Nodes may be modified, but changing the tree structure
+    /// (modes, child types, or instances) invalidates the iterator.
+    std::ranges::subrange<MutableSubtreeIterator, std::default_sentinel_t> subtree() {
+        return {MutableSubtreeIterator(this), std::default_sentinel};
+    }
 
   private:
     /// Storage of all pins of this node.
