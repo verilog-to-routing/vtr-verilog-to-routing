@@ -1510,6 +1510,8 @@ class t_pb_graph_node {
     std::ranges::subrange<SubtreeIterator, std::default_sentinel_t> subtree() const {
         return {SubtreeIterator(this), std::default_sentinel};
     }
+    /// Mutable traversal. Nodes may be modified, but changing the tree structure
+    /// (modes, child types, or instances) invalidates the iterator.
     std::ranges::subrange<MutableSubtreeIterator, std::default_sentinel_t> subtree() {
         return {MutableSubtreeIterator(this), std::default_sentinel};
     }
