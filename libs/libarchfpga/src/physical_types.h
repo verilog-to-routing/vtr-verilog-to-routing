@@ -31,6 +31,7 @@
 #include <functional>
 #include <iterator>
 #include <ranges>
+#include <type_traits>
 #include <utility>
 #include <vector>
 #include <unordered_map>
@@ -1453,7 +1454,11 @@ class t_pb_graph_node {
      * @tparam Node  t_pb_graph_node, or const t_pb_graph_node for read-only walks.
      */
     template<typename Node>
-    class BasicSubtreeIterator {
+    class PbGraphSubtreeIterator {
+        // The template parameter only selects const or mutable access; this
+        // iterator walks t_pb_graph_node trees and nothing else.
+        static_assert(std::is_same_v<std::remove_const_t<Node>, t_pb_graph_node>);
+
       public:
         using iterator_category = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
@@ -1461,10 +1466,10 @@ class t_pb_graph_node {
         using pointer = Node*;
         using reference = Node&;
 
-        BasicSubtreeIterator() = default;
+        PbGraphSubtreeIterator() = default;
 
         /// Start a walk at root. A null root gives an empty walk.
-        explicit BasicSubtreeIterator(Node* root) {
+        explicit PbGraphSubtreeIterator(Node* root) {
             if (root != nullptr)
                 to_visit_.push_back(root);
         }
@@ -1472,7 +1477,7 @@ class t_pb_graph_node {
         reference operator*() const { return *to_visit_.back(); }
         pointer operator->() const { return to_visit_.back(); }
 
-        BasicSubtreeIterator& operator++() {
+        PbGraphSubtreeIterator& operator++() {
             Node* node = to_visit_.back();
             to_visit_.pop_back();
 
@@ -1493,8 +1498,8 @@ class t_pb_graph_node {
         std::vector<Node*> to_visit_; ///< Nodes still to visit; the current node is at the back.
     };
 
-    using SubtreeIterator = BasicSubtreeIterator<const t_pb_graph_node>;
-    using MutableSubtreeIterator = BasicSubtreeIterator<t_pb_graph_node>;
+    using SubtreeIterator = PbGraphSubtreeIterator<const t_pb_graph_node>;
+    using MutableSubtreeIterator = PbGraphSubtreeIterator<t_pb_graph_node>;
 
     /**
      * @brief Return this node and all of its descendants in depth-first pre-order.
