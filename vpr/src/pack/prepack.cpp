@@ -246,8 +246,8 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
     for (int i = 0; i < pb_graph_node->num_input_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
             bool hasPattern = false;
-            for (int k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges; k++) {
-                t_pb_graph_edge* output_edge = pb_graph_node->input_pins[i][j].output_edges[k];
+            for (int k = 0; k < pb_graph_node->pins_by_input_port[i][j].num_output_edges; k++) {
+                t_pb_graph_edge* output_edge = pb_graph_node->pins_by_input_port[i][j].output_edges[k];
                 output_edge->pack_pattern_indices.resize(output_edge->num_pack_patterns);
                 for (int m = 0; m < output_edge->num_pack_patterns; m++) {
                     hasPattern = true;
@@ -267,7 +267,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             // trace the inputs to this pin and mark them to infer pattern
             // if they are direct connections (num_input_edges == 1)
             if (hasPattern) {
-                backward_infer_pattern(&pb_graph_node->input_pins[i][j]);
+                backward_infer_pattern(&pb_graph_node->pins_by_input_port[i][j]);
             }
         }
     }
@@ -275,8 +275,8 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
     for (int i = 0; i < pb_graph_node->num_output_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
             bool hasPattern = false;
-            for (int k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges; k++) {
-                t_pb_graph_edge* output_edge = pb_graph_node->output_pins[i][j].output_edges[k];
+            for (int k = 0; k < pb_graph_node->pins_by_output_port[i][j].num_output_edges; k++) {
+                t_pb_graph_edge* output_edge = pb_graph_node->pins_by_output_port[i][j].output_edges[k];
                 output_edge->pack_pattern_indices.resize(output_edge->num_pack_patterns);
                 for (int m = 0; m < output_edge->num_pack_patterns; m++) {
                     hasPattern = true;
@@ -296,7 +296,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             // trace the inputs to this pin and mark them to infer pattern
             // if they are direct connections (num_input_edges == 1)
             if (hasPattern) {
-                backward_infer_pattern(&pb_graph_node->output_pins[i][j]);
+                backward_infer_pattern(&pb_graph_node->pins_by_output_port[i][j]);
             }
         }
     }
@@ -304,8 +304,8 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
     for (int i = 0; i < pb_graph_node->num_clock_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
             bool hasPattern = false;
-            for (int k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges; k++) {
-                t_pb_graph_edge* output_edge = pb_graph_node->clock_pins[i][j].output_edges[k];
+            for (int k = 0; k < pb_graph_node->pins_by_clock_port[i][j].num_output_edges; k++) {
+                t_pb_graph_edge* output_edge = pb_graph_node->pins_by_clock_port[i][j].output_edges[k];
                 output_edge->pack_pattern_indices.resize(output_edge->num_pack_patterns);
                 for (int m = 0; m < output_edge->num_pack_patterns; m++) {
                     hasPattern = true;
@@ -325,7 +325,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             // trace the inputs to this pin and mark them to infer pattern
             // if they are direct connections (num_input_edges == 1)
             if (hasPattern) {
-                backward_infer_pattern(&pb_graph_node->clock_pins[i][j]);
+                backward_infer_pattern(&pb_graph_node->pins_by_clock_port[i][j]);
             }
         }
     }
@@ -411,7 +411,7 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
 
     for (i = 0; i < pb_graph_node->num_input_ports; i++) {
         for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-            t_pb_graph_pin& input_pin = pb_graph_node->input_pins[i][j];
+            t_pb_graph_pin& input_pin = pb_graph_node->pins_by_input_port[i][j];
             for (k = 0; k < input_pin.num_output_edges; k++) {
                 for (m = 0; m < input_pin.output_edges[k]->num_pack_patterns; m++) {
                     if (input_pin.output_edges[k]->pack_pattern_indices[m] == pattern_index) {
@@ -424,7 +424,7 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
 
     for (i = 0; i < pb_graph_node->num_output_ports; i++) {
         for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-            t_pb_graph_pin& output_pin = pb_graph_node->output_pins[i][j];
+            t_pb_graph_pin& output_pin = pb_graph_node->pins_by_output_port[i][j];
             for (k = 0; k < output_pin.num_output_edges; k++) {
                 for (m = 0; m < output_pin.output_edges[k]->num_pack_patterns; m++) {
                     if (output_pin.output_edges[k]->pack_pattern_indices[m] == pattern_index) {
@@ -437,7 +437,7 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
 
     for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
         for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-            t_pb_graph_pin& clock_pin = pb_graph_node->clock_pins[i][j];
+            t_pb_graph_pin& clock_pin = pb_graph_node->pins_by_clock_port[i][j];
             for (k = 0; k < clock_pin.num_output_edges; k++) {
                 for (m = 0; m < clock_pin.output_edges[k]->num_pack_patterns; m++) {
                     if (clock_pin.output_edges[k]->pack_pattern_indices[m] == pattern_index) {
@@ -529,10 +529,10 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
             // explore the inputs to this primitive
             for (iport = 0; iport < destination_pb_graph_node->num_input_ports; iport++) {
                 for (ipin = 0; ipin < destination_pb_graph_node->num_input_pins[iport]; ipin++) {
-                    for (iedge = 0; iedge < destination_pb_graph_node->input_pins[iport][ipin].num_input_edges; iedge++) {
-                        backward_expand_pack_pattern_from_edge(destination_pb_graph_node->input_pins[iport][ipin].input_edges[iedge],
+                    for (iedge = 0; iedge < destination_pb_graph_node->pins_by_input_port[iport][ipin].num_input_edges; iedge++) {
+                        backward_expand_pack_pattern_from_edge(destination_pb_graph_node->pins_by_input_port[iport][ipin].input_edges[iedge],
                                                                packing_pattern,
-                                                               &destination_pb_graph_node->input_pins[iport][ipin],
+                                                               &destination_pb_graph_node->pins_by_input_port[iport][ipin],
                                                                destination_block, L_num_blocks,
                                                                last_added_pattern_block,
                                                                false);
@@ -543,8 +543,8 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
             // explore the outputs of this primitive
             for (iport = 0; iport < destination_pb_graph_node->num_output_ports; iport++) {
                 for (ipin = 0; ipin < destination_pb_graph_node->num_output_pins[iport]; ipin++) {
-                    for (iedge = 0; iedge < destination_pb_graph_node->output_pins[iport][ipin].num_output_edges; iedge++) {
-                        forward_expand_pack_pattern_from_edge(destination_pb_graph_node->output_pins[iport][ipin].output_edges[iedge],
+                    for (iedge = 0; iedge < destination_pb_graph_node->pins_by_output_port[iport][ipin].num_output_edges; iedge++) {
+                        forward_expand_pack_pattern_from_edge(destination_pb_graph_node->pins_by_output_port[iport][ipin].output_edges[iedge],
                                                               packing_pattern, L_num_blocks, false,
                                                               last_added_pattern_block);
                     }
@@ -554,10 +554,10 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
             // explore the clock pins of this primitive
             for (iport = 0; iport < destination_pb_graph_node->num_clock_ports; iport++) {
                 for (ipin = 0; ipin < destination_pb_graph_node->num_clock_pins[iport]; ipin++) {
-                    for (iedge = 0; iedge < destination_pb_graph_node->clock_pins[iport][ipin].num_input_edges; iedge++) {
-                        backward_expand_pack_pattern_from_edge(destination_pb_graph_node->clock_pins[iport][ipin].input_edges[iedge],
+                    for (iedge = 0; iedge < destination_pb_graph_node->pins_by_clock_port[iport][ipin].num_input_edges; iedge++) {
+                        backward_expand_pack_pattern_from_edge(destination_pb_graph_node->pins_by_clock_port[iport][ipin].input_edges[iedge],
                                                                packing_pattern,
-                                                               &destination_pb_graph_node->clock_pins[iport][ipin],
+                                                               &destination_pb_graph_node->pins_by_clock_port[iport][ipin],
                                                                destination_block, L_num_blocks, last_added_pattern_block,
                                                                false);
                     }
@@ -689,10 +689,10 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             // explore the inputs of this primitive
             for (iport = 0; iport < source_pb_graph_node->num_input_ports; iport++) {
                 for (ipin = 0; ipin < source_pb_graph_node->num_input_pins[iport]; ipin++) {
-                    for (iedge = 0; iedge < source_pb_graph_node->input_pins[iport][ipin].num_input_edges; iedge++) {
-                        backward_expand_pack_pattern_from_edge(source_pb_graph_node->input_pins[iport][ipin].input_edges[iedge],
+                    for (iedge = 0; iedge < source_pb_graph_node->pins_by_input_port[iport][ipin].num_input_edges; iedge++) {
+                        backward_expand_pack_pattern_from_edge(source_pb_graph_node->pins_by_input_port[iport][ipin].input_edges[iedge],
                                                                packing_pattern,
-                                                               &source_pb_graph_node->input_pins[iport][ipin],
+                                                               &source_pb_graph_node->pins_by_input_port[iport][ipin],
                                                                source_block,
                                                                L_num_blocks,
                                                                last_added_pattern_block,
@@ -704,8 +704,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             // explore the outputs of this primitive
             for (iport = 0; iport < source_pb_graph_node->num_output_ports; iport++) {
                 for (ipin = 0; ipin < source_pb_graph_node->num_output_pins[iport]; ipin++) {
-                    for (iedge = 0; iedge < source_pb_graph_node->output_pins[iport][ipin].num_output_edges; iedge++) {
-                        forward_expand_pack_pattern_from_edge(source_pb_graph_node->output_pins[iport][ipin].output_edges[iedge],
+                    for (iedge = 0; iedge < source_pb_graph_node->pins_by_output_port[iport][ipin].num_output_edges; iedge++) {
+                        forward_expand_pack_pattern_from_edge(source_pb_graph_node->pins_by_output_port[iport][ipin].output_edges[iedge],
                                                               packing_pattern,
                                                               L_num_blocks,
                                                               false,
@@ -717,10 +717,10 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             // explore the clock pins of this primitive
             for (iport = 0; iport < source_pb_graph_node->num_clock_ports; iport++) {
                 for (ipin = 0; ipin < source_pb_graph_node->num_clock_pins[iport]; ipin++) {
-                    for (iedge = 0; iedge < source_pb_graph_node->clock_pins[iport][ipin].num_input_edges; iedge++) {
-                        backward_expand_pack_pattern_from_edge(source_pb_graph_node->clock_pins[iport][ipin].input_edges[iedge],
+                    for (iedge = 0; iedge < source_pb_graph_node->pins_by_clock_port[iport][ipin].num_input_edges; iedge++) {
+                        backward_expand_pack_pattern_from_edge(source_pb_graph_node->pins_by_clock_port[iport][ipin].input_edges[iedge],
                                                                packing_pattern,
-                                                               &source_pb_graph_node->clock_pins[iport][ipin],
+                                                               &source_pb_graph_node->pins_by_clock_port[iport][ipin],
                                                                source_block,
                                                                L_num_blocks,
                                                                last_added_pattern_block,
@@ -1546,7 +1546,7 @@ static void expand_search(const t_pb_graph_pin* input_pin, std::queue<t_pb_graph
             const int port_pins = pin_pb_graph_node->num_output_pins[iport];
             for (int ipin = 0; ipin < port_pins; ipin++) {
                 // add primitive output pins to pins_queue to be explored
-                pins_queue.push(&pin_pb_graph_node->output_pins[iport][ipin]);
+                pins_queue.push(&pin_pb_graph_node->pins_by_output_port[iport][ipin]);
             }
         }
     }
@@ -1596,7 +1596,7 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
     // the chain_input_pins vector
     for (int iports = 0; iports < root_block->num_input_ports; iports++) {
         for (int ipins = 0; ipins < root_block->num_input_pins[iports]; ipins++) {
-            t_pb_graph_pin& input_pin = root_block->input_pins[iports][ipins];
+            t_pb_graph_pin& input_pin = root_block->pins_by_input_port[iports][ipins];
             for (int iedge = 0; iedge < input_pin.num_output_edges; iedge++) {
                 if (input_pin.output_edges[iedge]->belongs_to_pattern(chain_pattern->index)) {
                     chain_input_pins.push_back(&input_pin);

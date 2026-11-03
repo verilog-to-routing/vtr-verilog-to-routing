@@ -1173,12 +1173,12 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
         const t_pb_graph_node* pb_graph_node = pb->pb_graph_node;
         for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
             for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
-                record_output_bit(&pb_graph_node->input_pins[iport][ipin]);
+                record_output_bit(&pb_graph_node->pins_by_input_port[iport][ipin]);
             }
         }
         for (int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
             for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
-                record_output_bit(&pb_graph_node->output_pins[iport][ipin]);
+                record_output_bit(&pb_graph_node->pins_by_output_port[iport][ipin]);
             }
         }
 

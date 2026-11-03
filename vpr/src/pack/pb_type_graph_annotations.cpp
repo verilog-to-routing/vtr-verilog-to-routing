@@ -133,9 +133,7 @@ static void load_pack_pattern_annotations(const int line_num,
                                           std::string_view value,
                                           bool allow_multi_fanout) {
     int *num_in_ptrs, *num_out_ptrs, num_in_sets, num_out_sets;
-    t_pb_graph_node** children = nullptr;
-
-    children = pb_graph_node->child_pb_graph_nodes[mode];
+    const std::vector<std::vector<t_pb_graph_node>>& children = pb_graph_node->child_pb_graph_nodes[mode];
     t_pb_graph_pin*** in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children,
                                                                          annot_in_pins, &num_in_ptrs, &num_in_sets, false, false);
     t_pb_graph_pin*** out_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children,
@@ -195,7 +193,6 @@ static void load_delay_annotations(const int line_num,
     int i, j, k;
     t_pb_graph_pin ***in_port, ***out_port;
     int *num_in_ptrs, *num_out_ptrs, num_in_sets, num_out_sets;
-    t_pb_graph_node** children = nullptr;
 
     int num_inputs, num_outputs;
     int num_entries_in_matrix;
@@ -222,11 +219,10 @@ static void load_delay_annotations(const int line_num,
 
     /* Determine what pins to read based on delay type */
     num_inputs = num_outputs = 0;
-    if (mode == UNDEFINED) {
-        children = nullptr;
-    } else {
-        children = pb_graph_node->child_pb_graph_nodes[mode];
-    }
+
+    VTR_ASSERT(pb_graph_node->is_primitive() == (mode == UNDEFINED));
+    const std::vector<std::vector<t_pb_graph_node>> no_children;
+    const std::vector<std::vector<t_pb_graph_node>>& children = pb_graph_node->is_primitive() ? no_children : pb_graph_node->child_pb_graph_nodes[mode];
     if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
@@ -325,14 +321,14 @@ static void load_delay_annotations(const int line_num,
                         t_pb_graph_edge* pb_edge = in_port[i][j]->output_edges[iedge];
                         if (out_pins.contains(pb_edge->output_pin())) {
                             if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX) {
-                                if (pb_edge->delay_max != 0) {
+                                if (!std::isnan(pb_edge->delay_max)) {
                                     vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                                               "Multiple max delay values specified");
                                 }
                                 pb_edge->delay_max = delay_matrix[k][p];
                             } else {
                                 VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MIN);
-                                if (pb_edge->delay_min != 0) {
+                                if (!std::isnan(pb_edge->delay_min)) {
                                     vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                                               "Multiple min delay values specified");
                                 }
@@ -474,21 +470,21 @@ static void inferr_unspecified_pb_graph_node_delays(t_pb_graph_node* pb_graph_no
 
     for (int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
         for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ++ipin) {
-            t_pb_graph_pin* pin = &pb_graph_node->input_pins[iport][ipin];
+            t_pb_graph_pin* pin = &pb_graph_node->pins_by_input_port[iport][ipin];
             inferr_unspecified_pb_graph_pin_delays(pin);
         }
     }
 
     for (int iport = 0; iport < pb_graph_node->num_output_ports; ++iport) {
         for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ++ipin) {
-            t_pb_graph_pin* pin = &pb_graph_node->output_pins[iport][ipin];
+            t_pb_graph_pin* pin = &pb_graph_node->pins_by_output_port[iport][ipin];
             inferr_unspecified_pb_graph_pin_delays(pin);
         }
     }
 
     for (int iport = 0; iport < pb_graph_node->num_clock_ports; ++iport) {
         for (int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ++ipin) {
-            t_pb_graph_pin* pin = &pb_graph_node->clock_pins[iport][ipin];
+            t_pb_graph_pin* pin = &pb_graph_node->pins_by_clock_port[iport][ipin];
             inferr_unspecified_pb_graph_pin_delays(pin);
         }
     }
@@ -501,7 +497,7 @@ static void inferr_unspecified_pb_graph_pin_delays(t_pb_graph_pin* pb_graph_pin)
     if (std::isnan(pb_graph_pin->thld) && !std::isnan(pb_graph_pin->tsu)) {
         //Hold missing, inferr from setup
         pb_graph_pin->thld = pb_graph_pin->tsu;
-    } else if (!std::isnan(pb_graph_pin->thld) && std::isnan(pb_graph_pin->thld)) {
+    } else if (!std::isnan(pb_graph_pin->thld) && std::isnan(pb_graph_pin->tsu)) {
         //Setup missing, inferr from hold
         pb_graph_pin->tsu = pb_graph_pin->thld;
     }
@@ -509,7 +505,7 @@ static void inferr_unspecified_pb_graph_pin_delays(t_pb_graph_pin* pb_graph_pin)
     if (std::isnan(pb_graph_pin->tco_min) && !std::isnan(pb_graph_pin->tco_max)) {
         //tco_min missing, inferr from tco_max
         pb_graph_pin->tco_min = pb_graph_pin->tco_max;
-    } else if (!std::isnan(pb_graph_pin->tco_min) && std::isnan(pb_graph_pin->tco_min)) {
+    } else if (!std::isnan(pb_graph_pin->tco_min) && std::isnan(pb_graph_pin->tco_max)) {
         //tco_max missing, inferr from tco_min
         pb_graph_pin->tco_max = pb_graph_pin->tco_min;
     }
@@ -543,9 +539,13 @@ static void inferr_unspecified_pb_graph_edge_delays(t_pb_graph_edge* pb_graph_ed
     if (std::isnan(pb_graph_edge->delay_min) && !std::isnan(pb_graph_edge->delay_max)) {
         //min missing, inferr from max
         pb_graph_edge->delay_min = pb_graph_edge->delay_max;
-    } else if (!std::isnan(pb_graph_edge->delay_min) && std::isnan(pb_graph_edge->delay_min)) {
+    } else if (!std::isnan(pb_graph_edge->delay_min) && std::isnan(pb_graph_edge->delay_max)) {
         //max missing, inferr from min
         pb_graph_edge->delay_max = pb_graph_edge->delay_min;
+    } else if (std::isnan(pb_graph_edge->delay_min) && std::isnan(pb_graph_edge->delay_max)) {
+        //No delay specified, the interconnect has no delay
+        pb_graph_edge->delay_min = 0.;
+        pb_graph_edge->delay_max = 0.;
     }
 }
 
@@ -554,12 +554,12 @@ static t_pb_graph_pin* find_clock_pin(t_pb_graph_node* gnode, std::string_view c
     for (int iport = 0; iport < gnode->num_clock_ports; ++iport) {
         VTR_ASSERT(gnode->num_clock_pins[iport] == 1);
 
-        if (clock == gnode->clock_pins[iport][0].port->name) {
+        if (clock == gnode->pins_by_clock_port[iport][0].port->name) {
             if (clock_pin != nullptr) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                           "Found duplicate clock-pin match");
             }
-            clock_pin = &gnode->clock_pins[iport][0];
+            clock_pin = &gnode->pins_by_clock_port[iport][0];
         }
     }
 

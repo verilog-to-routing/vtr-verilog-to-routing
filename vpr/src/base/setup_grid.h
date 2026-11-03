@@ -52,3 +52,12 @@ size_t count_grid_tiles(const DeviceGrid& grid);
  * also updating the task parser's regex patterns.
  */
 void report_device_grid_stats(const DeviceGrid& grid);
+
+/**
+ * @brief Writes the device grid to a text file (the device_grid.echo echo file): every tile
+ *        type with its sub-tiles, their capacity and the logical block types they host, then
+ *        the layer, location and type of every tile's root location. External tools can count
+ *        the sites of a block type inside any area of the device from this file without
+ *        rebuilding the grid from the architecture.
+ */
+void write_device_grid(const char* fname, const DeviceGrid& grid);

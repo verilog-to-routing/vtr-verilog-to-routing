@@ -229,7 +229,7 @@ static bool primitive_has_external_output(const t_pb_graph_node* prim) {
 
     for (int port_idx = 0; port_idx < prim->num_output_ports; port_idx++) {
         for (int pin_idx = 0; pin_idx < prim->num_output_pins[port_idx]; pin_idx++) {
-            bfs_queue.push(&prim->output_pins[port_idx][pin_idx]);
+            bfs_queue.push(&prim->pins_by_output_port[port_idx][pin_idx]);
         }
     }
 

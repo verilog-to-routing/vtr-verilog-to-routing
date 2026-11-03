@@ -328,12 +328,12 @@ static void for_each_pb_mode_rr_node(const t_pb* pb, Visitor&& visit) {
     // Input and clock pin modes are based on current pb mode
     for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
-            visit(LbRRNodeId(pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster));
+            visit(LbRRNodeId(pb_graph_node->pins_by_input_port[iport][ipin].pin_count_in_cluster));
         }
     }
     for (int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
-            visit(LbRRNodeId(pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster));
+            visit(LbRRNodeId(pb_graph_node->pins_by_clock_port[iport][ipin].pin_count_in_cluster));
         }
     }
 
@@ -345,7 +345,7 @@ static void for_each_pb_mode_rr_node(const t_pb* pb, Visitor&& visit) {
                 const t_pb_graph_node* child_pb_graph_node = &pb_graph_node->child_pb_graph_nodes[mode][ichild_type][ichild];
                 for (int iport = 0; iport < child_pb_graph_node->num_output_ports; iport++) {
                     for (int ipin = 0; ipin < child_pb_graph_node->num_output_pins[iport]; ipin++) {
-                        visit(LbRRNodeId(child_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster));
+                        visit(LbRRNodeId(child_pb_graph_node->pins_by_output_port[iport][ipin].pin_count_in_cluster));
                     }
                 }
             }

@@ -279,7 +279,7 @@ static void clustering_xml_open_block(pugi::xml_node& parent_node, t_logical_blo
             if (pb_type->ports[i].type == OUT_PORT) {
                 VTR_ASSERT(!pb_type->ports[i].is_clock);
                 for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-                    const t_pb_graph_pin* pin = &pb_graph_node->output_pins[port_index][j];
+                    const t_pb_graph_pin* pin = &pb_graph_node->pins_by_output_port[port_index][j];
                     node_index = pin->pin_count_in_cluster;
                     if (!pb_type->is_primitive() && pb_route.count(node_index) && pb_route[node_index].atom_net_id) {
                         prev_node = pb_route[node_index].driver_pb_pin_id;
@@ -318,7 +318,7 @@ static void clustering_xml_open_block(pugi::xml_node& parent_node, t_logical_blo
 
                 std::vector<std::string> pins;
                 for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-                    node_index = pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
+                    node_index = pb_graph_node->pins_by_input_port[port_index][j].pin_count_in_cluster;
 
                     if (pb_type->is_root()) {
                         pins.push_back(clustering_xml_net_text(pb_route[node_index].atom_net_id));
@@ -342,7 +342,7 @@ static void clustering_xml_open_block(pugi::xml_node& parent_node, t_logical_blo
                 port_node.append_attribute("name") = pb_graph_node->pb_type->ports[i].name;
                 std::vector<std::string> pins;
                 for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-                    node_index = pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
+                    node_index = pb_graph_node->pins_by_output_port[port_index][j].pin_count_in_cluster;
                     pins.push_back(clustering_xml_interconnect_text(type, pb_graph_pin_lookup_from_index_by_type, node_index, pb_route));
                 }
                 port_node.text().set(vtr::join(pins.begin(), pins.end(), " ").c_str());
@@ -360,7 +360,7 @@ static void clustering_xml_open_block(pugi::xml_node& parent_node, t_logical_blo
 
                 std::vector<std::string> pins;
                 for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-                    node_index = pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
+                    node_index = pb_graph_node->pins_by_clock_port[port_index][j].pin_count_in_cluster;
                     if (pb_type->is_root()) {
                         pins.push_back(clustering_xml_net_text(pb_route[node_index].atom_net_id));
                     } else {
@@ -381,7 +381,7 @@ static void clustering_xml_open_block(pugi::xml_node& parent_node, t_logical_blo
                     for (k = 0; k < child_pb_type->num_ports && !is_used; k++) {
                         if (child_pb_type->ports[k].type == OUT_PORT) {
                             for (m = 0; m < child_pb_type->ports[k].num_pins; m++) {
-                                node_index = pb_graph_node->child_pb_graph_nodes[mode_of_edge][i][j].output_pins[port_index][m].pin_count_in_cluster;
+                                node_index = pb_graph_node->child_pb_graph_nodes[mode_of_edge][i][j].pins_by_output_port[port_index][m].pin_count_in_cluster;
                                 if (pb_route.count(node_index) && pb_route[node_index].atom_net_id) {
                                     is_used = true;
                                     break;
@@ -448,7 +448,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
 
             std::vector<std::string> pins;
             for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-                node_index = pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
+                node_index = pb->pb_graph_node->pins_by_input_port[port_index][j].pin_count_in_cluster;
 
                 if (pb_type->is_root()) {
                     if (pb_route.count(node_index)) {
@@ -483,7 +483,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
                     std::vector<std::string> pin_map_list;
 
                     for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-                        node_index = pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
+                        node_index = pb->pb_graph_node->pins_by_input_port[port_index][j].pin_count_in_cluster;
 
                         if (pb_route.count(node_index)) {
                             AtomNetId atom_net = pb_route[node_index].atom_net_id;
@@ -531,7 +531,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
             port_node.append_attribute("name") = pb_graph_node->pb_type->ports[i].name;
             std::vector<std::string> pins;
             for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-                node_index = pb->pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
+                node_index = pb->pb_graph_node->pins_by_output_port[port_index][j].pin_count_in_cluster;
                 pins.push_back(clustering_xml_interconnect_text(type, pb_graph_pin_lookup_from_index_by_type, node_index, pb_route));
             }
             port_node.text().set(vtr::join(pins.begin(), pins.end(), " ").c_str());
@@ -549,7 +549,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
 
             std::vector<std::string> pins;
             for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-                node_index = pb->pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
+                node_index = pb->pb_graph_node->pins_by_clock_port[port_index][j].pin_count_in_cluster;
                 if (pb_type->is_root()) {
                     if (pb_route.count(node_index)) {
                         pins.push_back(clustering_xml_net_text(pb_route[node_index].atom_net_id));
@@ -579,7 +579,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
                     for (k = 0; k < child_pb_type->num_ports && !is_used; k++) {
                         if (child_pb_type->ports[k].type == OUT_PORT) {
                             for (m = 0; m < child_pb_type->ports[k].num_pins; m++) {
-                                node_index = pb_graph_node->child_pb_graph_nodes[pb->mode][i][j].output_pins[port_index][m].pin_count_in_cluster;
+                                node_index = pb_graph_node->child_pb_graph_nodes[pb->mode][i][j].pins_by_output_port[port_index][m].pin_count_in_cluster;
                                 if (pb_route.count(node_index) && pb_route[node_index].atom_net_id) {
                                     is_used = true;
                                     break;

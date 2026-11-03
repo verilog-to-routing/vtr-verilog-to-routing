@@ -107,6 +107,7 @@ class Job:
     def __init__(
         self,
         task_name,
+        config_dir,
         arch,
         circuit,
         include,
@@ -119,6 +120,7 @@ class Job:
         flow_script=None,
     ):
         self._task_name = task_name
+        self._config_dir = config_dir
         self._arch = arch
         self._circuit = circuit
         self._include = include
@@ -135,6 +137,13 @@ class Job:
         return the task name of the job
         """
         return self._task_name
+
+    def config_dir(self):
+        """
+        return the config directory of the job's task. Unlike the task name,
+        this uniquely identifies the task.
+        """
+        return self._config_dir
 
     def arch(self):
         """
@@ -772,6 +781,7 @@ def create_job(
 
     return Job(
         config.task_name,
+        config.config_dir,
         arch,
         circuit,
         include,

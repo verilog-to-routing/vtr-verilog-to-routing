@@ -180,12 +180,17 @@ RouteTree& RouteTree::operator=(RouteTree&& rhs) {
 /** Reload timing values (R_upstream, C_downstream, Tdel).
  * Can take a RouteTreeNode& to do an incremental update.
  * Note that update_from_heap already calls this. */
-void RouteTree::reload_timing(vtr::optional<RouteTreeNode&> from_node) {
+void RouteTree::reload_timing(vtr::optional<RouteTreeNode&> from_node, DelayType delay_type) {
     std::unique_lock<std::mutex> write_lock(_write_mutex);
-    reload_timing_unlocked(from_node);
+    reload_timing_unlocked(from_node, delay_type);
 }
 
-void RouteTree::reload_timing_unlocked(vtr::optional<RouteTreeNode&> from_node) {
+/** Returns the intrinsic delay of a switch for the given delay type. */
+static inline float switch_Tdel(const t_rr_switch_inf& rr_switch, DelayType delay_type) {
+    return (delay_type == DelayType::MAX) ? rr_switch.Tdel_max : rr_switch.Tdel_min;
+}
+
+void RouteTree::reload_timing_unlocked(vtr::optional<RouteTreeNode&> from_node, DelayType delay_type) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -210,10 +215,10 @@ void RouteTree::reload_timing_unlocked(vtr::optional<RouteTreeNode&> from_node) 
         /* TODO Just a note (no action needed for this PR): In future, we need to consider APIs that returns
          * the Tdel for a routing trace in RRGraphView.*/
         Tdel_start += rr_graph.rr_switch_inf(iswitch).R * unbuffered_subtree_rt_root.C_downstream;
-        Tdel_start += rr_graph.rr_switch_inf(iswitch).Tdel_max;
+        Tdel_start += switch_Tdel(rr_graph.rr_switch_inf(iswitch), delay_type);
     }
 
-    load_route_tree_Tdel(unbuffered_subtree_rt_root, Tdel_start);
+    load_route_tree_Tdel(unbuffered_subtree_rt_root, Tdel_start, delay_type);
 }
 
 /** Sets the R_upstream values of all the nodes in the new path to the
@@ -325,8 +330,9 @@ RouteTree::update_unbuffered_ancestors_C_downstream(RouteTreeNode& from_node) {
 /** Updates the Tdel values of the subtree rooted at rt_node by
  * by calling itself recursively. The C_downstream values of all the nodes
  * must be correct before this routine is called. Tarrival is the time at
- * at which the signal arrives at this node's *input*. */
-void RouteTree::load_route_tree_Tdel(RouteTreeNode& from_node, float Tarrival) {
+ * at which the signal arrives at this node's *input*. delay_type selects
+ * the min or max intrinsic delay of the switches. */
+void RouteTree::load_route_tree_Tdel(RouteTreeNode& from_node, float Tarrival, DelayType delay_type) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -343,8 +349,8 @@ void RouteTree::load_route_tree_Tdel(RouteTreeNode& from_node, float Tarrival) {
         RRSwitchId iswitch = child.parent_switch;
 
         float Tchild = Tdel + rr_graph.rr_switch_inf(iswitch).R * child.C_downstream;
-        Tchild += rr_graph.rr_switch_inf(iswitch).Tdel_max; /* Intrinsic switch delay. */
-        load_route_tree_Tdel(child, Tchild);
+        Tchild += switch_Tdel(rr_graph.rr_switch_inf(iswitch), delay_type); /* Intrinsic switch delay. */
+        load_route_tree_Tdel(child, Tchild, delay_type);
     }
 }
 

@@ -1575,7 +1575,7 @@ void ClusterLegalizer::init_feedback_pin_sets(const std::vector<t_logical_block_
         t_physical_tile_type_ptr tile = lb_type.equivalent_tiles[0];
         for (int iport = 0; iport < pb_head->num_output_ports; iport++) {
             for (int ipin = 0; ipin < pb_head->num_output_pins[iport]; ipin++) {
-                const t_pb_graph_pin* pb_pin = &pb_head->output_pins[iport][ipin];
+                const t_pb_graph_pin* pb_pin = &pb_head->pins_by_output_port[iport][ipin];
                 int phys_pin = get_physical_pin(tile, &lb_type, pb_pin->pin_count_in_cluster);
                 if (non_zero_fc_pins.count(phys_pin)) {
                     valid_set.insert(pb_pin->pin_count_in_cluster);
