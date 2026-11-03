@@ -10,25 +10,8 @@
 #include "vtr_assert.h"
 #include "vtr_hash.h"
 
-#include <chrono>
 #include <limits>
 #include <optional>
-
-/// @brief Backoff step for busy-wait loops: spin briefly, then yield, then sleep.
-///
-/// Batches are microsecond-scale, so workers usually pick up the next job while
-/// still spinning. The sleep tier only engages during long serial phases (e.g.
-/// timing updates in the outer loop) to avoid burning CPU.
-static inline void spin_backoff(unsigned& spin_count) {
-    ++spin_count;
-    if (spin_count < 1024) {
-        // busy spin
-    } else if (spin_count < 65536) {
-        std::this_thread::yield();
-    } else {
-        std::this_thread::sleep_for(std::chrono::microseconds(50));
-    }
-}
 
 ParallelAnnealEngine::EvalReplica::EvalReplica(const t_placer_opts& placer_opts,
                                                const PlaceMacros& place_macros,
@@ -103,10 +86,6 @@ ParallelAnnealEngine::ParallelAnnealEngine(int num_workers,
                                                              delay_model_, criticalities_));
     }
 
-    // Start in the "all workers done" state so the first job does not wait
-    // for a previous one.
-    workers_done_.store(num_workers_ - 1);
-
     // The annealer's thread acts as worker 0, so one fewer thread is spawned.
     workers_.reserve(num_workers_ - 1);
     for (int i = 1; i < num_workers_; ++i) {
@@ -125,13 +104,7 @@ void ParallelAnnealEngine::worker_main_(int worker_id) {
     uint64_t last_epoch = 0;
 
     while (true) {
-        unsigned spin_count = 0;
-        while (job_epoch_.load(std::memory_order_acquire) == last_epoch) {
-            spin_backoff(spin_count);
-        }
-        // A new job is never published while one is in flight, so no epoch
-        // can be missed here.
-        last_epoch = job_epoch_.load(std::memory_order_acquire);
+        last_epoch = dispatch_barrier_.wait_for_publish(last_epoch);
 
         if (job_ == e_worker_job::EXIT) {
             return;
@@ -139,7 +112,7 @@ void ParallelAnnealEngine::worker_main_(int worker_id) {
 
         execute_worker_job_(worker_id);
 
-        workers_done_.fetch_add(1, std::memory_order_release);
+        dispatch_barrier_.mark_done();
     }
 }
 
@@ -174,24 +147,15 @@ void ParallelAnnealEngine::execute_worker_job_(int worker_id) {
 void ParallelAnnealEngine::begin_worker_job_(e_worker_job job) {
     // The previous job may still be in flight: run_batch() leaves the replica
     // COMMIT_WINNER running so it overlaps the annealer's batch bookkeeping.
-    wait_worker_job_();
-    workers_done_.store(0, std::memory_order_relaxed);
+    dispatch_barrier_.wait_all_done();
     job_ = job;
-    job_epoch_.fetch_add(1, std::memory_order_release);
-}
-
-void ParallelAnnealEngine::wait_worker_job_() {
-    const int num_worker_threads = num_workers_ - 1;
-    unsigned spin_count = 0;
-    while (workers_done_.load(std::memory_order_acquire) != num_worker_threads) {
-        spin_backoff(spin_count);
-    }
+    dispatch_barrier_.publish();
 }
 
 void ParallelAnnealEngine::run_worker_job_(e_worker_job job) {
     begin_worker_job_(job);
     execute_worker_job_(/*worker_id=*/0);
-    wait_worker_job_();
+    dispatch_barrier_.wait_all_done();
 }
 
 void ParallelAnnealEngine::sync_replicas() {
@@ -345,7 +309,7 @@ t_batch_outcome ParallelAnnealEngine::run_batch(int batch_size,
 
     // The previous batch's replica commits may still be reading their winner
     // from attempts_. Wait for them before the resize below can reallocate it.
-    wait_worker_job_();
+    dispatch_barrier_.wait_all_done();
 
     if (attempts_.size() < static_cast<size_t>(batch_size)) {
         attempts_.resize(batch_size);

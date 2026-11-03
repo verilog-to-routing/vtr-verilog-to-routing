@@ -50,6 +50,7 @@
 #include "placer_state.h"
 #include "swap_evaluator.h"
 #include "vtr_random.h"
+#include "vtr_thread_sync.h"
 
 #include <atomic>
 #include <cstdint>
@@ -250,16 +251,10 @@ class ParallelAnnealEngine {
     // thread). The threads live for the lifetime of the engine and are joined
     // by the destructor after an EXIT job.
     //
-    // Jobs are dispatched one at a time. The coordinator writes the job and its
-    // payload, then bumps job_epoch_. Worker threads spin on job_epoch_, run the
-    // job on their own replica, and increment workers_done_. The coordinator
-    // runs its own share on replica 0 and then waits for workers_done_ to reach
-    // the worker thread count before publishing the next job. Spinning backs
-    // off to yield and then sleep during long serial phases.
-    //
-    // std::barrier was tried instead, but it gives up spinning too quickly and
-    // puts waiters to sleep. With microsecond-scale batches, the wake-up cost
-    // made AP detailed placement 16-26% slower.
+    // Jobs are dispatched one at a time through dispatch_barrier_. The
+    // coordinator writes the job and its payload, publishes it, runs its own
+    // share on replica 0, and waits for the workers before publishing the next
+    // job. Worker threads wait for each job and run it on their own replica.
 
     /// @brief Commands executed by the worker pool.
     enum class e_worker_job : uint8_t {
@@ -279,9 +274,6 @@ class ParallelAnnealEngine {
 
     /// @brief Waits for the previous job to finish, then publishes a new one without waiting for it.
     void begin_worker_job_(e_worker_job job);
-
-    /// @brief Blocks until all worker threads have finished the current job.
-    void wait_worker_job_();
 
     /// @brief Publishes a job, runs the coordinator's share, and waits for the workers.
     void run_worker_job_(e_worker_job job);
@@ -342,9 +334,9 @@ class ParallelAnnealEngine {
 
     /// The num_workers_ - 1 worker threads. The coordinator is worker 0.
     std::vector<std::thread> workers_;
-    /// Incremented to publish a new job. Worker threads spin on it.
-    alignas(64) std::atomic<uint64_t> job_epoch_{0};
-    /// Current job, written before job_epoch_ is bumped.
+    /// Sequences jobs between the coordinator and the worker threads.
+    vtr::DispatchBarrier<> dispatch_barrier_{static_cast<size_t>(num_workers_ - 1)};
+    /// Current job, written before it is published through dispatch_barrier_.
     e_worker_job job_ = e_worker_job::NONE;
     /// EVALUATE payload: whether replicas propose with their second generator.
     bool batch_use_gen2_ = false;
@@ -358,9 +350,6 @@ class ParallelAnnealEngine {
     const MoveGenerator* batch_master_generator_ = nullptr;
     /// COMMIT_WINNER payload: the winning attempt.
     const t_speculative_swap* winner_attempt_ = nullptr;
-    /// Number of worker threads that finished the current job. Written while
-    /// a job runs, so it gets its own cache line.
-    alignas(64) std::atomic<int> workers_done_{0};
     /// Lowest accepted attempt id in the current batch, or INT_MAX if none yet.
     /// Attempts with a higher id cancel early. Written while a job runs, so it
     /// gets its own cache line.

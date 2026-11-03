@@ -4,16 +4,22 @@
  * @file vtr_thread_sync.h
  * @brief Thread synchronization primitives shared by VTR's parallel algorithms.
  *
- * Contains a spin lock and several thread barrier implementations. The
- * barriers share the same interface (constructor taking the thread count,
- * init(), wait()) so callers can switch between them with a type alias.
+ * Contains a spin lock, several symmetric thread barriers, and a
+ * coordinator/worker DispatchBarrier. The symmetric barriers share the same
+ * interface (constructor taking the thread count, init(), wait()) so callers
+ * can switch between them with a type alias.
  */
+
+#include "vtr_assert.h"
 
 #include <atomic>
 #include <barrier>
+#include <chrono>
 #include <condition_variable>
 #include <cstddef>
+#include <cstdint>
 #include <mutex>
+#include <thread>
 
 namespace vtr {
 
@@ -172,6 +178,105 @@ class standard_barrier_t {
     inline void wait() {
         barrier_.arrive_and_wait();
     }
+};
+
+/**
+ * @brief Synchronizes one coordinator thread with a fixed set of worker threads.
+ *
+ * The coordinator publishes jobs one at a time and every worker runs each one:
+ *
+ *     coordinator                      worker
+ *     wait_all_done()                  epoch = wait_for_publish(epoch)
+ *     <write the job payload>          <read the job payload>
+ *     publish()                        <run the job>
+ *     ...                              mark_done()
+ *
+ * The job payload lives in the caller. Writes before publish() are visible
+ * after wait_for_publish(), and writes before mark_done() are visible after
+ * wait_all_done(). The coordinator may do other work between publish() and
+ * wait_all_done().
+ *
+ * Waiting spins, then yields, then sleeps. std::barrier gives up spinning too
+ * quickly.
+ *
+ * @tparam SpinIters  Wait iterations spent busy-spinning before yielding.
+ * @tparam YieldIters Wait iterations (including the spinning ones) before sleeping.
+ * @tparam SleepUs    Sleep duration in microseconds once past YieldIters.
+ */
+template<unsigned SpinIters = 1024, unsigned YieldIters = 65536, unsigned SleepUs = 50>
+class DispatchBarrier {
+    static_assert(SpinIters <= YieldIters, "Spinning must end before sleeping begins.");
+
+  public:
+    /// @brief Creates a barrier for num_workers worker threads, not counting the coordinator.
+    explicit DispatchBarrier(size_t num_workers)
+        : num_workers_(num_workers)
+        , done_(num_workers) {}
+
+    /**
+     * @brief Coordinator: publishes a new job to the workers.
+     *
+     * Every worker must have finished the previous job, and the job payload
+     * must be written before this call.
+     */
+    void publish() {
+        VTR_ASSERT_SAFE(done_.load() == num_workers_);
+        done_.store(0, std::memory_order_relaxed);
+        epoch_.fetch_add(1, std::memory_order_release);
+    }
+
+    /// @brief Coordinator: blocks until every worker has called mark_done() for the current job.
+    void wait_all_done() const {
+        unsigned spin_count = 0;
+        while (done_.load(std::memory_order_acquire) != num_workers_) {
+            spin_backoff(spin_count);
+        }
+    }
+
+    /**
+     * @brief Worker: blocks until a job newer than last_epoch is published.
+     * @param last_epoch The value returned by the previous call, or 0 before the first job.
+     * @return The epoch of the published job, to be passed to the next call.
+     */
+    uint64_t wait_for_publish(uint64_t last_epoch) const {
+        unsigned spin_count = 0;
+        uint64_t epoch = epoch_.load(std::memory_order_acquire);
+        while (epoch == last_epoch) {
+            spin_backoff(spin_count);
+            epoch = epoch_.load(std::memory_order_acquire);
+        }
+        return epoch;
+    }
+
+    /// @brief Worker: reports that it finished the current job.
+    void mark_done() {
+        done_.fetch_add(1, std::memory_order_release);
+    }
+
+  private:
+    /// @brief Backoff step for the wait loops: spin briefly, then yield, then sleep.
+    ///
+    /// Jobs are usually short, so waiters pick up the next event while still
+    /// spinning. Waiters only start sleeping when the coordinator is in a long
+    /// serial phase, so they do not burn CPU there.
+    static void spin_backoff(unsigned& spin_count) {
+        ++spin_count;
+        if (spin_count < SpinIters) {
+            // busy spin
+        } else if (spin_count < YieldIters) {
+            std::this_thread::yield();
+        } else {
+            std::this_thread::sleep_for(std::chrono::microseconds(SleepUs));
+        }
+    }
+
+    /// Number of worker threads, not counting the coordinator.
+    const size_t num_workers_;
+    /// Incremented by publish(). Workers poll it, so it gets its own cache line.
+    alignas(64) std::atomic<uint64_t> epoch_{0};
+    /// Number of workers that finished the current job. Workers write it while
+    /// the coordinator polls it, so it gets its own cache line.
+    alignas(64) std::atomic<size_t> done_;
 };
 
 } // namespace vtr
