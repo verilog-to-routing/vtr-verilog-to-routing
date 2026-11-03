@@ -256,6 +256,10 @@ class ParallelAnnealEngine {
     // runs its own share on replica 0 and then waits for workers_done_ to reach
     // the worker thread count before publishing the next job. Spinning backs
     // off to yield and then sleep during long serial phases.
+    //
+    // std::barrier was tried instead, but it gives up spinning too quickly and
+    // puts waiters to sleep. With microsecond-scale batches, the wake-up cost
+    // made AP detailed placement 16-26% slower.
 
     /// @brief Commands executed by the worker pool.
     enum class e_worker_job : uint8_t {
