@@ -57,6 +57,8 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
 
     auto& logical_block_types = g_vpr_ctx.mutable_device().logical_block_types;
     logical_block_types.clear();
+    // The tiles below point at elements of this vector, so it must not reallocate.
+    logical_block_types.reserve(5);
 
     t_physical_tile_type empty_tile;
     empty_tile.name = empty_tile_name;
@@ -64,10 +66,9 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     empty_tile.width = 1;
     empty_tile.sub_tiles.emplace_back();
 
-    t_logical_block_type EMPTY_LOGICAL_BLOCK_TYPE = get_empty_logical_type();
+    t_logical_block_type& EMPTY_LOGICAL_BLOCK_TYPE = logical_block_types.emplace_back(get_empty_logical_type());
     EMPTY_LOGICAL_BLOCK_TYPE.index = 0;
     EMPTY_LOGICAL_BLOCK_TYPE.equivalent_tiles.push_back(&empty_tile);
-    logical_block_types.push_back(EMPTY_LOGICAL_BLOCK_TYPE);
 
     g_vpr_ctx.mutable_device().EMPTY_PHYSICAL_TILE_TYPE = &empty_tile;
 
@@ -81,10 +82,9 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     io_tile.width = 1;
     io_tile.sub_tiles.emplace_back();
 
-    t_logical_block_type io_logical_type;
+    t_logical_block_type& io_logical_type = logical_block_types.emplace_back();
     io_logical_type.index = 1;
     io_logical_type.equivalent_tiles.push_back(&io_tile);
-    logical_block_types.push_back(io_logical_type);
 
     io_tile.sub_tiles.back().index = 0;
     io_tile.sub_tiles.back().equivalent_sites.push_back(&io_logical_type);
@@ -96,10 +96,9 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     small_tile.width = 1;
     small_tile.sub_tiles.emplace_back();
 
-    t_logical_block_type small_logical_type;
+    t_logical_block_type& small_logical_type = logical_block_types.emplace_back();
     small_logical_type.index = 2;
     small_logical_type.equivalent_tiles.push_back(&small_tile);
-    logical_block_types.push_back(small_logical_type);
 
     small_tile.sub_tiles.back().index = 0;
     small_tile.sub_tiles.back().equivalent_sites.push_back(&small_logical_type);
@@ -111,10 +110,9 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     tall_tile.width = 1;
     tall_tile.sub_tiles.emplace_back();
 
-    t_logical_block_type tall_logical_type;
+    t_logical_block_type& tall_logical_type = logical_block_types.emplace_back();
     tall_logical_type.index = 3;
     tall_logical_type.equivalent_tiles.push_back(&tall_tile);
-    logical_block_types.push_back(tall_logical_type);
 
     tall_tile.sub_tiles.back().index = 0;
     tall_tile.sub_tiles.back().equivalent_sites.push_back(&tall_logical_type);
@@ -125,10 +123,9 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     large_tile.width = 3;
     large_tile.sub_tiles.emplace_back();
 
-    t_logical_block_type large_logical_type;
+    t_logical_block_type& large_logical_type = logical_block_types.emplace_back();
     large_logical_type.index = 4;
     large_logical_type.equivalent_tiles.push_back(&large_tile);
-    logical_block_types.push_back(large_logical_type);
 
     large_tile.sub_tiles.back().index = 0;
     large_tile.sub_tiles.back().equivalent_sites.push_back(&large_logical_type);

@@ -195,7 +195,7 @@ class PlacementAnnealer {
                       std::unique_ptr<MoveGenerator>&& move_generator_2,
                       const PlaceDelayModel* delay_model,
                       PlacerCriticalities* criticalities,
-                      PlacerSetupSlacks* setup_slacks,
+                      std::optional<PlacerSetupSlacks>& setup_slacks,
                       SetupTimingInfo* timing_info,
                       NetPinTimingInvalidator* pin_timing_invalidator,
                       float auto_init_t_scale,
@@ -321,7 +321,8 @@ class PlacementAnnealer {
 
     const PlaceDelayModel* delay_model_;
     PlacerCriticalities* criticalities_;
-    PlacerSetupSlacks* setup_slacks_;
+    /// Empty unless the anneal or quench algorithm is slack-driven.
+    std::optional<PlacerSetupSlacks>& setup_slacks_;
     SetupTimingInfo* timing_info_;
     NetPinTimingInvalidator* pin_timing_invalidator_;
     std::unique_ptr<FILE, decltype(&vtr::fclose)> move_stats_file_;

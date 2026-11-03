@@ -19,6 +19,8 @@
  * through the rr_node_route_inf. See update_traceback as an example of this tracing.
  */
 
+#include <span>
+
 #include "connection_router_interface.h"
 #include "globals.h"
 #include "route_path_manager.h"
@@ -52,10 +54,9 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , rr_graph_(rr_graph)
         , rr_rc_data_(rr_rc_data)
         , rr_switch_inf_(rr_switch_inf.data(), rr_switch_inf.size())
-        , net_terminal_groups(g_vpr_ctx.routing().net_terminal_groups)
-        , net_terminal_group_num(g_vpr_ctx.routing().net_terminal_group_num)
         , rr_node_route_inf_(rr_node_route_inf)
         , is_flat_(is_flat)
+        , has_bus_muxes_(is_flat && !g_vpr_ctx.device().rr_bus_muxes.empty())
         , route_verbosity_(route_verbosity)
         , router_stats_(nullptr)
         , router_debug_(false)
@@ -282,11 +283,13 @@ class ConnectionRouter : public ConnectionRouterInterface {
      * filled in to's backward_path_cost and R_upstream.
      * @param to Neighbor node to calculate costs before being expanded
      * @param cost_params Cost function parameters
+     * @param from_node Current node ID being explored
      * @param target_node Target node ID to route to
      * @param Tdel Delay of to_node, returned by evaluate_timing_driven_backward_costs()
      */
     void evaluate_timing_driven_total_cost(RTExploredNode* to,
                                            const t_conn_cost_params& cost_params,
+                                           RRNodeId from_node,
                                            RRNodeId target_node,
                                            float Tdel);
 
@@ -351,19 +354,16 @@ class ConnectionRouter : public ConnectionRouterInterface {
     const RRRCData& rr_rc_data_;
 
     /** RR switch data */
-    vtr::array_view<const t_rr_switch_inf> rr_switch_inf_;
-
-    //@{
-    /** Net terminal groups */
-    const vtr::vector<ParentNetId, std::vector<std::vector<int>>>& net_terminal_groups;
-    const vtr::vector<ParentNetId, std::vector<int>>& net_terminal_group_num;
-    //@}
+    std::span<const t_rr_switch_inf> rr_switch_inf_;
 
     /** RR node extra information needed during routing */
     vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_;
 
     /** Is flat router enabled or not? */
     bool is_flat_;
+
+    /** Does the routed architecture have bus-based muxes to negotiate (flat routing only)? */
+    bool has_bus_muxes_;
 
     /** The verbosity of log messages in the router. */
     int route_verbosity_;

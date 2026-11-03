@@ -270,10 +270,11 @@ class ParallelConnectionRouter : public ConnectionRouter<MultiQueueDAryHeap<Heap
     /**
      * @brief [Not supported] Enables RCV feature
      * @note RCV for parallel connection router has not been implemented yet.
-     * Thus this function is not expected to be called.
+     * Thus RCV is not expected to be enabled.
      */
-    void set_rcv_enabled(bool) final {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "RCV for parallel connection router not yet implemented. Not expected to be called.");
+    void set_rcv_enabled(bool enable) final {
+        if (enable)
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "RCV for parallel connection router not yet implemented. Not expected to be enabled.");
     }
 
     /**

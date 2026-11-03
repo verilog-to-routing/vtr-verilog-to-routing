@@ -104,7 +104,7 @@ class SwapEvaluator {
     /**
      * @brief Reverts an applied move, restoring block_locs and resetting the
      * scratch/proposed state. When `revert_td` is set, the proposed connection
-     * delay/timing cost entries are also invalidated.
+     * delay/timing cost entries are also discarded.
      */
     void revert(t_pl_blocks_to_be_moved& blocks_affected, bool revert_td);
 

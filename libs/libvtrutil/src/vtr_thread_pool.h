@@ -68,9 +68,11 @@ class thread_pool {
         for (size_t i = 0; i < thread_count; i++) {
             auto thread_data = std::make_unique<ThreadData>();
 
-            thread_data->thread = std::thread([&]() {
-                ThreadData* td = thread_data.get();
+            // Capture the pointer by value. thread_data itself is moved into
+            // the threads vector below, possibly before the new thread starts.
+            ThreadData* td = thread_data.get();
 
+            thread_data->thread = std::thread([td]() {
                 while (true) {
                     std::function<void()> task;
 
@@ -123,9 +125,15 @@ class thread_pool {
                 throw;
             }
 
-            size_t remaining = --active_tasks;
-            if (remaining == 0) {
-                completion_cv.notify_all();
+            // Hold completion_mutex while updating the counter so that
+            // wait_for_all cannot miss the notification between checking the
+            // counter and going to sleep.
+            {
+                std::lock_guard<std::mutex> lock(completion_mutex);
+                size_t remaining = --active_tasks;
+                if (remaining == 0) {
+                    completion_cv.notify_all();
+                }
             }
         };
 

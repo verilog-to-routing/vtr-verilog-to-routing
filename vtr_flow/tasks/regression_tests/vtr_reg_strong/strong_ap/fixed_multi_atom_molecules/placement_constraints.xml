@@ -1,0 +1,29 @@
+<!--
+Fixes molecules which contain multiple atoms to single tiles. Each partition
+constrains both the LUT and the FF of a LUT+FF (ble6 pack pattern) molecule to
+the same location. AP should treat the molecule as a single fixed block.
+-->
+<vpr_constraints tool_name="vpr">
+<partition_list>
+    <partition name="mol_0">
+        <add_atom name_pattern="n_n45"/>
+        <add_atom name_pattern="n_n852"/>
+        <add_region x_low="5" y_low="5" x_high="5" y_high="5"/>
+    </partition>
+    <partition name="mol_1">
+        <add_atom name_pattern="n_n46"/>
+        <add_atom name_pattern="n_n853"/>
+        <add_region x_low="18" y_low="40" x_high="18" y_high="40"/>
+    </partition>
+    <partition name="mol_2">
+        <add_atom name_pattern="n_n47"/>
+        <add_atom name_pattern="n_n854"/>
+        <add_region x_low="10" y_low="25" x_high="10" y_high="25"/>
+    </partition>
+    <partition name="mol_3">
+        <add_atom name_pattern="n_n48"/>
+        <add_atom name_pattern="n_n855"/>
+        <add_region x_low="20" y_low="12" x_high="20" y_high="12"/>
+    </partition>
+</partition_list>
+</vpr_constraints>

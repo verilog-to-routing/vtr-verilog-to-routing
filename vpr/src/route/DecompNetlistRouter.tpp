@@ -61,12 +61,6 @@ void DecompNetlistRouter<HeapType>::handle_bb_updated_nets(const std::vector<Par
 }
 
 template<typename HeapType>
-void DecompNetlistRouter<HeapType>::set_rcv_enabled(bool x) {
-    if (x)
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Net decomposition with RCV is not implemented yet.\n");
-}
-
-template<typename HeapType>
 void DecompNetlistRouter<HeapType>::set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info) {
     _timing_info = timing_info;
 }

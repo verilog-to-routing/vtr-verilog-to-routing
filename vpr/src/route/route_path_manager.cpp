@@ -119,8 +119,6 @@ void PathManager::update_route_tree_set(t_heap_path* cheapest_path_struct) {
 }
 
 void PathManager::empty_route_tree_nodes() {
-    if (!is_enabled_) return;
-
     route_tree_nodes_.clear();
 }
 

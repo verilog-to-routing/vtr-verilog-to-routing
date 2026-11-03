@@ -107,7 +107,7 @@ void SwapEvaluator::commit(t_pl_blocks_to_be_moved& blocks_affected,
     if (commit_td) {
         // Update the connection_timing_cost and connection_delay
         // values from the temporary values.
-        placer_state_.mutable_timing().commit_td_cost(blocks_affected);
+        placer_state_.mutable_timing().commit_td_cost();
     }
 
     // Commit the proposed net costs and release the scratch state of the move.
@@ -135,8 +135,7 @@ void SwapEvaluator::extract_commit_record(const t_pl_blocks_to_be_moved& blocks_
 
     if (placer_opts_.place_algorithm.is_timing_driven()) {
         record.affected_pins = blocks_affected.affected_pins;
-        placer_state_.timing().extract_connection_commit_record(blocks_affected.affected_pins,
-                                                                record.connection_entries);
+        placer_state_.timing().extract_connection_commit_record(record.connection_entries);
     } else {
         record.affected_pins.clear();
         record.connection_entries.clear();
@@ -176,7 +175,7 @@ void SwapEvaluator::revert(t_pl_blocks_to_be_moved& blocks_affected, bool revert
     placer_state_.mutable_blk_loc_registry().revert_move_blocks(blocks_affected);
 
     if (revert_td) {
-        // Un-stage the values stored in proposed_* data structures
-        placer_state_.mutable_timing().revert_td_cost(blocks_affected);
+        // Discard the proposed connection delays and timing costs
+        placer_state_.mutable_timing().revert_td_cost();
     }
 }

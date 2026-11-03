@@ -15,24 +15,12 @@
 class Prepacker;
 class PreClusterTimingManager;
 struct PartialPlacement;
-struct t_arch;
-struct t_vpr_setup;
 
 // Types to indicate the type of drawing operation
 enum class APDrawType {
     Solver,
     Legalizer
 };
-
-/**
- * @brief Initialize graphics state and allocate draw structures for the AP flow.
- *
- * Must be called once the device grid is valid, before any APDrawManager is created.
- * Kept here (rather than in vpr_flow) because non-AP flows must not set show_graphics
- * before vpr_create_device builds the RR graph and calls init_draw_coords, which
- * accesses tile arrays that alloc_draw_structs has not yet allocated.
- */
-void init_ap_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch);
 
 /**
  * @class APDrawManager

@@ -595,21 +595,21 @@ static void power_size_pb_rec(t_pb_graph_node* pb_node) {
         for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
             for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
                  pin_idx++) {
-                power_size_pin_buffers_and_wires(&pb_node->input_pins[port_idx][pin_idx], true);
+                power_size_pin_buffers_and_wires(&pb_node->pins_by_input_port[port_idx][pin_idx], true);
             }
         }
 
         for (port_idx = 0; port_idx < pb_node->num_output_ports; port_idx++) {
             for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx];
                  pin_idx++) {
-                power_size_pin_buffers_and_wires(&pb_node->output_pins[port_idx][pin_idx], false);
+                power_size_pin_buffers_and_wires(&pb_node->pins_by_output_port[port_idx][pin_idx], false);
             }
         }
 
         for (port_idx = 0; port_idx < pb_node->num_clock_ports; port_idx++) {
             for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx];
                  pin_idx++) {
-                power_size_pin_buffers_and_wires(&pb_node->clock_pins[port_idx][pin_idx], true);
+                power_size_pin_buffers_and_wires(&pb_node->pins_by_clock_port[port_idx][pin_idx], true);
             }
         }
     }

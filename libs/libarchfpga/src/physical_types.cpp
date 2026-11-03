@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "physical_types.h"
 #include "arch_types.h"
 #include "vtr_math.h"
@@ -26,23 +28,40 @@ e_directionality t_arch_switch_inf::directionality() const {
     return switch_type_directionality(type());
 }
 
-float t_arch_switch_inf::Tdel(int fanin) const {
+float t_arch_switch_inf::Tdel_max(int fanin) const {
+    return lookup_Tdel(Tdel_max_map_, fanin);
+}
+
+float t_arch_switch_inf::Tdel_min(int fanin) const {
+    float min_delay = lookup_Tdel(Tdel_min_map_, fanin);
+
+    // Extrapolating the min and max delays separately may give a negative min
+    // delay or a min delay above the max delay, so clamp it. Clamping to the
+    // max delay last keeps min == max for switches whose min and max delays
+    // are the same (even if the extrapolated max delay is negative).
+    min_delay = std::max(min_delay, 0.f);
+    return std::min(min_delay, Tdel_max(fanin));
+}
+
+float t_arch_switch_inf::lookup_Tdel(const std::map<int, double>& Tdel_map, int fanin) const {
     if (fixed_Tdel()) {
-        auto itr = Tdel_map_.find(UNDEFINED_FANIN);
-        VTR_ASSERT(itr != Tdel_map_.end());
+        auto itr = Tdel_map.find(UNDEFINED_FANIN);
+        VTR_ASSERT(itr != Tdel_map.end());
         return itr->second;
     } else {
         VTR_ASSERT(fanin >= 0);
-        return vtr::linear_interpolate_or_extrapolate(&Tdel_map_, fanin);
+        return vtr::linear_interpolate_or_extrapolate(&Tdel_map, fanin);
     }
 }
 
 bool t_arch_switch_inf::fixed_Tdel() const {
-    return Tdel_map_.size() == 1 && Tdel_map_.count(UNDEFINED_FANIN);
+    return Tdel_max_map_.size() == 1 && Tdel_max_map_.count(UNDEFINED_FANIN);
 }
 
-void t_arch_switch_inf::set_Tdel(int fanin, float delay) {
-    Tdel_map_[fanin] = delay;
+void t_arch_switch_inf::set_Tdel(int fanin, float Tdel_min, float Tdel_max) {
+    VTR_ASSERT_MSG(Tdel_min <= Tdel_max, "Switch min delay must not be larger than its max delay");
+    Tdel_min_map_[fanin] = Tdel_min;
+    Tdel_max_map_[fanin] = Tdel_max;
 }
 
 void t_arch_switch_inf::set_type(e_switch_type type_val) {
@@ -178,6 +197,10 @@ bool t_logical_block_type::is_io() const {
     return false;
 }
 
+bool t_logical_block_type::has_bus_mux() const {
+    return pb_type != nullptr && pb_type->has_bus_mux();
+}
+
 const t_port* t_logical_block_type::get_port(std::string_view port_name) const {
     for (int i = 0; i < pb_type->num_ports; i++) {
         const t_port& port = pb_type->ports[i];
@@ -264,27 +287,26 @@ int t_pb_type::get_max_depth() const {
     return max_depth;
 }
 
+bool t_pb_type::has_bus_mux() const {
+    for (int imode = 0; imode < num_modes; imode++) {
+        const t_mode& mode = modes[imode];
+        for (int iinterc = 0; iinterc < mode.num_interconnect; iinterc++) {
+            if (mode.interconnect[iinterc].type == MUX_INTERC && mode.interconnect[iinterc].bus) {
+                return true;
+            }
+        }
+        for (int ichild = 0; ichild < mode.num_pb_type_children; ichild++) {
+            if (mode.pb_type_children[ichild].has_bus_mux()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 /*
  * t_pb_graph_node
  */
-
-int t_pb_graph_node::num_pins() const {
-    int npins = 0;
-
-    for (int iport = 0; iport < num_input_ports; ++iport) {
-        npins += num_input_pins[iport];
-    }
-
-    for (int iport = 0; iport < num_output_ports; ++iport) {
-        npins += num_output_pins[iport];
-    }
-
-    for (int iport = 0; iport < num_clock_ports; ++iport) {
-        npins += num_clock_pins[iport];
-    }
-
-    return npins;
-}
 
 std::string t_pb_graph_node::hierarchical_type_name() const {
     std::vector<std::string> names;
@@ -340,9 +362,40 @@ std::string t_pb_graph_pin::to_string(const bool full_description) const {
     return pin_string;
 }
 
+bool t_pb_graph_pin::is_bus_mux_output() const {
+    for (int iedge = 0; iedge < num_input_edges; iedge++) {
+        if (input_edges[iedge]->is_bus_mux()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+const t_pb_graph_edge* t_pb_graph_pin::edge_to(const t_pb_graph_pin* sink_pin) const {
+    return output_edges[sink_pin_edge_idx_map.at(sink_pin)];
+}
+
 /*
  * t_pb_graph_edge
  */
+
+bool t_pb_graph_edge::is_bus_mux() const {
+    return interconnect->type == MUX_INTERC && interconnect->bus;
+}
+
+const t_pb_graph_node* t_pb_graph_edge::bus_mux_owner() const {
+    const t_pb_graph_node* out_node = output_pin()->parent_node;
+    const t_pb_type* owner_type = interconnect->parent_mode->parent_pb_type;
+
+    // The mux output is either an output port of the owner itself or an input
+    // port of one of the owner's children.
+    if (out_node->pb_type == owner_type) {
+        return out_node;
+    }
+    VTR_ASSERT(out_node->parent_pb_graph_node != nullptr
+               && out_node->parent_pb_graph_node->pb_type == owner_type);
+    return out_node->parent_pb_graph_node;
+}
 
 bool t_pb_graph_edge::annotated_with_pattern(int pattern_index) const {
     for (int ipattern = 0; ipattern < this->num_pack_patterns; ipattern++) {
@@ -361,11 +414,9 @@ bool t_pb_graph_edge::belongs_to_pattern(int pattern_index) const {
         // if not annotated check if its pattern should be inferred
     } else if (this->infer_pattern) {
         // if pattern should be inferred try to infer it from all connected output edges
-        for (int ipin = 0; ipin < this->num_output_pins; ipin++) {
-            for (int iedge = 0; iedge < this->output_pins[ipin]->num_output_edges; iedge++) {
-                if (this->output_pins[ipin]->output_edges[iedge]->belongs_to_pattern(pattern_index)) {
-                    return true;
-                }
+        for (const t_pb_graph_edge* out_edge : this->output_pin()->output_edges) {
+            if (out_edge->belongs_to_pattern(pattern_index)) {
+                return true;
             }
         }
     }

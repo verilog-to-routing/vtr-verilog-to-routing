@@ -1,5 +1,7 @@
 #include "grid_util.h"
 
+#include <algorithm>
+
 #include "device_grid.h"
 #include "physical_types.h"
 #include "vtr_expr_eval.h"
@@ -101,6 +103,9 @@ resolve_interposer_cut_locations(const DeviceGrid& grid,
                 horizontal[layer].push_back(cut_loc);
             }
         }
+
+        std::ranges::sort(horizontal[layer]);
+        std::ranges::sort(vertical[layer]);
     }
     return {std::move(horizontal), std::move(vertical)};
 }

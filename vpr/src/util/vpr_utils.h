@@ -138,20 +138,17 @@ std::string rr_node_arch_name(RRNodeId inode, bool is_flat);
 //Class for looking up pb graph pins from block pin indices
 class IntraLbPbPinLookup {
   public:
-    IntraLbPbPinLookup() = default;
     IntraLbPbPinLookup(const std::vector<t_logical_block_type>& block_types);
     IntraLbPbPinLookup(const IntraLbPbPinLookup& rhs);
-    IntraLbPbPinLookup& operator=(IntraLbPbPinLookup rhs);
+    IntraLbPbPinLookup& operator=(const IntraLbPbPinLookup&) = delete;
     ~IntraLbPbPinLookup();
 
     //Returns the pb graph pin associated with the specified type (index into block types array) and
     // pb pin index (index into block_pb().pb_route)
     const t_pb_graph_pin* pb_gpin(unsigned int itype, int ipin) const;
 
-    friend void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs);
-
   private:
-    std::vector<t_logical_block_type> block_types_;
+    const std::vector<t_logical_block_type>& block_types_;
 
     std::vector<t_pb_graph_pin**> intra_lb_pb_pin_lookup_;
 };
@@ -204,7 +201,15 @@ vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping();
 void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping);
 
-std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id);
+/// @brief Where a cluster block is placed: its tile type, sub-tile and sub-tile instance, and its logical block type.
+struct t_cluster_blk_physical_spec {
+    t_physical_tile_type_ptr physical_type; ///< Tile type the block is placed in
+    const t_sub_tile* sub_tile;             ///< Sub-tile of physical_type the block is placed in
+    int sub_tile_instance;                  ///< Which instance of sub_tile the block is placed in, counting from 0
+    t_logical_block_type_ptr logical_block; ///< Logical block type of the block
+};
+
+t_cluster_blk_physical_spec get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id);
 
 std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
                                                   ClusterBlockId cluster_block_id);
@@ -329,7 +334,10 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_til
                                                             const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                             t_physical_tile_type_ptr physical_type);
 
-t_arch_switch_inf create_internal_arch_sw(float delay);
+/**
+ * @brief Creates the architecture switch used for edges inside a cluster, with a fixed (fan-in independent) delay.
+ */
+t_arch_switch_inf create_internal_arch_sw(float delay_min, float delay_max);
 
 void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb);
 

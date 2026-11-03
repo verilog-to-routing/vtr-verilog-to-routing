@@ -16,6 +16,7 @@
 #include "vtr_assert.h"
 #include "vtr_math.h"
 #include "vtr_log.h"
+#include "vtr_util.h"
 #include "stats.h"
 
 #include "vpr_error.h"
@@ -811,4 +812,38 @@ void report_device_grid_stats(const DeviceGrid& grid) {
     size_t num_grid_tiles = count_grid_tiles(grid);
     VTR_LOG("FPGA sized to %zu x %zu: %zu grid tiles (%s)\n",
             grid.width(), grid.height(), num_grid_tiles, grid.name().c_str());
+}
+
+void write_device_grid(const char* fname, const DeviceGrid& grid) {
+    FILE* fp = vtr::fopen(fname, "w");
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+
+    fprintf(fp, "# VPR device grid: layout %s, %zu x %zu tiles, %zu layer(s)\n",
+            grid.name().c_str(), grid.width(), grid.height(), grid.get_num_layers());
+    fprintf(fp, "# TileType <tile> <width> <height>\n");
+    fprintf(fp, "# SubTile <tile> <sub_tile> <capacity> <site>[,<site>...]\n");
+    for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
+        if (&type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) continue;
+        fprintf(fp, "TileType %s %d %d\n", type.name.c_str(), type.width, type.height);
+        for (const t_sub_tile& sub_tile : type.sub_tiles) {
+            fprintf(fp, "SubTile %s %s %d ", type.name.c_str(), sub_tile.name.c_str(),
+                    sub_tile.capacity.total());
+            for (size_t i = 0; i < sub_tile.equivalent_sites.size(); ++i) {
+                fprintf(fp, "%s%s", i ? "," : "", sub_tile.equivalent_sites[i]->name.c_str());
+            }
+            fprintf(fp, "\n");
+        }
+    }
+    fprintf(fp, "# Root <layer> <x> <y> <tile>: the root location of every tile\n");
+    for (int layer = 0; layer < (int)grid.get_num_layers(); ++layer) {
+        for (int x = 0; x < (int)grid.width(); ++x) {
+            for (int y = 0; y < (int)grid.height(); ++y) {
+                t_physical_tile_loc loc(x, y, layer);
+                t_physical_tile_type_ptr type = grid.get_physical_type(loc);
+                if (type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE || !grid.is_root_location(loc)) continue;
+                fprintf(fp, "Root %d %d %d %s\n", layer, x, y, type->name.c_str());
+            }
+        }
+    }
+    vtr::fclose(fp);
 }

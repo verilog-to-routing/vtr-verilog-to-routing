@@ -43,9 +43,7 @@
 #include <string>
 #include <string_view>
 
-#ifndef VPR_MAIN_UI_PATH
-#define VPR_MAIN_UI_PATH ":/ezgl/main.ui"
-#endif
+#include "test_main_ui.hpp"
 
 #include <QApplication>
 #include <QCheckBox>
@@ -240,7 +238,7 @@ constexpr ComboContentSpec kComboContent[] = {
 
 TEST_CASE("UiContract: every find_*() target exists in main.ui with correct Qt type",
           "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
     win->show();
@@ -271,7 +269,7 @@ TEST_CASE("UiContract: every find_*() target exists in main.ui with correct Qt t
 
 TEST_CASE("UiContract: menu combos have the contracted item counts",
           "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
     win->show();
@@ -296,7 +294,7 @@ TEST_CASE("UiContract: menu combos have the contracted item counts",
 
 TEST_CASE("UiContract: SearchType combo entries appear in the contracted order",
           "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
     win->show();
@@ -324,7 +322,7 @@ TEST_CASE("UiContract: SearchType combo entries appear in the contracted order",
 
 TEST_CASE("UiContract: top-level canvas and status surfaces are present",
           "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
     win->show();

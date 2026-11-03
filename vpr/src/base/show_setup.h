@@ -15,6 +15,8 @@ struct ClusteredNetlistStats {
     void write_json_(std::ostream& output) const;
     void write_xml_(std::ostream& output) const;
 
+    const std::vector<t_logical_block_type>& logical_block_types_;
+
   public:
     ClusteredNetlistStats();
 
@@ -29,7 +31,6 @@ struct ClusteredNetlistStats {
     int L_num_p_inputs;
     int L_num_p_outputs;
     std::vector<int> num_blocks_type;
-    std::vector<t_logical_block_type> logical_block_types;
 
     void write(e_clustered_netlist_output_format fmt, std::ostream& output) const;
 };

@@ -39,7 +39,7 @@ class SimpleLookahead final : public RouterLookahead {
   public:
     // Public so SimpleDelayModel can call it through the
     // concrete type statically, without using dynamic dispatch.
-    float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
+    float get_opin_distance_min_delay(int /*physical_tile_idx*/, const t_physical_tile_loc& /*from_loc*/, const t_physical_tile_loc& /*to_loc*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "SimpleLookahead::get_opin_distance_min_delay unimplemented");
     }
 };

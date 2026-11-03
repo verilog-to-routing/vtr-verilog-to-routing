@@ -25,4 +25,4 @@
 	url = https://github.com/verilog-to-routing/libsdcparse.git
 [submodule "libs/EXTERNAL/eigen"]
 	path = libs/EXTERNAL/eigen
-	url = https://gitlab.com/libeigen/eigen.git
+	url = https://github.com/eigen-mirror/eigen

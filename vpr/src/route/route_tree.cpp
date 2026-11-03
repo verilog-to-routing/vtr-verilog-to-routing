@@ -5,6 +5,7 @@
 #include "netlist_fwd.h"
 #include "route_debug.h"
 #include "route_common.h"
+#include "bus_mux_routing.h"
 #include "rr_graph_fwd.h"
 #include "vtr_math.h"
 
@@ -179,12 +180,17 @@ RouteTree& RouteTree::operator=(RouteTree&& rhs) {
 /** Reload timing values (R_upstream, C_downstream, Tdel).
  * Can take a RouteTreeNode& to do an incremental update.
  * Note that update_from_heap already calls this. */
-void RouteTree::reload_timing(vtr::optional<RouteTreeNode&> from_node) {
+void RouteTree::reload_timing(vtr::optional<RouteTreeNode&> from_node, DelayType delay_type) {
     std::unique_lock<std::mutex> write_lock(_write_mutex);
-    reload_timing_unlocked(from_node);
+    reload_timing_unlocked(from_node, delay_type);
 }
 
-void RouteTree::reload_timing_unlocked(vtr::optional<RouteTreeNode&> from_node) {
+/** Returns the intrinsic delay of a switch for the given delay type. */
+static inline float switch_Tdel(const t_rr_switch_inf& rr_switch, DelayType delay_type) {
+    return (delay_type == DelayType::MAX) ? rr_switch.Tdel_max : rr_switch.Tdel_min;
+}
+
+void RouteTree::reload_timing_unlocked(vtr::optional<RouteTreeNode&> from_node, DelayType delay_type) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -209,10 +215,10 @@ void RouteTree::reload_timing_unlocked(vtr::optional<RouteTreeNode&> from_node) 
         /* TODO Just a note (no action needed for this PR): In future, we need to consider APIs that returns
          * the Tdel for a routing trace in RRGraphView.*/
         Tdel_start += rr_graph.rr_switch_inf(iswitch).R * unbuffered_subtree_rt_root.C_downstream;
-        Tdel_start += rr_graph.rr_switch_inf(iswitch).Tdel;
+        Tdel_start += switch_Tdel(rr_graph.rr_switch_inf(iswitch), delay_type);
     }
 
-    load_route_tree_Tdel(unbuffered_subtree_rt_root, Tdel_start);
+    load_route_tree_Tdel(unbuffered_subtree_rt_root, Tdel_start, delay_type);
 }
 
 /** Sets the R_upstream values of all the nodes in the new path to the
@@ -324,8 +330,9 @@ RouteTree::update_unbuffered_ancestors_C_downstream(RouteTreeNode& from_node) {
 /** Updates the Tdel values of the subtree rooted at rt_node by
  * by calling itself recursively. The C_downstream values of all the nodes
  * must be correct before this routine is called. Tarrival is the time at
- * at which the signal arrives at this node's *input*. */
-void RouteTree::load_route_tree_Tdel(RouteTreeNode& from_node, float Tarrival) {
+ * at which the signal arrives at this node's *input*. delay_type selects
+ * the min or max intrinsic delay of the switches. */
+void RouteTree::load_route_tree_Tdel(RouteTreeNode& from_node, float Tarrival, DelayType delay_type) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -342,8 +349,8 @@ void RouteTree::load_route_tree_Tdel(RouteTreeNode& from_node, float Tarrival) {
         RRSwitchId iswitch = child.parent_switch;
 
         float Tchild = Tdel + rr_graph.rr_switch_inf(iswitch).R * child.C_downstream;
-        Tchild += rr_graph.rr_switch_inf(iswitch).Tdel; /* Intrinsic switch delay. */
-        load_route_tree_Tdel(child, Tchild);
+        Tchild += switch_Tdel(rr_graph.rr_switch_inf(iswitch), delay_type); /* Intrinsic switch delay. */
+        load_route_tree_Tdel(child, Tchild, delay_type);
     }
 }
 
@@ -657,7 +664,9 @@ RouteTree::prune(CBRR& connections_inf, std::vector<int>* non_config_node_set_us
     VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[root().inode].occ() <= rr_graph.node_capacity(root().inode),
                    "Route tree root/SOURCE should never be congested");
 
-    auto pruned_node = prune_x(*_root, connections_inf, false, non_config_node_set_usage);
+    // Architectures without bus muxes skip the per-node bus-mux lookup in prune_x().
+    const bool has_bus_muxes = !g_vpr_ctx.device().rr_bus_muxes.empty();
+    vtr::optional<RouteTreeNode&> pruned_node = prune_x(*_root, connections_inf, false, has_bus_muxes, non_config_node_set_usage);
     if (pruned_node)
         return *this;
     else
@@ -668,11 +677,16 @@ RouteTree::prune(CBRR& connections_inf, std::vector<int>* non_config_node_set_us
  * Recursively traverse the route tree rooted at node and remove any congested subtrees.
  * Returns nullopt if pruned */
 vtr::optional<RouteTreeNode&>
-RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_prune, std::vector<int>* non_config_node_set_usage) {
+RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_prune, bool has_bus_muxes, std::vector<int>* non_config_node_set_usage) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
     bool congested = (route_ctx.rr_node_route_inf[rt_node.inode].occ() > rr_graph.node_capacity(rt_node.inode));
+
+    // Rip up bits of a mux with conflicting selects so routing can choose one input set.
+    if (!congested && has_bus_muxes && is_bus_mux_edge_control_congested(rt_node)) {
+        congested = true;
+    }
 
     int node_set = -1;
     auto itr = device_ctx.rr_node_to_non_config_node_set.find(rt_node.inode);
@@ -693,7 +707,7 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
     // Recursively prune child nodes
     bool all_children_pruned = true;
     remove_child_if(rt_node, [&](auto& child) {
-        vtr::optional<RouteTreeNode&> child_maybe = prune_x(child, connections_inf, force_prune, non_config_node_set_usage);
+        vtr::optional<RouteTreeNode&> child_maybe = prune_x(child, connections_inf, force_prune, has_bus_muxes, non_config_node_set_usage);
 
         if (child_maybe.has_value()) { // Not pruned
             all_children_pruned = false;
@@ -811,7 +825,7 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
             //  node set usage count will be > 0. However after
             //  prune_route_tree_recurr visits 2, 3 and 4, the node set usage
             //  will be 0, so everything can be pruned.
-            return prune_x(rt_node, connections_inf, /*force_prune=*/false, non_config_node_set_usage);
+            return prune_x(rt_node, connections_inf, /*force_prune=*/false, has_bus_muxes, non_config_node_set_usage);
         }
 
         //An unpruned intermediate node

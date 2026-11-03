@@ -61,7 +61,6 @@
 #include "read_sdc.h"
 #include "power.h"
 #include "pack_types.h"
-#include "lb_type_rr_graph.h"
 #include "read_activity.h"
 #include "net_delay.h"
 #include "concrete_timing_info.h"
@@ -259,7 +258,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     VTR_LOG("\n");
 
     /* Determine whether echo is on or off */
-    setEchoEnabled(options->CreateEchoFile);
+    init_echo_files_from_options(options->echo_file.value());
 
     /*
      * Initialize the functions names for which VPR_ERRORs
@@ -306,7 +305,6 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->NocOpts,
              &vpr_setup->ServerOpts,
              vpr_setup->RoutingArch,
-             &vpr_setup->PackerRRGraph,
              vpr_setup->Segments,
              &vpr_setup->Timing,
              &vpr_setup->ShowGraphics,
@@ -465,6 +463,13 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
             // TODO: Make this return a bool if the placement was successful or not.
             run_analytical_placement_flow(vpr_setup);
 
+            // If only global placement was requested, there is no clustering
+            // or placement for the rest of the flow to use; stop here.
+            if (vpr_setup.APOpts.stop_after_global_placement) {
+                vpr_close_graphics(vpr_setup);
+                return true;
+            }
+
             // Write out a flat placement file at the end of Analytical Placement
             // flow if the option is specified.
             if (!vpr_setup.FileNameOpts.write_flat_place_file.empty()) {
@@ -518,21 +523,12 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     // TODO: Placer still assumes that cluster net list is used - graphics can not work with flat routing yet
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
-    // alloc_draw_structs now that the device context is valid (for both AP and non-AP paths).
+    // Initialize graphics now that the device context is valid (for both AP and non-AP paths).
     // This call also reinitializes graphics state and re-sizes draw arrays in case the AP flow
-    // changed the device dimensions during full legalization.
-    vpr_init_graphics(vpr_setup, arch, is_flat);
-
-    // Re-run init_draw_coords() now that the graphics state (show_graphics,
-    // save_graphics, graphics_commands) is fully configured. The call inside
-    // vpr_create_device() fired before vpr_init_graphics() set those flags,
-    // so it always hit the early-return and left initial_world at zero. This
-    // second call populates tile_x/tile_y and sets initial_world correctly,
-    // which save_graphics needs to compute valid image dimensions.
-    if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty()) {
-        init_draw_coords(vpr_setup.PlacerOpts.place_chan_width,
-                         g_vpr_ctx.placement().blk_loc_registry());
-    }
+    // changed the device dimensions during full legalization. It also re-runs init_draw_coords():
+    // the call inside vpr_create_device() fired before the graphics flags were set, so it hit the
+    // early-return and left initial_world at zero.
+    init_graphics(vpr_setup, arch);
 
     vpr_init_server(vpr_setup);
 
@@ -620,6 +616,9 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     }
 
     report_device_grid_stats(device_ctx.grid);
+    if (isEchoFileEnabled(E_ECHO_DEVICE_GRID)) {
+        write_device_grid(getEchoFileName(E_ECHO_DEVICE_GRID), device_ctx.grid);
+    }
 }
 
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
@@ -727,12 +726,11 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                                                                      g_vpr_ctx.atom().netlist());
     }
 
-    // Run the prepacker, packing the atoms into molecules.
-    // The Prepacker object performs prepacking and stores the pack molecules.
-    // As long as the molecules are used, this object must persist.
+    // Group atoms into molecules. Keep the prepacker alive while its molecules are used.
     const Prepacker prepacker(g_vpr_ctx.atom().netlist(),
                               arch.models,
-                              g_vpr_ctx.device().logical_block_types);
+                              g_vpr_ctx.device().logical_block_types,
+                              g_vpr_ctx.floorplanning().relative_macros);
 
     // Setup pre-clustering timing analysis
     PreClusterTimingManager pre_cluster_timing_manager(vpr_setup.PackerOpts.timing_driven,
@@ -772,7 +770,6 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     return try_pack(vpr_setup.PackerOpts,
                     vpr_setup.APOpts,
                     arch,
-                    vpr_setup.PackerRRGraph,
                     prepacker,
                     pre_cluster_timing_manager,
                     g_vpr_ctx.atom().flat_placement_info(),
@@ -1059,7 +1056,11 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
         std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
         if (vpr_setup.Timing.timing_analysis_enabled) {
             auto& atom_ctx = g_vpr_ctx.atom();
-            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay, is_flat);
+            // The router only computes the max net delays (the min delays are computed after
+            // routing, in the analysis stage), so they are also used as the min delays here.
+            // TODO: For hold-aware routing (RCV), the router's timing analysis should use the
+            //       min net delays. This requires the router to also compute the min delays.
+            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay, net_delay, is_flat);
             timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
 #ifndef NO_SERVER
             if (g_vpr_ctx.server().gate_io.is_running()) {
@@ -1315,15 +1316,6 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
     init_draw_coords(chan_width_fac, g_vpr_ctx.placement().blk_loc_registry());
 }
 
-void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat) {
-    /* Startup X graphics */
-    init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
-                        vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics,
-                        vpr_setup.GraphicsCommands, vpr_setup.RendererType, is_flat);
-    if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty())
-        alloc_draw_structs(&arch);
-}
-
 void vpr_init_server(const t_vpr_setup& vpr_setup) {
 #ifndef NO_SERVER
     if (vpr_setup.ServerOpts.is_server_mode_enabled) {
@@ -1364,7 +1356,6 @@ static void free_complex_block_types() {
 
     free_type_descriptors(device_ctx.logical_block_types);
     free_type_descriptors(device_ctx.physical_tile_types);
-    free_pb_graph_edges();
 }
 
 void free_circuit() {
@@ -1416,7 +1407,6 @@ static bool is_pack_only(const t_vpr_setup& vpr_setup) {
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
                                   t_vpr_setup& vpr_setup) {
-    free_all_lb_type_rr_graph(vpr_setup.PackerRRGraph);
     free_circuit();
     free_arch(&Arch);
     free_device(vpr_setup.RoutingArch);
@@ -1462,11 +1452,10 @@ void vpr_setup_vpr(t_options* Options,
                    t_noc_opts* NocOpts,
                    t_server_opts* ServerOpts,
                    t_det_routing_arch& RoutingArch,
-                   std::vector<std::vector<t_lb_type_rr_node>>* PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
                    t_timing_inf* Timing,
                    bool* ShowGraphics,
-                   int* GraphPause,
+                   e_graphics_pause* GraphPause,
                    bool* SaveGraphics,
                    std::string* GraphicsCommands,
                    std::string* RendererType,
@@ -1487,7 +1476,6 @@ void vpr_setup_vpr(t_options* Options,
              NocOpts,
              ServerOpts,
              RoutingArch,
-             PackerRRGraph,
              Segments,
              Timing,
              ShowGraphics,
@@ -1597,11 +1585,12 @@ void vpr_analysis(const Netlist<>& net_list,
     if (vpr_setup.TimingEnabled) {
         //Load the net delays
 
-        NetPinsMatrix<float> net_delay = make_net_pins_matrix<float>(net_list);
-        load_net_delay_from_routing(net_list, net_delay);
+        NetPinsMatrix<float> net_delay_min = make_net_pins_matrix<float>(net_list);
+        NetPinsMatrix<float> net_delay_max = make_net_pins_matrix<float>(net_list);
+        load_net_delay_from_routing(net_list, net_delay_min, net_delay_max);
 
         //Do final timing analysis
-        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay, vpr_setup.RouterOpts.flat_routing);
+        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay_min, net_delay_max, vpr_setup.RouterOpts.flat_routing);
         auto timing_info = make_setup_hold_timing_info(analysis_delay_calc, vpr_setup.AnalysisOpts.timing_update_type);
         timing_info->update();
 

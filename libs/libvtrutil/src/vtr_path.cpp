@@ -43,7 +43,7 @@ std::string dirname(const std::string& path) {
     std::string str;
     if (elements.size() > 0) {
         //We need to start the dirname with a PATH_DELIM if path started with one
-        if (starts_with(path, PATH_DELIM)) {
+        if (path.starts_with(PATH_DELIM)) {
             str += PATH_DELIM;
         }
 

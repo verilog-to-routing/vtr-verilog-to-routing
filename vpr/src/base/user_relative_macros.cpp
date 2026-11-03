@@ -4,17 +4,24 @@
 
 #include "vtr_assert.h"
 
-UserRelativeMacroId UserRelativeMacros::add_macro(t_user_relative_macro macro) {
-    UserRelativeMacroId macro_id(macros_.size());
+UserRelativeMacroId UserRelativeMacros::add_macro(const std::string& name, std::vector<t_user_relative_group> groups) {
+    VTR_ASSERT_MSG(!groups.empty(), "A relative placement macro must have a reference group");
 
-    for (size_t group_idx = 0; group_idx < macro.groups.size(); group_idx++) {
-        const t_user_relative_group& group = macro.groups[group_idx];
+    UserRelativeMacroId macro_id(macros_.size());
+    t_user_relative_macro macro;
+    macro.name = name;
+
+    for (t_user_relative_group& group : groups) {
         VTR_ASSERT_MSG(group.atom_site_paths.size() == group.atoms.size(),
                        "A relative placement group must have one atom_site_paths entry per atom (an empty entry for an unlocked atom)");
+        UserRelativeGroupId group_id(groups_.size());
         for (size_t atom_idx = 0; atom_idx < group.atoms.size(); atom_idx++) {
-            bool first_time = atom_locations_.emplace(group.atoms[atom_idx], t_atom_location{macro_id, group_idx, atom_idx}).second;
+            bool first_time = atom_locations_.emplace(group.atoms[atom_idx], t_atom_location{group_id, atom_idx}).second;
             VTR_ASSERT_MSG(first_time, "An atom may belong to at most one relative placement group");
         }
+        group.macro_id = macro_id;
+        groups_.push_back(std::move(group));
+        macro.groups.push_back(group_id);
     }
 
     macros_.push_back(std::move(macro));
@@ -34,17 +41,30 @@ const t_user_relative_macro& UserRelativeMacros::get_macro(UserRelativeMacroId m
     return macros_[macro_id];
 }
 
-std::pair<UserRelativeMacroId, int> UserRelativeMacros::get_atom_group(AtomBlockId blk_id) const {
+size_t UserRelativeMacros::get_num_groups() const {
+    return groups_.size();
+}
+
+UserRelativeMacros::group_range UserRelativeMacros::groups() const {
+    return groups_.keys();
+}
+
+const t_user_relative_group& UserRelativeMacros::get_group(UserRelativeGroupId group_id) const {
+    VTR_ASSERT(group_id.is_valid() && (size_t)group_id < groups_.size());
+    return groups_[group_id];
+}
+
+UserRelativeGroupId UserRelativeMacros::get_atom_group(AtomBlockId blk_id) const {
     // Fast path for the common case of no relative placement macros: callers
     // on hot packer paths may query every atom.
     if (atom_locations_.empty()) {
-        return {UserRelativeMacroId::INVALID(), -1};
+        return UserRelativeGroupId::INVALID();
     }
     auto itr = atom_locations_.find(blk_id);
     if (itr == atom_locations_.end()) {
-        return {UserRelativeMacroId::INVALID(), -1};
+        return UserRelativeGroupId::INVALID();
     }
-    return {itr->second.macro_id, (int)itr->second.group_idx};
+    return itr->second.group_id;
 }
 
 const std::string& UserRelativeMacros::get_atom_locked_site_path(AtomBlockId blk_id) const {
@@ -57,7 +77,7 @@ const std::string& UserRelativeMacros::get_atom_locked_site_path(AtomBlockId blk
         return unlocked;
     }
     const t_atom_location& location = itr->second;
-    const t_user_relative_group& group = macros_[location.macro_id].groups[location.group_idx];
+    const t_user_relative_group& group = groups_[location.group_id];
     // Empty for an atom its group leaves unlocked.
     return group.atom_site_paths[location.atom_idx];
 }
@@ -70,9 +90,10 @@ void print_relative_macros(FILE* fp, const UserRelativeMacros& relative_macros) 
         fprintf(fp, "\nrelative_macro_id: %zu name: %s\n", size_t(macro_id), macro.name.c_str());
 
         for (size_t igroup = 0; igroup < macro.groups.size(); igroup++) {
-            const t_user_relative_group& group = macro.groups[igroup];
-            fprintf(fp, "\t%s: offset (x %d, y %d, sub_tile %d, layer %d), %zu atom(s)\n",
-                    igroup == 0 ? "reference group" : "relative group",
+            UserRelativeGroupId group_id = macro.groups[igroup];
+            const t_user_relative_group& group = relative_macros.get_group(group_id);
+            fprintf(fp, "\t%s (id %zu): offset (x %d, y %d, sub_tile %d, layer %d), %zu atom(s)\n",
+                    igroup == 0 ? "reference group" : "relative group", size_t(group_id),
                     group.offset.x, group.offset.y, group.offset.sub_tile, group.offset.layer,
                     group.atoms.size());
             fprintf(fp, "\tIds of atoms in group (with site_path if locked):\n");

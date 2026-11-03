@@ -390,6 +390,174 @@ TEST_CASE("test_ap_primitive_vector_verify", "[vpr_ap]") {
         vec2.set_dim_val(dim_0, 3.f);
         REQUIRE(!vec1.are_dims_disjoint(vec2));
     }
+
+    SECTION("Test dims range") {
+        PrimitiveVector vec;
+        // The zero vector has no stored dims.
+        REQUIRE(vec.dims().size() == 0);
+
+        // Setting a dim stores every dim up to and including it.
+        vec.set_dim_val(dim_3, 1.f);
+        REQUIRE(vec.dims().size() == 4);
+        size_t expected_id = 0;
+        for (PrimitiveVectorDim dim : vec.dims()) {
+            REQUIRE(size_t(dim) == expected_id);
+            expected_id++;
+        }
+        REQUIRE(expected_id == 4);
+    }
+
+    SECTION("Test subtract_and_relu") {
+        PrimitiveVector vec1, vec2;
+
+        // Standard test:
+        // relu(<5, 1, 0, -2> - <3, 4, -1, -5>) = <2, 0, 1, 3>
+        vec1.set_dim_val(dim_0, 5.f);
+        vec1.set_dim_val(dim_1, 1.f);
+        vec1.set_dim_val(dim_2, 0.f);
+        vec1.set_dim_val(dim_3, -2.f);
+        vec2.set_dim_val(dim_0, 3.f);
+        vec2.set_dim_val(dim_1, 4.f);
+        vec2.set_dim_val(dim_2, -1.f);
+        vec2.set_dim_val(dim_3, -5.f);
+        PrimitiveVector golden;
+        golden.set_dim_val(dim_0, 2.f);
+        golden.set_dim_val(dim_1, 0.f);
+        golden.set_dim_val(dim_2, 1.f);
+        golden.set_dim_val(dim_3, 3.f);
+        PrimitiveVector res = vec1;
+        res.subtract_and_relu(vec2);
+        REQUIRE(res == golden);
+        REQUIRE(res.is_non_negative());
+
+        // Matches operator-= followed by relu.
+        PrimitiveVector expected = vec1;
+        expected -= vec2;
+        expected.relu();
+        REQUIRE(res == expected);
+
+        // rhs has more dims than this vector.
+        vec1.clear();
+        vec1.set_dim_val(dim_0, 4.f);
+        vec2.clear();
+        vec2.set_dim_val(dim_0, 1.f);
+        vec2.set_dim_val(dim_2, -3.f);
+        vec2.set_dim_val(dim_4, 2.f);
+        res = vec1;
+        res.subtract_and_relu(vec2);
+        REQUIRE(res.get_dim_val(dim_0) == 3.f);
+        REQUIRE(res.get_dim_val(dim_1) == 0.f);
+        REQUIRE(res.get_dim_val(dim_2) == 3.f);
+        REQUIRE(res.get_dim_val(dim_3) == 0.f);
+        REQUIRE(res.get_dim_val(dim_4) == 0.f);
+
+        // This vector has more dims than rhs.
+        vec1.clear();
+        vec1.set_dim_val(dim_0, 1.f);
+        vec1.set_dim_val(dim_3, -2.f);
+        vec1.set_dim_val(dim_4, 6.f);
+        vec2.clear();
+        vec2.set_dim_val(dim_0, 2.f);
+        res = vec1;
+        res.subtract_and_relu(vec2);
+        REQUIRE(res.get_dim_val(dim_0) == 0.f);
+        REQUIRE(res.get_dim_val(dim_3) == 0.f);
+        REQUIRE(res.get_dim_val(dim_4) == 6.f);
+
+        // Subtracting the zero vector is the same as relu.
+        res = vec1;
+        res.subtract_and_relu(PrimitiveVector());
+        expected = vec1;
+        expected.relu();
+        REQUIRE(res == expected);
+
+        // Subtracting a vector from itself gives the zero vector.
+        res = vec1;
+        res.subtract_and_relu(res);
+        REQUIRE(res.is_zero());
+    }
+
+    SECTION("Test set_relu_of_difference") {
+        PrimitiveVector vec1, vec2;
+
+        // Standard test:
+        // relu(<5, 1, 0, -2> - <3, 4, -1, -5>) = <2, 0, 1, 3>
+        vec1.set_dim_val(dim_0, 5.f);
+        vec1.set_dim_val(dim_1, 1.f);
+        vec1.set_dim_val(dim_2, 0.f);
+        vec1.set_dim_val(dim_3, -2.f);
+        vec2.set_dim_val(dim_0, 3.f);
+        vec2.set_dim_val(dim_1, 4.f);
+        vec2.set_dim_val(dim_2, -1.f);
+        vec2.set_dim_val(dim_3, -5.f);
+        PrimitiveVector golden;
+        golden.set_dim_val(dim_0, 2.f);
+        golden.set_dim_val(dim_1, 0.f);
+        golden.set_dim_val(dim_2, 1.f);
+        golden.set_dim_val(dim_3, 3.f);
+        PrimitiveVector res;
+        res.set_relu_of_difference(vec1, vec2);
+        REQUIRE(res == golden);
+
+        // Matches lhs - rhs followed by relu.
+        PrimitiveVector expected = vec1 - vec2;
+        expected.relu();
+        REQUIRE(res == expected);
+
+        // The inputs are not modified.
+        REQUIRE(vec1.get_dim_val(dim_0) == 5.f);
+        REQUIRE(vec2.get_dim_val(dim_0) == 3.f);
+
+        // Old values in the result are overwritten, including dims beyond
+        // the size of both inputs.
+        res.clear();
+        res.set_dim_val(dim_0, 100.f);
+        res.set_dim_val(dim_10, 100.f);
+        vec1.clear();
+        vec1.set_dim_val(dim_0, 1.f);
+        vec2.clear();
+        vec2.set_dim_val(dim_1, -2.f);
+        res.set_relu_of_difference(vec1, vec2);
+        REQUIRE(res.get_dim_val(dim_0) == 1.f);
+        REQUIRE(res.get_dim_val(dim_1) == 2.f);
+        REQUIRE(res.get_dim_val(dim_10) == 0.f);
+        expected = vec1 - vec2;
+        expected.relu();
+        REQUIRE(res == expected);
+
+        // lhs has more dims than rhs.
+        vec1.clear();
+        vec1.set_dim_val(dim_0, 1.f);
+        vec1.set_dim_val(dim_4, 7.f);
+        vec2.clear();
+        vec2.set_dim_val(dim_0, 3.f);
+        res.clear();
+        res.set_relu_of_difference(vec1, vec2);
+        REQUIRE(res.get_dim_val(dim_0) == 0.f);
+        REQUIRE(res.get_dim_val(dim_4) == 7.f);
+
+        // rhs has more dims than lhs.
+        res.clear();
+        res.set_relu_of_difference(vec2, vec1);
+        REQUIRE(res.get_dim_val(dim_0) == 2.f);
+        REQUIRE(res.get_dim_val(dim_4) == 0.f);
+
+        // The result may be the same object as lhs or rhs.
+        vec1.clear();
+        vec1.set_dim_val(dim_0, 5.f);
+        vec1.set_dim_val(dim_1, -1.f);
+        vec2.clear();
+        vec2.set_dim_val(dim_0, 2.f);
+        vec2.set_dim_val(dim_1, -4.f);
+        expected = vec1 - vec2;
+        expected.relu();
+        res = vec1;
+        res.set_relu_of_difference(res, vec2);
+        REQUIRE(res == expected);
+        res = vec2;
+        res.set_relu_of_difference(vec1, res);
+        REQUIRE(res == expected);
+    }
 }
 
 } // namespace

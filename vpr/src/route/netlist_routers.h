@@ -16,6 +16,7 @@
 
 #include <vector>
 #include "NetPinTimingInvalidator.h"
+#include "choke_points.h"
 #include "clustered_netlist_utils.h"
 #include "connection_based_routing_fwd.h"
 #include "d_ary_heap.h"
@@ -57,9 +58,6 @@ class NetlistRouter {
      * No-op for the serial router */
     virtual void handle_bb_updated_nets(const std::vector<ParentNetId>& nets) = 0;
 
-    /** Enable RCV for each of the ConnectionRouters this NetlistRouter manages.*/
-    virtual void set_rcv_enabled(bool x) = 0;
-
     /** Set this NetlistRouter's timing_info ptr. We sometimes change timing_info
      * throughout iterations, but not frequently enough to make it a public member. */
     virtual void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info) = 0;
@@ -73,6 +71,10 @@ class NetlistRouter {
 #include "DecompNetlistRouter.h"
 #endif
 
+/**
+ * @brief Create the selected netlist router using HeapType.
+ * @param choking_spots Choke points indexed by net ID.
+ */
 template<typename HeapType>
 inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
     const Netlist<>& net_list,
@@ -85,7 +87,7 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
     NetPinTimingInvalidator* pin_timing_invalidator,
     route_budgets& budgeting_inf,
     const RoutingPredictor& routing_predictor,
-    const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
+    const vtr::vector<ParentNetId, t_net_choke_points>& choking_spots,
     bool is_flat,
     int route_verbosity) {
     if (router_opts.router_algorithm == e_router_algorithm::TIMING_DRIVEN) {
@@ -161,7 +163,10 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
     }
 }
 
-/** Make a NetlistRouter depending on router_algorithm and router_heap in \p router_opts. */
+/**
+ * @brief Create a netlist router using the algorithm and heap in router_opts.
+ * @param choking_spots Choke points indexed by net ID.
+ */
 inline std::unique_ptr<NetlistRouter> make_netlist_router(
     const Netlist<>& net_list,
     const RouterLookahead* router_lookahead,
@@ -173,7 +178,7 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router(
     NetPinTimingInvalidator* pin_timing_invalidator,
     route_budgets& budgeting_inf,
     const RoutingPredictor& routing_predictor,
-    const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
+    const vtr::vector<ParentNetId, t_net_choke_points>& choking_spots,
     bool is_flat,
     int route_verbosity) {
     if (router_opts.router_heap == e_heap_type::BINARY_HEAP) {

@@ -62,7 +62,7 @@
 // File-scope ``application`` pointer in vpr/src/draw/draw.cpp; buttons.cpp
 // reads it as ``application->find_widget("InnerGrid")``. The fixture
 // guarantees ``test_app()`` is non-null, but draw.cpp's own pointer is
-// only initialised by ``vpr_init_graphics`` (gated on ``--disp on``),
+// only initialised by ``init_graphics`` (gated on ``--disp on``),
 // so we wire it for the duration of each test.
 namespace ezgl {
 class application;

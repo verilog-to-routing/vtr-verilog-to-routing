@@ -41,7 +41,7 @@ static bool is_non_empty_physical_tile(const DeviceGrid& grid,
 WindowedBiMatchingDetailedPlacer::WindowedBiMatchingDetailedPlacer(
     const BlkLocRegistry& curr_clustered_placement,
     const t_placer_opts& placer_opts)
-    : placer_state_(false)
+    : placer_state_(/*placement_is_timing_driven=*/false, /*placement_uses_setup_slacks=*/false)
     , net_cost_handler_(placer_state_,
                         e_place_algorithm::BOUNDING_BOX_PLACE,
                         placer_opts.congestion_chan_util_threshold) {
@@ -52,7 +52,7 @@ WindowedBiMatchingDetailedPlacer::WindowedBiMatchingDetailedPlacer(
     for (ClusterBlockId block_id : clb_nlist.blocks()) {
         blk_loc_registry.place_sync_external_block_connections(block_id);
     }
-    // PlacerState(false) for now because timing cost updates are not needed
+    // PlacerState is not timing driven for now because timing cost updates are not needed
     (void)net_cost_handler_.comp_bb_cong_cost(e_cost_methods::NORMAL);
 }
 

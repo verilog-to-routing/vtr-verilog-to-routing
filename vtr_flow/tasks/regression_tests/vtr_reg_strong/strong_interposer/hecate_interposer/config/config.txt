@@ -28,3 +28,4 @@ pass_requirements_file=pass_requirements_strict_rr_graph.txt
 script_params_common = -track_memory_usage --route_chan_width 80 --device_width 40
 script_params_list_add = --pack --place --route --analysis
 script_params_list_add = --analytical_place --route --analysis
+script_params_list_add = --analytical_place --route --analysis --router_lookahead separable

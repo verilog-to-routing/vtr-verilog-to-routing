@@ -101,6 +101,14 @@
     <xs:attribute name="Cinternal" type="xs:float"/>
     <xs:attribute name="Cout" type="xs:float"/>
     <xs:attribute name="Tdel" type="xs:float"/>
+    <!-- Separate min and max intrinsic delays.  Tdel gives a single delay
+         used as both the min and max delay, so it must not be given together
+         with Tdel_min or Tdel_max.  A missing Tdel_min or Tdel_max is 0.
+         Writers emit Tdel when the min and max delays are equal, so files
+         that do not use separate min and max delays are unchanged.
+    -->
+    <xs:attribute name="Tdel_min" type="xs:float"/>
+    <xs:attribute name="Tdel_max" type="xs:float"/>
   </xs:complexType>
 
   <xs:complexType name="sizing">
