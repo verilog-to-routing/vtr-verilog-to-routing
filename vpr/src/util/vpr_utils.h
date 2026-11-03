@@ -239,7 +239,11 @@ struct t_direct_pin_spec {
     int end_pin_index = UNDEFINED;   ///< Last pin of the range (inclusive), or UNDEFINED when the whole port is meant
 
     /// @brief True when the direct names an explicit pin index or pin range rather than the whole port
-    bool has_pin_range() const { return start_pin_index != UNDEFINED; }
+    bool has_pin_range() const {
+        // A range always has both ends, and a whole port has neither
+        VTR_ASSERT((start_pin_index == UNDEFINED) == (end_pin_index == UNDEFINED));
+        return start_pin_index != UNDEFINED;
+    }
 };
 
 /**

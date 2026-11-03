@@ -42,7 +42,6 @@ std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::v
         int start_pin_index = from_pin.start_pin_index;
         int end_pin_index = from_pin.end_pin_index;
         if (!from_pin.has_pin_range()) {
-            VTR_ASSERT(end_pin_index == UNDEFINED);
             start_pin_index = 0;
             end_pin_index = tile_port.num_pins - 1;
         }
@@ -70,7 +69,6 @@ std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::v
         start_pin_index = to_pin.start_pin_index;
         end_pin_index = to_pin.end_pin_index;
         if (!to_pin.has_pin_range()) {
-            VTR_ASSERT(end_pin_index == UNDEFINED);
             start_pin_index = 0;
             end_pin_index = tile_port.num_pins - 1;
         }
