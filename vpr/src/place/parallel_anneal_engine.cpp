@@ -39,7 +39,7 @@ ParallelAnnealEngine::EvalReplica::EvalReplica(const t_placer_opts& placer_opts,
                                                float noc_centroid_weight,
                                                const PlaceDelayModel* delay_model,
                                                const PlacerCriticalities* criticalities)
-    : placer_state(placer_opts.place_algorithm.is_timing_driven())
+    : placer_state(placer_opts.place_algorithm.is_timing_driven(), placer_opts.uses_setup_slacks())
     , blocks_affected(g_vpr_ctx.clustering().clb_nlist.blocks().size())
     , rng(placer_opts.seed) {
     // The move generator constructors below query the block location registry

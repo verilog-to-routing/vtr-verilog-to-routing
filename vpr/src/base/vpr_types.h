@@ -1162,6 +1162,12 @@ struct t_placer_opts {
     float place_auto_init_t_scale;
 
     e_anneal_init_t_estimator anneal_init_t_estimator;
+
+    /// @brief Returns true if the anneal or quench algorithm reads setup slacks.
+    bool uses_setup_slacks() const {
+        return place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE
+               || place_quench_algorithm == e_place_algorithm::SLACK_TIMING_PLACE;
+    }
 };
 
 /******************************************************************
