@@ -226,11 +226,31 @@ float compute_primitive_base_cost(const t_pb_graph_node* primitive);
 int num_ext_inputs_atom_block(AtomBlockId blk_id);
 
 /**
- * @brief Parses out the pb_type_name and port_name from the direct passed in.
- * If the start_pin_index and end_pin_index is specified, parse them too. *
- * @return (start_pin_index, end_pin_index, pb_type_name, port_name)
+ * @brief One side of a <direct> connection from the architecture file: the
+ *        pb_type, the port and, optionally, the range of pins on that port.
+ *
+ * The pin range is inclusive. When the direct names the whole port (no "[...]"
+ * suffix) both pin indices are UNDEFINED.
  */
-std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line);
+struct t_direct_pin_spec {
+    std::string pb_type_name;        ///< Name of the pb_type (tile) the port belongs to
+    std::string port_name;           ///< Name of the port on that pb_type
+    int start_pin_index = UNDEFINED; ///< First pin of the range, or UNDEFINED when the whole port is meant
+    int end_pin_index = UNDEFINED;   ///< Last pin of the range (inclusive), or UNDEFINED when the whole port is meant
+
+    /// @brief True when the direct names an explicit pin index or pin range rather than the whole port
+    bool has_pin_range() const { return start_pin_index != UNDEFINED; }
+};
+
+/**
+ * @brief Parses one side of a direct connection, i.e. a string of the form
+ *        "pb_type_name.port_name", "pb_type_name.port_name[pin_index]" or
+ *        "pb_type_name.port_name[end_pin_index:start_pin_index]".
+ *
+ * @param src_string The from_pin or to_pin attribute of the <direct> tag
+ * @param line Architecture file line number, used in error messages
+ */
+t_direct_pin_spec parse_direct_pin_name(std::string_view src_string, int line);
 
 void free_pb_stats(t_pb* pb);
 void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap);

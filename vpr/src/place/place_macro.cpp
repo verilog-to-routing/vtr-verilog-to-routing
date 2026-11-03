@@ -58,17 +58,15 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
                                int matching_macro,
                                int latest_macro);
 
-/* Go through all the ports in all the blocks to find the port that has the same   *
- * name as port_name and belongs to the block type that has the name pb_type_name. *
- * Then, check that whether start_pin_index and end_pin_index are specified. If    *
- * they are, mark down the pins from start_pin_index to end_pin_index, inclusive.  *
- * Otherwise, mark down all the pins in that port.                                 */
+/**
+ * @brief Go through all the ports in all the blocks to find the port named by pin_spec.
+ *
+ * If pin_spec gives a pin range, mark down the pins from start_pin_index to
+ * end_pin_index, inclusive. Otherwise, mark down all the pins in that port.
+ */
 static void mark_direct_of_ports(int idirect,
                                  e_pin_type direct_type,
-                                 std::string_view pb_type_name,
-                                 std::string_view port_name,
-                                 int end_pin_index,
-                                 int start_pin_index,
+                                 const t_direct_pin_spec& pin_spec,
                                  std::string_view src_string,
                                  int line,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
@@ -445,30 +443,24 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
     /* Load the values */
     // Go through directs and find pins with possible direct connections
     for (size_t idirect = 0; idirect < directs.size(); idirect++) {
-        // Parse out the pb_type and port name, possibly pin_indices from from_pin
-        auto [from_start_pin_index, from_end_pin_index, from_pb_type_name, from_port_name] = parse_direct_pin_name(directs[idirect].from_pin,
-                                                                                                                   directs[idirect].line);
-
-        // Parse out the pb_type and port name, possibly pin_indices from to_pin
-        auto [to_start_pin_index, to_end_pin_index, to_pb_type_name, to_port_name] = parse_direct_pin_name(directs[idirect].to_pin,
-                                                                                                           directs[idirect].line);
+        // Parse out the pb_type and port name, possibly pin_indices from from_pin and to_pin
+        t_direct_pin_spec from_pin = parse_direct_pin_name(directs[idirect].from_pin, directs[idirect].line);
+        t_direct_pin_spec to_pin = parse_direct_pin_name(directs[idirect].to_pin, directs[idirect].line);
 
         /* Now I have all the data that I need, I could go through all the block pins
          * in all the blocks to find all the pins that could have possible direct
          * connections. Mark all down all those pins with the idirect the pins belong
          * to and whether it is a source or a sink of the direct connection. */
 
-        // Find blocks with the same name as from_pb_type_name and from_port_name
-        mark_direct_of_ports(idirect, e_pin_type::DRIVER, from_pb_type_name, from_port_name,
-                             from_end_pin_index, from_start_pin_index, directs[idirect].from_pin,
+        // Find blocks with the same name as from_pin's pb_type and port
+        mark_direct_of_ports(idirect, e_pin_type::DRIVER, from_pin, directs[idirect].from_pin,
                              directs[idirect].line,
                              idirect_from_blk_pin_, direct_type_from_blk_pin_,
                              physical_tile_types,
                              port_pin_to_block_pin);
 
-        // Then, find blocks with the same name as to_pb_type_name and from_port_name
-        mark_direct_of_ports(idirect, e_pin_type::RECEIVER, to_pb_type_name, to_port_name,
-                             to_end_pin_index, to_start_pin_index, directs[idirect].to_pin,
+        // Then, find blocks with the same name as to_pin's pb_type and port
+        mark_direct_of_ports(idirect, e_pin_type::RECEIVER, to_pin, directs[idirect].to_pin,
                              directs[idirect].line,
                              idirect_from_blk_pin_, direct_type_from_blk_pin_,
                              physical_tile_types,
@@ -479,38 +471,29 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
 
 static void mark_direct_of_ports(int idirect,
                                  e_pin_type direct_type,
-                                 std::string_view pb_type_name,
-                                 std::string_view port_name,
-                                 int end_pin_index,
-                                 int start_pin_index,
+                                 const t_direct_pin_spec& pin_spec,
                                  std::string_view src_string,
                                  int line,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
                                  std::vector<std::vector<e_pin_type>>& direct_type_from_blk_pin,
                                  const std::vector<t_physical_tile_type>& physical_tile_types,
                                  const PortPinToBlockPinConverter& port_pin_to_block_pin) {
-    /* Go through all the ports in all the blocks to find the port that has the same   *
-     * name as port_name and belongs to the block type that has the name pb_type_name. *
-     * Then, check that whether start_pin_index and end_pin_index are specified. If    *
-     * they are, mark down the pins from start_pin_index to end_pin_index, inclusive.  *
-     * Otherwise, mark down all the pins in that port.                                 */
-
     // Go through all the block types
     for (int itype = 1; itype < (int)physical_tile_types.size(); itype++) {
         auto& physical_tile = physical_tile_types[itype];
         // Find blocks with the same pb_type_name
-        if (pb_type_name == physical_tile.name) {
+        if (pin_spec.pb_type_name == physical_tile.name) {
             int num_sub_tiles = physical_tile.sub_tiles.size();
             for (int isub_tile = 0; isub_tile < num_sub_tiles; isub_tile++) {
                 auto& ports = physical_tile.sub_tiles[isub_tile].ports;
                 int num_ports = ports.size();
                 for (int iport = 0; iport < num_ports; iport++) {
                     // Find ports with the same port_name
-                    if (port_name == ports[iport].name) {
+                    if (pin_spec.port_name == ports[iport].name) {
                         int num_port_pins = ports[iport].num_pins;
 
                         // Check whether the end_pin_index is valid
-                        if (end_pin_index > num_port_pins) {
+                        if (pin_spec.end_pin_index > num_port_pins) {
                             VTR_LOG_ERROR(
                                 "[LINE %d] Invalid pin - %s, the end_pin_index in "
                                 "[end_pin_index:start_pin_index] should "
@@ -520,8 +503,8 @@ static void mark_direct_of_ports(int idirect,
                         }
 
                         // Check whether the pin indices are specified
-                        if (start_pin_index >= 0 || end_pin_index >= 0) {
-                            mark_direct_of_pins(start_pin_index, end_pin_index, itype,
+                        if (pin_spec.has_pin_range()) {
+                            mark_direct_of_pins(pin_spec.start_pin_index, pin_spec.end_pin_index, itype,
                                                 isub_tile, iport, idirect_from_blk_pin, idirect,
                                                 direct_type_from_blk_pin, direct_type, line, src_string,
                                                 physical_tile_types,

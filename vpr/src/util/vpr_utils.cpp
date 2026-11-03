@@ -1326,7 +1326,7 @@ void free_pb_stats(t_pb* pb) {
  * load placement macros in place_macro.c                                              *
  *                                                                                     *
  ***************************************************************************************/
-std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line) {
+t_direct_pin_spec parse_direct_pin_name(std::string_view src_string, int line) {
     if (vtr::StringToken(src_string).split(" \t\n").size() > 1) {
         VPR_THROW(VPR_ERROR_ARCH,
                   "Only a single port pin range specification allowed for direct connect (was: '%.*s')",
@@ -1336,9 +1336,6 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
     // parse out the pb_type and port name, possibly pin_indices
     if (src_string.find('[') == std::string_view::npos) {
         // Format "pb_type_name.port_name"
-        const int start_pin_index = -1;
-        const int end_pin_index = -1;
-
         std::string source_string{src_string};
         // replace '.' characters with space
         std::ranges::replace(source_string, '.', ' ');
@@ -1347,7 +1344,8 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
         std::string pb_type_name, port_name;
 
         if (source_iss >> pb_type_name >> port_name) {
-            return {start_pin_index, end_pin_index, pb_type_name, port_name};
+            // No pin range given: the whole port is meant, so the pin indices stay UNDEFINED
+            return {.pb_type_name = pb_type_name, .port_name = port_name};
         } else {
             VTR_LOG_ERROR(
                 "[LINE %d] Invalid pin - %.*s, name should be in the format "
@@ -1400,7 +1398,10 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
                 exit(1);
             }
 
-            return {start_pin_index, end_pin_index, pb_type_name, port_name};
+            return {.pb_type_name = pb_type_name,
+                    .port_name = port_name,
+                    .start_pin_index = start_pin_index,
+                    .end_pin_index = end_pin_index};
         } else {
             VTR_LOG_ERROR(
                 "[LINE %d] Invalid pin - %.*s, name should be in the format "
