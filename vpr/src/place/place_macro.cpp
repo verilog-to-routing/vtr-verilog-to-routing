@@ -6,6 +6,8 @@
 #include <sstream>
 #include <map>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include "atom_lookup.h"
 #include "atom_netlist.h"
@@ -71,26 +73,32 @@ static void mark_direct_of_ports(int idirect,
                                  int line,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
                                  std::vector<std::vector<e_pin_type>>& direct_type_from_blk_pin,
+                                 std::vector<std::pair<int, int>>& shared_pins,
                                  const std::vector<t_physical_tile_type>& physical_tile_types,
                                  const PortPinToBlockPinConverter& port_pin_to_block_pin);
 
 /**
  * @brief Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in
  * direct_type_from_blk_pin with direct_type from start_pin_index to end_pin_index.
+ *
+ * A pin that is already part of another direct is left as it is and appended to
+ * shared_pins as a (type index, block pin index) pair, so that the caller can drop it
+ * once all directs have been processed.
+ *
+ * @return The number of pins in the range that were already part of another direct
  */
-static void mark_direct_of_pins(int start_pin_index,
-                                int end_pin_index,
-                                int itype,
-                                int isub_tile,
-                                int iport,
-                                std::vector<std::vector<int>>& idirect_from_blk_pin,
-                                int idirect,
-                                std::vector<std::vector<e_pin_type>>& direct_type_from_blk_pin,
-                                e_pin_type direct_type,
-                                int line,
-                                std::string_view src_string,
-                                const std::vector<t_physical_tile_type>& physical_tile_types,
-                                const PortPinToBlockPinConverter& port_pin_to_block_pin);
+static int mark_direct_of_pins(int start_pin_index,
+                               int end_pin_index,
+                               int itype,
+                               int isub_tile,
+                               int iport,
+                               std::vector<std::vector<int>>& idirect_from_blk_pin,
+                               int idirect,
+                               std::vector<std::vector<e_pin_type>>& direct_type_from_blk_pin,
+                               e_pin_type direct_type,
+                               std::vector<std::pair<int, int>>& shared_pins,
+                               const std::vector<t_physical_tile_type>& physical_tile_types,
+                               const PortPinToBlockPinConverter& port_pin_to_block_pin);
 
 const std::vector<t_pl_macro>& PlaceMacros::macros() const {
     return pl_macros_;
@@ -440,6 +448,9 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
 
     const PortPinToBlockPinConverter port_pin_to_block_pin;
 
+    // (type index, block pin index) of pins that are part of more than one direct
+    std::vector<std::pair<int, int>> shared_pins;
+
     /* Load the values */
     // Go through directs and find pins with possible direct connections
     for (size_t idirect = 0; idirect < directs.size(); idirect++) {
@@ -455,18 +466,26 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
         // Find blocks with the same name as from_pin's pb_type and port
         mark_direct_of_ports(idirect, e_pin_type::DRIVER, from_pin, directs[idirect].from_pin,
                              directs[idirect].line,
-                             idirect_from_blk_pin_, direct_type_from_blk_pin_,
+                             idirect_from_blk_pin_, direct_type_from_blk_pin_, shared_pins,
                              physical_tile_types,
                              port_pin_to_block_pin);
 
         // Then, find blocks with the same name as to_pin's pb_type and port
         mark_direct_of_ports(idirect, e_pin_type::RECEIVER, to_pin, directs[idirect].to_pin,
                              directs[idirect].line,
-                             idirect_from_blk_pin_, direct_type_from_blk_pin_,
+                             idirect_from_blk_pin_, direct_type_from_blk_pin_, shared_pins,
                              physical_tile_types,
                              port_pin_to_block_pin);
 
     } // Finish going through all the directs
+
+    // A placement macro needs a single direct per pin, so pins that are part of more
+    // than one direct are not used for macros. They were left marked above so that
+    // every direct naming them was detected; drop them now.
+    for (auto [itype, iblk_pin] : shared_pins) {
+        idirect_from_blk_pin_[itype][iblk_pin] = UNDEFINED;
+        direct_type_from_blk_pin_[itype][iblk_pin] = e_pin_type::OPEN;
+    }
 }
 
 static void mark_direct_of_ports(int idirect,
@@ -476,6 +495,7 @@ static void mark_direct_of_ports(int idirect,
                                  int line,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
                                  std::vector<std::vector<e_pin_type>>& direct_type_from_blk_pin,
+                                 std::vector<std::pair<int, int>>& shared_pins,
                                  const std::vector<t_physical_tile_type>& physical_tile_types,
                                  const PortPinToBlockPinConverter& port_pin_to_block_pin) {
     // Go through all the block types
@@ -502,19 +522,18 @@ static void mark_direct_of_ports(int idirect,
                             exit(1);
                         }
 
-                        // Check whether the pin indices are specified
-                        if (pin_spec.has_pin_range()) {
-                            mark_direct_of_pins(pin_spec.start_pin_index, pin_spec.end_pin_index, itype,
-                                                isub_tile, iport, idirect_from_blk_pin, idirect,
-                                                direct_type_from_blk_pin, direct_type, line, src_string,
-                                                physical_tile_types,
-                                                port_pin_to_block_pin);
-                        } else {
-                            mark_direct_of_pins(0, num_port_pins - 1, itype,
-                                                isub_tile, iport, idirect_from_blk_pin, idirect,
-                                                direct_type_from_blk_pin, direct_type, line, src_string,
-                                                physical_tile_types,
-                                                port_pin_to_block_pin);
+                        // Mark the specified pin range, or the whole port if no range is given
+                        int start_pin_index = pin_spec.has_pin_range() ? pin_spec.start_pin_index : 0;
+                        int end_pin_index = pin_spec.has_pin_range() ? pin_spec.end_pin_index : num_port_pins - 1;
+                        int num_shared_pins = mark_direct_of_pins(start_pin_index, end_pin_index, itype,
+                                                                  isub_tile, iport, idirect_from_blk_pin, idirect,
+                                                                  direct_type_from_blk_pin, direct_type, shared_pins,
+                                                                  physical_tile_types,
+                                                                  port_pin_to_block_pin);
+                        if (num_shared_pins > 0) {
+                            VTR_LOG_WARN("[LINE %d] %d pin(s) of %.*s are part of more than one direct connection; "
+                                         "placement macros will not be formed through them.\n",
+                                         line, num_shared_pins, static_cast<int>(src_string.length()), src_string.data());
                         }
                     } // Do nothing if port_name does not match
                 } // Finish going through all the ports
@@ -523,19 +542,20 @@ static void mark_direct_of_ports(int idirect,
     } // Finish going through all the blocks
 }
 
-static void mark_direct_of_pins(int start_pin_index,
-                                int end_pin_index,
-                                int itype,
-                                int isub_tile,
-                                int iport,
-                                std::vector<std::vector<int>>& idirect_from_blk_pin,
-                                int idirect,
-                                std::vector<std::vector<e_pin_type>>& direct_type_from_blk_pin,
-                                e_pin_type direct_type,
-                                int line,
-                                std::string_view src_string,
-                                const std::vector<t_physical_tile_type>& physical_tile_types,
-                                const PortPinToBlockPinConverter& port_pin_to_block_pin) {
+static int mark_direct_of_pins(int start_pin_index,
+                               int end_pin_index,
+                               int itype,
+                               int isub_tile,
+                               int iport,
+                               std::vector<std::vector<int>>& idirect_from_blk_pin,
+                               int idirect,
+                               std::vector<std::vector<e_pin_type>>& direct_type_from_blk_pin,
+                               e_pin_type direct_type,
+                               std::vector<std::pair<int, int>>& shared_pins,
+                               const std::vector<t_physical_tile_type>& physical_tile_types,
+                               const PortPinToBlockPinConverter& port_pin_to_block_pin) {
+    int num_shared_pins = 0;
+
     // Mark pins with indices from start_pin_index to end_pin_index, inclusive
     for (int iport_pin = start_pin_index; iport_pin <= end_pin_index; iport_pin++) {
         int iblk_pin = port_pin_to_block_pin.get_blk_pin_from_port_pin(itype, isub_tile, iport, iport_pin);
@@ -554,18 +574,18 @@ static void mark_direct_of_pins(int start_pin_index,
 
         // Check the fc for the pin, direct chain link only if fc == 0
         if (all_fcs_0) {
-            idirect_from_blk_pin[itype][iblk_pin] = idirect;
-
-            // Check whether the pins are marked, errors out if so
             if (direct_type_from_blk_pin[itype][iblk_pin] != e_pin_type::OPEN) {
-                VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                                "[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n",
-                                line, src_string.data());
+                // Already part of another direct; the caller drops it once all directs are loaded
+                shared_pins.emplace_back(itype, iblk_pin);
+                num_shared_pins++;
             } else {
+                idirect_from_blk_pin[itype][iblk_pin] = idirect;
                 direct_type_from_blk_pin[itype][iblk_pin] = direct_type;
             }
         }
     } // Finish marking all the pins
+
+    return num_shared_pins;
 }
 
 /* Allocates and loads imacro_from_iblk array. */
