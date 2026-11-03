@@ -27,37 +27,15 @@ class WindowedBiMatchingDetailedPlacer : public DetailedPlacer {
   private:
     PlacerState placer_state_;
     NetCostHandler net_cost_handler_;
-    int window_size_ = 2;        ///< Size of local placement window, forced to 2 temporarily
-    int placement_layer_ = 0;    ///< Device layer processed by placer, forced to 0 temporarily
-    int placement_sub_tile_ = 0; ///< Sub-tile processed by placer, forced to 0 temporarily
+    int compressed_window_radius_ = 2; ///< Radius of the compressed-grid search window.
+    int placement_layer_ = 0;          ///< Device layer processed by placer, forced to 0 temporarily
+    int placement_sub_tile_ = 0;       ///< Sub-tile processed by placer, forced to 0 temporarily
 
     /**
-     * @brief Returns true if every physical tile in the 2x2 window is not empty.
+     * @brief Attempts to commit an improving move/swap between two placement locations.
      */
-    bool window_has_no_empty_physical_tiles(const DeviceGrid& grid,
-                                            int x,
-                                            int y,
-                                            int layer);
-    /**
-     * @brief Returns true if every checked sub-tile location in the window contains a placed block.
-     */
-    bool window_has_all_placed_blocks(const BlkLocRegistry& blk_loc_registry,
-                                      int x,
-                                      int y,
-                                      int layer);
-    /**
-     * @brief Returns true if two blocks can be swapped by this pass.
-     */
-    bool blocks_are_swappable(const BlkLocRegistry& blk_loc_registry,
-                              const ClusteredNetlist& clb_nlist,
-                              ClusterBlockId block_a,
-                              ClusterBlockId block_b);
-    /**
-     * @brief Attempts to commit a swap between two placed blocks.
-     */
-    bool try_swap_blocks(BlkLocRegistry& blk_loc_registry,
-                         ClusterBlockId block_a,
-                         t_pl_loc loc_a,
-                         ClusterBlockId block_b,
-                         t_pl_loc loc_b);
+    bool try_swap_locations(BlkLocRegistry& blk_loc_registry,
+                            const DeviceGrid& grid,
+                            t_pl_loc loc_a,
+                            t_pl_loc loc_b);
 };
