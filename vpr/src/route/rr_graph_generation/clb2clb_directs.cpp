@@ -39,6 +39,13 @@ std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::v
             VPR_THROW(VPR_ERROR_ARCH, "Unable to find sub tile under tile '%s' which contains the port %s.\n", from_pin.pb_type_name.c_str(), from_pin.port_name.c_str());
         }
 
+        if (!from_pin.fits_in_port(tile_port.num_pins)) {
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line,
+                      "Invalid pin - %s, the pin range [end_pin_index:start_pin_index] "
+                      "must lie within the %d pins of the port.\n",
+                      directs[i].from_pin.c_str(), tile_port.num_pins);
+        }
+
         int start_pin_index = from_pin.start_pin_index;
         int end_pin_index = from_pin.end_pin_index;
         if (!from_pin.has_pin_range()) {
@@ -65,6 +72,13 @@ std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::v
         tile_port = find_tile_port_by_name(physical_tile, to_pin.port_name);
         // Cache the destination port name as the pin index is not enough to identify if the destination subtile is the one we want
         clb_to_clb_directs[i].to_port = to_pin.port_name;
+
+        if (!to_pin.fits_in_port(tile_port.num_pins)) {
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line,
+                      "Invalid pin - %s, the pin range [end_pin_index:start_pin_index] "
+                      "must lie within the %d pins of the port.\n",
+                      directs[i].to_pin.c_str(), tile_port.num_pins);
+        }
 
         start_pin_index = to_pin.start_pin_index;
         end_pin_index = to_pin.end_pin_index;

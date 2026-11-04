@@ -543,12 +543,11 @@ static void mark_direct_of_ports(int idirect,
                     if (pin_spec.port_name == ports[iport].name) {
                         int num_port_pins = ports[iport].num_pins;
 
-                        // Check whether the end_pin_index is valid
-                        if (pin_spec.has_pin_range() && pin_spec.end_pin_index >= num_port_pins) {
+                        // Check whether the pin range lies within the port
+                        if (!pin_spec.fits_in_port(num_port_pins)) {
                             vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line,
-                                      "Invalid pin - %.*s, the end_pin_index in "
-                                      "[end_pin_index:start_pin_index] should "
-                                      "be less than the num_port_pins %d.\n",
+                                      "Invalid pin - %.*s, the pin range [end_pin_index:start_pin_index] "
+                                      "must lie within the %d pins of the port.\n",
                                       static_cast<int>(src_string.length()), src_string.data(), num_port_pins);
                         }
 

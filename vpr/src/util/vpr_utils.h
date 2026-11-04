@@ -245,6 +245,20 @@ struct t_direct_pin_spec {
         VTR_ASSERT_SAFE((start_pin_index == UNDEFINED) == (end_pin_index == UNDEFINED));
         return start_pin_index != UNDEFINED;
     }
+
+    /**
+     * @brief Checks that the pin range lies within the port it names.
+     *
+     * @param num_port_pins Number of pins on the port
+     * @return True if the direct names the whole port, or if
+     *         0 <= start_pin_index <= end_pin_index < num_port_pins
+     */
+    bool fits_in_port(int num_port_pins) const {
+        if (!has_pin_range()) {
+            return true;
+        }
+        return 0 <= start_pin_index && start_pin_index <= end_pin_index && end_pin_index < num_port_pins;
+    }
 };
 
 /**
