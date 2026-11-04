@@ -1340,12 +1340,11 @@ t_direct_pin_spec parse_direct_pin_name(std::string_view src_string, int line) {
             // No pin range given: the whole port is meant, so the pin indices stay UNDEFINED
             return {.pb_type_name = pb_type_name, .port_name = port_name};
         } else {
-            VTR_LOG_ERROR(
-                "[LINE %d] Invalid pin - %.*s, name should be in the format "
-                "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
-                "The end_pin_index and start_pin_index can be the same.\n",
-                line, static_cast<int>(src_string.length()), src_string.data());
-            exit(1);
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line,
+                      "Invalid pin - %.*s, name should be in the format "
+                      "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+                      "The end_pin_index and start_pin_index can be the same.\n",
+                      static_cast<int>(src_string.length()), src_string.data());
         }
     } else {
         // Format "pb_type_name.port_name[end_pin_index:start_pin_index]" or "pb_type_name.port_name[pin_index]"
@@ -1376,19 +1375,17 @@ t_direct_pin_spec parse_direct_pin_name(std::string_view src_string, int line) {
 
         if (parsed_ok) {
             if (end_pin_index < 0 || start_pin_index < 0) {
-                VTR_LOG_ERROR(
-                    "[LINE %d] Invalid pin - %.*s, the pin_index in "
-                    "[end_pin_index:start_pin_index] should not be a negative value.\n",
-                    line, static_cast<int>(src_string.length()), src_string.data());
-                exit(1);
+                vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line,
+                          "Invalid pin - %.*s, the pin_index in "
+                          "[end_pin_index:start_pin_index] should not be a negative value.\n",
+                          static_cast<int>(src_string.length()), src_string.data());
             }
 
             if (end_pin_index < start_pin_index) {
-                VTR_LOG_ERROR(
-                    "[LINE %d] Invalid from_pin - %.*s, the end_pin_index in "
-                    "[end_pin_index:start_pin_index] should not be less than start_pin_index.\n",
-                    line, static_cast<int>(src_string.length()), src_string.data());
-                exit(1);
+                vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line,
+                          "Invalid pin - %.*s, the end_pin_index in "
+                          "[end_pin_index:start_pin_index] should not be less than start_pin_index.\n",
+                          static_cast<int>(src_string.length()), src_string.data());
             }
 
             return {.pb_type_name = pb_type_name,
@@ -1396,12 +1393,11 @@ t_direct_pin_spec parse_direct_pin_name(std::string_view src_string, int line) {
                     .start_pin_index = start_pin_index,
                     .end_pin_index = end_pin_index};
         } else {
-            VTR_LOG_ERROR(
-                "[LINE %d] Invalid pin - %.*s, name should be in the format "
-                "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
-                "The end_pin_index and start_pin_index can be the same.\n",
-                line, static_cast<int>(src_string.length()), src_string.data());
-            exit(1);
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line,
+                      "Invalid pin - %.*s, name should be in the format "
+                      "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+                      "The end_pin_index and start_pin_index can be the same.\n",
+                      static_cast<int>(src_string.length()), src_string.data());
         }
     }
 }
