@@ -63,10 +63,9 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
 /**
  * @brief Records which pins belong to one end of a direct connection.
  *
- * Finds the tile type and port named in pin_spec, checking each subtile for a match.
- * Passes the specified pin range, or the whole port if no range is given, to
- * mark_direct_of_pins(). Reports an error if the range extends past the port and
- * warns about pins shared with another direct.
+ * Finds the tile type and port named in pin_spec, checking each subtile for a match,
+ * and passes each matching port to mark_direct_of_pins(). Reports an error if the
+ * range extends past the port and warns about pins shared with another direct.
  *
  * @param idirect Index of this direct in the architecture's direct list.
  * @param direct_type DRIVER for from_pin, RECEIVER for to_pin.
@@ -93,8 +92,9 @@ static void mark_direct_of_ports(int idirect,
                                  const PortPinToBlockPinConverter& port_pin_to_block_pin);
 
 /**
- * @brief Records a direct connection for a range of pins in one port.
+ * @brief Records a direct connection for the pins of one port named in pin_spec.
  *
+ * Uses the pin range given in pin_spec, or the whole port if no range is given.
  * Records each pin's direct index and DRIVER/RECEIVER role. Only includes pins with
  * Fc = 0 for every routing segment, since pins with access to general routing do not
  * require a placement macro.
@@ -103,8 +103,8 @@ static void mark_direct_of_ports(int idirect,
  * it to shared_pins. The caller clears these pins from the tables after processing
  * all directs, so they cannot be used to form placement macros.
  *
- * @param start_pin_index First pin in the range, indexed within the port.
- * @param end_pin_index Last pin in the range (inclusive), indexed within the port.
+ * @param pin_spec Parsed tile name, port name, and optional pin range. The range must
+ *                 fit within the port.
  * @param itype Index of the physical tile type.
  * @param isub_tile Index of the subtile within the tile type.
  * @param iport Index of the port within the subtile.
@@ -119,8 +119,7 @@ static void mark_direct_of_ports(int idirect,
  * @param port_pin_to_block_pin Converts port pin indices to block pin indices.
  * @return Number of eligible pins that already belonged to another direct.
  */
-static int mark_direct_of_pins(int start_pin_index,
-                               int end_pin_index,
+static int mark_direct_of_pins(const t_direct_pin_spec& pin_spec,
                                int itype,
                                int isub_tile,
                                int iport,
@@ -553,10 +552,7 @@ static void mark_direct_of_ports(int idirect,
                                       static_cast<int>(src_string.length()), src_string.data(), num_port_pins);
                         }
 
-                        // Mark the specified pin range, or the whole port if no range is given
-                        int start_pin_index = pin_spec.has_pin_range() ? pin_spec.start_pin_index : 0;
-                        int end_pin_index = pin_spec.has_pin_range() ? pin_spec.end_pin_index : num_port_pins - 1;
-                        int num_shared_pins = mark_direct_of_pins(start_pin_index, end_pin_index, itype,
+                        int num_shared_pins = mark_direct_of_pins(pin_spec, itype,
                                                                   isub_tile, iport, idirect_from_blk_pin, idirect,
                                                                   direct_type_from_blk_pin, direct_type, shared_pins,
                                                                   physical_tile_types,
@@ -573,8 +569,7 @@ static void mark_direct_of_ports(int idirect,
     } // Finish going through all the blocks
 }
 
-static int mark_direct_of_pins(int start_pin_index,
-                               int end_pin_index,
+static int mark_direct_of_pins(const t_direct_pin_spec& pin_spec,
                                int itype,
                                int isub_tile,
                                int iport,
@@ -587,7 +582,10 @@ static int mark_direct_of_pins(int start_pin_index,
                                const PortPinToBlockPinConverter& port_pin_to_block_pin) {
     int num_shared_pins = 0;
 
-    // Mark pins with indices from start_pin_index to end_pin_index, inclusive
+    // Mark the specified pin range (inclusive), or the whole port if no range is given
+    int num_port_pins = physical_tile_types[itype].sub_tiles[isub_tile].ports[iport].num_pins;
+    int start_pin_index = pin_spec.has_pin_range() ? pin_spec.start_pin_index : 0;
+    int end_pin_index = pin_spec.has_pin_range() ? pin_spec.end_pin_index : num_port_pins - 1;
     for (int iport_pin = start_pin_index; iport_pin <= end_pin_index; iport_pin++) {
         int iblk_pin = port_pin_to_block_pin.get_blk_pin_from_port_pin(itype, isub_tile, iport, iport_pin);
 
