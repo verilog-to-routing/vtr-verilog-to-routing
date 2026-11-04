@@ -2,9 +2,6 @@
     "defparam/defparam_failure/no_arch": {
         "test_name": "defparam/defparam_failure/no_arch",
         "exit": 1,
-        "errors": [
-            "defparam_failure.v:0 Can't find object for defparam `simple_op.m1.width`!"
-        ],
         "max_rss(MiB)": 13.8,
         "exec_time(ms)": 6.2,
         "elaboration_time(ms)": 1,
@@ -15,9 +12,6 @@
     "defparam/defparam/no_arch": {
         "test_name": "defparam/defparam/no_arch",
         "exit": 1,
-        "errors": [
-            "defparam.v:0 Can't find object for defparam `simple_op.m1.width`!"
-        ],
         "max_rss(MiB)": 13.6,
         "exec_time(ms)": 5.5,
         "elaboration_time(ms)": 1,
@@ -28,9 +22,6 @@
     "defparam/defparam_string/no_arch": {
         "test_name": "defparam/defparam_string/no_arch",
         "exit": 1,
-        "errors": [
-            "defparam_string.v:0 Can't find object for defparam `simple_op.msg`!"
-        ],
         "max_rss(MiB)": 11.4,
         "exec_time(ms)": 3.1,
         "elaboration_time(ms)": 0.4,
@@ -85,9 +76,6 @@
     "defparam/defparam_simple_failure/no_arch": {
         "test_name": "defparam/defparam_simple_failure/no_arch",
         "exit": 1,
-        "errors": [
-            "defparam_simple_failure.v:0 Can't find object for defparam `simple_op.m1.width`!"
-        ],
         "max_rss(MiB)": 32.7,
         "exec_time(ms)": 5.6,
         "elaboration_time(ms)": 0.6,

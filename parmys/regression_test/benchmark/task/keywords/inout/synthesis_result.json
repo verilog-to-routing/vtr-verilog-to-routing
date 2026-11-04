@@ -13,7 +13,7 @@
             "BUF_NODE"
         ],
         "warnings": [
-            "Yosys has only limited support for tri-state logic at the moment. (regression_test/benchmark/verilog/keywords/inout/inout_failure.v:8)",
+            "inout_failure.v:8 Yosys has only limited support for tri-state logic at the moment.",
             "reg '\\in_out1' is assigned in a continuous assignment at regression_test/benchmark/verilog/keywords/inout/inout_failure.v:8.9-8.35."
         ]
     },
@@ -24,7 +24,7 @@
             "BUF_NODE"
         ],
         "warnings": [
-            "Yosys has only limited support for tri-state logic at the moment. (regression_test/benchmark/verilog/keywords/inout/simple_inout.v:8)"
+            "simple_inout.v:8 Yosys has only limited support for tri-state logic at the moment."
         ]
     },
     "DEFAULT": {
