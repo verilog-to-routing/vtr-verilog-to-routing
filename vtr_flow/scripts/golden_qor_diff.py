@@ -90,9 +90,7 @@ def list_tasks(suite):
         return [suite]
     task_list = TASKS_DIR / "regression_tests" / suite / "task_list.txt"
     if not task_list.is_file():
-        raise FileNotFoundError(
-            f"{suite}: neither a task nor a suite with a task_list.txt"
-        )
+        raise FileNotFoundError(f"{suite}: neither a task nor a suite with a task_list.txt")
     tasks = []
     for line in task_list.read_text(encoding="utf-8").splitlines():
         line = line.strip()
