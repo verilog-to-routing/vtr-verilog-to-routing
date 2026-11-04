@@ -5,6 +5,7 @@
 #include "device_grid.h"
 #include "rr_graph_utils.h"
 #include "vpr_types.h"
+#include "vtr_assert.h"
 #include "vtr_vector.h"
 #include "atom_pb_bimap.h"
 #include <list>
@@ -241,7 +242,7 @@ struct t_direct_pin_spec {
     /// @brief True when the direct names an explicit pin index or pin range rather than the whole port
     bool has_pin_range() const {
         // A range always has both ends, and a whole port has neither
-        VTR_ASSERT((start_pin_index == UNDEFINED) == (end_pin_index == UNDEFINED));
+        VTR_ASSERT_SAFE((start_pin_index == UNDEFINED) == (end_pin_index == UNDEFINED));
         return start_pin_index != UNDEFINED;
     }
 };
