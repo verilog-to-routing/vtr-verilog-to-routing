@@ -12,15 +12,9 @@ target_include_directories(wildebeest PUBLIC
     # clk_domains.cc includes mosaic headers (vtr_arch_clocks.h)
     ${CMAKE_CURRENT_SOURCE_DIR}/../src
 )
-target_include_directories(wildebeest SYSTEM PUBLIC
-    ${VTR_SOURCE_DIR}/libs/EXTERNAL/yosys
-    ${VTR_SOURCE_DIR}/libs/EXTERNAL/yosys/share/include
-)
-target_compile_definitions(wildebeest PUBLIC
-    _YOSYS_
-)
-
-if(TCL_FOUND)
-    target_compile_definitions(wildebeest PUBLIC YOSYS_ENABLE_TCL)
-    target_include_directories(wildebeest SYSTEM PUBLIC ${TCL_INCLUDE_PATH})
-endif()
+# yosys_plugin_api (libs/EXTERNAL) supplies the installed yosys headers, -D_YOSYS_,
+# and the Tcl include path. YOSYS_ENABLE_TCL now comes from yosys' generated
+# kernel/yosys_config.h rather than being defined here.
+target_link_libraries(wildebeest PUBLIC yosys_plugin_api)
+# the headers only exist once the yosys external project has been installed
+add_dependencies(wildebeest yosys)
