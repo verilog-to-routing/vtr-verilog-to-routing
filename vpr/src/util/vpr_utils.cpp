@@ -32,7 +32,7 @@ const std::regex REGISTER_MODEL_REGEX("(.subckt\\s+)?.*(latch|dff).*", std::rege
 const std::regex LOGIC_MODEL_REGEX("(.subckt\\s+)?.*(lut|names|lcell).*", std::regex::icase);
 
 /******************** Subroutine declarations ********************************/
-static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node);
+static void load_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node);
 
 static void load_pin_id_to_pb_mapping_rec(t_pb* cur_pb, t_pb** pin_id_to_pb_mapping);
 
@@ -978,8 +978,8 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
     return nullptr;
 }
 
-/* Recursively visit through all pb_graph_nodes to populate pb_graph_pin_lookup_from_index */
-static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node) {
+/* Populate pb_graph_pin_lookup_from_index with the pins of a pb_graph_node */
+static void load_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node) {
     for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
             t_pb_graph_pin* pb_pin = &pb_graph_node->pins_by_input_port[iport][ipin];
@@ -999,14 +999,6 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pi
             t_pb_graph_pin* pb_pin = &pb_graph_node->pins_by_clock_port[iport][ipin];
             VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == nullptr);
             pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
-        }
-    }
-
-    for (int imode = 0; imode < pb_graph_node->pb_type->num_modes; imode++) {
-        for (int ipb_type = 0; ipb_type < pb_graph_node->pb_type->modes[imode].num_pb_type_children; ipb_type++) {
-            for (int ipb = 0; ipb < pb_graph_node->pb_type->modes[imode].pb_type_children[ipb_type].num_pb; ipb++) {
-                load_pb_graph_pin_lookup_from_index_rec(pb_graph_pin_lookup_from_index, &pb_graph_node->child_pb_graph_nodes[imode][ipb_type][ipb]);
-            }
         }
     }
 }
@@ -1030,7 +1022,8 @@ t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_t
 
     VTR_ASSERT(pb_graph_pin_lookup_from_type);
 
-    load_pb_graph_pin_lookup_from_index_rec(pb_graph_pin_lookup_from_type, pb_graph_head);
+    for (t_pb_graph_node& pb_graph_node : pb_graph_head->subtree())
+        load_pb_graph_pin_lookup_from_index(pb_graph_pin_lookup_from_type, &pb_graph_node);
 
     for (int id = 0; id < num_pins; id++) {
         VTR_ASSERT(pb_graph_pin_lookup_from_type[id] != nullptr);
@@ -1326,7 +1319,7 @@ void free_pb_stats(t_pb* pb) {
  * load placement macros in place_macro.c                                              *
  *                                                                                     *
  ***************************************************************************************/
-std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line) {
+t_direct_pin_spec parse_direct_pin_name(std::string_view src_string, int line) {
     if (vtr::StringToken(src_string).split(" \t\n").size() > 1) {
         VPR_THROW(VPR_ERROR_ARCH,
                   "Only a single port pin range specification allowed for direct connect (was: '%.*s')",
@@ -1336,9 +1329,6 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
     // parse out the pb_type and port name, possibly pin_indices
     if (src_string.find('[') == std::string_view::npos) {
         // Format "pb_type_name.port_name"
-        const int start_pin_index = -1;
-        const int end_pin_index = -1;
-
         std::string source_string{src_string};
         // replace '.' characters with space
         std::ranges::replace(source_string, '.', ' ');
@@ -1347,14 +1337,14 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
         std::string pb_type_name, port_name;
 
         if (source_iss >> pb_type_name >> port_name) {
-            return {start_pin_index, end_pin_index, pb_type_name, port_name};
+            // No pin range given: the whole port is meant, so the pin indices stay UNDEFINED
+            return {.pb_type_name = pb_type_name, .port_name = port_name};
         } else {
-            VTR_LOG_ERROR(
-                "[LINE %d] Invalid pin - %.*s, name should be in the format "
-                "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
-                "The end_pin_index and start_pin_index can be the same.\n",
-                line, static_cast<int>(src_string.length()), src_string.data());
-            exit(1);
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line,
+                      "Invalid pin - %.*s, name should be in the format "
+                      "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+                      "The end_pin_index and start_pin_index can be the same.\n",
+                      static_cast<int>(src_string.length()), src_string.data());
         }
     } else {
         // Format "pb_type_name.port_name[end_pin_index:start_pin_index]" or "pb_type_name.port_name[pin_index]"
@@ -1385,29 +1375,29 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
 
         if (parsed_ok) {
             if (end_pin_index < 0 || start_pin_index < 0) {
-                VTR_LOG_ERROR(
-                    "[LINE %d] Invalid pin - %.*s, the pin_index in "
-                    "[end_pin_index:start_pin_index] should not be a negative value.\n",
-                    line, static_cast<int>(src_string.length()), src_string.data());
-                exit(1);
+                vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line,
+                          "Invalid pin - %.*s, the pin_index in "
+                          "[end_pin_index:start_pin_index] should not be a negative value.\n",
+                          static_cast<int>(src_string.length()), src_string.data());
             }
 
             if (end_pin_index < start_pin_index) {
-                VTR_LOG_ERROR(
-                    "[LINE %d] Invalid from_pin - %.*s, the end_pin_index in "
-                    "[end_pin_index:start_pin_index] should not be less than start_pin_index.\n",
-                    line, static_cast<int>(src_string.length()), src_string.data());
-                exit(1);
+                vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line,
+                          "Invalid pin - %.*s, the end_pin_index in "
+                          "[end_pin_index:start_pin_index] should not be less than start_pin_index.\n",
+                          static_cast<int>(src_string.length()), src_string.data());
             }
 
-            return {start_pin_index, end_pin_index, pb_type_name, port_name};
+            return {.pb_type_name = pb_type_name,
+                    .port_name = port_name,
+                    .start_pin_index = start_pin_index,
+                    .end_pin_index = end_pin_index};
         } else {
-            VTR_LOG_ERROR(
-                "[LINE %d] Invalid pin - %.*s, name should be in the format "
-                "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
-                "The end_pin_index and start_pin_index can be the same.\n",
-                line, static_cast<int>(src_string.length()), src_string.data());
-            exit(1);
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line,
+                      "Invalid pin - %.*s, name should be in the format "
+                      "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+                      "The end_pin_index and start_pin_index can be the same.\n",
+                      static_cast<int>(src_string.length()), src_string.data());
         }
     }
 }
@@ -1622,21 +1612,9 @@ void print_timing_stats(const std::string& name,
 
 std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_graph_node* pb_graph_node) {
     std::vector<const t_pb_graph_node*> primitives;
-    if (pb_graph_node->is_primitive()) {
-        primitives.push_back(pb_graph_node);
-        return primitives;
-    }
-
-    auto pb_type = pb_graph_node->pb_type;
-    for (int mode_idx = 0; mode_idx < pb_graph_node->pb_type->num_modes; mode_idx++) {
-        for (int pb_type_idx = 0; pb_type_idx < (pb_type->modes[mode_idx]).num_pb_type_children; pb_type_idx++) {
-            int num_pb = pb_type->modes[mode_idx].pb_type_children[pb_type_idx].num_pb;
-            for (int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
-                const t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
-                auto tmp_primitives = get_all_pb_graph_node_primitives(child_pb_graph_node);
-                primitives.insert(std::end(primitives), std::begin(tmp_primitives), std::end(tmp_primitives));
-            }
-        }
+    for (const t_pb_graph_node& node : pb_graph_node->subtree()) {
+        if (node.is_primitive())
+            primitives.push_back(&node);
     }
     return primitives;
 }
