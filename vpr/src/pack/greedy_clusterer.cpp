@@ -650,8 +650,11 @@ void GreedyClusterer::pack_relative_group_into_cluster_(PackMoleculeId seed_mol_
             continue;
         }
 
-        // Keep the original failure in the log. A later unlocked molecule may
-        // occupy this site before the candidate selector retries the molecule.
+        // Do not call update_cluster_gain_stats_candidate_failed() here. This group
+        // must be packed into this cluster, and recording a failure would prevent
+        // the candidate selector from retrying the molecule, even though it may fit
+        // later as the cluster fills. Log the original failure, since another
+        // molecule may occupy the required site before the retry.
         VTR_LOGV(log_verbosity_ > 2,
                  "\tRelative placement group molecule of atom '%s' was not admitted to cluster %zu on this pass (%s)\n",
                  atom_netlist_.block_name(prepacker.get_molecule_root_atom(mol_id)).c_str(),

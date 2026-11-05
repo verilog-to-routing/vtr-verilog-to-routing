@@ -274,6 +274,8 @@ LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_
     //        - Lower placement cost is preferred.
     //        - Higher total_primitive_count breaks ties.
     //        - Earlier encountered primitives break remaining ties.
+    // If force_site_node is set, only that primitive is tried and the queue
+    // holds at most one entry.
     // The returned priority queue may be empty if no feasible primitive exists.
 
     // Initialize variables
@@ -284,18 +286,18 @@ LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_
     // A locked molecule has one possible root primitive. Look it up directly
     // rather than scanning the cluster's primitives.
     if (force_site_node != nullptr) {
+        // try_place_molecule() checks that the primitive is valid and can
+        // implement the molecule's root.
         t_cluster_placement_primitive* placement_primitive = cluster_placement_stats->get_pb_graph_node_placement_primitive(force_site_node);
-        if (placement_primitive->valid
-            && primitive_type_feasible(molecule.atom_block_ids[molecule.root], force_site_node->pb_type)) {
-            cost = try_place_molecule(cluster_placement_stats,
-                                      molecule_id,
-                                      placement_primitive->pb_graph_node,
-                                      primitives_list,
-                                      prepacker);
-            if (cost < std::numeric_limits<float>::max()) {
-                primitives_alive.push(placement_primitive->pb_graph_node,
-                                      std::make_tuple(-cost, force_site_node->total_primitive_count, 0));
-            }
+        cost = try_place_molecule(cluster_placement_stats,
+                                  molecule_id,
+                                  placement_primitive->pb_graph_node,
+                                  primitives_list,
+                                  prepacker);
+        if (cost < std::numeric_limits<float>::max()) {
+            // Single candidate, so the tie-breakers do not matter.
+            primitives_alive.push(placement_primitive->pb_graph_node,
+                                  std::make_tuple(-cost, force_site_node->total_primitive_count, /*-encounter_order=*/0));
         }
         return primitives_alive;
     }
