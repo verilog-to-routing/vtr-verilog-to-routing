@@ -56,6 +56,9 @@ static std::vector<t_pack_patterns> alloc_and_init_pattern_list_from_hash(const 
 static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
                                                        const t_pb_graph_node* pb_graph_node);
 
+static t_pb_graph_edge* find_expansion_edge_of_pattern_in_node(const int pattern_index,
+                                                               const t_pb_graph_node* pb_graph_node);
+
 static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansion_edge,
                                                   t_pack_patterns& packing_pattern,
                                                   int* L_num_blocks,
@@ -170,7 +173,10 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vect
     /* alloc and initialize array of packing patterns based on architecture complex blocks */
     std::unordered_map<std::string, int> pattern_names;
     for (const t_logical_block_type& type : logical_block_types) {
-        discover_pattern_names_in_pb_graph_node(type.pb_graph_head, pattern_names, last_added_pattern_block);
+        if (type.pb_graph_head == nullptr)
+            continue;
+        for (t_pb_graph_node& pb_graph_node : type.pb_graph_head->subtree())
+            discover_pattern_names_in_pb_graph_node(&pb_graph_node, pattern_names, last_added_pattern_block);
     }
 
     std::vector<t_pack_patterns> packing_patterns = alloc_and_init_pattern_list_from_hash(pattern_names);
@@ -236,10 +242,6 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
                                                     std::unordered_map<t_pb_graph_node*, t_pack_pattern_block*>& last_added_pattern_block) {
     /* Iterate over all edges to discover if an edge in current physical block belongs to a pattern
      * If edge does, then record the name of the pattern in a hash table */
-
-    if (pb_graph_node == nullptr) {
-        return;
-    }
 
     last_added_pattern_block[pb_graph_node] = nullptr;
 
@@ -329,14 +331,6 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             }
         }
     }
-
-    for (int i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-        for (int j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-            for (int k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                discover_pattern_names_in_pb_graph_node(&pb_graph_node->child_pb_graph_nodes[i][j][k], pattern_names, last_added_pattern_block);
-            }
-        }
-    }
 }
 
 /**
@@ -399,15 +393,27 @@ static void free_pack_pattern(t_pack_patterns* pack_pattern) {
  */
 static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
                                                        const t_pb_graph_node* pb_graph_node) {
-    int i, j, k, m;
-    t_pb_graph_edge* edge;
-    /* Iterate over all edges to discover if an edge in current physical block belongs to a pattern
-     * If edge does, then return that edge
-     */
-
     if (pb_graph_node == nullptr) {
         return nullptr;
     }
+
+    for (const t_pb_graph_node& node : pb_graph_node->subtree()) {
+        if (t_pb_graph_edge* edge = find_expansion_edge_of_pattern_in_node(pattern_index, &node)) {
+            return edge;
+        }
+    }
+    return nullptr;
+}
+
+/**
+ * Locate the first edge driven by a pin of pb_graph_node that belongs to pattern index
+ */
+static t_pb_graph_edge* find_expansion_edge_of_pattern_in_node(const int pattern_index,
+                                                               const t_pb_graph_node* pb_graph_node) {
+    int i, j, k, m;
+    /* Iterate over all edges to discover if an edge in current physical block belongs to a pattern
+     * If edge does, then return that edge
+     */
 
     for (i = 0; i < pb_graph_node->num_input_ports; i++) {
         for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
@@ -443,18 +449,6 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
                     if (clock_pin.output_edges[k]->pack_pattern_indices[m] == pattern_index) {
                         return clock_pin.output_edges[k];
                     }
-                }
-            }
-        }
-    }
-
-    for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-        t_mode& pb_mode = pb_graph_node->pb_type->modes[i];
-        for (j = 0; j < pb_mode.num_pb_type_children; j++) {
-            for (k = 0; k < pb_mode.pb_type_children[j].num_pb; k++) {
-                edge = find_expansion_edge_of_pattern(pattern_index, &pb_graph_node->child_pb_graph_nodes[i][j][k]);
-                if (edge != nullptr) {
-                    return edge;
                 }
             }
         }
