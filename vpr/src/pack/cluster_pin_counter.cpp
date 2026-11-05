@@ -306,9 +306,7 @@ static bool net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin,
 
     // Count how many sink pins are reachable.
     size_t num_reachable_sinks = 0;
-    for (int i_prim_pin = 0; i_prim_pin < driver_pb_gpin->num_connectable_primitive_input_pins[depth]; ++i_prim_pin) {
-        const t_pb_graph_pin* reachable_pb_gpin = driver_pb_gpin->list_of_connectable_input_pin_ptrs[depth][i_prim_pin];
-
+    for (const t_pb_graph_pin* reachable_pb_gpin : driver_pb_gpin->list_of_connectable_input_pin_ptrs[depth]) {
         if (sink_pb_gpins.count(reachable_pb_gpin)) {
             ++num_reachable_sinks;
             if (num_reachable_sinks == atom_ctx.netlist().net_sinks(net_id).size()) {
@@ -343,7 +341,7 @@ static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const Atom
         if (prim_port.type == OUT_PORT) {
             if (prim_port.model_port == driver_model_port) {
                 // Get the output pb_graph_pin driving this input net.
-                return &(driver_pb->pb_graph_node->output_pins[output_port][atom_netlist.pin_port_bit(driver_pin_id)]);
+                return &(driver_pb->pb_graph_node->pins_by_output_port[output_port][atom_netlist.pin_port_bit(driver_pin_id)]);
             }
             output_port++;
         }
@@ -395,8 +393,8 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_input_pin(AtomPinId pin_i
                 check_pb = check_pb->parent_pb;
             }
             if (check_pb) {
-                for (int i = 0; i < output_pb_graph_pin->num_connectable_primitive_input_pins[depth]; i++) {
-                    if (pb_graph_pin == output_pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][i]) {
+                for (const t_pb_graph_pin* reachable_pin : output_pb_graph_pin->list_of_connectable_input_pin_ptrs[depth]) {
+                    if (pb_graph_pin == reachable_pin) {
                         is_reachable = true;
                         break;
                     }
@@ -448,7 +446,7 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_output_pin(AtomPinId pin_
 
         bool net_exits_cluster = true;
 
-        if (pb_graph_pin->num_connectable_primitive_input_pins[depth] >= num_net_sinks) {
+        if (static_cast<int>(pb_graph_pin->list_of_connectable_input_pin_ptrs[depth].size()) >= num_net_sinks) {
             // It is possible the net is completely absorbed in the cluster,
             // since this pin could (potentially) drive all the net's sinks
 

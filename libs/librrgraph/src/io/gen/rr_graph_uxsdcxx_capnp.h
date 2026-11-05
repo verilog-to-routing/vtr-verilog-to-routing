@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcap.py /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 4b2ef78f43cba03933974d33ee053c65
+ * Cmdline: uxsdcxx/uxsdcap.py /home/alex/vtr-switch-min-max-delay/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/alex/vtr-switch-min-max-delay/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: fc64388fa00da75640603bc9d9aa7416
  */
 
 #include <functional>
@@ -533,6 +533,8 @@ inline void load_timing_capnp_type(const ucap::Timing::Reader &root, T &out, Con
 	out.set_timing_Cout(root.getCout(), context);
 	out.set_timing_R(root.getR(), context);
 	out.set_timing_Tdel(root.getTdel(), context);
+	out.set_timing_Tdel_max(root.getTdelMax(), context);
+	out.set_timing_Tdel_min(root.getTdelMin(), context);
 }
 
 template<class T, typename Context>
@@ -1064,6 +1066,10 @@ inline void write_switch_capnp_type(T &in, ucap::Switch::Builder &root, Context 
 			switch_timing.setR(in.get_timing_R(child_context));
 		if((bool)in.get_timing_Tdel(child_context))
 			switch_timing.setTdel(in.get_timing_Tdel(child_context));
+		if((bool)in.get_timing_Tdel_max(child_context))
+			switch_timing.setTdelMax(in.get_timing_Tdel_max(child_context));
+		if((bool)in.get_timing_Tdel_min(child_context))
+			switch_timing.setTdelMin(in.get_timing_Tdel_min(child_context));
 	}
 
 	{

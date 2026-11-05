@@ -38,6 +38,9 @@ void show_setup(const t_vpr_setup& vpr_setup) {
     VTR_LOG("Packer: %s\n", stage_action_strings[vpr_setup.PackerOpts.doPacking]);
     VTR_LOG("Placer: %s\n", stage_action_strings[vpr_setup.PlacerOpts.do_placement]);
     VTR_LOG("Analytical Placer: %s\n", stage_action_strings[vpr_setup.APOpts.doAP]);
+    if (vpr_setup.APOpts.doAP != e_stage_action::SKIP && vpr_setup.APOpts.stop_after_global_placement) {
+        VTR_LOG("\tStopping after Global Placement\n");
+    }
     VTR_LOG("Router: %s\n", stage_action_strings[vpr_setup.RouterOpts.doRouting]);
     VTR_LOG("Analysis: %s\n", stage_action_strings[vpr_setup.AnalysisOpts.doAnalysis]);
     VTR_LOG("\n");
@@ -70,7 +73,7 @@ void ClusteredNetlistStats::write_human_(std::ostream& output) const {
     output << "Cluster level netlist and block usage statistics\n";
     output << "Netlist num_nets: " << num_nets << "\n";
     output << "Netlist num_blocks: " << num_blocks << "\n";
-    for (const t_logical_block_type& type : logical_block_types) {
+    for (const t_logical_block_type& type : logical_block_types_) {
         output << "Netlist " << type.name << " blocks: " << num_blocks_type[type.index] << ".\n";
     }
 
@@ -88,9 +91,9 @@ void ClusteredNetlistStats::write_json_(std::ostream& output) const {
 
     output << "  \"blocks\": {\n";
 
-    for (const t_logical_block_type& type : logical_block_types) {
+    for (const t_logical_block_type& type : logical_block_types_) {
         output << "    \"" << type.name << "\": " << num_blocks_type[type.index];
-        if ((int)type.index < (int)logical_block_types.size() - 1)
+        if ((int)type.index < (int)logical_block_types_.size() - 1)
             output << ",\n";
         else
             output << "\n";
@@ -106,7 +109,7 @@ void ClusteredNetlistStats::write_xml_(std::ostream& output) const {
     output << "  <nets num=\"" << num_nets << "\"></nets>\n";
     output << "  <blocks num=\"" << num_blocks << "\">\n";
 
-    for (const t_logical_block_type& type : logical_block_types) {
+    for (const t_logical_block_type& type : logical_block_types_) {
         output << "    <block type=\"" << type.name << "\" usage=\"" << num_blocks_type[type.index] << "\"></block>\n";
     }
     output << "  </blocks>\n";
@@ -117,7 +120,8 @@ void ClusteredNetlistStats::write_xml_(std::ostream& output) const {
     output << "</block_usage_report>\n";
 }
 
-ClusteredNetlistStats::ClusteredNetlistStats() {
+ClusteredNetlistStats::ClusteredNetlistStats()
+    : logical_block_types_(g_vpr_ctx.device().logical_block_types) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -126,7 +130,6 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
     num_blocks_type = std::vector<int>(device_ctx.logical_block_types.size(), 0);
     num_nets = (int)cluster_ctx.clb_nlist.nets().size();
     num_blocks = (int)cluster_ctx.clb_nlist.blocks().size();
-    logical_block_types = device_ctx.logical_block_types;
 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         t_logical_block_type_ptr logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
@@ -432,6 +435,9 @@ static void show_router_opts(const t_router_opts& router_opts) {
                 break;
             case e_router_lookahead::SIMPLE:
                 VTR_LOG("SIMPLE\n");
+                break;
+            case e_router_lookahead::SEPARABLE:
+                VTR_LOG("SEPARABLE\n");
                 break;
             case e_router_lookahead::NO_OP:
                 VTR_LOG("NO_OP\n");
@@ -746,6 +752,7 @@ static void show_analysis_opts(const t_analysis_opts& analysis_opts) {
     VTR_LOG("analysis_opts.gen_post_implementation_sdc: %s\n", analysis_opts.gen_post_implementation_sdc ? "true" : "false");
     VTR_LOG("analysis_opts.timing_report_npaths: %d\n", analysis_opts.timing_report_npaths);
     VTR_LOG("analysis_opts.timing_report_skew: %s\n", analysis_opts.timing_report_skew ? "true" : "false");
+    VTR_LOG("analysis_opts.timing_report_path_categories: %s\n", analysis_opts.timing_report_path_categories.to_string().c_str());
     VTR_LOG("analysis_opts.echo_dot_timing_graph_node: %s\n", analysis_opts.echo_dot_timing_graph_node.c_str());
 
     VTR_LOG("analysis_opts.timing_report_detail: ");

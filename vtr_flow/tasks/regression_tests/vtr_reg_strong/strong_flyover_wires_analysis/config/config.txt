@@ -1,0 +1,38 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Re-loads the routing of a fabric with non-configurable (shorted and buffered)
+# flyover wires in an analysis-only run. A routed net can then hold members of
+# a non-configurable set that reach no SINK, which the route file writes as
+# branches ending on a wire rather than a SINK.
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog
+
+# Path to directory of architectures to use
+archs_dir=arch/custom_grid
+
+# Add circuits to list to sweep
+circuit_list_add=raygentop.v
+
+# Add architectures to list to sweep
+arch_list_add=shorted_flyover_wires.xml
+arch_list_add=buffered_flyover_wires.xml
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+parse_file=vpr_parse_second_file.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_analysis_only.txt
+
+# Script parameters
+# -verify_rr_graph is what makes the flow run VPR a second time; -check_route
+# makes that second run an analysis-only run that reads back the route file.
+# The channel width is 1.5x raygentop's minimum on both architectures (70),
+# rounded up to an even width for these unidirectional channels.
+script_params = -check_route -verify_rr_graph --route_chan_width 106

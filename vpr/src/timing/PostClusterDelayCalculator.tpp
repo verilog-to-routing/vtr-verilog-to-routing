@@ -12,11 +12,13 @@
 
 inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist& netlist,
                                                               const AtomLookup& netlist_lookup,
-                                                              const NetPinsMatrix<float>& net_delay,
+                                                              const NetPinsMatrix<float>& net_delay_min,
+                                                              const NetPinsMatrix<float>& net_delay_max,
                                                               bool is_flat)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
-    , net_delay_(net_delay)
+    , net_delay_min_(net_delay_min)
+    , net_delay_max_(net_delay_max)
     , atom_delay_calc_(netlist, netlist_lookup)
     , edge_min_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
     , edge_max_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
@@ -240,7 +242,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             if (is_flat_) {
                 sink_net_pin_index = netlist_.pin_net_index(atom_sink_pin);
 
-                tatum::Time net_delay = tatum::Time(inter_cluster_delay((ParentNetId&)atom_net, 0, sink_net_pin_index));
+                tatum::Time net_delay = tatum::Time(inter_cluster_delay((ParentNetId&)atom_net, 0, sink_net_pin_index, delay_type));
 
                 // For the atom nets, launch_cluster_delay and capture are equal to zero.
                 edge_delay = /* driver_clb_delay=0 + */ net_delay /* + sink_clb_delay=0 */;
@@ -285,7 +287,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
                                                                                                                 src_pb_route_id,
                                                                                                                 delay_type));
 
-                    tatum::Time net_delay = tatum::Time(inter_cluster_delay((ParentNetId&)cluster_net_id, 0, sink_net_pin_index));
+                    tatum::Time net_delay = tatum::Time(inter_cluster_delay((ParentNetId&)cluster_net_id, 0, sink_net_pin_index, delay_type));
 
                     tatum::Time sink_clb_delay = tatum::Time(clb_delay_calc_.clb_input_to_internal_sink_delay(clb_sink_block,
                                                                                                               sink_block_pin_index,
@@ -341,7 +343,8 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
                 sink_net_pin_index = g_vpr_ctx.atom().netlist().pin_net_index((AtomPinId&)sink_pin);
                 tatum::Time net_delay = tatum::Time(inter_cluster_delay((ParentNetId&)atom_src_net,
                                                                         0,
-                                                                        sink_net_pin_index));
+                                                                        sink_net_pin_index,
+                                                                        delay_type));
                 edge_delay = /* driver_clb_delay=0 + */ net_delay /* + sink_clb_delay=0 */;
 
             } else {
@@ -356,7 +359,8 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
                 VTR_ASSERT(src_net == cluster_ctx.clb_nlist.pin_net((ClusterPinId&)sink_pin));
                 tatum::Time net_delay = tatum::Time(inter_cluster_delay((ParentNetId&)src_net,
                                                                         0,
-                                                                        cluster_ctx.clb_nlist.pin_net_index((ClusterPinId&)sink_pin)));
+                                                                        cluster_ctx.clb_nlist.pin_net_index((ClusterPinId&)sink_pin),
+                                                                        delay_type));
 
                 edge_delay = driver_clb_delay + net_delay + sink_clb_delay;
             }
@@ -380,11 +384,25 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
     return edge_delay;
 }
 
-inline float PostClusterDelayCalculator::inter_cluster_delay(const ParentNetId net_id, const int src_net_pin_index, const int sink_net_pin_index) const {
+inline float PostClusterDelayCalculator::inter_cluster_delay(const ParentNetId net_id, const int src_net_pin_index, const int sink_net_pin_index, DelayType delay_type) const {
     VTR_ASSERT(src_net_pin_index == 0);
 
-    //TODO: support minimum net delays
-    return net_delay_[net_id][sink_net_pin_index];
+    if (routing_delay_type(delay_type) == DelayType::MAX) {
+        return net_delay_max_[net_id][sink_net_pin_index];
+    } else {
+        VTR_ASSERT(routing_delay_type(delay_type) == DelayType::MIN);
+        return net_delay_min_[net_id][sink_net_pin_index];
+    }
+}
+
+inline DelayType PostClusterDelayCalculator::routing_delay_type(DelayType delay_type) const {
+    //TODO: With flat routing, the min delays of the routing inside clusters are not
+    //      correct yet (see issue #3946), so the max net delay is also used for hold
+    //      analysis.
+    if (is_flat_) {
+        return DelayType::MAX;
+    }
+    return delay_type;
 }
 
 inline tatum::Time PostClusterDelayCalculator::get_cached_delay(tatum::EdgeId edge, DelayType delay_type) const {

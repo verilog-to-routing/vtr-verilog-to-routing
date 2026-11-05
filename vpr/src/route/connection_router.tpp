@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "describe_rr_node.h"
 #include "route_common.h"
+#include "bus_mux_routing.h"
 #include "rr_graph_fwd.h"
 #include "vpr_context.h"
 #include "vpr_utils.h"
@@ -318,6 +319,10 @@ float ConnectionRouter<Heap>::evaluate_timing_driven_backward_costs(RTExploredNo
     float cong_cost = 0.;
     if (reached_configurably) {
         cong_cost = get_rr_cong_cost(to->index, cost_params.pres_fac);
+        if (has_bus_muxes_) {
+            // Control congestion: bits of a bus mux already routed on other input sets.
+            cong_cost += get_bus_mux_cong_cost(from_node, to->index, cost_params.pres_fac);
+        }
     } else {
         // Reached by a non-configurable edge.
         // Therefore the from_node and to_node are part of the same non-configurable node set.
@@ -356,6 +361,7 @@ float ConnectionRouter<Heap>::evaluate_timing_driven_backward_costs(RTExploredNo
 template<typename Heap>
 void ConnectionRouter<Heap>::evaluate_timing_driven_total_cost(RTExploredNode* to,
                                                                const t_conn_cost_params& cost_params,
+                                                               RRNodeId from_node,
                                                                RRNodeId target_node,
                                                                float Tdel) {
     // to->total_cost: is the "known" backward cost + an expected cost to get to the target.
@@ -364,7 +370,12 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_total_cost(RTExploredNode* t
 
     if (rcv_path_manager.is_enabled() && to->path_data != nullptr) {
         to->path_data->backward_delay += cost_params.criticality * Tdel;
-        to->path_data->backward_cong += (1. - cost_params.criticality) * get_rr_cong_cost(to->index, cost_params.pres_fac);
+        float cong_cost = get_rr_cong_cost(to->index, cost_params.pres_fac);
+        if (has_bus_muxes_) {
+            // Keep the RCV congestion term consistent with the backward cost: add the control congestion.
+            cong_cost += get_bus_mux_cong_cost(from_node, to->index, cost_params.pres_fac);
+        }
+        to->path_data->backward_cong += (1. - cost_params.criticality) * cong_cost;
 
         total_cost = compute_node_cost_using_rcv(cost_params, to->index, target_node, to->path_data->backward_delay, to->path_data->backward_cong, to->R_upstream);
     } else {
@@ -389,7 +400,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
                                                                RRNodeId from_node,
                                                                RRNodeId target_node) {
     float Tdel = evaluate_timing_driven_backward_costs(to, cost_params, from_node);
-    evaluate_timing_driven_total_cost(to, cost_params, target_node, Tdel);
+    evaluate_timing_driven_total_cost(to, cost_params, from_node, target_node, Tdel);
 }
 
 template<typename Heap>
@@ -504,9 +515,9 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                         continue;
                 }
 
-                /* In case of the parallel router, we may be dealing with a virtual net
-                 * so prune the nodes from the HF lookup against the bounding box just in case */
-                if (!inside_bb(rr_node_to_add, net_bounding_box))
+                // In case of the parallel router, we may be dealing with a virtual net
+                // so prune the nodes from the HF lookup against the bounding box just in case
+                if (!inside_bb(rr_nodes_, rr_node_to_add, net_bounding_box))
                     continue;
 
                 short rt_node_layer_num = rr_graph_->node_layer_low(rr_node_to_add);

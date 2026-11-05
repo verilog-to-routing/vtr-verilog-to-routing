@@ -174,7 +174,7 @@ class StrongId {
         static constexpr StrongId INVALID() { return StrongId(); }
 
         //Default to the sentinel value
-        constexpr StrongId() : id_(sentinel) {}
+        constexpr StrongId() noexcept : id_(sentinel) {}
 
         //Only allow explicit constructions from a raw Id (no automatic conversions)
         explicit constexpr StrongId(T id) noexcept : id_(id) {}

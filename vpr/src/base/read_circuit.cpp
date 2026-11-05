@@ -1,4 +1,9 @@
 #include "read_circuit.h"
+
+#include <algorithm>
+#include <string>
+#include <vector>
+
 #include "logic_types.h"
 #include "read_blif.h"
 #include "read_interchange_netlist.h"
@@ -9,6 +14,8 @@
 #include "vtr_log.h"
 #include "vtr_path.h"
 #include "vtr_time.h"
+#include "vtr_util.h"
+#include "vpr_error.h"
 
 static void process_circuit(AtomNetlist& netlist,
                             e_const_gen_inference const_gen_inference_method,
@@ -22,6 +29,17 @@ static void process_circuit(AtomNetlist& netlist,
                             int verbosity);
 
 static void show_circuit_stats(const AtomNetlist& netlist, const LogicalModels& models);
+
+/**
+ * @brief Errors out if the netlist contains nets which have sinks but no driver.
+ *
+ * Undriven nets are normally removed by --sweep_dangling_nets. When that sweep
+ * is turned off they would be kept, but the rest of VPR (packing, placement,
+ * routing and timing analysis) requires every net to have a driver. They also
+ * point to a problem upstream (in the design or in synthesis), so we report
+ * them clearly instead of silently implementing logic with floating inputs.
+ */
+static void check_no_undriven_nets(const AtomNetlist& netlist, int verbosity);
 
 AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setup& vpr_setup, t_arch& arch) {
     // Options
@@ -141,6 +159,11 @@ static void process_circuit(AtomNetlist& netlist,
                         const_gen_inference_method,
                         models,
                         verbosity);
+
+        // Undriven nets are only left in the netlist if they were not swept
+        if (!should_sweep_dangling_nets) {
+            check_no_undriven_nets(netlist, verbosity);
+        }
     }
 
     {
@@ -154,6 +177,51 @@ static void process_circuit(AtomNetlist& netlist,
 
         netlist.verify();
     }
+}
+
+static void check_no_undriven_nets(const AtomNetlist& netlist, int verbosity) {
+    // Number of undriven nets named in the error, unless the verbosity asks for all of them
+    constexpr size_t max_nets_listed = 10;
+
+    std::vector<AtomNetId> undriven_nets;
+    for (AtomNetId net_id : netlist.nets()) {
+        // The netlist has not been compressed yet, so it may hold invalid (swept) ids
+        if (!net_id) continue;
+
+        // A net with neither a driver nor sinks is harmless; it is removed when the netlist is compressed
+        if (!netlist.net_driver(net_id) && !netlist.net_sinks(net_id).empty()) {
+            undriven_nets.push_back(net_id);
+        }
+    }
+
+    if (undriven_nets.empty()) return;
+
+    size_t num_nets_listed = (verbosity > 1) ? undriven_nets.size() : std::min(undriven_nets.size(), max_nets_listed);
+    std::string net_list;
+    for (size_t i = 0; i < num_nets_listed; i++) {
+        AtomNetId net_id = undriven_nets[i];
+        AtomPinId first_sink = *netlist.net_sinks(net_id).begin();
+        net_list += vtr::string_fmt("  '%s' (%zu sink(s), e.g. block '%s' port '%s')\n",
+                                    netlist.net_name(net_id).c_str(),
+                                    netlist.net_sinks(net_id).size(),
+                                    netlist.block_name(netlist.pin_block(first_sink)).c_str(),
+                                    netlist.port_name(netlist.pin_port(first_sink)).c_str());
+    }
+    if (num_nets_listed < undriven_nets.size()) {
+        net_list += vtr::string_fmt("  ... and %zu more (run with --netlist_verbosity 2 to list all)\n",
+                                    undriven_nets.size() - num_nets_listed);
+    }
+
+    VPR_FATAL_ERROR(VPR_ERROR_ATOM_NETLIST,
+                    "The netlist contains %zu undriven net(s) (nets with sinks but no driver):\n"
+                    "%s"
+                    "Undriven nets usually indicate a problem in the design or in synthesis, which should be fixed upstream. "
+                    "Their sinks have no defined value, and on an FPGA would be driven by whatever happens to be on the "
+                    "unused routing they connect to.\n"
+                    "VPR keeps undriven nets in the netlist because --sweep_dangling_nets is off, but cannot implement them. "
+                    "To proceed anyway, re-run with '--sweep_dangling_nets on' to remove them; their sinks will be left "
+                    "unconnected.\n",
+                    undriven_nets.size(), net_list.c_str());
 }
 
 static void show_circuit_stats(const AtomNetlist& netlist, const LogicalModels& models) {

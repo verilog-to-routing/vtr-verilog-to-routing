@@ -14,14 +14,17 @@
  * No history term is needed because the cost is tracked per input set, which
  * already makes the minority choice more expensive.
  */
-#include <unordered_map>
+#include <string>
 #include <vector>
 
 #include "clustered_netlist_fwd.h"
+#include "physical_types.h"
 #include "rr_graph_fwd.h"
+#include "vtr_strong_id.h"
+#include "vtr_util.h"
 
-struct t_interconnect;
-class t_pb_graph_node;
+/// @brief Identifies one bus-based mux instance of the routing resource graph.
+typedef vtr::StrongId<struct bus_mux_id_tag> BusMuxId;
 
 /// @brief Identity of one bus-based mux instance: its <mux> tag and the pb instance that owns it.
 struct t_bus_mux_key {
@@ -43,6 +46,20 @@ struct t_rr_bus_mux {
     const t_pb_graph_node* owner = nullptr;
     /// @brief Number of input sets (data lines).
     int num_sets = 0;
+
+    /// @brief Describe the mux and its owner, e.g. "'a2a' in one_mult_27x27[0]".
+    std::string describe() const {
+        return vtr::string_fmt("'%s' in %s[%d]",
+                               interconnect->name.c_str(),
+                               owner->pb_type->name,
+                               owner->placement_index);
+    }
+};
+
+/// @brief The mux and input set an rr edge belongs to, see find_bus_mux_edge().
+struct t_bus_mux_edge {
+    BusMuxId mux_id;
+    int set;
 };
 
 /// @brief An rr edge implementing one bit of a bus-based mux, seen from the mux output node.
@@ -53,8 +70,41 @@ struct t_rr_bus_mux_in_edge {
 
 /// @brief The bus-mux edges ending at one output bit of a bus-based mux.
 struct t_rr_bus_mux_out_node {
-    /// @brief Index into DeviceContext::rr_bus_muxes.
-    int mux_idx = -1;
+    /// @brief The mux this output bit belongs to.
+    BusMuxId mux_id;
     /// @brief The edges driving this output bit, one per input set present in the rr graph.
     std::vector<t_rr_bus_mux_in_edge> in_edges;
+};
+
+/// @brief Routing state of one bus-based mux instance.
+struct t_bus_mux_route_inf {
+    /// @brief Routed bit counts indexed by input set [0..num_sets-1].
+    std::vector<int> set_occ;
+
+    /// @brief Count input sets driving at least one bit.
+    int num_sets_in_use() const {
+        int num_in_use = 0;
+        for (int occ : set_occ) {
+            if (occ > 0) {
+                num_in_use++;
+            }
+        }
+        return num_in_use;
+    }
+
+    /// @brief Whether the mux uses more than one input set.
+    bool is_control_congested() const {
+        return num_sets_in_use() > 1;
+    }
+
+    /// @brief Count bits that must change inputs if the mux selects set.
+    int bits_on_other_sets(int set) const {
+        int num_bits = 0;
+        for (size_t other_set = 0; other_set < set_occ.size(); other_set++) {
+            if ((int)other_set != set) {
+                num_bits += set_occ[other_set];
+            }
+        }
+        return num_bits;
+    }
 };

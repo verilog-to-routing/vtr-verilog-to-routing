@@ -156,8 +156,8 @@ t_intra_cluster_placement_stats* alloc_and_load_cluster_placement_stats(t_logica
     //       stats.
     if (!is_empty_type(cluster_type)) {
         cluster_placement_stats->curr_molecule = PackMoleculeId::INVALID();
-        load_cluster_placement_stats_for_pb_graph_node(cluster_placement_stats,
-                                                       cluster_type->pb_graph_head);
+        for (t_pb_graph_node& pb_graph_node : cluster_type->pb_graph_head->subtree())
+            load_cluster_placement_stats_for_pb_graph_node(cluster_placement_stats, &pb_graph_node);
     }
     reset_cluster_placement_stats(cluster_placement_stats);
     set_mode_cluster_placement_stats(cluster_placement_stats,
@@ -397,12 +397,11 @@ static void reset_cluster_placement_stats(t_intra_cluster_placement_stats* clust
 }
 
 /**
- * Add any primitives found in pb_graph_nodes to cluster_placement_stats
+ * Add pb_graph_node to cluster_placement_stats if it is a primitive
  * Adds backward link from pb_graph_node to cluster_placement_primitive
  */
 static void load_cluster_placement_stats_for_pb_graph_node(t_intra_cluster_placement_stats* cluster_placement_stats,
                                                            t_pb_graph_node* pb_graph_node) {
-    int i, j, k;
     t_cluster_placement_primitive* placement_primitive;
     const t_pb_type* pb_type = pb_graph_node->pb_type;
     //if pb_graph_node is primitive
@@ -439,17 +438,6 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_intra_cluster_place
             cluster_placement_stats->valid_primitives.emplace_back();
             cluster_placement_stats->valid_primitives[cluster_placement_stats->valid_primitives.size() - 1].insert({0, placement_primitive});
             cluster_placement_stats->num_pb_types++;
-        }
-
-    } else { // not a primitive, recursively call the function for all its children
-        for (i = 0; i < pb_type->num_modes; i++) {
-            for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-                for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb;
-                     k++) {
-                    load_cluster_placement_stats_for_pb_graph_node(cluster_placement_stats,
-                                                                   &pb_graph_node->child_pb_graph_nodes[i][j][k]);
-                }
-            }
         }
     }
 }
@@ -576,7 +564,7 @@ static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stat
                 int from_pin, from_port;
                 from_pin = cur.from_pin->pin_number;
                 from_port = cur.from_pin->port->port_index_by_type;
-                cur_pin = &pb_graph_node->output_pins[from_port][from_pin];
+                cur_pin = &pb_graph_node->pins_by_output_port[from_port][from_pin];
                 next_pin = expand_pack_molecule_pin_edge(pack_pattern_block->pattern_index, cur_pin, true);
             } else {
                 /* backward expand to find next block */
@@ -586,9 +574,9 @@ static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stat
                 to_port = cur.to_pin->port->port_index_by_type;
 
                 if (cur.from_pin->port->is_clock) {
-                    cur_pin = &pb_graph_node->clock_pins[to_port][to_pin];
+                    cur_pin = &pb_graph_node->pins_by_clock_port[to_port][to_pin];
                 } else {
-                    cur_pin = &pb_graph_node->input_pins[to_port][to_pin];
+                    cur_pin = &pb_graph_node->pins_by_input_port[to_port][to_pin];
                 }
                 next_pin = expand_pack_molecule_pin_edge(pack_pattern_block->pattern_index, cur_pin, false);
             }
@@ -627,7 +615,7 @@ static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stat
 static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                                                      const t_pb_graph_pin* cur_pin,
                                                      const bool forward) {
-    int i, j, k;
+    int i, j;
     t_pb_graph_pin *temp_pin, *dest_pin;
     temp_pin = nullptr;
     dest_pin = nullptr;
@@ -635,16 +623,11 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
         for (i = 0; i < cur_pin->num_output_edges; i++) {
             /* one fanout assumption */
             if (cur_pin->output_edges[i]->infer_pattern) {
-                for (k = 0; k < cur_pin->output_edges[i]->num_output_pins;
-                     k++) {
-                    if (cur_pin->output_edges[i]->output_pins[k]->parent_node->pb_type->num_modes
-                        == 0) {
-                        temp_pin = cur_pin->output_edges[i]->output_pins[k];
-                    } else {
-                        temp_pin = expand_pack_molecule_pin_edge(pattern_id,
-                                                                 cur_pin->output_edges[i]->output_pins[k],
-                                                                 forward);
-                    }
+                t_pb_graph_pin* out_pin = cur_pin->output_edges[i]->output_pin();
+                if (out_pin->parent_node->pb_type->num_modes == 0) {
+                    temp_pin = out_pin;
+                } else {
+                    temp_pin = expand_pack_molecule_pin_edge(pattern_id, out_pin, forward);
                 }
                 if (temp_pin != nullptr) {
                     VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin || dest_pin->parent_node == temp_pin->parent_node);
@@ -655,17 +638,11 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                      j++) {
                     if (cur_pin->output_edges[i]->pack_pattern_indices[j]
                         == pattern_id) {
-                        for (k = 0;
-                             k < cur_pin->output_edges[i]->num_output_pins;
-                             k++) {
-                            if (cur_pin->output_edges[i]->output_pins[k]->parent_node->pb_type->num_modes
-                                == 0) {
-                                temp_pin = cur_pin->output_edges[i]->output_pins[k];
-                            } else {
-                                temp_pin = expand_pack_molecule_pin_edge(pattern_id,
-                                                                         cur_pin->output_edges[i]->output_pins[k],
-                                                                         forward);
-                            }
+                        t_pb_graph_pin* out_pin = cur_pin->output_edges[i]->output_pin();
+                        if (out_pin->parent_node->pb_type->num_modes == 0) {
+                            temp_pin = out_pin;
+                        } else {
+                            temp_pin = expand_pack_molecule_pin_edge(pattern_id, out_pin, forward);
                         }
                         if (temp_pin != nullptr) {
                             VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin || dest_pin->parent_node == temp_pin->parent_node);
@@ -679,15 +656,11 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
         for (i = 0; i < cur_pin->num_input_edges; i++) {
             /* one fanout assumption */
             if (cur_pin->input_edges[i]->infer_pattern) {
-                for (k = 0; k < cur_pin->input_edges[i]->num_input_pins; k++) {
-                    if (cur_pin->input_edges[i]->input_pins[k]->parent_node->pb_type->num_modes
-                        == 0) {
-                        temp_pin = cur_pin->input_edges[i]->input_pins[k];
-                    } else {
-                        temp_pin = expand_pack_molecule_pin_edge(pattern_id,
-                                                                 cur_pin->input_edges[i]->input_pins[k],
-                                                                 forward);
-                    }
+                t_pb_graph_pin* in_pin = cur_pin->input_edges[i]->input_pin();
+                if (in_pin->parent_node->pb_type->num_modes == 0) {
+                    temp_pin = in_pin;
+                } else {
+                    temp_pin = expand_pack_molecule_pin_edge(pattern_id, in_pin, forward);
                 }
                 if (temp_pin != nullptr) {
                     VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin || dest_pin->parent_node == temp_pin->parent_node);
@@ -698,16 +671,11 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                      j++) {
                     if (cur_pin->input_edges[i]->pack_pattern_indices[j]
                         == pattern_id) {
-                        for (k = 0; k < cur_pin->input_edges[i]->num_input_pins;
-                             k++) {
-                            if (cur_pin->input_edges[i]->input_pins[k]->parent_node->pb_type->num_modes
-                                == 0) {
-                                temp_pin = cur_pin->input_edges[i]->input_pins[k];
-                            } else {
-                                temp_pin = expand_pack_molecule_pin_edge(pattern_id,
-                                                                         cur_pin->input_edges[i]->input_pins[k],
-                                                                         forward);
-                            }
+                        t_pb_graph_pin* in_pin = cur_pin->input_edges[i]->input_pin();
+                        if (in_pin->parent_node->pb_type->num_modes == 0) {
+                            temp_pin = in_pin;
+                        } else {
+                            temp_pin = expand_pack_molecule_pin_edge(pattern_id, in_pin, forward);
                         }
                         if (temp_pin != nullptr) {
                             VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin || dest_pin->parent_node == temp_pin->parent_node);

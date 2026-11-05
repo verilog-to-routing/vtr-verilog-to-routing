@@ -69,13 +69,11 @@ class RouterLookahead {
      * @brief Retrieve the minimum delay to a point on the "to_layer," which is dx and dy away,
      *        across all the OPINs on the physical tile identified by "physical_tile_idx".
      * @param physical_tile_idx The index of the physical tile from which the cost is calculated
-     * @param from_layer The layer that the tile is located on
-     * @param to_layer The layer on which the destination is located
-     * @param dx Horizontal distance to the destination
-     * @param dy Vertical distance to the destination
-     * @return Minimum delay to a point which is dx and dy away from a point on the die number "from_layer" to a point on the die number "to_layer".
+     * @param from_loc Location (x, y, layer) of the source tile
+     * @param to_loc Location (x, y, layer) of the destination
+     * @return Minimum delay from "from_loc" to "to_loc".
      */
-    virtual float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const = 0;
+    virtual float get_opin_distance_min_delay(int physical_tile_idx, const t_physical_tile_loc& from_loc, const t_physical_tile_loc& to_loc) const = 0;
 
     virtual ~RouterLookahead() {}
 };
@@ -153,7 +151,7 @@ class ClassicLookahead final : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::write_intra_cluster unimplemented");
     }
 
-    float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
+    float get_opin_distance_min_delay(int /*physical_tile_idx*/, const t_physical_tile_loc& /*from_loc*/, const t_physical_tile_loc& /*to_loc*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::get_opin_distance_min_delay unimplemented");
     }
 
@@ -197,7 +195,7 @@ class NoOpLookahead final : public RouterLookahead {
   public:
     // Public so SimpleDelayModel can call it through the
     // concrete type statically, without using dynamic dispatch.
-    float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
+    float get_opin_distance_min_delay(int /*physical_tile_idx*/, const t_physical_tile_loc& /*from_loc*/, const t_physical_tile_loc& /*to_loc*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "get_opin_distance_min_delay not supported for NoOpLookahead");
     }
 };

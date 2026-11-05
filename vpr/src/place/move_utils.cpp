@@ -1330,3 +1330,21 @@ int get_random_layer(t_logical_block_type_ptr logical_block, vtr::RngContainer& 
 
     return layer_num;
 }
+
+std::pair<int, int> find_middle_pair(std::vector<int>& coords) {
+    VTR_ASSERT_SAFE(!coords.empty());
+
+    // A single value is both the lower and the upper middle value
+    if (coords.size() == 1) {
+        return {coords[0], coords[0]};
+    }
+
+    // Move the upper middle value to its sorted position
+    auto upper_mid = coords.begin() + (coords.size() - 1) / 2 + 1;
+    std::nth_element(coords.begin(), upper_mid, coords.end());
+
+    // The lower middle value is the largest element before it
+    int lower = *std::max_element(coords.begin(), upper_mid);
+
+    return {lower, *upper_mid};
+}

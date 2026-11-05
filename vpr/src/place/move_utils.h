@@ -435,6 +435,11 @@ std::string e_move_result_to_string(e_move_result move_outcome);
 
 int get_random_layer(t_logical_block_type_ptr logical_block, vtr::RngContainer& rng);
 
+/// @brief Returns the values at indices (n-1)/2 and (n-1)/2 + 1 of coords as if it were sorted.
+/// If coords has one element, both values are that element.
+/// @note The order of coords is changed.
+std::pair<int, int> find_middle_pair(std::vector<int>& coords);
+
 /**
  * @brief If the block ID passed to the placer_debug_net parameter of the command line is equal to blk_id, or if any of the nets
  * connected to the block share the same ID as the net ID passed to the placer_debug_net parameter of the command line,

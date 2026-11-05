@@ -1,0 +1,34 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Flat-route DSP circuits whose 27x27 multiplier operands go through bus-based muxes
+# (<mux bus="true"/>). Every bit of a bus-based mux must come from the same input set.
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/microbenchmarks
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+circuit_list_add=mult_27x27.v
+circuit_list_add=mac_27x27.v
+circuit_list_add=complex_mult_20.v
+circuit_list_add=iq_power_24.v
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_tileable_4add_2chains_depop50_mem20K_22nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+script_params_common=-track_memory_usage --pack --place --route --analysis --route_chan_width 86 --max_router_iterations 100 --router_lookahead map --flat_routing on
+script_params_list_add =

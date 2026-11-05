@@ -279,6 +279,9 @@ void update_td_costs(const PlaceDelayModel* delay_model,
     PlacerRuntimeContext& p_runtime_ctx = placer_state.mutable_runtime();
     PlacerTimingCosts& connection_timing_cost = p_timing_ctx.connection_timing_cost;
 
+    VTR_ASSERT_SAFE_MSG(p_timing_ctx.proposed_connection_timing.empty(),
+                        "No move may be in flight when timing costs are updated");
+
     // Update the modified pin timing costs
     {
         vtr::Timer timer;
@@ -345,6 +348,9 @@ void comp_td_costs(const PlaceDelayModel* delay_model,
     PlacerTimingCosts& connection_timing_cost = p_timing_ctx.connection_timing_cost;
     vtr::vector<ClusterNetId, double>& net_timing_cost = p_timing_ctx.net_timing_cost;
 
+    VTR_ASSERT_SAFE_MSG(p_timing_ctx.proposed_connection_timing.empty(),
+                        "No move may be in flight when timing costs are recomputed");
+
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
 
@@ -380,12 +386,6 @@ static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
                         "Connection delays should already be updated");
 
     double conn_timing_cost = place_crit.criticality(net, ipin) * p_timing_ctx.connection_delay[net][ipin];
-
-    VTR_ASSERT_SAFE_MSG(std::isnan(p_timing_ctx.proposed_connection_delay[net][ipin]),
-                        "Proposed connection delay should already be invalidated");
-
-    VTR_ASSERT_SAFE_MSG(std::isnan(p_timing_ctx.proposed_connection_timing_cost[net][ipin]),
-                        "Proposed connection timing cost should already be invalidated");
 
     return conn_timing_cost;
 }

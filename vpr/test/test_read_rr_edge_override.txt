@@ -7,3 +7,12 @@
 (591, 347)  7.9e-11
 (544,  45)  8.3e-11
 (37 , 511)  9.5e-11
+# Separate min and max delays: edge Tdel_min Tdel_max
+100         4.0e-11    6.0e-11
+200         5.0e-11    6.0e-11
+300         0          6.5e-11
+400         7.7e-11    7.7e-11
+(591, 347)  7.5e-11    7.9e-11
+# A single delay replaces both the min and max delay
+500         3.0e-11    8.0e-11
+500         6.6e-11

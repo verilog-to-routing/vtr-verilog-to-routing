@@ -13,8 +13,11 @@
 
 #include <cstdio>
 #include <cstring>
+#include <deque>
 #include <queue>
+#include <span>
 #include <unordered_set>
+#include <vector>
 
 #include "vtr_util.h"
 #include "vtr_assert.h"
@@ -31,10 +34,6 @@
 #include "pb_type_graph_annotations.h"
 #include "cluster_feasibility_filter.h"
 
-/* variable global to this section that indexes each pb graph pin within a cluster */
-static vtr::t_linked_vptr* edges_head;
-static vtr::t_linked_vptr* num_edges_head;
-
 /* TODO: Software engineering decision needed: Move this file to libarch?
  *
  */
@@ -46,7 +45,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     const int index,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster,
-                                    int& primitive_num);
+                                    int& primitive_num,
+                                    std::deque<t_pb_graph_edge>& pb_graph_edges);
 
 static void alloc_and_load_pb_graph_pin_sinks(t_pb_graph_node* pb_graph_node);
 
@@ -61,20 +61,19 @@ static void add_primitive_logical_classes(t_logical_block_type* logical_block);
 
 /* Add SRC/SINK pins for the given ports */
 static int add_port_logical_classes(t_logical_block_type* logical_block,
-                                    t_pb_graph_pin** pb_graph_pins,
-                                    int num_ports,
-                                    int* num_pins);
+                                    const std::vector<std::span<t_pb_graph_pin>>& pb_graph_pins);
 
 static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_node,
-                                             t_pb_graph_node** pb_graph_children_nodes,
+                                             const std::vector<std::vector<t_pb_graph_node>>& pb_graph_children_nodes,
                                              const t_mode* mode,
-                                             bool load_power_structures);
+                                             bool load_power_structures,
+                                             std::deque<t_pb_graph_edge>& pb_graph_edges);
 
 static void store_pin_sinks_edge_id(t_pb_graph_node* pb_graph_node);
 
 static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                                                       const t_pb_graph_node* pb_graph_parent_node,
-                                                      t_pb_graph_node** pb_graph_children_nodes,
+                                                      const std::vector<std::vector<t_pb_graph_node>>& pb_graph_children_nodes,
                                                       const bool interconnect_error_check,
                                                       const bool is_input_to_interc,
                                                       const Tokens& tokens,
@@ -92,7 +91,8 @@ static void alloc_and_load_complete_interc_edges(t_interconnect* interconnect,
                                                  const int* num_input_ptrs,
                                                  t_pb_graph_pin*** output_pb_graph_node_pin_ptrs,
                                                  const int num_output_sets,
-                                                 const int* num_output_ptrs);
+                                                 const int* num_output_ptrs,
+                                                 std::deque<t_pb_graph_edge>& pb_graph_edges);
 
 static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
                                                t_pb_graph_pin*** input_pb_graph_node_pin_ptrs,
@@ -100,7 +100,8 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
                                                const int* num_input_ptrs,
                                                t_pb_graph_pin*** output_pb_graph_node_pin_ptrs,
                                                const int num_output_sets,
-                                               const int* num_output_ptrs);
+                                               const int* num_output_ptrs,
+                                               std::deque<t_pb_graph_edge>& pb_graph_edges);
 
 static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
                                             t_pb_graph_pin*** input_pb_graph_node_pin_ptrs,
@@ -108,10 +109,11 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
                                             const int* num_input_ptrs,
                                             t_pb_graph_pin*** output_pb_graph_node_pin_ptrs,
                                             const int num_output_sets,
-                                            const int* num_output_ptrs);
+                                            const int* num_output_ptrs,
+                                            std::deque<t_pb_graph_edge>& pb_graph_edges);
 
-static void echo_pb_rec(const t_pb_graph_node* pb, const int level, FILE* fp);
-static void echo_pb_pins(t_pb_graph_pin** pb_graph_pins, const int num_ports, const int level, FILE* fp);
+static void echo_pb_node(const t_pb_graph_node* pb_graph_node, const int level, FILE* fp);
+static void echo_pb_pins(const std::vector<std::span<t_pb_graph_pin>>& pb_graph_pins, const int level, FILE* fp);
 
 static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
                                              t_interconnect* interconnect,
@@ -131,7 +133,7 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
  *
  * @param pb_graph_node Pointer to the pb_graph_node to start the traversal from.
  */
-static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node);
+static void check_pb_node(const t_pb_graph_node* pb_graph_node);
 
 /**
  * @brief Checks for repeated edges connected to a single pb_graph_pin.
@@ -180,9 +182,9 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
  *        as a pin on a CLB, IO, or DSP block.
  *
  * @param start    Pin to search from.
- * @param forward  If true, traverse output_edges/output_pins (search
+ * @param forward  If true, traverse output_edges/output_pin() (search
  *                 downstream of start). If false, traverse input_edges/
- *                 input_pins (search upstream of start).
+ *                 input_pin() (search upstream of start).
  * @param target   If non-null, search stops at this specific pin. If
  *                 nullptr, search stops at the nearest root-block pin.
  *
@@ -196,8 +198,6 @@ static float calc_pb_graph_delay(const t_pb_graph_pin* start, bool forward, cons
  */
 void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
     int errors;
-    edges_head = nullptr;
-    num_edges_head = nullptr;
     DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
     for (t_logical_block_type& type : device_ctx.logical_block_types) {
@@ -211,7 +211,8 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
                                     /*index=*/0,
                                     load_power_structures,
                                     pin_count_in_cluster,
-                                    primitive_num);
+                                    primitive_num,
+                                    type.pb_graph_edges);
             type.pb_graph_head->total_pb_pins = pin_count_in_cluster;
             load_pin_classes_in_pb_graph_head(type.pb_graph_head);
             if (is_flat) {
@@ -251,8 +252,10 @@ void echo_pb_graph(char* filename) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     for (const t_logical_block_type& type : device_ctx.logical_block_types) {
         fprintf(fp, "type %s\n", type.name.c_str());
-        if (type.pb_graph_head)
-            echo_pb_rec(type.pb_graph_head, 1, fp);
+        if (type.pb_graph_head) {
+            for (const t_pb_graph_node& pb_graph_node : type.pb_graph_head->subtree())
+                echo_pb_node(&pb_graph_node, pb_graph_node.pb_type->depth + 1, fp);
+        }
     }
 
     fclose(fp);
@@ -273,7 +276,8 @@ static int check_pb_graph() {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     for (const t_logical_block_type& type : device_ctx.logical_block_types) {
         if (type.pb_type) {
-            check_pb_node_rec(type.pb_graph_head);
+            for (const t_pb_graph_node& pb_graph_node : type.pb_graph_head->subtree())
+                check_pb_node(&pb_graph_node);
         }
     }
     return num_errors;
@@ -285,7 +289,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     const int index,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster,
-                                    int& primitive_num) {
+                                    int& primitive_num,
+                                    std::deque<t_pb_graph_edge>& pb_graph_edges) {
     int i, j, k, i_input, i_output, i_clockport;
 
     pb_graph_node->placement_index = index;
@@ -310,64 +315,68 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
         }
     }
 
-    if (pb_graph_node->num_input_ports > 0) {
-        pb_graph_node->num_input_pins = new int[pb_graph_node->num_input_ports]{0};
-        pb_graph_node->input_pins = new t_pb_graph_pin* [pb_graph_node->num_input_ports] { nullptr };
+    // Size the pin storage and the per-port views once. Nothing resizes them after this.
+    int num_pins = 0;
+    for (i = 0; i < pb_type->num_ports; i++) {
+        num_pins += pb_type->ports[i].num_pins;
     }
-
-    if (pb_graph_node->num_output_ports > 0) {
-        pb_graph_node->num_output_pins = new int[pb_graph_node->num_output_ports]{0};
-        pb_graph_node->output_pins = new t_pb_graph_pin* [pb_graph_node->num_output_ports] { nullptr };
-    }
-
-    if (pb_graph_node->num_clock_ports > 0) {
-        pb_graph_node->num_clock_pins = new int[pb_graph_node->num_clock_ports]{0};
-        pb_graph_node->clock_pins = new t_pb_graph_pin* [pb_graph_node->num_clock_ports] { nullptr };
-    }
+    pb_graph_node->alloc_pins(num_pins);
+    pb_graph_node->pins_by_input_port = std::vector<std::span<t_pb_graph_pin>>(pb_graph_node->num_input_ports);
+    pb_graph_node->pins_by_output_port = std::vector<std::span<t_pb_graph_pin>>(pb_graph_node->num_output_ports);
+    pb_graph_node->pins_by_clock_port = std::vector<std::span<t_pb_graph_pin>>(pb_graph_node->num_clock_ports);
+    pb_graph_node->num_input_pins = std::vector<int>(pb_graph_node->num_input_ports, 0);
+    pb_graph_node->num_output_pins = std::vector<int>(pb_graph_node->num_output_ports, 0);
+    pb_graph_node->num_clock_pins = std::vector<int>(pb_graph_node->num_clock_ports, 0);
 
     i_input = i_output = i_clockport = 0;
     pb_graph_node->pin_num_range.low = pin_count_in_cluster;
+    std::span<t_pb_graph_pin> unassigned_pins = pb_graph_node->mutable_pins();
     for (i = 0; i < pb_type->num_ports; i++) {
         if (pb_type->ports[i].model_port) {
             VTR_ASSERT(pb_type->is_primitive());
         } else {
             VTR_ASSERT(pb_type->num_modes != 0 || pb_type->ports[i].is_clock);
         }
+
+        // Each port takes the next pins in storage, so pin numbers follow the port order
+        std::span<t_pb_graph_pin> port_pins = unassigned_pins.first(pb_type->ports[i].num_pins);
+        unassigned_pins = unassigned_pins.subspan(pb_type->ports[i].num_pins);
+
         if (pb_type->ports[i].type == IN_PORT && !pb_type->ports[i].is_clock) {
-            pb_graph_node->input_pins[i_input] = new t_pb_graph_pin[pb_type->ports[i].num_pins];
+            pb_graph_node->pins_by_input_port[i_input] = port_pins;
             pb_graph_node->num_input_pins[i_input] = pb_type->ports[i].num_pins;
             for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-                pb_graph_node->input_pins[i_input][j].pin_number = j;
-                pb_graph_node->input_pins[i_input][j].port = &pb_type->ports[i];
-                pb_graph_node->input_pins[i_input][j].parent_node = pb_graph_node;
-                pb_graph_node->input_pins[i_input][j].pin_count_in_cluster = pin_count_in_cluster;
+                pb_graph_node->pins_by_input_port[i_input][j].pin_number = j;
+                pb_graph_node->pins_by_input_port[i_input][j].port = &pb_type->ports[i];
+                pb_graph_node->pins_by_input_port[i_input][j].parent_node = pb_graph_node;
+                pb_graph_node->pins_by_input_port[i_input][j].pin_count_in_cluster = pin_count_in_cluster;
                 if (pb_graph_node->pb_type->blif_model != nullptr) {
                     if (strcmp(pb_graph_node->pb_type->blif_model, LogicalModels::MODEL_OUTPUT) == 0) {
-                        pb_graph_node->input_pins[i_input][j].type = PB_PIN_OUTPAD;
+                        pb_graph_node->pins_by_input_port[i_input][j].type = PB_PIN_OUTPAD;
                     } else if (pb_graph_node->num_clock_ports != 0) {
-                        pb_graph_node->input_pins[i_input][j].type = PB_PIN_SEQUENTIAL;
+                        pb_graph_node->pins_by_input_port[i_input][j].type = PB_PIN_SEQUENTIAL;
                     } else {
-                        pb_graph_node->input_pins[i_input][j].type = PB_PIN_TERMINAL;
+                        pb_graph_node->pins_by_input_port[i_input][j].type = PB_PIN_TERMINAL;
                     }
                 }
                 pin_count_in_cluster++;
             }
             i_input++;
         } else if (pb_type->ports[i].type == OUT_PORT) {
-            pb_graph_node->output_pins[i_output] = new t_pb_graph_pin[pb_type->ports[i].num_pins];
+            pb_graph_node->pins_by_output_port[i_output] = port_pins;
             pb_graph_node->num_output_pins[i_output] = pb_type->ports[i].num_pins;
             for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-                pb_graph_node->output_pins[i_output][j].pin_number = j;
-                pb_graph_node->output_pins[i_output][j].port = &pb_type->ports[i];
-                pb_graph_node->output_pins[i_output][j].parent_node = pb_graph_node;
-                pb_graph_node->output_pins[i_output][j].pin_count_in_cluster = pin_count_in_cluster;
+                pb_graph_node->pins_by_output_port[i_output][j].pin_number = j;
+                pb_graph_node->pins_by_output_port[i_output][j].port = &pb_type->ports[i];
+                pb_graph_node->pins_by_output_port[i_output][j].parent_node = pb_graph_node;
+                pb_graph_node->pins_by_output_port[i_output][j].pin_count_in_cluster = pin_count_in_cluster;
                 if (pb_graph_node->pb_type->blif_model != nullptr) {
                     if (strcmp(pb_graph_node->pb_type->blif_model, LogicalModels::MODEL_INPUT) == 0) {
-                        pb_graph_node->output_pins[i_output][j].type = PB_PIN_INPAD;
+                        pb_graph_node->pins_by_output_port[i_output][j].type = PB_PIN_INPAD;
                     } else if (pb_graph_node->num_clock_ports != 0) {
-                        pb_graph_node->output_pins[i_output][j].type = PB_PIN_SEQUENTIAL;
+                        pb_graph_node->pins_by_output_port[i_output][j].type = PB_PIN_SEQUENTIAL;
                     } else {
-                        pb_graph_node->output_pins[i_output][j].type = PB_PIN_TERMINAL;
+                        pb_graph_node->pins_by_output_port[i_output][j].type = PB_PIN_TERMINAL;
                     }
                 }
                 pin_count_in_cluster++;
@@ -375,15 +384,15 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
             i_output++;
         } else {
             VTR_ASSERT(pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT);
-            pb_graph_node->clock_pins[i_clockport] = new t_pb_graph_pin[pb_type->ports[i].num_pins];
+            pb_graph_node->pins_by_clock_port[i_clockport] = port_pins;
             pb_graph_node->num_clock_pins[i_clockport] = pb_type->ports[i].num_pins;
             for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-                pb_graph_node->clock_pins[i_clockport][j].pin_number = j;
-                pb_graph_node->clock_pins[i_clockport][j].port = &pb_type->ports[i];
-                pb_graph_node->clock_pins[i_clockport][j].parent_node = pb_graph_node;
-                pb_graph_node->clock_pins[i_clockport][j].pin_count_in_cluster = pin_count_in_cluster;
+                pb_graph_node->pins_by_clock_port[i_clockport][j].pin_number = j;
+                pb_graph_node->pins_by_clock_port[i_clockport][j].port = &pb_type->ports[i];
+                pb_graph_node->pins_by_clock_port[i_clockport][j].parent_node = pb_graph_node;
+                pb_graph_node->pins_by_clock_port[i_clockport][j].pin_count_in_cluster = pin_count_in_cluster;
                 if (pb_graph_node->pb_type->blif_model != nullptr) {
-                    pb_graph_node->clock_pins[i_clockport][j].type = PB_PIN_CLOCK;
+                    pb_graph_node->pins_by_clock_port[i_clockport][j].type = PB_PIN_CLOCK;
                 }
                 pin_count_in_cluster++;
             }
@@ -391,6 +400,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
         }
     }
 
+    VTR_ASSERT(unassigned_pins.empty());
     pb_graph_node->pin_num_range.high = (pin_count_in_cluster - 1);
 
     /* Power */
@@ -408,13 +418,13 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 
     /* Allocate and load child nodes for each mode and create interconnect in each mode */
 
-    pb_graph_node->child_pb_graph_nodes = (t_pb_graph_node***)vtr::calloc(pb_type->num_modes, sizeof(t_pb_graph_node**));
+    // Size each level once. Nothing resizes them after this.
+    pb_graph_node->child_pb_graph_nodes = std::vector<std::vector<std::vector<t_pb_graph_node>>>(pb_type->num_modes);
     for (i = 0; i < pb_type->num_modes; i++) {
-        pb_graph_node->child_pb_graph_nodes[i] = (t_pb_graph_node**)vtr::calloc(pb_type->modes[i].num_pb_type_children,
-                                                                                sizeof(t_pb_graph_node*));
+        pb_graph_node->child_pb_graph_nodes[i] = std::vector<std::vector<t_pb_graph_node>>(pb_type->modes[i].num_pb_type_children);
         for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-            pb_graph_node->child_pb_graph_nodes[i][j] = (t_pb_graph_node*)vtr::calloc(pb_type->modes[i].pb_type_children[j].num_pb, sizeof(t_pb_graph_node));
             int num_children_of_type = pb_type->modes[i].pb_type_children[j].num_pb;
+            pb_graph_node->child_pb_graph_nodes[i][j] = std::vector<t_pb_graph_node>(num_children_of_type);
 
             for (k = 0; k < num_children_of_type; k++) {
                 alloc_and_load_pb_graph(&pb_graph_node->child_pb_graph_nodes[i][j][k],
@@ -423,7 +433,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                         k,
                                         load_power_structures,
                                         pin_count_in_cluster,
-                                        primitive_num);
+                                        primitive_num,
+                                        pb_graph_edges);
             }
         }
     }
@@ -436,7 +447,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
         alloc_and_load_mode_interconnect(pb_graph_node,
                                          pb_graph_node->child_pb_graph_nodes[i],
                                          &pb_type->modes[i],
-                                         load_power_structures);
+                                         load_power_structures,
+                                         pb_graph_edges);
     }
 
     // update the total number of primitives of that type
@@ -452,88 +464,17 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 }
 
 static void alloc_and_load_pb_graph_pin_sinks(t_pb_graph_node* pb_graph_node) {
-    std::queue<t_pb_graph_node*> pb_graph_node_q;
-
-    pb_graph_node_q.push(pb_graph_node);
-
-    while (!pb_graph_node_q.empty()) {
-        t_pb_graph_node* curr_pb_graph_node = pb_graph_node_q.front();
-        pb_graph_node_q.pop();
-        store_pin_sinks_edge_id(curr_pb_graph_node);
-
-        for (int mode_num = 0; mode_num < curr_pb_graph_node->pb_type->num_modes; mode_num++) {
-            for (int child_pb_type_num = 0; child_pb_type_num < curr_pb_graph_node->pb_type->modes[mode_num].num_pb_type_children; child_pb_type_num++) {
-                for (int child_pb_num = 0; child_pb_num < curr_pb_graph_node->pb_type->modes[mode_num].pb_type_children[child_pb_type_num].num_pb; child_pb_num++) {
-                    pb_graph_node_q.push(&curr_pb_graph_node->child_pb_graph_nodes[mode_num][child_pb_type_num][child_pb_num]);
-                }
-            }
-        }
-    }
+    for (t_pb_graph_node& curr_pb_graph_node : pb_graph_node->subtree())
+        store_pin_sinks_edge_id(&curr_pb_graph_node);
 }
 
 static void set_pins_logical_num(t_logical_block_type* logical_block) {
-    /* Index of the pins located on the root-level block starts from 0 -
-     * For other pins it starts from the roo_level pb_type.num_pins */
-    t_pb_graph_node* root_pb_graph_node = logical_block->pb_graph_head;
-    std::queue<t_pb_graph_node*> pb_graph_node_to_set_pin_index_q;
-
     std::unordered_map<int, t_pb_graph_pin*>& pb_pin_idx_map = logical_block->pin_logical_num_to_pb_pin_mapping;
-    int offset = 0;
 
-    pb_graph_node_to_set_pin_index_q.push(root_pb_graph_node);
-    /* Iterated over all sub-blocks from the root-level block down to primitives */
-    while (!pb_graph_node_to_set_pin_index_q.empty()) {
-        t_pb_graph_node* curr_pb_graph_node = pb_graph_node_to_set_pin_index_q.front();
-        pb_graph_node_to_set_pin_index_q.pop();
-        t_pb_type* curr_pb_type = curr_pb_graph_node->pb_type;
-
-        /* There are three types of ports which can be defined for each block : Input - Output - Clock
-         * In this for loop, we first iterate over the ports of the same type
-         */
-        for (int port_type = 0; port_type < 3; port_type++) {
-            int num_ports;
-            int* num_pins;
-            t_pb_graph_pin** pins;
-            if (port_type == 0) {
-                /* Port type = Input */
-                num_ports = curr_pb_graph_node->num_input_ports;
-                num_pins = curr_pb_graph_node->num_input_pins;
-                pins = curr_pb_graph_node->input_pins;
-            } else if (port_type == 1) {
-                /* Port type = Output */
-                num_ports = curr_pb_graph_node->num_output_ports;
-                num_pins = curr_pb_graph_node->num_output_pins;
-                pins = curr_pb_graph_node->output_pins;
-            } else {
-                /* Port type = Clock */
-                num_ports = curr_pb_graph_node->num_clock_ports;
-                num_pins = curr_pb_graph_node->num_clock_pins;
-                pins = curr_pb_graph_node->clock_pins;
-            }
-            for (int port_idx = 0; port_idx < num_ports; port_idx++) {
-                for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
-                    t_pb_graph_pin* curr_pb_graph_pin = &pins[port_idx][pin_idx];
-                    pb_pin_idx_map.insert(std::make_pair(curr_pb_graph_pin->pin_count_in_cluster, curr_pb_graph_pin));
-                }
-            }
-        }
-        /* logical indices for the next block should be shifted by the number of pins seen so far. As a result, the given logical index will be unique in the logical_block level*/
-        offset += curr_pb_type->num_pins;
-
-        if (curr_pb_graph_node->is_root()) {
-            VTR_ASSERT(offset == curr_pb_graph_node->pb_type->num_pins);
-        }
-
-        /* Push sub-blocks to the queue */
-        for (int mode_idx = 0; mode_idx < curr_pb_type->num_modes; mode_idx++) {
-            t_mode* curr_mode = &curr_pb_type->modes[mode_idx];
-            for (int pb_type_idx = 0; pb_type_idx < curr_mode->num_pb_type_children; pb_type_idx++) {
-                int num_pb = curr_mode->pb_type_children[pb_type_idx].num_pb;
-                for (int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
-                    t_pb_graph_node* child_pb_graph_node = &(curr_pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
-                    pb_graph_node_to_set_pin_index_q.push(child_pb_graph_node);
-                }
-            }
+    // The logical number of a pin is its pin_count_in_cluster, which is unique within the logical block.
+    for (t_pb_graph_node& pb_graph_node : logical_block->pb_graph_head->subtree()) {
+        for (t_pb_graph_pin& pb_graph_pin : pb_graph_node.mutable_pins()) {
+            pb_pin_idx_map.insert(std::make_pair(pb_graph_pin.pin_count_in_cluster, &pb_graph_pin));
         }
     }
 }
@@ -575,47 +516,24 @@ static void add_primitive_logical_classes(t_logical_block_type* logical_block) {
     for (const t_pb_graph_node* pb_graph_node : pb_graph_nodes) {
         int first_class_num = (int)logical_block->primitive_logical_class_inf.size();
         int num_added_classes = 0;
-        /* There are three types of ports which can be defined for each block : Input - Output - Clock
-         * In this for loop, we first iterate over the ports of the same type
-         */
-        for (int port_type = 0; port_type < 3; port_type++) {
-            int num_ports;
-            int* num_pins;
-            t_pb_graph_pin** pb_graph_pins;
-            if (port_type == 0) {
-                num_ports = pb_graph_node->num_input_ports;
-                num_pins = pb_graph_node->num_input_pins;
-                pb_graph_pins = pb_graph_node->input_pins;
-
-            } else if (port_type == 1) {
-                num_ports = pb_graph_node->num_output_ports;
-                num_pins = pb_graph_node->num_output_pins;
-                pb_graph_pins = pb_graph_node->output_pins;
-
-            } else {
-                VTR_ASSERT(port_type == 2);
-                num_ports = pb_graph_node->num_clock_ports;
-                num_pins = pb_graph_node->num_clock_pins;
-                pb_graph_pins = pb_graph_node->clock_pins;
-            }
-            num_added_classes += add_port_logical_classes(logical_block, pb_graph_pins, num_ports, num_pins);
-        }
+        num_added_classes += add_port_logical_classes(logical_block, pb_graph_node->pins_by_input_port);
+        num_added_classes += add_port_logical_classes(logical_block, pb_graph_node->pins_by_output_port);
+        num_added_classes += add_port_logical_classes(logical_block, pb_graph_node->pins_by_clock_port);
         logical_block->primitive_pb_graph_node_class_range.insert(std::make_pair(pb_graph_node, t_class_range(first_class_num,
                                                                                                               first_class_num + num_added_classes - 1)));
     }
 }
 
 static int add_port_logical_classes(t_logical_block_type* logical_block,
-                                    t_pb_graph_pin** pb_graph_pins,
-                                    int num_ports,
-                                    int* num_pins) {
+                                    const std::vector<std::span<t_pb_graph_pin>>& pb_graph_pins) {
     int num_added_classes = 0;
     std::vector<t_class>& primitive_logical_class_inf = logical_block->primitive_logical_class_inf;
 
-    for (int port_idx = 0; port_idx < num_ports; port_idx++) {
-        if (num_pins[port_idx] == 0)
+    for (std::span<t_pb_graph_pin> port_pins : pb_graph_pins) {
+        if (port_pins.empty()) {
             continue;
-        t_port* port = pb_graph_pins[port_idx][0].port;
+        }
+        t_port* port = port_pins[0].port;
         if (port->equivalent != PortEquivalence::NONE) {
             t_class class_inf;
             int class_num = (int)primitive_logical_class_inf.size();
@@ -629,15 +547,15 @@ static int add_port_logical_classes(t_logical_block_type* logical_block,
                 class_inf.type = e_pin_type::DRIVER;
             }
 
-            for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
-                t_pb_graph_pin* pb_graph_pin = &(pb_graph_pins[port_idx][pin_idx]);
+            for (t_pb_graph_pin& pin : port_pins) {
+                t_pb_graph_pin* pb_graph_pin = &pin;
                 class_inf.pinlist.push_back(pb_graph_pin->pin_count_in_cluster);
                 logical_block->primitive_pb_pin_to_logical_class_num_mapping.insert(std::make_pair(pb_graph_pin, class_num));
             }
             primitive_logical_class_inf.push_back(class_inf);
             num_added_classes++;
         } else {
-            for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
+            for (t_pb_graph_pin& pin : port_pins) {
                 t_class class_inf;
                 int class_num = (int)primitive_logical_class_inf.size();
                 class_inf.num_pins = 1;
@@ -650,7 +568,7 @@ static int add_port_logical_classes(t_logical_block_type* logical_block,
                     class_inf.type = e_pin_type::DRIVER;
                 }
 
-                t_pb_graph_pin* pb_graph_pin = &(pb_graph_pins[port_idx][pin_idx]);
+                t_pb_graph_pin* pb_graph_pin = &pin;
                 class_inf.pinlist.push_back(pb_graph_pin->pin_count_in_cluster);
                 logical_block->primitive_pb_pin_to_logical_class_num_mapping.insert(std::make_pair(pb_graph_pin, class_num));
                 primitive_logical_class_inf.push_back(class_inf);
@@ -660,32 +578,6 @@ static int add_port_logical_classes(t_logical_block_type* logical_block,
     }
 
     return num_added_classes;
-}
-
-void free_pb_graph_edges() {
-    t_pb_graph_edge* edges;
-    vtr::t_linked_vptr *cur, *cur_num;
-
-    while (edges_head != nullptr) {
-        cur = edges_head;
-        cur_num = num_edges_head;
-        edges = (t_pb_graph_edge*)cur->data_vptr;
-        for (int i = 0; i < (intptr_t)cur_num->data_vptr; i++) {
-            delete[] edges[i].input_pins;
-            delete[] edges[i].output_pins;
-            if (edges[i].pack_pattern_indices) {
-                delete[] edges[i].pack_pattern_indices;
-            }
-            // if (edges[i].pack_pattern_names) {
-            // vtr::free(edges[i].pack_pattern_names);
-            // }
-        }
-        edges_head = edges_head->next;
-        num_edges_head = num_edges_head->next;
-        delete[] edges;
-        delete cur_num;
-        delete cur;
-    }
 }
 
 static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
@@ -821,9 +713,10 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
  * mode: mode of operation
  */
 static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_node,
-                                             t_pb_graph_node** pb_graph_children_nodes,
+                                             const std::vector<std::vector<t_pb_graph_node>>& pb_graph_children_nodes,
                                              const t_mode* mode,
-                                             bool load_power_structures) {
+                                             bool load_power_structures,
+                                             std::deque<t_pb_graph_edge>& pb_graph_edges) {
     int i, j;
     int *num_input_pb_graph_node_pins, *num_output_pb_graph_node_pins; /* number of pins in a set [0..num_sets-1] */
     int num_input_pb_graph_node_sets, num_output_pb_graph_node_sets;
@@ -866,7 +759,8 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
                                                      input_pb_graph_node_pins, num_input_pb_graph_node_sets,
                                                      num_input_pb_graph_node_pins, output_pb_graph_node_pins,
                                                      num_output_pb_graph_node_sets,
-                                                     num_output_pb_graph_node_pins);
+                                                     num_output_pb_graph_node_pins,
+                                                     pb_graph_edges);
 
                 break;
 
@@ -875,7 +769,8 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
                                                    input_pb_graph_node_pins, num_input_pb_graph_node_sets,
                                                    num_input_pb_graph_node_pins, output_pb_graph_node_pins,
                                                    num_output_pb_graph_node_sets,
-                                                   num_output_pb_graph_node_pins);
+                                                   num_output_pb_graph_node_pins,
+                                                   pb_graph_edges);
                 break;
 
             case MUX_INTERC:
@@ -883,7 +778,8 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
                                                 input_pb_graph_node_pins, num_input_pb_graph_node_sets,
                                                 num_input_pb_graph_node_pins, output_pb_graph_node_pins,
                                                 num_output_pb_graph_node_sets,
-                                                num_output_pb_graph_node_pins);
+                                                num_output_pb_graph_node_pins,
+                                                pb_graph_edges);
 
                 break;
 
@@ -908,44 +804,10 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
 }
 
 static void store_pin_sinks_edge_id(t_pb_graph_node* pb_graph_node) {
-    static int NUM_PORT_TYPES = 3;
-
-    for (int port_type = 0; port_type < NUM_PORT_TYPES; port_type++) {
-        int num_ports = 0;
-        int* num_pins = nullptr;
-        t_pb_graph_pin** pins = nullptr;
-        switch (port_type) {
-            case 0:
-                num_ports = pb_graph_node->num_input_ports;
-                num_pins = pb_graph_node->num_input_pins;
-                pins = pb_graph_node->input_pins;
-                break;
-            case 1:
-                num_ports = pb_graph_node->num_output_ports;
-                num_pins = pb_graph_node->num_output_pins;
-                pins = pb_graph_node->output_pins;
-                break;
-            case 2:
-                num_ports = pb_graph_node->num_clock_ports;
-                num_pins = pb_graph_node->num_clock_pins;
-                pins = pb_graph_node->clock_pins;
-                break;
-            default:
-                VTR_ASSERT(false);
-        }
-
-        for (int port_idx = 0; port_idx < num_ports; ++port_idx) {
-            for (int pin_idx = 0; pin_idx < num_pins[port_idx]; ++pin_idx) {
-                t_pb_graph_pin& pb_pin = pins[port_idx][pin_idx];
-                for (int edge_idx = 0; edge_idx < pb_pin.num_output_edges; ++edge_idx) {
-                    t_pb_graph_edge* output_edge = pb_pin.output_edges[edge_idx];
-                    int num_edge_output_pin = output_edge->num_output_pins;
-                    for (int edge_output_pin_idx = 0; edge_output_pin_idx < num_edge_output_pin; ++edge_output_pin_idx) {
-                        t_pb_graph_pin* edge_output_pin = output_edge->output_pins[edge_output_pin_idx];
-                        pb_pin.sink_pin_edge_idx_map.insert(std::make_pair(edge_output_pin, edge_idx));
-                    }
-                }
-            }
+    for (t_pb_graph_pin& pb_pin : pb_graph_node->mutable_pins()) {
+        for (int edge_idx = 0; edge_idx < pb_pin.num_output_edges; ++edge_idx) {
+            t_pb_graph_edge* output_edge = pb_pin.output_edges[edge_idx];
+            pb_pin.sink_pin_edge_idx_map.insert(std::make_pair(output_edge->output_pin(), edge_idx));
         }
     }
 }
@@ -956,7 +818,7 @@ static void store_pin_sinks_edge_id(t_pb_graph_node* pb_graph_node) {
  */
 t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                                                            const t_pb_graph_node* pb_graph_parent_node,
-                                                           t_pb_graph_node** pb_graph_children_nodes,
+                                                           const std::vector<std::vector<t_pb_graph_node>>& pb_graph_children_nodes,
                                                            std::string_view port_string,
                                                            int** num_ptrs,
                                                            int* num_sets,
@@ -1053,12 +915,10 @@ static void alloc_and_load_complete_interc_edges(t_interconnect* interconnect,
                                                  const int* num_input_ptrs,
                                                  t_pb_graph_pin*** output_pb_graph_node_pin_ptrs,
                                                  const int num_output_sets,
-                                                 const int* num_output_ptrs) {
+                                                 const int* num_output_ptrs,
+                                                 std::deque<t_pb_graph_edge>& pb_graph_edges) {
     int i_inset, i_outset, i_inpin, i_outpin;
     int in_count, out_count;
-    t_pb_graph_edge* edges;
-    int i_edge;
-    vtr::t_linked_vptr* cur;
 
     VTR_ASSERT(interconnect->infer_annotations == false);
 
@@ -1072,16 +932,6 @@ static void alloc_and_load_complete_interc_edges(t_interconnect* interconnect,
         out_count += num_output_ptrs[i_outset];
     }
 
-    edges = new t_pb_graph_edge[in_count * out_count]();
-    cur = new vtr::t_linked_vptr;
-    cur->next = edges_head;
-    edges_head = cur;
-    cur->data_vptr = (void*)edges;
-    cur = new vtr::t_linked_vptr;
-    cur->next = num_edges_head;
-    num_edges_head = cur;
-    cur->data_vptr = (void*)((intptr_t)in_count * out_count);
-
     for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
         for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {
             input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->output_edges.resize(input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->num_output_edges + out_count);
@@ -1094,8 +944,6 @@ static void alloc_and_load_complete_interc_edges(t_interconnect* interconnect,
         }
     }
 
-    i_edge = 0;
-
     /* Load connections between pins and record these updates in the edges */
     for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
         for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {
@@ -1103,28 +951,19 @@ static void alloc_and_load_complete_interc_edges(t_interconnect* interconnect,
                 for (i_outpin = 0; i_outpin < num_output_ptrs[i_outset]; i_outpin++) {
                     t_pb_graph_pin* in_pin = input_pb_graph_node_pin_ptrs[i_inset][i_inpin];
                     t_pb_graph_pin* out_pin = output_pb_graph_node_pin_ptrs[i_outset][i_outpin];
-                    in_pin->output_edges[in_pin->num_output_edges] = &edges[i_edge];
+                    t_pb_graph_edge& edge = pb_graph_edges.emplace_back();
+                    in_pin->output_edges[in_pin->num_output_edges] = &edge;
                     in_pin->num_output_edges++;
-                    out_pin->input_edges[out_pin->num_input_edges] = &edges[i_edge];
+                    out_pin->input_edges[out_pin->num_input_edges] = &edge;
                     out_pin->num_input_edges++;
 
-                    edges[i_edge].num_input_pins = 1;
-                    edges[i_edge].input_pins = new t_pb_graph_pin*[1];
-                    edges[i_edge].input_pins[0] = in_pin;
-                    edges[i_edge].num_output_pins = 1;
-                    edges[i_edge].output_pins = new t_pb_graph_pin*[1];
-                    edges[i_edge].output_pins[0] = out_pin;
-
-                    edges[i_edge].interconnect = interconnect;
-                    edges[i_edge].driver_set = i_inset;
-                    edges[i_edge].driver_pin = i_inpin;
-
-                    i_edge++;
+                    edge.set_pins(in_pin, out_pin);
+                    edge.interconnect = interconnect;
+                    edge.driver_set = i_inset;
                 }
             }
         }
     }
-    VTR_ASSERT(i_edge == in_count * out_count);
 }
 
 static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
@@ -1133,7 +972,8 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
                                                const int* num_input_ptrs,
                                                t_pb_graph_pin*** output_pb_graph_node_pin_ptrs,
                                                const int num_output_sets,
-                                               const int* num_output_ptrs) {
+                                               const int* num_output_ptrs,
+                                               std::deque<t_pb_graph_edge>& pb_graph_edges) {
     if (num_input_sets != 1) {
         vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
                   "Direct interconnect only allows connections from one set of input pins to one-or-more output sets. "
@@ -1152,15 +992,8 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
     }
 
     /* Allocate memory for edges */
-    t_pb_graph_edge* edges = new t_pb_graph_edge[pins_per_set * num_output_sets]();
-    vtr::t_linked_vptr* cur = new vtr::t_linked_vptr;
-    cur->next = edges_head;
-    edges_head = cur;
-    cur->data_vptr = (void*)edges;
-    cur = new vtr::t_linked_vptr;
-    cur->next = num_edges_head;
-    num_edges_head = cur;
-    cur->data_vptr = (void*)((intptr_t)num_input_ptrs[0]);
+    const size_t first_edge = pb_graph_edges.size();
+    pb_graph_edges.resize(first_edge + pins_per_set * num_output_sets);
 
     /* Reallocate memory for pins and load connections between pins and record these updates in the edges */
     for (int ipin = 0; ipin < pins_per_set; ++ipin) {
@@ -1173,7 +1006,7 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
         for (int iset = 0; iset < num_output_sets; ++iset) {
             int iedge = iset * pins_per_set + ipin;
             int ipin_edge = input_pin->num_output_edges + iset;
-            input_pin->output_edges[ipin_edge] = &edges[iedge];
+            input_pin->output_edges[ipin_edge] = &pb_graph_edges[first_edge + iedge];
         }
         input_pin->num_output_edges += num_output_sets;
     }
@@ -1187,7 +1020,7 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
 
             int ipin_edge = output_pin->num_input_edges;
             int iedge = iset * pins_per_set + ipin;
-            output_pin->input_edges[ipin_edge] = &edges[iedge];
+            output_pin->input_edges[ipin_edge] = &pb_graph_edges[first_edge + iedge];
             output_pin->num_input_edges += 1;
         }
     }
@@ -1196,21 +1029,15 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
     for (int iset = 0; iset < num_output_sets; ++iset) {
         for (int ipin = 0; ipin < pins_per_set; ++ipin) {
             int iedge = iset * pins_per_set + ipin;
+            t_pb_graph_edge& edge = pb_graph_edges[first_edge + iedge];
 
             t_pb_graph_pin* in_pin = input_pb_graph_node_pin_ptrs[0][ipin];
             t_pb_graph_pin* out_pin = output_pb_graph_node_pin_ptrs[iset][ipin];
 
-            edges[iedge].num_input_pins = 1;
-            edges[iedge].input_pins = new t_pb_graph_pin*[1];
-            edges[iedge].input_pins[0] = in_pin;
-            edges[iedge].num_output_pins = 1;
-            edges[iedge].output_pins = new t_pb_graph_pin*[1];
-            edges[iedge].output_pins[0] = out_pin;
-
-            edges[iedge].interconnect = interconnect;
-            edges[iedge].driver_set = 0;
-            edges[iedge].driver_pin = ipin;
-            edges[iedge].infer_pattern = interconnect->infer_annotations;
+            edge.set_pins(in_pin, out_pin);
+            edge.interconnect = interconnect;
+            edge.driver_set = 0;
+            edge.infer_pattern = interconnect->infer_annotations;
         }
     }
 }
@@ -1221,9 +1048,9 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
                                             const int* num_input_ptrs,
                                             t_pb_graph_pin*** output_pb_graph_node_pin_ptrs,
                                             const int num_output_sets,
-                                            const int* num_output_ptrs) {
+                                            const int* num_output_ptrs,
+                                            std::deque<t_pb_graph_edge>& pb_graph_edges) {
     int i_inset, i_inpin, i_outpin;
-    vtr::t_linked_vptr* cur;
 
     VTR_ASSERT(interconnect->infer_annotations == false);
 
@@ -1248,17 +1075,6 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
     /* One edge per (input_set, pin) pair so every edge remains single-pin.
      * For a 1-bit mux this is identical to the original behaviour. */
     const int pins_per_set = num_output_ptrs[0];
-    const int total_edges = num_input_sets * pins_per_set;
-
-    t_pb_graph_edge* edges = new t_pb_graph_edge[total_edges]();
-    cur = new vtr::t_linked_vptr;
-    cur->next = edges_head;
-    edges_head = cur;
-    cur->data_vptr = (void*)edges;
-    cur = new vtr::t_linked_vptr;
-    cur->next = num_edges_head;
-    num_edges_head = cur;
-    cur->data_vptr = (void*)((intptr_t)total_edges);
 
     /* Pre-size all pin edge arrays to their exact final count before wiring.
      * Each input pin gains exactly 1 new output edge (appears in one set only).
@@ -1277,23 +1093,17 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
     /* Create one single-pin edge per (input_set, pin) pair */
     for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
         for (i_inpin = 0; i_inpin < pins_per_set; i_inpin++) {
-            const int edge_idx = i_inset * pins_per_set + i_inpin;
             t_pb_graph_pin* in_pin = input_pb_graph_node_pin_ptrs[i_inset][i_inpin];
             t_pb_graph_pin* out_pin = output_pb_graph_node_pin_ptrs[0][i_inpin];
 
-            edges[edge_idx].input_pins = new t_pb_graph_pin*[1];
-            edges[edge_idx].output_pins = new t_pb_graph_pin*[1];
-            edges[edge_idx].input_pins[0] = in_pin;
-            edges[edge_idx].output_pins[0] = out_pin;
-            edges[edge_idx].num_input_pins = 1;
-            edges[edge_idx].num_output_pins = 1;
-            edges[edge_idx].interconnect = interconnect;
-            edges[edge_idx].driver_set = i_inset;
-            edges[edge_idx].driver_pin = i_inpin;
+            t_pb_graph_edge& edge = pb_graph_edges.emplace_back();
+            edge.set_pins(in_pin, out_pin);
+            edge.interconnect = interconnect;
+            edge.driver_set = i_inset;
 
-            in_pin->output_edges[in_pin->num_output_edges] = &edges[edge_idx];
+            in_pin->output_edges[in_pin->num_output_edges] = &edge;
             in_pin->num_output_edges++;
-            out_pin->input_edges[out_pin->num_input_edges] = &edges[edge_idx];
+            out_pin->input_edges[out_pin->num_input_edges] = &edge;
             out_pin->num_input_edges++;
         }
     }
@@ -1307,7 +1117,7 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
  */
 static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                                                       const t_pb_graph_node* pb_graph_parent_node,
-                                                      t_pb_graph_node** pb_graph_children_nodes,
+                                                      const std::vector<std::vector<t_pb_graph_node>>& pb_graph_children_nodes,
                                                       const bool interconnect_error_check,
                                                       const bool is_input_to_interc,
                                                       const Tokens& tokens,
@@ -1321,11 +1131,14 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
     int add_or_subtract_pb, add_or_subtract_pin;
 
     VTR_ASSERT(tokens[*token_index].type == e_token_type::STRING);
-    const t_pb_graph_node* pb_node_array = nullptr;
-    int max_pb_node_array = 0;
+
+    // The pb graph nodes named by the token.
+    std::span<const t_pb_graph_node> pb_nodes;
+    // True when the token names the parent node.
+    bool matched_parent = false;
 
     t_mode* mode = nullptr;
-    if (pb_graph_children_nodes) {
+    if (!pb_graph_children_nodes.empty()) {
         mode = pb_graph_children_nodes[0][0].pb_type->parent_mode;
     }
 
@@ -1336,8 +1149,8 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
     bool found = false;
     if (pb_graph_parent_node->pb_type->name == tokens[*token_index].data) {
         // Parent pb_type
-        pb_node_array = pb_graph_parent_node;
-        max_pb_node_array = 1;
+        pb_nodes = std::span<const t_pb_graph_node>(pb_graph_parent_node, 1);
+        matched_parent = true;
         pb_msb = pb_lsb = 0;
         found = true;
         (*token_index)++;
@@ -1389,8 +1202,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
             for (int i = 0; i < mode->num_pb_type_children; i++) {
                 VTR_ASSERT(&mode->pb_type_children[i] == pb_graph_children_nodes[i][0].pb_type);
                 if (mode->pb_type_children[i].name == tokens[*token_index].data) {
-                    pb_node_array = pb_graph_children_nodes[i];
-                    max_pb_node_array = mode->pb_type_children[i].num_pb;
+                    pb_nodes = pb_graph_children_nodes[i];
                     found = true;
                     (*token_index)++;
 
@@ -1422,13 +1234,14 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                             (*token_index)++;
                         }
                         // Check range of children pb
-                        if (pb_lsb < 0 || pb_lsb >= max_pb_node_array || pb_msb < 0 || pb_msb >= max_pb_node_array) {
+                        int num_pb_nodes = static_cast<int>(pb_nodes.size());
+                        if (pb_lsb < 0 || pb_lsb >= num_pb_nodes || pb_msb < 0 || pb_msb >= num_pb_nodes) {
                             vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                                       "Mode '%s' -> pb '%s' [%d,%d] out of range [%d,%d]", mode->name,
-                                      mode->pb_type_children[i].name, pb_msb, pb_lsb, max_pb_node_array - 1, 0);
+                                      mode->pb_type_children[i].name, pb_msb, pb_lsb, num_pb_nodes - 1, 0);
                         }
                     } else {
-                        pb_msb = pb_node_array[0].pb_type->num_pb - 1;
+                        pb_msb = static_cast<int>(pb_nodes.size()) - 1;
                         pb_lsb = 0;
                     }
                     break; // found pb_type_children, no need to keep traversing
@@ -1463,7 +1276,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
     const char* port_name = tokens[*token_index].data.c_str();
     (*token_index)++;
 
-    if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb], 0) == nullptr) {
+    if (get_pb_graph_pin_from_name(port_name, &pb_nodes[pb_lsb], 0) == nullptr) {
         vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                   "Failed to find port name %s", port_name);
     }
@@ -1496,7 +1309,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
             (*token_index)++;
         }
     } else {
-        iport = get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb], 0)->port;
+        iport = get_pb_graph_pin_from_name(port_name, &pb_nodes[pb_lsb], 0)->port;
         pin_msb = iport->num_pins - 1;
         pin_lsb = 0;
     }
@@ -1536,11 +1349,11 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
         j = 0;
         while (ipin != pin_msb + add_or_subtract_pin) {
             int idx = prev_num_pins + i * (abs(pin_msb - pin_lsb) + 1) + j;
-            (*pb_graph_pins)[idx] = get_pb_graph_pin_from_name(port_name, &pb_node_array[ipb], ipin);
+            (*pb_graph_pins)[idx] = get_pb_graph_pin_from_name(port_name, &pb_nodes[ipb], ipin);
             if ((*pb_graph_pins)[idx] == nullptr) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                           "Pin %s.%s[%d] cannot be found",
-                          pb_node_array[ipb].pb_type->name, port_name, ipin);
+                          pb_nodes[ipb].pb_type->name, port_name, ipin);
             }
             iport = (*pb_graph_pins)[idx]->port;
             if (!iport) {
@@ -1549,7 +1362,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
             // Error checking before assignment
             if (interconnect_error_check) {
-                if (pb_node_array == pb_graph_parent_node) {
+                if (matched_parent) {
                     if (is_input_to_interc) {
                         if (iport->type != IN_PORT) {
                             vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
@@ -1596,27 +1409,27 @@ static t_pb_graph_pin* get_pb_graph_pin_from_name(const char* port_name,
     int i;
 
     for (i = 0; i < pb->num_input_ports; i++) {
-        if (0 == strcmp(port_name, pb->input_pins[i][0].port->name)) {
-            if (pin < pb->input_pins[i][0].port->num_pins) {
-                return &pb->input_pins[i][pin];
+        if (0 == strcmp(port_name, pb->pins_by_input_port[i][0].port->name)) {
+            if (pin < pb->pins_by_input_port[i][0].port->num_pins) {
+                return &pb->pins_by_input_port[i][pin];
             } else {
                 return nullptr;
             }
         }
     }
     for (i = 0; i < pb->num_output_ports; i++) {
-        if (0 == strcmp(port_name, pb->output_pins[i][0].port->name)) {
-            if (pin < pb->output_pins[i][0].port->num_pins) {
-                return &pb->output_pins[i][pin];
+        if (0 == strcmp(port_name, pb->pins_by_output_port[i][0].port->name)) {
+            if (pin < pb->pins_by_output_port[i][0].port->num_pins) {
+                return &pb->pins_by_output_port[i][pin];
             } else {
                 return nullptr;
             }
         }
     }
     for (i = 0; i < pb->num_clock_ports; i++) {
-        if (0 == strcmp(port_name, pb->clock_pins[i][0].port->name)) {
-            if (pin < pb->clock_pins[i][0].port->num_pins) {
-                return &pb->clock_pins[i][pin];
+        if (0 == strcmp(port_name, pb->pins_by_clock_port[i][0].port->name)) {
+            if (pin < pb->pins_by_clock_port[i][0].port->num_pins) {
+                return &pb->pins_by_clock_port[i][pin];
             } else {
                 return nullptr;
             }
@@ -1625,9 +1438,7 @@ static t_pb_graph_pin* get_pb_graph_pin_from_name(const char* port_name,
     return nullptr;
 }
 
-static void echo_pb_rec(const t_pb_graph_node* pb_graph_node, const int level, FILE* fp) {
-    int i, j, k;
-
+static void echo_pb_node(const t_pb_graph_node* pb_graph_node, const int level, FILE* fp) {
     print_tabs(fp, level);
     fprintf(fp, "Physical Block: type \"%s\"  index %d  num_children %d\n",
             pb_graph_node->pb_type->name, pb_graph_node->placement_index,
@@ -1643,18 +1454,15 @@ static void echo_pb_rec(const t_pb_graph_node* pb_graph_node, const int level, F
     print_tabs(fp, level);
     fprintf(fp, "Input Ports: total ports %d\n",
             pb_graph_node->num_input_ports);
-    echo_pb_pins(pb_graph_node->input_pins, pb_graph_node->num_input_ports,
-                 level, fp);
+    echo_pb_pins(pb_graph_node->pins_by_input_port, level, fp);
     print_tabs(fp, level);
     fprintf(fp, "Output Ports: total ports %d\n",
             pb_graph_node->num_output_ports);
-    echo_pb_pins(pb_graph_node->output_pins, pb_graph_node->num_output_ports,
-                 level, fp);
+    echo_pb_pins(pb_graph_node->pins_by_output_port, level, fp);
     print_tabs(fp, level);
     fprintf(fp, "Clock Ports: total ports %d\n",
             pb_graph_node->num_clock_ports);
-    echo_pb_pins(pb_graph_node->clock_pins, pb_graph_node->num_clock_ports,
-                 level, fp);
+    echo_pb_pins(pb_graph_node->pins_by_clock_port, level, fp);
     print_tabs(fp, level);
     for (size_t class_id = 0; class_id < pb_graph_node->input_pin_class_sizes.size(); class_id++) {
         fprintf(fp, "Input class %zu: %zu pins, ", class_id,
@@ -1672,30 +1480,21 @@ static void echo_pb_rec(const t_pb_graph_node* pb_graph_node, const int level, F
         print_tabs(fp, level);
         fprintf(fp, "Children:\n");
     }
-    for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-        for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-            for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                echo_pb_rec(&pb_graph_node->child_pb_graph_nodes[i][j][k],
-                            level + 1, fp);
-            }
-        }
-    }
 }
 
-static void echo_pb_pins(t_pb_graph_pin** pb_graph_pins, const int num_ports, const int level, FILE* fp) {
-    int i, j, k, m;
+static void echo_pb_pins(const std::vector<std::span<t_pb_graph_pin>>& pb_graph_pins, const int level, FILE* fp) {
     t_port* port;
 
     print_tabs(fp, level);
 
-    for (i = 0; i < num_ports; i++) {
+    for (int i = 0; i < (int)pb_graph_pins.size(); i++) {
         port = pb_graph_pins[i][0].port;
         print_tabs(fp, level);
         fprintf(fp, "Port \"%s\": num_pins %d type %d parent name \"%s\"\n",
                 port->name, port->num_pins, port->type,
                 port->parent_pb_type->name);
 
-        for (j = 0; j < port->num_pins; j++) {
+        for (int j = 0; j < port->num_pins; j++) {
             print_tabs(fp, level + 1);
             VTR_ASSERT(j == pb_graph_pins[i][j].pin_number);
             VTR_ASSERT(pb_graph_pins[i][j].port == port);
@@ -1710,98 +1509,88 @@ static void echo_pb_pins(t_pb_graph_pin** pb_graph_pins, const int num_ports, co
             print_tabs(fp, level + 2);
             if (pb_graph_pins[i][j].is_primitive_pin()) {
                 fprintf(fp, "pin class (depth, pin class): ");
-                for (k = 0; k < pb_graph_pins[i][j].parent_node->pb_type->depth; k++) {
+                for (int k = 0; k < pb_graph_pins[i][j].parent_node->pb_type->depth; k++) {
                     fprintf(fp, "(%d %d), ", k,
                             pb_graph_pins[i][j].parent_pin_class[k]);
                 }
                 fprintf(fp, "\n");
                 if (pb_graph_pins[i][j].port->type == OUT_PORT) {
-                    for (k = 0; k < pb_graph_pins[i][j].parent_node->pb_type->depth; k++) {
+                    for (int k = 0; k < pb_graph_pins[i][j].parent_node->pb_type->depth; k++) {
                         print_tabs(fp, level + 2);
-                        fprintf(fp, "connectable input pins within depth %d: %d\n",
-                                k, pb_graph_pins[i][j].num_connectable_primitive_input_pins[k]);
-                        for (m = 0; m < pb_graph_pins[i][j].num_connectable_primitive_input_pins[k]; m++) {
+                        fprintf(fp, "connectable input pins within depth %d: %zu\n",
+                                k, pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k].size());
+                        for (const t_pb_graph_pin* connectable_pin : pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k]) {
                             print_tabs(fp, level + 3);
                             fprintf(fp, "pb_graph_node %s[%d].%s[%d] \n",
-                                    pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k][m]->parent_node->pb_type->name,
-                                    pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k][m]->parent_node->placement_index,
-                                    pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k][m]->port->name,
-                                    pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k][m]->pin_number);
+                                    connectable_pin->parent_node->pb_type->name,
+                                    connectable_pin->parent_node->placement_index,
+                                    connectable_pin->port->name,
+                                    connectable_pin->pin_number);
                         }
                     }
                 }
             } else {
                 fprintf(fp, "pin class %d \n", pb_graph_pins[i][j].pin_class);
             }
-            for (k = 0; k < pb_graph_pins[i][j].num_input_edges; k++) {
+            for (int k = 0; k < pb_graph_pins[i][j].num_input_edges; k++) {
+                const t_pb_graph_edge* edge = pb_graph_pins[i][j].input_edges[k];
                 print_tabs(fp, level + 2);
-                fprintf(fp, "Input edge %d num inputs %d num outputs %d\n", k,
-                        pb_graph_pins[i][j].input_edges[k]->num_input_pins,
-                        pb_graph_pins[i][j].input_edges[k]->num_output_pins);
+                fprintf(fp, "Input edge %d\n", k);
                 print_tabs(fp, level + 3);
                 fprintf(fp, "Input edge inputs\n");
-                for (m = 0; m < pb_graph_pins[i][j].input_edges[k]->num_input_pins; m++) {
-                    print_tabs(fp, level + 3);
-                    fprintf(fp, "pin number %d port_name \"%s\"\n",
-                            pb_graph_pins[i][j].input_edges[k]->input_pins[m]->pin_number,
-                            pb_graph_pins[i][j].input_edges[k]->input_pins[m]->port->name);
-                }
+                print_tabs(fp, level + 3);
+                fprintf(fp, "pin number %d port_name \"%s\"\n",
+                        edge->input_pin()->pin_number,
+                        edge->input_pin()->port->name);
                 print_tabs(fp, level + 3);
                 fprintf(fp, "Input edge outputs\n");
-                for (m = 0; m < pb_graph_pins[i][j].input_edges[k]->num_output_pins; m++) {
-                    print_tabs(fp, level + 3);
-                    fprintf(fp,
-                            "pin number %d port_name \"%s\" parent type \"%s\" parent index %d\n",
-                            pb_graph_pins[i][j].input_edges[k]->output_pins[m]->pin_number,
-                            pb_graph_pins[i][j].input_edges[k]->output_pins[m]->port->name,
-                            pb_graph_pins[i][j].input_edges[k]->output_pins[m]->parent_node->pb_type->name,
-                            pb_graph_pins[i][j].input_edges[k]->output_pins[m]->parent_node->placement_index);
-                }
+                print_tabs(fp, level + 3);
+                fprintf(fp,
+                        "pin number %d port_name \"%s\" parent type \"%s\" parent index %d\n",
+                        edge->output_pin()->pin_number,
+                        edge->output_pin()->port->name,
+                        edge->output_pin()->parent_node->pb_type->name,
+                        edge->output_pin()->parent_node->placement_index);
             }
-            for (k = 0; k < pb_graph_pins[i][j].num_output_edges; k++) {
+            for (int k = 0; k < pb_graph_pins[i][j].num_output_edges; k++) {
+                const t_pb_graph_edge* edge = pb_graph_pins[i][j].output_edges[k];
                 print_tabs(fp, level + 2);
-                fprintf(fp, "Output edge %d num inputs %d num outputs %d\n", k,
-                        pb_graph_pins[i][j].output_edges[k]->num_input_pins,
-                        pb_graph_pins[i][j].output_edges[k]->num_output_pins);
+                fprintf(fp, "Output edge %d\n", k);
                 print_tabs(fp, level + 3);
                 fprintf(fp, "Output edge inputs\n");
-                for (m = 0; m < pb_graph_pins[i][j].output_edges[k]->num_input_pins; m++) {
-                    print_tabs(fp, level + 3);
-                    fprintf(fp, "pin number %d port_name \"%s\"\n",
-                            pb_graph_pins[i][j].output_edges[k]->input_pins[m]->pin_number,
-                            pb_graph_pins[i][j].output_edges[k]->input_pins[m]->port->name);
-                }
+                print_tabs(fp, level + 3);
+                fprintf(fp, "pin number %d port_name \"%s\"\n",
+                        edge->input_pin()->pin_number,
+                        edge->input_pin()->port->name);
                 print_tabs(fp, level + 3);
                 fprintf(fp, "Output edge outputs\n");
-                for (m = 0; m < pb_graph_pins[i][j].output_edges[k]->num_output_pins; m++) {
-                    print_tabs(fp, level + 3);
-                    fprintf(fp, "pin number %d port_name \"%s\" parent type \"%s\" parent index %d\n",
-                            pb_graph_pins[i][j].output_edges[k]->output_pins[m]->pin_number,
-                            pb_graph_pins[i][j].output_edges[k]->output_pins[m]->port->name,
-                            pb_graph_pins[i][j].output_edges[k]->output_pins[m]->parent_node->pb_type->name,
-                            pb_graph_pins[i][j].output_edges[k]->output_pins[m]->parent_node->placement_index);
-                }
+                print_tabs(fp, level + 3);
+                fprintf(fp, "pin number %d port_name \"%s\" parent type \"%s\" parent index %d\n",
+                        edge->output_pin()->pin_number,
+                        edge->output_pin()->port->name,
+                        edge->output_pin()->parent_node->pb_type->name,
+                        edge->output_pin()->parent_node->placement_index);
             }
         }
     }
 }
 
-static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node) {
+static void check_pb_node(const t_pb_graph_node* pb_graph_node) {
     int line_num = 0;
     std::map<int, int> logic_equivalent_pins_map;
 
     for (int i = 0; i < pb_graph_node->num_input_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-            check_repeated_edges_at_pb_pin(&pb_graph_node->input_pins[i][j]);
+            check_repeated_edges_at_pb_pin(&pb_graph_node->pins_by_input_port[i][j]);
             // Checks the equivalency of pins of an input port
-            if (pb_graph_node->input_pins[i][j].port->equivalent != PortEquivalence::NONE) {
-                if (!check_input_pins_equivalence(&pb_graph_node->input_pins[i][j],
+            if (pb_graph_node->pins_by_input_port[i][j].port->equivalent != PortEquivalence::NONE) {
+                if (!check_input_pins_equivalence(&pb_graph_node->pins_by_input_port[i][j],
                                                   j, logic_equivalent_pins_map, &line_num)) {
                     VTR_LOG_WARN("[LINE %d] false logically-equivalent pin %s[%d].%s[%d].\n",
                                  line_num, pb_graph_node->pb_type->name,
                                  pb_graph_node->placement_index,
-                                 pb_graph_node->input_pins[i][j].port->name,
-                                 pb_graph_node->input_pins[i][j].pin_number);
+                                 pb_graph_node->pins_by_input_port[i][j].port->name,
+                                 pb_graph_node->pins_by_input_port[i][j].pin_number);
                 }
             }
         }
@@ -1810,21 +1599,13 @@ static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node) {
 
     for (int i = 0; i < pb_graph_node->num_output_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-            check_repeated_edges_at_pb_pin(&pb_graph_node->output_pins[i][j]);
+            check_repeated_edges_at_pb_pin(&pb_graph_node->pins_by_output_port[i][j]);
         }
     }
 
     for (int i = 0; i < pb_graph_node->num_clock_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-            check_repeated_edges_at_pb_pin(&pb_graph_node->clock_pins[i][j]);
-        }
-    }
-
-    for (int i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-        for (int j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-            for (int k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                check_pb_node_rec(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
-            }
+            check_repeated_edges_at_pb_pin(&pb_graph_node->pins_by_clock_port[i][j]);
         }
     }
 }
@@ -1836,32 +1617,30 @@ static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin) {
     // First check the incoming edges into cur_pin
     for (int i_edge = 0; i_edge < cur_pin->num_input_edges; i_edge++) {
         t_pb_graph_edge* cur_edge = cur_pin->input_edges[i_edge];
-        for (int i_pin = 0; i_pin < cur_edge->num_input_pins; i_pin++) {
-            // Populate the edge_comparator struct and attempt to insert it into STL map
-            edges_info.parent_edge = cur_edge;
-            edges_info.input_pin = cur_edge->input_pins[i_pin];
-            edges_info.output_pin = cur_pin;
-            edges_info.input_pin_id_in_cluster = cur_edge->input_pins[i_pin]->pin_count_in_cluster;
-            edges_info.output_pin_id_in_cluster = cur_pin->pin_count_in_cluster;
-            auto [it, success] = edges_map.insert(std::pair<t_pb_graph_edge_comparator, int>(edges_info, 0));
-            if (!success) {
-                // Print out the connection that already exists in the map and then the new one
-                // we are trying to insert into the map.
-                vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), cur_edge->interconnect->line_num,
-                          "Duplicate edges detected between: \n"
-                          "%s[%d].%s[%d]--->%s[%d].%s[%d] \n"
-                          "Found edges on line %d and %d.\n",
-                          it->first.input_pin->parent_node->pb_type->name,
-                          it->first.input_pin->parent_node->placement_index,
-                          it->first.input_pin->port->name,
-                          it->first.input_pin->pin_number,
-                          it->first.output_pin->parent_node->pb_type->name,
-                          it->first.output_pin->parent_node->placement_index,
-                          it->first.output_pin->port->name,
-                          it->first.output_pin->pin_number,
-                          it->first.parent_edge->interconnect->line_num,
-                          cur_edge->interconnect->line_num);
-            }
+        // Populate the edge_comparator struct and attempt to insert it into STL map
+        edges_info.parent_edge = cur_edge;
+        edges_info.input_pin = cur_edge->input_pin();
+        edges_info.output_pin = cur_pin;
+        edges_info.input_pin_id_in_cluster = cur_edge->input_pin()->pin_count_in_cluster;
+        edges_info.output_pin_id_in_cluster = cur_pin->pin_count_in_cluster;
+        auto [it, success] = edges_map.insert(std::pair<t_pb_graph_edge_comparator, int>(edges_info, 0));
+        if (!success) {
+            // Print out the connection that already exists in the map and then the new one
+            // we are trying to insert into the map.
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), cur_edge->interconnect->line_num,
+                      "Duplicate edges detected between: \n"
+                      "%s[%d].%s[%d]--->%s[%d].%s[%d] \n"
+                      "Found edges on line %d and %d.\n",
+                      it->first.input_pin->parent_node->pb_type->name,
+                      it->first.input_pin->parent_node->placement_index,
+                      it->first.input_pin->port->name,
+                      it->first.input_pin->pin_number,
+                      it->first.output_pin->parent_node->pb_type->name,
+                      it->first.output_pin->parent_node->placement_index,
+                      it->first.output_pin->port->name,
+                      it->first.output_pin->pin_number,
+                      it->first.parent_edge->interconnect->line_num,
+                      cur_edge->interconnect->line_num);
         }
     }
 
@@ -1886,20 +1665,19 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
     for (int i = 0; i < cur_pin->num_output_edges; i++) {
         t_pb_graph_edge* cur_edge = cur_pin->output_edges[i];
         *line_num = cur_edge->interconnect->line_num;
-        for (int j = 0; j < cur_edge->num_output_pins; j++) {
-            if (i_pin == 0) {
-                // First pin of an equivalent port, populate edges_map first
-                logic_equivalent_pins_map.insert(std::pair<int, int>(cur_edge->output_pins[j]->pin_count_in_cluster, 0));
-            } else {
-                // Rest of the pins of an equivalent port, they should connect to the
-                // same set of pins
-                if (logic_equivalent_pins_map.find(cur_edge->output_pins[j]->pin_count_in_cluster) == logic_equivalent_pins_map.end()) {
-                    // Could not find the outpin that cur_pin connects to
-                    pins_equivalent = false;
-                }
+        int out_pin_num = cur_edge->output_pin()->pin_count_in_cluster;
+        if (i_pin == 0) {
+            // First pin of an equivalent port, populate edges_map first
+            logic_equivalent_pins_map.insert(std::pair<int, int>(out_pin_num, 0));
+        } else {
+            // Rest of the pins of an equivalent port, they should connect to the
+            // same set of pins
+            if (logic_equivalent_pins_map.find(out_pin_num) == logic_equivalent_pins_map.end()) {
+                // Could not find the outpin that cur_pin connects to
+                pins_equivalent = false;
             }
-            edge_count++;
         }
+        edge_count++;
     }
 
     if (edge_count != (int)logic_equivalent_pins_map.size()) {
@@ -1919,9 +1697,7 @@ const t_pb_graph_edge* get_edge_between_pins(const t_pb_graph_pin* driver_pin, c
     int node_index = pin->pin_count_in_cluster;
     for (int iedge = 0; iedge < driver_pin->num_output_edges; iedge++) {
         t_pb_graph_edge* edge = driver_pin->output_edges[iedge];
-        VTR_ASSERT(edge->num_output_pins == 1);
-
-        if (edge->output_pins[0]->pin_count_in_cluster == node_index) {
+        if (edge->output_pin()->pin_count_in_cluster == node_index) {
             return edge;
         }
     }
@@ -1961,21 +1737,18 @@ static float calc_pb_graph_delay(const t_pb_graph_pin* start, bool forward, cons
         auto [cur_pin, cur_delay] = queue.front();
         queue.pop();
 
-        // forward searches downstream via output_edges/output_pins;
-        // !forward searches upstream via input_edges/input_pins.
+        // forward searches downstream via output_edges/output_pin();
+        // !forward searches upstream via input_edges/input_pin().
         size_t num_edges = forward ? cur_pin->output_edges.size() : cur_pin->input_edges.size();
         for (size_t ie = 0; ie < num_edges; ++ie) {
             const t_pb_graph_edge* edge = forward ? cur_pin->output_edges[ie] : cur_pin->input_edges[ie];
-            int num_pins = forward ? edge->num_output_pins : edge->num_input_pins;
-            for (int ip = 0; ip < num_pins; ++ip) {
-                const t_pb_graph_pin* next = forward ? edge->output_pins[ip] : edge->input_pins[ip];
-                if (is_search_target(next, target)) {
-                    return cur_delay + edge->delay_max;
-                }
-                if (visited.count(next) == 0) {
-                    visited.insert(next);
-                    queue.push({next, cur_delay + edge->delay_max});
-                }
+            const t_pb_graph_pin* next = forward ? edge->output_pin() : edge->input_pin();
+            if (is_search_target(next, target)) {
+                return cur_delay + edge->delay_max;
+            }
+            if (visited.count(next) == 0) {
+                visited.insert(next);
+                queue.push({next, cur_delay + edge->delay_max});
             }
         }
     }
@@ -1993,4 +1766,120 @@ float calc_pb_graph_delay_to_root_pin(const t_pb_graph_pin* src) {
 
 float calc_pb_graph_delay_from_root_pin(const t_pb_graph_pin* sink) {
     return calc_pb_graph_delay(sink, /*forward=*/false, nullptr);
+}
+
+/**
+ * @brief Find the pin of the given primitive pb_graph node which implements
+ *        the same model port and pin number as the given primitive pin.
+ *
+ * @return The equivalent pin, or nullptr if no such pin exists.
+ */
+static const t_pb_graph_pin* find_equivalent_pin_in_primitive(const t_pb_graph_node* node,
+                                                              const t_pb_graph_pin* pin) {
+    auto search_ports = [pin](const std::vector<std::span<t_pb_graph_pin>>& port_pins) -> const t_pb_graph_pin* {
+        for (std::span<t_pb_graph_pin> port : port_pins) {
+            if (port.empty() || port[0].port->model_port != pin->port->model_port)
+                continue;
+            if (pin->pin_number < (int)port.size())
+                return &port[pin->pin_number];
+        }
+        return nullptr;
+    };
+
+    if (const t_pb_graph_pin* found = search_ports(node->pins_by_input_port))
+        return found;
+    if (const t_pb_graph_pin* found = search_ports(node->pins_by_output_port))
+        return found;
+    return search_ports(node->pins_by_clock_port);
+}
+
+std::vector<const t_pb_graph_pin*> find_equivalent_pb_graph_pins(const t_pb_graph_pin* pin) {
+    std::vector<const t_pb_graph_pin*> equivalent_pins;
+    if (pin == nullptr) return equivalent_pins;
+    VTR_ASSERT_SAFE(pin->parent_node->pb_type->is_primitive());
+
+    // Find the root pb_graph node (i.e. the cluster) that this pin is within.
+    const t_pb_graph_node* root = pin->parent_node;
+    while (!root->is_root())
+        root = root->parent_pb_graph_node;
+
+    // Search every primitive in the cluster (in every mode) for primitives
+    // implementing the same model as the pin's primitive.
+    LogicalModelId target_model_id = pin->parent_node->pb_type->model_id;
+    for (const t_pb_graph_node& node : root->subtree()) {
+        if (!node.pb_type->is_primitive() || node.pb_type->model_id != target_model_id)
+            continue;
+        const t_pb_graph_pin* equivalent_pin = find_equivalent_pin_in_primitive(&node, pin);
+        if (equivalent_pin != nullptr)
+            equivalent_pins.push_back(equivalent_pin);
+    }
+
+    return equivalent_pins;
+}
+
+/**
+ * @brief Find the minimum delay between the cluster boundary and any pin
+ *        equivalent to the given pin (see find_equivalent_pb_graph_pins).
+ *
+ * @param pin       The pin to find the equivalent pins of.
+ * @param forward   If true, search from the equivalent pins to a root-block
+ *                  pin; otherwise, search from a root-block pin to the
+ *                  equivalent pins.
+ *
+ * @return The minimum, over equivalent pins, of the accumulated delay_max
+ *         along the fewest-hop path between the equivalent pin and the nearest
+ *         root-block pin, or -1.0f if no equivalent pin can reach (or be
+ *         reached from) a root-block pin.
+ */
+static float calc_min_equivalent_pin_root_delay(const t_pb_graph_pin* pin, bool forward) {
+    float min_delay = -1.0f;
+    for (const t_pb_graph_pin* equivalent_pin : find_equivalent_pb_graph_pins(pin)) {
+        float delay = calc_pb_graph_delay(equivalent_pin, forward, nullptr);
+        if (delay >= 0.0f && (min_delay < 0.0f || delay < min_delay))
+            min_delay = delay;
+    }
+    return min_delay;
+}
+
+float calc_min_equivalent_pin_path_delay(const t_pb_graph_pin* src, const t_pb_graph_pin* sink) {
+    if (src == nullptr || sink == nullptr) return -1.0f;
+
+    std::vector<const t_pb_graph_pin*> equivalent_sinks = find_equivalent_pb_graph_pins(sink);
+    std::unordered_set<const t_pb_graph_pin*> sink_set(equivalent_sinks.begin(), equivalent_sinks.end());
+
+    // From each equivalent source pin, search forward through the pb_graph
+    // and record the delay to every equivalent sink pin reached. Similar to
+    // calc_pb_graph_delay, the delay of a pin is the delay along the BFS path
+    // that first reaches it.
+    float min_delay = -1.0f;
+    for (const t_pb_graph_pin* equivalent_src : find_equivalent_pb_graph_pins(src)) {
+        std::queue<std::pair<const t_pb_graph_pin*, float>> queue;
+        std::unordered_set<const t_pb_graph_pin*> visited;
+        queue.push({equivalent_src, 0.0f});
+        visited.insert(equivalent_src);
+        while (!queue.empty()) {
+            auto [cur_pin, cur_delay] = queue.front();
+            queue.pop();
+            if (sink_set.count(cur_pin) != 0) {
+                if (min_delay < 0.0f || cur_delay < min_delay)
+                    min_delay = cur_delay;
+                continue;
+            }
+            for (const t_pb_graph_edge* edge : cur_pin->output_edges) {
+                const t_pb_graph_pin* next = edge->output_pin();
+                if (visited.insert(next).second) {
+                    queue.push({next, cur_delay + edge->delay_max});
+                }
+            }
+        }
+    }
+    return min_delay;
+}
+
+float calc_min_equivalent_pin_delay_to_root_pin(const t_pb_graph_pin* src) {
+    return calc_min_equivalent_pin_root_delay(src, /*forward=*/true);
+}
+
+float calc_min_equivalent_pin_delay_from_root_pin(const t_pb_graph_pin* sink) {
+    return calc_min_equivalent_pin_root_delay(sink, /*forward=*/false);
 }

@@ -1,9 +1,7 @@
 #pragma once
 
-#include <map>
-
 #include "atom_netlist_fwd.h"
-#include "DomainPair.h"
+#include "domain_pair.h"
 #include "tatum/analyzers/HoldTimingAnalyzer.hpp"
 #include "tatum/analyzers/SetupTimingAnalyzer.hpp"
 #include "vtr_vector.h"
@@ -18,8 +16,9 @@
  * which are reported as having been modified by the previous timing analysis.
  */
 class SetupSlackCrit {
-  public: //Constructors
-    SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& netlist_lookup);
+  public: // Constructors
+    /// @param num_clock_domains Number of clock domains in the timing constraints. Sizes the per domain pair tables.
+    SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, size_t num_clock_domains);
     ~SetupSlackCrit();
 
   public: //Types
@@ -115,13 +114,23 @@ class SetupSlackCrit {
     std::vector<AtomPinId> pins_with_modified_slacks_;        //Set of pins with modified slacks
     std::vector<AtomPinId> pins_with_modified_criticalities_; //Set of pins with modified criticalities
 
-    std::map<DomainPair, float> max_req_;                  //Maximum required times for all clock domains
-    std::map<DomainPair, float> worst_slack_;              //Worst slacks for all clock domains
-    std::map<DomainPair, tatum::NodeId> max_req_node_;     //Timing graph nodes with maximum required times (for all clock domains)
-    std::map<DomainPair, tatum::NodeId> worst_slack_node_; //Timing graph nodes with worst slacks (for all clock domains)
+    /// Maximum required times for all clock domain pairs
+    DomainPairTable<float> max_req_;
 
-    std::map<DomainPair, float> prev_max_req_;     //Maximum required times from previous call to update_max_req_worst_slack()
-    std::map<DomainPair, float> prev_worst_slack_; //Worst slacks from previous call to update_max_req_worst_slack()
+    /// Worst slacks for all clock domain pairs
+    DomainPairTable<float> worst_slack_;
+
+    /// Timing graph nodes with maximum required times for all clock domain pairs
+    DomainPairTable<tatum::NodeId> max_req_node_;
+
+    /// Timing graph nodes with worst slacks for all clock domain pairs
+    DomainPairTable<tatum::NodeId> worst_slack_node_;
+
+    /// Maximum required times from previous call to update_max_req_worst_slack()
+    DomainPairTable<float> prev_max_req_;
+
+    /// Worst slacks from previous call to update_max_req_worst_slack()
+    DomainPairTable<float> prev_worst_slack_;
 
     std::vector<tatum::NodeId> all_nodes_; //Set of all timing graph nodes (used only for non-incremental updates)
 

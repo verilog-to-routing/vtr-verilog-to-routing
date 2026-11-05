@@ -18,7 +18,6 @@
 #include "read_fpga_interchange_arch.h"
 #include "pb_type_graph.h"
 #include "pack_types.h"
-#include "lb_type_rr_graph.h"
 #include "echo_arch.h"
 #include "read_options.h"
 #include "echo_files.h"
@@ -86,6 +85,14 @@ static void setup_switches(const t_arch& arch,
                            const std::vector<t_arch_switch_inf>& arch_switches);
 
 static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analysis_opts);
+
+/**
+ * @brief Converts the values given to --timing_report_path_categories into a timing path category filter.
+ *
+ *   @param category_names  Either "all", or the names of the categories to report (e.g. "reg2reg").
+ */
+static tatum::TimingPathCategoryFilter setup_timing_report_path_categories(const std::vector<std::string>& category_names);
+
 static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts, DeviceContext& device_ctx);
 static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 
@@ -96,13 +103,20 @@ static void setup_power_opts(const t_options& Options, t_power_opts* power_opts,
  */
 static int find_ipin_cblock_switch_index(const t_arch& arch);
 
-// Fill the data structures used when flat_routing is enabled to speed-up routing
+/// Fill the data structures used when flat_routing is enabled to speed-up routing
 static void alloc_and_load_intra_cluster_resources(bool reachability_analysis);
 static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type);
-// Fill the pin_num to pb_pin map in physical_type
+/// Fill the pin_num to pb_pin map in physical_type
 static void add_logical_pin_to_physical_tile(int physical_pin_offset,
                                              t_logical_block_type_ptr logical_block_ptr,
                                              t_physical_tile_type* physical_type);
+/// Fill sub_tile.pb_pin_physical_nums for a logical block placed in one instance of the sub-tile. The pins inside the
+/// block are numbered from physical_pin_offset; the pins of its root block are pins on the tile.
+static void load_pb_pin_physical_nums(const t_physical_tile_type& physical_type,
+                                      t_sub_tile& sub_tile,
+                                      int sub_tile_inst,
+                                      t_logical_block_type_ptr logical_block,
+                                      int physical_pin_offset);
 static void add_primitive_pin_to_physical_tile(const std::vector<int>& pin_list,
                                                int physical_class_num,
                                                t_physical_tile_type* physical_tile);
@@ -131,7 +145,6 @@ void SetupVPR(const t_options* options,
               t_noc_opts* nocOpts,
               t_server_opts* serverOpts,
               t_det_routing_arch& routingArch,
-              std::vector<std::vector<t_lb_type_rr_node>>* packerRRGraphs,
               std::vector<t_segment_inf>& segments,
               t_timing_inf* timing,
               bool* showGraphics,
@@ -172,6 +185,7 @@ void SetupVPR(const t_options* options,
     fileNameOpts->read_flat_place_file = options->read_flat_place_file;
     fileNameOpts->write_flat_place_file = options->write_flat_place_file;
     fileNameOpts->write_legalized_flat_place_file = options->write_legalized_flat_place_file;
+    fileNameOpts->write_post_gp_flat_place_file = options->write_post_gp_flat_place_file;
     fileNameOpts->flat_place_verbosity = options->flat_place_verbosity;
     fileNameOpts->write_block_usage = options->write_block_usage;
 
@@ -287,6 +301,7 @@ void SetupVPR(const t_options* options,
         && !options->do_legalize
         && !options->do_placement
         && !options->do_analytical_placement
+        && !options->do_global_placement
         && !options->do_routing
         && !options->do_analysis) {
         // If none specified, we do the AP flow.
@@ -329,6 +344,16 @@ void SetupVPR(const t_options* options,
             apOpts->doAP = e_stage_action::DO;
         }
 
+        if (options->do_global_placement && !options->do_analytical_placement) {
+            // Global placement is the first stage of the Analytical Placement
+            // flow. Run the AP flow, but stop it right after global placement.
+            // If the full AP flow was also requested, it takes precedence.
+            packerOpts->doPacking = e_stage_action::SKIP;
+            placerOpts->do_placement = e_stage_action::SKIP;
+            apOpts->doAP = e_stage_action::DO;
+            apOpts->stop_after_global_placement = true;
+        }
+
         if (options->do_packing) {
             packerOpts->doPacking = e_stage_action::DO;
         }
@@ -347,7 +372,6 @@ void SetupVPR(const t_options* options,
     {
         vtr::ScopedStartFinishTimer t("Building complex block graph");
         alloc_and_load_all_pb_graphs(powerOpts->do_power, routerOpts->flat_routing);
-        *packerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
     }
 
     if (routerOpts->flat_routing) {
@@ -369,10 +393,6 @@ void SetupVPR(const t_options* options,
 
     if ((options->clock_modeling == ROUTED_CLOCK) || (options->clock_modeling == DEDICATED_NETWORK)) {
         ClockModeling::treat_clock_pins_as_non_globals();
-    }
-
-    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {
-        echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH), *packerRRGraphs);
     }
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) {
@@ -431,7 +451,7 @@ static void setup_switches(const t_arch& arch,
     device_ctx.arch_switch_inf[routing_arch.delayless_switch].R = 0.;
     device_ctx.arch_switch_inf[routing_arch.delayless_switch].Cin = 0.;
     device_ctx.arch_switch_inf[routing_arch.delayless_switch].Cout = 0.;
-    device_ctx.arch_switch_inf[routing_arch.delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
+    device_ctx.arch_switch_inf[routing_arch.delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0., 0.);
     device_ctx.arch_switch_inf[routing_arch.delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
     device_ctx.arch_switch_inf[routing_arch.delayless_switch].mux_trans_size = 0.;
     device_ctx.arch_switch_inf[routing_arch.delayless_switch].buf_size_type = e_buffer_size::ABSOLUTE;
@@ -628,6 +648,9 @@ static void setup_ap_opts(const t_options& options,
     apOpts.num_threads = options.num_workers.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
     apOpts.generate_mass_report = options.ap_generate_mass_report.value();
+    // This is set later, based on the stage options, if only global placement
+    // should be run.
+    apOpts.stop_after_global_placement = false;
 }
 
 void setup_packer_opts(const t_options& Options,
@@ -783,6 +806,7 @@ static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analy
     analysis_opts.timing_report_npaths = Options.timing_report_npaths;
     analysis_opts.timing_report_detail = Options.timing_report_detail;
     analysis_opts.timing_report_skew = Options.timing_report_skew;
+    analysis_opts.timing_report_path_categories = setup_timing_report_path_categories(Options.timing_report_path_categories.value());
     analysis_opts.echo_dot_timing_graph_node = Options.echo_dot_timing_graph_node;
 
     analysis_opts.post_synth_netlist_unconn_input_handling = Options.post_synth_netlist_unconn_input_handling;
@@ -793,6 +817,43 @@ static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analy
     analysis_opts.write_timing_summary = Options.write_timing_summary;
     analysis_opts.skip_sync_clustering_and_routing_results = Options.skip_sync_clustering_and_routing_results;
     analysis_opts.generate_net_timing_report = Options.generate_net_timing_report;
+}
+
+static tatum::TimingPathCategoryFilter setup_timing_report_path_categories(const std::vector<std::string>& category_names) {
+    VTR_ASSERT(!category_names.empty());
+    if (category_names.size() == 1 && category_names[0] == "all") {
+        return tatum::TimingPathCategoryFilter::all();
+    }
+
+    tatum::TimingPathCategoryFilter category_filter = tatum::TimingPathCategoryFilter::none();
+    for (const std::string& category_name : category_names) {
+        if (category_name == "all") {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "--timing_report_path_categories 'all' cannot be combined with other values.\n");
+        }
+
+        // Find the category with this name
+        tatum::TimingPathCategory category = tatum::TimingPathCategory::NUM_CATEGORIES;
+        for (size_t icategory = 0; icategory < size_t(tatum::TimingPathCategory::NUM_CATEGORIES); icategory++) {
+            if (category_name == tatum::to_string(tatum::TimingPathCategory(icategory))) {
+                category = tatum::TimingPathCategory(icategory);
+            }
+        }
+        if (category == tatum::TimingPathCategory::NUM_CATEGORIES) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Unknown timing path category '%s' given to --timing_report_path_categories (expected 'all' or one or more of: %s).\n",
+                            category_name.c_str(), tatum::TimingPathCategoryFilter::all().to_string().c_str());
+        }
+
+        if (category_filter.contains(category)) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "--timing_report_path_categories '%s' was given more than once.\n",
+                            category_name.c_str());
+        }
+        category_filter.add(category);
+    }
+
+    return category_filter;
 }
 
 static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts, DeviceContext& device_ctx) {
@@ -895,7 +956,9 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
         for (t_sub_tile& sub_tile : physical_type.sub_tiles) {
             sub_tile.primitive_class_range.resize(sub_tile.capacity.total());
             sub_tile.intra_pin_range.resize(sub_tile.capacity.total());
+            sub_tile.pb_pin_physical_nums.resize(sub_tile.capacity.total());
             for (int sub_tile_inst = 0; sub_tile_inst < sub_tile.capacity.total(); sub_tile_inst++) {
+                sub_tile.pb_pin_physical_nums[sub_tile_inst].resize(device_ctx.logical_block_types.size());
                 for (t_logical_block_type_ptr logic_block_ptr : sub_tile.equivalent_sites) {
                     int num_classes = (int)logic_block_ptr->primitive_logical_class_inf.size();
                     int num_pins = (int)logic_block_ptr->pin_logical_num_to_pb_pin_mapping.size();
@@ -910,6 +973,7 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
                         std::make_pair(logic_block_ptr, t_pin_range(physical_pin_offset,
                                                                     physical_pin_offset + num_pins - 1)));
                     add_logical_pin_to_physical_tile(physical_pin_offset, logic_block_ptr, &physical_type);
+                    load_pb_pin_physical_nums(physical_type, sub_tile, sub_tile_inst, logic_block_ptr, physical_pin_offset);
 
                     std::vector<t_class> logical_classes = logic_block_ptr->primitive_logical_class_inf;
                     // Change the pin numbers in a class pin list from logical number to physical number
@@ -986,6 +1050,28 @@ static void add_logical_pin_to_physical_tile(int physical_pin_offset,
     }
 }
 
+static void load_pb_pin_physical_nums(const t_physical_tile_type& physical_type,
+                                      t_sub_tile& sub_tile,
+                                      int sub_tile_inst,
+                                      t_logical_block_type_ptr logical_block,
+                                      int physical_pin_offset) {
+    std::vector<int>& pin_physical_nums = sub_tile.pb_pin_physical_nums[sub_tile_inst][logical_block->index];
+    pin_physical_nums.resize(logical_block->pin_logical_num_to_pb_pin_mapping.size());
+    // The logical number of a pin is its pin_count_in_cluster
+    for (const auto& [pin_count_in_cluster, pb_pin] : logical_block->pin_logical_num_to_pb_pin_mapping) {
+        VTR_ASSERT(pin_count_in_cluster == pb_pin->pin_count_in_cluster);
+        VTR_ASSERT(pin_count_in_cluster < (int)pin_physical_nums.size());
+        if (pb_pin->is_root_block_pin()) {
+            pin_physical_nums[pin_count_in_cluster] = get_physical_pin_at_sub_tile_location(&physical_type,
+                                                                                            logical_block,
+                                                                                            sub_tile.capacity.low + sub_tile_inst,
+                                                                                            pin_count_in_cluster);
+        } else {
+            pin_physical_nums[pin_count_in_cluster] = physical_pin_offset + pin_count_in_cluster;
+        }
+    }
+}
+
 static void add_primitive_pin_to_physical_tile(const std::vector<int>& pin_list,
                                                int physical_class_num,
                                                t_physical_tile_type* physical_tile) {
@@ -1015,17 +1101,19 @@ static void add_intra_tile_switches() {
         while (!pb_graph_node_q.empty()) {
             pb_graph_node = pb_graph_node_q.front();
             pb_graph_node_q.pop_front();
-            std::vector<t_pb_graph_pin*> pb_pins = get_mutable_pb_graph_node_pb_pins(pb_graph_node);
 
-            for (t_pb_graph_pin* pb_pin : pb_pins) {
-                for (int out_edge_idx = 0; out_edge_idx < pb_pin->num_output_edges; out_edge_idx++) {
-                    t_pb_graph_edge* pb_graph_edge = pb_pin->output_edges[out_edge_idx];
+            for (const t_pb_graph_pin& pb_pin : pb_graph_node->pins()) {
+                for (int out_edge_idx = 0; out_edge_idx < pb_pin.num_output_edges; out_edge_idx++) {
+                    t_pb_graph_edge* pb_graph_edge = pb_pin.output_edges[out_edge_idx];
                     float max_delay = pb_graph_edge->delay_max;
 
                     if (pb_edge_delays.find(max_delay) == pb_edge_delays.end()) {
                         switch_type_id = (int)device_ctx.all_sw_inf.size();
                         pb_edge_delays.insert(std::make_pair(max_delay, switch_type_id));
-                        t_arch_switch_inf arch_switch_inf = create_internal_arch_sw(max_delay);
+                        // TODO: Only the max delay of pb graph edges is used, so intra-cluster switches have min == max
+                        // and hold analysis with flat routing is optimistic. Key pb_edge_delays on both delay_min and
+                        // delay_max, and pass pb_graph_edge->delay_min here.
+                        t_arch_switch_inf arch_switch_inf = create_internal_arch_sw(/*delay_min=*/max_delay, /*delay_max=*/max_delay);
                         // AM: In the function that arch_sw to rr_swith remapping takes place, we assumed that the delay of the intra-cluster
                         // switches is fixed, and it is not dependent on the fan-in.
                         VTR_ASSERT_MSG(arch_switch_inf.fixed_Tdel(), "Intra-cluster switch is expected to have a fixed delay");

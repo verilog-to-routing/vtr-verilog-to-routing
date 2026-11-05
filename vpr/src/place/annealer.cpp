@@ -618,9 +618,9 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             // Invalidates timing of modified connections for incremental timing updates.
             pin_timing_invalidator_->invalidate_affected_connections(blocks_affected_);
 
-            /* Update the connection_timing_cost and connection_delay
-             * values from the temporary values. */
-            placer_state_.mutable_timing().commit_td_cost(blocks_affected_);
+            // Update the connection_timing_cost and connection_delay
+            // values from the temporary values.
+            placer_state_.mutable_timing().commit_td_cost();
 
             /* Update timing information. Since we are analyzing setup slacks,
              * we only update those values and keep the criticalities stale

@@ -196,9 +196,11 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
     // Update the point-to-point delays from the initial placement
     comp_td_connection_delays(place_delay_model_.get(), placer_state_);
 
-    // Initialize timing analysis
+    // Initialize timing analysis. The placement delay model only estimates one delay per
+    // connection, so it is used as both the min and max delay.
     placement_delay_calc_ = std::make_shared<PlacementDelayCalculator>(atom_ctx.netlist(),
                                                                        atom_ctx.lookup(),
+                                                                       p_timing_ctx.connection_delay,
                                                                        p_timing_ctx.connection_delay,
                                                                        is_flat_);
     placement_delay_calc_->set_tsu_margin_relative(placer_opts_.tsu_rel_margin);

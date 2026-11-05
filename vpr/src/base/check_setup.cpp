@@ -131,6 +131,26 @@ void check_setup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
                             "ap_high_fanout_threshold should be greater than 1");
         }
 
+        // When only running global placement, there is no clustered placement
+        // for the later stages of the flow to use.
+        if (ap_opts.stop_after_global_placement) {
+            if (router_opts.doRouting != e_stage_action::SKIP
+                || vpr_setup.AnalysisOpts.doAnalysis != e_stage_action::SKIP) {
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "--global_place only runs global placement and cannot be combined with "
+                                "routing or analysis. Use --analytical_place to run the full analytical "
+                                "placement flow.\n");
+            }
+            if (!vpr_setup.FileNameOpts.write_flat_place_file.empty()) {
+                VTR_LOG_WARN("--write_flat_place is ignored when only running global placement "
+                             "(--global_place). Use --write_post_gp_flat_place instead.\n");
+            }
+            if (!vpr_setup.FileNameOpts.write_legalized_flat_place_file.empty()) {
+                VTR_LOG_WARN("--write_legalized_flat_place is ignored when only running global "
+                             "placement (--global_place). Use --write_post_gp_flat_place instead.\n");
+            }
+        }
+
         // Delta delay override model is not supported for AP.
         if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {
             // NOTE: This is disabled for AP since this uses pins on the tile to

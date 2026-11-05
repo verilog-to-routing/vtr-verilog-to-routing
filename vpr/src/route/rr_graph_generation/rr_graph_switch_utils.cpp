@@ -94,16 +94,18 @@ void load_rr_switch_from_arch_switch(RRGraphBuilder& rr_graph_builder,
                                      int fanin,
                                      const float R_minW_nmos,
                                      const float R_minW_pmos) {
-    // figure out, by looking at the arch switch's Tdel map, what the delay of the new rr switch should be
-    double rr_switch_Tdel = arch_sw_inf.at(arch_switch_idx).Tdel(fanin);
+    // figure out, by looking at the arch switch's Tdel maps, what the delays of the new rr switch should be
+    double rr_switch_Tdel_min = arch_sw_inf.at(arch_switch_idx).Tdel_min(fanin);
+    double rr_switch_Tdel_max = arch_sw_inf.at(arch_switch_idx).Tdel_max(fanin);
 
-    // copy over the arch switch to rr_switch_inf[rr_switch_idx], but with the changed Tdel value
+    // copy over the arch switch to rr_switch_inf[rr_switch_idx], but with the changed Tdel values
     rr_graph_builder.rr_switch()[rr_switch_idx].set_type(arch_sw_inf.at(arch_switch_idx).type());
     rr_graph_builder.rr_switch()[rr_switch_idx].R = arch_sw_inf.at(arch_switch_idx).R;
     rr_graph_builder.rr_switch()[rr_switch_idx].Cin = arch_sw_inf.at(arch_switch_idx).Cin;
     rr_graph_builder.rr_switch()[rr_switch_idx].Cinternal = arch_sw_inf.at(arch_switch_idx).Cinternal;
     rr_graph_builder.rr_switch()[rr_switch_idx].Cout = arch_sw_inf.at(arch_switch_idx).Cout;
-    rr_graph_builder.rr_switch()[rr_switch_idx].Tdel = rr_switch_Tdel;
+    rr_graph_builder.rr_switch()[rr_switch_idx].Tdel_min = rr_switch_Tdel_min;
+    rr_graph_builder.rr_switch()[rr_switch_idx].Tdel_max = rr_switch_Tdel_max;
     rr_graph_builder.rr_switch()[rr_switch_idx].mux_trans_size = arch_sw_inf.at(arch_switch_idx).mux_trans_size;
     if (arch_sw_inf.at(arch_switch_idx).buf_size_type == e_buffer_size::AUTO) {
         // Size based on resistance
@@ -123,16 +125,18 @@ t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_
                                                   const float R_minW_pmos) {
     t_rr_switch_inf rr_switch_inf;
 
-    // figure out, by looking at the arch switch's Tdel map, what the delay of the new rr switch should be
-    double rr_switch_Tdel = arch_sw_inf.Tdel(0);
+    // figure out, by looking at the arch switch's Tdel maps, what the delays of the new rr switch should be
+    double rr_switch_Tdel_min = arch_sw_inf.Tdel_min(0);
+    double rr_switch_Tdel_max = arch_sw_inf.Tdel_max(0);
 
-    // copy over the arch switch to rr_switch_inf[rr_switch_idx], but with the changed Tdel value
+    // copy over the arch switch to rr_switch_inf[rr_switch_idx], but with the changed Tdel values
     rr_switch_inf.set_type(arch_sw_inf.type());
     rr_switch_inf.R = arch_sw_inf.R;
     rr_switch_inf.Cin = arch_sw_inf.Cin;
     rr_switch_inf.Cinternal = arch_sw_inf.Cinternal;
     rr_switch_inf.Cout = arch_sw_inf.Cout;
-    rr_switch_inf.Tdel = rr_switch_Tdel;
+    rr_switch_inf.Tdel_min = rr_switch_Tdel_min;
+    rr_switch_inf.Tdel_max = rr_switch_Tdel_max;
     rr_switch_inf.mux_trans_size = arch_sw_inf.mux_trans_size;
     if (arch_sw_inf.buf_size_type == e_buffer_size::AUTO) {
         // Size based on resistance
