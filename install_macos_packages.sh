@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-echo "Installing OpenFPGA macOS dependencies..."
+echo "Installing VTR macOS dependencies..."
 
 brew update
 
@@ -23,8 +23,6 @@ brew install \
     zip \
     perl \
     boost \
-    eigen@3 \
-    openssl@3 \
     zlib \
     libffi \
     readline \
@@ -34,10 +32,8 @@ brew install \
     tcl-tk \
     swig \
     graphviz \
-    icarus-verilog \
     googletest \
     gawk \
-    llvm \
     qt
 
 # Apple Clang
@@ -64,6 +60,5 @@ ninja --version
 ccache --version
 python3 --version
 qmake --version
-iverilog -V
 
-echo "OpenFPGA macOS dependencies installed."
+echo "VTR macOS dependencies installed."
