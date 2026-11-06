@@ -509,7 +509,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                     continue;
                 RRNodeId rr_node_to_add = rt_node.inode;
 
-                /* Flat router: don't go into clusters other than the target one */
+                // Flat router: don't go into clusters other than the target one
                 if (is_flat_) {
                     if (!relevant_node_to_target(rr_graph_, rr_node_to_add, target_node))
                         continue;
