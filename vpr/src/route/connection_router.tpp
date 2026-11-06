@@ -478,6 +478,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     int target_bin_y = grid_to_bin_y(rr_graph_->node_ylow(target_node), spatial_rt_lookup);
 
     short target_layer = rr_graph_->node_layer_low(target_node);
+    const std::vector<bool>& has_3d_switchblocks = g_vpr_ctx.device().has_3d_switchblocks;
 
     int chan_nodes_added = 0;
 
@@ -493,7 +494,6 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     //If the target's bin has insufficient existing routing add from the surrounding bins
     constexpr int SINGLE_BIN_MIN_NODES = 2;
     bool done = false;
-    bool found_node_on_same_layer = false;
     for (int dx : {0, -1, +1}) {
         size_t bin_x = target_bin_x + dx;
 
@@ -509,7 +509,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                     continue;
                 RRNodeId rr_node_to_add = rt_node.inode;
 
-                /* Flat router: don't go into clusters other than the target one */
+                // Flat router: don't go into clusters other than the target one
                 if (is_flat_) {
                     if (!relevant_node_to_target(rr_graph_, rr_node_to_add, target_node))
                         continue;
@@ -521,8 +521,28 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                     continue;
 
                 short rt_node_layer_num = rr_graph_->node_layer_low(rr_node_to_add);
-                if (rt_node_layer_num == target_layer)
-                    found_node_on_same_layer = true;
+
+                // CHANZ wires span multiple layers, so their layer_num is the end they deliver
+                // their signal to.
+                if (rr_graph_->node_type(rr_node_to_add) == e_rr_type::CHANZ) {
+                    short layer_low = rr_graph_->node_layer_low(rr_node_to_add);
+                    short layer_high = rr_graph_->node_layer_high(rr_node_to_add);
+                    Direction direction = rr_graph_->node_direction(rr_node_to_add);
+
+                    if (direction == Direction::INC) {
+                        rt_node_layer_num = layer_high;
+                    } else if (direction == Direction::DEC) {
+                        rt_node_layer_num = layer_low;
+                    } else if (target_layer == layer_low || target_layer == layer_high) {
+                        // Bidirectional wires can deliver their signal to either end.
+                        rt_node_layer_num = target_layer;
+                    }
+                }
+
+                // Without 3D switch blocks, routing wires can't change layers, so a node that
+                // leads to another layer can't reach the target.
+                if (rt_node_layer_num != target_layer && !has_3d_switchblocks[rt_node_layer_num])
+                    continue;
 
                 // Put the node onto the heap
                 add_route_tree_node_to_heap(rt_node, target_node, cost_params, net_bounding_box);
@@ -535,7 +555,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 }
             }
 
-            if (dx == 0 && dy == 0 && chan_nodes_added > SINGLE_BIN_MIN_NODES && found_node_on_same_layer) {
+            if (dx == 0 && dy == 0 && chan_nodes_added > SINGLE_BIN_MIN_NODES) {
                 //Target bin contained at least minimum amount of routing
                 //
                 //We require at least SINGLE_BIN_MIN_NODES to be added.
@@ -548,9 +568,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
         }
         if (done) break;
     }
-    /* If we didn't find enough nodes to branch off near the target
-     * or they are on the wrong grid layer, just add the full route tree */
-    if (chan_nodes_added <= SINGLE_BIN_MIN_NODES || !found_node_on_same_layer) {
+    // If we didn't find enough nodes to branch off near the target, just add the full route tree
+    if (chan_nodes_added <= SINGLE_BIN_MIN_NODES) {
         add_route_tree_to_heap(rt_root, target_node, cost_params, net_bounding_box);
         return net_bounding_box;
     } else {
