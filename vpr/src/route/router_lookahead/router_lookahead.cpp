@@ -82,7 +82,7 @@ float ClassicLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target
     return delay_cost + cong_cost;
 }
 
-std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
+std::pair<float, float> ClassicLookahead::calculate_delay_and_cong(bool scale_delay, RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -110,8 +110,10 @@ std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId n
                      + num_segs_ortho_dir * num_segs_ortho_dir * ortho_data.T_quadratic
                      + R_upstream * (num_segs_same_dir * same_data.C_load + num_segs_ortho_dir * ortho_data.C_load)
                      + ipin_data.T_linear;
-
-        return std::make_pair(params.criticality * Tdel, (1 - params.criticality) * cong_cost);
+        if (scale_delay)
+            return std::make_pair(params.criticality * Tdel, (1 - params.criticality) * cong_cost);
+        else
+            return std::make_pair(Tdel, (1 - params.criticality) * cong_cost);
     } else if (rr_type == e_rr_type::IPIN) { /* Change if you're allowing route-throughs */
         return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
 
@@ -120,11 +122,23 @@ std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId n
     }
 }
 
+std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
+    return calculate_delay_and_cong(/*scale_delay*/ true, node, target_node, params, R_upstream);
+}
+
+std::pair<float, float> ClassicLookahead::get_expected_pure_delay_and_scaled_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
+    return calculate_delay_and_cong(/*scale_delay*/ false, node, target_node, params, R_upstream);
+}
+
 float NoOpLookahead::get_expected_cost(RRNodeId /*current_node*/, RRNodeId /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
     return 0.;
 }
 
 std::pair<float, float> NoOpLookahead::get_expected_delay_and_cong(RRNodeId /*node*/, RRNodeId /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
+    return std::make_pair(0., 0.);
+}
+
+std::pair<float, float> NoOpLookahead::get_expected_pure_delay_and_scaled_cong(RRNodeId /*node*/, RRNodeId /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
     return std::make_pair(0., 0.);
 }
 
