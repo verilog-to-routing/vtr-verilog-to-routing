@@ -5,34 +5,43 @@
 
 #include "relative_macro_packing.h"
 
+#include <algorithm>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "atom_netlist.h"
+#include "atom_pb_bimap.h"
 #include "cluster_legalizer.h"
 #include "vpr_error.h"
+#include "vpr_utils.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
+
+// Maximum number of alternative site paths to include in an error message.
+static constexpr size_t MAX_REPORTED_SITE_PATHS = 3;
 
 RelativeMacroPacker::RelativeMacroPacker(const UserRelativeMacros& relative_macros,
                                          const Prepacker& prepacker,
                                          const AtomNetlist& atom_netlist)
     : relative_macros_(relative_macros)
     , prepacker_(prepacker)
-    , atom_netlist_(atom_netlist) {
+    , atom_netlist_(atom_netlist)
+    , chain_owners_(prepacker.get_num_molecule_chains(), UserRelativeGroupId::INVALID()) {
     VTR_ASSERT(relative_macros.get_num_macros() != 0);
     init_chain_owners_();
     validate_molecule_groups_();
+    validate_locked_sites_();
 }
 
 void RelativeMacroPacker::init_chain_owners_() {
-    VTR_ASSERT(chain_owners_.empty());
-
     // A chain is owned by the group of its first constrained atom. Chains whose
     // atoms span several groups are rejected by validate_molecule_groups_().
     for (PackMoleculeId mol_id : prepacker_.molecules()) {
         const t_pack_molecule& molecule = prepacker_.get_molecule(mol_id);
-        if (!molecule.chain_id.is_valid())
+        if (!molecule.chain_id.is_valid() || chain_owners_[molecule.chain_id].is_valid())
             continue;
 
         for (AtomBlockId blk_id : molecule.atom_block_ids) {
@@ -41,7 +50,7 @@ void RelativeMacroPacker::init_chain_owners_() {
 
             UserRelativeGroupId atom_group = relative_macros_.get_atom_group(blk_id);
             if (atom_group.is_valid()) {
-                chain_owners_.emplace(molecule.chain_id, atom_group);
+                chain_owners_[molecule.chain_id] = atom_group;
                 break;
             }
         }
@@ -110,6 +119,56 @@ void RelativeMacroPacker::validate_molecule_groups_() const {
     }
 }
 
+void RelativeMacroPacker::validate_locked_sites_() const {
+    // Report non-root site locks in one warning. Constraints generated from a
+    // placement can contain many of them, but only root sites are forced directly.
+    size_t num_non_root_sites = 0;
+    AtomBlockId first_non_root_site;
+
+    for (PackMoleculeId mol_id : prepacker_.molecules()) {
+        const t_pack_molecule& molecule = prepacker_.get_molecule(mol_id);
+        AtomBlockId root_blk_id = prepacker_.get_molecule_root_atom(mol_id);
+        const bool root_is_locked = !relative_macros_.get_atom_locked_site_path(root_blk_id).empty();
+
+        for (AtomBlockId blk_id : molecule.atom_block_ids) {
+            if (!blk_id.is_valid() || blk_id == root_blk_id)
+                continue;
+            const std::string& site_path = relative_macros_.get_atom_locked_site_path(blk_id);
+            if (site_path.empty())
+                continue;
+
+            if (!root_is_locked) {
+                // An unlocked root leaves this atom's site unenforced. The
+                // molecule may differ from the one used to record the sites.
+                UserRelativeGroupId atom_group = relative_macros_.get_atom_group(blk_id);
+                VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                "Atom '%s' of relative macro '%s' group %zu is locked to primitive site '%s', but it "
+                                "is not the root of its prepacked molecule (the root is atom '%s', which is not "
+                                "locked). A site can only be forced through a molecule's root primitive, so this site "
+                                "would be ignored. The netlist most likely forms different pack patterns than the "
+                                "netlist the sites were recorded from; regenerate the macro against this netlist.\n",
+                                atom_netlist_.block_name(blk_id).c_str(),
+                                relative_macros_.get_macro(relative_macros_.get_group(atom_group).macro_id).name.c_str(),
+                                size_t(atom_group),
+                                site_path.c_str(),
+                                atom_netlist_.block_name(root_blk_id).c_str());
+            }
+
+            num_non_root_sites++;
+            if (!first_non_root_site.is_valid())
+                first_non_root_site = blk_id;
+        }
+    }
+
+    VTR_LOGV_WARN(num_non_root_sites > 0,
+                  "%zu atom(s) of relative placement macros carry a primitive site but are not the root of their "
+                  "prepacked molecule (first: '%s'). Only a molecule's root can be placed on a given site; the "
+                  "others follow from the pack pattern. These sites are not enforced directly, but are checked "
+                  "against the final clustering, which will report any that were not met.\n",
+                  num_non_root_sites,
+                  atom_netlist_.block_name(first_non_root_site).c_str());
+}
+
 UserRelativeGroupId RelativeMacroPacker::molecule_group(PackMoleculeId molecule_id) const {
     VTR_ASSERT_SAFE(molecule_id.is_valid());
 
@@ -126,10 +185,8 @@ UserRelativeGroupId RelativeMacroPacker::molecule_group(PackMoleculeId molecule_
 }
 
 UserRelativeGroupId RelativeMacroPacker::chain_owner_(MoleculeChainId chain_id) const {
-    auto owner_itr = chain_owners_.find(chain_id);
-    if (owner_itr != chain_owners_.end())
-        return owner_itr->second;
-    return UserRelativeGroupId::INVALID();
+    VTR_ASSERT_SAFE(chain_id.is_valid());
+    return chain_owners_[chain_id];
 }
 
 bool long_chain_ownership_allows(bool molecule_is_long_chain,
@@ -216,6 +273,258 @@ t_relative_macro_verdict RelativeMacroPacker::evaluate_molecule(PackMoleculeId m
     return verdict;
 }
 
+const std::string& RelativeMacroPacker::molecule_site_path_(PackMoleculeId molecule_id) const {
+    return relative_macros_.get_atom_locked_site_path(prepacker_.get_molecule_root_atom(molecule_id));
+}
+
+bool RelativeMacroPacker::molecule_is_locked_to_site(PackMoleculeId molecule_id) const {
+    return !molecule_site_path_(molecule_id).empty();
+}
+
+const std::unordered_map<std::string, const t_pb_graph_node*>& RelativeMacroPacker::site_table_(t_logical_block_type_ptr cluster_type) {
+    auto table_itr = site_tables_.find(cluster_type);
+    if (table_itr == site_tables_.end()) {
+        // Cache each primitive by its full hierarchical path, using the same
+        // names as the constraints loader.
+        std::unordered_map<std::string, const t_pb_graph_node*> table;
+        for (const t_pb_graph_node& node : cluster_type->pb_graph_head->subtree()) {
+            if (node.is_primitive())
+                table.emplace(node.hierarchical_type_name(), &node);
+        }
+        table_itr = site_tables_.emplace(cluster_type, std::move(table)).first;
+    }
+    return table_itr->second;
+}
+
+RelativeMacroPacker::t_locked_site RelativeMacroPacker::resolve_locked_site(PackMoleculeId molecule_id,
+                                                                            t_logical_block_type_ptr cluster_type) {
+    const std::string& site_path = molecule_site_path_(molecule_id);
+    if (site_path.empty())
+        return {e_locked_site::NOT_LOCKED, nullptr};
+    VTR_ASSERT(cluster_type != nullptr);
+
+    const std::unordered_map<std::string, const t_pb_graph_node*>& table = site_table_(cluster_type);
+    auto node_itr = table.find(site_path);
+    if (node_itr == table.end())
+        return {e_locked_site::NOT_IN_TYPE, nullptr};
+    return {e_locked_site::RESOLVED, node_itr->second};
+}
+
+void RelativeMacroPacker::report_unsatisfiable_locked_site(PackMoleculeId molecule_id,
+                                                           const LegalizationCluster& cluster,
+                                                           const AtomPBBimap& atom_pb_lookup,
+                                                           const t_pb_graph_node* resolved_site,
+                                                           int log_verbosity) {
+    AtomBlockId root_blk_id = prepacker_.get_molecule_root_atom(molecule_id);
+    const std::string& site_path = molecule_site_path_(molecule_id);
+    VTR_ASSERT(!site_path.empty());
+    const UserRelativeGroupId group = molecule_group(molecule_id);
+    const std::string& macro_name = relative_macros_.get_macro(relative_macros_.get_group(group).macro_id).name;
+
+    // Check the cluster's atoms for an occupant. Searching the full pb graph
+    // for alternative sites is deferred until the fatal error is formatted.
+    t_locked_site_failure failure;
+    failure.cluster_type = cluster.type;
+    if (resolved_site == nullptr) {
+        failure.reason = e_locked_site_failure::NOT_IN_TYPE;
+    } else {
+        failure.reason = e_locked_site_failure::MOLECULE_DOES_NOT_FIT;
+        for (PackMoleculeId cluster_mol_id : cluster.molecules) {
+            for (AtomBlockId blk_id : prepacker_.get_molecule(cluster_mol_id).atom_block_ids) {
+                if (!blk_id.is_valid())
+                    continue;
+                const t_pb* atom_pb = atom_pb_lookup.atom_pb(blk_id);
+                if (atom_pb == nullptr || atom_pb->pb_graph_node != resolved_site)
+                    continue;
+                failure.reason = e_locked_site_failure::SITE_OCCUPIED;
+                failure.occupying_atom = blk_id;
+                break;
+            }
+            if (failure.reason == e_locked_site_failure::SITE_OCCUPIED)
+                break;
+        }
+    }
+
+    // Save only failures in empty clusters for the seed error message. Keep one
+    // entry per cluster type, and reset the record when a different seed fails.
+    if (cluster.molecules.empty()) {
+        if (last_unsatisfiable_locked_site_.atom != root_blk_id)
+            last_unsatisfiable_locked_site_ = {root_blk_id, group, site_path, {}};
+        std::vector<t_locked_site_failure>& failures = last_unsatisfiable_locked_site_.failures;
+        auto same_type = std::find_if(failures.begin(), failures.end(), [&](const t_locked_site_failure& seen) {
+            return seen.cluster_type == failure.cluster_type;
+        });
+        if (same_type == failures.end())
+            failures.push_back(failure);
+        else
+            *same_type = failure;
+    }
+
+    if (log_verbosity <= 2)
+        return;
+
+    switch (failure.reason) {
+        case e_locked_site_failure::NOT_IN_TYPE:
+            VTR_LOG("\t\tRelative macro '%s' group %zu: atom '%s' is locked to primitive site '%s', which does not "
+                    "exist in cluster type '%s'\n",
+                    macro_name.c_str(), size_t(group),
+                    atom_netlist_.block_name(root_blk_id).c_str(), site_path.c_str(), cluster.type->name.c_str());
+            break;
+        case e_locked_site_failure::SITE_OCCUPIED:
+            VTR_LOG("\t\tRelative macro '%s' group %zu: atom '%s' is locked to primitive site '%s', which is already "
+                    "occupied by atom '%s'\n",
+                    macro_name.c_str(), size_t(group),
+                    atom_netlist_.block_name(root_blk_id).c_str(), site_path.c_str(),
+                    atom_netlist_.block_name(failure.occupying_atom).c_str());
+            break;
+        case e_locked_site_failure::MOLECULE_DOES_NOT_FIT:
+            VTR_LOG("\t\tRelative macro '%s' group %zu: the molecule rooted at atom '%s' could not be placed on its "
+                    "primitive site '%s' in cluster type '%s' (the site is not occupied; it is unavailable in the "
+                    "cluster's current modes, or the molecule does not fit or route there)\n",
+                    macro_name.c_str(), size_t(group),
+                    atom_netlist_.block_name(root_blk_id).c_str(), site_path.c_str(), cluster.type->name.c_str());
+            break;
+        default:
+            VTR_ASSERT_MSG(false, "Unknown locked site failure reason");
+            break;
+    }
+}
+
+std::string RelativeMacroPacker::describe_unsatisfiable_locked_site(PackMoleculeId seed_molecule_id) const {
+    const t_pack_molecule& seed_mol = prepacker_.get_molecule(seed_molecule_id);
+    const t_unsatisfiable_locked_site& record = last_unsatisfiable_locked_site_;
+    if (record.atom != prepacker_.get_molecule_root_atom(seed_molecule_id))
+        return {};
+
+    std::string message = "\tThe atom is locked to primitive site '" + record.site_path
+                          + "' by relative macro '" + relative_macros_.get_macro(relative_macros_.get_group(record.group).macro_id).name
+                          + "' group " + std::to_string(size_t(record.group))
+                          + ", and no candidate block type could honour it:\n";
+
+    bool any_not_in_type = false;
+    bool any_does_not_fit = false;
+    for (const t_locked_site_failure& failure : record.failures) {
+        const std::string& type_name = failure.cluster_type->name;
+        switch (failure.reason) {
+            case e_locked_site_failure::NOT_IN_TYPE: {
+                any_not_in_type = true;
+                // Find compatible site examples for the fatal error message.
+                std::vector<std::string> available_paths;
+                for (const t_pb_graph_node& candidate : failure.cluster_type->pb_graph_head->subtree()) {
+                    if (available_paths.size() == MAX_REPORTED_SITE_PATHS)
+                        break;
+                    if (candidate.is_primitive() && primitive_type_feasible(record.atom, candidate.pb_type))
+                        available_paths.push_back(candidate.hierarchical_type_name());
+                }
+                std::string examples;
+                for (const std::string& path : available_paths)
+                    examples += " '" + path + "'";
+                message += "\t\t'" + type_name + "': has no such primitive; sites it does offer this atom include"
+                           + (examples.empty() ? std::string(" none") : examples) + "\n";
+                break;
+            }
+            case e_locked_site_failure::MOLECULE_DOES_NOT_FIT:
+                any_does_not_fit = true;
+                message += "\t\t'" + type_name + "': the site is free, but the molecule rooted at this atom does not "
+                                                 "fit or route there\n";
+                break;
+            default:
+                // Seed failures come from empty clusters, so SITE_OCCUPIED
+                // cannot appear in this record.
+                VTR_ASSERT_MSG(false, "Unexpected locked site failure reason for a seed molecule");
+                break;
+        }
+    }
+
+    // A root's site must accommodate the whole pack pattern. List the other
+    // atoms to show why a site compatible with the root alone may still fail.
+    std::string other_atoms;
+    if (any_does_not_fit && seed_mol.pack_pattern != nullptr) {
+        for (AtomBlockId blk_id : seed_mol.atom_block_ids) {
+            if (!blk_id.is_valid() || blk_id == record.atom)
+                continue;
+            other_atoms += " '" + atom_netlist_.block_name(blk_id) + "'";
+        }
+    }
+    if (!other_atoms.empty()) {
+        message += "\tAtom '" + atom_netlist_.block_name(record.atom) + "' roots a '"
+                   + seed_mol.pack_pattern->name + "' molecule, which must also find primitives for:" + other_atoms;
+        message += "\n\tA site for the root only works where the whole molecule fits. If this atom did not root "
+                   "this molecule when the sites were recorded, the netlist has changed; regenerate the macro "
+                   "against it.\n";
+    }
+
+    // Suggest regenerating the path only if no candidate type contains it.
+    // The constraints loader currently rejects such paths, but keep the
+    // diagnostic here in case that validation changes.
+    const bool site_exists_somewhere = std::any_of(record.failures.begin(), record.failures.end(),
+                                                   [](const t_locked_site_failure& failure) {
+                                                       return failure.reason != e_locked_site_failure::NOT_IN_TYPE;
+                                                   });
+    if (any_not_in_type && !site_exists_somewhere) {
+        message += "\tA site path fixes the block type and the mode at every level, so a path recorded on another "
+                   "architecture or another mode never matches. Regenerate the macro against this netlist and "
+                   "architecture.\n";
+    }
+
+    return message;
+}
+
+std::vector<PackMoleculeId> RelativeMacroPacker::group_molecules_to_pack(PackMoleculeId seed_molecule_id,
+                                                                         LegalizationClusterId cluster_id,
+                                                                         const ClusterLegalizer& cluster_legalizer,
+                                                                         int log_verbosity) const {
+    std::vector<PackMoleculeId> order;
+
+    const UserRelativeGroupId group = molecule_group(seed_molecule_id);
+    if (!group.is_valid())
+        return order;
+
+    // Collect unclustered group molecules, excluding the seed. Molecules in
+    // other clusters cannot be moved here; count them for the split-group log.
+    // The end-of-pass check reports any split as an error.
+    std::unordered_set<PackMoleculeId> seen = {seed_molecule_id};
+    size_t num_elsewhere = 0;
+    AtomBlockId first_elsewhere;
+    for (AtomBlockId blk_id : relative_macros_.get_group(group).atoms) {
+        PackMoleculeId mol_id = prepacker_.get_atom_molecule(blk_id);
+        if (!seen.insert(mol_id).second)
+            continue;
+
+        if (!cluster_legalizer.is_mol_clustered(mol_id)) {
+            order.push_back(mol_id);
+        } else if (cluster_legalizer.get_atom_cluster(blk_id) != cluster_id) {
+            num_elsewhere++;
+            if (!first_elsewhere.is_valid())
+                first_elsewhere = blk_id;
+        }
+    }
+
+    // Summarize the split once per attempt instead of logging every atom.
+    VTR_LOGV(log_verbosity > 1 && num_elsewhere > 0,
+             "\tRelative macro '%s' group %zu is split: %zu of its molecules are already in other clusters "
+             "(first: atom '%s' in cluster %zu) while cluster %zu is being seeded with the same group.\n",
+             relative_macros_.get_macro(relative_macros_.get_group(group).macro_id).name.c_str(), size_t(group),
+             num_elsewhere,
+             atom_netlist_.block_name(first_elsewhere).c_str(),
+             size_t(cluster_legalizer.get_atom_cluster(first_elsewhere)),
+             size_t(cluster_id));
+
+    // Reserve locked sites first, preserving constraints-file order. Try larger
+    // unlocked molecules before smaller ones.
+    std::stable_sort(order.begin(), order.end(), [&](PackMoleculeId lhs, PackMoleculeId rhs) {
+        bool lhs_locked = molecule_is_locked_to_site(lhs);
+        bool rhs_locked = molecule_is_locked_to_site(rhs);
+        if (lhs_locked != rhs_locked)
+            return lhs_locked;
+        if (lhs_locked)
+            return false;
+        return prepacker_.get_molecule_num_valid_atoms(lhs) > prepacker_.get_molecule_num_valid_atoms(rhs);
+    });
+
+    return order;
+}
+
 /**
  * @brief Find relative placement groups whose atoms occupy multiple clusters.
  *
@@ -260,7 +569,10 @@ void report_split_relative_groups(const ClusterLegalizer& cluster_legalizer,
         report += "  Relative macro '" + macro.name + "', group " + std::to_string(size_t(group_id)) + ":";
         for (AtomBlockId blk_id : group.atoms) {
             LegalizationClusterId cluster_id = cluster_legalizer.get_atom_cluster(blk_id);
+            // Include locked sites to help diagnose why the group was split.
+            const std::string& site_path = relative_macros.get_atom_locked_site_path(blk_id);
             report += " '" + atom_netlist.block_name(blk_id) + "' ("
+                      + (!site_path.empty() ? "site '" + site_path + "', " : "")
                       + (cluster_id.is_valid() ? "cluster " + std::to_string((size_t)cluster_id)
                                                : std::string("unclustered"))
                       + ")";

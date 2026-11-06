@@ -19,6 +19,7 @@
 #include "logic_types.h"
 #include "logical_ram_infer.h"
 #include "prepack.h"
+#include "relative_macro_packing.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
@@ -178,7 +179,8 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
                                        const t_molecule_stats& max_molecule_stats,
                                        const LogicalModels& models,
                                        const PreClusterTimingManager& pre_cluster_timing_manager,
-                                       const RamMapper& ram_mapper)
+                                       const RamMapper& ram_mapper,
+                                       const std::optional<RelativeMacroPacker>& relative_macro_packer)
     : seed_mols_(prepacker.molecules().begin(), prepacker.molecules().end()) {
     // Seed molecule list is initialized with all molecule in the netlist.
 
@@ -244,6 +246,23 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
                                   AtomBlockId root = mol.atom_block_ids[mol.root];
                                   return ram_mapper.group_id_of(root).is_valid();
                               });
+    }
+
+    // Seed relative placement groups first so other clusters cannot take their
+    // molecules before the groups are packed together.
+    if (relative_macro_packer) {
+        std::vector<PackMoleculeId>::iterator relative_end = std::stable_partition(seed_mols_.begin(),
+                                                                                   seed_mols_.end(),
+                                                                                   [&](PackMoleculeId mol_id) {
+                                                                                       return relative_macro_packer->molecule_group(mol_id).is_valid();
+                                                                                   });
+
+        // Within the constrained molecules, put locked seeds first. The seed is
+        // placed before the rest of its group, so an unlocked seed could occupy
+        // a site needed by a locked group member.
+        std::stable_partition(seed_mols_.begin(), relative_end, [&](PackMoleculeId mol_id) {
+            return relative_macro_packer->molecule_is_locked_to_site(mol_id);
+        });
     }
 
     // Print the seed gains if requested.
