@@ -339,6 +339,9 @@ struct DeviceContext : public Context {
 
     bool rr_graph_is_flat = false;
 
+    /// Whether each layer has 3D switchblocks i.e. a CHANX/CHANY wire that fans out to a CHANZ wire [0..number_of_layers-1]
+    std::vector<bool> has_3d_switchblocks;
+
     /// @brief Version of the Generic Switch Block used to build the tileable RR graph.
     e_gsb_version gsb_version;
 
