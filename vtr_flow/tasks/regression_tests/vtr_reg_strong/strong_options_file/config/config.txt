@@ -1,0 +1,40 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+circuit_list_add=ch_intrinsics.v
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_fixed_chan_width.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+# Script parameters
+# All three runs use the same VPR options, so they should produce identical results:
+#   1. Every option on the command-line (the reference).
+#   2. Every option from vpr_options.yaml.
+#   3. Some options from vpr_options_partial.yaml and the rest on the command-line, including a
+#      multi-value option with values from both (they are combined in argument order).
+# The positional arguments (architecture, circuit) can also be given in an options file, but are not
+# tested here because run_vtr_flow always passes them on the command-line (see
+# vpr/test/test_read_options_file.cpp instead).
+# --route_chan_width stays on the command-line in every run: run_vtr_flow only reads its own
+# command-line, and without it would expect VPR to search for the minimum channel width.
+script_params_common = -track_memory_usage
+script_params_list_add = --pack --place --route --analysis --seed 5 --inner_num 0.5 --route_chan_width 100 --router_algorithm timing_driven --timing_analysis on --timing_report_detail detailed --timing_report_path_categories in2reg reg2reg
+script_params_list_add = --route_chan_width 100 --options_file ../../../../config/vpr_options.yaml
+script_params_list_add = --pack --place --route --analysis --route_chan_width 100 --options_file ../../../../config/vpr_options_partial.yaml --seed 5 --timing_report_path_categories reg2reg

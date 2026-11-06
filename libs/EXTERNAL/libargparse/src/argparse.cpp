@@ -49,6 +49,11 @@ namespace argparse {
         return argument_groups_[argument_groups_.size() - 1];
     }
 
+    ArgumentParser& ArgumentParser::file_expander(FileExpander expander) {
+        file_expander_ = std::move(expander);
+        return *this;
+    }
+
     void ArgumentParser::parse_args(int argc, const char* const* argv, int error_exit_code, int help_exit_code, int version_exit_code) {
         try {
             parse_args_throw(argc, argv);
@@ -80,6 +85,7 @@ namespace argparse {
     
     void ArgumentParser::parse_args_throw(std::vector<std::string> arg_strs) {
         add_help_option_if_unspecified();
+        expanded_args_.clear();
 
         //Reset all the defaults
         for (const auto& group : argument_groups()) {
@@ -116,6 +122,17 @@ namespace argparse {
 
         std::set<std::shared_ptr<Argument>> specified_arguments;
 
+        // End (exclusive) of the arguments spliced in from the most recently expanded file. Since
+        // arguments are processed in order, i < expanded_file_end means arg_strs[i] came from that file.
+        size_t expanded_file_end = 0;
+
+        // The [begin, end) indices of each EXPAND_FILE option and its value, which are left out of
+        // expanded_args_.
+        std::vector<std::pair<size_t, size_t>> expand_file_option_ranges;
+
+        // Whether a positional argument was taken from an expanded file (used for error messages).
+        bool positional_from_file = false;
+
         //Process the arguments
         for (size_t i = 0; i < arg_strs.size(); i++) {
             ShortArgInfo short_arg_info = no_space_short_arg(arg_strs[i], str_to_option_arg);
@@ -134,6 +151,11 @@ namespace argparse {
 
             if (arg) {
                 //Start of an argument
+                const size_t option_idx = i;
+
+                if (arg->action() == Action::EXPAND_FILE && i < expanded_file_end) {
+                    throw ArgParseError(arg->long_option() + " can not be used within an expanded file");
+                }
 
                 specified_arguments.insert(arg);
 
@@ -148,7 +170,7 @@ namespace argparse {
                     arg->set_dest_to_true(); 
                     throw ArgParseVersion();
                 } else {
-                    assert(arg->action() == Action::STORE);
+                    assert(arg->action() == Action::STORE || arg->action() == Action::EXPAND_FILE);
 
 
                     size_t max_values_to_read = 0;
@@ -182,12 +204,19 @@ namespace argparse {
                         if (next_idx >= arg_strs.size()) {
                             break;
                         }
+                        // An option from an expanded file only takes values from that file.
+                        if (i < expanded_file_end && next_idx >= expanded_file_end) {
+                            break;
+                        }
                         std::string str = arg_strs[next_idx];
 
 
                         if (is_argument(str, str_to_option_arg)) break;
 
-                        if (!arg->is_valid_value(str)) break;
+                        // On the command-line an invalid value ends the option's values (it may be a
+                        // positional argument). Within an expanded file all values after an option
+                        // belong to it, so keep the value and let the checks below report it.
+                        if (!arg->is_valid_value(str) && next_idx >= expanded_file_end) break;
 
                         values.push_back(str);
                     }
@@ -215,7 +244,7 @@ namespace argparse {
                     for (const auto& val : values) {
                         if (!is_valid_choice(val, arg->choices())) {
                             std::stringstream msg;
-                            msg << "Unexpected option value '" << values[0] << "' (expected one of: " << join(arg->choices(), ", ");
+                            msg << "Unexpected option value '" << val << "' (expected one of: " << join(arg->choices(), ", ");
                             msg << ") for " << arg->name();
                             throw ArgParseError(msg.str());
                         }
@@ -266,13 +295,33 @@ namespace argparse {
                     if (!short_arg_info.is_no_space_short_arg) {
                         i += nargs_read; //Skip over the values (don't need to for short args)
                     }
+
+                    if (arg->action() == Action::EXPAND_FILE) {
+                        assert(values.size() == 1);
+                        std::vector<std::string> file_args = expand_file_(*arg, values[0]);
+
+                        // Splice the file's arguments in directly after this option, so they are
+                        // parsed exactly as if they had been written there on the command-line.
+                        arg_strs.insert(arg_strs.begin() + i + 1, file_args.begin(), file_args.end());
+                        expanded_file_end = i + 1 + file_args.size();
+                        expand_file_option_ranges.emplace_back(option_idx, i + 1);
+                    }
                 }
 
             } else {
                 if (positional_args.empty()) {
                     //Unrecognized
                     std::stringstream ss;
-                    ss << "Unexpected command-line argument '" << arg_strs[i] << "'";
+                    if (i < expanded_file_end) {
+                        ss << "Unexpected argument '" << arg_strs[i] << "' from expanded file";
+                    } else {
+                        ss << "Unexpected command-line argument '" << arg_strs[i] << "'";
+                    }
+                    // A positional argument given twice is not an option (unlike, say, a mistyped option).
+                    bool may_be_positional = arg_strs[i].empty() || arg_strs[i][0] != '-';
+                    if ((i < expanded_file_end || positional_from_file) && may_be_positional) {
+                        ss << " (were positional arguments given both in the file and on the command-line?)";
+                    }
                     throw ArgParseError(ss.str());
                 } else {
                     //Positional argument
@@ -289,6 +338,9 @@ namespace argparse {
 
                     auto value = arg_strs[i];
                     specified_arguments.insert(pos_arg);
+                    if (i < expanded_file_end) {
+                        positional_from_file = true;
+                    }
                 }
             }
         }
@@ -317,6 +369,13 @@ namespace argparse {
                 }
             }
         }
+
+        // Leave out the EXPAND_FILE options, which have been replaced by the files' arguments.
+        // Erase from the back, so the earlier ranges' indices stay valid.
+        for (auto range = expand_file_option_ranges.rbegin(); range != expand_file_option_ranges.rend(); ++range) {
+            arg_strs.erase(arg_strs.begin() + range->first, arg_strs.begin() + range->second);
+        }
+        expanded_args_ = arg_strs;
     }
 
     void ArgumentParser::reset_destinations() {
@@ -350,6 +409,21 @@ namespace argparse {
     std::string ArgumentParser::description() const { return description_; }
     std::string ArgumentParser::epilog() const { return epilog_; }
     std::vector<ArgumentGroup> ArgumentParser::argument_groups() const { return argument_groups_; }
+    const std::vector<std::string>& ArgumentParser::expanded_args() const { return expanded_args_; }
+
+    std::vector<std::string> ArgumentParser::expand_file_(const Argument& arg, const std::string& file_path) const {
+        if (!file_expander_) {
+            throw ArgParseError("No file expander set for " + arg.long_option());
+        }
+
+        try {
+            return file_expander_(file_path, *this);
+        } catch (const ArgParseError& e) {
+            std::stringstream msg;
+            msg << "Failed to expand " << arg.long_option() << " '" << file_path << "': " << e.what();
+            throw ArgParseError(msg.str());
+        }
+    }
 
     void ArgumentParser::add_help_option_if_unspecified() {
         //Has a help already been specified
@@ -467,6 +541,8 @@ namespace argparse {
             throw ArgParseError("HELP action requires nargs to be '0'");
         } else if (action() == Action::STORE && (nargs_type != '1' && nargs_type != '+' && nargs_type != '*')) {
             throw ArgParseError("STORE action requires nargs to be '1', '+' or '*'");
+        } else if (action() == Action::EXPAND_FILE && nargs_type != '1') {
+            throw ArgParseError("EXPAND_FILE action requires nargs to be '1'");
         }
 
         nargs_ = nargs_type;
@@ -493,7 +569,7 @@ namespace argparse {
             || action_ == Action::HELP 
             || action_ == Action::VERSION) {
             this->nargs('0');
-        } else if (action_ == Action::STORE) {
+        } else if (action_ == Action::STORE || action_ == Action::EXPAND_FILE) {
             this->nargs('1');
         } else {
             throw ArgParseError("Unrecognized argparse action");
