@@ -103,6 +103,8 @@ bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router
 
 void print_overused_nodes_status(const t_router_opts& router_opts, const OveruseInfo& overuse_info);
 
+/// @brief Print one line of the routing status table.
+/// @param hold_timing_updated False when timing_info holds no hold results for this iteration, so the hold columns print N/A.
 void print_route_status(int itry,
                         double elapsed_sec,
                         float pres_fac,
@@ -111,6 +113,7 @@ void print_route_status(int itry,
                         const OveruseInfo& overuse_info,
                         const WirelengthInfo& wirelength_info,
                         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                        bool hold_timing_updated,
                         float est_success_iteration);
 
 void print_route_status_header();

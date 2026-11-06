@@ -187,6 +187,13 @@ bool route(const Netlist<>& net_list,
     RoutingMetrics best_routing_metrics;
     int legal_convergence_count = 0;
 
+    // The router only reads setup criticality while it negotiates congestion. Hold results are needed
+    // when routing budgets are in use and on a feasible iteration, where they are compared against the
+    // best routing so far. An incremental analyzer consumes the invalidated edges on each update, so a
+    // setup-only update would leave the hold results of those edges stale for later full updates.
+    const bool hold_analysis_skippable = router_opts.routing_budgets_algorithm == DISABLE
+                                         && router_opts.timing_update_type != e_timing_update_type::INCREMENTAL;
+
     /* Get initial criticalities from the lookahead */
     if (router_opts.with_timing_analysis && router_opts.initial_timing == e_router_initial_timing::LOOKAHEAD) {
         vtr::ScopedStartFinishTimer init_timing_timer("Initializing router criticalities");
@@ -198,8 +205,12 @@ bool route(const Netlist<>& net_list,
                                       device_ctx.rr_graph,
                                       is_flat);
 
-        //Run STA to get estimated criticalities
-        timing_info->update();
+        // Run STA to get estimated criticalities
+        if (hold_analysis_skippable) {
+            timing_info->update_setup();
+        } else {
+            timing_info->update();
+        }
         VTR_LOG("Initial Net Connection Criticality Histogram:\n");
         print_router_criticality_histogram(net_list, *timing_info, netlist_pin_lookup, is_flat);
     }
@@ -310,9 +321,15 @@ bool route(const Netlist<>& net_list,
         routing_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes + overuse_info.control_congested_bus_muxes);
         float est_success_iteration = routing_predictor.estimate_success_iteration();
 
-        //Update timing based on the new routing
-        //Note that the net delays have already been updated by timing_driven_route_net
-        timing_info->update();
+        // Update timing based on the new routing
+        // Note that the net delays have already been updated by timing_driven_route_net
+        // Hold analysis is skipped on iterations that cannot complete, since nothing reads its results there
+        bool hold_timing_updated = routing_is_feasible || !hold_analysis_skippable;
+        if (hold_timing_updated) {
+            timing_info->update();
+        } else {
+            timing_info->update_setup();
+        }
         timing_info->set_warn_unconstrained(false); //Don't warn again about unconstrained nodes again during routing
         pin_timing_invalidator->reset();
 
@@ -331,8 +348,17 @@ bool route(const Netlist<>& net_list,
 
         PartitionTreeDebug::log(iteration_msg);
 
-        //Output progress
-        print_route_status(itry, iter_elapsed_time, pres_fac, num_net_bounding_boxes_updated, iter_results.stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
+        // Output progress
+        print_route_status(itry,
+                           iter_elapsed_time,
+                           pres_fac,
+                           num_net_bounding_boxes_updated,
+                           iter_results.stats,
+                           overuse_info,
+                           wirelength_info,
+                           timing_info,
+                           hold_timing_updated,
+                           est_success_iteration);
         // Show mux conflicts only in verbose mode to keep the status table readable.
         // print_overused_nodes_status() lists affected muxes if routing fails.
         VTR_LOGV(router_opts.route_verbosity > 2 && overuse_info.control_congested_bus_muxes > 0,
