@@ -41,7 +41,7 @@ namespace argparse {
      * arguments, except that:
      *  - Options within the file only take values from the file.
      *  - An invalid value after an option within the file is an error, rather than ending the
-     *    option's values (so positional arguments must come before any options).
+     *    option's values (so positional arguments must come before any other options).
      *  - The file may not itself contain an EXPAND_FILE option.
      *
      * Implementations must report failures by throwing ArgParseError.

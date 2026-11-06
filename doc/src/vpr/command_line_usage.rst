@@ -79,7 +79,7 @@ Instead of passing every option on the command-line, options can be read from a 
         timing_report_detail: "detailed"  # Quotes are optional.
 
         # Options which take multiple values are given as a list,
-        # either as [in2reg, reg2reg] or one item per line:
+        # either as [in2reg, reg2reg] or as one "- item" per line:
         timing_report_path_categories:
           - in2reg
           - reg2reg
@@ -97,7 +97,7 @@ Instead of passing every option on the command-line, options can be read from a 
     * An option which takes a single value may only be given once, so it can not be given both in the file and on the command-line.
     * Flags (options which take no value, such as ``--pack``) are given as ``true`` (set the flag) or ``false`` (do not set it).
       YAML's other boolean words (``yes``/``no``, ``on``/``off``) are also accepted.
-    * Options which take multiple values are given as a YAML list.
+    * Options which take multiple values are given as a YAML list, either on one line (``[a, b]``) or with one ``- item`` per line.
       Values given both in the file and on the command-line are combined, in the order they appear.
     * Values are passed to VPR as the text written in the file (without any quotes), so they take the same values as on the command-line.
       For example, ``--timing_analysis`` takes ``on`` or ``off``, not ``true`` or ``false``.
