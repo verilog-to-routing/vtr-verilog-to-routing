@@ -137,8 +137,11 @@ namespace argparse {
              * @brief Returns the arguments of the last successful parse, with each EXPAND_FILE
              *        option (and its value) replaced by the arguments read from its file.
              *
-             * Parsing these arguments gives the same result without reading any files. Equal to the
-             * arguments which were passed in when no files were expanded.
+             * For example, if args.txt contains "--seed 5", then the arguments
+             * {"--args_file", "args.txt", "--pack"} are returned as {"--seed", "5", "--pack"}.
+             * Parsing the returned arguments gives the same result as the original arguments, without
+             * reading any files. If no EXPAND_FILE option was given, the returned arguments are the
+             * same as those passed to the parse.
              */
             const std::vector<std::string>& expanded_args() const;
 
