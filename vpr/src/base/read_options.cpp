@@ -1,4 +1,5 @@
 #include "read_options.h"
+#include "read_options_file.h"
 #include "constant_nets.h"
 #include "clock_modeling.h"
 #include "vpr_error.h"
@@ -22,6 +23,7 @@ t_options read_options(int argc, const char** argv) {
     auto parser = create_arg_parser(argv[0], args);
 
     parser.parse_args(argc, argv);
+    args.expanded_args = parser.expanded_args();
 
     set_conditional_defaults(args);
 
@@ -2060,6 +2062,14 @@ static void add_general_options(argparse::ArgumentParser& parser, t_options& arg
 static void add_file_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& file_grp = parser.add_argument_group("file options");
 
+    file_grp.add_argument(args.options_file, "--options_file")
+        .help(
+            "YAML file of additional command-line options, as a map from option name to value"
+            " (e.g. 'route_chan_width: 100'). The options are used as if written on the"
+            " command-line in place of --options_file. The positional arguments (architecture,"
+            " circuit) may also be given in the file.")
+        .action(argparse::Action::EXPAND_FILE);
+
     file_grp.add_argument<e_arch_format, ParseArchFormat>(args.arch_format, "--arch_format")
         .help(
             "File format for the input atom-level circuit/netlist.\n"
@@ -4017,6 +4027,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         "Attempts to find the minimum routable channel width, unless a fixed"
         " channel width is specified with --route_chan_width.";
     auto parser = argparse::ArgumentParser(prog_name, description);
+    parser.file_expander(expand_yaml_options_file);
 
     std::string epilog = vtr::replace_all(
         "Usage Examples\n"

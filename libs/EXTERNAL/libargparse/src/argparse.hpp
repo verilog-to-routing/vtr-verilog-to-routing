@@ -7,6 +7,7 @@
 #include <sstream>
 #include <memory>
 #include <map>
+#include <functional>
 
 #include "argparse_formatter.hpp"
 #include "argparse_default_converter.hpp"
@@ -17,14 +18,41 @@ namespace argparse {
 
     class Argument;
     class ArgumentGroup;
+    class ArgumentParser;
 
+    /**
+     * @brief What the parser does when an option is given on the command-line.
+     */
     enum class Action {
-        STORE,
-        STORE_TRUE,
-        STORE_FALSE,
-        HELP,
-        VERSION
+        STORE,       ///< Stores the option's value(s).
+        STORE_TRUE,  ///< Stores true; the option takes no value.
+        STORE_FALSE, ///< Stores false; the option takes no value.
+        HELP,        ///< Prints the help message and exits.
+        VERSION,     ///< Prints the version and exits.
+        EXPAND_FILE  ///< Reads arguments from the given file; see FileExpander.
     };
+
+    /**
+     * @brief Converts a file into a list of argument strings (e.g. {"--seed", "5"}).
+     *
+     * Used by options with Action::EXPAND_FILE. The returned arguments are spliced into the
+     * argument list directly after the option, and parsed exactly as if they had been written on
+     * the command-line there, so they follow the normal rules for ordering and duplicate
+     * arguments, except that:
+     *  - Options within the file only take values from the file.
+     *  - An invalid value after an option within the file is an error, rather than ending the
+     *    option's values (so positional arguments must come before any options).
+     *  - The file may not itself contain an EXPAND_FILE option.
+     *
+     * Implementations must report failures by throwing ArgParseError.
+     *
+     * @param file_path The value given to the EXPAND_FILE option.
+     * @param parser    The parser being run; it can be queried (e.g. argument_groups()) to decide
+     *                  how to convert each entry of the file.
+     * @return The argument strings to splice into the argument list.
+     */
+    using FileExpander = std::function<std::vector<std::string>(const std::string& file_path,
+                                                                const ArgumentParser& parser)>;
 
     enum class ShowIn {
         USAGE_AND_HELP,
@@ -64,6 +92,11 @@ namespace argparse {
             //Adds a group to collect related arguments
             ArgumentGroup& add_argument_group(std::string description_str);
 
+            /**
+             * @brief Sets the function used to expand the files given to Action::EXPAND_FILE options.
+             */
+            ArgumentParser& file_expander(FileExpander expander);
+
             //Like parse_arg_throw(), but catches exceptions and exits the program
             void parse_args(int argc, const char* const* argv, int error_exit_code=1, int help_exit_code=0, int version_exit_code=0);
 
@@ -100,8 +133,24 @@ namespace argparse {
             //Returns all the argument groups in this parser
             std::vector<ArgumentGroup> argument_groups() const;
 
+            /**
+             * @brief Returns the arguments of the last successful parse, with each EXPAND_FILE
+             *        option (and its value) replaced by the arguments read from its file.
+             *
+             * Parsing these arguments gives the same result without reading any files. Equal to the
+             * arguments which were passed in when no files were expanded.
+             */
+            const std::vector<std::string>& expanded_args() const;
+
         private:
             void add_help_option_if_unspecified();
+
+            /**
+             * @brief Runs the file expander on the value of an EXPAND_FILE option.
+             *
+             * Adds the option and file to the message of any error raised by the expander.
+             */
+            std::vector<std::string> expand_file_(const Argument& arg, const std::string& file_path) const;
 
             struct ShortArgInfo {
                 bool is_no_space_short_arg = false;
@@ -119,6 +168,9 @@ namespace argparse {
             std::unique_ptr<Formatter> formatter_;
             std::ostream& os_;
             ArgValue<bool> show_help_dummy_; //Dummy variable used as destination for automatically generated help option
+
+            FileExpander file_expander_;              ///< Expands the files given to EXPAND_FILE options.
+            std::vector<std::string> expanded_args_;  ///< Arguments of the last successful parse, see expanded_args().
     };
 
     class ArgumentGroup {
@@ -337,8 +389,8 @@ namespace argparse {
                     std::stringstream msg;
                     msg << "Non-boolean destination can not have STORE_FALSE action (" << long_option() << ")";
                     throw ArgParseError(msg.str());
-                } else if (action() != Action::STORE) {
-                    throw ArgParseError("Unexpected action (expected STORE)");
+                } else if (action() != Action::STORE && action() != Action::EXPAND_FILE) {
+                    throw ArgParseError("Unexpected action (expected STORE or EXPAND_FILE)");
                 }
                 return true;
             }
@@ -409,7 +461,13 @@ namespace argparse {
             }
 
             bool valid_action() override { 
-                //Any supported action is valid on a boolean destination
+                //Any supported action is valid on a boolean destination,
+                //except EXPAND_FILE whose value is a file path
+                if (action() == Action::EXPAND_FILE) {
+                    std::stringstream msg;
+                    msg << "Boolean destination can not have EXPAND_FILE action (" << long_option() << ")";
+                    throw ArgParseError(msg.str());
+                }
                 return true; 
             }
 
