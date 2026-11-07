@@ -342,7 +342,7 @@ struct ParMYSPass : public Pass {
             return DPRAM;
         }
 
-        if (RTLIL::builtin_ff_cell_types().count(type)) {
+        if (StaticCellTypes::categories.is_ff(type)) {
             return SKIP;
         }
 
