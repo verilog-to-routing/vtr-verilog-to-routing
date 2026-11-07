@@ -8,6 +8,8 @@
 post_gp_wirelength;vpr.out;\s*Placement estimated wirelength: (.*)
 post_gp_cpd;vpr.out;\s*Placement estimated CPD: (.*) ns
 post_gp_sTNS;vpr.out;\s*Placement estimated sTNS: (.*) ns
+post_gp_legality_pins;vpr.out;\s*Pins in violation: (\d+) \(
+post_gp_legality_norm_pins;vpr.out;\s*Pins in violation: \d+ \((.*) of \d+ connected pins\)
 
 # Run-time Metrics
 ap_mem;vpr.out;.*Analytical Placement took.*\(max_rss (.*), .*\)

@@ -8,5 +8,9 @@ post_gp_wirelength;Range(0.90,1.10)
 post_gp_cpd;Range(0.90,1.10)
 post_gp_sTNS;Range(0.90,1.10)
 
+# Post-Global Placement legality estimate. The absolute threshold allows up to
+# 1% of the connected pins to change, since the golden value may be 0.
+post_gp_legality_norm_pins;RangeAbs(0.90,1.10,0.01)
+
 # Run-time
 ap_time;RangeAbs(0.10,10.0,3)
