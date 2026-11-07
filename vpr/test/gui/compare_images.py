@@ -1,13 +1,30 @@
 #!/usr/bin/env python3
-"""Layer 5 — Image comparison using SSIM (Structural Similarity Index).
+"""Layer 5 — golden image comparison.
+
+Layer 5 is a **same-host** gate. VPR's offscreen rendering is bit-exact on a
+fixed host (42/42 outputs byte-identical across repeated runs), and label fonts
+are pinned to a checked-in font, so immediate/deferred renders also match across
+hosts. That makes an exact pixel comparison both the simplest and the most sensitive gate
+available: it catches recolouring, a single wrong glyph in a block label, a
+deleted wire and a moved block alike.
+
+A drift-tolerant metric that survives a different host was measured and
+rejected. Tolerating cross-host text rasterization costs ~9,000 differing
+pixels; a genuinely wrong label digit costs ~33. No threshold separates them, so
+a tolerant gate is blind to precisely the regressions this layer exists to
+catch. If the render host changes, regenerate the goldens — do not widen the
+gate.
+
+SSIM is still computed and reported as a magnitude cue when reading a failure,
+but it does not gate unless --threshold is passed explicitly.
 
 Usage:
-    python compare_images.py <image_a> <image_b> [--threshold 0.999]
+    python compare_images.py <image_a> <image_b> [--max-diff-pixels N]
 
 Exit codes:
-    0 — images match (SSIM >= threshold)
-    1 — images differ (SSIM < threshold)
-    2 — error (file not found, import error, etc.)
+    0 — images match
+    1 — images differ
+    2 — error (file not found, unreadable image, missing dependency)
 
 Dependencies:
     pip install scikit-image Pillow numpy
@@ -16,131 +33,200 @@ Dependencies:
 import argparse
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
+
+# Bit-exact on a fixed host, so anything above zero is a real change. Both stay
+# exposed as knobs for deliberate one-off investigation.
+DEFAULT_MAX_DIFF_PIXELS = 0
+DEFAULT_INTENSITY_TOL = 0
+
+
+def _deps():
+    """Import the optional imaging stack, or exit 2 with an actionable message."""
+    # pylint: disable=import-outside-toplevel,import-error
+    try:
+        from PIL import Image as pil_image
+        import numpy as np
+        from skimage.metrics import structural_similarity
+    except ImportError as exc:
+        print(f"ERROR: Missing dependency: {exc}", file=sys.stderr)
+        print("Install with: pip install scikit-image Pillow numpy", file=sys.stderr)
+        sys.exit(2)
+    return pil_image, np, structural_similarity
+
+
+def _load(path: Path):
+    """Load as RGB, compositing alpha over white rather than discarding it."""
+    pil_image, np, _ = _deps()
+    try:
+        img = pil_image.open(path)
+        img.load()
+    # Any decode failure is an infra fault, not a diff.
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        print(f"ERROR: cannot read image {path}: {exc}", file=sys.stderr)
+        sys.exit(2)
+
+    # The goldens are RGBA. A plain .convert("RGB") drops alpha, so a render
+    # that went fully transparent would compare equal to its golden.
+    if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+        background = pil_image.new("RGBA", img.size, (255, 255, 255, 255))
+        img = pil_image.alpha_composite(background, img.convert("RGBA"))
+    return np.array(img.convert("RGB"))
+
+
+def _pad_to(img, height: int, width: int):
+    """Pad on the bottom/right with magenta, a colour absent from the goldens."""
+    _, np, _ = _deps()
+    out = np.empty((height, width, 3), dtype=np.uint8)
+    out[:] = (255, 0, 255)
+    out[: img.shape[0], : img.shape[1]] = img
+    return out
 
 
 def _write_diff_triptych(img_a, img_b, diff_out: Path) -> None:
     """Write a ``[golden | current | amplified-diff]`` triptych PNG.
 
-    The diff channel is ``|img_a − img_b|`` amplified 8× and clipped, so
-    sub-pixel drift is visible to the eye — a pure 256-level absdiff is
-    invisible at the SSIM thresholds we care about (~0.98+).
+    The diff channel is amplified 8x and clipped so sub-pixel drift is visible.
+    Images of different sizes are padded to the larger one so a size mismatch
+    still gets a triptych.
     """
-    # pylint: disable=import-outside-toplevel,import-error
-    from PIL import Image
-    import numpy as np
-
-    diff = np.clip(
-        np.abs(img_a.astype(np.int16) - img_b.astype(np.int16)) * 8,
-        0,
-        255,
-    ).astype(np.uint8)
+    pil_image, np, _ = _deps()
+    height = max(img_a.shape[0], img_b.shape[0])
+    width = max(img_a.shape[1], img_b.shape[1])
+    img_a = _pad_to(img_a, height, width)
+    img_b = _pad_to(img_b, height, width)
+    diff = np.clip(np.abs(img_a.astype(np.int16) - img_b.astype(np.int16)) * 8, 0, 255).astype(
+        np.uint8
+    )
     diff_out.parent.mkdir(parents=True, exist_ok=True)
-    Image.fromarray(np.concatenate([img_a, img_b, diff], axis=1)).save(diff_out)
+    pil_image.fromarray(np.concatenate([img_a, img_b, diff], axis=1)).save(diff_out)
 
 
-def compare_ssim(
+def differing_pixels(a, b, intensity_tol: int = DEFAULT_INTENSITY_TOL) -> int:
+    """Count pixels where any channel differs by more than ``intensity_tol``."""
+    _, np, _ = _deps()
+    delta = np.abs(a.astype(np.int16) - b.astype(np.int16)).max(axis=2)
+    return int((delta > intensity_tol).sum())
+
+
+def compare_arrays(
+    a,
+    b,
+    name_a: str,
+    name_b: str,
+    intensity_tol: int = DEFAULT_INTENSITY_TOL,
+) -> Tuple[int, Optional[float]]:
+    """Return ``(differing pixel count, SSIM)``; count is -1 on a size mismatch."""
+    _, _, structural_similarity = _deps()
+
+    if a.shape != b.shape:
+        # Never resize to compare — that launders a resolution regression into
+        # a pass.
+        print(
+            f"ERROR: dimension mismatch: {name_a} is {a.shape[1]}x{a.shape[0]}, "
+            f"{name_b} is {b.shape[1]}x{b.shape[0]}",
+            file=sys.stderr,
+        )
+        return -1, None
+
+    return differing_pixels(a, b, intensity_tol), float(structural_similarity(a, b, channel_axis=2))
+
+
+def compare(
     path_a: Path,
     path_b: Path,
-    diff_out: Optional[Path] = None,
-    diff_only_below: Optional[float] = None,
-) -> float:
-    """Compute SSIM between two images. Returns value in [0, 1].
-
-    When ``diff_out`` is provided, writes a triptych PNG
-    ``[golden | current | amplified-diff]`` to that path so a human can
-    eyeball the discrepancy after the test run.
-
-    ``diff_only_below`` gates the write: ``None`` → always write the diff;
-    a float ``T`` → write only when ``score < T``. The latter is what the
-    ``--diff-on-fail-only`` runner flag wires up.
-    """
-    # These dependencies are optional (CI-only) — graceful error if missing.
-    # pylint: disable=import-outside-toplevel,import-error
-    try:
-        from skimage.metrics import structural_similarity
-        from PIL import Image
-        import numpy as np
-    except ImportError as exc:
-        print(f"ERROR: Missing dependency: {exc}", file=sys.stderr)
-        print("Install with: pip install scikit-image Pillow numpy", file=sys.stderr)
-        sys.exit(2)
-
-    img_a = np.array(Image.open(path_a).convert("RGB"))
-    img_b = np.array(Image.open(path_b).convert("RGB"))
-
-    # Resize to match if dimensions differ (cross-platform tolerance)
-    if img_a.shape != img_b.shape:
-        min_h = min(img_a.shape[0], img_b.shape[0])
-        min_w = min(img_a.shape[1], img_b.shape[1])
-        img_a = np.array(Image.fromarray(img_a).resize((min_w, min_h), Image.LANCZOS))
-        img_b = np.array(Image.fromarray(img_b).resize((min_w, min_h), Image.LANCZOS))
-
-    score = structural_similarity(img_a, img_b, channel_axis=2)
-
-    if diff_out is not None and (diff_only_below is None or score < diff_only_below):
-        _write_diff_triptych(img_a, img_b, diff_out)
-
-    return float(score)
+    intensity_tol: int = DEFAULT_INTENSITY_TOL,
+) -> Tuple[int, Optional[float]]:
+    """Return ``(differing pixel count, SSIM)``; count is -1 on a size mismatch."""
+    return compare_arrays(_load(path_a), _load(path_b), path_a.name, path_b.name, intensity_tol)
 
 
 def main() -> int:
-    """CLI entry point: compare two images and report SSIM result."""
-    parser = argparse.ArgumentParser(description="Compare two images via SSIM")
+    """CLI entry point: compare a render against its golden."""
+    parser = argparse.ArgumentParser(description="Compare a render against its golden")
     parser.add_argument("image_a", type=Path, help="First image (e.g. golden)")
     parser.add_argument("image_b", type=Path, help="Second image (e.g. current)")
     parser.add_argument(
+        "--max-diff-pixels",
+        type=int,
+        default=DEFAULT_MAX_DIFF_PIXELS,
+        help="Fail above this many differing pixels (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--intensity-tol",
+        type=int,
+        default=DEFAULT_INTENSITY_TOL,
+        help="Per-channel delta treated as unchanged (default: %(default)s).",
+    )
+    parser.add_argument(
         "--threshold",
         type=float,
-        default=0.999,
-        help="SSIM threshold for pass (default: 0.999)",
+        default=None,
+        help=(
+            "Optional SSIM floor, off by default. SSIM is reported for context "
+            "but is a poor gate here: it rates a benign 1 px shift (0.951) "
+            "worse than a visibly wrong label (0.999). The gate is "
+            "--max-diff-pixels."
+        ),
     )
     parser.add_argument("--quiet", action="store_true", help="Only print PASS/FAIL")
     parser.add_argument(
         "--diff-out",
         type=Path,
         default=None,
-        help=(
-            "Write a [golden | current | amplified-diff] triptych PNG to this "
-            "path for manual inspection. By default writes for every case; "
-            "see --diff-on-fail-only."
-        ),
+        help="Write a [golden | current | amplified-diff] triptych PNG here.",
     )
     parser.add_argument(
         "--diff-on-fail-only",
         action="store_true",
-        help=(
-            "Only write --diff-out when SSIM < threshold. Lets the runner "
-            "skip the triptych-write cost on passing cases while still "
-            "capturing failures for post-mortem."
-        ),
+        help="Only write --diff-out when the comparison fails.",
     )
     args = parser.parse_args()
+
+    if args.max_diff_pixels < 0:
+        parser.error("--max-diff-pixels must be >= 0")
+    if not 0 <= args.intensity_tol <= 255:
+        parser.error("--intensity-tol must be in [0, 255]")
 
     for p in (args.image_a, args.image_b):
         if not p.exists():
             print(f"ERROR: File not found: {p}", file=sys.stderr)
             return 2
 
-    diff_only_below = args.threshold if args.diff_on_fail_only else None
-    score = compare_ssim(
-        args.image_a,
-        args.image_b,
-        diff_out=args.diff_out,
-        diff_only_below=diff_only_below,
+    img_a = _load(args.image_a)
+    img_b = _load(args.image_b)
+    ndiff, score = compare_arrays(
+        img_a, img_b, args.image_a.name, args.image_b.name, intensity_tol=args.intensity_tol
     )
 
-    passed = score >= args.threshold
+    if ndiff < 0:  # dimension mismatch, already reported on stderr
+        if args.diff_out is not None:
+            _write_diff_triptych(img_a, img_b, args.diff_out)
+        return 1
+
+    diff_ok = ndiff <= args.max_diff_pixels
+    ssim_ok = args.threshold is None or score >= args.threshold
+    passed = diff_ok and ssim_ok
 
     if not args.quiet:
-        print(f"SSIM:      {score:.6f}")
-        print(f"Threshold: {args.threshold:.6f}")
+        print(f"Diff px:   {ndiff} (budget {args.max_diff_pixels})")
+        floor = "" if args.threshold is None else f" (floor {args.threshold:.6f})"
+        print(f"SSIM:      {score:.6f}{floor}")
+
+    # Key the triptych off the actual verdict, not off SSIM.
+    if args.diff_out is not None and (not args.diff_on_fail_only or not passed):
+        _write_diff_triptych(img_a, img_b, args.diff_out)
 
     if passed:
         print("PASS")
         return 0
 
-    print(f"FAIL (delta: {args.threshold - score:.6f})")
+    reasons = []
+    if not diff_ok:
+        reasons.append(f"{ndiff} differing px > {args.max_diff_pixels}")
+    if not ssim_ok:
+        reasons.append(f"SSIM {score:.6f} < {args.threshold:.6f}")
+    print(f"FAIL ({'; '.join(reasons)})")
     return 1
 
 

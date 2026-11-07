@@ -1,6 +1,6 @@
 /**
  * @file test_ezgl_app_fixture.hpp
- * @brief GUI-T-017 (Layer-4 substrate) — ezgl::application + main.ui fixture.
+ * @brief Layer-4 substrate — ezgl::application + main.ui fixture.
  *
  * Layer-4 tests in vpr/test/gui drive functions in vpr/src/draw that
  * take an ``ezgl::application*`` and look up named widgets via

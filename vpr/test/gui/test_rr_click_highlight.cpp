@@ -1,6 +1,6 @@
 /**
  * @file test_rr_click_highlight.cpp
- * @brief GUI-T-005 — RR click → highlight fan-in / fan-out (Layer 4).
+ * @brief RR click → highlight fan-in / fan-out (Layer 4).
  *
  * Locks the contract of ``highlight_rr_nodes`` (both overloads) in
  * ``vpr/src/draw/search_bar.cpp`` and ``vpr/src/draw/draw_rr.cpp``,
@@ -17,7 +17,7 @@
  *     skips ``SOURCE``/``SINK`` nodes.
  *
  * Why this is real, behaviour-relevant coverage rather than
- * structural noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * structural noise:
  *
  *   The toggle semantics (first click selects, second click
  *   de-selects) is a contract the user depends on every time they
@@ -43,7 +43,7 @@
  *   4. ``DrawApplicationScope`` points draw.cpp's file-scope
  *      ``application`` at ``test_app()``.
  *
- * Tag: [layer4][interactive][rr-click][vpr_gui][GUI-T-005]
+ * Tag: [layer4][interactive][rr-click][vpr_gui]
  */
 
 #include <catch2/catch_test_macros.hpp>
@@ -141,7 +141,7 @@ RRNodeId pick_inter_cluster_node() {
 // =============================================================================
 TEST_CASE("RRClick: highlight_rr_nodes(RRNodeId) toggles MAGENTA ↔ WHITE "
           "and tracks hit_nodes",
-          "[layer4][interactive][rr-click][vpr_gui][GUI-T-005]") {
+          "[layer4][interactive][rr-click][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture fx_vpr;
     fx_vpr.run_to(Stage::PostRoute);
@@ -177,7 +177,7 @@ TEST_CASE("RRClick: highlight_rr_nodes(RRNodeId) toggles MAGENTA ↔ WHITE "
 // INVALID node returns false and does not mutate hit_nodes
 // =============================================================================
 TEST_CASE("RRClick: highlight_rr_nodes(INVALID) returns false, no mutation",
-          "[layer4][interactive][rr-click][vpr_gui][GUI-T-005]") {
+          "[layer4][interactive][rr-click][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture fx_vpr;
     fx_vpr.run_to(Stage::PostRoute);
@@ -206,7 +206,7 @@ TEST_CASE("RRClick: highlight_rr_nodes(INVALID) returns false, no mutation",
 // Coordinate hit-test: clicks on origin or far-out are misses
 // =============================================================================
 TEST_CASE("RRClick: highlight_rr_nodes(x, y) at empty space returns false",
-          "[layer4][interactive][rr-click][vpr_gui][GUI-T-005]") {
+          "[layer4][interactive][rr-click][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture fx_vpr;
     fx_vpr.run_to(Stage::PostRoute);
@@ -224,7 +224,7 @@ TEST_CASE("RRClick: highlight_rr_nodes(x, y) at empty space returns false",
 // Layer-visibility gating: hidden layer hides its nodes from the hit-test
 // =============================================================================
 TEST_CASE("RRClick: hidden layer hides its rr-nodes from the coordinate hit-test",
-          "[layer4][interactive][rr-click][vpr_gui][GUI-T-005]") {
+          "[layer4][interactive][rr-click][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture fx_vpr;
     fx_vpr.run_to(Stage::PostRoute);
@@ -267,7 +267,7 @@ TEST_CASE("RRClick: hidden layer hides its rr-nodes from the coordinate hit-test
 // Non-configurable expansion: highlighting a node propagates to neighbours
 // =============================================================================
 TEST_CASE("RRClick: select propagates MAGENTA to non-configurable neighbours",
-          "[layer4][interactive][rr-click][vpr_gui][GUI-T-005]") {
+          "[layer4][interactive][rr-click][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture fx_vpr;
     fx_vpr.run_to(Stage::PostRoute);

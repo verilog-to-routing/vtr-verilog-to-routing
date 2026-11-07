@@ -71,7 +71,7 @@ run_test() {
     else
         local rc=$?
         if [[ "${expect_fail}" == "xfail" ]]; then
-            echo "    XFAIL (exit ${rc}) — known issue, see defect log"
+            echo "    XFAIL (exit ${rc}) — known issue"
             (( XFAIL++ )) || true
         else
             echo "    FAIL (exit ${rc})"
@@ -82,7 +82,7 @@ run_test() {
 }
 
 # Inverse of run_test: PASS only when VPR exits non-zero. Used by negative
-# parser cases (GUI-T-004) where the contract is "the unknown-token branch in
+# parser cases where the contract is "the unknown-token branch in
 # run_graphics_commands raises VPR_ERROR_DRAW and aborts".
 run_test_expect_nonzero() {
     local name="$1"; shift
@@ -110,7 +110,7 @@ check_file() {
         (( PASS++ )) || true
     else
         if [[ "${expect_fail}" == "xfail" ]]; then
-            echo "    XFAIL: ${filepath} missing — known issue (DEF-004)"
+            echo "    XFAIL: ${filepath} missing — known issue"
             (( XFAIL++ )) || true
         else
             echo "    FAIL: ${filepath} missing or empty"
@@ -183,10 +183,9 @@ echo "    Checking PNG output..."
 check_file "smoke_route_save_file" "${WORK_DIR}/smoke_route_save_run/smoke_routing.png" "no"
 
 # ===========================================================================
-# GUI-T-004 — graphics_commands parser semantics
+# graphics_commands parser semantics
 #
-# Closes the "happy paths only" gap recorded in
-# doc/src/dev/vpr_gui_complete_test_plan.rst §12.2:
+# Covers paths beyond the happy ones:
 #   * set_clip_routing_util — implemented but no scenario currently drives it.
 #   * {i} substitution — vtr::replace_all("{i}", sequence_number) in
 #     run_graphics_commands has no behavioural test pinning the substitution.
@@ -198,7 +197,7 @@ check_file "smoke_route_save_file" "${WORK_DIR}/smoke_route_save_run/smoke_routi
 #     token fail silently.
 # ===========================================================================
 
-# ---- T-004.a: set_clip_routing_util after route ----------------------------
+# ---- set_clip_routing_util after route -------------------------------------
 # Drives the only currently-implemented setter no scenario invokes. Requires
 # --route so the routing-util state is meaningful.
 run_test "t004_clip_routing_util" "set_clip_routing_util after route" "no" \
@@ -206,7 +205,7 @@ run_test "t004_clip_routing_util" "set_clip_routing_util after route" "no" \
     --disp off --pack --place --route --seed 1 \
     --graphics_commands "set_routing_util 1; set_clip_routing_util 1; exit 0"
 
-# ---- T-004.b: {i} substitution -> "0" --------------------------------------
+# ---- {i} substitution -> "0" -----------------------------------------------
 # A single --graphics_commands invocation runs with sequence_number == 0
 # throughout the command list (it is incremented once at the end of
 # run_graphics_commands). Therefore "out_{i}.png" must produce a file named
@@ -229,7 +228,7 @@ else
     (( PASS++ )) || true
 fi
 
-# ---- T-004.c: multi-token sequence dispatch --------------------------------
+# ---- multi-token sequence dispatch -----------------------------------------
 # Three setters in a single --graphics_commands string followed by save +
 # exit. Verifies the for-loop in run_graphics_commands dispatches every
 # token (a regression that drops a token mid-list would still produce a
@@ -258,7 +257,7 @@ for tok in set_nets set_macros set_cpd save_graphics; do
     fi
 done
 
-# ---- T-004.d: unknown-token negative ---------------------------------------
+# ---- unknown-token negative ------------------------------------------------
 # Per draw.cpp run_graphics_commands, an unrecognised command raises
 # VPR_ERROR_DRAW("Unrecognized graphics command '...'"), which aborts.
 # A future change that turns the unknown-token branch into a silent skip

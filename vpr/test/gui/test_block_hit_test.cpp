@@ -1,6 +1,6 @@
 /**
  * @file test_block_hit_test.cpp
- * @brief GUI-T-014 — Block hit-test on canvas click (Layer 4).
+ * @brief Block hit-test on canvas click (Layer 4).
  *
  * Locks the contract of ``get_cluster_block_id_from_xy_loc(x, y)`` in
  * ``vpr/src/draw/draw.cpp``, the public hit-test entry point that the
@@ -16,7 +16,7 @@
  *     layer must not surface a block from that layer.
  *
  * Why this is real, behaviour-relevant coverage rather than structural
- * noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * noise:
  *
  *   ``get_cluster_block_id_from_xy_loc`` traverses the device grid in
  *   reverse-layer order, calls ``get_absolute_clb_bbox`` for every
@@ -41,7 +41,7 @@
  *      The drawing globals are restored / freed in a teardown
  *      helper at the end of each case.
  *
- * Tag: [layer4][hit-test][vpr_gui][GUI-T-014]
+ * Tag: [layer4][hit-test][vpr_gui]
  */
 
 #include <catch2/catch_test_macros.hpp>
@@ -110,7 +110,7 @@ ezgl::rectangle bbox_of(ClusterBlockId blk) {
 // Positive: every placed block is hit-testable at its bbox center
 // =============================================================================
 TEST_CASE("HitTest: every placed block is found at its bbox center",
-          "[layer4][hit-test][vpr_gui][GUI-T-014]") {
+          "[layer4][hit-test][vpr_gui]") {
     VprRunStageFixture fx;
     fx.run_to(Stage::PostPlace);
     DrawStructsScope draw_scope(&fx.arch());
@@ -149,7 +149,7 @@ TEST_CASE("HitTest: every placed block is found at its bbox center",
 // =============================================================================
 TEST_CASE("HitTest: clicks far outside the grid return INVALID "
           "(no spurious selection)",
-          "[layer4][hit-test][vpr_gui][GUI-T-014]") {
+          "[layer4][hit-test][vpr_gui]") {
     VprRunStageFixture fx;
     fx.run_to(Stage::PostPlace);
     DrawStructsScope draw_scope(&fx.arch());
@@ -173,7 +173,7 @@ TEST_CASE("HitTest: clicks far outside the grid return INVALID "
 // Negative: hidden layer is invisible to the hit-test
 // =============================================================================
 TEST_CASE("HitTest: hidden layer hides its blocks from the hit-test",
-          "[layer4][hit-test][vpr_gui][GUI-T-014]") {
+          "[layer4][hit-test][vpr_gui]") {
     VprRunStageFixture fx;
     fx.run_to(Stage::PostPlace);
     DrawStructsScope draw_scope(&fx.arch());
@@ -215,7 +215,7 @@ TEST_CASE("HitTest: hidden layer hides its blocks from the hit-test",
 // Boundary: clicks on the bbox edges resolve consistently
 // =============================================================================
 TEST_CASE("HitTest: clicks on a bbox interior corner hit the block",
-          "[layer4][hit-test][vpr_gui][GUI-T-014]") {
+          "[layer4][hit-test][vpr_gui]") {
     VprRunStageFixture fx;
     fx.run_to(Stage::PostPlace);
     DrawStructsScope draw_scope(&fx.arch());

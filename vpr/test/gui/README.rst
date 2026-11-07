@@ -27,8 +27,9 @@ Test Layers
    * - **5**
      - Visual Regression
      - Bash + Python
-     - Compares VPR-rendered PNGs against golden images using SSIM.
-       Currently blocked by DEF-004.
+     - Compares VPR-rendered PNGs against golden images, exactly.
+       See the note under *Diff triptychs* for why the gate is a
+       differing-pixel count and not SSIM.
 
 Quick Start
 -----------
@@ -146,10 +147,55 @@ triptychs under ``golden/tmp/``) and commit only the intended updates.
 Only regenerate when the visual change is intentional — it invalidates all
 prior comparisons.
 
+To regenerate under a CI runner's rendering environment instead (offscreen
+Qt platform, Mesa software GL, no display server), use the wrapper, which
+takes the same arguments::
+
+    ./vpr/test/gui/generate_goldens_CI.sh
+
+Without a display QRhi gets no GL context, so the wrapper skips ``rhi`` and
+exits 2, leaving the ``rhi`` goldens untouched.
+
 Diff-write policy:
 
-* **default** — the triptych is written only when SSIM falls below
-  the threshold (i.e. a test case fails). Passing cases skip the
+.. note::
+
+   **Layer 5 is a same-host gate, and gates exactly.** VPR's offscreen
+   rendering is bit-exact on a fixed host (all 42 outputs byte-identical
+   across repeated runs), and label text, the one input that otherwise varies
+   between hosts, is pinned to the checked-in font under ``fonts/`` via
+   ``FONTCONFIG_FILE``. immediate/deferred goldens generated on a developer
+   host therefore match a CI runner. ``compare_images.py`` fails on the first
+   differing pixel.
+
+   A drift-tolerant metric was tried and rejected on measurement. Tolerating
+   cross-host text rasterization costs ~9,000 differing pixels while a
+   genuinely wrong label digit costs ~33 — no threshold separates them, so a
+   tolerant gate is blind to exactly the regressions this layer exists to
+   catch. It was also blind to recolouring: a tolerance of 64/channel passed
+   an image whose entire background had changed shade.
+
+   Consequence: **if the render host changes, regenerate the goldens** — do
+   not widen the gate. ``test_compare_images.py`` pins this by asserting the
+   defaults are still exact and that each regression class is still detected.
+
+   SSIM is still computed and printed as a magnitude cue when reading a
+   failure, but it only gates if ``--threshold`` is passed explicitly.
+
+.. note::
+
+   On a host with no working QRhi backend, ``--renderer rhi`` silently falls
+   back to the immediate rasterizer — the Qt diagnostic varies by backend and
+   EZGL still reports ``active renderer backend: rhi``. The runner detects this
+   (rhi output identical to immediate across the first few cases) and **skips**
+   rhi rather than comparing fallback pixels against rhi goldens;
+   ``generate_goldens.sh`` likewise refuses to overwrite them and exits 2 to
+   mark the baseline partial. A run with any skips exits 2, so ctest reports
+   ``Skipped`` — never a green pass over comparisons that did not happen.
+   Regenerate rhi goldens on an RHI-capable host.
+
+* **default** — the triptych is written only when a case fails.
+  Passing cases skip the
   triptych-write cost so the runner stays cheap.
 * **--debug** — the triptych is written for **every** case, passing
   or failing, so a developer can eyeball even passing renders for
@@ -199,13 +245,15 @@ Files
    * - ``test_qtgladeloader.cpp``
      - Layer 3: Glade XML → Qt widget loader tests
    * - ``run_headless_smoke.sh``
-     - Layer 1: 8 headless smoke tests (6 pass + 2 xfail DEF-004)
+     - Layer 1: headless smoke tests
    * - ``run_visual_regression.sh``
-     - Layer 5: SSIM comparison against golden images
+     - Layer 5: exact comparison against golden images
    * - ``generate_goldens.sh``
      - Layer 5: generate reference golden PNGs
+   * - ``generate_goldens_CI.sh``
+     - Layer 5: ``generate_goldens.sh`` under a CI runner's rendering environment
    * - ``compare_images.py``
-     - Layer 5: SSIM image comparison tool
+     - Layer 5: image comparison tool (exact, SSIM reported for context)
    * - ``golden/``
      - Layer 5: golden image storage (see ``golden/MANIFEST.rst``)
    * - ``run_all_tests.sh``

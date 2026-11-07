@@ -190,7 +190,7 @@ TEST_CASE("WidgetHierarchy: popovers are loaded and accessible as children", "[l
 
 TEST_CASE("WidgetHierarchy: sensitive=False disables widget", "[layer3][vpr_gui][!mayfail]") {
     // KNOWN LIMITATION: QtGladeLoader::applyCommonProperties() does not
-    // handle the "sensitive" Glade property. See defect log DEF-001.
+    // handle the "sensitive" Glade property.
     auto mw = vpr_gui_test::load_main_ui();
     QMainWindow* win = mw.window();
     REQUIRE(win != nullptr);

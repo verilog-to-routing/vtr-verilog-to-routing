@@ -1,6 +1,6 @@
 /**
  * @file test_manual_moves.cpp
- * @brief GUI-T-007 — Manual moves form & cost-summary contract (Layer 4).
+ * @brief Manual moves form & cost-summary contract (Layer 4).
  *
  * Locks the contract of ``vpr/src/draw/manual_moves.{h,cpp}``:
  *
@@ -30,7 +30,7 @@
  *     guarantees the resulting top-level QWidgets are reaped).
  *
  * Why this is real, behaviour-relevant coverage rather than
- * structural noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * structural noise:
  *
  *   The manual-moves form is the only GUI-driven write path into
  *   the placer. A bug here either pretends to move a block but
@@ -62,7 +62,7 @@
  * staged ``QTimer`` injection that is much more brittle than the
  * contract it would lock.
  *
- * Tag: [layer4][interactive][manual-moves][vpr_gui][GUI-T-007]
+ * Tag: [layer4][interactive][manual-moves][vpr_gui]
  */
 
 #include <catch2/catch_test_macros.hpp>
@@ -106,7 +106,7 @@ class ManualMovesStateGuard {
 } // namespace
 
 TEST_CASE("ManualMovesInfo zero-init defaults match the documented contract",
-          "[layer4][interactive][manual-moves][vpr_gui][GUI-T-007]") {
+          "[layer4][interactive][manual-moves][vpr_gui]") {
     ManualMovesInfo info;
     REQUIRE(info.blockID == -1);
     REQUIRE(info.x_pos == -1);
@@ -122,7 +122,7 @@ TEST_CASE("ManualMovesInfo zero-init defaults match the documented contract",
 }
 
 TEST_CASE("ManualMovesState zero-init defaults: every window flag is false",
-          "[layer4][interactive][manual-moves][vpr_gui][GUI-T-007]") {
+          "[layer4][interactive][manual-moves][vpr_gui]") {
     ManualMovesState state;
     REQUIRE_FALSE(state.manual_move_window_is_open);
     REQUIRE_FALSE(state.user_highlighted_block);
@@ -133,7 +133,7 @@ TEST_CASE("ManualMovesState zero-init defaults: every window flag is false",
 }
 
 TEST_CASE("string_is_a_number recognises pure-digit ids and rejects names",
-          "[layer4][interactive][manual-moves][vpr_gui][GUI-T-007]") {
+          "[layer4][interactive][manual-moves][vpr_gui]") {
     REQUIRE(string_is_a_number("0"));
     REQUIRE(string_is_a_number("42"));
     REQUIRE(string_is_a_number("123456789"));
@@ -151,7 +151,7 @@ TEST_CASE("string_is_a_number recognises pure-digit ids and rejects names",
 }
 
 TEST_CASE("close_manual_moves_window flips the open guard to false; idempotent",
-          "[layer4][interactive][manual-moves][vpr_gui][GUI-T-007]") {
+          "[layer4][interactive][manual-moves][vpr_gui]") {
     ManualMovesStateGuard guard;
     auto& state = get_draw_state_vars()->manual_moves_state;
 
@@ -170,7 +170,7 @@ TEST_CASE("close_manual_moves_window flips the open guard to false; idempotent",
 
 TEST_CASE("manual_move_is_selected reads the manualMove checkbox and "
           "writes the result into manual_moves_state",
-          "[layer4][interactive][manual-moves][vpr_gui][GUI-T-007]") {
+          "[layer4][interactive][manual-moves][vpr_gui]") {
     EzglAppFixture app_fixture;
     ManualMovesStateGuard state_guard;
 
@@ -200,7 +200,7 @@ TEST_CASE("manual_move_is_selected reads the manualMove checkbox and "
 }
 
 TEST_CASE("is_manual_move_legal rejects an invalid block id (PostPlace)",
-          "[layer4][interactive][manual-moves][vpr_gui][GUI-T-007]") {
+          "[layer4][interactive][manual-moves][vpr_gui]") {
     EzglAppFixture app_fixture;
     VprRunStageFixture vpr_fixture;
     vpr_fixture.run_to(Stage::PostPlace);
@@ -214,7 +214,7 @@ TEST_CASE("is_manual_move_legal rejects an invalid block id (PostPlace)",
 }
 
 TEST_CASE("is_manual_move_legal rejects out-of-grid destinations (PostPlace)",
-          "[layer4][interactive][manual-moves][vpr_gui][GUI-T-007]") {
+          "[layer4][interactive][manual-moves][vpr_gui]") {
     EzglAppFixture app_fixture;
     VprRunStageFixture vpr_fixture;
     vpr_fixture.run_to(Stage::PostPlace);
@@ -229,7 +229,7 @@ TEST_CASE("is_manual_move_legal rejects out-of-grid destinations (PostPlace)",
 }
 
 TEST_CASE("is_manual_move_legal rejects same-location no-op moves (PostPlace)",
-          "[layer4][interactive][manual-moves][vpr_gui][GUI-T-007]") {
+          "[layer4][interactive][manual-moves][vpr_gui]") {
     EzglAppFixture app_fixture;
     VprRunStageFixture vpr_fixture;
     vpr_fixture.run_to(Stage::PostPlace);
