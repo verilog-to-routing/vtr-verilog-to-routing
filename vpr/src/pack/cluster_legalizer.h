@@ -669,7 +669,7 @@ class ClusterLegalizer {
     ///        Indexed by t_logical_block_type::index.
     std::vector<std::unordered_set<int>> valid_feedback_pins_by_type_;
 
-    /// @brief Per-type hop counts to the targets of the rr graph, used by the
+    /// @brief Per-type hop counts to the targets of the RR graph, used by the
     ///        cluster router. Empty when --cluster_router_lookahead is none.
     ///        Indexed by t_logical_block_type::index.
     std::vector<ClusterRouterLookahead> lookaheads_by_type_;

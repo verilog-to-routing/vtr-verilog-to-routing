@@ -130,7 +130,7 @@ ClusterRouter::ClusterRouter(const LbTypeRRGraph& lb_type_graph,
     target_hops_ = nullptr;
     hop_cost_ = 0;
     if (lookahead != nullptr) {
-        hop_cost_ = MIN_FANOUT_FACTOR * lookahead->min_edge_cost();
+        hop_cost_ = MIN_FANOUT_FACTOR * lb_type_graph.min_edge_cost();
     }
 
     size_t size = lb_type_graph.num_nodes();

@@ -1,21 +1,19 @@
 #pragma once
 /**
  * @file
- * @brief Lower bounds on the cost from each node of a logical block type's rr
+ * @brief Lower bounds on the cost from each node of a logical block type's RR
  *        graph to a target node, used to order the cluster router search.
  */
 
 #include <cstddef>
 #include <cstdint>
-#include <span>
 #include <unordered_map>
-#include <vector>
 
 #include "lb_type_rr_graph.h"
 #include "vtr_vector.h"
 
 /**
- * @brief Fewest edges from each node to each target of one block type's rr
+ * @brief Fewest edges from each node to each target of one block type's RR
  *        graph, shared by every cluster of that type.
  *
  * The hop counts to a target are computed over the edges of all modes the
@@ -34,35 +32,18 @@ class ClusterRouterLookahead {
     /// @brief Hop count of every node, indexed by node.
     typedef vtr::vector<LbRRNodeId, uint8_t> t_hop_table;
 
-    /// @brief Builds the in edges of lb_type_graph. Hop tables are built on first use.
+    /// @brief Hop tables are built on first use. lb_type_graph must outlive this object.
     explicit ClusterRouterLookahead(const LbTypeRRGraph& lb_type_graph);
 
     /// @brief For each node, the fewest edges on any path to target, or UNREACHABLE.
     const t_hop_table& hops_to(LbRRNodeId target);
 
-    /// @brief Lowest cost of any edge in the graph.
-    float min_edge_cost() const { return min_edge_cost_; }
-
   private:
-    /// @brief The nodes with an edge into node, in any mode.
-    std::span<const LbRRNodeId> in_edges_(LbRRNodeId node) const {
-        int32_t first = in_edge_start_[size_t(node)];
-        int32_t last = in_edge_start_[size_t(node) + 1];
-        return std::span<const LbRRNodeId>(in_edge_sources_.data() + first, last - first);
-    }
-
     /// @brief Fills hops with the fewest edges from every node to target.
     void build_hop_table_(LbRRNodeId target, t_hop_table& hops) const;
 
-    /// @brief For each node, the index in in_edge_sources_ of its first in edge.
-    ///        One extra entry at the end holds the total number of edges.
-    std::vector<int32_t> in_edge_start_;
-
-    /// @brief The source node of every edge, grouped by the node the edge drives.
-    std::vector<LbRRNodeId> in_edge_sources_;
-
-    /// @brief Lowest cost of any edge in the graph.
-    float min_edge_cost_;
+    /// @brief The graph the hop tables are computed over.
+    const LbTypeRRGraph* lb_type_graph_;
 
     /// @brief Hop tables built so far, keyed by target node.
     std::unordered_map<LbRRNodeId, t_hop_table> hop_tables_;

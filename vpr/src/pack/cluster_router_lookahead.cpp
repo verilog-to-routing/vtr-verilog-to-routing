@@ -1,46 +1,14 @@
 #include "cluster_router_lookahead.h"
 
 #include <algorithm>
-#include <limits>
+#include <vector>
 
 /// @brief Most memory the hop tables of one block type may use.
 static constexpr size_t MAX_HOP_TABLE_BYTES = 128 * 1024 * 1024;
 
 ClusterRouterLookahead::ClusterRouterLookahead(const LbTypeRRGraph& lb_type_graph) {
-    const size_t num_nodes = lb_type_graph.num_nodes();
-
-    // Count the in edges of each node over the edges of all modes.
-    in_edge_start_.assign(num_nodes + 1, 0);
-    min_edge_cost_ = std::numeric_limits<float>::max();
-    for (LbRRNodeId inode : lb_type_graph.nodes()) {
-        for (int mode = 0; mode < lb_type_graph.num_modes(inode); mode++) {
-            for (const LbTypeRRGraph::t_edge& edge : lb_type_graph.edges(inode, mode)) {
-                in_edge_start_[size_t(edge.node_index) + 1]++;
-                min_edge_cost_ = std::min(min_edge_cost_, edge.cost);
-            }
-        }
-    }
-
-    // Turn the counts into the start index of each node's in edges.
-    for (size_t inode = 0; inode < num_nodes; inode++) {
-        in_edge_start_[inode + 1] += in_edge_start_[inode];
-    }
-    if (in_edge_start_[num_nodes] == 0) {
-        min_edge_cost_ = 0;
-    }
-
-    // Place the source of each edge in the group of the node it drives.
-    in_edge_sources_.resize(in_edge_start_[num_nodes]);
-    std::vector<int32_t> next_slot(in_edge_start_.begin(), in_edge_start_.end() - 1);
-    for (LbRRNodeId inode : lb_type_graph.nodes()) {
-        for (int mode = 0; mode < lb_type_graph.num_modes(inode); mode++) {
-            for (const LbTypeRRGraph::t_edge& edge : lb_type_graph.edges(inode, mode)) {
-                in_edge_sources_[next_slot[size_t(edge.node_index)]++] = inode;
-            }
-        }
-    }
-
-    zero_hops_.resize(num_nodes, 0);
+    lb_type_graph_ = &lb_type_graph;
+    zero_hops_.resize(lb_type_graph.num_nodes(), 0);
     hop_table_bytes_ = 0;
 }
 
@@ -75,7 +43,7 @@ void ClusterRouterLookahead::build_hop_table_(LbRRNodeId target, t_hop_table& ho
 
         // Counts stop growing one below UNREACHABLE so they stay a lower bound.
         uint8_t next_hops = std::min<int>(hops[inode] + 1, UNREACHABLE - 1);
-        for (LbRRNodeId src : in_edges_(inode)) {
+        for (LbRRNodeId src : lb_type_graph_->fanin_nodes(inode)) {
             if (hops[src] == UNREACHABLE) {
                 hops[src] = next_hops;
                 visit_order.push_back(src);
