@@ -259,10 +259,8 @@ class ClusterRouter {
      *  @param valid_feedback_pins  Pre-computed set of top-level output pin
      *                              indices with Fc_out > 0; owned by the
      *                              caller and must outlive this router.
-     *  @param lookahead            Hop counts to the targets of this type, or
-     *                              nullptr to order the search by path cost
-     *                              only. Owned by the caller and must outlive
-     *                              this router.
+     *  @param lookahead            Hop counts to the targets of this type.
+     *                              Owned by the caller and must outlive this router.
      *  @param enable_hot_start     When true, each call to try_intra_lb_route
      *                              seeds unchanged nets from the last successful
      *                              route before running pathfinder, reducing
@@ -566,9 +564,8 @@ class ClusterRouter {
     ///        into the map owned by ClusterLegalizer, valid for packing lifetime.
     const std::unordered_set<int>* valid_feedback_pins_;
 
-    /// @brief Hop counts to the targets of this block type, shared by all its
-    ///        clusters and owned by ClusterLegalizer. Null when the search is
-    ///        ordered by path cost only.
+    /// @brief Hop counts to the targets of this block type.
+    ///        Null when the cluster router lookahead option is off.
     ClusterRouterLookahead* lookahead_;
 
     // =========================================================================
@@ -625,7 +622,7 @@ class ClusterRouter {
     vtr::priority_queue<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node> pq_;
 
     /// @brief Hop counts to the target of the current search, from lookahead_.
-    ///        Null when lookahead_ is null.
+    ///        Stays null when the router has no lookahead.
     const ClusterRouterLookahead::t_hop_table* target_hops_;
 
     /// @brief Lower bound on the cost of one edge. A node h hops from the
