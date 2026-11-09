@@ -71,6 +71,28 @@ struct t_cluster_progress_stats {
     int mols_since_last_print = 0;
 };
 
+/**
+ * @brief Return a packing status name for log messages.
+ */
+const char* block_pack_status_name(e_block_pack_status status) {
+    switch (status) {
+        case e_block_pack_status::BLK_PASSED:
+            return "PASSED";
+        case e_block_pack_status::BLK_FAILED_FEASIBLE:
+            return "FAILED_FEASIBILITY_CHECK";
+        case e_block_pack_status::BLK_FAILED_ROUTE:
+            return "FAILED_ROUTE";
+        case e_block_pack_status::BLK_FAILED_FLOORPLANNING:
+            return "FAILED_FLOORPLANNING_CHECK";
+        case e_block_pack_status::BLK_FAILED_NOC_GROUP:
+            return "FAILED_NOC_GROUP_CHECK";
+        case e_block_pack_status::BLK_FAILED_RELATIVE_GROUP:
+            return "FAILED_RELATIVE_GROUP_CHECK";
+        default:
+            return "UNDEFINED";
+    }
+}
+
 } // namespace
 
 GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
@@ -540,29 +562,7 @@ bool GreedyClusterer::try_add_candidate_mol_to_cluster_(PackMoleculeId candidate
 
     // Print helpful debugging log messages.
     if (log_verbosity_ > 2) {
-        switch (pack_status) {
-            case e_block_pack_status::BLK_PASSED:
-                VTR_LOG("\tPassed: ");
-                break;
-            case e_block_pack_status::BLK_FAILED_ROUTE:
-                VTR_LOG("\tNO_ROUTE: ");
-                break;
-            case e_block_pack_status::BLK_FAILED_FLOORPLANNING:
-                VTR_LOG("\tFAILED_FLOORPLANNING_CONSTRAINTS_CHECK: ");
-                break;
-            case e_block_pack_status::BLK_FAILED_FEASIBLE:
-                VTR_LOG("\tFAILED_FEASIBILITY_CHECK: ");
-                break;
-            case e_block_pack_status::BLK_FAILED_NOC_GROUP:
-                VTR_LOG("\tFAILED_NOC_GROUP_CHECK: ");
-                break;
-            case e_block_pack_status::BLK_FAILED_RELATIVE_GROUP:
-                VTR_LOG("\tFAILED_RELATIVE_GROUP_CHECK: ");
-                break;
-            default:
-                VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unknown pack status thrown.");
-                break;
-        }
+        VTR_LOG("\t%s: ", block_pack_status_name(pack_status));
         // Get the block name and model name
         const t_pack_molecule& candidate_mol = prepacker.get_molecule(candidate_mol_id);
         AtomBlockId blk_id = candidate_mol.atom_block_ids[candidate_mol.root];
