@@ -17,6 +17,7 @@
 #include "atom_netlist_fwd.h"
 #include "prepack.h"
 #include "user_relative_macros.h"
+#include "vtr_vector.h"
 
 class AtomNetlist;
 class ClusterLegalizer;
@@ -149,7 +150,7 @@ class RelativeMacroPacker {
 
     const AtomNetlist& atom_netlist_; ///< Atom netlist being packed.
 
-    std::map<MoleculeChainId, UserRelativeGroupId> chain_owners_; ///< Owning group of each chain with constrained atoms.
+    vtr::vector<MoleculeChainId, UserRelativeGroupId> chain_owners_; ///< Owning group of each chain; invalid if the chain has no constrained atoms.
 };
 
 /**
