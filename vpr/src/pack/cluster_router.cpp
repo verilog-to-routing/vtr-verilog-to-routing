@@ -45,6 +45,27 @@
 #endif
 
 // =============================================================================
+// Constants
+// =============================================================================
+
+/// @brief Cost factor of a node with more than one fanout, before the
+///        FANOUT_FACTOR_STEP / net_fanout adjustment applied in expand_edges_.
+static constexpr float HIGH_FANOUT_NODE_FACTOR = 0.85f;
+
+/// @brief Cost factor of a node with at most one fanout, before the
+///        FANOUT_FACTOR_STEP / net_fanout adjustment applied in expand_edges_.
+static constexpr float LOW_FANOUT_NODE_FACTOR = 1.15f;
+
+/// @brief Amount the node factors move with 1 / net_fanout. Nets with more
+///        sinks are pushed towards high fanout nodes.
+static constexpr float FANOUT_FACTOR_STEP = 0.25f;
+
+/// @brief Lower bound on the fanout factors applied in expand_edges_. Assumes
+///        net_fanout is at least 1.
+static constexpr float MIN_FANOUT_FACTOR = std::min(HIGH_FANOUT_NODE_FACTOR,
+                                                    LOW_FANOUT_NODE_FACTOR - FANOUT_FACTOR_STEP);
+
+// =============================================================================
 // Internal functions declarations
 // =============================================================================
 
@@ -109,10 +130,6 @@ static std::vector<LbRRNodeId> find_incoming_rr_nodes(LbRRNodeId dst_node, const
 static bool is_route_mode_compatible(const t_lb_trace& rt,
                                      const LbTypeRRGraph& lb_type_graph,
                                      const vtr::vector<LbRRNodeId, t_lb_rr_node_stats>& lb_rr_node_stats);
-
-/// @brief Lower bound on the fanout factors applied in expand_edges_,
-///        0.85 + 0.25 / fanout and 1.15 - 0.25 / fanout.
-static constexpr float MIN_FANOUT_FACTOR = 0.85f;
 
 // =============================================================================
 // Constructor/Destructor functions
@@ -1260,9 +1277,9 @@ void ClusterRouter::expand_edges_(int mode,
             next_mode = 0;
         }
         if (lb_type_graph.num_fanout(enode.node_index, next_mode) > 1) {
-            fanout_factor = 0.85 + (0.25 / net_fanout);
+            fanout_factor = HIGH_FANOUT_NODE_FACTOR + (FANOUT_FACTOR_STEP / net_fanout);
         } else {
-            fanout_factor = 1.15 - (0.25 / net_fanout);
+            fanout_factor = LOW_FANOUT_NODE_FACTOR - (FANOUT_FACTOR_STEP / net_fanout);
         }
 
         incr_cost *= fanout_factor;
