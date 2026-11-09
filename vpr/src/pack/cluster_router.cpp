@@ -139,16 +139,13 @@ ClusterRouter::ClusterRouter(const LbTypeRRGraph& lb_type_graph,
                              t_logical_block_type_ptr type,
                              const std::unordered_set<int>& valid_feedback_pins,
                              ClusterRouterLookahead* lookahead,
-                             bool enable_hot_start) {
+                             bool enable_hot_start)
+    : lookahead_(lookahead)
+    , target_hops_(nullptr)
+    , hop_cost_(lookahead != nullptr ? MIN_FANOUT_FACTOR * lb_type_graph.min_edge_cost() : 0.0f) {
     lb_type_graph_ = &lb_type_graph;
     lb_type_ = type;
     valid_feedback_pins_ = &valid_feedback_pins;
-    lookahead_ = lookahead;
-    target_hops_ = nullptr;
-    hop_cost_ = 0;
-    if (lookahead != nullptr) {
-        hop_cost_ = MIN_FANOUT_FACTOR * lb_type_graph.min_edge_cost();
-    }
 
     size_t size = lb_type_graph.num_nodes();
     lb_rr_node_stats_.resize(size);
@@ -579,13 +576,18 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
             // Route each sink of net
             for (size_t itarget = 1; itarget < intra_lb_nets_[idx].terminals.size() && !is_impossible; itarget++) {
                 pq_.clear();
+
+                // Get the hop table of this sink. It holds the fewest edges
+                // from every node to the sink over the edges of all modes,
+                // which the search adds to the path cost of each node to
+                // order the queue.
                 if (lookahead_ != nullptr) {
                     target_hops_ = &lookahead_->hops_to(intra_lb_nets_[idx].terminals[itarget]);
                 }
-                // Get lowest cost next node, repeat until a path is found or if it is impossible to route
 
                 expand_rt_(idx);
 
+                // Get lowest cost next node, repeat until a path is found or if it is impossible to route
                 is_impossible = try_expand_nodes_(intra_lb_nets_[idx], &exp_node, itarget, mode_status->expand_all_modes, verbosity);
 
                 if (is_impossible && !mode_status->expand_all_modes) {
@@ -1201,7 +1203,7 @@ void ClusterRouter::expand_rt_rec_(const t_lb_trace& rt, LbRRNodeId prev_index, 
     explored_node_tb_[enode.node_index].enqueue_cost = 0;
     explored_node_tb_[enode.node_index].prev_index = prev_index;
 
-    // Queue the node keyed by the lower bound on the cost to the target.
+    // Queue the node with its cost set to the lower bound on the cost to the target.
     // A node with no path to the target is left out of the queue.
     if (target_hops_ == nullptr) {
         enode.cost = 0;
@@ -1243,9 +1245,6 @@ void ClusterRouter::expand_edges_(int mode,
         }
     }
 
-    const ClusterRouterLookahead::t_hop_table* target_hops = target_hops_;
-    const float hop_cost = hop_cost_;
-
     for (const LbTypeRRGraph::t_edge& edge : lb_type_graph.edges(cur_inode, mode)) {
         // Init new expansion node
         enode.prev_index = cur_inode;
@@ -1253,12 +1252,12 @@ void ClusterRouter::expand_edges_(int mode,
 
         // Skip nodes with no path to the target.
         float remaining_cost = 0;
-        if (target_hops != nullptr) {
-            uint8_t hops = (*target_hops)[enode.node_index];
+        if (target_hops_ != nullptr) {
+            uint8_t hops = (*target_hops_)[enode.node_index];
             if (hops == ClusterRouterLookahead::UNREACHABLE) {
                 continue;
             }
-            remaining_cost = hop_cost * hops;
+            remaining_cost = hop_cost_ * hops;
         }
 
         // Determine incremental cost of using expansion node
