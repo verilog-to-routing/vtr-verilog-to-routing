@@ -1,0 +1,14 @@
+# VPR options for the strong_options_file regression test, used together with command-line options.
+# Together with the command-line options of its run in config.txt, these must match the reference run.
+
+# A flag may be given both here and on the command-line (here, --pack is also on the command-line).
+pack: true
+
+inner_num: 0.5
+router_algorithm: timing_driven
+timing_analysis: on
+timing_report_detail: detailed
+
+# A single value can be given without a list. Values given on the command-line after
+# --options_file (reg2reg) are added after it, giving [in2reg, reg2reg].
+timing_report_path_categories: in2reg

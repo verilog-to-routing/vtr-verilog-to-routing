@@ -21,6 +21,7 @@ struct t_options {
     argparse::ArgValue<std::string> PowerFile;
     argparse::ArgValue<std::string> CmosTechFile;
     argparse::ArgValue<std::string> SDCFile;
+    argparse::ArgValue<std::string> options_file; ///< YAML file of additional command-line options (--options_file).
 
     argparse::ArgValue<e_arch_format> arch_format;
     argparse::ArgValue<e_circuit_format> circuit_format;
@@ -321,6 +322,9 @@ struct t_options {
     argparse::ArgValue<bool> annotated_rr_graph;
     argparse::ArgValue<bool> remove_dangling_nodes;
     argparse::ArgValue<e_gsb_version> gsb_version;
+
+    // Not set directly by an option
+    std::vector<std::string> expanded_args; ///< Command-line arguments (without argv[0]), with --options_file replaced by the file's arguments.
 };
 
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);

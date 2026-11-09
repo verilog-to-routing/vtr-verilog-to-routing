@@ -78,6 +78,8 @@ struct t_cluster_progress_stats {
  * @brief Return a packing status name for log messages.
  */
 const char* block_pack_status_name(e_block_pack_status status) {
+    VTR_ASSERT_MSG(status != e_block_pack_status::BLK_STATUS_UNDEFINED,
+                   "Block pack status was never set");
     switch (status) {
         case e_block_pack_status::BLK_PASSED:
             return "PASSED";
@@ -92,7 +94,7 @@ const char* block_pack_status_name(e_block_pack_status status) {
         case e_block_pack_status::BLK_FAILED_RELATIVE_GROUP:
             return "FAILED_RELATIVE_GROUP_CHECK";
         default:
-            return "UNDEFINED";
+            VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unknown block pack status %d.", static_cast<int>(status));
     }
 }
 

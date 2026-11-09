@@ -63,7 +63,7 @@ void cache_hard_block_names()
     std::vector<LogicalModelId> user_models(Arch.models.user_models().begin(), Arch.models.user_models().end());
     std::reverse(user_models.begin(), user_models.end());
     for (LogicalModelId model_id : user_models) {
-        t_model* hard_blocks = &Arch.models.get_model(model_id);
+        t_model *hard_blocks = &Arch.models.get_model(model_id);
         int sc_spot = sc_add_string(hard_block_names, hard_blocks->name.c_str());
         hard_block_names->data[sc_spot] = (void *)hard_blocks;
     }
@@ -209,7 +209,7 @@ void output_hard_blocks_yosys(Yosys::Design *design)
     std::vector<LogicalModelId> user_models(Arch.models.user_models().begin(), Arch.models.user_models().end());
     std::reverse(user_models.begin(), user_models.end());
     for (LogicalModelId model_id : user_models) {
-        t_model* hard_blocks = &Arch.models.get_model(model_id);
+        t_model *hard_blocks = &Arch.models.get_model(model_id);
         if (hard_blocks->used == 1) /* Hard Block is utilized */
         {
             // IF the hard_blocks is an adder or a multiplier, we ignore it.(Already print out in add_the_blackbox_for_adds and
