@@ -1,4 +1,5 @@
 #include "read_options.h"
+#include "read_options_file.h"
 #include "constant_nets.h"
 #include "clock_modeling.h"
 #include "vpr_error.h"
@@ -22,6 +23,7 @@ t_options read_options(int argc, const char** argv) {
     auto parser = create_arg_parser(argv[0], args);
 
     parser.parse_args(argc, argv);
+    args.expanded_args = parser.expanded_args();
 
     set_conditional_defaults(args);
 
@@ -2004,10 +2006,12 @@ static void add_general_options(argparse::ArgumentParser& parser, t_options& arg
 
     gen_grp.add_argument<e_constant_net_method, ParseConstantNetMethod>(args.constant_net_method, "--constant_net_method")
         .help(
-            "Specifies how constant nets (i.e. those driven to a constant\n"
-            "value) are handled:\n"
-            " * global: Treat constant nets as globals (not routed)\n"
-            " * route : Treat constant nets as normal nets (routed)\n")
+            "Specifies how constant nets (i.e. those driven by a constant\n"
+            "generator such as vcc/gnd) are handled:\n"
+            " * global: Treat constant nets as ignored (not routed)\n"
+            " * route : Treat constant nets as normal nets (routed)\n"
+            "Nets which are only inferred to be constant (e.g. the output\n"
+            "of a primitive whose inputs are all constant) are always routed.\n")
         .default_value("global")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2088,6 +2092,14 @@ static void add_general_options(argparse::ArgumentParser& parser, t_options& arg
  */
 static void add_file_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& file_grp = parser.add_argument_group("file options");
+
+    file_grp.add_argument(args.options_file, "--options_file")
+        .help(
+            "YAML file of additional command-line options, as a map from option name to value"
+            " (e.g. 'route_chan_width: 100'). The options are used as if written on the"
+            " command-line in place of --options_file. The positional arguments (architecture,"
+            " circuit) may also be given in the file.")
+        .action(argparse::Action::EXPAND_FILE);
 
     file_grp.add_argument<e_arch_format, ParseArchFormat>(args.arch_format, "--arch_format")
         .help(
@@ -2260,7 +2272,7 @@ static void add_netlist_options(argparse::ArgumentParser& parser, t_options& arg
     netlist_grp.add_argument<bool, ParseOnOff>(args.merge_constant_generators, "--merge_constant_generators")
         .help("Controls whether constant generators of the same value (e.g. the many LUTs tying"
               " signals to gnd / vcc) are merged into a single constant generator")
-        .default_value("off")
+        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     netlist_grp.add_argument<e_const_gen_inference, ParseConstGenInference>(args.const_gen_inference, "--const_gen_inference")
@@ -2291,7 +2303,7 @@ static void add_netlist_options(argparse::ArgumentParser& parser, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     netlist_grp.add_argument<bool, ParseOnOff>(args.sweep_constant_primary_outputs, "--sweep_constant_primary_outputs")
-        .help("Controls whether primary outputs driven by constant values are removed from the netlist")
+        .help("Controls whether primary outputs driven by constant generators (e.g. vcc/gnd) are removed from the netlist")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -3757,6 +3769,26 @@ static void add_analysis_options(argparse::ArgumentParser& parser, t_options& ar
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    analysis_grp.add_argument(args.timing_report_path_categories, "--timing_report_path_categories")
+        .help(
+            "Controls which categories of timing paths are included in the timing and skew reports:\n"
+            " * all: All timing paths are reported\n"
+            " * <category> ...: Only the listed categories of timing paths are reported"
+            " (e.g. --timing_report_path_categories in2reg reg2reg), where the categories are:\n"
+            "    * in2reg: Primary input to register\n"
+            "    * reg2reg: Register to register\n"
+            "    * reg2out: Register to primary output\n"
+            "    * in2out: Primary input to primary output\n"
+            "Only the worst path into each endpoint (for each clock domain pair) is considered,"
+            " so a register whose worst path comes from a primary input is not included in a"
+            " reg2reg report. Constraining the primary I/Os on their own (virtual) clock in the"
+            " SDC file avoids this. This only filters the reported paths; it does not affect"
+            " the slack or criticality calculations.")
+        .nargs('+')
+        .metavar("CATEGORY")
+        .default_value({"all"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     analysis_grp.add_argument(args.echo_dot_timing_graph_node, "--echo_dot_timing_graph_node")
         .help(
             "Controls how the timing graph echo file in DOT/GraphViz format is created when\n"
@@ -4040,6 +4072,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         "Attempts to find the minimum routable channel width, unless a fixed"
         " channel width is specified with --route_chan_width.";
     auto parser = argparse::ArgumentParser(prog_name, description);
+    parser.file_expander(expand_yaml_options_file);
 
     std::string epilog = vtr::replace_all(
         "Usage Examples\n"

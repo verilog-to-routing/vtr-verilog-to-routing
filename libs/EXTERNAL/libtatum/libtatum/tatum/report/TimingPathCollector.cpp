@@ -3,16 +3,20 @@
 #include "tatum/report/TimingPathCollector.hpp"
 #include "tatum/report/TimingReportTagRetriever.hpp"
 #include "tatum/report/timing_path_tracing.hpp"
+#include "tatum/report/TimingPathCategory.hpp"
 #include <map>
 
 namespace tatum {
 
 namespace detail {
-std::vector<TimingPath> collect_worst_timing_paths(const TimingGraph& timing_graph, const detail::TagRetriever& tag_retriever, size_t npaths);
+std::vector<TimingPath> collect_worst_timing_paths(const TimingGraph& timing_graph, const detail::TagRetriever& tag_retriever, size_t npaths,
+                                                   const TimingPathCategoryFilter& category_filter);
 std::vector<SkewPath> collect_worst_skew_paths(const TimingGraph& timing_graph, const TimingConstraints& timing_constraings,
-                                              const detail::TagRetriever& tag_retriever, TimingType timing_type, size_t npaths);
+                                              const detail::TagRetriever& tag_retriever, TimingType timing_type, size_t npaths,
+                                              const TimingPathCategoryFilter& category_filter);
 
-std::vector<TimingPath> collect_worst_timing_paths(const TimingGraph& timing_graph, const detail::TagRetriever& tag_retriever, size_t npaths) {
+std::vector<TimingPath> collect_worst_timing_paths(const TimingGraph& timing_graph, const detail::TagRetriever& tag_retriever, size_t npaths,
+                                                   const TimingPathCategoryFilter& category_filter) {
     std::vector<TimingPath> paths;
 
     struct TagNode {
@@ -28,6 +32,9 @@ std::vector<TimingPath> collect_worst_timing_paths(const TimingGraph& timing_gra
 
     //Add the slacks of all sink
     for(NodeId node : timing_graph.logical_outputs()) {
+        // Skip sinks which can not end any path in the requested categories, so we avoid tracing them
+        if(!category_filter.accepts_endpoint(is_register_endpoint(timing_graph, node))) continue;
+
         for(TimingTag tag : tag_retriever.slacks(node)) {
             tags_and_sinks.emplace_back(tag,node);
         }
@@ -49,6 +56,10 @@ std::vector<TimingPath> collect_worst_timing_paths(const TimingGraph& timing_gra
 
         TimingPath path = detail::trace_path(timing_graph, tag_retriever, sink_tag.launch_clock_domain(), sink_tag.capture_clock_domain(), sink_node); 
 
+        // The startpoint (and hence category) is only known once the path has been traced.
+        // Note that this filtering must occur before truncating to npaths.
+        if(!category_filter.contains(classify_timing_path(timing_graph, path.path_info()))) continue;
+
         paths.push_back(path);
 
         if(paths.size() >= npaths) break;
@@ -58,12 +69,15 @@ std::vector<TimingPath> collect_worst_timing_paths(const TimingGraph& timing_gra
 }
 
 std::vector<SkewPath> collect_worst_skew_paths(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, 
-                                               const detail::TagRetriever& tag_retriever, TimingType timing_type, size_t npaths) {
+                                               const detail::TagRetriever& tag_retriever, TimingType timing_type, size_t npaths,
+                                               const TimingPathCategoryFilter& category_filter) {
     std::vector<SkewPath> paths;
 
     for(NodeId node : timing_graph.nodes()) {
         NodeType node_type = timing_graph.node_type(node);
         if (node_type != NodeType::SINK) continue;
+
+        if (!category_filter.accepts_endpoint(is_register_endpoint(timing_graph, node))) continue;
 
         const auto& required_tags = tag_retriever.tags(node, TagType::DATA_REQUIRED);
 
@@ -83,6 +97,8 @@ std::vector<SkewPath> collect_worst_skew_paths(const TimingGraph& timing_graph, 
 
             path.data_launch_node = data_launch_elem.node();
             path.data_capture_node = node;
+
+            if (!category_filter.contains(classify_skew_path(timing_graph, path))) continue;
 
             path.clock_launch_path = detail::trace_clock_launch_path(timing_graph, tag_retriever, path.launch_domain, path.capture_domain, path.data_launch_node);
             path.clock_capture_path = detail::trace_clock_capture_path(timing_graph, tag_retriever, path.launch_domain, path.capture_domain, path.data_capture_node);
@@ -166,24 +182,28 @@ std::vector<SkewPath> collect_worst_skew_paths(const TimingGraph& timing_graph, 
 
 } //namespace detail
 
-std::vector<TimingPath> TimingPathCollector::collect_worst_setup_timing_paths(const TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths) const {
+std::vector<TimingPath> TimingPathCollector::collect_worst_setup_timing_paths(const TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths,
+                                                                             const TimingPathCategoryFilter& category_filter) const {
     detail::SetupTagRetriever tag_retriever(setup_analyzer);
-    return collect_worst_timing_paths(timing_graph, tag_retriever, npaths);
+    return collect_worst_timing_paths(timing_graph, tag_retriever, npaths, category_filter);
 }
 
-std::vector<TimingPath> TimingPathCollector::collect_worst_hold_timing_paths(const TimingGraph& timing_graph, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths) const {
+std::vector<TimingPath> TimingPathCollector::collect_worst_hold_timing_paths(const TimingGraph& timing_graph, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths,
+                                                                             const TimingPathCategoryFilter& category_filter) const {
     detail::HoldTagRetriever tag_retriever(hold_analyzer);
-    return collect_worst_timing_paths(timing_graph, tag_retriever, npaths);
+    return collect_worst_timing_paths(timing_graph, tag_retriever, npaths, category_filter);
 }
 
-std::vector<SkewPath> TimingPathCollector::collect_worst_setup_skew_paths(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths) const {
+std::vector<SkewPath> TimingPathCollector::collect_worst_setup_skew_paths(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths,
+                                                                         const TimingPathCategoryFilter& category_filter) const {
     detail::SetupTagRetriever tag_retriever(setup_analyzer);
-    return collect_worst_skew_paths(timing_graph, timing_constraints, tag_retriever, TimingType::SETUP, npaths);
+    return collect_worst_skew_paths(timing_graph, timing_constraints, tag_retriever, TimingType::SETUP, npaths, category_filter);
 }
 
-std::vector<SkewPath> TimingPathCollector::collect_worst_hold_skew_paths(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths) const {
+std::vector<SkewPath> TimingPathCollector::collect_worst_hold_skew_paths(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths,
+                                                                         const TimingPathCategoryFilter& category_filter) const {
     detail::HoldTagRetriever tag_retriever(hold_analyzer);
-    return collect_worst_skew_paths(timing_graph, timing_constraints, tag_retriever, TimingType::HOLD, npaths);
+    return collect_worst_skew_paths(timing_graph, timing_constraints, tag_retriever, TimingType::HOLD, npaths, category_filter);
 }
 
 } //namespace tatum

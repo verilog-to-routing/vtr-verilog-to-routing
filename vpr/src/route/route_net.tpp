@@ -10,6 +10,7 @@
 #include <limits>
 #include <tuple>
 
+#include "choke_points.h"
 #include "connection_based_routing.h"
 #include "connection_router_interface.h"
 #include "describe_rr_node.h"
@@ -21,7 +22,8 @@
 #include "rr_graph_fwd.h"
 #include "vtr_dynamic_bitset.h"
 
-/** Attempt to route a single net.
+/**
+ * @brief Attempt to route a single net.
  *
  * @param router The ConnectionRouterType instance
  * @param net_list Input netlist
@@ -40,7 +42,7 @@
  * @param budgeting_inf
  * @param worst_neg_slack
  * @param routing_predictor
- * @param choking_spots
+ * @param choking_spots Choke points for this net's sinks.
  * @param is_flat
  * @param net_bb Bounding box for the net (Routing resources outside net_bb will not be used)
  * @param should_setup Should we reset/prune the existing route tree first?
@@ -62,7 +64,7 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
                                 route_budgets& budgeting_inf,
                                 float worst_negative_slack,
                                 const RoutingPredictor& routing_predictor,
-                                const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
+                                const t_net_choke_points& choking_spots,
                                 bool is_flat,
                                 const t_bb& net_bb,
                                 bool should_setup = true,
@@ -481,9 +483,8 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
     return out;
 }
 
-/** Attempt to route a single sink (target_pin) in a net.
- * In the process, update global pathfinder costs, rr_node_route_inf and extend the global RouteTree
- * for this net.
+/**
+ * @brief Route target_pin, extend the route tree, and update PathFinder costs.
  *
  * @param router The ConnectionRouterType instance
  * @param net_list Input netlist
@@ -498,7 +499,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
  * @param router_stats
  * @param budgeting_inf
  * @param routing_predictor
- * @param choking_spots
+ * @param choking_spots Choke points for this net's sinks.
  * @param is_flat
  * @param net_bb Bounding box for the net (Routing resources outside net_bb will not be used)
  * @return NetResultFlags for this sink to be bubbled up through route_net */
@@ -515,7 +516,7 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
                                  RouterStats& router_stats,
                                  route_budgets& budgeting_inf,
                                  const RoutingPredictor& routing_predictor,
-                                 const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
+                                 const t_net_choke_points& choking_spots,
                                  bool is_flat,
                                  const t_bb& net_bb) {
     const auto& device_ctx = g_vpr_ctx.device();
@@ -539,8 +540,9 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
     bool net_is_clock = route_ctx.is_clock_net[net_id] != 0;
 
-    bool router_opt_choke_points = ((int)choking_spots[target_pin].size() != 0) && router_opts.has_choke_point;
-    ConnectionParameters conn_params(net_id, target_pin, router_opt_choke_points, choking_spots[target_pin]);
+    const std::unordered_map<RRNodeId, int>& sink_choking_spots = choking_spots.sink_choke_points(target_pin);
+    bool router_opt_choke_points = !sink_choking_spots.empty() && router_opts.has_choke_point;
+    ConnectionParameters conn_params(net_id, target_pin, router_opt_choke_points, sink_choking_spots);
 
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto

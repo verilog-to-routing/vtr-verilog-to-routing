@@ -21,6 +21,7 @@ struct t_options {
     argparse::ArgValue<std::string> PowerFile;
     argparse::ArgValue<std::string> CmosTechFile;
     argparse::ArgValue<std::string> SDCFile;
+    argparse::ArgValue<std::string> options_file; ///< YAML file of additional command-line options (--options_file).
 
     argparse::ArgValue<e_arch_format> arch_format;
     argparse::ArgValue<e_circuit_format> circuit_format;
@@ -307,6 +308,7 @@ struct t_options {
     argparse::ArgValue<int> timing_report_npaths;
     argparse::ArgValue<e_timing_report_detail> timing_report_detail;
     argparse::ArgValue<bool> timing_report_skew;
+    argparse::ArgValue<std::vector<std::string>> timing_report_path_categories;
     argparse::ArgValue<std::string> echo_dot_timing_graph_node;
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_input_handling;
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_output_handling;
@@ -321,6 +323,9 @@ struct t_options {
     argparse::ArgValue<bool> annotated_rr_graph;
     argparse::ArgValue<bool> remove_dangling_nodes;
     argparse::ArgValue<e_gsb_version> gsb_version;
+
+    // Not set directly by an option
+    std::vector<std::string> expanded_args; ///< Command-line arguments (without argv[0]), with --options_file replaced by the file's arguments.
 };
 
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);

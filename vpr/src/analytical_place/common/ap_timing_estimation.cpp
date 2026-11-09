@@ -174,12 +174,9 @@ static std::set<t_tile_pin> find_connected_tile_pins(const t_pb_graph_pin* pin,
 
             const std::vector<t_pb_graph_edge*>& edges = forward ? cur_pin->output_edges : cur_pin->input_edges;
             for (const t_pb_graph_edge* edge : edges) {
-                int num_pins = forward ? edge->num_output_pins : edge->num_input_pins;
-                for (int ipin = 0; ipin < num_pins; ipin++) {
-                    const t_pb_graph_pin* next_pin = forward ? edge->output_pins[ipin] : edge->input_pins[ipin];
-                    if (visited.insert(next_pin).second)
-                        stack.push_back(next_pin);
-                }
+                const t_pb_graph_pin* next_pin = forward ? edge->output_pin() : edge->input_pin();
+                if (visited.insert(next_pin).second)
+                    stack.push_back(next_pin);
             }
         }
     }
@@ -248,7 +245,7 @@ void FlatPlacementArcDelayEstimator::precompute_direct_arcs_(const PreClusterDel
                     float delay = 0.0f;
                     if (clb_direct.switch_index != DIRECT_DELAYLESS_SWITCH) {
                         const t_arch_switch_inf& direct_switch = device_ctx.arch_switch_inf[clb_direct.switch_index];
-                        delay = direct_switch.fixed_Tdel() ? direct_switch.Tdel() : direct_switch.Tdel(1);
+                        delay = direct_switch.fixed_Tdel() ? direct_switch.Tdel_max() : direct_switch.Tdel_max(1);
                     }
                     it->second.push_back({directs[idirect].x_offset, directs[idirect].y_offset, delay});
                     break;

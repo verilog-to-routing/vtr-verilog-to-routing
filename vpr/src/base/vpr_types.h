@@ -33,7 +33,6 @@
 #include "constant_nets.h"
 #include "clock_modeling.h"
 #include "heap_type.h"
-#include "lb_type_rr_graph.h"
 
 #include "vtr_assert.h"
 #include "vtr_vector.h"
@@ -42,6 +41,7 @@
 #include "rr_graph_fwd.h"
 #include "rr_graph_cost.h"
 #include "rr_graph_type.h"
+#include "tatum/report/TimingPathCategory.hpp"
 
 /*******************************************************************************
  * Global data types and constants
@@ -688,7 +688,7 @@ struct t_file_name_opts {
 struct t_netlist_opts {
     e_const_gen_inference const_gen_inference = e_const_gen_inference::COMB;
     bool absorb_buffer_luts = true;
-    bool merge_constant_generators = false;
+    bool merge_constant_generators = true;
     bool sweep_dangling_primary_ios = true;
     bool sweep_dangling_blocks = true;
     bool sweep_dangling_nets = true;
@@ -1440,6 +1440,9 @@ struct t_analysis_opts {
     int timing_report_npaths;
     e_timing_report_detail timing_report_detail;
     bool timing_report_skew;
+    /// @brief The categories of timing paths (e.g. reg2reg) included in the timing and skew reports.
+    ///        This only filters the reported paths; it does not affect the slack or criticality calculations.
+    tatum::TimingPathCategoryFilter timing_report_path_categories;
     std::string echo_dot_timing_graph_node;
     std::string write_timing_summary;
     bool generate_net_timing_report;
@@ -1645,19 +1648,18 @@ struct t_server_opts {
 
 ///@brief Store settings for VPR
 struct t_vpr_setup {
-    bool TimingEnabled;             ///<Is VPR timing enabled
-    t_file_name_opts FileNameOpts;  ///<File names
-    t_netlist_opts NetlistOpts;     ///<Options for packer
-    t_packer_opts PackerOpts;       ///<Options for packer
-    t_placer_opts PlacerOpts;       ///<Options for placer
-    t_ap_opts APOpts;               ///<Options for analytical placer
-    t_router_opts RouterOpts;       ///<router options
-    t_analysis_opts AnalysisOpts;   ///<Analysis options
-    t_crr_opts CRROpts;             ///<CRR options
-    t_noc_opts NocOpts;             ///<Options for the NoC
-    t_server_opts ServerOpts;       ///<Server options
-    t_det_routing_arch RoutingArch; ///<routing architecture
-    std::vector<LbTypeRrGraph> PackerRRGraph;
+    bool TimingEnabled;                  ///<Is VPR timing enabled
+    t_file_name_opts FileNameOpts;       ///<File names
+    t_netlist_opts NetlistOpts;          ///<Options for packer
+    t_packer_opts PackerOpts;            ///<Options for packer
+    t_placer_opts PlacerOpts;            ///<Options for placer
+    t_ap_opts APOpts;                    ///<Options for analytical placer
+    t_router_opts RouterOpts;            ///<router options
+    t_analysis_opts AnalysisOpts;        ///<Analysis options
+    t_crr_opts CRROpts;                  ///<CRR options
+    t_noc_opts NocOpts;                  ///<Options for the NoC
+    t_server_opts ServerOpts;            ///<Server options
+    t_det_routing_arch RoutingArch;      ///<routing architecture
     std::vector<t_segment_inf> Segments; ///<wires in routing architecture
     t_timing_inf Timing;                 ///<timing information
     float constant_net_delay;            ///<timing information when place and route not run

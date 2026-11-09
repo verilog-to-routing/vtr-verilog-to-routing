@@ -15,9 +15,9 @@
 #include "lb_type_rr_graph.h"
 
 /// @brief Prints one graph to fp.
-static void print_lb_type_rr_graph(FILE* fp, const LbTypeRrGraph& lb_type_rr_graph);
+static void print_lb_type_rr_graph(FILE* fp, const LbTypeRRGraph& lb_type_rr_graph);
 
-int LbTypeRrGraph::edge_mode(LbRrNodeId src, LbRrNodeId dst) const {
+int LbTypeRRGraph::edge_mode(LbRRNodeId src, LbRRNodeId dst) const {
     for (int imode = 0; imode < num_modes(src); imode++) {
         for (const t_edge& edge : edges(src, imode)) {
             if (edge.node_index == dst) {
@@ -28,7 +28,7 @@ int LbTypeRrGraph::edge_mode(LbRrNodeId src, LbRrNodeId dst) const {
     return -1;
 }
 
-void echo_lb_type_rr_graphs(char* filename, const std::vector<LbTypeRrGraph>& lb_type_rr_graphs) {
+void echo_lb_type_rr_graphs(char* filename, const std::vector<LbTypeRRGraph>& lb_type_rr_graphs) {
     FILE* fp = vtr::fopen(filename, "w");
 
     const DeviceContext& device_ctx = g_vpr_ctx.device();
@@ -45,8 +45,8 @@ void echo_lb_type_rr_graphs(char* filename, const std::vector<LbTypeRrGraph>& lb
     fclose(fp);
 }
 
-static void print_lb_type_rr_graph(FILE* fp, const LbTypeRrGraph& lb_type_rr_graph) {
-    for (LbRrNodeId inode : lb_type_rr_graph.nodes()) {
+static void print_lb_type_rr_graph(FILE* fp, const LbTypeRRGraph& lb_type_rr_graph) {
+    for (LbRRNodeId inode : lb_type_rr_graph.nodes()) {
         fprintf(fp, "Node %zu\n", size_t(inode));
         const t_pb_graph_pin* pb_graph_pin = lb_type_rr_graph.pb_graph_pin(inode);
         if (pb_graph_pin != nullptr) {
@@ -60,10 +60,10 @@ static void print_lb_type_rr_graph(FILE* fp, const LbTypeRrGraph& lb_type_rr_gra
         fprintf(fp, "\tCapacity: %d\n", lb_type_rr_graph.capacity(inode));
         fprintf(fp, "\tNumber Modes: %d\n", lb_type_rr_graph.num_modes(inode));
         for (int imode = 0; imode < lb_type_rr_graph.num_modes(inode); imode++) {
-            std::span<const LbTypeRrGraph::t_edge> edges = lb_type_rr_graph.edges(inode, imode);
+            std::span<const LbTypeRRGraph::t_edge> edges = lb_type_rr_graph.edges(inode, imode);
             fprintf(fp, "\tMode: %d   # Outedges: %zu", imode, edges.size());
             int count = 0;
-            for (const LbTypeRrGraph::t_edge& edge : edges) {
+            for (const LbTypeRRGraph::t_edge& edge : edges) {
                 // Break long lines
                 if (count % 5 == 0) {
                     fprintf(fp, "\n\t\t");

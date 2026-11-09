@@ -41,22 +41,18 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
     // detail is written to the vpr_constraints echo file
     const UserRelativeMacros& relative_macros = floorplanning_ctx.relative_macros;
     if (relative_macros.get_num_macros() > 0) {
-        size_t num_groups = 0;
         size_t num_atoms = 0;
         size_t num_locked_atoms = 0;
-        for (UserRelativeMacroId macro_id : relative_macros.macros()) {
-            const t_user_relative_macro& macro = relative_macros.get_macro(macro_id);
-            num_groups += macro.groups.size();
-            for (const t_user_relative_group& group : macro.groups) {
-                num_atoms += group.atoms.size();
-                for (const std::string& site_path : group.atom_site_paths) {
-                    if (!site_path.empty())
-                        num_locked_atoms++;
-                }
+        for (UserRelativeGroupId group_id : relative_macros.groups()) {
+            const t_user_relative_group& group = relative_macros.get_group(group_id);
+            num_atoms += group.atoms.size();
+            for (const std::string& site_path : group.atom_site_paths) {
+                if (!site_path.empty())
+                    num_locked_atoms++;
             }
         }
         VTR_LOG("Read %zu relative placement macro(s): %zu group(s), %zu atom(s), %zu atom(s) locked to a primitive site\n",
-                relative_macros.get_num_macros(), num_groups, num_atoms, num_locked_atoms);
+                relative_macros.get_num_macros(), relative_macros.get_num_groups(), num_atoms, num_locked_atoms);
     }
 
     auto& routing_ctx = g_vpr_ctx.mutable_routing();

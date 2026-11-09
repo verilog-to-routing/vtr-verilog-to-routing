@@ -229,7 +229,7 @@ static bool primitive_has_external_output(const t_pb_graph_node* prim) {
 
     for (int port_idx = 0; port_idx < prim->num_output_ports; port_idx++) {
         for (int pin_idx = 0; pin_idx < prim->num_output_pins[port_idx]; pin_idx++) {
-            bfs_queue.push(&prim->output_pins[port_idx][pin_idx]);
+            bfs_queue.push(&prim->pins_by_output_port[port_idx][pin_idx]);
         }
     }
 
@@ -244,9 +244,7 @@ static bool primitive_has_external_output(const t_pb_graph_node* prim) {
             return true;
 
         for (t_pb_graph_edge* edge : cur_pin->output_edges) {
-            for (int sink_idx = 0; sink_idx < edge->num_output_pins; sink_idx++) {
-                bfs_queue.push(edge->output_pins[sink_idx]);
-            }
+            bfs_queue.push(edge->output_pin());
         }
     }
     return false;
@@ -288,8 +286,7 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
         // if none qualifies (e.g. outpad atoms with no output pins).
         t_logical_block_type_ptr mapped_type = nullptr;
         for (t_logical_block_type_ptr cand : primitive_candidate_block_types[root_model_id]) {
-            std::vector<t_logical_block_type> candidate_logical_type = {*cand};
-            const t_pb_graph_node* current_type_prim = prepacker.get_expected_lowest_cost_primitive_for_atom_block(root_atom, candidate_logical_type);
+            const t_pb_graph_node* current_type_prim = prepacker.get_expected_lowest_cost_primitive_for_atom_block(root_atom, *cand);
             if (current_type_prim && primitive_has_external_output(current_type_prim)) {
                 mapped_type = cand;
                 break;

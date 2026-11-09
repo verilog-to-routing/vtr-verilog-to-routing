@@ -1,0 +1,39 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Regression test for the packer's cleanup of intra-cluster router modes.
+#
+# The architecture wraps each flip-flop in a non-primitive pb_type inside the
+# BLE. When a LUT+FF molecule is rolled back, freeing the BLE also frees the
+# flip-flop wrapper, whose modes must be cleared in the cluster router too.
+# Stale modes silently block later intra-cluster routes. The check that the
+# router modes match the pb tree is a VTR_ASSERT_SAFE, so this test relies on
+# a build with VTR_ASSERT_LEVEL >= 3 (as in CI).
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/blif/4
+
+# Path to directory of architectures to use
+archs_dir=arch/reg_test_archs
+
+# Add circuits to list to sweep
+circuit_list_add=dk512.blif
+circuit_list_add=s208.blif
+circuit_list_add=bbara.blif
+circuit_list_add=opus.blif
+
+# Add architectures to list to sweep
+arch_list_add=k4_N4_90nm_wrapped_ff.xml
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+# Script parameters
+script_params=-starting_stage vpr -track_memory_usage

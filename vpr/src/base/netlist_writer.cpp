@@ -1253,16 +1253,16 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::string io_name;
         int cluster_pin_idx = -1;
         if (dir == PortType::INPUT) {
-            VTR_ASSERT(pb_graph_node->num_output_ports == 1);                        //One output port
-            VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1);                      //One output pin
-            cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+            VTR_ASSERT(pb_graph_node->num_output_ports == 1);                                // One output port
+            VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1);                              // One output pin
+            cluster_pin_idx = pb_graph_node->pins_by_output_port[0][0].pin_count_in_cluster; // Unique pin index in cluster
 
             io_name = atom->name;
 
         } else {
-            VTR_ASSERT(pb_graph_node->num_input_ports == 1);                        //One input port
-            VTR_ASSERT(pb_graph_node->num_input_pins[0] == 1);                      //One input pin
-            cluster_pin_idx = pb_graph_node->input_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+            VTR_ASSERT(pb_graph_node->num_input_ports == 1);                                // One input port
+            VTR_ASSERT(pb_graph_node->num_input_pins[0] == 1);                              // One input pin
+            cluster_pin_idx = pb_graph_node->pins_by_input_port[0][0].pin_count_in_cluster; // Unique pin index in cluster
 
             //Strip off the starting 'out:' that vpr adds to uniqify outputs
             //this makes the port names match the input blif file
@@ -1355,14 +1355,14 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         const auto& top_pb_route = find_top_pb_route(atom);
 
-        VTR_ASSERT(pb_graph_node->num_output_ports == 1);                                 //LUT has one output port
-        VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1);                               //LUT has one output pin
-        int sink_cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+        VTR_ASSERT(pb_graph_node->num_output_ports == 1);                                         // LUT has one output port
+        VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1);                                       // LUT has one output pin
+        int sink_cluster_pin_idx = pb_graph_node->pins_by_output_port[0][0].pin_count_in_cluster; // Unique pin index in cluster
 
         //Add inputs connections
         std::vector<Arc> timing_arcs;
         for (int pin_idx = 0; pin_idx < pb_graph_node->num_input_pins[0]; pin_idx++) {
-            int cluster_pin_idx = pb_graph_node->input_pins[0][pin_idx].pin_count_in_cluster; //Unique pin index in cluster
+            int cluster_pin_idx = pb_graph_node->pins_by_input_port[0][pin_idx].pin_count_in_cluster; // Unique pin index in cluster
 
             std::string net;
             if (!top_pb_route.count(cluster_pin_idx)) {
@@ -1435,29 +1435,29 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::map<std::string, std::string> port_conns;
 
         //Input (D)
-        int input_cluster_pin_idx = pb_graph_node->input_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+        int input_cluster_pin_idx = pb_graph_node->pins_by_input_port[0][0].pin_count_in_cluster; // Unique pin index in cluster
         VTR_ASSERT(top_pb_route.count(input_cluster_pin_idx));
         auto input_atom_net_id = top_pb_route[input_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
         std::string input_net = make_inst_wire(input_atom_net_id, find_tnode(atom, input_cluster_pin_idx), inst_name, PortType::INPUT, 0, 0);
         port_conns["D"] = input_net;
 
-        double tsu = pb_graph_node->input_pins[0][0].tsu;
+        double tsu = pb_graph_node->pins_by_input_port[0][0].tsu;
         DelayTriple tsu_triple(tsu, tsu, tsu);
 
-        double thld = pb_graph_node->input_pins[0][0].thld;
+        double thld = pb_graph_node->pins_by_input_port[0][0].thld;
         DelayTriple thld_triple(thld, thld, thld);
 
         //Output (Q)
-        int output_cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+        int output_cluster_pin_idx = pb_graph_node->pins_by_output_port[0][0].pin_count_in_cluster; // Unique pin index in cluster
         VTR_ASSERT(top_pb_route.count(output_cluster_pin_idx));
         auto output_atom_net_id = top_pb_route[output_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
         std::string output_net = make_inst_wire(output_atom_net_id, find_tnode(atom, output_cluster_pin_idx), inst_name, PortType::OUTPUT, 0, 0);
         port_conns["Q"] = output_net;
 
-        DelayTriple tcq_triple = get_pin_tco_delay_triple(pb_graph_node->output_pins[0][0]);
+        DelayTriple tcq_triple = get_pin_tco_delay_triple(pb_graph_node->pins_by_output_port[0][0]);
 
         //Clock (control)
-        int control_cluster_pin_idx = pb_graph_node->clock_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+        int control_cluster_pin_idx = pb_graph_node->pins_by_clock_port[0][0].pin_count_in_cluster; // Unique pin index in cluster
         VTR_ASSERT(top_pb_route.count(control_cluster_pin_idx));
         auto control_atom_net_id = top_pb_route[control_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
         std::string control_net = make_inst_wire(control_atom_net_id, find_tnode(atom, control_cluster_pin_idx), inst_name, PortType::CLOCK, 0, 0);
@@ -1501,7 +1501,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Process the input ports
         for (int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
             for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ++ipin) {
-                const t_pb_graph_pin* pin = &pb_graph_node->input_pins[iport][ipin];
+                const t_pb_graph_pin* pin = &pb_graph_node->pins_by_input_port[iport][ipin];
                 const t_port* port = pin->port;
                 std::string port_class = port->port_class;
 
@@ -1561,7 +1561,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Process the output ports
         for (int iport = 0; iport < pb_graph_node->num_output_ports; ++iport) {
             for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ++ipin) {
-                const t_pb_graph_pin* pin = &pb_graph_node->output_pins[iport][ipin];
+                const t_pb_graph_pin* pin = &pb_graph_node->pins_by_output_port[iport][ipin];
                 const t_port* port = pin->port;
                 std::string port_class = port->port_class;
 
@@ -1604,7 +1604,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             VTR_ASSERT(pb_graph_node->num_clock_pins[iport] == 1); //Expect a single clock port
 
             for (int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ++ipin) {
-                const t_pb_graph_pin* pin = &pb_graph_node->clock_pins[iport][ipin];
+                const t_pb_graph_pin* pin = &pb_graph_node->pins_by_clock_port[iport][ipin];
                 const t_port* port = pin->port;
                 std::string port_class = port->port_class;
 
@@ -1660,7 +1660,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Process the input ports
         for (int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
             for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ++ipin) {
-                const t_pb_graph_pin* pin = &pb_graph_node->input_pins[iport][ipin];
+                const t_pb_graph_pin* pin = &pb_graph_node->pins_by_input_port[iport][ipin];
                 const t_port* port = pin->port;
                 params["WIDTH"] = std::to_string(port->num_pins); //Assume same width on all ports
 
@@ -1694,7 +1694,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Process the output ports
         for (int iport = 0; iport < pb_graph_node->num_output_ports; ++iport) {
             for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ++ipin) {
-                const t_pb_graph_pin* pin = &pb_graph_node->output_pins[iport][ipin];
+                const t_pb_graph_pin* pin = &pb_graph_node->pins_by_output_port[iport][ipin];
                 const t_port* port = pin->port;
 
                 int cluster_pin_idx = pin->pin_count_in_cluster;
@@ -1759,7 +1759,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Process the input ports
         for (int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
             for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ++ipin) {
-                const t_pb_graph_pin* pin = &pb_graph_node->input_pins[iport][ipin];
+                const t_pb_graph_pin* pin = &pb_graph_node->pins_by_input_port[iport][ipin];
                 const t_port* port = pin->port;
 
                 if (port->name == std::string("a") || port->name == std::string("b")) {
@@ -1798,7 +1798,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Process the output ports
         for (int iport = 0; iport < pb_graph_node->num_output_ports; ++iport) {
             for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ++ipin) {
-                const t_pb_graph_pin* pin = &pb_graph_node->output_pins[iport][ipin];
+                const t_pb_graph_pin* pin = &pb_graph_node->pins_by_output_port[iport][ipin];
                 const t_port* port = pin->port;
 
                 int cluster_pin_idx = pin->pin_count_in_cluster;
@@ -1866,7 +1866,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Process the input ports
         for (int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
             for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ++ipin) {
-                const t_pb_graph_pin* pin = &pb_graph_node->input_pins[iport][ipin];
+                const t_pb_graph_pin* pin = &pb_graph_node->pins_by_input_port[iport][ipin];
                 const t_port* port = pin->port;
 
                 int cluster_pin_idx = pin->pin_count_in_cluster;
@@ -2022,7 +2022,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Process the output ports
         for (int iport = 0; iport < pb_graph_node->num_output_ports; ++iport) {
             for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ++ipin) {
-                const t_pb_graph_pin* pin = &pb_graph_node->output_pins[iport][ipin];
+                const t_pb_graph_pin* pin = &pb_graph_node->pins_by_output_port[iport][ipin];
                 const t_port* port = pin->port;
 
                 int cluster_pin_idx = pin->pin_count_in_cluster;
@@ -2123,7 +2123,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Process the clock ports
         for (int iport = 0; iport < pb_graph_node->num_clock_ports; ++iport) {
             for (int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ++ipin) {
-                const t_pb_graph_pin* pin = &pb_graph_node->clock_pins[iport][ipin];
+                const t_pb_graph_pin* pin = &pb_graph_node->pins_by_clock_port[iport][ipin];
                 const t_port* port = pin->port;
 
                 int cluster_pin_idx = pin->pin_count_in_cluster;
@@ -2271,7 +2271,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 AtomNetId impl_input_net_id = find_atom_input_logical_net(atom_pb, ipin); //The net currently connected to input j
 
                 //Find the original pin index
-                const t_pb_graph_pin* gpin = &gnode->input_pins[0][ipin];
+                const t_pb_graph_pin* gpin = &gnode->pins_by_input_port[0][ipin];
                 BitIndex orig_index = atom_pb->atom_pin_bit_index(gpin);
 
                 if (impl_input_net_id) {
@@ -2425,7 +2425,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
     AtomNetId find_atom_input_logical_net(const t_pb* atom, int atom_input_idx) {
         const t_pb_graph_node* pb_node = atom->pb_graph_node;
 
-        int cluster_pin_idx = pb_node->input_pins[0][atom_input_idx].pin_count_in_cluster;
+        int cluster_pin_idx = pb_node->pins_by_input_port[0][atom_input_idx].pin_count_in_cluster;
         const auto& top_pb_route = find_top_pb_route(atom);
         AtomNetId atom_net_id;
         if (top_pb_route.count(cluster_pin_idx)) {
@@ -2569,9 +2569,9 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
         std::smatch matches;
 
         if (dir == PortType::INPUT) {
-            VTR_ASSERT(pb_graph_node->num_output_ports == 1);                        //One output port
-            VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1);                      //One output pin
-            cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+            VTR_ASSERT(pb_graph_node->num_output_ports == 1);                                // One output port
+            VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1);                              // One output pin
+            cluster_pin_idx = pb_graph_node->pins_by_output_port[0][0].pin_count_in_cluster; // Unique pin index in cluster
 
             io_name = "";
             indexed_io_name = atom->name;
@@ -2586,9 +2586,9 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
             }
 
         } else {
-            VTR_ASSERT(pb_graph_node->num_input_ports == 1);                        //One input port
-            VTR_ASSERT(pb_graph_node->num_input_pins[0] == 1);                      //One input pin
-            cluster_pin_idx = pb_graph_node->input_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+            VTR_ASSERT(pb_graph_node->num_input_ports == 1);                                // One input port
+            VTR_ASSERT(pb_graph_node->num_input_pins[0] == 1);                              // One input pin
+            cluster_pin_idx = pb_graph_node->pins_by_input_port[0][0].pin_count_in_cluster; // Unique pin index in cluster
 
             //Strip off the starting 'out:' that vpr adds to uniqify outputs
             //this makes the port names match the input blif file

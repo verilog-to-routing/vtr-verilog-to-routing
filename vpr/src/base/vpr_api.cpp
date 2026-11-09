@@ -11,6 +11,7 @@
  * that doing so can break the correctness of VPR
  */
 
+#include <cctype>
 #include <cstdio>
 #include <cstring>
 #include <cmath>
@@ -155,6 +156,49 @@ void vpr_print_args(int argc, const char** argv) {
     VTR_LOG("\n\n");
 }
 
+/**
+ * @brief Returns the argument quoted for a POSIX shell, if it needs to be.
+ */
+static std::string shell_quote(const std::string& arg) {
+    constexpr const char* safe_chars = "_-+=./:,@%";
+    bool is_safe = !arg.empty();
+    for (char c : arg) {
+        if (!std::isalnum(static_cast<unsigned char>(c)) && (c == '\0' || std::strchr(safe_chars, c) == nullptr)) {
+            is_safe = false;
+            break;
+        }
+    }
+    if (is_safe) {
+        return arg;
+    }
+
+    // Within single quotes nothing is special except the single quote itself, which is written as '\''.
+    std::string quoted = "'";
+    for (char c : arg) {
+        if (c == '\'') {
+            quoted += "'\\''";
+        } else {
+            quoted += c;
+        }
+    }
+    quoted += "'";
+    return quoted;
+}
+
+void vpr_print_expanded_args(const char* prog, const t_options& options) {
+    if (options.options_file.provenance() != argparse::Provenance::SPECIFIED) {
+        return;
+    }
+
+    VTR_LOG("Options were read from %s (--options_file). The equivalent command-line, which can be re-run without the file, is:\n",
+            options.options_file.value().c_str());
+    VTR_LOG("%s", shell_quote(prog).c_str());
+    for (const std::string& arg : options.expanded_args) {
+        VTR_LOG(" %s", shell_quote(arg).c_str());
+    }
+    VTR_LOG("\n\n");
+}
+
 void vpr_initialize_logging() {
     {
         //Allow the default vpr log file to be overwritten
@@ -194,6 +238,7 @@ void vpr_init(const int argc, const char** argv, t_options* options, t_vpr_setup
     //This provides a reference in the log file to exactly
     //how VPR was run, aiding in re-producibility
     vpr_print_args(argc, argv);
+    vpr_print_expanded_args(argv[0], *options);
 
     vpr_init_with_options(options, vpr_setup, arch);
 }
@@ -305,7 +350,6 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->NocOpts,
              &vpr_setup->ServerOpts,
              vpr_setup->RoutingArch,
-             vpr_setup->PackerRRGraph,
              vpr_setup->Segments,
              &vpr_setup->Timing,
              &vpr_setup->ShowGraphics,
@@ -617,6 +661,9 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     }
 
     report_device_grid_stats(device_ctx.grid);
+    if (isEchoFileEnabled(E_ECHO_DEVICE_GRID)) {
+        write_device_grid(getEchoFileName(E_ECHO_DEVICE_GRID), device_ctx.grid);
+    }
 }
 
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
@@ -724,12 +771,11 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                                                                      g_vpr_ctx.atom().netlist());
     }
 
-    // Run the prepacker, packing the atoms into molecules.
-    // The Prepacker object performs prepacking and stores the pack molecules.
-    // As long as the molecules are used, this object must persist.
+    // Group atoms into molecules. Keep the prepacker alive while its molecules are used.
     const Prepacker prepacker(g_vpr_ctx.atom().netlist(),
                               arch.models,
-                              g_vpr_ctx.device().logical_block_types);
+                              g_vpr_ctx.device().logical_block_types,
+                              g_vpr_ctx.floorplanning().relative_macros);
 
     // Setup pre-clustering timing analysis
     PreClusterTimingManager pre_cluster_timing_manager(vpr_setup.PackerOpts.timing_driven,
@@ -769,7 +815,6 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     return try_pack(vpr_setup.PackerOpts,
                     vpr_setup.APOpts,
                     arch,
-                    vpr_setup.PackerRRGraph,
                     prepacker,
                     pre_cluster_timing_manager,
                     g_vpr_ctx.atom().flat_placement_info(),
@@ -1056,7 +1101,11 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
         std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
         if (vpr_setup.Timing.timing_analysis_enabled) {
             auto& atom_ctx = g_vpr_ctx.atom();
-            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay, is_flat);
+            // The router only computes the max net delays (the min delays are computed after
+            // routing, in the analysis stage), so they are also used as the min delays here.
+            // TODO: For hold-aware routing (RCV), the router's timing analysis should use the
+            //       min net delays. This requires the router to also compute the min delays.
+            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay, net_delay, is_flat);
             timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
 #ifndef NO_SERVER
             if (g_vpr_ctx.server().gate_io.is_running()) {
@@ -1352,7 +1401,6 @@ static void free_complex_block_types() {
 
     free_type_descriptors(device_ctx.logical_block_types);
     free_type_descriptors(device_ctx.physical_tile_types);
-    free_pb_graph_edges();
 }
 
 void free_circuit() {
@@ -1404,7 +1452,6 @@ static bool is_pack_only(const t_vpr_setup& vpr_setup) {
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
                                   t_vpr_setup& vpr_setup) {
-    vpr_setup.PackerRRGraph.clear();
     free_circuit();
     free_arch(&Arch);
     free_device(vpr_setup.RoutingArch);
@@ -1450,7 +1497,6 @@ void vpr_setup_vpr(t_options* Options,
                    t_noc_opts* NocOpts,
                    t_server_opts* ServerOpts,
                    t_det_routing_arch& RoutingArch,
-                   std::vector<LbTypeRrGraph>& lb_type_rr_graphs,
                    std::vector<t_segment_inf>& Segments,
                    t_timing_inf* Timing,
                    bool* ShowGraphics,
@@ -1475,7 +1521,6 @@ void vpr_setup_vpr(t_options* Options,
              NocOpts,
              ServerOpts,
              RoutingArch,
-             lb_type_rr_graphs,
              Segments,
              Timing,
              ShowGraphics,
@@ -1585,11 +1630,12 @@ void vpr_analysis(const Netlist<>& net_list,
     if (vpr_setup.TimingEnabled) {
         //Load the net delays
 
-        NetPinsMatrix<float> net_delay = make_net_pins_matrix<float>(net_list);
-        load_net_delay_from_routing(net_list, net_delay);
+        NetPinsMatrix<float> net_delay_min = make_net_pins_matrix<float>(net_list);
+        NetPinsMatrix<float> net_delay_max = make_net_pins_matrix<float>(net_list);
+        load_net_delay_from_routing(net_list, net_delay_min, net_delay_max);
 
         //Do final timing analysis
-        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay, vpr_setup.RouterOpts.flat_routing);
+        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay_min, net_delay_max, vpr_setup.RouterOpts.flat_routing);
         auto timing_info = make_setup_hold_timing_info(analysis_delay_calc, vpr_setup.AnalysisOpts.timing_update_type);
         timing_info->update();
 

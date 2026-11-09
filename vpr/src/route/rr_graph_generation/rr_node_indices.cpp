@@ -274,9 +274,13 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
         }
     }
 
+    // Reuse coordinate vector capacity across pins.
+    std::vector<int> x_offset;
+    std::vector<int> y_offset;
+    std::vector<e_side> pin_sides;
     for (const int pin_num : pin_num_vec) {
         bool assigned_to_rr_node = false;
-        const auto [x_offset, y_offset, pin_sides] = get_pin_coordinates(physical_type_ptr, pin_num, wanted_sides);
+        get_pin_coordinates(physical_type_ptr, pin_num, wanted_sides, x_offset, y_offset, pin_sides);
         e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
         for (int pin_coord_idx = 0; pin_coord_idx < (int)pin_sides.size(); pin_coord_idx++) {
             int x_tile = root_loc.x + x_offset[pin_coord_idx];
@@ -503,7 +507,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                               describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
                 }
 
-                if (tile_loc.layer_num < rr_graph.node_layer_low(inode) && tile_loc.layer_num > rr_graph.node_layer_high(inode)) {
+                if (tile_loc.layer_num < rr_graph.node_layer_low(inode) || tile_loc.layer_num > rr_graph.node_layer_high(inode)) {
                     VPR_ERROR(VPR_ERROR_ROUTE, "RR node layer does not match between rr_nodes and rr_node_indices (%s/%s): %s",
                               rr_node_typename[rr_graph.node_type(inode)],
                               rr_node_typename[rr_type],

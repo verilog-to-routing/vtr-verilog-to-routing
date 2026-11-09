@@ -133,9 +133,9 @@ static void route_intra_cluster_conn(const t_pb_graph_pin* source_pin, const t_p
         }
 
         for (t_pb_graph_edge* edge : cur_pin->output_edges) {
-            VTR_ASSERT(edge->num_output_pins == 1);
-            queue.push_back(edge->output_pins[0]);
-            prev[edge->output_pins[0]] = cur_pin;
+            t_pb_graph_pin* next_pin = edge->output_pin();
+            queue.push_back(next_pin);
+            prev[next_pin] = cur_pin;
         }
     }
 
@@ -481,7 +481,7 @@ static void check_cluster_bus_mux_selects(ClusterBlockId clb_blk_id, const t_pb_
         // Match the incoming edge to the recorded driver pin.
         for (int iedge = 0; iedge < pin->num_input_edges; iedge++) {
             const t_pb_graph_edge* edge = pin->input_edges[iedge];
-            if (edge->input_pins[0]->pin_count_in_cluster != route.driver_pb_pin_id) {
+            if (edge->input_pin()->pin_count_in_cluster != route.driver_pb_pin_id) {
                 continue;
             }
             if (!edge->is_bus_mux()) {

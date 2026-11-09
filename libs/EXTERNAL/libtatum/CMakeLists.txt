@@ -5,6 +5,8 @@ project("tatum")
 set(TATUM_EXECUTION_ENGINE "auto" CACHE STRING "Specify the framework for (potential) parallel execution")
 set_property(CACHE TATUM_EXECUTION_ENGINE PROPERTY STRINGS auto serial tbb)
 
+option(TATUM_BUILD_UNIT_TESTS "Build Tatum's (Catch2) unit tests" OFF)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
@@ -32,6 +34,15 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 add_subdirectory(libtatum)
+
+if(TATUM_BUILD_UNIT_TESTS)
+    if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+        #As a sub-project the parent project is expected to provide Catch2 and enable testing
+        find_package(Catch2 3 REQUIRED)
+        enable_testing()
+    endif()
+    add_subdirectory(unit_test)
+endif()
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
     #Only build the parser, test executable and docs if not a sub-project

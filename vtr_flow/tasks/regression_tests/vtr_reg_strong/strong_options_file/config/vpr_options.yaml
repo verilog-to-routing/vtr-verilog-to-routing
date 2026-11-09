@@ -1,0 +1,28 @@
+# VPR options for the strong_options_file regression test.
+# Together with --route_chan_width (which run_vtr_flow needs to see on the command-line), these must
+# match the command-line options of the reference run in config.txt.
+#
+# The file is a YAML map from option name to value. Comments like this one are allowed, either on
+# their own line or at the end of a line.
+
+# Flags (options which take no value): true sets the flag, false leaves it unset.
+pack: true
+place: true
+route: true
+analysis: true
+analytical_place: false  # Not set, so VPR runs the traditional pack/place/route flow.
+
+# The leading dashes of an option name are optional.
+--seed: 5
+
+# Options which take a single value. Values are passed to VPR exactly as written.
+inner_num: 0.5
+router_algorithm: timing_driven
+timing_analysis: on              # Stays "on" (not converted to a YAML boolean).
+timing_report_detail: "detailed" # Quoted values are also allowed.
+
+# Options which take multiple values are given as a YAML list, in either block style:
+timing_report_path_categories:
+  - in2reg
+  - reg2reg
+# or flow style: timing_report_path_categories: [in2reg, reg2reg]

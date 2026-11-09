@@ -48,6 +48,69 @@ To use the traditional sequential flow (pack, place, route, analysis), pass all 
 
 By default VPR will perform a binary search routing to find the minimum channel width required to route the circuit.
 
+.. _vpr_options_file:
+
+Options File
+------------
+
+Instead of passing every option on the command-line, options can be read from a YAML file.
+
+.. option:: --options_file <file>
+
+    Reads additional command-line options from the YAML file ``<file>``.
+
+    The file is a map from option name to value.
+    For example, the file ``my_options.yaml``:
+
+    .. code-block:: yaml
+
+        # Comments may be on their own line...
+        architecture: my_arch.xml   # ...or at the end of a line.
+        circuit: my_circuit.blif    # Positional arguments: give both or neither.
+        route_chan_width: 100
+        --seed: 7                   # The leading "--" is optional.
+
+        # Flags: true sets the flag, false leaves it out.
+        pack: true
+        place: true
+        analytical_place: false
+
+        timing_analysis: on         # Passed as "on", not as the YAML boolean true.
+        timing_report_detail: "detailed"  # Quotes are optional.
+
+        # Options which take multiple values are given as a list,
+        # either as [in2reg, reg2reg] or as one "- item" per line:
+        timing_report_path_categories:
+          - in2reg
+          - reg2reg
+
+    can be used as::
+
+        vpr --options_file my_options.yaml
+
+    which is equivalent to::
+
+        vpr my_arch.xml my_circuit.blif --route_chan_width 100 --seed 7 --pack --place --timing_analysis on --timing_report_detail detailed --timing_report_path_categories in2reg reg2reg
+
+    The options in the file are used exactly as if they were written on the command-line in place of ``--options_file <file>``, and follow the usual rules:
+
+    * An option which takes a single value may only be given once, so it can not be given both in the file and on the command-line.
+    * Flags (options which take no value, such as ``--pack``) are given as ``true`` (set the flag) or ``false`` (do not set it).
+      YAML's other boolean words (``yes``/``no``, ``on``/``off``) are also accepted.
+    * Options which take multiple values are given as a YAML list, either on one line (``[a, b]``) or with one ``- item`` per line.
+      Values given both in the file and on the command-line are combined, in the order they appear.
+    * Values are passed to VPR as the text written in the file (without any quotes), so they take the same values as on the command-line.
+      For example, ``--timing_analysis`` takes ``on`` or ``off``, not ``true`` or ``false``.
+    * Relative file paths are relative to the directory VPR is run from, not to the location of the options file.
+    * The positional arguments (``architecture`` and ``circuit``) may be given in the file.
+      If either is given in the file, both must be, and neither may then be given on the command-line.
+    * Only one options file may be given, and it may not contain ``options_file``.
+    * Comments (``# ...``) may be used, on their own line or at the end of a line.
+    * The leading ``--`` of an option name is optional (``seed`` and ``--seed`` are equivalent).
+      Positional arguments have no leading ``--`` (``architecture``, not ``--architecture``).
+
+    The VPR log shows both the command-line VPR was run with and an equivalent command-line with the options file replaced by its options, which can be re-run without the file.
+
 Detailed Command-line Options
 -----------------------------
 VPR has a lot of options. Running :option:`vpr --help` will display all the available options and their usage information.
@@ -377,10 +440,12 @@ General Options
 
 .. option:: --constant_net_method {global | route}
 
-    Specifies how constant nets (i.e. those driven to a constant value) are handled:
+    Specifies how constant nets (i.e. those driven by a constant generator such as vcc/gnd) are handled:
 
-     * ``global``: Treat constant nets as globals (not routed)
+     * ``global``: Treat constant nets as ignored (not routed)
      * ``route``: Treat constant nets as normal nets (routed)
+
+    Nets which are only inferred to be constant (e.g. the output of a primitive whose inputs are all constant, see :option:`--const_gen_inference`) are always routed, since the primitive driving them is still implemented.
 
      **Default:** ``global``
 
@@ -498,6 +563,7 @@ Use the options below to override this default naming behaviour.
 .. option:: --read_rr_edge_override <file>
 
     Reads a file that overrides the intrinsic delay of specific edges in RR graph.
+    See the :ref:`file format <rr_edge_override_file_format>`.
 
     This option should be used with both :option:`--read_rr_graph` and :option:`--write_rr_graph`. When used this way,
     VPR reads the RR graph, updates the delays of selected edges using :option:`--read_rr_edge_override`,
@@ -654,9 +720,12 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
     When enabled, all constant-zero generators are merged into a single constant-zero generator, and all constant-one generators are merged into a single constant-one generator.
     The generator with the highest fanout of each value (e.g. ``gnd`` / ``vcc``) is kept, and the names of the removed nets are kept as aliases of the merged net.
 
+    Since constant nets are not routed by default (see :option:`--constant_net_method`), the constant generators are assumed to be available within each tile and do not need to be duplicated.
+    However, each constant generator is still implemented as a physical block and uses tile pin resources, so merging them avoids wasting these resources.
+
     Disabling merging can improve the matching between the input and post-synthesis netlist.
 
-    **Default**: ``off``
+    **Default**: ``on``
 
 .. option:: --const_gen_inference {none | comb | comb_seq}
 
@@ -701,7 +770,8 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
 .. option:: --sweep_constant_primary_outputs {on | off}
 
-    Controls whether primary outputs driven by constant values are swept and removed from the netlist.
+    Controls whether primary outputs driven by constant generators (e.g. vcc/gnd) are swept and removed from the netlist.
+    Primary outputs driven by nets which are only inferred to be constant (see :option:`--const_gen_inference`) are not swept.
 
     .. seealso:: :option:`--sweep_dangling_primary_ios`
 
@@ -2650,6 +2720,37 @@ Analysis Options
     Controls whether clock skew timing reports are generated.
 
     **Default:** ``off``
+
+.. option:: --timing_report_path_categories {all | <category> [<category> ...]}
+
+    Controls which categories of timing paths are included in the timing reports (``report_timing.setup.rpt`` and ``report_timing.hold.rpt``) and the clock skew reports (see :option:`--timing_report_skew`).
+
+    A timing path is categorized by its startpoint and endpoint, where a register is any clocked primitive (e.g. a flip-flop or the clocked ports of a RAM):
+
+    * ``in2reg``: From a primary input to a register.
+    * ``reg2reg``: From a register to a register.
+    * ``reg2out``: From a register to a primary output.
+    * ``in2out``: From a primary input to a primary output (i.e. purely combinational).
+
+    The values can be:
+
+    * ``all``: All timing paths are reported.
+    * ``<category> [<category> ...]``: Only the timing paths in the listed categories are reported.
+
+    The paths are filtered before choosing the worst :option:`--timing_report_npaths` paths, and filtered reports state which categories they contain.
+    This option only filters the reported paths; it does not affect the slack or criticality calculations (and hence the optimization), or the timing summary printed to the log.
+
+    For example, the following reports only the register to register paths, which is useful when looking at the clock skew between registers:
+
+    .. code-block:: none
+
+        --timing_report_skew on --timing_report_path_categories reg2reg
+
+    .. note:: Only the worst path into each endpoint (for each pair of launch and capture clock domains) is considered, so each endpoint is categorized by its worst path.
+              For example, a register whose worst incoming path starts at a primary input is not included in a ``reg2reg`` report, even if it is also reached from other registers.
+              Constraining the primary inputs and outputs on their own (virtual) clock in the SDC file separates these paths, so that both are reported.
+
+    **Default:** ``all``
 
 
 .. _power_estimation_options:

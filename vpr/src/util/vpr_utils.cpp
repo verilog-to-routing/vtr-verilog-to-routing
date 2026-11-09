@@ -32,7 +32,7 @@ const std::regex REGISTER_MODEL_REGEX("(.subckt\\s+)?.*(latch|dff).*", std::rege
 const std::regex LOGIC_MODEL_REGEX("(.subckt\\s+)?.*(lut|names|lcell).*", std::regex::icase);
 
 /******************** Subroutine declarations ********************************/
-static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node);
+static void load_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node);
 
 static void load_pin_id_to_pb_mapping_rec(t_pb* cur_pb, t_pb** pin_id_to_pb_mapping);
 
@@ -98,20 +98,13 @@ IntraLbPbPinLookup::IntraLbPbPinLookup(const std::vector<t_logical_block_type>& 
     : block_types_(block_types)
     , intra_lb_pb_pin_lookup_(block_types.size(), nullptr) {
     for (unsigned int itype = 0; itype < block_types_.size(); ++itype) {
-        intra_lb_pb_pin_lookup_[itype] = alloc_and_load_pb_graph_pin_lookup_from_index(&block_types[itype]);
+        intra_lb_pb_pin_lookup_[itype] = alloc_and_load_pb_graph_pin_lookup_from_index(&block_types_[itype]);
     }
 }
 
 IntraLbPbPinLookup::IntraLbPbPinLookup(const IntraLbPbPinLookup& rhs)
     : IntraLbPbPinLookup(rhs.block_types_) {
     //nop
-}
-
-IntraLbPbPinLookup& IntraLbPbPinLookup::operator=(IntraLbPbPinLookup rhs) {
-    //Copy-swap idiom
-    swap(*this, rhs);
-
-    return *this;
 }
 
 IntraLbPbPinLookup::~IntraLbPbPinLookup() {
@@ -124,11 +117,6 @@ const t_pb_graph_pin* IntraLbPbPinLookup::pb_gpin(unsigned int itype, int ipin) 
     VTR_ASSERT(itype < block_types_.size());
 
     return intra_lb_pb_pin_lookup_[itype][ipin];
-}
-
-void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs) {
-    std::swap(lhs.block_types_, rhs.block_types_);
-    std::swap(lhs.intra_lb_pb_pin_lookup_, rhs.intra_lb_pb_pin_lookup_);
 }
 
 //Returns the set of pins which are connected to the top level clb pin
@@ -447,13 +435,13 @@ int get_sub_tile_index(ClusterBlockId blk) {
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node) {
     // Select the first pin in the pb_graph node.
     t_pb_graph_pin* first_pin = nullptr;
-    if (pb_graph_node->num_input_pins != nullptr) {
-        first_pin = &(pb_graph_node->input_pins[0][0]);
-    } else if (pb_graph_node->num_output_pins != nullptr) {
-        first_pin = &(pb_graph_node->output_pins[0][0]);
+    if (!pb_graph_node->pins_by_input_port.empty()) {
+        first_pin = &(pb_graph_node->pins_by_input_port[0][0]);
+    } else if (!pb_graph_node->pins_by_output_port.empty()) {
+        first_pin = &(pb_graph_node->pins_by_output_port[0][0]);
     } else {
-        VTR_ASSERT(pb_graph_node->num_clock_pins != nullptr);
-        first_pin = &(pb_graph_node->clock_pins[0][0]);
+        VTR_ASSERT(!pb_graph_node->pins_by_clock_port.empty());
+        first_pin = &(pb_graph_node->pins_by_clock_port[0][0]);
     }
 
     // Use the pin count of the first pin in the cluster as the node id.
@@ -818,9 +806,9 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
     if (model_port->dir == IN_PORT) {
         if (!model_port->is_clock) {
             for (int i = 0; i < pb_graph_node->num_input_ports; i++) {
-                if (pb_graph_node->input_pins[i][0].port->model_port == model_port) {
+                if (pb_graph_node->pins_by_input_port[i][0].port->model_port == model_port) {
                     if (pb_graph_node->num_input_pins[i] > model_pin) {
-                        return &pb_graph_node->input_pins[i][model_pin];
+                        return &pb_graph_node->pins_by_input_port[i][model_pin];
                     } else {
                         return nullptr;
                     }
@@ -828,9 +816,9 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
             }
         } else {
             for (int i = 0; i < pb_graph_node->num_clock_ports; i++) {
-                if (pb_graph_node->clock_pins[i][0].port->model_port == model_port) {
+                if (pb_graph_node->pins_by_clock_port[i][0].port->model_port == model_port) {
                     if (pb_graph_node->num_clock_pins[i] > model_pin) {
-                        return &pb_graph_node->clock_pins[i][model_pin];
+                        return &pb_graph_node->pins_by_clock_port[i][model_pin];
                     } else {
                         return nullptr;
                     }
@@ -840,9 +828,9 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
     } else {
         VTR_ASSERT(model_port->dir == OUT_PORT);
         for (int i = 0; i < pb_graph_node->num_output_ports; i++) {
-            if (pb_graph_node->output_pins[i][0].port->model_port == model_port) {
+            if (pb_graph_node->pins_by_output_port[i][0].port->model_port == model_port) {
                 if (pb_graph_node->num_output_pins[i] > model_pin) {
-                    return &pb_graph_node->output_pins[i][model_pin];
+                    return &pb_graph_node->pins_by_output_port[i][model_pin];
                 } else {
                     return nullptr;
                 }
@@ -915,7 +903,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_gra
             if (count - pb_graph_node->num_input_pins[i] >= 0) {
                 count -= pb_graph_node->num_input_pins[i];
             } else {
-                return &pb_graph_node->input_pins[i][count];
+                return &pb_graph_node->pins_by_input_port[i][count];
             }
         }
     } else if (ipin < pb_type->num_input_pins + pb_type->num_output_pins) {
@@ -924,7 +912,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_gra
             if (count - pb_graph_node->num_output_pins[i] >= 0) {
                 count -= pb_graph_node->num_output_pins[i];
             } else {
-                return &pb_graph_node->output_pins[i][count];
+                return &pb_graph_node->pins_by_output_port[i][count];
             }
         }
     } else {
@@ -933,7 +921,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_gra
             if (count - pb_graph_node->num_clock_pins[i] >= 0) {
                 count -= pb_graph_node->num_clock_pins[i];
             } else {
-                return &pb_graph_node->clock_pins[i][count];
+                return &pb_graph_node->pins_by_clock_port[i][count];
             }
         }
     }
@@ -961,7 +949,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
     for (int iport = 0; iport < pb_gnode->num_input_ports; iport++) {
         if (pb_gnode->num_input_pins[iport] < index) continue;
 
-        const t_pb_graph_pin* gpin = &pb_gnode->input_pins[iport][index];
+        const t_pb_graph_pin* gpin = &pb_gnode->pins_by_input_port[iport][index];
 
         if (gpin->port->name == port_name) {
             return gpin;
@@ -970,7 +958,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
     for (int iport = 0; iport < pb_gnode->num_output_ports; iport++) {
         if (pb_gnode->num_output_pins[iport] < index) continue;
 
-        const t_pb_graph_pin* gpin = &pb_gnode->output_pins[iport][index];
+        const t_pb_graph_pin* gpin = &pb_gnode->pins_by_output_port[iport][index];
 
         if (gpin->port->name == port_name) {
             return gpin;
@@ -979,7 +967,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
     for (int iport = 0; iport < pb_gnode->num_clock_ports; iport++) {
         if (pb_gnode->num_clock_pins[iport] < index) continue;
 
-        const t_pb_graph_pin* gpin = &pb_gnode->clock_pins[iport][index];
+        const t_pb_graph_pin* gpin = &pb_gnode->pins_by_clock_port[iport][index];
 
         if (gpin->port->name == port_name) {
             return gpin;
@@ -990,35 +978,27 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
     return nullptr;
 }
 
-/* Recursively visit through all pb_graph_nodes to populate pb_graph_pin_lookup_from_index */
-static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node) {
+/* Populate pb_graph_pin_lookup_from_index with the pins of a pb_graph_node */
+static void load_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node) {
     for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
-            t_pb_graph_pin* pb_pin = &pb_graph_node->input_pins[iport][ipin];
+            t_pb_graph_pin* pb_pin = &pb_graph_node->pins_by_input_port[iport][ipin];
             VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == nullptr);
             pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
         }
     }
     for (int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
-            t_pb_graph_pin* pb_pin = &pb_graph_node->output_pins[iport][ipin];
+            t_pb_graph_pin* pb_pin = &pb_graph_node->pins_by_output_port[iport][ipin];
             VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == nullptr);
             pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
         }
     }
     for (int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
-            t_pb_graph_pin* pb_pin = &pb_graph_node->clock_pins[iport][ipin];
+            t_pb_graph_pin* pb_pin = &pb_graph_node->pins_by_clock_port[iport][ipin];
             VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == nullptr);
             pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
-        }
-    }
-
-    for (int imode = 0; imode < pb_graph_node->pb_type->num_modes; imode++) {
-        for (int ipb_type = 0; ipb_type < pb_graph_node->pb_type->modes[imode].num_pb_type_children; ipb_type++) {
-            for (int ipb = 0; ipb < pb_graph_node->pb_type->modes[imode].pb_type_children[ipb_type].num_pb; ipb++) {
-                load_pb_graph_pin_lookup_from_index_rec(pb_graph_pin_lookup_from_index, &pb_graph_node->child_pb_graph_nodes[imode][ipb_type][ipb]);
-            }
         }
     }
 }
@@ -1042,7 +1022,8 @@ t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_t
 
     VTR_ASSERT(pb_graph_pin_lookup_from_type);
 
-    load_pb_graph_pin_lookup_from_index_rec(pb_graph_pin_lookup_from_type, pb_graph_head);
+    for (t_pb_graph_node& pb_graph_node : pb_graph_head->subtree())
+        load_pb_graph_pin_lookup_from_index(pb_graph_pin_lookup_from_type, &pb_graph_node);
 
     for (int id = 0; id < num_pins; id++) {
         VTR_ASSERT(pb_graph_pin_lookup_from_type[id] != nullptr);
@@ -1086,17 +1067,17 @@ static void load_pin_id_to_pb_mapping_rec(t_pb* cur_pb, t_pb** pin_id_to_pb_mapp
 
     for (int i = 0; i < pb_graph_node->num_input_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-            pin_id_to_pb_mapping[pb_graph_node->input_pins[i][j].pin_count_in_cluster] = cur_pb;
+            pin_id_to_pb_mapping[pb_graph_node->pins_by_input_port[i][j].pin_count_in_cluster] = cur_pb;
         }
     }
     for (int i = 0; i < pb_graph_node->num_output_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-            pin_id_to_pb_mapping[pb_graph_node->output_pins[i][j].pin_count_in_cluster] = cur_pb;
+            pin_id_to_pb_mapping[pb_graph_node->pins_by_output_port[i][j].pin_count_in_cluster] = cur_pb;
         }
     }
     for (int i = 0; i < pb_graph_node->num_clock_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-            pin_id_to_pb_mapping[pb_graph_node->clock_pins[i][j].pin_count_in_cluster] = cur_pb;
+            pin_id_to_pb_mapping[pb_graph_node->pins_by_clock_port[i][j].pin_count_in_cluster] = cur_pb;
         }
     }
 
@@ -1122,7 +1103,7 @@ void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb
     pin_id_to_pb_mapping.clear();
 }
 
-std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id) {
+t_cluster_blk_physical_spec get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id) {
     auto& grid = g_vpr_ctx.device().grid;
     auto& block_locs = g_vpr_ctx.placement().block_locs();
     auto& loc = block_locs[cluster_blk_id].loc;
@@ -1137,7 +1118,7 @@ std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_typ
     VTR_ASSERT(rel_cap >= 0);
     auto logical_block = cluster_net_list.block_type(cluster_blk_id);
 
-    return std::make_tuple(physical_type, sub_tile, rel_cap, logical_block);
+    return {physical_type, sub_tile, rel_cap, logical_block};
 }
 
 std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
@@ -1338,7 +1319,7 @@ void free_pb_stats(t_pb* pb) {
  * load placement macros in place_macro.c                                              *
  *                                                                                     *
  ***************************************************************************************/
-std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line) {
+t_direct_pin_spec parse_direct_pin_name(std::string_view src_string, int line) {
     if (vtr::StringToken(src_string).split(" \t\n").size() > 1) {
         VPR_THROW(VPR_ERROR_ARCH,
                   "Only a single port pin range specification allowed for direct connect (was: '%.*s')",
@@ -1348,9 +1329,6 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
     // parse out the pb_type and port name, possibly pin_indices
     if (src_string.find('[') == std::string_view::npos) {
         // Format "pb_type_name.port_name"
-        const int start_pin_index = -1;
-        const int end_pin_index = -1;
-
         std::string source_string{src_string};
         // replace '.' characters with space
         std::ranges::replace(source_string, '.', ' ');
@@ -1359,14 +1337,14 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
         std::string pb_type_name, port_name;
 
         if (source_iss >> pb_type_name >> port_name) {
-            return {start_pin_index, end_pin_index, pb_type_name, port_name};
+            // No pin range given: the whole port is meant, so the pin indices stay UNDEFINED
+            return {.pb_type_name = pb_type_name, .port_name = port_name};
         } else {
-            VTR_LOG_ERROR(
-                "[LINE %d] Invalid pin - %.*s, name should be in the format "
-                "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
-                "The end_pin_index and start_pin_index can be the same.\n",
-                line, static_cast<int>(src_string.length()), src_string.data());
-            exit(1);
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line,
+                      "Invalid pin - %.*s, name should be in the format "
+                      "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+                      "The end_pin_index and start_pin_index can be the same.\n",
+                      static_cast<int>(src_string.length()), src_string.data());
         }
     } else {
         // Format "pb_type_name.port_name[end_pin_index:start_pin_index]" or "pb_type_name.port_name[pin_index]"
@@ -1397,29 +1375,29 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
 
         if (parsed_ok) {
             if (end_pin_index < 0 || start_pin_index < 0) {
-                VTR_LOG_ERROR(
-                    "[LINE %d] Invalid pin - %.*s, the pin_index in "
-                    "[end_pin_index:start_pin_index] should not be a negative value.\n",
-                    line, static_cast<int>(src_string.length()), src_string.data());
-                exit(1);
+                vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line,
+                          "Invalid pin - %.*s, the pin_index in "
+                          "[end_pin_index:start_pin_index] should not be a negative value.\n",
+                          static_cast<int>(src_string.length()), src_string.data());
             }
 
             if (end_pin_index < start_pin_index) {
-                VTR_LOG_ERROR(
-                    "[LINE %d] Invalid from_pin - %.*s, the end_pin_index in "
-                    "[end_pin_index:start_pin_index] should not be less than start_pin_index.\n",
-                    line, static_cast<int>(src_string.length()), src_string.data());
-                exit(1);
+                vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line,
+                          "Invalid pin - %.*s, the end_pin_index in "
+                          "[end_pin_index:start_pin_index] should not be less than start_pin_index.\n",
+                          static_cast<int>(src_string.length()), src_string.data());
             }
 
-            return {start_pin_index, end_pin_index, pb_type_name, port_name};
+            return {.pb_type_name = pb_type_name,
+                    .port_name = port_name,
+                    .start_pin_index = start_pin_index,
+                    .end_pin_index = end_pin_index};
         } else {
-            VTR_LOG_ERROR(
-                "[LINE %d] Invalid pin - %.*s, name should be in the format "
-                "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
-                "The end_pin_index and start_pin_index can be the same.\n",
-                line, static_cast<int>(src_string.length()), src_string.data());
-            exit(1);
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line,
+                      "Invalid pin - %.*s, name should be in the format "
+                      "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+                      "The end_pin_index and start_pin_index can be the same.\n",
+                      static_cast<int>(src_string.length()), src_string.data());
         }
     }
 }
@@ -1505,7 +1483,7 @@ void print_switch_usage() {
 
     for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
         for (const RRSwitchId rr_switch_id : inward_switch_inf[rr_id] | std::views::keys) {
-            float Tdel = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
+            float Tdel = rr_graph.rr_switch_inf(rr_switch_id).Tdel_max;
             const auto [arch_switch_id, fanin] = convert_switch_index(rr_switch_id);
             // convert_switch_index scans the full switch_fanin_remap, which is kept the
             // same size as all_sw_inf, so every in-use rr_switch maps to a valid index.
@@ -1556,7 +1534,7 @@ int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
     auto [physical_type, sub_tile, sub_tile_rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_block_id);
     auto pb_graph_pin = atom_look_up.atom_pin_pb_graph_pin(atom_pin_id);
     int pin_physical_num = -1;
-    pin_physical_num = get_pb_pin_physical_num(physical_type, sub_tile, logical_block, sub_tile_rel_cap, pb_graph_pin);
+    pin_physical_num = get_pb_pin_physical_num(sub_tile, logical_block, sub_tile_rel_cap, pb_graph_pin);
 
     return get_class_num_from_pin_physical_num(physical_type, pin_physical_num);
 }
@@ -1634,21 +1612,9 @@ void print_timing_stats(const std::string& name,
 
 std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_graph_node* pb_graph_node) {
     std::vector<const t_pb_graph_node*> primitives;
-    if (pb_graph_node->is_primitive()) {
-        primitives.push_back(pb_graph_node);
-        return primitives;
-    }
-
-    auto pb_type = pb_graph_node->pb_type;
-    for (int mode_idx = 0; mode_idx < pb_graph_node->pb_type->num_modes; mode_idx++) {
-        for (int pb_type_idx = 0; pb_type_idx < (pb_type->modes[mode_idx]).num_pb_type_children; pb_type_idx++) {
-            int num_pb = pb_type->modes[mode_idx].pb_type_children[pb_type_idx].num_pb;
-            for (int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
-                const t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
-                auto tmp_primitives = get_all_pb_graph_node_primitives(child_pb_graph_node);
-                primitives.insert(std::end(primitives), std::begin(tmp_primitives), std::end(tmp_primitives));
-            }
-        }
+    for (const t_pb_graph_node& node : pb_graph_node->subtree()) {
+        if (node.is_primitive())
+            primitives.push_back(&node);
     }
     return primitives;
 }
@@ -1698,26 +1664,36 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                             int pin_physical_num) {
     e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
     e_rr_type node_type = (pin_type == e_pin_type::DRIVER) ? e_rr_type::OPIN : e_rr_type::IPIN;
-    std::vector<int> x_offset;
-    std::vector<int> y_offset;
-    std::vector<e_side> pin_sides;
-    std::tie(x_offset, y_offset, pin_sides) = get_pin_coordinates(physical_tile, pin_physical_num, std::vector<e_side>(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end()));
-    VTR_ASSERT(!x_offset.empty());
-    RRNodeId node_id = RRNodeId::INVALID();
-    // Pin sides from get_pin_coordinates are those specified in the architecture. However, when
-    // adding pins to the RR Graph, not all sides may be included (depending on the block’s location).
-    // Therefore, we iterate over all sides to find a valid node id.
-    for (int coord_idx = 0; coord_idx < (int)pin_sides.size(); coord_idx++) {
-        node_id = rr_spatial_lookup.find_node(root_loc.layer_num,
-                                              root_loc.x + x_offset[coord_idx],
-                                              root_loc.y + y_offset[coord_idx],
-                                              node_type,
-                                              pin_physical_num,
-                                              pin_sides[coord_idx]);
-        if (node_id != RRNodeId::INVALID())
-            break;
+
+    // Internal pins use the TOP side at the tile root (see get_pin_coordinates()).
+    if (!is_pin_on_tile(physical_tile, pin_physical_num)) {
+        return rr_spatial_lookup.find_node(root_loc.layer_num, root_loc.x, root_loc.y, node_type, pin_physical_num, e_side::TOP);
     }
-    return node_id;
+
+    // Search pin locations in get_pin_coordinates() order (side, width, height) without temporary vectors.
+    // The block's location may exclude some sides from the RR graph, so return the first valid node.
+    bool pin_located = false;
+    for (e_side side : TOTAL_2D_SIDES) {
+        for (int width = 0; width < physical_tile->width; ++width) {
+            for (int height = 0; height < physical_tile->height; ++height) {
+                if (!physical_tile->pinloc[width][height][side][pin_physical_num]) {
+                    continue;
+                }
+                pin_located = true;
+                RRNodeId node_id = rr_spatial_lookup.find_node(root_loc.layer_num,
+                                                               root_loc.x + width,
+                                                               root_loc.y + height,
+                                                               node_type,
+                                                               pin_physical_num,
+                                                               side);
+                if (node_id != RRNodeId::INVALID()) {
+                    return node_id;
+                }
+            }
+        }
+    }
+    VTR_ASSERT(pin_located);
+    return RRNodeId::INVALID();
 }
 
 RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
@@ -1930,16 +1906,20 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_til
     return pin_num_vec;
 }
 
-t_arch_switch_inf create_internal_arch_sw(float delay) {
+t_arch_switch_inf create_internal_arch_sw(float delay_min, float delay_max) {
     t_arch_switch_inf arch_switch_inf;
     arch_switch_inf.set_type(e_switch_type::MUX);
     std::ostringstream stream_obj;
-    stream_obj << delay << std::scientific;
+    stream_obj << std::scientific << delay_max;
+    // Switches with the same max delay but different min delays need different names
+    if (delay_min != delay_max) {
+        stream_obj << "/min/" << delay_min;
+    }
     arch_switch_inf.name = (std::string(VPR_INTERNAL_SWITCH_NAME) + "/" + stream_obj.str());
     arch_switch_inf.R = 0.;
     arch_switch_inf.Cin = 0.;
     arch_switch_inf.Cout = 0;
-    arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, delay);
+    arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, delay_min, delay_max);
     arch_switch_inf.power_buffer_type = POWER_BUFFER_TYPE_NONE;
     arch_switch_inf.mux_trans_size = 0.;
     arch_switch_inf.buf_size_type = e_buffer_size::ABSOLUTE;

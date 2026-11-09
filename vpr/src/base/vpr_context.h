@@ -599,10 +599,6 @@ struct RoutingContext : public Context {
 
     vtr::vector<BusMuxId, t_bus_mux_route_inf> bus_mux_route_inf; ///< Current routing state of each DeviceContext::rr_bus_muxes entry.
 
-    vtr::vector<ParentNetId, std::vector<std::vector<int>>> net_terminal_groups;
-
-    vtr::vector<ParentNetId, std::vector<int>> net_terminal_group_num;
-
     /**
      * @brief Information about whether a node is part of a non-configurable set
      *

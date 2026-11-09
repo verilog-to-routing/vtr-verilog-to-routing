@@ -555,7 +555,7 @@ static vtr::vector<RRIndexedDataId, int> load_rr_indexed_data_T_values(const RRG
         if (rr_type == e_rr_type::IPIN) {
             for (const RREdgeId edge : fan_in_list.edges(rr_id)) {
                 RRSwitchId rr_switch_id = RRSwitchId(rr_graph.edge_switch(edge));
-                float switch_T_del = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
+                float switch_T_del = rr_graph.rr_switch_inf(rr_switch_id).Tdel_max;
                 ipin_switch_T_total += switch_T_del;
                 ipin_switch_count++;
             }
@@ -720,7 +720,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
             }
 
             avg_switch_R += rr_graph.rr_switch_inf(switch_index).R;
-            avg_switch_T += rr_graph.rr_switch_inf(switch_index).Tdel;
+            avg_switch_T += rr_graph.rr_switch_inf(switch_index).Tdel_max;
             avg_switch_Cinternal += rr_graph.rr_switch_inf(switch_index).Cinternal;
 
             if (buffered == LIBRRGRAPH_UNDEFINED_VAL) {

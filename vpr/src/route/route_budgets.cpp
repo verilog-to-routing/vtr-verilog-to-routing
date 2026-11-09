@@ -702,7 +702,9 @@ void route_budgets::check_if_budgets_in_bounds() {
 std::shared_ptr<SetupHoldTimingInfo> route_budgets::perform_sta(NetPinsMatrix<float>& temp_budgets) {
     auto& atom_ctx = g_vpr_ctx.atom();
     /*Perform static timing analysis to get the delay and path weights for slack allocation*/
-    std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), temp_budgets, is_flat_);
+    //TODO: the budgets only have one delay per connection, so it is used as both the min and max
+    //      delay. The hold analysis here should use the min delays of the routing.
+    std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), temp_budgets, temp_budgets, is_flat_);
 
     //TODO: now that we support incremental timing updates, we should avoid re-building the timing analyzer from scratch and try
     //      to calculate this incrementally
