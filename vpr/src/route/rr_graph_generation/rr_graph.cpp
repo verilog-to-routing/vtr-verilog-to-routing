@@ -13,6 +13,7 @@
 #include "physical_types_util.h"
 #include "rr_graph_fwd.h"
 #include "rr_graph_view.h"
+#include "rr_node_types.h"
 #include "rr_rc_data.h"
 #include "switchblock_types.h"
 #include "vpr_context.h"
@@ -1162,7 +1163,7 @@ static std::vector<bool> init_has_3d_switchblocks(const DeviceGrid& grid,
 
     for (RRNodeId node : rr_graph.nodes()) {
         e_rr_type node_type = rr_graph.node_type(node);
-        if (node_type != e_rr_type::CHANX && node_type != e_rr_type::CHANY) {
+        if (!is_chanxy(node_type)) {
             continue;
         }
 
