@@ -6,8 +6,8 @@
 /// @brief Most memory the hop tables of one block type may use.
 static constexpr size_t MAX_HOP_TABLE_BYTES = 128 * 1024 * 1024;
 
-ClusterRouterLookahead::ClusterRouterLookahead(const LbTypeRRGraph& lb_type_graph) {
-    lb_type_graph_ = &lb_type_graph;
+ClusterRouterLookahead::ClusterRouterLookahead(const LbTypeRRGraph& lb_type_graph)
+    : lb_type_graph_(lb_type_graph) {
     zero_hops_.resize(lb_type_graph.num_nodes(), 0);
     hop_table_bytes_ = 0;
 }
@@ -43,7 +43,7 @@ void ClusterRouterLookahead::build_hop_table_(LbRRNodeId target, t_hop_table& ho
 
         // Counts stop growing one below UNREACHABLE so they stay a lower bound.
         uint8_t next_hops = std::min<int>(hops[inode] + 1, UNREACHABLE - 1);
-        for (LbRRNodeId src : lb_type_graph_->fanin_nodes(inode)) {
+        for (LbRRNodeId src : lb_type_graph_.fanin_nodes(inode)) {
             if (hops[src] == UNREACHABLE) {
                 hops[src] = next_hops;
                 visit_order.push_back(src);

@@ -2,7 +2,7 @@
 /**
  * @file
  * @brief Lower bounds on the cost from each node of a logical block type's RR
- *        graph to a target node, used to order the cluster router search.
+ *        graph to a target node.
  */
 
 #include <cstddef>
@@ -43,7 +43,7 @@ class ClusterRouterLookahead {
     void build_hop_table_(LbRRNodeId target, t_hop_table& hops) const;
 
     /// @brief The graph the hop tables are computed over.
-    const LbTypeRRGraph* lb_type_graph_;
+    const LbTypeRRGraph& lb_type_graph_;
 
     /// @brief Hop tables built so far, keyed by target node.
     std::unordered_map<LbRRNodeId, t_hop_table> hop_tables_;
