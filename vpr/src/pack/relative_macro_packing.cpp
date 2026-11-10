@@ -522,13 +522,10 @@ std::vector<PackMoleculeId> RelativeMacroPacker::group_molecules_to_pack(UserRel
 
     // Reserve locked sites first, preserving constraints-file order. Try larger
     // unlocked molecules before smaller ones.
-    std::stable_sort(order.begin(), order.end(), [&](PackMoleculeId lhs, PackMoleculeId rhs) {
-        bool lhs_locked = molecule_is_locked_to_site(lhs);
-        bool rhs_locked = molecule_is_locked_to_site(rhs);
-        if (lhs_locked != rhs_locked)
-            return lhs_locked;
-        if (lhs_locked)
-            return false;
+    auto unlocked_begin = std::stable_partition(order.begin(), order.end(), [&](PackMoleculeId mol_id) {
+        return molecule_is_locked_to_site(mol_id);
+    });
+    std::stable_sort(unlocked_begin, order.end(), [&](PackMoleculeId lhs, PackMoleculeId rhs) {
         return prepacker_.get_molecule_num_valid_atoms(lhs) > prepacker_.get_molecule_num_valid_atoms(rhs);
     });
 
