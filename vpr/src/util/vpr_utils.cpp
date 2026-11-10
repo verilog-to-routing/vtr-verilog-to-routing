@@ -32,13 +32,11 @@ const std::regex REGISTER_MODEL_REGEX("(.subckt\\s+)?.*(latch|dff).*", std::rege
 const std::regex LOGIC_MODEL_REGEX("(.subckt\\s+)?.*(lut|names|lcell).*", std::regex::icase);
 
 /******************** Subroutine declarations ********************************/
-static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node);
-
 static void load_pin_id_to_pb_mapping_rec(t_pb* cur_pb, t_pb** pin_id_to_pb_mapping);
 
 static std::vector<int> find_connected_internal_clb_sink_pins(ClusterBlockId clb, int pb_pin);
 static void find_connected_internal_clb_sink_pins_recurr(ClusterBlockId clb, int pb_pin, std::vector<int>& connected_sink_pb_pins);
-static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_id, const IntraLbPbPinLookup& pb_gpin_lookup);
+static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_id);
 
 static bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::regex& blif_model_regex);
 static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::regex& blif_model_regex);
@@ -94,15 +92,9 @@ std::string rr_node_arch_name(RRNodeId inode, bool is_flat) {
     return rr_node_arch_name;
 }
 
-const t_pb_graph_pin* IntraLbPbPinLookup::pb_gpin(unsigned int itype, int ipin) const {
-    VTR_ASSERT(itype < block_types_.size());
-
-    return block_types_[itype].pb_graph_pin(ipin);
-}
-
 //Returns the set of pins which are connected to the top level clb pin
 //  The pin(s) may be input(s) or and output (returning the connected sinks or drivers respectively)
-std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
+std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int logical_pin) {
     std::vector<AtomPinId> atom_pins;
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
@@ -114,20 +106,20 @@ std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int 
 
     if (is_opin(physical_pin, physical_tile)) {
         //output
-        AtomPinId driver = find_clb_pin_driver_atom_pin(clb, logical_pin, pb_gpin_lookup);
+        AtomPinId driver = find_clb_pin_driver_atom_pin(clb, logical_pin);
         if (driver) {
             atom_pins.push_back(driver);
         }
     } else {
         //input
-        atom_pins = find_clb_pin_sink_atom_pins(clb, logical_pin, pb_gpin_lookup);
+        atom_pins = find_clb_pin_sink_atom_pins(clb, logical_pin);
     }
 
     return atom_pins;
 }
 
 //Returns the atom pin which drives the top level clb output pin
-AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
+AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int logical_pin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -148,7 +140,7 @@ AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int logical_pin, cons
     VTR_ASSERT(atom_net == pb_routes[pb_pin_id].atom_net_id);
 
     //Map the pb_pin_id to AtomPinId
-    AtomPinId atom_pin = find_atom_pin_for_pb_route_id(clb, pb_pin_id, pb_gpin_lookup);
+    AtomPinId atom_pin = find_atom_pin_for_pb_route_id(clb, pb_pin_id);
     VTR_ASSERT(atom_pin);
 
     VTR_ASSERT_MSG(atom_ctx.netlist().pin_net(atom_pin) == atom_net, "Driver atom pin should drive the same net");
@@ -157,7 +149,7 @@ AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int logical_pin, cons
 }
 
 //Returns the set of atom sink pins associated with the top level clb input pin
-std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
+std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int logical_pin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -178,7 +170,7 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int logic
     std::vector<AtomPinId> sink_atom_pins;
     for (int sink_pb_pin : connected_sink_pb_pins) {
         //Map the logical_pin_id to AtomPinId
-        AtomPinId atom_pin = find_atom_pin_for_pb_route_id(clb, sink_pb_pin, pb_gpin_lookup);
+        AtomPinId atom_pin = find_atom_pin_for_pb_route_id(clb, sink_pb_pin);
         VTR_ASSERT(atom_pin);
 
         VTR_ASSERT_MSG(atom_ctx.netlist().pin_net(atom_pin) == atom_net, "Sink atom pins should be driven by the same net");
@@ -211,14 +203,14 @@ static void find_connected_internal_clb_sink_pins_recurr(ClusterBlockId clb, int
 }
 
 //Maps from a CLB's pb_route ID to it's matching AtomPinId (if the pb_route is a primitive pin)
-static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_id, const IntraLbPbPinLookup& pb_gpin_lookup) {
+static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
     VTR_ASSERT_MSG(cluster_ctx.clb_nlist.block_pb(clb)->pb_route[pb_route_id].atom_net_id, "PB route should correspond to a valid atom net");
 
     //Find the graph pin associated with this pb_route
-    const t_pb_graph_pin* gpin = pb_gpin_lookup.pb_gpin(cluster_ctx.clb_nlist.block_type(clb)->index, pb_route_id);
+    const t_pb_graph_pin* gpin = cluster_ctx.clb_nlist.block_type(clb)->pb_graph_pin(pb_route_id);
     VTR_ASSERT(gpin);
 
     //Get the PB associated with this block
@@ -957,75 +949,6 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
 
     //Not found
     return nullptr;
-}
-
-/* Recursively visit through all pb_graph_nodes to populate pb_graph_pin_lookup_from_index */
-static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node) {
-    for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
-        for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
-            t_pb_graph_pin* pb_pin = &pb_graph_node->pins_by_input_port[iport][ipin];
-            VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == nullptr);
-            pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
-        }
-    }
-    for (int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
-        for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
-            t_pb_graph_pin* pb_pin = &pb_graph_node->pins_by_output_port[iport][ipin];
-            VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == nullptr);
-            pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
-        }
-    }
-    for (int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
-        for (int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
-            t_pb_graph_pin* pb_pin = &pb_graph_node->pins_by_clock_port[iport][ipin];
-            VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == nullptr);
-            pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
-        }
-    }
-
-    for (int imode = 0; imode < pb_graph_node->pb_type->num_modes; imode++) {
-        for (int ipb_type = 0; ipb_type < pb_graph_node->pb_type->modes[imode].num_pb_type_children; ipb_type++) {
-            for (int ipb = 0; ipb < pb_graph_node->pb_type->modes[imode].pb_type_children[ipb_type].num_pb; ipb++) {
-                load_pb_graph_pin_lookup_from_index_rec(pb_graph_pin_lookup_from_index, &pb_graph_node->child_pb_graph_nodes[imode][ipb_type][ipb]);
-            }
-        }
-    }
-}
-
-/* Create a lookup that returns a pb_graph_pin pointer given the pb_graph_pin index */
-t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
-    t_pb_graph_pin** pb_graph_pin_lookup_from_type = nullptr;
-
-    t_pb_graph_node* pb_graph_head = type->pb_graph_head;
-    if (pb_graph_head == nullptr) {
-        return nullptr;
-    }
-    int num_pins = pb_graph_head->total_pb_pins;
-
-    VTR_ASSERT(num_pins > 0);
-
-    pb_graph_pin_lookup_from_type = new t_pb_graph_pin*[num_pins];
-    for (int id = 0; id < num_pins; id++) {
-        pb_graph_pin_lookup_from_type[id] = nullptr;
-    }
-
-    VTR_ASSERT(pb_graph_pin_lookup_from_type);
-
-    load_pb_graph_pin_lookup_from_index_rec(pb_graph_pin_lookup_from_type, pb_graph_head);
-
-    for (int id = 0; id < num_pins; id++) {
-        VTR_ASSERT(pb_graph_pin_lookup_from_type[id] != nullptr);
-    }
-
-    return pb_graph_pin_lookup_from_type;
-}
-
-/* Free pb_graph_pin lookup array */
-void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
-    if (pb_graph_pin_lookup_from_type == nullptr) {
-        return;
-    }
-    delete[] pb_graph_pin_lookup_from_type;
 }
 
 /**

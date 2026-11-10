@@ -43,7 +43,6 @@ void try_place(const Netlist<>& net_list,
     // receive is_flat as false. For example, if the RR graph of router lookahead is built here, it should be as
     // if is_flat is false, even if is_flat is set to true from the command line
     VTR_ASSERT(!is_flat);
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     PlacementContext& mutable_placement = g_vpr_ctx.mutable_placement();
@@ -106,10 +105,8 @@ void try_place(const Netlist<>& net_list,
     // when this object goes out of scope at the end of this function.
     vtr::ScopedStartFinishTimer placement_timer("SA Placement");
 
-    // Enables fast look-up pb graph pins from block pin indices
-    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
     // Enables fast look-up of atom pins connect to CLB pins
-    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.netlist(), pb_gpin_lookup);
+    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.netlist());
 
     Placer placer(net_list, {}, placer_opts, analysis_opts, noc_opts, netlist_pin_lookup,
                   flat_placement_info, place_delay_model, placer_opts.place_auto_init_t_scale,

@@ -8,8 +8,6 @@
 //Delay Calculator for routing internal to a clustered logic block
 class ClbDelayCalc {
   public:
-    ClbDelayCalc();
-
     //Delay from a CLB input (driven outside the CLB) to specified internal sink pin
     float clb_input_to_internal_sink_delay(const ClusterBlockId block_id, const int pin_index, int internal_sink_pin, DelayType delay_type) const;
 
@@ -25,9 +23,6 @@ class ClbDelayCalc {
     float pb_route_delay(ClusterBlockId clb, int pb_route_idx, DelayType delay_type) const;
     const t_pb_graph_edge* find_pb_graph_edge(ClusterBlockId clb, int pb_route_idx) const;
     const t_pb_graph_edge* find_pb_graph_edge(const t_pb_graph_pin* driver, const t_pb_graph_pin* sink) const;
-
-  private:
-    IntraLbPbPinLookup intra_lb_pb_pin_lookup_;
 };
 
 #include "clb_delay_calc.inl"
