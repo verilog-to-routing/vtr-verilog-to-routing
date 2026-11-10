@@ -300,8 +300,19 @@ EdgeId TimingGraph::find_edge(const tatum::NodeId src_node, const tatum::NodeId 
     TATUM_ASSERT(valid_node_id(src_node));
     TATUM_ASSERT(valid_node_id(sink_node));
 
-    for(EdgeId edge : node_out_edges(src_node)) {
-        if(edge_sink_node(edge) == sink_node) {
+    // Search the shorter of the two edge lists.
+    // A clock source can drive every flip-flop, while its sinks have only a few in-edges.
+    if (node_in_edges_[sink_node].size() < node_out_edges_[src_node].size()) {
+        for (EdgeId edge : node_in_edges_[sink_node]) {
+            if (edge_src_node(edge) == src_node) {
+                return edge;
+            }
+        }
+        return EdgeId::INVALID();
+    }
+
+    for (EdgeId edge : node_out_edges_[src_node]) {
+        if (edge_sink_node(edge) == sink_node) {
             return edge;
         }
     }
