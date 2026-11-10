@@ -1062,7 +1062,7 @@ std::vector<int> get_cluster_internal_pins(ClusterBlockId cluster_blk_id) {
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
 
     auto [physical_tile, sub_tile, rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_blk_id);
-    internal_pins.reserve(logical_block->pin_logical_num_to_pb_pin_mapping.size());
+    internal_pins.reserve(logical_block->pb_graph_pins.size());
 
     std::list<const t_pb*> internal_pbs;
     const t_pb* pb = cluster_net_list.block_pb(cluster_blk_id);
@@ -1085,7 +1085,7 @@ std::vector<int> get_cluster_internal_pins(ClusterBlockId cluster_blk_id) {
         add_pb_child_to_list(internal_pbs, pb);
     }
     internal_pins.shrink_to_fit();
-    VTR_ASSERT(internal_pins.size() <= logical_block->pin_logical_num_to_pb_pin_mapping.size());
+    VTR_ASSERT(internal_pins.size() <= logical_block->pb_graph_pins.size());
     return internal_pins;
 }
 

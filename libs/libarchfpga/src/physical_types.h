@@ -883,10 +883,6 @@ struct t_physical_tile_port {
  * index: Keep track of type in array for easy access
  * physical_tile_index: index of the corresponding physical tile type
  *
- * pin_logical_num_to_pb_pin_mapping: Contains all the pins, including pins on the root-level block and internal pins, in
- * the logical block. The key of this map is the logical number of the pin, and the value is a pointer to the
- * corresponding pb_graph_pin
- *
  * primitive_pb_pin_to_logical_class_num_mapping: Maps each pin to its corresponding class's logical number. To retrieve the actual class, use this number as an
  * index to logical_class_inf.
  *
@@ -921,8 +917,10 @@ struct t_logical_block_type {
     /// these edges, so the container must keep element addresses stable.
     std::deque<t_pb_graph_edge> pb_graph_edges;
 
-    /// All pins of the pb graph under pb_graph_head.
-    /// [0..total_pb_pins-1], indexed by pin_count_in_cluster
+    /// All pins of the pb graph under pb_graph_head, including pins on the
+    /// root-level block and internal pins. The index is the pin's
+    /// pin_count_in_cluster, which is also its logical number.
+    /// [0..total_pb_pins-1]
     std::vector<t_pb_graph_pin*> pb_graph_pins;
 
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
@@ -930,7 +928,6 @@ struct t_logical_block_type {
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///< List of physical tiles at which one could
                                                             ///< place this type of netlist block.
 
-    std::unordered_map<int, t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;                    /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
     std::unordered_map<const t_pb_graph_pin*, int> primitive_pb_pin_to_logical_class_num_mapping;  /* primitive_pb_pin_to_logical_class_num_mapping[pb_graph_pin ptr] -> class logical number */
     std::vector<t_class> primitive_logical_class_inf;                                              /* primitive_logical_class_inf[class_logical_number] -> class */
     std::unordered_map<const t_pb_graph_node*, t_class_range> primitive_pb_graph_node_class_range; /* primitive_pb_graph_node_class_range[primitive_pb_graph_node ptr] -> class range for that primitive*/

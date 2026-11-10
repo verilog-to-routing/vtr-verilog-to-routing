@@ -51,9 +51,6 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 
 static void alloc_and_load_pb_graph_pin_sinks(t_pb_graph_node* pb_graph_node);
 
-/* Assign a unique id to each IPIN/OPIN pin at logical block level (i.e. fill pin_logical_num_to_pb_pin_mapping in logical_block)*/
-static void set_pins_logical_num(t_logical_block_type* logical_block);
-
 /* Return all pb_graph_nodes, in all modes and sub-blocks, contained in the given logical_block */
 static std::vector<const t_pb_graph_node*> get_primitive_pb_graph_nodes(t_logical_block_type_ptr logical_block);
 
@@ -220,7 +217,6 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
             load_pin_classes_in_pb_graph_head(type.pb_graph_head);
             if (is_flat) {
                 alloc_and_load_pb_graph_pin_sinks(type.pb_graph_head);
-                set_pins_logical_num(&type);
                 add_primitive_logical_classes(&type);
             }
         } else {
@@ -486,46 +482,6 @@ static void alloc_and_load_pb_graph_pin_sinks(t_pb_graph_node* pb_graph_node) {
             for (int child_pb_type_num = 0; child_pb_type_num < curr_pb_graph_node->pb_type->modes[mode_num].num_pb_type_children; child_pb_type_num++) {
                 for (int child_pb_num = 0; child_pb_num < curr_pb_graph_node->pb_type->modes[mode_num].pb_type_children[child_pb_type_num].num_pb; child_pb_num++) {
                     pb_graph_node_q.push(&curr_pb_graph_node->child_pb_graph_nodes[mode_num][child_pb_type_num][child_pb_num]);
-                }
-            }
-        }
-    }
-}
-
-static void set_pins_logical_num(t_logical_block_type* logical_block) {
-    /* Index of the pins located on the root-level block starts from 0 -
-     * For other pins it starts from the roo_level pb_type.num_pins */
-    t_pb_graph_node* root_pb_graph_node = logical_block->pb_graph_head;
-    std::queue<t_pb_graph_node*> pb_graph_node_to_set_pin_index_q;
-
-    std::unordered_map<int, t_pb_graph_pin*>& pb_pin_idx_map = logical_block->pin_logical_num_to_pb_pin_mapping;
-    int offset = 0;
-
-    pb_graph_node_to_set_pin_index_q.push(root_pb_graph_node);
-    /* Iterated over all sub-blocks from the root-level block down to primitives */
-    while (!pb_graph_node_to_set_pin_index_q.empty()) {
-        t_pb_graph_node* curr_pb_graph_node = pb_graph_node_to_set_pin_index_q.front();
-        pb_graph_node_to_set_pin_index_q.pop();
-        t_pb_type* curr_pb_type = curr_pb_graph_node->pb_type;
-
-        for (t_pb_graph_pin& curr_pb_graph_pin : curr_pb_graph_node->mutable_pins()) {
-            pb_pin_idx_map.insert(std::make_pair(curr_pb_graph_pin.pin_count_in_cluster, &curr_pb_graph_pin));
-        }
-        /* logical indices for the next block should be shifted by the number of pins seen so far. As a result, the given logical index will be unique in the logical_block level*/
-        offset += curr_pb_type->num_pins;
-
-        if (curr_pb_graph_node->is_root()) {
-            VTR_ASSERT(offset == curr_pb_graph_node->pb_type->num_pins);
-        }
-
-        /* Push sub-blocks to the queue */
-        for (int mode_idx = 0; mode_idx < curr_pb_type->num_modes; mode_idx++) {
-            t_mode* curr_mode = &curr_pb_type->modes[mode_idx];
-            for (int pb_type_idx = 0; pb_type_idx < curr_mode->num_pb_type_children; pb_type_idx++) {
-                int num_pb = curr_mode->pb_type_children[pb_type_idx].num_pb;
-                for (int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
-                    t_pb_graph_node* child_pb_graph_node = &(curr_pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
-                    pb_graph_node_to_set_pin_index_q.push(child_pb_graph_node);
                 }
             }
         }
