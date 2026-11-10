@@ -9,6 +9,7 @@
  */
 
 #include <cstdio>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -500,6 +501,9 @@ class ClusterRouter {
                        float cur_cost,
                        int net_fanout,
                        bool target_is_internal_sink);
+
+    /// @brief Lower bound on the cost from node to the current sink, or nullopt if node has no path to it.
+    std::optional<float> remaining_cost_(LbRRNodeId node) const;
 
     /**
      * @brief Determine if a completed route is valid.
