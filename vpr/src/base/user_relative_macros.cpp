@@ -82,6 +82,10 @@ const std::string& UserRelativeMacros::get_atom_locked_site_path(AtomBlockId blk
     return group.atom_site_paths[location.atom_idx];
 }
 
+const std::string& UserRelativeMacros::get_group_macro_name(UserRelativeGroupId group_id) const {
+    return get_macro(get_group(group_id).macro_id).name;
+}
+
 void print_relative_macros(FILE* fp, const UserRelativeMacros& relative_macros) {
     fprintf(fp, "\n Number of relative macros is %zu \n", relative_macros.get_num_macros());
 

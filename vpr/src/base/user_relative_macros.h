@@ -129,6 +129,11 @@ class UserRelativeMacros {
      */
     const std::string& get_atom_locked_site_path(AtomBlockId blk_id) const;
 
+    /**
+     * @brief Return the name of the macro the given group belongs to.
+     */
+    const std::string& get_group_macro_name(UserRelativeGroupId group_id) const;
+
   private:
     /// @brief Where an atom sits inside the stored groups.
     struct t_atom_location {

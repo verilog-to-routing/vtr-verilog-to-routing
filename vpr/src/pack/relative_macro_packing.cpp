@@ -98,8 +98,6 @@ void RelativeMacroPacker::validate_molecule_groups_() const {
                     }
                     VTR_ASSERT(mol_group_atom.is_valid());
                 }
-                const t_user_relative_macro& mol_macro = relative_macros_.get_macro(relative_macros_.get_group(mol_group).macro_id);
-                const t_user_relative_macro& atom_macro = relative_macros_.get_macro(relative_macros_.get_group(atom_group).macro_id);
                 VPR_FATAL_ERROR(VPR_ERROR_PACK,
                                 "Atoms '%s' (relative macro '%s', group %zu) and '%s' (relative macro '%s', group %zu) "
                                 "belong to the same prepacked %s (typically a carry chain, whose atoms are connected "
@@ -108,10 +106,10 @@ void RelativeMacroPacker::validate_molecule_groups_() const {
                                 "constraints so the chain's atoms are in at most one group (the rest of the chain "
                                 "may be left unconstrained).\n",
                                 atom_netlist_.block_name(mol_group_atom).c_str(),
-                                mol_macro.name.c_str(),
+                                relative_macros_.get_group_macro_name(mol_group).c_str(),
                                 size_t(mol_group),
                                 atom_netlist_.block_name(blk_id).c_str(),
-                                atom_macro.name.c_str(),
+                                relative_macros_.get_group_macro_name(atom_group).c_str(),
                                 size_t(atom_group),
                                 mol_group_from_chain ? "chain" : "molecule");
             }
@@ -148,7 +146,7 @@ void RelativeMacroPacker::validate_locked_sites_() const {
                                 "would be ignored. The netlist most likely forms different pack patterns than the "
                                 "netlist the sites were recorded from; regenerate the macro against this netlist.\n",
                                 atom_netlist_.block_name(blk_id).c_str(),
-                                relative_macros_.get_macro(relative_macros_.get_group(atom_group).macro_id).name.c_str(),
+                                relative_macros_.get_group_macro_name(atom_group).c_str(),
                                 size_t(atom_group),
                                 site_path.c_str(),
                                 atom_netlist_.block_name(root_blk_id).c_str());
@@ -319,7 +317,7 @@ void RelativeMacroPacker::report_unsatisfiable_locked_site(PackMoleculeId molecu
     const std::string& site_path = molecule_site_path_(molecule_id);
     VTR_ASSERT(!site_path.empty());
     const UserRelativeGroupId group = molecule_group(molecule_id);
-    const std::string& macro_name = relative_macros_.get_macro(relative_macros_.get_group(group).macro_id).name;
+    const std::string& macro_name = relative_macros_.get_group_macro_name(group);
 
     // Check the cluster's atoms for an occupant. Searching the full pb graph
     // for alternative sites is deferred until the fatal error is formatted.
@@ -397,7 +395,7 @@ std::string RelativeMacroPacker::describe_unsatisfiable_locked_site(PackMolecule
         return {};
 
     std::string message = "\tThe atom is locked to primitive site '" + record.site_path
-                          + "' by relative macro '" + relative_macros_.get_macro(relative_macros_.get_group(record.group).macro_id).name
+                          + "' by relative macro '" + relative_macros_.get_group_macro_name(record.group)
                           + "' group " + std::to_string(size_t(record.group))
                           + ", and no candidate block type could honour it:\n";
 
@@ -504,7 +502,7 @@ std::vector<PackMoleculeId> RelativeMacroPacker::group_molecules_to_pack(PackMol
     VTR_LOGV(log_verbosity > 1 && num_elsewhere > 0,
              "\tRelative macro '%s' group %zu is split: %zu of its molecules are already in other clusters "
              "(first: atom '%s' in cluster %zu) while cluster %zu is being seeded with the same group.\n",
-             relative_macros_.get_macro(relative_macros_.get_group(group).macro_id).name.c_str(), size_t(group),
+             relative_macros_.get_group_macro_name(group).c_str(), size_t(group),
              num_elsewhere,
              atom_netlist_.block_name(first_elsewhere).c_str(),
              size_t(cluster_legalizer.get_atom_cluster(first_elsewhere)),
