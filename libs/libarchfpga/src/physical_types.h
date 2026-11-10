@@ -25,9 +25,13 @@
  * Authors: Jason Luu and Kenneth Kent
  */
 
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <iterator>
+#include <ranges>
+#include <type_traits>
 #include <utility>
 #include <vector>
 #include <unordered_map>
@@ -875,6 +879,83 @@ struct t_physical_tile_port {
     }
 };
 
+/** Describes a pb graph edge
+ *
+ *  Note: This class must be fully defined before t_logical_block_type, which
+ *  stores these edges in a std::deque (std::deque does not support incomplete
+ *  element types).
+ *
+ *  An edge connects one input pin to one output pin.
+ *
+ *  Data members:
+ *      num_pack_patterns: number of pack patterns this edge belongs to
+ *      pack_pattern_names: [0..num_pack_patterns-1] name of each pack pattern
+ *      pack_pattern_indices: [0..num_pack_patterns-1] id of each pack pattern
+ *      infer_pattern: if true, pattern of this edge could be inferred by checking
+ *                     input/output edges. This is true when the edge is a single
+ *                     fanout edge and is driven or driving another edge which is
+ *                     annotated with a pack pattern.
+ */
+class t_pb_graph_edge {
+  public:
+    /* timing information (NaN until loaded from the architecture's delay annotations) */
+    float delay_max = std::numeric_limits<float>::quiet_NaN();
+    float delay_min = std::numeric_limits<float>::quiet_NaN();
+
+    /* who drives this edge */
+    t_interconnect* interconnect;
+    int driver_set;
+
+    /* pack pattern info */
+    int num_pack_patterns;
+    std::vector<const char*> pack_pattern_names;
+    std::vector<int> pack_pattern_indices;
+    /* [0..num_pack_patterns-1] parallel to pack_pattern_names: true if the
+     * pattern annotation on this edge is marked allow_multi_fanout */
+    std::vector<bool> pack_pattern_allow_multi_fanout;
+    bool infer_pattern;
+
+    int switch_type_idx = ARCH_FPGA_UNDEFINED_VAL; /* architecture switch id of the edge - used when flat_routing is enabled */
+
+    // class member functions
+  public:
+    /// @brief Returns the pin that drives this edge.
+    t_pb_graph_pin* input_pin() const { return input_pin_; }
+
+    /// @brief Returns the pin that this edge drives.
+    t_pb_graph_pin* output_pin() const { return output_pin_; }
+
+    /// @brief Connects this edge from input_pin to output_pin.
+    void set_pins(t_pb_graph_pin* input_pin, t_pb_graph_pin* output_pin) {
+        input_pin_ = input_pin;
+        output_pin_ = output_pin;
+    }
+
+    /// Returns true if this edge implements one bit of a bus-based mux
+    /// (<mux bus="true">), whose single select drives every bit of its output bus.
+    bool is_bus_mux() const;
+
+    /// Returns the pb_graph_node instance whose mode contains this edge's
+    /// bus-based mux, i.e. the node that owns the one shared select.
+    /// Only valid when is_bus_mux() is true.
+    const t_pb_graph_node* bus_mux_owner() const;
+
+    /// Returns true is this edge is annotated with the given pattern_index
+    ///  pattern_index : index of the packing pattern
+    bool annotated_with_pattern(int pattern_index) const;
+
+    /// Returns true is this edge is annotated with pattern_index or its pattern
+    /// is inferred and a connected output edge is annotated with pattern_index
+    ///   pattern_index : index of the packing pattern
+    bool belongs_to_pattern(int pattern_index) const;
+
+  private:
+    /// The pin that drives this edge
+    t_pb_graph_pin* input_pin_ = nullptr;
+    /// The pin that this edge drives
+    t_pb_graph_pin* output_pin_ = nullptr;
+};
+
 /* Describes the type for a logical block
  * name: unique identifier for type
  * pb_type: Internal subblocks and routing information for this physical block
@@ -1444,6 +1525,81 @@ class t_pb_graph_node {
     /// Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
     std::string hierarchical_type_name() const;
 
+    /**
+     * @brief Input iterator over a pb graph subtree in depth-first pre-order.
+     *
+     * Visits each node before its children, with modes, child types, and
+     * instances in index order. This is the order of a recursive walk that
+     * handles a node and then recurses into
+     * child_pb_graph_nodes[mode][type][instance]. Uses an explicit stack to
+     * avoid deep recursion. The end of the walk compares equal to
+     * std::default_sentinel.
+     *
+     * @tparam Node  t_pb_graph_node, or const t_pb_graph_node for read-only walks.
+     */
+    template<typename Node>
+    class PbGraphSubtreeIterator {
+        // The template parameter only selects const or mutable access; this
+        // iterator walks t_pb_graph_node trees and nothing else.
+        static_assert(std::is_same_v<std::remove_const_t<Node>, t_pb_graph_node>);
+
+      public:
+        using iterator_category = std::input_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = t_pb_graph_node;
+        using pointer = Node*;
+        using reference = Node&;
+
+        PbGraphSubtreeIterator() = default;
+
+        /// Start a walk at root. A null root gives an empty walk.
+        explicit PbGraphSubtreeIterator(Node* root) {
+            if (root != nullptr)
+                to_visit_.push_back(root);
+        }
+
+        reference operator*() const { return *to_visit_.back(); }
+        pointer operator->() const { return to_visit_.back(); }
+
+        PbGraphSubtreeIterator& operator++() {
+            Node* node = to_visit_.back();
+            to_visit_.pop_back();
+
+            // Push the children in reverse so they are visited in index order.
+            for (auto& mode_children : std::views::reverse(node->child_pb_graph_nodes)) {
+                for (auto& type_children : std::views::reverse(mode_children)) {
+                    for (Node& child : std::views::reverse(type_children))
+                        to_visit_.push_back(&child);
+                }
+            }
+            return *this;
+        }
+        void operator++(int) { ++*this; }
+
+        bool operator==(std::default_sentinel_t) const { return to_visit_.empty(); }
+
+      private:
+        std::vector<Node*> to_visit_; ///< Nodes still to visit; the current node is at the back.
+    };
+
+    using SubtreeIterator = PbGraphSubtreeIterator<const t_pb_graph_node>;
+    using MutableSubtreeIterator = PbGraphSubtreeIterator<t_pb_graph_node>;
+
+    /**
+     * @brief Return this node and all of its descendants in depth-first pre-order.
+     *
+     * Example:
+     *   for (const t_pb_graph_node& node : type->pb_graph_head->subtree()) { ... }
+     */
+    std::ranges::subrange<SubtreeIterator, std::default_sentinel_t> subtree() const {
+        return {SubtreeIterator(this), std::default_sentinel};
+    }
+    /// Mutable traversal. Nodes may be modified, but changing the tree structure
+    /// (modes, child types, or instances) invalidates the iterator.
+    std::ranges::subrange<MutableSubtreeIterator, std::default_sentinel_t> subtree() {
+        return {MutableSubtreeIterator(this), std::default_sentinel};
+    }
+
   private:
     /// Storage of all pins of this node.
     std::vector<t_pb_graph_pin> pins_;
@@ -1568,79 +1724,6 @@ inline void t_pb_graph_node::alloc_pins(int num_pins) {
     VTR_ASSERT(pins_.empty());
     pins_ = std::vector<t_pb_graph_pin>(num_pins);
 }
-
-/** Describes a pb graph edge
- *
- *  An edge connects one input pin to one output pin.
- *
- *  Data members:
- *      num_pack_patterns: number of pack patterns this edge belongs to
- *      pack_pattern_names: [0..num_pack_patterns-1] name of each pack pattern
- *      pack_pattern_indices: [0..num_pack_patterns-1] id of each pack pattern
- *      infer_pattern: if true, pattern of this edge could be inferred by checking
- *                     input/output edges. This is true when the edge is a single
- *                     fanout edge and is driven or driving another edge which is
- *                     annotated with a pack pattern.
- */
-class t_pb_graph_edge {
-  public:
-    /* timing information */
-    float delay_max;
-    float delay_min;
-
-    /* who drives this edge */
-    t_interconnect* interconnect;
-    int driver_set;
-
-    /* pack pattern info */
-    int num_pack_patterns;
-    std::vector<const char*> pack_pattern_names;
-    std::vector<int> pack_pattern_indices;
-    /* [0..num_pack_patterns-1] parallel to pack_pattern_names: true if the
-     * pattern annotation on this edge is marked allow_multi_fanout */
-    std::vector<bool> pack_pattern_allow_multi_fanout;
-    bool infer_pattern;
-
-    int switch_type_idx = ARCH_FPGA_UNDEFINED_VAL; /* architecture switch id of the edge - used when flat_routing is enabled */
-
-    // class member functions
-  public:
-    /// @brief Returns the pin that drives this edge.
-    t_pb_graph_pin* input_pin() const { return input_pin_; }
-
-    /// @brief Returns the pin that this edge drives.
-    t_pb_graph_pin* output_pin() const { return output_pin_; }
-
-    /// @brief Connects this edge from input_pin to output_pin.
-    void set_pins(t_pb_graph_pin* input_pin, t_pb_graph_pin* output_pin) {
-        input_pin_ = input_pin;
-        output_pin_ = output_pin;
-    }
-
-    /// Returns true if this edge implements one bit of a bus-based mux
-    /// (<mux bus="true">), whose single select drives every bit of its output bus.
-    bool is_bus_mux() const;
-
-    /// Returns the pb_graph_node instance whose mode contains this edge's
-    /// bus-based mux, i.e. the node that owns the one shared select.
-    /// Only valid when is_bus_mux() is true.
-    const t_pb_graph_node* bus_mux_owner() const;
-
-    /// Returns true is this edge is annotated with the given pattern_index
-    ///  pattern_index : index of the packing pattern
-    bool annotated_with_pattern(int pattern_index) const;
-
-    /// Returns true is this edge is annotated with pattern_index or its pattern
-    /// is inferred and a connected output edge is annotated with pattern_index
-    ///   pattern_index : index of the packing pattern
-    bool belongs_to_pattern(int pattern_index) const;
-
-  private:
-    /// The pin that drives this edge
-    t_pb_graph_pin* input_pin_ = nullptr;
-    /// The pin that this edge drives
-    t_pb_graph_pin* output_pin_ = nullptr;
-};
 
 struct t_pb_graph_node_power {
     float transistor_cnt_pb_children; /* Total transistor size of this pb */

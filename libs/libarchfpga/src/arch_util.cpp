@@ -20,7 +20,7 @@
 /******************** Subroutine declarations ********************************/
 
 static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_descriptors);
-static void free_pb_graph(t_pb_graph_node* pb_graph_node);
+static void free_pb_graph_node(t_pb_graph_node* pb_graph_node);
 static void free_pb_type(t_pb_type* pb_type);
 
 /******************** End Subroutine declarations ****************************/
@@ -205,7 +205,8 @@ static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_desc
     for (t_logical_block_type& type : type_descriptors) {
         if (type.pb_type) {
             if (type.pb_graph_head) {
-                free_pb_graph(type.pb_graph_head);
+                for (t_pb_graph_node& pb_graph_node : type.pb_graph_head->subtree())
+                    free_pb_graph_node(&pb_graph_node);
                 delete type.pb_graph_head;
             }
         }
@@ -215,9 +216,7 @@ static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_desc
     }
 }
 
-static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
-    const t_pb_type* pb_type = pb_graph_node->pb_type;
-
+static void free_pb_graph_node(t_pb_graph_node* pb_graph_node) {
     if (pb_graph_node->interconnect_pins) {
         for (int i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
             if (pb_graph_node->interconnect_pins[i] == nullptr) continue;
@@ -245,14 +244,6 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
     }
     delete[] pb_graph_node->interconnect_pins;
     delete pb_graph_node->pb_node_power;
-
-    for (int i = 0; i < pb_type->num_modes; i++) {
-        for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-            for (int k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                free_pb_graph(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
-            }
-        }
-    }
 }
 
 static void free_pb_type(t_pb_type* pb_type) {

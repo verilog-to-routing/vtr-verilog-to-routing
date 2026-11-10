@@ -4,6 +4,7 @@
 #include "tatum/TimingGraphFwd.hpp"
 #include "tatum/TimingConstraintsFwd.hpp"
 #include "tatum/timing_analyzers.hpp"
+#include "tatum/base/ArrivalType.hpp"
 
 #include "tatum/TimingGraphNameResolver.hpp"
 #include "tatum/report/TimingPath.hpp"
@@ -209,12 +210,30 @@ class TimingReporter {
                                                  TimingType timing_type,
                                                  Time path) const;
 
-        //Reports clock latency and path (caller should handle rising edge)
-        Time report_timing_clock_subpath(std::ostream& os, 
+        /**
+         * @brief Reports the clock source latency and the clock path to a launch or capture node.
+         *
+         * The caller reports the clock's rising edge before calling this function.
+         *
+         *   @param os              The stream to write the report to.
+         *   @param path_helper     Formats the report lines and tracks the reported path time.
+         *   @param subpath         The clock path to report. Empty for primary inputs and outputs.
+         *   @param domain          The clock domain of the clock path.
+         *   @param timing_type     Whether this is a setup or hold report (selects max or min edge delays).
+         *   @param latency_type    Which source latency (early or late) to report. Launch and capture
+         *                          clocks use opposite ones: setup launches late and captures early,
+         *                          while hold launches early and captures late.
+         *   @param path            The path time at the clock's rising edge.
+         *   @param offset          Added to the reported path times, but not to the returned time.
+         *
+         *   @return The path time at the end of the clock path, excluding the offset.
+         */
+        Time report_timing_clock_subpath(std::ostream& os,
                                          detail::ReportTimingPathHelper& path_helper,
                                          const TimingSubPath& subpath,
                                          DomainId domain,
                                          TimingType timing_type,
+                                         ArrivalType latency_type,
                                          Time path,
                                          Time offset) const;
 

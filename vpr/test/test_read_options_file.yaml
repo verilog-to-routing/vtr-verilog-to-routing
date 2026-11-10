@@ -1,0 +1,6 @@
+# Options file for test_read_options_file.cpp: gives the positional arguments, which the
+# vtr_reg_strong/strong_options_file regression test can not, since run_vtr_flow always passes
+# them on the command-line.
+architecture: test_read_arch_metadata.xml
+circuit: wire.eblif
+seed: 7
