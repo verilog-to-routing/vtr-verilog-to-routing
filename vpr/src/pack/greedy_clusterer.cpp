@@ -525,7 +525,7 @@ LegalizationClusterId GreedyClusterer::start_new_cluster_(
         // Include site-specific failures in the error if the seed is locked.
         std::string locked_site_reason;
         if (cluster_legalizer.relative_macro_packer())
-            locked_site_reason = cluster_legalizer.relative_macro_packer()->describe_unsatisfiable_locked_site(seed_mol_id);
+            locked_site_reason = cluster_legalizer.relative_macro_packer()->describe_locked_site_failure(seed_mol_id, candidate_types);
 
         // All candidate block types and modes have failed.
         if (seed_mol.type == e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK) {

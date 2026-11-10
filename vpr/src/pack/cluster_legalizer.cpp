@@ -953,11 +953,10 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             if (force_site_node != nullptr && !site_in_cluster_type(force_site_node, cluster.type)) {
                 // Reject this type so GreedyClusterer::start_new_cluster_() can
                 // try one that has the required site.
-                relative_macro_packer_->report_unsatisfiable_locked_site(molecule_id,
-                                                                         cluster,
-                                                                         atom_pb_lookup_,
-                                                                         /*resolved_site=*/nullptr,
-                                                                         log_verbosity_);
+                if (log_verbosity_ > 2) {
+                    VTR_LOG("\t\tFAILED pack molecule reason: locked primitive site '%s' is not in cluster type '%s'\n",
+                            force_site_node->hierarchical_type_name().c_str(), cluster.type->name.c_str());
+                }
                 return e_block_pack_status::BLK_FAILED_FEASIBLE;
             }
         }
@@ -976,11 +975,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         if (primitives_alive.empty()) {
             if (force_site_node != nullptr) {
                 // The required site failed; no other primitive is allowed.
-                relative_macro_packer_->report_unsatisfiable_locked_site(molecule_id,
-                                                                         cluster,
-                                                                         atom_pb_lookup_,
-                                                                         force_site_node,
-                                                                         log_verbosity_);
+                if (log_verbosity_ > 2)
+                    relative_macro_packer_->log_locked_site_failure(molecule_id, cluster, atom_pb_lookup_, force_site_node);
                 block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
                 break;
             }
