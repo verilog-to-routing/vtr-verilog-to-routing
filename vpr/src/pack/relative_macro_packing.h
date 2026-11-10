@@ -185,6 +185,16 @@ class RelativeMacroPacker {
     std::string describe_unsatisfiable_locked_site(PackMoleculeId seed_molecule_id) const;
 
     /**
+     * @brief Move the seeds of relative placement groups to the front, locked
+     *        seeds first, preserving the order otherwise.
+     *
+     * Groups are seeded before other clusters can take their molecules. A
+     * locked seed goes before unlocked ones so an unlocked seed cannot occupy
+     * a site a locked group member needs.
+     */
+    void prioritize_seeds(std::vector<PackMoleculeId>& seeds) const;
+
+    /**
      * @brief Return unclustered group molecules in the order to try adding them.
      *
      * Locked molecules go first, in constraints-file order, so unlocked

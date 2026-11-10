@@ -248,22 +248,9 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
                               });
     }
 
-    // Seed relative placement groups first so other clusters cannot take their
-    // molecules before the groups are packed together.
-    if (relative_macro_packer) {
-        std::vector<PackMoleculeId>::iterator relative_end = std::stable_partition(seed_mols_.begin(),
-                                                                                   seed_mols_.end(),
-                                                                                   [&](PackMoleculeId mol_id) {
-                                                                                       return relative_macro_packer->molecule_group(mol_id).is_valid();
-                                                                                   });
-
-        // Within the constrained molecules, put locked seeds first. The seed is
-        // placed before the rest of its group, so an unlocked seed could occupy
-        // a site needed by a locked group member.
-        std::stable_partition(seed_mols_.begin(), relative_end, [&](PackMoleculeId mol_id) {
-            return relative_macro_packer->molecule_is_locked_to_site(mol_id);
-        });
-    }
+    // Seed relative placement groups first, with locked seeds leading.
+    if (relative_macro_packer)
+        relative_macro_packer->prioritize_seeds(seed_mols_);
 
     // Print the seed gains if requested.
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES)) {

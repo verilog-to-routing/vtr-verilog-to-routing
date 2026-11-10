@@ -468,6 +468,21 @@ std::string RelativeMacroPacker::describe_unsatisfiable_locked_site(PackMolecule
     return message;
 }
 
+void RelativeMacroPacker::prioritize_seeds(std::vector<PackMoleculeId>& seeds) const {
+    // Seed relative placement groups first so other clusters cannot take their
+    // molecules before the groups are packed together.
+    auto relative_end = std::stable_partition(seeds.begin(), seeds.end(), [&](PackMoleculeId mol_id) {
+        return molecule_group(mol_id).is_valid();
+    });
+
+    // Within the constrained molecules, put locked seeds first. The seed is
+    // placed before the rest of its group, so an unlocked seed could occupy
+    // a site needed by a locked group member.
+    std::stable_partition(seeds.begin(), relative_end, [&](PackMoleculeId mol_id) {
+        return molecule_is_locked_to_site(mol_id);
+    });
+}
+
 std::vector<PackMoleculeId> RelativeMacroPacker::group_molecules_to_pack(PackMoleculeId seed_molecule_id,
                                                                          LegalizationClusterId cluster_id,
                                                                          const ClusterLegalizer& cluster_legalizer,
