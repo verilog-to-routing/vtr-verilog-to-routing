@@ -94,29 +94,10 @@ std::string rr_node_arch_name(RRNodeId inode, bool is_flat) {
     return rr_node_arch_name;
 }
 
-IntraLbPbPinLookup::IntraLbPbPinLookup(const std::vector<t_logical_block_type>& block_types)
-    : block_types_(block_types)
-    , intra_lb_pb_pin_lookup_(block_types.size(), nullptr) {
-    for (unsigned int itype = 0; itype < block_types_.size(); ++itype) {
-        intra_lb_pb_pin_lookup_[itype] = alloc_and_load_pb_graph_pin_lookup_from_index(&block_types_[itype]);
-    }
-}
-
-IntraLbPbPinLookup::IntraLbPbPinLookup(const IntraLbPbPinLookup& rhs)
-    : IntraLbPbPinLookup(rhs.block_types_) {
-    //nop
-}
-
-IntraLbPbPinLookup::~IntraLbPbPinLookup() {
-    for (unsigned int itype = 0; itype < intra_lb_pb_pin_lookup_.size(); ++itype) {
-        free_pb_graph_pin_lookup_from_index(intra_lb_pb_pin_lookup_[itype]);
-    }
-}
-
 const t_pb_graph_pin* IntraLbPbPinLookup::pb_gpin(unsigned int itype, int ipin) const {
     VTR_ASSERT(itype < block_types_.size());
 
-    return intra_lb_pb_pin_lookup_[itype][ipin];
+    return block_types_[itype].pb_graph_pin(ipin);
 }
 
 //Returns the set of pins which are connected to the top level clb pin

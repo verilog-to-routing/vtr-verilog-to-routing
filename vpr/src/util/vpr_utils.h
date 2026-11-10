@@ -138,10 +138,9 @@ std::string rr_node_arch_name(RRNodeId inode, bool is_flat);
 //Class for looking up pb graph pins from block pin indices
 class IntraLbPbPinLookup {
   public:
-    IntraLbPbPinLookup(const std::vector<t_logical_block_type>& block_types);
-    IntraLbPbPinLookup(const IntraLbPbPinLookup& rhs);
+    IntraLbPbPinLookup(const std::vector<t_logical_block_type>& block_types)
+        : block_types_(block_types) {}
     IntraLbPbPinLookup& operator=(const IntraLbPbPinLookup&) = delete;
-    ~IntraLbPbPinLookup();
 
     //Returns the pb graph pin associated with the specified type (index into block types array) and
     // pb pin index (index into block_pb().pb_route)
@@ -149,8 +148,6 @@ class IntraLbPbPinLookup {
 
   private:
     const std::vector<t_logical_block_type>& block_types_;
-
-    std::vector<t_pb_graph_pin**> intra_lb_pb_pin_lookup_;
 };
 
 //Find the atom pins (driver or sinks) connected to the specified top-level CLB pin
