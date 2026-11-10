@@ -627,7 +627,7 @@ class ClusterRouter {
 
     /// @brief Hop counts to the sink of the current search, from lookahead_.
     ///        Stays null when the router has no lookahead.
-    const ClusterRouterLookahead::t_hop_table* sink_hops_;
+    const ClusterRouterLookahead::t_cost_to_sink* sink_hops_;
 
     /// @brief Lower bound on the cost of one edge. A node h hops from the
     ///        sink is at least hop_cost_ * h away from it.
