@@ -35,6 +35,11 @@
 #include "vtr_log.h"
 #include "vtr_time.h"
 
+/// @brief The number of global placement iterations between timing updates.
+///        A value of 1 updates the timing information every iteration.
+static constexpr size_t TIMING_UPDATE_INTERVAL = 5;
+static_assert(TIMING_UPDATE_INTERVAL > 0, "Timing update interval must be positive");
+
 std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytical_solver_type,
                                                  e_ap_solver_threading solver_threading,
                                                  e_ap_partial_legalizer partial_legalizer_type,
@@ -439,13 +444,17 @@ PartialPlacement SimPLGlobalPlacer::place() {
         float legalizer_end_time = runtime_timer.elapsed_sec();
         double ub_hpwl = p_placement.get_hpwl(ap_netlist_);
 
-        // Perform a timing update
+        // Perform a timing update every TIMING_UPDATE_INTERVAL iterations.
+        // Between updates, the solver keeps using the most recently computed
+        // criticalities and net weights.
         float timing_update_start_time = runtime_timer.elapsed_sec();
-        update_timing_info_with_gp_placement(pre_cluster_timing_manager_,
-                                             *place_delay_model_.get(),
-                                             p_placement,
-                                             ap_netlist_);
-        solver_->update_net_weights(pre_cluster_timing_manager_);
+        if (i % TIMING_UPDATE_INTERVAL == 0) {
+            update_timing_info_with_gp_placement(pre_cluster_timing_manager_,
+                                                 *place_delay_model_.get(),
+                                                 p_placement,
+                                                 ap_netlist_);
+            solver_->update_net_weights(pre_cluster_timing_manager_);
+        }
         float timing_update_end_time = runtime_timer.elapsed_sec();
 
         // Update graphics after legalizer and timing update
