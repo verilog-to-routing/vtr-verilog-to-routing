@@ -587,7 +587,7 @@ class ClusterLegalizer {
     }
 
     /**
-     * @brief Return the relative macro packer, or std::nullopt if there are no macros.
+     * @brief Access relative placement packing support, if the design has macros.
      *
      * The clusterer and seed selector use it to choose and order group molecules.
      */

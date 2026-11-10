@@ -40,9 +40,8 @@ struct t_user_relative_group {
     ///        in the constraints file).
     std::vector<AtomBlockId> atoms;
 
-    /// @brief The primitive site each atom is locked to: atom_sites[i] is the
-    ///        site of atoms[i], so there is always one entry per atom. nullptr
-    ///        leaves that atom unlocked, i.e. the packer picks its site.
+    /// @brief atom_sites[i] is the required primitive site for atoms[i], or
+    ///        nullptr if that atom has no site constraint.
     std::vector<const t_pb_graph_node*> atom_sites;
 
     /// @brief Placement offset of this group's cluster relative to the
@@ -124,6 +123,9 @@ class UserRelativeMacros {
      * @brief Return the primitive site the given atom is locked to by its
      *        relative placement group, or nullptr if the atom is in no group
      *        or its group leaves it unlocked.
+     *
+     * This is the required site from the constraints, not the atom's current
+     * packed location.
      */
     const t_pb_graph_node* get_atom_locked_site(AtomBlockId blk_id) const;
 

@@ -933,9 +933,11 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         }
     }
 
-    // Check relative macro rules and choose the molecule's pin utilization limit.
+    // Evaluate relative placement constraints without changing the cluster's
+    // group or chain ownership until packing succeeds.
     t_relative_macro_verdict rel_verdict;
-    // Allow full pin utilization for group members to help keep the group together.
+    // Group members may use the full pin capacity so the utilization target
+    // does not prevent them from packing together. Physical pin limits still apply.
     t_ext_pin_util effective_external_pin_util = max_external_pin_util;
     // A null site leaves the molecule free to use any compatible primitive.
     const t_pb_graph_node* force_site_node = nullptr;
@@ -951,8 +953,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
             force_site_node = relative_macro_packer_->molecule_locked_site(molecule_id);
             if (force_site_node != nullptr && !site_in_cluster_type(force_site_node, cluster.type)) {
-                // Reject this type so GreedyClusterer::start_new_cluster_() can
-                // try one that has the required site.
+                // Site nodes belong to one block type's pb graph. Reject a
+                // different type before looking up its placement primitives.
                 if (log_verbosity_ > 2) {
                     VTR_LOG("\t\tFAILED pack molecule reason: locked primitive site '%s' is not in cluster type '%s'\n",
                             force_site_node->hierarchical_type_name().c_str(), cluster.type->name.c_str());

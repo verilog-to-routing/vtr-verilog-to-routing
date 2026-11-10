@@ -291,8 +291,9 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster_(PackMoleculeId seed_mol
                                                                                        cluster_legalizer,
                                                                                        attraction_groups);
 
-    // If the seed belongs to a relative placement group, pack the rest of the
-    // group before adding molecules chosen by packing gain.
+    // A relative placement group must share one cluster. If this seed belongs
+    // to a group, try its remaining molecules before the normal candidate search
+    // can fill the cluster with other atoms.
     const std::optional<RelativeMacroPacker>& relative_macro_packer = cluster_legalizer.relative_macro_packer();
     if (relative_macro_packer) {
         UserRelativeGroupId seed_group = relative_macro_packer->molecule_group(seed_mol_id);
@@ -633,13 +634,14 @@ void GreedyClusterer::pack_relative_group_into_cluster_(UserRelativeGroupId grou
                                                                            cluster_legalizer,
                                                                            attraction_groups);
         } else {
-            // Do not call update_cluster_gain_stats_candidate_failed() here. This group
-            // must be packed into this cluster, and recording a failure would prevent
-            // the candidate selector from retrying the molecule, even though it may fit
-            // later as the cluster fills. Log the original failure, since another
-            // molecule may occupy the required site before the retry.
+            // Don't record this as a failed candidate.
+            // This would permanently exclude the molecule from this cluster, potentially
+            // splitting the group. Normal candidate selection can retry the molecule and
+            // record the failure if needed. Any remaining splits are reported by
+            // report_split_relative_groups().
             VTR_LOGV(log_verbosity_ > 2,
-                     "\tRelative placement group molecule of atom '%s' was not admitted to cluster %zu on this pass (%s)\n",
+                     "\tCould not add relative placement group molecule rooted at '%s' to cluster %zu (%s); "
+                     "it remains eligible for later candidate selection\n",
                      atom_netlist_.block_name(prepacker.get_molecule_root_atom(mol_id)).c_str(),
                      (size_t)legalization_cluster_id,
                      block_pack_status_name(pack_status));

@@ -205,12 +205,12 @@ class GreedyClusterer {
                                            const Prepacker& prepacker);
 
     /**
-     * @brief Try to pack the molecules of the seed's relative placement group
-     *        before adding other molecules, updating gain statistics for each
-     *        success.
+     * @brief Try to add the seed group's remaining molecules before selecting
+     *        other candidates.
      *
-     * Rejected molecules remain available to the candidate selector. The
-     * end-of-pass check reports any group that could not be packed together.
+     * Updates candidate gains for successful additions. Rejected molecules
+     * remain available to the normal candidate search. If the group's atoms
+     * end up in different clusters, final packing checks report an error.
      *
      *  @param group               The seed's relative placement group.
      *  @param cluster_gain_stats  The gain stats of the cluster being grown.

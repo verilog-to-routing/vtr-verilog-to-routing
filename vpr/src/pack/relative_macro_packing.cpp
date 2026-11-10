@@ -19,7 +19,7 @@
 #include "vtr_assert.h"
 #include "vtr_log.h"
 
-// Maximum number of alternative site paths to include in an error message.
+// Limit the examples printed for a block type that lacks the required site.
 static constexpr size_t MAX_REPORTED_SITE_PATHS = 3;
 
 RelativeMacroPacker::RelativeMacroPacker(const UserRelativeMacros& relative_macros,
@@ -36,8 +36,8 @@ RelativeMacroPacker::RelativeMacroPacker(const UserRelativeMacros& relative_macr
 }
 
 void RelativeMacroPacker::init_chain_owners_() {
-    // A chain is owned by the group of its first constrained atom. Chains whose
-    // atoms span several groups are rejected by validate_molecule_groups_().
+    // Any constrained atom identifies the chain's owner. Validate agreement
+    // among all constrained atoms after every chain's owner has been recorded.
     for (PackMoleculeId mol_id : prepacker_.molecules()) {
         const t_pack_molecule& molecule = prepacker_.get_molecule(mol_id);
         if (!molecule.chain_id.is_valid() || chain_owners_[molecule.chain_id].is_valid())
@@ -57,7 +57,8 @@ void RelativeMacroPacker::init_chain_owners_() {
 }
 
 void RelativeMacroPacker::validate_molecule_groups_() const {
-    // Check each molecule's atoms against each other and against its chain's owner.
+    // Chain molecules must agree with the owner found across the entire chain;
+    // other molecules only need agreement among their own constrained atoms.
     for (PackMoleculeId mol_id : prepacker_.molecules()) {
         const t_pack_molecule& molecule = prepacker_.get_molecule(mol_id);
 
@@ -99,11 +100,10 @@ void RelativeMacroPacker::validate_molecule_groups_() const {
                 }
                 VPR_FATAL_ERROR(VPR_ERROR_PACK,
                                 "Atoms '%s' (relative macro '%s', group %zu) and '%s' (relative macro '%s', group %zu) "
-                                "belong to the same prepacked %s (typically a carry chain, whose atoms are connected "
-                                "through dedicated routing and cannot be separated); however, atoms of different "
-                                "relative placement groups must be packed into different clusters. Adjust the "
-                                "constraints so the chain's atoms are in at most one group (the rest of the chain "
-                                "may be left unconstrained).\n",
+                                "belong to the same prepacked %s but are assigned to different groups. "
+                                "All constrained atoms of a molecule or chain must belong to one relative placement "
+                                "group. Update the group assignments in the constraints file; other atoms of the "
+                                "molecule or chain may be left unconstrained.\n",
                                 atom_netlist_.block_name(mol_group_atom).c_str(),
                                 relative_macros_.get_group_macro_name(mol_group).c_str(),
                                 size_t(mol_group),
@@ -117,8 +117,8 @@ void RelativeMacroPacker::validate_molecule_groups_() const {
 }
 
 void RelativeMacroPacker::validate_locked_sites_() const {
-    // Report non-root site locks in one warning. Constraints generated from a
-    // placement can contain many of them, but only root sites are forced directly.
+    // The root selects the molecule's placement; its pack pattern determines
+    // the remaining sites. Count non-root locks for a single warning below.
     size_t num_non_root_sites = 0;
     AtomBlockId first_non_root_site;
 
@@ -135,15 +135,14 @@ void RelativeMacroPacker::validate_locked_sites_() const {
                 continue;
 
             if (!root_is_locked) {
-                // An unlocked root leaves this atom's site unenforced. The
-                // molecule may differ from the one used to record the sites.
+                // Without a root lock, the packer cannot use this constraint
+                // to select the molecule's placement.
                 UserRelativeGroupId atom_group = relative_macros_.get_atom_group(blk_id);
                 VPR_FATAL_ERROR(VPR_ERROR_PACK,
-                                "Atom '%s' of relative macro '%s' group %zu is locked to primitive site '%s', but it "
-                                "is not the root of its prepacked molecule (the root is atom '%s', which is not "
-                                "locked). A site can only be forced through a molecule's root primitive, so this site "
-                                "would be ignored. The netlist most likely forms different pack patterns than the "
-                                "netlist the sites were recorded from; regenerate the macro against this netlist.\n",
+                                "Atom '%s' of relative macro '%s' group %zu is locked to primitive site '%s', but "
+                                "its molecule's root atom '%s' has no site constraint. VPR chooses the molecule's "
+                                "placement through its root. Add a compatible site_path for the root atom, or "
+                                "remove this non-root atom's site_path.\n",
                                 atom_netlist_.block_name(blk_id).c_str(),
                                 relative_macros_.get_group_macro_name(atom_group).c_str(),
                                 size_t(atom_group),
@@ -158,10 +157,10 @@ void RelativeMacroPacker::validate_locked_sites_() const {
     }
 
     VTR_LOGV_WARN(num_non_root_sites > 0,
-                  "%zu atom(s) of relative placement macros carry a primitive site but are not the root of their "
-                  "prepacked molecule (first: '%s'). Only a molecule's root can be placed on a given site; the "
-                  "others follow from the pack pattern. These sites are not enforced directly, but are checked "
-                  "against the final clustering, which will report any that were not met.\n",
+                  "VPR cannot select sites independently for %zu constrained atom(s) (first: '%s'). Each is packed "
+                  "with other atoms according to an architecture pack pattern; the root atom's site determines "
+                  "the others. These site_path constraints will be checked after packing, and a mismatch will "
+                  "stop VPR. Check that the constraints agree with the pack pattern.\n",
                   num_non_root_sites,
                   atom_netlist_.block_name(first_non_root_site).c_str());
 }
@@ -201,7 +200,7 @@ bool long_chain_ownership_allows(bool molecule_is_long_chain,
             return false;
     }
 
-    // The resulting group must own the cluster's existing long chain.
+    // Also check the existing chain when a non-chain molecule introduces a group.
     if (cluster_has_long_chain && cluster_group.is_valid() && cluster_group != cluster_long_chain_owner)
         return false;
 
@@ -229,10 +228,10 @@ bool RelativeMacroPacker::check_long_chain_ownership_(PackMoleculeId molecule_id
         return true;
     }
 
-    // try_pack_molecule() rejects a second long chain earlier;
-    // is_molecule_compatible() relies on this check for ownership conflicts.
+    // The compatibility query also uses this check, before attempting placement.
     VTR_LOGV(log_verbosity > 3,
-             "\t\t\t Long Chain: molecule and cluster do not agree on which relative group owns the long chain\n");
+             "\t\t\t Cannot combine this molecule and cluster: their long chains or relative placement groups "
+             "have conflicting ownership\n");
     return false;
 }
 
@@ -249,7 +248,7 @@ t_relative_macro_verdict RelativeMacroPacker::evaluate_molecule(PackMoleculeId m
         if (!cluster_state.group.is_valid()) {
             // An ungrouped cluster adopts the molecule's group if packing succeeds.
             VTR_LOGV(log_verbosity > 3,
-                     "\t\t\t Relative Group: molecule passed relative group check, cluster adopted its group %zu\n",
+                     "\t\t\t Relative group check passed: cluster would adopt group %zu if packing succeeds\n",
                      size_t(molecule_rel_group));
             verdict.cluster_state.group = molecule_rel_group;
         } else if (cluster_state.group != molecule_rel_group) {
@@ -294,7 +293,7 @@ void RelativeMacroPacker::log_locked_site_failure(PackMoleculeId molecule_id,
     const std::string& macro_name = relative_macros_.get_group_macro_name(group);
     const std::string site_path = site->hierarchical_type_name();
 
-    // Look for an atom of the cluster occupying the site.
+    // An occupied site gives a specific conflict to report.
     for (PackMoleculeId cluster_mol_id : cluster.molecules) {
         for (AtomBlockId blk_id : prepacker_.get_molecule(cluster_mol_id).atom_block_ids) {
             if (!blk_id.is_valid())
@@ -302,7 +301,7 @@ void RelativeMacroPacker::log_locked_site_failure(PackMoleculeId molecule_id,
             const t_pb* atom_pb = atom_pb_lookup.atom_pb(blk_id);
             if (atom_pb != nullptr && atom_pb->pb_graph_node == site) {
                 VTR_LOG("\t\tRelative macro '%s' group %zu: atom '%s' is locked to primitive site '%s', which is already "
-                        "occupied by atom '%s'\n",
+                        "occupied by atom '%s'. These atoms cannot share this site in the current cluster.\n",
                         macro_name.c_str(), size_t(group),
                         atom_netlist_.block_name(root_blk_id).c_str(), site_path.c_str(),
                         atom_netlist_.block_name(blk_id).c_str());
@@ -311,9 +310,11 @@ void RelativeMacroPacker::log_locked_site_failure(PackMoleculeId molecule_id,
         }
     }
 
-    VTR_LOG("\t\tRelative macro '%s' group %zu: the molecule rooted at atom '%s' could not be placed on its "
-            "primitive site '%s' in cluster type '%s' (the site is not occupied; it is unavailable in the "
-            "cluster's current modes, or the molecule does not fit or route there)\n",
+    // No occupant was found. The failed attempt does not identify which of
+    // the remaining placement, mode, pin, or routing constraints rejected it.
+    VTR_LOG("\t\tRelative macro '%s' group %zu: cannot pack the molecule rooted at atom '%s' at its required "
+            "primitive site '%s' in block type '%s'. No atom occupies the site; other packing constraints "
+            "prevented this placement.\n",
             macro_name.c_str(), size_t(group),
             atom_netlist_.block_name(root_blk_id).c_str(), site_path.c_str(), cluster.type->name.c_str());
 }
@@ -328,18 +329,21 @@ std::string RelativeMacroPacker::describe_locked_site_failure(PackMoleculeId see
     AtomBlockId root_blk_id = prepacker_.get_molecule_root_atom(seed_molecule_id);
     const UserRelativeGroupId group = molecule_group(seed_molecule_id);
 
-    std::string message = "\tThe atom is locked to primitive site '" + site->hierarchical_type_name()
-                          + "' by relative macro '" + relative_macros_.get_group_macro_name(group)
+    std::string message = "\tPrimitive site '" + site->hierarchical_type_name()
+                          + "' required by relative macro '" + relative_macros_.get_group_macro_name(group)
                           + "' group " + std::to_string(size_t(group))
-                          + ", and no candidate block type could honour it:\n";
+                          + " could not be used to start a cluster. Check this site_path along with the design's "
+                            "other packing constraints.\n"
+                            "\tCandidate block types:\n";
 
-    // The seed's cluster was empty, so the site cannot have been occupied: a
-    // type either lacks the site or could not place the molecule on it.
+    // Each attempt started an empty cluster. Distinguish a missing site from
+    // a failed packing attempt in the type that contains it.
     bool any_does_not_fit = false;
     for (t_logical_block_type_ptr cluster_type : candidate_types) {
         const std::string& type_name = cluster_type->name;
         if (!site_in_cluster_type(site, cluster_type)) {
-            // Find compatible site examples for the fatal error message.
+            // Suggest sites compatible with the root atom. These examples do
+            // not guarantee that the whole molecule can be packed there.
             std::vector<std::string> available_paths;
             for (const t_pb_graph_node& candidate : cluster_type->pb_graph_head->subtree()) {
                 if (available_paths.size() == MAX_REPORTED_SITE_PATHS)
@@ -350,17 +354,16 @@ std::string RelativeMacroPacker::describe_locked_site_failure(PackMoleculeId see
             std::string examples;
             for (const std::string& path : available_paths)
                 examples += " '" + path + "'";
-            message += "\t\t'" + type_name + "': has no such primitive; sites it does offer this atom include"
+            message += "\t\t'" + type_name + "': does not contain the required site. Alternative sites compatible "
+                                             "with the root atom:"
                        + (examples.empty() ? std::string(" none") : examples) + "\n";
         } else {
             any_does_not_fit = true;
-            message += "\t\t'" + type_name + "': the site is free, but the molecule rooted at this atom does not "
-                                             "fit or route there\n";
+            message += "\t\t'" + type_name + "': contains the required site, but packing failed with this constraint\n";
         }
     }
 
-    // A root's site must accommodate the whole pack pattern. List the other
-    // atoms to show why a site compatible with the root alone may still fail.
+    // Show the atoms that must accompany the root when checking alternative sites.
     std::string other_atoms;
     if (any_does_not_fit && seed_mol.pack_pattern != nullptr) {
         for (AtomBlockId blk_id : seed_mol.atom_block_ids) {
@@ -370,26 +373,24 @@ std::string RelativeMacroPacker::describe_locked_site_failure(PackMoleculeId see
         }
     }
     if (!other_atoms.empty()) {
-        message += "\tAtom '" + atom_netlist_.block_name(root_blk_id) + "' roots a '"
-                   + seed_mol.pack_pattern->name + "' molecule, which must also find primitives for:" + other_atoms;
-        message += "\n\tA site for the root only works where the whole molecule fits. If this atom did not root "
-                   "this molecule when the sites were recorded, the netlist has changed; regenerate the macro "
-                   "against it.\n";
+        message += "\tAtom '" + atom_netlist_.block_name(root_blk_id) + "' is the root of a '"
+                   + seed_mol.pack_pattern->name + "' molecule, which must also pack these atoms:" + other_atoms;
+        message += "\n\tThe root's site must allow all of these atoms to pack together. Any alternative sites "
+                   "shown above were checked only for the root atom.\n";
     }
 
     return message;
 }
 
 void RelativeMacroPacker::prioritize_seeds(std::vector<PackMoleculeId>& seeds) const {
-    // Seed relative placement groups first so other clusters cannot take their
-    // molecules before the groups are packed together.
+    // Starting these groups first reduces the risk of their molecules being
+    // absorbed by clusters seeded with unconstrained atoms.
     auto relative_end = std::stable_partition(seeds.begin(), seeds.end(), [&](PackMoleculeId mol_id) {
         return molecule_group(mol_id).is_valid();
     });
 
-    // Within the constrained molecules, put locked seeds first. The seed is
-    // placed before the rest of its group, so an unlocked seed could occupy
-    // a site needed by a locked group member.
+    // The seed is placed before its group members. Use a locked root when
+    // possible so an unlocked seed cannot take a group member's required site.
     std::stable_partition(seeds.begin(), relative_end, [&](PackMoleculeId mol_id) {
         return molecule_locked_site(mol_id) != nullptr;
     });
@@ -402,9 +403,8 @@ std::vector<PackMoleculeId> RelativeMacroPacker::group_molecules_to_pack(UserRel
     VTR_ASSERT(group.is_valid());
     std::vector<PackMoleculeId> order;
 
-    // Collect unclustered group molecules. Molecules in other clusters cannot
-    // be moved here; count them for the split-group log. The end-of-pass check
-    // reports any split as an error.
+    // A molecule may contain several group atoms; collect it only once.
+    // Members already packed elsewhere cannot be moved into this cluster.
     std::unordered_set<PackMoleculeId> seen;
     size_t num_elsewhere = 0;
     AtomBlockId first_elsewhere;
@@ -422,7 +422,8 @@ std::vector<PackMoleculeId> RelativeMacroPacker::group_molecules_to_pack(UserRel
         }
     }
 
-    // Summarize the split once per attempt instead of logging every atom.
+    // A split may be temporary during a packing attempt. Final packing checks
+    // report an error if it persists.
     VTR_LOGV(log_verbosity > 1 && num_elsewhere > 0,
              "\tRelative macro '%s' group %zu is split: %zu of its molecules are already in other clusters "
              "(first: atom '%s' in cluster %zu) while cluster %zu is being seeded with the same group.\n",
@@ -432,11 +433,12 @@ std::vector<PackMoleculeId> RelativeMacroPacker::group_molecules_to_pack(UserRel
              size_t(cluster_legalizer.get_atom_cluster(first_elsewhere)),
              size_t(cluster_id));
 
-    // Reserve locked sites first, preserving constraints-file order. Try larger
-    // unlocked molecules before smaller ones.
+    // Place locked roots before other molecules can occupy their sites.
+    // Stable partition preserves their order from the constraints file.
     auto unlocked_begin = std::stable_partition(order.begin(), order.end(), [&](PackMoleculeId mol_id) {
         return molecule_locked_site(mol_id) != nullptr;
     });
+    // Larger unlocked molecules have fewer placement options as the cluster fills.
     std::stable_sort(unlocked_begin, order.end(), [&](PackMoleculeId lhs, PackMoleculeId rhs) {
         return prepacker_.get_molecule_num_valid_atoms(lhs) > prepacker_.get_molecule_num_valid_atoms(rhs);
     });
@@ -447,8 +449,7 @@ std::vector<PackMoleculeId> RelativeMacroPacker::group_molecules_to_pack(UserRel
 /**
  * @brief Find relative placement groups whose atoms occupy multiple clusters.
  *
- * All atoms in a group must share a cluster so the group can become a single
- * placement macro member.
+ * Unclustered atoms are left to the final clustering verifier.
  */
 static std::vector<UserRelativeGroupId> find_split_relative_groups(const ClusterLegalizer& cluster_legalizer,
                                                                    const UserRelativeMacros& relative_macros) {
@@ -503,14 +504,14 @@ void report_split_relative_groups(const ClusterLegalizer& cluster_legalizer,
         VPR_FATAL_ERROR(VPR_ERROR_PACK,
                         "Failed to pack each relative placement group into a single cluster "
                         "(%zu group(s) split):\n%s"
-                        "The group(s) may be too large to fit into one cluster or may conflict "
-                        "with pack patterns. Consider making the group(s) smaller.\n",
+                        "Each group must fit into one cluster, including its site constraints and pack patterns. "
+                        "Reduce the groups or revise their site_path constraints to allow them to pack together.\n",
                         split_groups.size(),
                         report.c_str());
     } else {
         VTR_LOG_WARN("%zu relative placement group(s) are split across clusters:\n%s"
-                     "This is likely a symptom of the clustering not fitting the device "
-                     "(see the following error).\n",
+                     "Packing also failed to satisfy the device or floorplanning limits; "
+                     "see the following error before revising the relative placement groups.\n",
                      split_groups.size(),
                      report.c_str());
     }

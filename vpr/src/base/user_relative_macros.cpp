@@ -78,7 +78,6 @@ const t_pb_graph_node* UserRelativeMacros::get_atom_locked_site(AtomBlockId blk_
     }
     const t_atom_location& location = itr->second;
     const t_user_relative_group& group = groups_[location.group_id];
-    // nullptr for an atom its group leaves unlocked.
     return group.atom_sites[location.atom_idx];
 }
 

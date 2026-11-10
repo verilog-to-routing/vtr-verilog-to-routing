@@ -283,14 +283,12 @@ LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_
     int encounter_order = 0;
     const t_pack_molecule& molecule = prepacker.get_molecule(molecule_id);
 
-    // A locked molecule has one possible root primitive. Look it up directly
-    // rather than scanning the cluster's primitives.
+    // A site lock restricts the root; the rest of the molecule must still fit
+    // the pack pattern from that root.
     if (force_site_node != nullptr) {
         t_cluster_placement_primitive* placement_primitive = cluster_placement_stats->get_pb_graph_node_placement_primitive(force_site_node);
         VTR_ASSERT(placement_primitive->pb_graph_node == force_site_node);
         t_pb_graph_node* root = placement_primitive->pb_graph_node;
-        // try_place_molecule() checks that the primitive is valid and can
-        // implement the molecule's root.
         cost = try_place_molecule(cluster_placement_stats,
                                   molecule_id,
                                   root,

@@ -1047,15 +1047,10 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     /**
-     * @brief Append an atom, with the site it is locked to, to the relative
-     *        placement group being loaded.
+     * @brief Add a matched atom and its optional site lock to the group being read.
      *
-     * An atom matched by several patterns of the same group is stored once. A
-     * pattern without a site_path has no opinion on the atom's site, so it
-     * neither conflicts with nor clears an earlier lock, and a locked pattern
-     * upgrades an earlier unlocked match. Two different sites for the same atom
-     * are contradictory placement intent, so that is a load error rather than a
-     * silent first-wins.
+     * Repeated matches store the atom once and preserve any site lock. Rejects
+     * incompatible primitives and conflicting locks on the same atom.
      *
      * The feasibility check requires a compressed atom netlist, which VPR
      * guarantees before the constraints file is read.
@@ -1195,7 +1190,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     std::string temp_name_string_;
     std::string temp_macro_string_;
     std::string temp_logical_block_location_string_;
-    std::string temp_site_path_string_;
+    std::string temp_site_path_string_; ///< Keeps the generated site_path alive until the writer consumes it.
 
     /*
      * Temp data for loads and writes.

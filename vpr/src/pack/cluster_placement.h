@@ -193,8 +193,9 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
  *              The prepacker object that provides access to the molecule
  *              corresponding to given molecule id.
  * @param force_site_node
- *              Required primitive for the molecule's root, if specified. Only this
- *              primitive is considered. nullptr allows any compatible primitive.
+ *              Required primitive for the molecule's root, or nullptr to search
+ *              all compatible primitives. Must belong to the current cluster type's
+ *              pb graph. Even with a required root, the whole molecule must fit.
  *
  * @return A LazyPopUniquePriorityQueue containing feasible primitive root
  *         candidates ordered by placement priority. The queue may be empty

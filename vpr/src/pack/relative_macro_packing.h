@@ -1,17 +1,16 @@
 #pragma once
 /**
  * @file
- * @brief Relative placement macro support for the packer.
+ * @brief Packing checks and molecule ordering for user-defined relative
+ *        placement macros.
  *
- * Each group in UserRelativeMacros becomes one placement macro member:
- *  - All atoms in a group must share one cluster.
- *  - Each cluster may contain atoms from at most one group.
- *  - An atom may be locked to a particular primitive site in its cluster.
+ * A relative placement group is a set of atoms that must share one cluster.
+ * Different groups must use different clusters. A site lock requires an atom
+ * to use a specific primitive within its cluster.
  *
- * RelativeMacroPacker validates chain ownership and site constraints at
- * construction, checks additions to clusters, and orders group molecules for
- * the greedy clusterer. ClusterLegalizer creates one when the design has
- * relative macros.
+ * The prepacker combines atoms into molecules, each with a root atom. Packing
+ * chooses a primitive site for the root and uses the molecule's pack pattern
+ * to place its other atoms.
  */
 
 #include <string>
@@ -30,22 +29,23 @@ class ClusterLegalizer;
 struct LegalizationCluster;
 
 /**
- * @brief Relative placement state stored in LegalizationCluster.
+ * @brief Group and long chain ownership recorded for a legalization cluster.
  */
 struct t_cluster_relative_state {
-    UserRelativeGroupId group; ///< Group whose constrained atoms are in this cluster.
+    UserRelativeGroupId group; ///< Group with atoms in this cluster; invalid if none.
 
-    UserRelativeGroupId long_chain_owner; ///< Owner of the long chain; invalid if unconstrained or absent.
+    UserRelativeGroupId long_chain_owner; ///< Group with atoms in the cluster's long chain; invalid if the chain is unconstrained or absent.
 };
 
 /**
- * @brief Check that adding a molecule to a cluster respects long chain ownership.
+ * @brief Check whether adding a molecule would mix incompatible long-chain owners.
  *
- * A long chain spans clusters that move together as one placement macro. If a
- * relative placement group shares a cluster with the chain, their macros are
- * merged. The group must own the chain to avoid conflicting placement offsets.
- * Long chains sharing a cluster must have the same owner. These checks do not
- * apply to chains that fit in one cluster.
+ * A long chain spans multiple clusters. Its owner is the relative placement
+ * group containing its constrained atoms; a chain without constrained atoms
+ * has no owner. If the resulting cluster belongs to group G, any long chain
+ * in it must also be owned by G. Existing and incoming long chains must have
+ * matching owners. These are group checks only; the legalizer separately
+ * prohibits adding a second long-chain molecule to a cluster.
  *
  * @param molecule_is_long_chain    Whether the molecule belongs to a long chain.
  * @param molecule_chain_owner      Group owning the molecule's chain, if any.
@@ -68,52 +68,61 @@ bool long_chain_ownership_allows(bool molecule_is_long_chain,
 bool site_in_cluster_type(const t_pb_graph_node* site, t_logical_block_type_ptr cluster_type);
 
 /**
- * @brief Result of checking whether a molecule can join a cluster.
- *
- * evaluate_molecule() produces this result for the legalizer's compatibility
- * check, pin utilization check, and state update.
+ * @brief Relative placement compatibility and proposed state for a molecule
+ *        being added to a cluster.
  */
 struct t_relative_macro_verdict {
     bool allowed = true; ///< Whether relative placement rules allow the addition.
 
-    t_cluster_relative_state cluster_state; ///< Proposed cluster state; apply only if packing succeeds.
+    t_cluster_relative_state cluster_state; ///< Group and chain owner to record if the addition is allowed and packing succeeds.
 
-    bool molecule_in_cluster_group = false; ///< Group member allowed full pin utilization to help keep the group together.
+    bool molecule_in_cluster_group = false; ///< For an allowed addition, true if this molecule has group constraints; lets it use full pin utilization.
 };
 
 /**
- * @brief Enforces the relative placement macro rules during packing.
+ * @brief Helps the legalizer and greedy clusterer satisfy relative placement
+ *        constraints during packing.
+ *
+ * Each relative placement group must occupy one cluster, distinct from the
+ * clusters of other groups. This class checks group and chain compatibility,
+ * supplies required primitive sites, and prioritizes group molecules so they
+ * can be packed together. Final clustering checks verify the group and site
+ * constraints.
  */
 class RelativeMacroPacker {
   public:
     /**
-     * @brief Initialize packing checks for the given relative macros and netlist.
+     * @brief Validate relative placement constraints against the prepacked
+     *        molecules and record chain ownership.
      *
-     * Records each chain's owning group. Reports a fatal error for molecules or
-     * chains spanning groups, or for non-root site locks with an unlocked root.
+     * Requires at least one macro. Rejects molecules or chains whose atoms
+     * belong to different groups. Also rejects a site lock on a non-root atom
+     * when the molecule's root has no site lock.
      */
     RelativeMacroPacker(const UserRelativeMacros& relative_macros,
                         const Prepacker& prepacker,
                         const AtomNetlist& atom_netlist);
 
     /**
-     * @brief Return the molecule's group, or an invalid group if unconstrained.
+     * @brief Return the group containing the molecule's constrained atoms,
+     *        or an invalid group if it has none.
      *
-     * Prepacking and construction-time validation ensure its constrained atoms
-     * share one group.
+     * Only this molecule's atoms are considered, even when it belongs to a
+     * longer chain.
      */
     UserRelativeGroupId molecule_group(PackMoleculeId molecule_id) const;
 
     /**
-     * @brief Decide whether a molecule may be added to a cluster.
+     * @brief Check whether the molecule's group and chain may share this cluster.
      *
-     * Checks that the cluster contains at most one group and respects long chain
-     * ownership.
+     * The returned cluster_state contains the group and chain owner to record
+     * if packing succeeds. This function does not place the molecule or modify
+     * the cluster.
      *
      *  @param molecule_id             The molecule to add.
      *  @param cluster_state           The cluster's current relative macro state.
      *  @param cluster_has_long_chain  Whether the cluster already holds part of a long chain.
-     *  @param log_verbosity           Packer log verbosity; > 3 logs group changes and conflicts.
+     *  @param log_verbosity           Packer log verbosity; > 3 logs compatibility decisions.
      */
     t_relative_macro_verdict evaluate_molecule(PackMoleculeId molecule_id,
                                                const t_cluster_relative_state& cluster_state,
@@ -124,18 +133,17 @@ class RelativeMacroPacker {
      * @brief Return the primitive site the molecule's root atom is locked to,
      *        or nullptr if it is unlocked.
      *
-     * The legalizer can force only the root's site. The pack pattern determines
-     * where the other atoms in a multi-atom molecule are placed.
+     * The legalizer places the root at this site and uses the pack pattern to
+     * place the remaining atoms. Locks on those atoms are checked after packing.
      */
     const t_pb_graph_node* molecule_locked_site(PackMoleculeId molecule_id) const;
 
     /**
-     * @brief Log why a locked molecule could not be placed on its site in the
-     *        given cluster: the site is occupied, or the molecule does not fit
-     *        or route there.
+     * @brief Log a rejected site-lock attempt, identifying any atom already
+     *        occupying the required site.
      *
-     * During ClusterLegalizer::start_new_cluster(), the cluster has not yet
-     * been stored, so it is passed by reference.
+     * Used for verbose legalizer diagnostics. If the site is unoccupied, reports
+     * a packing failure without claiming a specific cause.
      *
      *  @param molecule_id     The locked molecule that was rejected.
      *  @param cluster         The cluster that rejected it.
@@ -148,8 +156,12 @@ class RelativeMacroPacker {
                                  const t_pb_graph_node* site) const;
 
     /**
-     * @brief Describe, for the error about a locked seed that no candidate
-     *        cluster type could start a cluster with, why each type failed.
+     * @brief Add site-constraint details to the error for a seed that could not
+     *        start a cluster.
+     *
+     * Lists which candidate block types contain the required site and gives
+     * alternative site examples for the root atom. Call after all candidate
+     * types have failed; this method does not identify why packing failed.
      *
      * @return The failure details, or an empty string if the seed is unlocked.
      */
@@ -157,28 +169,27 @@ class RelativeMacroPacker {
                                              const std::vector<t_logical_block_type_ptr>& candidate_types) const;
 
     /**
-     * @brief Move the seeds of relative placement groups to the front, locked
-     *        seeds first, preserving the order otherwise.
+     * @brief Prioritize group molecules as seeds so their groups can be packed
+     *        before other clusters take their atoms.
      *
-     * Groups are seeded before other clusters can take their molecules. A
-     * locked seed goes before unlocked ones so an unlocked seed cannot occupy
-     * a site a locked group member needs.
+     * Molecules with locked roots lead, followed by other group molecules and
+     * then unconstrained molecules. Preserves the input order within each set.
      */
     void prioritize_seeds(std::vector<PackMoleculeId>& seeds) const;
 
     /**
-     * @brief Return the group's unclustered molecules in the order to try
-     *        adding them to the cluster.
+     * @brief Return the group's unclustered molecules to try before ordinary
+     *        cluster candidates.
      *
-     * Locked molecules go first, in constraints-file order, so unlocked
-     * molecules cannot take their sites. Unlocked molecules follow in descending
-     * atom count because larger molecules are harder to place as the cluster fills.
+     * Lists molecules with a required root site first, then all other molecules
+     * in decreasing atom count.
+     * Already clustered molecules are excluded; members in other clusters are
+     * reported in the verbose log because they cannot be moved into this one.
      *
      *  @param group              The relative placement group being packed.
      *  @param cluster_id         The cluster being grown.
      *  @param cluster_legalizer  Used to skip molecules already clustered.
-     *  @param log_verbosity      Packer log verbosity; > 1 reports a group that
-     *                            an earlier cluster already split.
+     *  @param log_verbosity      Packer log verbosity; > 1 reports members in other clusters.
      */
     std::vector<PackMoleculeId> group_molecules_to_pack(UserRelativeGroupId group,
                                                         LegalizationClusterId cluster_id,
@@ -187,28 +198,26 @@ class RelativeMacroPacker {
 
   private:
     /**
-     * @brief Record each chain's owning group: the group of its first constrained atom.
+     * @brief Identify each chain's owning group from its constrained atoms.
+     *        Chains without constrained atoms have no owner.
      */
     void init_chain_owners_();
 
     /**
      * @brief Reject molecules or chains spanning multiple groups with a fatal error.
      *
-     * Prepacking prevents non-chain molecules from spanning groups, so only chains
-     * can fail this check.
-     *
-     * Unconstrained chain atoms may share the group's cluster or extend into nearby
-     * clusters. PlaceMacros merges those clusters with the group's placement macro.
+     * All group-constrained atoms in a molecule must belong to the same group.
+     * For chains, this rule applies across all of their molecules. Atoms without
+     * group constraints do not affect this check.
      */
     void validate_molecule_groups_() const;
 
     /**
-     * @brief Validate site locks on non-root atoms in prepacked molecules.
+     * @brief Check that non-root site locks have a locked molecule root.
      *
-     * A non-root site lock requires a locked root; otherwise packing fails
-     * because the lock cannot be enforced. With a locked root, the pack pattern
-     * determines the other sites. Warn once about these indirect constraints;
-     * verify_clustering() checks that the final sites match.
+     * Rejects a non-root lock with an unlocked root. Otherwise warns that the
+     * pack pattern determines non-root sites; verify_clustering() checks those
+     * sites against the constraints after packing.
      */
     void validate_locked_sites_() const;
 
@@ -218,10 +227,11 @@ class RelativeMacroPacker {
     UserRelativeGroupId chain_owner_(MoleculeChainId chain_id) const;
 
     /**
-     * @brief Check long chain ownership and log any conflict.
+     * @brief Check long chain ownership and record the incoming chain's owner
+     *        in new_state if allowed.
      *
-     * new_state holds the cluster's group after adding the molecule. On success,
-     * if the molecule is part of a long chain, its owner is recorded in new_state.
+     * new_state.group must be the group the cluster would contain after adding
+     * the molecule. Logs conflicts at verbosity > 3.
      */
     bool check_long_chain_ownership_(PackMoleculeId molecule_id,
                                      bool cluster_has_long_chain,
@@ -240,12 +250,9 @@ class RelativeMacroPacker {
 /**
  * @brief Report relative placement groups whose atoms occupy multiple clusters.
  *
- * Call after the final packing pass. All atoms in each group must share a
- * cluster so the group can become a single placement macro member.
- *
- * If packing otherwise succeeded, report split groups with a fatal error.
- * If packing failed, log a warning and let the caller report the packing error.
- * Do nothing if no groups are split.
+ * Call after the final packing pass. A split violates the requirement that
+ * each group occupy one cluster. Raises a packing error if clustering otherwise
+ * succeeded; otherwise warns so the caller can report the primary packing error.
  *
  *  @param cluster_legalizer     The cluster legalizer holding the final packing result.
  *  @param relative_macros       User-defined relative placement macros.

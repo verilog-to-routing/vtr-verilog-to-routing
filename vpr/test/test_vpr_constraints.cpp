@@ -640,8 +640,7 @@ TEST_CASE("UserRelativeMacros", "[vpr]") {
 
     t_user_relative_group ref_group;
     ref_group.atoms = {AtomBlockId(0), AtomBlockId(1)};
-    // No atom of this macro is locked to a site, but there is still one (null)
-    // site per atom
+    // Unlocked atoms still need one nullptr entry each in atom_sites.
     ref_group.atom_sites = {nullptr, nullptr};
     ref_group.offset = t_pl_offset(0, 0, 0, 0);
     macro1_groups.push_back(ref_group);
@@ -702,9 +701,8 @@ TEST_CASE("UserRelativeMacros", "[vpr]") {
     REQUIRE(relative_macros.get_atom_locked_site(AtomBlockId(0)) == nullptr);
     REQUIRE(relative_macros.get_atom_locked_site(AtomBlockId(2)) == nullptr);
 
-    // A third macro pins some of its atoms to primitive sites; atom_sites[i]
-    // is the site of atoms[i], and nullptr leaves that atom free. Only the
-    // pointers are stored, so stand-in nodes are enough here.
+    // Check mixed locked and unlocked atoms. This container stores node pointers
+    // without inspecting the graph, so stand-in nodes are sufficient here.
     t_pb_graph_node site_a;
     t_pb_graph_node site_b;
     std::vector<t_user_relative_group> macro3_groups;
@@ -730,7 +728,7 @@ TEST_CASE("UserRelativeMacros", "[vpr]") {
     REQUIRE(relative_macros.get_group(stored_macro3.groups[0]).atom_sites == std::vector<const t_pb_graph_node*>{&site_a, nullptr});
     REQUIRE(relative_macros.get_group(stored_macro3.groups[1]).atom_sites == std::vector<const t_pb_graph_node*>{&site_b});
 
-    // Adding a macro with sites does not pin the atoms of the earlier macros
+    // Adding site locks does not change the earlier macros' unlocked atoms.
     REQUIRE(relative_macros.get_atom_locked_site(AtomBlockId(0)) == nullptr);
 
     // An atom outside every macro is unlocked

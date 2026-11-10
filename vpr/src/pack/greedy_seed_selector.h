@@ -56,12 +56,8 @@ class GreedySeedSelector {
      *              If there are any RAM groups, RAM seeds are moved to the
      *              front of the seed list so that RAM clusters are formed first.
      *  @param relative_macro_packer
-     *              Empty if the design has no relative placement macros.
-     *              When present, RPM molecules are prioritized over RAM and other seeds
-     *              to ensure each group is packed into one cluster before its molecules
-     *              are taken by other clusters.
-     *              Molecules locked to specific sites are prioritized within each group
-     *              to prevent other molecules from occupying those sites.
+     *              Provides seed priorities for relative placement constraints.
+     *              Empty when the design has no relative placement macros.
      */
     GreedySeedSelector(const AtomNetlist& atom_netlist,
                        const Prepacker& prepacker,
