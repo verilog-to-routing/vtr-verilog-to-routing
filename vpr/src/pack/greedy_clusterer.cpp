@@ -291,14 +291,22 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster_(PackMoleculeId seed_mol
                                                                                        cluster_legalizer,
                                                                                        attraction_groups);
 
-    // Try the seed's group before adding molecules chosen by packing gain.
-    pack_relative_group_into_cluster_(seed_mol_id,
-                                      legalization_cluster_id,
-                                      cluster_legalizer,
-                                      prepacker,
-                                      candidate_selector,
-                                      cluster_gain_stats,
-                                      attraction_groups);
+    // If the seed belongs to a relative placement group, pack the rest of the
+    // group before adding molecules chosen by packing gain.
+    const std::optional<RelativeMacroPacker>& relative_macro_packer = cluster_legalizer.relative_macro_packer();
+    if (relative_macro_packer) {
+        UserRelativeGroupId seed_group = relative_macro_packer->molecule_group(seed_mol_id);
+        if (seed_group.is_valid()) {
+            pack_relative_group_into_cluster_(seed_group,
+                                              *relative_macro_packer,
+                                              legalization_cluster_id,
+                                              cluster_legalizer,
+                                              prepacker,
+                                              candidate_selector,
+                                              cluster_gain_stats,
+                                              attraction_groups);
+        }
+    }
 
     // Select the first candidate molecule to try to add to this cluster.
     PackMoleculeId candidate_mol_id = candidate_selector.get_next_candidate_for_cluster(
@@ -603,21 +611,18 @@ bool GreedyClusterer::try_add_candidate_mol_to_cluster_(PackMoleculeId candidate
     return pack_status == e_block_pack_status::BLK_PASSED;
 }
 
-void GreedyClusterer::pack_relative_group_into_cluster_(PackMoleculeId seed_mol_id,
+void GreedyClusterer::pack_relative_group_into_cluster_(UserRelativeGroupId group,
+                                                        const RelativeMacroPacker& relative_macro_packer,
                                                         LegalizationClusterId legalization_cluster_id,
                                                         ClusterLegalizer& cluster_legalizer,
                                                         const Prepacker& prepacker,
                                                         GreedyCandidateSelector& candidate_selector,
                                                         ClusterGainStats& cluster_gain_stats,
                                                         AttractionInfo& attraction_groups) {
-    const std::optional<RelativeMacroPacker>& relative_macro_packer = cluster_legalizer.relative_macro_packer();
-    if (!relative_macro_packer)
-        return;
-
-    std::vector<PackMoleculeId> group_mols = relative_macro_packer->group_molecules_to_pack(seed_mol_id,
-                                                                                            legalization_cluster_id,
-                                                                                            cluster_legalizer,
-                                                                                            log_verbosity_);
+    std::vector<PackMoleculeId> group_mols = relative_macro_packer.group_molecules_to_pack(group,
+                                                                                           legalization_cluster_id,
+                                                                                           cluster_legalizer,
+                                                                                           log_verbosity_);
     for (PackMoleculeId mol_id : group_mols) {
         e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(mol_id, legalization_cluster_id);
         if (pack_status == e_block_pack_status::BLK_PASSED) {

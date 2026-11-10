@@ -483,20 +483,17 @@ void RelativeMacroPacker::prioritize_seeds(std::vector<PackMoleculeId>& seeds) c
     });
 }
 
-std::vector<PackMoleculeId> RelativeMacroPacker::group_molecules_to_pack(PackMoleculeId seed_molecule_id,
+std::vector<PackMoleculeId> RelativeMacroPacker::group_molecules_to_pack(UserRelativeGroupId group,
                                                                          LegalizationClusterId cluster_id,
                                                                          const ClusterLegalizer& cluster_legalizer,
                                                                          int log_verbosity) const {
+    VTR_ASSERT(group.is_valid());
     std::vector<PackMoleculeId> order;
 
-    const UserRelativeGroupId group = molecule_group(seed_molecule_id);
-    if (!group.is_valid())
-        return order;
-
-    // Collect unclustered group molecules, excluding the seed. Molecules in
-    // other clusters cannot be moved here; count them for the split-group log.
-    // The end-of-pass check reports any split as an error.
-    std::unordered_set<PackMoleculeId> seen = {seed_molecule_id};
+    // Collect unclustered group molecules. Molecules in other clusters cannot
+    // be moved here; count them for the split-group log. The end-of-pass check
+    // reports any split as an error.
+    std::unordered_set<PackMoleculeId> seen;
     size_t num_elsewhere = 0;
     AtomBlockId first_elsewhere;
     for (AtomBlockId blk_id : relative_macros_.get_group(group).atoms) {

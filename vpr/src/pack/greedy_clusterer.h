@@ -26,6 +26,7 @@ struct DeviceContext;
 class GreedyCandidateSelector;
 class PreClusterTimingManager;
 class RamMapper;
+class RelativeMacroPacker;
 class t_pack_high_fanout_thresholds;
 struct t_analysis_opts;
 struct t_clustering_data;
@@ -204,17 +205,18 @@ class GreedyClusterer {
                                            const Prepacker& prepacker);
 
     /**
-     * @brief Try to pack the seed's relative placement group before adding
-     *        other molecules, updating gain statistics for each success.
+     * @brief Try to pack the molecules of the seed's relative placement group
+     *        before adding other molecules, updating gain statistics for each
+     *        success.
      *
      * Rejected molecules remain available to the candidate selector. The
      * end-of-pass check reports any group that could not be packed together.
      *
-     * Does nothing when the seed belongs to no group.
-     *
+     *  @param group               The seed's relative placement group.
      *  @param cluster_gain_stats  The gain stats of the cluster being grown.
      */
-    void pack_relative_group_into_cluster_(PackMoleculeId seed_mol_id,
+    void pack_relative_group_into_cluster_(UserRelativeGroupId group,
+                                           const RelativeMacroPacker& relative_macro_packer,
                                            LegalizationClusterId legalization_cluster_id,
                                            ClusterLegalizer& cluster_legalizer,
                                            const Prepacker& prepacker,

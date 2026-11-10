@@ -195,22 +195,20 @@ class RelativeMacroPacker {
     void prioritize_seeds(std::vector<PackMoleculeId>& seeds) const;
 
     /**
-     * @brief Return unclustered group molecules in the order to try adding them.
+     * @brief Return the group's unclustered molecules in the order to try
+     *        adding them to the cluster.
      *
      * Locked molecules go first, in constraints-file order, so unlocked
      * molecules cannot take their sites. Unlocked molecules follow in descending
      * atom count because larger molecules are harder to place as the cluster fills.
      *
-     *  @param seed_molecule_id   The molecule the cluster was seeded with.
+     *  @param group              The relative placement group being packed.
      *  @param cluster_id         The cluster being grown.
      *  @param cluster_legalizer  Used to skip molecules already clustered.
      *  @param log_verbosity      Packer log verbosity; > 1 reports a group that
      *                            an earlier cluster already split.
-     *
-     *  @return The molecules to offer, or an empty vector if the seed belongs
-     *          to no group.
      */
-    std::vector<PackMoleculeId> group_molecules_to_pack(PackMoleculeId seed_molecule_id,
+    std::vector<PackMoleculeId> group_molecules_to_pack(UserRelativeGroupId group,
                                                         LegalizationClusterId cluster_id,
                                                         const ClusterLegalizer& cluster_legalizer,
                                                         int log_verbosity) const;
