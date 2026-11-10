@@ -58,6 +58,7 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
     const t_conn_cost_params& cost_params,
     const t_bb& net_bounding_box,
     const SpatialRouteTreeLookup& spatial_rt_lookup,
+    const std::vector<bool>& has_3d_switchblocks,
     RouterStats& router_stats,
     const ConnectionParameters& conn_params) {
     router_stats_ = &router_stats;
@@ -65,7 +66,7 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
-    t_bb high_fanout_bb = add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, spatial_rt_lookup, net_bounding_box);
+    t_bb high_fanout_bb = add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, spatial_rt_lookup, net_bounding_box, has_3d_switchblocks);
     heap_.build_heap();
 
     RRNodeId source_node = rt_root.inode;
@@ -461,7 +462,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     RRNodeId target_node,
     const t_conn_cost_params& cost_params,
     const SpatialRouteTreeLookup& spatial_rt_lookup,
-    const t_bb& net_bounding_box) {
+    const t_bb& net_bounding_box,
+    const std::vector<bool>& has_3d_switchblocks) {
     //For high fanout nets we only add those route tree nodes which are spatially close
     //to the sink.
     //
@@ -478,7 +480,6 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     int target_bin_y = grid_to_bin_y(rr_graph_->node_ylow(target_node), spatial_rt_lookup);
 
     short target_layer = rr_graph_->node_layer_low(target_node);
-    const std::vector<bool>& has_3d_switchblocks = g_vpr_ctx.device().has_3d_switchblocks;
 
     int chan_nodes_added = 0;
 

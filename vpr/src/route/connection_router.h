@@ -109,6 +109,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
      * @param cost_params Cost function parameters
      * @param net_bounding_box Keep search confined to this bounding box
      * @param spatial_rt_lookup Route tree spatial lookup
+     * @param has_3d_switchblocks Per-layer flag indicating whether the layer has 3D switch blocks
      * @param router_stats Update router statistics
      * @param conn_params Parameters to guide the routing of the given connection
      * @return A tuple of:
@@ -122,6 +123,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_conn_cost_params& cost_params,
         const t_bb& net_bounding_box,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
+        const std::vector<bool>& has_3d_switchblocks,
         RouterStats& router_stats,
         const ConnectionParameters& conn_params) final;
 
@@ -330,13 +332,15 @@ class ConnectionRouter : public ConnectionRouterInterface {
      * @param cost_params Cost function parameters
      * @param spatial_route_tree_lookup Route tree spatial lookup
      * @param net_bounding_box Do not push to heap if not in bounding box
+     * @param has_3d_switchblocks Per-layer flag indicating whether the layer has 3D switch blocks
      */
     t_bb add_high_fanout_route_tree_to_heap(
         const RouteTreeNode& rt_root,
         RRNodeId target_node,
         const t_conn_cost_params& cost_params,
         const SpatialRouteTreeLookup& spatial_route_tree_lookup,
-        const t_bb& net_bounding_box);
+        const t_bb& net_bounding_box,
+        const std::vector<bool>& has_3d_switchblocks);
 
     /** Device grid */
     const DeviceGrid& grid_;
