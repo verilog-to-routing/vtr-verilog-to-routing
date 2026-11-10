@@ -640,15 +640,15 @@ TEST_CASE("UserRelativeMacros", "[vpr]") {
 
     t_user_relative_group ref_group;
     ref_group.atoms = {AtomBlockId(0), AtomBlockId(1)};
-    // No atom of this macro is locked to a site, but there is still one (empty)
-    // site path per atom
-    ref_group.atom_site_paths = {"", ""};
+    // No atom of this macro is locked to a site, but there is still one (null)
+    // site per atom
+    ref_group.atom_sites = {nullptr, nullptr};
     ref_group.offset = t_pl_offset(0, 0, 0, 0);
     macro1_groups.push_back(ref_group);
 
     t_user_relative_group rel_group;
     rel_group.atoms = {AtomBlockId(2)};
-    rel_group.atom_site_paths = {""};
+    rel_group.atom_sites = {nullptr};
     rel_group.offset = t_pl_offset(1, -2, 0, 0);
     macro1_groups.push_back(rel_group);
 
@@ -676,11 +676,11 @@ TEST_CASE("UserRelativeMacros", "[vpr]") {
     std::vector<t_user_relative_group> macro2_groups;
     t_user_relative_group ref_group2;
     ref_group2.atoms = {AtomBlockId(3)};
-    ref_group2.atom_site_paths = {""};
+    ref_group2.atom_sites = {nullptr};
     macro2_groups.push_back(ref_group2);
     t_user_relative_group rel_group2;
     rel_group2.atoms = {AtomBlockId(4)};
-    rel_group2.atom_site_paths = {""};
+    rel_group2.atom_sites = {nullptr};
     rel_group2.offset = t_pl_offset(0, 3, 0, 0);
     macro2_groups.push_back(rel_group2);
 
@@ -699,42 +699,42 @@ TEST_CASE("UserRelativeMacros", "[vpr]") {
     REQUIRE(relative_macros.get_atom_group(AtomBlockId(2)) == stored_macro.groups[1]);
 
     // Atoms of macros authored without site information are unlocked
-    REQUIRE(relative_macros.get_atom_locked_site_path(AtomBlockId(0)).empty());
-    REQUIRE(relative_macros.get_atom_locked_site_path(AtomBlockId(2)).empty());
+    REQUIRE(relative_macros.get_atom_locked_site(AtomBlockId(0)) == nullptr);
+    REQUIRE(relative_macros.get_atom_locked_site(AtomBlockId(2)) == nullptr);
 
-    // A third macro pins some of its atoms to primitive sites, given as the
-    // hierarchical path of the primitive inside the cluster; atom_site_paths[i]
-    // is the site of atoms[i], and an empty path leaves that atom free
-    const std::string site_a = "clb[0][default]/lab[0][default]/fle[0][n1_lut6]/ble6[0][default]/lut6[0]";
-    const std::string site_b = "clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]";
+    // A third macro pins some of its atoms to primitive sites; atom_sites[i]
+    // is the site of atoms[i], and nullptr leaves that atom free. Only the
+    // pointers are stored, so stand-in nodes are enough here.
+    t_pb_graph_node site_a;
+    t_pb_graph_node site_b;
     std::vector<t_user_relative_group> macro3_groups;
     t_user_relative_group ref_group3;
     ref_group3.atoms = {AtomBlockId(5), AtomBlockId(6)};
-    ref_group3.atom_site_paths = {site_a, ""};
+    ref_group3.atom_sites = {&site_a, nullptr};
     macro3_groups.push_back(ref_group3);
     t_user_relative_group rel_group3;
     rel_group3.atoms = {AtomBlockId(7)};
-    rel_group3.atom_site_paths = {site_b};
+    rel_group3.atom_sites = {&site_b};
     rel_group3.offset = t_pl_offset(0, 1, 0, 0);
     macro3_groups.push_back(rel_group3);
 
     UserRelativeMacroId macro3_id = relative_macros.add_macro("macro3", macro3_groups);
     REQUIRE(relative_macros.get_num_macros() == 3);
 
-    REQUIRE(relative_macros.get_atom_locked_site_path(AtomBlockId(5)) == site_a);
-    REQUIRE(relative_macros.get_atom_locked_site_path(AtomBlockId(6)).empty());
-    REQUIRE(relative_macros.get_atom_locked_site_path(AtomBlockId(7)) == site_b);
+    REQUIRE(relative_macros.get_atom_locked_site(AtomBlockId(5)) == &site_a);
+    REQUIRE(relative_macros.get_atom_locked_site(AtomBlockId(6)) == nullptr);
+    REQUIRE(relative_macros.get_atom_locked_site(AtomBlockId(7)) == &site_b);
 
-    // The site paths are stored on the group, parallel to its atoms
+    // The sites are stored on the group, parallel to its atoms
     const t_user_relative_macro& stored_macro3 = relative_macros.get_macro(macro3_id);
-    REQUIRE(relative_macros.get_group(stored_macro3.groups[0]).atom_site_paths == std::vector<std::string>{site_a, ""});
-    REQUIRE(relative_macros.get_group(stored_macro3.groups[1]).atom_site_paths == std::vector<std::string>{site_b});
+    REQUIRE(relative_macros.get_group(stored_macro3.groups[0]).atom_sites == std::vector<const t_pb_graph_node*>{&site_a, nullptr});
+    REQUIRE(relative_macros.get_group(stored_macro3.groups[1]).atom_sites == std::vector<const t_pb_graph_node*>{&site_b});
 
     // Adding a macro with sites does not pin the atoms of the earlier macros
-    REQUIRE(relative_macros.get_atom_locked_site_path(AtomBlockId(0)).empty());
+    REQUIRE(relative_macros.get_atom_locked_site(AtomBlockId(0)) == nullptr);
 
     // An atom outside every macro is unlocked
-    REQUIRE(relative_macros.get_atom_locked_site_path(AtomBlockId(42)).empty());
+    REQUIRE(relative_macros.get_atom_locked_site(AtomBlockId(42)) == nullptr);
 }
 
 namespace {
@@ -840,7 +840,7 @@ TEST_CASE("RelativeMacroConstraintsLoader", "[vpr]") {
         // lb_3 is matched twice by the same group and stored once
         REQUIRE(m1_g2.atoms == std::vector<AtomBlockId>{lb_3, lb_4});
         // no site_path anywhere: one unlocked entry per atom
-        REQUIRE(m1_g2.atom_site_paths == std::vector<std::string>{"", ""});
+        REQUIRE(m1_g2.atom_sites == std::vector<const t_pb_graph_node*>{nullptr, nullptr});
 
         const t_user_relative_macro& m2 = macros.get_macro(m2_id);
         REQUIRE(m2.name == "m2");
@@ -854,7 +854,7 @@ TEST_CASE("RelativeMacroConstraintsLoader", "[vpr]") {
         REQUIRE(macros.get_atom_group(lb_2) == m1.groups[1]);
         REQUIRE(macros.get_atom_group(lb_3) == m1.groups[2]);
         REQUIRE(macros.get_atom_group(ff_b) == m2.groups[1]);
-        REQUIRE(macros.get_atom_locked_site_path(lb_3).empty());
+        REQUIRE(macros.get_atom_locked_site(lb_3) == nullptr);
     }
 
     SECTION("groups and macros that match no atom are dropped") {

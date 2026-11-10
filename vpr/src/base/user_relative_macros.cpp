@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include "physical_types.h"
 #include "vtr_assert.h"
 
 UserRelativeMacroId UserRelativeMacros::add_macro(const std::string& name, std::vector<t_user_relative_group> groups) {
@@ -12,8 +13,8 @@ UserRelativeMacroId UserRelativeMacros::add_macro(const std::string& name, std::
     macro.name = name;
 
     for (t_user_relative_group& group : groups) {
-        VTR_ASSERT_MSG(group.atom_site_paths.size() == group.atoms.size(),
-                       "A relative placement group must have one atom_site_paths entry per atom (an empty entry for an unlocked atom)");
+        VTR_ASSERT_MSG(group.atom_sites.size() == group.atoms.size(),
+                       "A relative placement group must have one atom_sites entry per atom (nullptr for an unlocked atom)");
         UserRelativeGroupId group_id(groups_.size());
         for (size_t atom_idx = 0; atom_idx < group.atoms.size(); atom_idx++) {
             bool first_time = atom_locations_.emplace(group.atoms[atom_idx], t_atom_location{group_id, atom_idx}).second;
@@ -67,19 +68,18 @@ UserRelativeGroupId UserRelativeMacros::get_atom_group(AtomBlockId blk_id) const
     return itr->second.group_id;
 }
 
-const std::string& UserRelativeMacros::get_atom_locked_site_path(AtomBlockId blk_id) const {
-    static const std::string unlocked;
+const t_pb_graph_node* UserRelativeMacros::get_atom_locked_site(AtomBlockId blk_id) const {
     if (atom_locations_.empty()) {
-        return unlocked;
+        return nullptr;
     }
     auto itr = atom_locations_.find(blk_id);
     if (itr == atom_locations_.end()) {
-        return unlocked;
+        return nullptr;
     }
     const t_atom_location& location = itr->second;
     const t_user_relative_group& group = groups_[location.group_id];
-    // Empty for an atom its group leaves unlocked.
-    return group.atom_site_paths[location.atom_idx];
+    // nullptr for an atom its group leaves unlocked.
+    return group.atom_sites[location.atom_idx];
 }
 
 const std::string& UserRelativeMacros::get_group_macro_name(UserRelativeGroupId group_id) const {
@@ -102,8 +102,8 @@ void print_relative_macros(FILE* fp, const UserRelativeMacros& relative_macros) 
                     group.atoms.size());
             fprintf(fp, "\tIds of atoms in group (with site_path if locked):\n");
             for (size_t iatom = 0; iatom < group.atoms.size(); iatom++) {
-                if (!group.atom_site_paths[iatom].empty()) {
-                    fprintf(fp, "\t#%zu %s\n", size_t(group.atoms[iatom]), group.atom_site_paths[iatom].c_str());
+                if (group.atom_sites[iatom] != nullptr) {
+                    fprintf(fp, "\t#%zu %s\n", size_t(group.atoms[iatom]), group.atom_sites[iatom]->hierarchical_type_name().c_str());
                 } else {
                     fprintf(fp, "\t#%zu\n", size_t(group.atoms[iatom]));
                 }

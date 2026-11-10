@@ -16,6 +16,8 @@
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 
+class t_pb_graph_node;
+
 /// @brief A unique identifier for a user-defined relative placement macro.
 typedef vtr::StrongId<struct user_relative_macro_id_tag> UserRelativeMacroId;
 
@@ -38,11 +40,10 @@ struct t_user_relative_group {
     ///        in the constraints file).
     std::vector<AtomBlockId> atoms;
 
-    /// @brief The primitive site each atom is locked to: atom_site_paths[i] is
-    ///        the site of atoms[i], so there is always one entry per atom. An
-    ///        empty string leaves that atom unlocked, i.e. the packer picks its
-    ///        site.
-    std::vector<std::string> atom_site_paths;
+    /// @brief The primitive site each atom is locked to: atom_sites[i] is the
+    ///        site of atoms[i], so there is always one entry per atom. nullptr
+    ///        leaves that atom unlocked, i.e. the packer picks its site.
+    std::vector<const t_pb_graph_node*> atom_sites;
 
     /// @brief Placement offset of this group's cluster relative to the
     ///        reference group's cluster. (0, 0, 0, 0) for the reference group.
@@ -120,14 +121,11 @@ class UserRelativeMacros {
     UserRelativeGroupId get_atom_group(AtomBlockId blk_id) const;
 
     /**
-     * @brief Return the hierarchical path of the primitive site the given atom
-     *        is locked to by its relative placement group, or an empty string
-     *        if the atom is in no group or its group leaves it unlocked.
-     *
-     * The returned reference points into the stored macro and stays valid as
-     * long as no macro is added.
+     * @brief Return the primitive site the given atom is locked to by its
+     *        relative placement group, or nullptr if the atom is in no group
+     *        or its group leaves it unlocked.
      */
-    const std::string& get_atom_locked_site_path(AtomBlockId blk_id) const;
+    const t_pb_graph_node* get_atom_locked_site(AtomBlockId blk_id) const;
 
     /**
      * @brief Return the name of the macro the given group belongs to.

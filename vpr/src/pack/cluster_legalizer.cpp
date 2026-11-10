@@ -949,8 +949,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         if (rel_verdict.molecule_in_cluster_group) {
             effective_external_pin_util = t_ext_pin_util(1.f, 1.f);
 
-            RelativeMacroPacker::t_locked_site locked_site = relative_macro_packer_->resolve_locked_site(molecule_id, cluster.type);
-            if (locked_site.status == RelativeMacroPacker::e_locked_site::NOT_IN_TYPE) {
+            force_site_node = relative_macro_packer_->molecule_locked_site(molecule_id);
+            if (force_site_node != nullptr && !site_in_cluster_type(force_site_node, cluster.type)) {
                 // Reject this type so GreedyClusterer::start_new_cluster_() can
                 // try one that has the required site.
                 relative_macro_packer_->report_unsatisfiable_locked_site(molecule_id,
@@ -960,7 +960,6 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                                                                          log_verbosity_);
                 return e_block_pack_status::BLK_FAILED_FEASIBLE;
             }
-            force_site_node = locked_site.node;
         }
     }
 

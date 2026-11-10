@@ -485,22 +485,22 @@ static unsigned check_clustering_relative_group_consistency(const AtomNetlist& a
 
             // Check all site constraints, including non-root atoms whose sites
             // are determined by the molecule's pack pattern.
-            const std::string& site_path = relative_macros.get_atom_locked_site_path(atom_blk_id);
-            if (!site_path.empty()) {
+            const t_pb_graph_node* site = relative_macros.get_atom_locked_site(atom_blk_id);
+            if (site != nullptr) {
                 const t_pb* atom_pb = atom_lookup.atom_pb_bimap().atom_pb(atom_blk_id);
                 if (atom_pb == nullptr || atom_pb->pb_graph_node == nullptr) {
                     VTR_LOG_ERROR(
                         "Atom block '%s' of relative macro '%s' group %zu is locked to "
                         "primitive site '%s' but is not mapped to a primitive.\n",
                         atom_nlist.block_name(atom_blk_id).c_str(),
-                        macro.name.c_str(), size_t(group_id), site_path.c_str());
+                        macro.name.c_str(), size_t(group_id), site->hierarchical_type_name().c_str());
                     num_errors++;
-                } else if (atom_pb->pb_graph_node->hierarchical_type_name() != site_path) {
+                } else if (atom_pb->pb_graph_node != site) {
                     VTR_LOG_ERROR(
                         "Atom block '%s' of relative macro '%s' group %zu is locked to "
                         "primitive site '%s', but it was placed on '%s'.\n",
                         atom_nlist.block_name(atom_blk_id).c_str(),
-                        macro.name.c_str(), size_t(group_id), site_path.c_str(),
+                        macro.name.c_str(), size_t(group_id), site->hierarchical_type_name().c_str(),
                         atom_pb->pb_graph_node->hierarchical_type_name().c_str());
                     num_errors++;
                 }

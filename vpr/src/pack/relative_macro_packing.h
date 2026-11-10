@@ -14,9 +14,7 @@
  * relative macros.
  */
 
-#include <map>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "atom_netlist_fwd.h"
@@ -62,6 +60,12 @@ bool long_chain_ownership_allows(bool molecule_is_long_chain,
                                  UserRelativeGroupId cluster_group,
                                  bool cluster_has_long_chain,
                                  UserRelativeGroupId cluster_long_chain_owner);
+
+/**
+ * @brief Return whether a primitive site belongs to the given cluster type's
+ *        pb graph.
+ */
+bool site_in_cluster_type(const t_pb_graph_node* site, t_logical_block_type_ptr cluster_type);
 
 /**
  * @brief Result of checking whether a molecule can join a cluster.
@@ -117,42 +121,13 @@ class RelativeMacroPacker {
                                                int log_verbosity) const;
 
     /**
-     * @brief Result of looking up a molecule's required site in a cluster type.
-     */
-    enum class e_locked_site {
-        NOT_LOCKED,  ///< No site constraint; any compatible primitive is allowed.
-        RESOLVED,    ///< The required site exists; t_locked_site::node points to it.
-        NOT_IN_TYPE, ///< The cluster type does not contain the required site.
-    };
-
-    /**
-     * @brief Site lookup result and the matching primitive, if found.
-     */
-    struct t_locked_site {
-        e_locked_site status = e_locked_site::NOT_LOCKED; ///< Whether a site is required and present in this type.
-
-        const t_pb_graph_node* node = nullptr; ///< Required primitive; non-null only when status is RESOLVED.
-    };
-
-    /**
-     * @brief Find the molecule root's required primitive in the given cluster type.
+     * @brief Return the primitive site the molecule's root atom is locked to,
+     *        or nullptr if it is unlocked.
      *
      * The legalizer can force only the root's site. The pack pattern determines
      * where the other atoms in a multi-atom molecule are placed.
-     *
-     * NOT_LOCKED allows any compatible primitive. NOT_IN_TYPE means the molecule
-     * cannot be placed in this cluster type.
-     *
-     * Builds and caches the primitive-site lookup table on the first request
-     * for each cluster type.
      */
-    t_locked_site resolve_locked_site(PackMoleculeId molecule_id,
-                                      t_logical_block_type_ptr cluster_type);
-
-    /**
-     * @brief Return whether the molecule's root atom is locked to a primitive site.
-     */
-    bool molecule_is_locked_to_site(PackMoleculeId molecule_id) const;
+    const t_pb_graph_node* molecule_locked_site(PackMoleculeId molecule_id) const;
 
     /**
      * @brief Log a locked-site failure and record it if the cluster is empty.
@@ -292,18 +267,6 @@ class RelativeMacroPacker {
                                      t_cluster_relative_state& new_state,
                                      int log_verbosity) const;
 
-    /**
-     * @brief Return the site path the molecule's root atom is locked to, or an
-     *        empty string if it is unlocked.
-     */
-    const std::string& molecule_site_path_(PackMoleculeId molecule_id) const;
-
-    /**
-     * @brief Return a cluster type's cached map from full primitive paths to nodes.
-     *        Build the map on the first request for the type.
-     */
-    const std::unordered_map<std::string, const t_pb_graph_node*>& site_table_(t_logical_block_type_ptr cluster_type);
-
     const UserRelativeMacros& relative_macros_; ///< User-defined relative placement macros.
 
     const Prepacker& prepacker_; ///< Prepacked molecules and chains.
@@ -311,8 +274,6 @@ class RelativeMacroPacker {
     const AtomNetlist& atom_netlist_; ///< Atom netlist being packed.
 
     vtr::vector<MoleculeChainId, UserRelativeGroupId> chain_owners_; ///< Owning group of each chain; invalid if the chain has no constrained atoms.
-
-    std::map<t_logical_block_type_ptr, std::unordered_map<std::string, const t_pb_graph_node*>> site_tables_; ///< Cached primitive paths and nodes for each cluster type.
 
     t_unsatisfiable_locked_site last_unsatisfiable_locked_site_; ///< Site failures for the most recently rejected locked seed.
 };

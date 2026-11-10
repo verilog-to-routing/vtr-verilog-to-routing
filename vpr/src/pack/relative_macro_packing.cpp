@@ -7,7 +7,6 @@
 
 #include <algorithm>
 #include <string>
-#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -126,13 +125,13 @@ void RelativeMacroPacker::validate_locked_sites_() const {
     for (PackMoleculeId mol_id : prepacker_.molecules()) {
         const t_pack_molecule& molecule = prepacker_.get_molecule(mol_id);
         AtomBlockId root_blk_id = prepacker_.get_molecule_root_atom(mol_id);
-        const bool root_is_locked = !relative_macros_.get_atom_locked_site_path(root_blk_id).empty();
+        const bool root_is_locked = relative_macros_.get_atom_locked_site(root_blk_id) != nullptr;
 
         for (AtomBlockId blk_id : molecule.atom_block_ids) {
             if (!blk_id.is_valid() || blk_id == root_blk_id)
                 continue;
-            const std::string& site_path = relative_macros_.get_atom_locked_site_path(blk_id);
-            if (site_path.empty())
+            const t_pb_graph_node* site = relative_macros_.get_atom_locked_site(blk_id);
+            if (site == nullptr)
                 continue;
 
             if (!root_is_locked) {
@@ -148,7 +147,7 @@ void RelativeMacroPacker::validate_locked_sites_() const {
                                 atom_netlist_.block_name(blk_id).c_str(),
                                 relative_macros_.get_group_macro_name(atom_group).c_str(),
                                 size_t(atom_group),
-                                site_path.c_str(),
+                                site->hierarchical_type_name().c_str(),
                                 atom_netlist_.block_name(root_blk_id).c_str());
             }
 
@@ -271,41 +270,18 @@ t_relative_macro_verdict RelativeMacroPacker::evaluate_molecule(PackMoleculeId m
     return verdict;
 }
 
-const std::string& RelativeMacroPacker::molecule_site_path_(PackMoleculeId molecule_id) const {
-    return relative_macros_.get_atom_locked_site_path(prepacker_.get_molecule_root_atom(molecule_id));
+const t_pb_graph_node* RelativeMacroPacker::molecule_locked_site(PackMoleculeId molecule_id) const {
+    return relative_macros_.get_atom_locked_site(prepacker_.get_molecule_root_atom(molecule_id));
 }
 
-bool RelativeMacroPacker::molecule_is_locked_to_site(PackMoleculeId molecule_id) const {
-    return !molecule_site_path_(molecule_id).empty();
-}
-
-const std::unordered_map<std::string, const t_pb_graph_node*>& RelativeMacroPacker::site_table_(t_logical_block_type_ptr cluster_type) {
-    auto table_itr = site_tables_.find(cluster_type);
-    if (table_itr == site_tables_.end()) {
-        // Cache each primitive by its full hierarchical path, using the same
-        // names as the constraints loader.
-        std::unordered_map<std::string, const t_pb_graph_node*> table;
-        for (const t_pb_graph_node& node : cluster_type->pb_graph_head->subtree()) {
-            if (node.is_primitive())
-                table.emplace(node.hierarchical_type_name(), &node);
-        }
-        table_itr = site_tables_.emplace(cluster_type, std::move(table)).first;
-    }
-    return table_itr->second;
-}
-
-RelativeMacroPacker::t_locked_site RelativeMacroPacker::resolve_locked_site(PackMoleculeId molecule_id,
-                                                                            t_logical_block_type_ptr cluster_type) {
-    const std::string& site_path = molecule_site_path_(molecule_id);
-    if (site_path.empty())
-        return {e_locked_site::NOT_LOCKED, nullptr};
-    VTR_ASSERT(cluster_type != nullptr);
-
-    const std::unordered_map<std::string, const t_pb_graph_node*>& table = site_table_(cluster_type);
-    auto node_itr = table.find(site_path);
-    if (node_itr == table.end())
-        return {e_locked_site::NOT_IN_TYPE, nullptr};
-    return {e_locked_site::RESOLVED, node_itr->second};
+bool site_in_cluster_type(const t_pb_graph_node* site, t_logical_block_type_ptr cluster_type) {
+    VTR_ASSERT_SAFE(site != nullptr && cluster_type != nullptr);
+    // Each logical block type has its own pb graph, so the site's root node
+    // identifies its type.
+    const t_pb_graph_node* node = site;
+    while (!node->is_root())
+        node = node->parent_pb_graph_node;
+    return node == cluster_type->pb_graph_head;
 }
 
 void RelativeMacroPacker::report_unsatisfiable_locked_site(PackMoleculeId molecule_id,
@@ -314,8 +290,9 @@ void RelativeMacroPacker::report_unsatisfiable_locked_site(PackMoleculeId molecu
                                                            const t_pb_graph_node* resolved_site,
                                                            int log_verbosity) {
     AtomBlockId root_blk_id = prepacker_.get_molecule_root_atom(molecule_id);
-    const std::string& site_path = molecule_site_path_(molecule_id);
-    VTR_ASSERT(!site_path.empty());
+    const t_pb_graph_node* site = molecule_locked_site(molecule_id);
+    VTR_ASSERT(site != nullptr);
+    const std::string site_path = site->hierarchical_type_name();
     const UserRelativeGroupId group = molecule_group(molecule_id);
     const std::string& macro_name = relative_macros_.get_group_macro_name(group);
 
@@ -479,7 +456,7 @@ void RelativeMacroPacker::prioritize_seeds(std::vector<PackMoleculeId>& seeds) c
     // placed before the rest of its group, so an unlocked seed could occupy
     // a site needed by a locked group member.
     std::stable_partition(seeds.begin(), relative_end, [&](PackMoleculeId mol_id) {
-        return molecule_is_locked_to_site(mol_id);
+        return molecule_locked_site(mol_id) != nullptr;
     });
 }
 
@@ -523,7 +500,7 @@ std::vector<PackMoleculeId> RelativeMacroPacker::group_molecules_to_pack(UserRel
     // Reserve locked sites first, preserving constraints-file order. Try larger
     // unlocked molecules before smaller ones.
     auto unlocked_begin = std::stable_partition(order.begin(), order.end(), [&](PackMoleculeId mol_id) {
-        return molecule_is_locked_to_site(mol_id);
+        return molecule_locked_site(mol_id) != nullptr;
     });
     std::stable_sort(unlocked_begin, order.end(), [&](PackMoleculeId lhs, PackMoleculeId rhs) {
         return prepacker_.get_molecule_num_valid_atoms(lhs) > prepacker_.get_molecule_num_valid_atoms(rhs);
@@ -577,9 +554,9 @@ void report_split_relative_groups(const ClusterLegalizer& cluster_legalizer,
         for (AtomBlockId blk_id : group.atoms) {
             LegalizationClusterId cluster_id = cluster_legalizer.get_atom_cluster(blk_id);
             // Include locked sites to help diagnose why the group was split.
-            const std::string& site_path = relative_macros.get_atom_locked_site_path(blk_id);
+            const t_pb_graph_node* site = relative_macros.get_atom_locked_site(blk_id);
             report += " '" + atom_netlist.block_name(blk_id) + "' ("
-                      + (!site_path.empty() ? "site '" + site_path + "', " : "")
+                      + (site != nullptr ? "site '" + site->hierarchical_type_name() + "', " : "")
                       + (cluster_id.is_valid() ? "cluster " + std::to_string((size_t)cluster_id)
                                                : std::string("unclustered"))
                       + ")";
