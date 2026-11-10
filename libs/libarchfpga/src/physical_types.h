@@ -921,6 +921,10 @@ struct t_logical_block_type {
     /// these edges, so the container must keep element addresses stable.
     std::deque<t_pb_graph_edge> pb_graph_edges;
 
+    /// All pins of the pb graph under pb_graph_head.
+    /// [0..total_pb_pins-1], indexed by pin_count_in_cluster
+    std::vector<t_pb_graph_pin*> pb_graph_pins;
+
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///< List of physical tiles at which one could
@@ -936,6 +940,12 @@ struct t_logical_block_type {
 
     /// Returns true if this logical block type is an IO block
     bool is_io() const;
+
+    /// @brief Returns the pb graph pin with the given pin_count_in_cluster.
+    const t_pb_graph_pin* pb_graph_pin(int pin_index) const {
+        VTR_ASSERT_SAFE(pin_index >= 0 && pin_index < (int)pb_graph_pins.size());
+        return pb_graph_pins[pin_index];
+    }
 
     /**
      * @brief Check if this logical block type contains a bus-based mux (<mux bus="true">).

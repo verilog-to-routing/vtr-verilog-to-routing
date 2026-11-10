@@ -46,7 +46,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster,
                                     int& primitive_num,
-                                    std::deque<t_pb_graph_edge>& pb_graph_edges);
+                                    std::deque<t_pb_graph_edge>& pb_graph_edges,
+                                    std::vector<t_pb_graph_pin*>& pb_graph_pins);
 
 static void alloc_and_load_pb_graph_pin_sinks(t_pb_graph_node* pb_graph_node);
 
@@ -212,8 +213,10 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
                                     load_power_structures,
                                     pin_count_in_cluster,
                                     primitive_num,
-                                    type.pb_graph_edges);
+                                    type.pb_graph_edges,
+                                    type.pb_graph_pins);
             type.pb_graph_head->total_pb_pins = pin_count_in_cluster;
+            VTR_ASSERT((int)type.pb_graph_pins.size() == pin_count_in_cluster);
             load_pin_classes_in_pb_graph_head(type.pb_graph_head);
             if (is_flat) {
                 alloc_and_load_pb_graph_pin_sinks(type.pb_graph_head);
@@ -287,7 +290,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster,
                                     int& primitive_num,
-                                    std::deque<t_pb_graph_edge>& pb_graph_edges) {
+                                    std::deque<t_pb_graph_edge>& pb_graph_edges,
+                                    std::vector<t_pb_graph_pin*>& pb_graph_pins) {
     int i, j, k, i_input, i_output, i_clockport;
 
     pb_graph_node->placement_index = index;
@@ -400,6 +404,13 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     VTR_ASSERT(unassigned_pins.empty());
     pb_graph_node->pin_num_range.high = (pin_count_in_cluster - 1);
 
+    // The node's pins are stored in numbering order, so appending them keeps
+    // the table indexed by pin_count_in_cluster
+    for (t_pb_graph_pin& pin : pb_graph_node->mutable_pins()) {
+        VTR_ASSERT_SAFE(pin.pin_count_in_cluster == (int)pb_graph_pins.size());
+        pb_graph_pins.push_back(&pin);
+    }
+
     /* Power */
     if (load_power_structures) {
         pb_graph_node->pb_node_power = new t_pb_graph_node_power();
@@ -431,7 +442,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                         load_power_structures,
                                         pin_count_in_cluster,
                                         primitive_num,
-                                        pb_graph_edges);
+                                        pb_graph_edges,
+                                        pb_graph_pins);
             }
         }
     }
