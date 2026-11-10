@@ -37,8 +37,8 @@ RelativeMacroPacker::RelativeMacroPacker(const UserRelativeMacros& relative_macr
 }
 
 void RelativeMacroPacker::init_chain_owners_() {
-    // Any constrained atom identifies the chain's owner. Validate agreement
-    // among all constrained atoms after every chain's owner has been recorded.
+    // A chain is owned by the group of its first constrained atom. Chains whose
+    // atoms span several groups are rejected by validate_molecule_groups_().
     for (PackMoleculeId mol_id : prepacker_.molecules()) {
         const t_pack_molecule& molecule = prepacker_.get_molecule(mol_id);
         if (!molecule.chain_id.is_valid() || chain_owners_[molecule.chain_id].is_valid())
