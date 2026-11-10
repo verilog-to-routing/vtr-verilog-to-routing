@@ -33,6 +33,7 @@ RelativeMacroPacker::RelativeMacroPacker(const UserRelativeMacros& relative_macr
     init_chain_owners_();
     validate_molecule_groups_();
     validate_locked_sites_();
+    warn_non_root_locked_sites_();
 }
 
 void RelativeMacroPacker::init_chain_owners_() {
@@ -117,16 +118,14 @@ void RelativeMacroPacker::validate_molecule_groups_() const {
 }
 
 void RelativeMacroPacker::validate_locked_sites_() const {
-    // The root selects the molecule's placement; its pack pattern determines
-    // the remaining sites. Count non-root locks for a single warning below.
-    size_t num_non_root_sites = 0;
-    AtomBlockId first_non_root_site;
-
     for (PackMoleculeId mol_id : prepacker_.molecules()) {
         const t_pack_molecule& molecule = prepacker_.get_molecule(mol_id);
         AtomBlockId root_blk_id = prepacker_.get_molecule_root_atom(mol_id);
-        const bool root_is_locked = relative_macros_.get_atom_locked_site(root_blk_id) != nullptr;
+        if (relative_macros_.get_atom_locked_site(root_blk_id) != nullptr)
+            continue;
 
+        // Without a root lock, the packer cannot use a non-root site constraint
+        // to select the molecule's placement.
         for (AtomBlockId blk_id : molecule.atom_block_ids) {
             if (!blk_id.is_valid() || blk_id == root_blk_id)
                 continue;
@@ -134,21 +133,36 @@ void RelativeMacroPacker::validate_locked_sites_() const {
             if (site == nullptr)
                 continue;
 
-            if (!root_is_locked) {
-                // Without a root lock, the packer cannot use this constraint
-                // to select the molecule's placement.
-                UserRelativeGroupId atom_group = relative_macros_.get_atom_group(blk_id);
-                VPR_FATAL_ERROR(VPR_ERROR_PACK,
-                                "Atom '%s' of relative macro '%s' group %zu is locked to primitive site '%s', but "
-                                "its molecule's root atom '%s' has no site constraint. VPR chooses the molecule's "
-                                "placement through its root. Add a compatible site_path for the root atom, or "
-                                "remove this non-root atom's site_path.\n",
-                                atom_netlist_.block_name(blk_id).c_str(),
-                                relative_macros_.get_group_macro_name(atom_group).c_str(),
-                                size_t(atom_group),
-                                site->hierarchical_type_name().c_str(),
-                                atom_netlist_.block_name(root_blk_id).c_str());
-            }
+            UserRelativeGroupId atom_group = relative_macros_.get_atom_group(blk_id);
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "Atom '%s' of relative macro '%s' group %zu is locked to primitive site '%s', but "
+                            "its molecule's root atom '%s' has no site constraint. VPR chooses the molecule's "
+                            "placement through its root. Add a compatible site_path for the root atom, or "
+                            "remove this non-root atom's site_path.\n",
+                            atom_netlist_.block_name(blk_id).c_str(),
+                            relative_macros_.get_group_macro_name(atom_group).c_str(),
+                            size_t(atom_group),
+                            site->hierarchical_type_name().c_str(),
+                            atom_netlist_.block_name(root_blk_id).c_str());
+        }
+    }
+}
+
+void RelativeMacroPacker::warn_non_root_locked_sites_() const {
+    // The root selects the molecule's placement; its pack pattern determines
+    // the remaining sites. Report all non-root locks in a single warning.
+    size_t num_non_root_sites = 0;
+    AtomBlockId first_non_root_site;
+
+    for (PackMoleculeId mol_id : prepacker_.molecules()) {
+        const t_pack_molecule& molecule = prepacker_.get_molecule(mol_id);
+        AtomBlockId root_blk_id = prepacker_.get_molecule_root_atom(mol_id);
+
+        for (AtomBlockId blk_id : molecule.atom_block_ids) {
+            if (!blk_id.is_valid() || blk_id == root_blk_id)
+                continue;
+            if (relative_macros_.get_atom_locked_site(blk_id) == nullptr)
+                continue;
 
             num_non_root_sites++;
             if (!first_non_root_site.is_valid())

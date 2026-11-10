@@ -213,13 +213,21 @@ class RelativeMacroPacker {
     void validate_molecule_groups_() const;
 
     /**
-     * @brief Check that non-root site locks have a locked molecule root.
+     * @brief Reject site locks on non-root atoms when the molecule root is unlocked.
      *
-     * Rejects a non-root lock with an unlocked root. Otherwise warns that the
-     * pack pattern determines non-root sites; verify_clustering() checks those
-     * sites against the constraints after packing.
+     * The packer places molecules using their roots, so it cannot enforce
+     * a non-root atom's site lock unless the root is also locked.
      */
     void validate_locked_sites_() const;
+
+    /**
+     * @brief Warn once when non-root atoms have site locks.
+     *
+     * The pack pattern determines where non-root atoms are placed.
+     * verify_clustering() checks whether their site locks are satisfied
+     * after packing.
+     */
+    void warn_non_root_locked_sites_() const;
 
     /**
      * @brief Return the chain's owning group, or an invalid group if unconstrained.
