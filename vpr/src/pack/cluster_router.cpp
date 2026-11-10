@@ -141,7 +141,7 @@ ClusterRouter::ClusterRouter(const LbTypeRRGraph& lb_type_graph,
                              ClusterRouterLookahead* lookahead,
                              bool enable_hot_start)
     : lookahead_(lookahead)
-    , target_hops_(nullptr)
+    , sink_hops_(nullptr)
     , hop_cost_(lookahead != nullptr ? MIN_FANOUT_FACTOR * lb_type_graph.min_edge_cost() : 0.0f) {
     lb_type_graph_ = &lb_type_graph;
     lb_type_ = type;
@@ -175,7 +175,7 @@ void ClusterRouter::clean_router_data() {
     intra_lb_nets_.shrink_to_fit();
     saved_lb_nets_.clear();
     saved_lb_nets_.shrink_to_fit();
-    target_hops_ = nullptr;
+    sink_hops_ = nullptr;
 
     is_clean_ = true;
     is_valid_ = false;
@@ -582,7 +582,7 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
                 // which the search adds to the path cost of each node to
                 // order the queue.
                 if (lookahead_ != nullptr) {
-                    target_hops_ = &lookahead_->hops_to(intra_lb_nets_[idx].terminals[itarget]);
+                    sink_hops_ = &lookahead_->hops_to(intra_lb_nets_[idx].terminals[itarget]);
                 }
 
                 expand_rt_(idx);
@@ -1203,13 +1203,13 @@ void ClusterRouter::expand_rt_rec_(const t_lb_trace& rt, LbRRNodeId prev_index, 
     explored_node_tb_[enode.node_index].enqueue_cost = 0;
     explored_node_tb_[enode.node_index].prev_index = prev_index;
 
-    // Queue the node with its cost set to the lower bound on the cost to the target.
-    // A node with no path to the target is left out of the queue.
-    if (target_hops_ == nullptr) {
+    // Queue the node with its cost set to the lower bound on the cost to the sink.
+    // A node with no path to the sink is left out of the queue.
+    if (sink_hops_ == nullptr) {
         enode.cost = 0;
         pq_.push(enode);
     } else {
-        uint8_t hops = (*target_hops_)[enode.node_index];
+        uint8_t hops = (*sink_hops_)[enode.node_index];
         if (hops != ClusterRouterLookahead::UNREACHABLE) {
             enode.cost = hop_cost_ * hops;
             pq_.push(enode);
@@ -1250,10 +1250,10 @@ void ClusterRouter::expand_edges_(int mode,
         enode.prev_index = cur_inode;
         enode.node_index = edge.node_index;
 
-        // Skip nodes with no path to the target.
+        // Skip nodes with no path to the sink.
         float remaining_cost = 0;
-        if (target_hops_ != nullptr) {
-            uint8_t hops = (*target_hops_)[enode.node_index];
+        if (sink_hops_ != nullptr) {
+            uint8_t hops = (*sink_hops_)[enode.node_index];
             if (hops == ClusterRouterLookahead::UNREACHABLE) {
                 continue;
             }

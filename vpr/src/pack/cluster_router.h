@@ -116,7 +116,7 @@ struct t_expansion_node {
     float path_cost;
 
     /// @brief path_cost plus a lower bound on the cost from this node to the
-    ///        target. Orders the priority queue.
+    ///        sink. Orders the priority queue.
     float cost;
 
     t_expansion_node() {
@@ -245,7 +245,7 @@ class ClusterRouter {
         , explore_id_index_(0)
         , lb_type_(nullptr)
         , pres_con_fac_(0.0f)
-        , target_hops_(nullptr)
+        , sink_hops_(nullptr)
         , hop_cost_(0.0f)
         , is_clean_(true)
         , is_valid_(false)
@@ -259,7 +259,7 @@ class ClusterRouter {
      *  @param valid_feedback_pins  Pre-computed set of top-level output pin
      *                              indices with Fc_out > 0; owned by the
      *                              caller and must outlive this router.
-     *  @param lookahead            Hop counts to the targets of this type.
+     *  @param lookahead            Hop counts to the sinks of this type.
      *                              Owned by the caller and must outlive this router.
      *  @param enable_hot_start     When true, each call to try_intra_lb_route
      *                              seeds unchanged nets from the last successful
@@ -417,7 +417,7 @@ class ClusterRouter {
     /**
      * @brief Expand all nodes found in route tree into the priority queue.
      *
-     * Route tree nodes with no path to the current target are left out of the
+     * Route tree nodes with no path to the current sink are left out of the
      * queue when the lookahead is on.
      *
      *  @param inet     The net to expand the route tree for.
@@ -485,7 +485,7 @@ class ClusterRouter {
      * @brief Explore all edges of an expansion node and insert connected nodes
      *        into the priority queue (i.e. connection routing).
      *
-     * Nodes with no path to the current target are skipped when the lookahead
+     * Nodes with no path to the current sink are skipped when the lookahead
      * is on.
      *
      *  @param mode                      The mode the node that is being explored is in.
@@ -564,7 +564,7 @@ class ClusterRouter {
     ///        into the map owned by ClusterLegalizer, valid for packing lifetime.
     const std::unordered_set<int>* valid_feedback_pins_;
 
-    /// @brief Hop counts to the targets of this block type.
+    /// @brief Hop counts to the sinks of this block type.
     ///        Null when the cluster router lookahead option is off.
     ClusterRouterLookahead* lookahead_;
 
@@ -621,12 +621,12 @@ class ClusterRouter {
     /// @brief Priority queue used during path search.
     vtr::priority_queue<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node> pq_;
 
-    /// @brief Hop counts to the target of the current search, from lookahead_.
+    /// @brief Hop counts to the sink of the current search, from lookahead_.
     ///        Stays null when the router has no lookahead.
-    const ClusterRouterLookahead::t_hop_table* target_hops_;
+    const ClusterRouterLookahead::t_hop_table* sink_hops_;
 
     /// @brief Lower bound on the cost of one edge. A node h hops from the
-    ///        target is at least hop_cost_ * h away from it.
+    ///        sink is at least hop_cost_ * h away from it.
     float hop_cost_;
 
     /// @brief Flag that indicates if this object has been cleaned or not.

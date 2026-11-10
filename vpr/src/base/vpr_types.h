@@ -168,11 +168,11 @@ enum class e_cluster_seed {
     BLEND2
 };
 
-/// @brief Estimate of the remaining cost to the target that orders the cluster router search.
+/// @brief Estimate of the remaining cost to the sink that orders the cluster router search.
 enum class e_cluster_router_lookahead {
     /// @brief Order by the cost of the path so far only.
     NONE,
-    /// @brief Add a lower bound from the fewest edges to the target.
+    /// @brief Add a lower bound from the fewest edges to the sink.
     HOPS
 };
 

@@ -112,7 +112,7 @@ struct LegalizationCluster {
      *  @param lb_type_rr_graphs         The RR-graphs for each cluster type.
      *  @param valid_feedback_pins       Pre-computed feedback-pin set for this type;
      *                                   owned by ClusterLegalizer, must outlive this cluster.
-     *  @param lookahead                 Hop counts to the targets of this type, or nullptr;
+     *  @param lookahead                 Hop counts to the sinks of this type, or nullptr.
      *                                   owned by ClusterLegalizer, must outlive this cluster.
      *  @param enable_router_hot_start   Forwarded to ClusterRouter; enables hot-start
      *                                   routing on each try_intra_lb_route call.
@@ -286,7 +286,7 @@ class ClusterLegalizer {
     // initialize state correctly.
     ClusterLegalizer() = delete;
 
-    /*
+    /**
      * @brief Initialize the ClusterLegalizer class.
      *
      * Allocates internal state.
@@ -319,7 +319,7 @@ class ClusterLegalizer {
      *          When true, each call to try_intra_lb_route seeds unchanged nets
      *          from the last successful route before running pathfinder.
      *  @param cluster_router_lookahead
-     *          The estimate of the remaining cost to the target that orders
+     *          The estimate of the remaining cost to the sink that orders
      *          the cluster router search.
      *  @param models
      *  @param logical_block_types
@@ -669,9 +669,9 @@ class ClusterLegalizer {
     ///        Indexed by t_logical_block_type::index.
     std::vector<std::unordered_set<int>> valid_feedback_pins_by_type_;
 
-    /// @brief Per-type hop counts to the targets of the RR graph, used by the
-    ///        cluster router. Empty when --cluster_router_lookahead is none.
-    ///        Indexed by t_logical_block_type::index.
+    /// @brief Per-type hop counts to the sinks of the RR graph, used by the
+    ///        cluster router. Only created when the cluster router lookahead
+    ///        is enabled. Indexed by t_logical_block_type::index.
     std::vector<ClusterRouterLookahead> lookaheads_by_type_;
 
     /// @brief The current legalization strategy of the cluster legalizer.

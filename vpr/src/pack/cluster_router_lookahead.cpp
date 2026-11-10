@@ -12,8 +12,8 @@ ClusterRouterLookahead::ClusterRouterLookahead(const LbTypeRRGraph& lb_type_grap
     hop_table_bytes_ = 0;
 }
 
-const ClusterRouterLookahead::t_hop_table& ClusterRouterLookahead::hops_to(LbRRNodeId target) {
-    auto it = hop_tables_.find(target);
+const ClusterRouterLookahead::t_hop_table& ClusterRouterLookahead::hops_to(LbRRNodeId sink) {
+    auto it = hop_tables_.find(sink);
     if (it != hop_tables_.end()) {
         return it->second;
     }
@@ -24,21 +24,21 @@ const ClusterRouterLookahead::t_hop_table& ClusterRouterLookahead::hops_to(LbRRN
         return zero_hops_;
     }
 
-    // Inserts an empty table for target that build_hop_table_ fills.
-    t_hop_table& hops = hop_tables_[target];
-    build_hop_table_(target, hops);
+    // Inserts an empty table for sink that build_hop_table_ fills.
+    t_hop_table& hops = hop_tables_[sink];
+    build_hop_table_(sink, hops);
     hop_table_bytes_ += bytes_per_hop_table;
     return hops;
 }
 
-void ClusterRouterLookahead::build_hop_table_(LbRRNodeId target, t_hop_table& hops) const {
+void ClusterRouterLookahead::build_hop_table_(LbRRNodeId sink, t_hop_table& hops) const {
     hops.assign(lb_type_graph_.num_nodes(), UNREACHABLE);
-    hops[target] = 0;
+    hops[sink] = 0;
 
-    // Breadth-first search from the target, following edges backwards. Nodes
+    // Breadth-first search from the sink, following edges backwards. Nodes
     // are visited in order of hop count, so the first visit gives the fewest hops.
     std::queue<LbRRNodeId> to_visit;
-    to_visit.push(target);
+    to_visit.push(sink);
     while (!to_visit.empty()) {
         LbRRNodeId inode = to_visit.front();
         to_visit.pop();

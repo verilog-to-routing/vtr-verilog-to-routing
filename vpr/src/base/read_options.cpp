@@ -2673,15 +2673,13 @@ static void add_packing_options(argparse::ArgumentParser& parser, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<e_cluster_router_lookahead, ParseClusterRouterLookahead>(args.cluster_router_lookahead, "--cluster_router_lookahead")
-        .help("Controls the estimate of the remaining cost to the target that\n"
+        .help("Controls the estimate of the remaining cost to the sink that "
               "orders the intra-cluster router search during packing.\n"
-              "\n"
               " * none: Order the search by the cost of the path so far only.\n"
-              " * hops: Add a lower bound computed from the fewest edges between\n"
-              "   each node and the target, and skip nodes with no path to it.\n"
-              "\n"
-              "The estimate never exceeds the real cost, so the router still finds\n"
-              "a lowest cost path. Which of several equal cost paths it finds first\n"
+              " * hops: Add a lower bound computed from the fewest edges between "
+              "each node and the sink, and skip nodes with no path to it.\n"
+              "The estimate never exceeds the real cost, so the router still finds "
+              "a lowest cost path. Which of several equal cost paths it finds first "
               "can change, so circuit quality metrics may vary slightly.\n")
         .default_value("none")
         .show_in(argparse::ShowIn::HELP_ONLY);

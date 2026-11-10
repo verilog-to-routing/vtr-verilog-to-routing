@@ -1007,10 +1007,10 @@ For people not working on CAD, you can probably leave all the options to their d
 
 .. option:: --cluster_router_lookahead {none | hops}
 
-    Controls the estimate of the remaining cost to the target that orders the intra-cluster router search during packing.
+    Controls the estimate of the remaining cost to the sink that orders the intra-cluster router search during packing.
 
     * ``none``: The search is ordered by the cost of the path so far only.
-    * ``hops``: A lower bound computed from the fewest edges between each node and the target is added to the path cost, and nodes with no path to the target are skipped.
+    * ``hops``: A lower bound computed from the fewest edges between each node and the sink is added to the path cost, and nodes with no path to the sink are skipped.
 
     The estimate never exceeds the real cost, so the router still finds a lowest cost path.
     Which of several equal cost paths it finds first can change, so circuit quality metrics may vary slightly.
