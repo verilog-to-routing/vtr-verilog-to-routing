@@ -57,7 +57,8 @@ struct t_compressed_block_grid {
         auto itr_x = std::ranges::lower_bound(compressed_to_grid_x[layer_num], grid_loc.x);
         auto itr_y = std::ranges::lower_bound(compressed_to_grid_y[layer_num], grid_loc.y);
 
-        if (*itr_x != grid_loc.x || *itr_y != grid_loc.y) {
+        if (itr_x == compressed_to_grid_x[layer_num].end() || *itr_x != grid_loc.x
+            || itr_y == compressed_to_grid_y[layer_num].end() || *itr_y != grid_loc.y) {
             // grid_loc is not compatible with the type of the compressed grid, returning undefined.
             return t_physical_tile_loc{ARCH_FPGA_UNDEFINED_VAL, ARCH_FPGA_UNDEFINED_VAL, ARCH_FPGA_UNDEFINED_VAL};
         }
