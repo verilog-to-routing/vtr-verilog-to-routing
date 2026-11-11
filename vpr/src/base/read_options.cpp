@@ -2681,7 +2681,7 @@ static void add_packing_options(argparse::ArgumentParser& parser, t_options& arg
               "The estimate never exceeds the real cost, so the router still finds "
               "a lowest cost path. Which of several equal cost paths it finds first "
               "can change, so circuit quality metrics may vary slightly.\n")
-        .default_value("none")
+        .default_value("hops")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")

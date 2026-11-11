@@ -1015,7 +1015,7 @@ For people not working on CAD, you can probably leave all the options to their d
     The estimate never exceeds the real cost, so the router still finds a lowest cost path.
     Which of several equal cost paths it finds first can change, so circuit quality metrics may vary slightly.
 
-    **Default:** ``none``
+    **Default:** ``hops``
 
 .. option:: --pack_verbosity <int>
 
