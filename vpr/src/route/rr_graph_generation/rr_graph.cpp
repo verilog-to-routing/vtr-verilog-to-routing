@@ -13,6 +13,7 @@
 #include "physical_types_util.h"
 #include "rr_graph_fwd.h"
 #include "rr_graph_view.h"
+#include "rr_node_types.h"
 #include "rr_rc_data.h"
 #include "switchblock_types.h"
 #include "vpr_context.h"
@@ -314,6 +315,16 @@ static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_c
                                                          const RRGraphView& rr_graph);
 
 /**
+ * @brief Finds which layers have 3D switch blocks, i.e. CHANX/CHANY wires that fan out to a CHANZ wire.
+ *
+ * @param grid     Device grid, used to get the number of layers.
+ * @param rr_graph Input RR graph to be analyzed.
+ * @return Whether each layer has 3D switch blocks [0..number_of_layers-1].
+ */
+static std::vector<bool> init_has_3d_switchblocks(const DeviceGrid& grid,
+                                                  const RRGraphView& rr_graph);
+
+/**
  * @brief Calculates the routing channel width at each grid location.
  *
  * Iterates through all RR nodes and counts how many wires pass through each (layer, x, y) location
@@ -491,6 +502,8 @@ void create_rr_graph(e_graph_type graph_type,
                            is_flat);
 
     alloc_and_init_channel_width();
+
+    mutable_device_ctx.has_3d_switchblocks = init_has_3d_switchblocks(grid, device_ctx.rr_graph);
 
     print_rr_graph_stats();
 
@@ -1138,6 +1151,38 @@ static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_c
     }
 }
 
+static std::vector<bool> init_has_3d_switchblocks(const DeviceGrid& grid,
+                                                  const RRGraphView& rr_graph) {
+    const size_t num_layers = grid.get_num_layers();
+    std::vector<bool> has_3d_switchblocks(num_layers, false);
+
+    // A single layer device has no CHANZ wires; nothing to search for.
+    if (num_layers == 1) {
+        return has_3d_switchblocks;
+    }
+
+    for (RRNodeId node : rr_graph.nodes()) {
+        e_rr_type node_type = rr_graph.node_type(node);
+        if (!is_chanxy(node_type)) {
+            continue;
+        }
+
+        int layer = rr_graph.node_layer_low(node);
+        if (has_3d_switchblocks[layer]) {
+            continue;
+        }
+
+        for (t_edge_size iedge : rr_graph.edges(node)) {
+            if (rr_graph.node_type(rr_graph.edge_sink_node(node, iedge)) == e_rr_type::CHANZ) {
+                has_3d_switchblocks[layer] = true;
+                break;
+            }
+        }
+    }
+
+    return has_3d_switchblocks;
+}
+
 static void alloc_and_init_channel_width() {
     DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
     const DeviceGrid& grid = mutable_device_ctx.grid;
@@ -1706,6 +1751,8 @@ void free_rr_graph() {
     device_ctx.switch_fanin_remap.clear();
 
     device_ctx.rr_graph_is_flat = false;
+
+    device_ctx.has_3d_switchblocks.clear();
 
     device_ctx.rr_bus_muxes.clear();
     device_ctx.rr_bus_mux_out_nodes.clear();
