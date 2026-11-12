@@ -1,0 +1,65 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/TODAES_KOIOS
+# Path to directory of architectures to use
+archs_dir=arch/Hecate_TODAES/hecate_25D
+# Add architectures to list to sweep
+arch_list_add=hecate_25d_L10_int_10um_bump_unidir_fanin_64.xml
+arch_list_add=hecate_25d_L12_int_10um_bump_unidir_fanin_64.xml
+arch_list_add=hecate_25d_L14_int_10um_bump_unidir_fanin_64.xml
+arch_list_add=hecate_25d_L16_int_10um_bump_unidir_fanin_64.xml
+arch_list_add=hecate_25d_L18_int_10um_bump_unidir_fanin_64.xml
+arch_list_add=hecate_25d_L20_int_10um_bump_unidir_fanin_64.xml
+arch_list_add=hecate_25d_L22_int_10um_bump_unidir_fanin_64.xml
+arch_list_add=hecate_25d_L24_int_10um_bump_unidir_fanin_64.xml
+arch_list_add=hecate_25d_L26_int_10um_bump_unidir_fanin_64.xml
+arch_list_add=hecate_25d_L28_int_10um_bump_unidir_fanin_64.xml
+arch_list_add=hecate_25d_L30_int_10um_bump_unidir_fanin_64.xml
+arch_list_add=hecate_25d_L32_int_10um_bump_unidir_fanin_64.xml
+arch_list_add=hecate_25d_L34_int_10um_bump_unidir_fanin_64.xml
+
+
+# Add circuits to list to sweep
+circuit_list_add=attention_layer.v
+circuit_list_add=bnn.v
+circuit_list_add=bwave_like.fixed.large.v
+circuit_list_add=clstm_like.large.v
+circuit_list_add=clstm_like.medium.v
+circuit_list_add=clstm_like.small.v
+circuit_list_add=conv_layer_hls.v
+circuit_list_add=dla_like.large.v
+circuit_list_add=dla_like.medium.v
+circuit_list_add=dla_like.small.v
+circuit_list_add=dnnweaver.v
+circuit_list_add=gemm_layer.v
+circuit_list_add=lstm.v
+circuit_list_add=proxy.5.v
+circuit_list_add=proxy.7.v
+circuit_list_add=tdarknet_like.large.v
+circuit_list_add=tdarknet_like.small.v
+circuit_list_add=tpu_like.large.os.v
+circuit_list_add=tpu_like.large.ws.v
+
+circuit_constraint_list_add=(tpu_like.large.os.v, device_width=191)
+circuit_constraint_list_add=(tpu_like.large.ws.v, device_width=186)
+circuit_constraint_list_add=(bwave_like.fixed.large.v, device_width=115)
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+#Script parameters
+script_params_common=-max_router_iterations 400 --place_interposer_net_cost_type interposer_wire_aware_crossing_bb --route_chan_width 320 --place_checkpointing off --pack --place --route --analysis --verify_file_digests off --router_lookahead separable --place_delay_model separable --astar_fac 0.9
+
+script_params_list_add=--seed 1
+script_params_list_add=--seed 2
+script_params_list_add=--seed 3
