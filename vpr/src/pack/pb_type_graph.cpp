@@ -203,6 +203,7 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
             type.pb_graph_head = new t_pb_graph_node();
             int pin_count_in_cluster = 0;
             int primitive_num = 0;
+            std::vector<t_pb_graph_pin*> pb_graph_pins;
             alloc_and_load_pb_graph(type.pb_graph_head,
                                     /*parent_pb_graph_node=*/nullptr,
                                     type.pb_type,
@@ -211,9 +212,10 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
                                     pin_count_in_cluster,
                                     primitive_num,
                                     type.pb_graph_edges,
-                                    type.pb_graph_pins);
+                                    pb_graph_pins);
             type.pb_graph_head->total_pb_pins = pin_count_in_cluster;
-            VTR_ASSERT((int)type.pb_graph_pins.size() == pin_count_in_cluster);
+            VTR_ASSERT((int)pb_graph_pins.size() == pin_count_in_cluster);
+            type.set_pb_graph_pins(std::move(pb_graph_pins));
             load_pin_classes_in_pb_graph_head(type.pb_graph_head);
             if (is_flat) {
                 alloc_and_load_pb_graph_pin_sinks(type.pb_graph_head);

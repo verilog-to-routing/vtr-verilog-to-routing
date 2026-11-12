@@ -212,7 +212,7 @@ static int get_logical_block_physical_pin_num_offset(t_physical_tile_type_ptr ph
     for (t_logical_block_type_ptr eq_site : curr_sub_tile->equivalent_sites) {
         if (eq_site == curr_logical_block)
             break;
-        offset += (int)eq_site->pb_graph_pins.size();
+        offset += (int)eq_site->pb_graph_pins().size();
     }
     return offset;
 }

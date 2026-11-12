@@ -961,7 +961,7 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
                 sub_tile.pb_pin_physical_nums[sub_tile_inst].resize(device_ctx.logical_block_types.size());
                 for (t_logical_block_type_ptr logic_block_ptr : sub_tile.equivalent_sites) {
                     int num_classes = (int)logic_block_ptr->primitive_logical_class_inf.size();
-                    int num_pins = (int)logic_block_ptr->pb_graph_pins.size();
+                    int num_pins = (int)logic_block_ptr->pb_graph_pins().size();
                     int logical_block_idx = logic_block_ptr->index;
                     t_logical_block_type* mutable_logical_block = &device_ctx.logical_block_types[logical_block_idx];
                     VTR_ASSERT(mutable_logical_block == logic_block_ptr);
@@ -1024,7 +1024,8 @@ static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type) {
                 auto find_res = direct_map.find(sub_tile_physical_pin);
                 VTR_ASSERT(find_res != direct_map.inverse_end());
                 t_logical_pin logical_pin = find_res->second;
-                t_pb_graph_pin* pb_pin = eq_site->pb_graph_pins.at(logical_pin.pin);
+                VTR_ASSERT(logical_pin.pin >= 0 && logical_pin.pin < (int)eq_site->pb_graph_pins().size());
+                t_pb_graph_pin* pb_pin = eq_site->pb_graph_pins()[logical_pin.pin];
 
                 auto map_find_res = physical_type->on_tile_pin_num_to_pb_pin.find(physical_pin_num);
                 if (map_find_res == physical_type->on_tile_pin_num_to_pb_pin.end()) {
@@ -1041,7 +1042,7 @@ static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type) {
 static void add_logical_pin_to_physical_tile(int physical_pin_offset,
                                              t_logical_block_type_ptr logical_block_ptr,
                                              t_physical_tile_type* physical_type) {
-    for (t_pb_graph_pin* pb_pin : logical_block_ptr->pb_graph_pins) {
+    for (t_pb_graph_pin* pb_pin : logical_block_ptr->pb_graph_pins()) {
         int pin_logical_num = pb_pin->pin_count_in_cluster;
         int pin_physical_num = pin_logical_num + physical_pin_offset;
         physical_type->pin_num_to_pb_pin.insert({pin_physical_num, pb_pin});
@@ -1055,9 +1056,9 @@ static void load_pb_pin_physical_nums(const t_physical_tile_type& physical_type,
                                       t_logical_block_type_ptr logical_block,
                                       int physical_pin_offset) {
     std::vector<int>& pin_physical_nums = sub_tile.pb_pin_physical_nums[sub_tile_inst][logical_block->index];
-    pin_physical_nums.resize(logical_block->pb_graph_pins.size());
+    pin_physical_nums.resize(logical_block->pb_graph_pins().size());
     // The logical number of a pin is its pin_count_in_cluster
-    for (const t_pb_graph_pin* pb_pin : logical_block->pb_graph_pins) {
+    for (const t_pb_graph_pin* pb_pin : logical_block->pb_graph_pins()) {
         int pin_count_in_cluster = pb_pin->pin_count_in_cluster;
         VTR_ASSERT(pin_count_in_cluster < (int)pin_physical_nums.size());
         if (pb_pin->is_root_block_pin()) {
