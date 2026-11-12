@@ -133,16 +133,16 @@ static void read_intra_cluster_router_lookahead(std::vector<util::t_ipin_primiti
 static void write_intra_cluster_router_lookahead(const std::string& file,
                                                  const std::vector<util::t_ipin_primitive_sink_delays>& intra_tile_pin_primitive_pin_delay);
 
-///@brief Sets the lookahead cost map entries from the smallest-delay cost entries in routing_cost_map.
+/// @brief Sets the lookahead cost map entries from the smallest-delay cost entries in routing_cost_map.
 static void set_lookahead_map_costs(unsigned from_layer_num,
                                     int segment_index,
                                     e_rr_type chan_type,
                                     util::t_routing_cost_map& routing_cost_map);
 
-/* fills in missing lookahead map entries by copying the cost of the closest valid entry */
+/// @brief Fills in missing lookahead map entries by copying the cost of the closest valid entry
 static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_type);
 
-/* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
+/// @brief Returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0))
 static util::Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, int to_layer_num, int segment_index, int chan_index);
 
 /**

@@ -28,8 +28,8 @@
 #include <tbb/parallel_for_each.h>
 #endif
 
-/* We're profiling routing cost over many tracks for each wire type, so we'll
- * have many cost entries at each |dx|,|dy| offset. We keep the smallest one. */
+// We're profiling routing cost over many tracks for each wire type, so we'll
+// have many cost entries at each |dx|,|dy| offset. We keep the smallest one.
 
 #define CONNECTION_BOX_LOOKAHEAD_MAP_PRINT_COST_MAPS
 
@@ -52,12 +52,12 @@ static constexpr int MIN_PATH_COUNT = 1000;
 namespace {
 
 /// @brief Priority queue entry that only calculates and stores the delay.
-class PQ_Entry_Delay {
+class PQEntryDelay {
   public:
     RRNodeId rr_node; ///<The RR node this entry represents
     float delay_cost; ///<The delay of the path to get to this node
 
-    PQ_Entry_Delay(RRNodeId set_rr_node, int switch_ind, const PQ_Entry_Delay* parent);
+    PQEntryDelay(RRNodeId set_rr_node, int switch_ind, const PQEntryDelay* parent);
 
     float cost() const {
         return delay_cost;
@@ -67,18 +67,18 @@ class PQ_Entry_Delay {
         delay_cost += amount;
     }
 
-    bool operator>(const PQ_Entry_Delay& obj) const {
+    bool operator>(const PQEntryDelay& obj) const {
         return delay_cost > obj.delay_cost;
     }
 };
 
 /// @brief Priority queue entry that only calculates and stores the base cost.
-class PQ_Entry_Base_Cost {
+class PQEntryBaseCost {
   public:
     RRNodeId rr_node; ///<The RR node this entry represents
     float base_cost;  ///<The base cost of the path to get to this node
 
-    PQ_Entry_Base_Cost(RRNodeId set_rr_node, int switch_ind, const PQ_Entry_Base_Cost* parent);
+    PQEntryBaseCost(RRNodeId set_rr_node, int switch_ind, const PQEntryBaseCost* parent);
 
     float cost() const {
         return base_cost;
@@ -88,27 +88,26 @@ class PQ_Entry_Base_Cost {
         // do nothing
     }
 
-    bool operator>(const PQ_Entry_Base_Cost& obj) const {
+    bool operator>(const PQEntryBaseCost& obj) const {
         return base_cost > obj.base_cost;
     }
 };
 
 /// @brief Best path found so far to a node during the Dijkstra expansion.
-struct Search_Path {
+struct t_search_path {
     float cost;    ///<Cost of the path to this node
     size_t parent; ///<Previous node on the path
     int edge;      ///<Edge index (from parent) used to reach this node
 };
 
-PQ_Entry_Delay::PQ_Entry_Delay(
+PQEntryDelay::PQEntryDelay(
     RRNodeId set_rr_node,
     int switch_ind,
-    const PQ_Entry_Delay* parent) {
+    const PQEntryDelay* parent) {
     this->rr_node = set_rr_node;
 
     if (parent != nullptr) {
-        auto& device_ctx = g_vpr_ctx.device();
-        const auto& rr_graph = device_ctx.rr_graph;
+        const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
         float Tsw = rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).Tdel_max;
         float Rsw = rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).R;
         float Cnode = rr_graph.node_C(set_rr_node);
@@ -117,7 +116,7 @@ PQ_Entry_Delay::PQ_Entry_Delay(
         float T_linear = 0.f;
         if (rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).buffered()) {
             T_linear = Tsw + Rsw * Cnode + 0.5 * Rnode * Cnode;
-        } else { /* Pass transistor */
+        } else { // Pass transistor
             T_linear = Tsw + 0.5 * Rsw * Cnode;
         }
 
@@ -128,15 +127,14 @@ PQ_Entry_Delay::PQ_Entry_Delay(
     }
 }
 
-PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
+PQEntryBaseCost::PQEntryBaseCost(
     RRNodeId set_rr_node,
     int switch_ind,
-    const PQ_Entry_Base_Cost* parent) {
+    const PQEntryBaseCost* parent) {
     this->rr_node = set_rr_node;
 
     if (parent != nullptr) {
-        auto& device_ctx = g_vpr_ctx.device();
-        const auto& rr_graph = device_ctx.rr_graph;
+        const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
         if (rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).configurable()) {
             this->base_cost = parent->base_cost + get_single_rr_cong_base_cost(set_rr_node);
         } else {
@@ -151,31 +149,31 @@ PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
 template<typename Entry>
 void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
                                 const Entry& parent_entry,
-                                std::vector<Search_Path>* paths,
-                                std::vector<bool>* node_expanded,
+                                std::vector<t_search_path>& paths,
+                                const std::vector<bool>& node_expanded,
                                 std::priority_queue<Entry,
                                                     std::vector<Entry>,
-                                                    std::greater<Entry>>* pq) {
+                                                    std::greater<Entry>>& pq) {
     RRNodeId parent = parent_entry.rr_node;
 
     for (int iedge = 0; iedge < rr_graph.num_edges(parent); iedge++) {
         int child_node_ind = size_t(rr_graph.edge_sink_node(RRNodeId(parent), iedge));
         int switch_ind = rr_graph.edge_switch(parent, iedge);
 
-        /* skip this child if it has already been expanded from */
-        if ((*node_expanded)[child_node_ind]) {
+        // skip this child if it has already been expanded from
+        if (node_expanded[child_node_ind]) {
             continue;
         }
 
         Entry child_entry(RRNodeId(child_node_ind), switch_ind, &parent_entry);
         VTR_ASSERT(child_entry.cost() >= 0);
 
-        /* Create (if it doesn't exist) or update (if the new cost is lower)
-         * to specified node */
-        Search_Path path_entry = {child_entry.cost(), size_t(parent), iedge};
-        auto& path = (*paths)[child_node_ind];
+        // Create (if it doesn't exist) or update (if the new cost is lower)
+        // to specified node
+        t_search_path path_entry = {child_entry.cost(), size_t(parent), iedge};
+        t_search_path& path = paths[child_node_ind];
         if (path_entry.cost < path.cost) {
-            pq->push(child_entry);
+            pq.push(child_entry);
             path = path_entry;
         }
     }
@@ -400,20 +398,24 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     return std::make_pair(expected_delay_cost, expected_cong_cost);
 }
 
-// Adds a best cost routing path from start_node_ind to node_ind to routing costs
-//
-// This routine performs a backtrace from a destination node to the starting node of each path found during the dijkstra expansion.
-//
-// The Routing Costs table is updated for every partial path found between the destination and start nodes, only if the cost to reach
-// the intermediate node is lower than the one already stored in the Routing Costs table.
+/**
+ * @brief Adds the best cost routing path from start_node to current.rr_node to routing_costs
+ *
+ * This routine performs a backtrace from a destination node to the starting node of each path found during the dijkstra expansion.
+ *
+ * The routing costs table is updated for every partial path found between the destination and start nodes, only if the cost to reach
+ * the intermediate node is lower than the one already stored in the routing costs table.
+ *
+ * @return Whether a new or cheaper sample was added to routing_costs
+ */
 template<typename Entry>
 static bool add_paths(RRNodeId start_node,
                       Entry current,
-                      const std::vector<Search_Path>& paths,
+                      const std::vector<t_search_path>& paths,
                       const util::t_chan_ipins_delays& chan_ipins_delays,
-                      RoutingCosts* routing_costs) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& rr_graph = device_ctx.rr_graph;
+                      t_routing_costs& routing_costs) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     RRNodeId node = current.rr_node;
 
@@ -455,7 +457,7 @@ static bool add_paths(RRNodeId start_node,
 
         vtr::Point<int> delta(delta_x, delta_y);
 
-        RoutingCostKey key = {
+        t_routing_cost_key key = {
             seg_index,
             delta};
 
@@ -475,7 +477,7 @@ static bool add_paths(RRNodeId start_node,
         // The unique key is composed by:
         //      - segment_id
         //      - delta_x/y
-        auto result = routing_costs->insert(std::make_pair(key, cost));
+        auto result = routing_costs.insert(std::make_pair(key, cost));
         if (!result.second) {
             if (cost < result.first->second) {
                 result.first->second = cost;
@@ -495,63 +497,64 @@ static bool add_paths(RRNodeId start_node,
     return new_sample_found;
 }
 
-/* Runs Dijkstra's algorithm from specified node until all nodes have been
- * visited. Each time a pin is visited, the delay/congestion information
- * to that pin is stored to an entry in the routing_cost_map.
+/**
+ * @brief Runs Dijkstra's algorithm from the specified node until all nodes have been visited.
  *
- * Returns the maximum (last) minimum cost path stored, and
- * the number of paths from start_node stored. */
+ * Each time an IPIN is visited, the paths to it are added to routing_costs (see add_paths()).
+ * node_expanded and paths are scratch vectors sized to the RR graph; they are reset on entry.
+ *
+ * @return The maximum (last) minimum cost path stored, and the number of paths from start_node stored.
+ */
 template<typename Entry>
 static std::pair<float, int> run_dijkstra(RRNodeId start_node,
-                                          std::vector<bool>* node_expanded,
-                                          std::vector<Search_Path>* paths,
+                                          std::vector<bool>& node_expanded,
+                                          std::vector<t_search_path>& paths,
                                           const util::t_chan_ipins_delays& chan_ipins_delays,
-                                          RoutingCosts* routing_costs) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+                                          t_routing_costs& routing_costs) {
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
     int path_count = 0;
 
-    /* a list of boolean flags (one for each rr node) to figure out if a
-     * certain node has already been expanded */
-    std::fill(node_expanded->begin(), node_expanded->end(), false);
-    /* For each node keep a list of the cost with which that node has been
-     * visited (used to determine whether to push a candidate node onto the
-     * expansion queue.
-     * Also store the parent node so we can reconstruct a specific path. */
-    std::fill(paths->begin(), paths->end(), Search_Path{std::numeric_limits<float>::infinity(), std::numeric_limits<size_t>::max(), -1});
-    /* a priority queue for expansion */
+    // a list of boolean flags (one for each rr node) to figure out if a
+    // certain node has already been expanded
+    std::fill(node_expanded.begin(), node_expanded.end(), false);
+    // For each node keep a list of the cost with which that node has been
+    // visited (used to determine whether to push a candidate node onto the
+    // expansion queue.
+    // Also store the parent node so we can reconstruct a specific path.
+    std::fill(paths.begin(), paths.end(), t_search_path{std::numeric_limits<float>::infinity(), std::numeric_limits<size_t>::max(), -1});
+    // a priority queue for expansion
     // TODO: Try a vtr::priority_queue passed in by the caller and emptied with
     // clear(), like node_expanded and paths, instead of a new queue for every call.
     std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> pq;
 
-    /* first entry has no upstream delay or congestion */
+    // first entry has no upstream delay or congestion
     Entry first_entry(start_node, UNDEFINED, nullptr);
     float max_cost = first_entry.cost();
 
     pq.push(first_entry);
 
-    /* now do routing */
+    // now do routing
     while (!pq.empty()) {
-        auto current = pq.top();
+        Entry current = pq.top();
         pq.pop();
 
         RRNodeId node = current.rr_node;
 
-        /* check that we haven't already expanded from this node */
-        if ((*node_expanded)[size_t(node)]) {
+        // check that we haven't already expanded from this node
+        if (node_expanded[size_t(node)]) {
             continue;
         }
 
-        /* if this node is an ipin record its congestion/delay in the routing_cost_map */
+        // if this node is an ipin record its congestion/delay in routing_costs
         if (rr_graph.node_type(node) == e_rr_type::IPIN) {
             // the last cost should be the highest
             max_cost = current.cost();
 
             path_count++;
-            add_paths<Entry>(start_node, current, *paths, chan_ipins_delays, routing_costs);
+            add_paths<Entry>(start_node, current, paths, chan_ipins_delays, routing_costs);
         } else {
-            expand_dijkstra_neighbours(rr_graph, current, paths, node_expanded, &pq);
-            (*node_expanded)[size_t(node)] = true;
+            expand_dijkstra_neighbours(rr_graph, current, paths, node_expanded, pq);
+            node_expanded[size_t(node)] = true;
         }
     }
     return std::make_pair(max_cost, path_count);
@@ -572,8 +575,8 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
     auto& device_ctx = g_vpr_ctx.device();
     cost_map_.set_counts(segment_inf.size());
 
-    RoutingCosts all_delay_costs;
-    RoutingCosts all_base_costs;
+    t_routing_costs all_delay_costs;
+    t_routing_costs all_base_costs;
 
     /* run Dijkstra's algorithm for each segment type & channel type combination */
 #if defined(VPR_USE_TBB) // Run in parallel
@@ -583,11 +586,11 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
     for (const auto& region : sample_regions) {
 #endif
         // holds the cost entries for a run
-        RoutingCosts delay_costs;
-        RoutingCosts base_costs;
+        t_routing_costs delay_costs;
+        t_routing_costs base_costs;
         int total_path_count = 0;
         std::vector<bool> node_expanded(device_ctx.rr_graph.num_nodes());
-        std::vector<Search_Path> paths(device_ctx.rr_graph.num_nodes());
+        std::vector<t_search_path> paths(device_ctx.rr_graph.num_nodes());
 
         // Each point in a sample region contains a set of nodes. Each node becomes a starting node
         // for the dijkstra expansions, and different paths are explored to reach different locations.
@@ -609,12 +612,12 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
                 //       Experiments have shown that the having two separate expansions lead to better results for Series 7 devices, but
                 //       this might not be true for Stratix ones.
                 {
-                    auto result = run_dijkstra<PQ_Entry_Delay>(node, &node_expanded, &paths, chan_ipins_delays, &delay_costs);
+                    auto result = run_dijkstra<PQEntryDelay>(node, node_expanded, paths, chan_ipins_delays, delay_costs);
                     max_delay_cost = std::max(max_delay_cost, result.first);
                     path_count += result.second;
                 }
                 {
-                    auto result = run_dijkstra<PQ_Entry_Base_Cost>(node, &node_expanded, &paths, chan_ipins_delays, &base_costs);
+                    auto result = run_dijkstra<PQEntryBaseCost>(node, node_expanded, paths, chan_ipins_delays, base_costs);
                     max_base_cost = std::max(max_base_cost, result.first);
                     path_count += result.second;
                 }

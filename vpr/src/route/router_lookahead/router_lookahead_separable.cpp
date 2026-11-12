@@ -260,7 +260,7 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
                             start_coord = start_y;
                         }
 
-                        auto record_cost = [&](util::PQ_Entry current) {
+                        auto record_cost = [&](util::PQEntry current) {
                             RRNodeId curr_node = current.rr_node;
 
                             // If we're profiling the y axis, we want to remove the delay of going from a channel node to an IPIN

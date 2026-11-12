@@ -124,7 +124,7 @@ static constexpr int DIRECT_CONNECT_SPECIAL_SEG_TYPE = -1;
 
 namespace util {
 
-PQ_Entry::PQ_Entry(RRNodeId node, const PQ_Entry* parent)
+PQEntry::PQEntry(RRNodeId node, const PQEntry* parent)
     : rr_node(node)
     , delay(0.f)
     , congestion_upstream(0.f) {
@@ -624,9 +624,6 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                       segment_inf.name.c_str(),
                       segment_inf.length);
     } else {
-        // reset cost for this segment
-        routing_cost_map.fill(Cost_Entry());
-
         // to avoid multiple memory allocation and de-allocations in run_dijkstra()
         // dijkstra_data is created outside the for loop and passed by reference to dijkstra_data()
         t_dijkstra_data dijkstra_data;
@@ -640,7 +637,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                 sample_y = rr_graph.node_yhigh(sample_node);
             }
 
-            auto map_lookahead_add_sample_route_to_table = [&](PQ_Entry current) {
+            auto map_lookahead_add_sample_route_to_table = [&](PQEntry current) {
                 RRNodeId curr_node = current.rr_node;
 
                 VTR_ASSERT_SAFE(rr_graph.node_xlow(curr_node) == rr_graph.node_xhigh(curr_node));

@@ -63,26 +63,25 @@ typedef Cost_Entry (*WireCostFunc)(e_rr_type chan_type, int seg_index, int from_
  * The delay is estimated from the rr_indexed_data T_linear values (the same data the VPR 7 lookahead uses)
  * and the congestion is the accumulated base cost.
  */
-class PQ_Entry {
+class PQEntry {
   public:
     RRNodeId rr_node;          ///<The RR node this entry represents
     float delay;               ///<Backward delay of the path to this node; also the queue priority
     float congestion_upstream; ///<Backward congestion (base cost) of the path to this node
 
     /// @brief Creates an entry for node, extending parent's path. parent == nullptr creates the starting entry.
-    PQ_Entry(RRNodeId node, const PQ_Entry* parent);
+    PQEntry(RRNodeId node, const PQEntry* parent);
 
-    bool operator<(const PQ_Entry& obj) const {
-        // Inserted into max priority queue so want queue entries with a lower cost to be greater
+    bool operator>(const PQEntry& obj) const {
         return delay > obj.delay;
     }
 };
 
 /// @brief Scratch data for run_dijkstra(), kept outside the call to avoid repeated allocations.
 struct t_dijkstra_data {
-    vtr::vector<RRNodeId, bool> node_expanded;       ///<Whether each node has already been expanded
-    vtr::vector<RRNodeId, float> node_visited_costs; ///<Cheapest cost each node has been pushed with (-1 if never)
-    std::priority_queue<PQ_Entry> pq;                ///<Expansion priority queue
+    vtr::vector<RRNodeId, bool> node_expanded;                                    ///<Whether each node has already been expanded
+    vtr::vector<RRNodeId, float> node_visited_costs;                              ///<Cheapest cost each node has been pushed with (-1 if never)
+    std::priority_queue<PQEntry, std::vector<PQEntry>, std::greater<PQEntry>> pq; ///<Expansion priority queue (lowest delay first)
 };
 
 struct t_reachable_wire_inf {

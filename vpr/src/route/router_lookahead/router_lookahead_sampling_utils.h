@@ -17,10 +17,10 @@ namespace util {
  * When false, coordinate calculations and bounding box checks are compiled out.
  */
 template<bool RestrictToBoundingBox>
-void expand_dijkstra_neighbours(const util::PQ_Entry& parent_entry,
+void expand_dijkstra_neighbours(const util::PQEntry& parent_entry,
                                 vtr::vector<RRNodeId, float>& node_visited_costs,
                                 vtr::vector<RRNodeId, bool>& node_expanded,
-                                std::priority_queue<util::PQ_Entry>& pq,
+                                std::priority_queue<util::PQEntry, std::vector<util::PQEntry>, std::greater<util::PQEntry>>& pq,
                                 const t_bb& bb) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
@@ -69,7 +69,7 @@ void expand_dijkstra_neighbours(const util::PQ_Entry& parent_entry,
             }
         }
 
-        util::PQ_Entry child_entry(child_node, &parent_entry);
+        util::PQEntry child_entry(child_node, &parent_entry);
 
         // Skip this child if it has been visited with smaller cost
         if (node_visited_costs[child_node] >= 0 && node_visited_costs[child_node] < child_entry.delay) {
@@ -112,7 +112,7 @@ void run_dijkstra(RRNodeId start_node,
     std::fill(node_visited_costs.begin(), node_visited_costs.end(), -1.0);
 
     // A priority queue for expansion
-    std::priority_queue<util::PQ_Entry>& pq = data.pq;
+    auto& pq = data.pq;
 
     // Clear priority queue if non-empty
     // TODO: Try a vtr::priority_queue for t_dijkstra_data::pq and call clear() instead of this loop.
@@ -125,7 +125,7 @@ void run_dijkstra(RRNodeId start_node,
 
     // Now do routing
     while (!pq.empty()) {
-        util::PQ_Entry current = pq.top();
+        util::PQEntry current = pq.top();
         pq.pop();
 
         RRNodeId curr_node = current.rr_node;

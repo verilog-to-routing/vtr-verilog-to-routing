@@ -21,13 +21,13 @@ static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& s
 
 static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec, int route_verbosity, bool device_model_warnings);
 
-/* sets the lookahead cost map entries from the smallest-delay cost entries in routing_cost_map */
+/// @brief Sets the lookahead cost map entries from the smallest-delay cost entries in routing_cost_map
 static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map);
 
-/* fills in missing lookahead map entries by copying the cost of the closest valid entry */
+/// @brief Fills in missing lookahead map entries by copying the cost of the closest valid entry
 static void fill_in_missing_compressed_lookahead_entries(const std::map<int, std::set<int>>& sorted_sample_loc, int segment_index, e_rr_type chan_type);
 
-/* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
+/// @brief Returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0))
 static util::Cost_Entry get_nearby_cost_entry_compressed_lookahead(int from_layer_num,
                                                                    int x,
                                                                    int y,
@@ -159,11 +159,11 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
                     continue;
                 }
 
-                /* store the smallest-delay cost entry at each coordinate in the lookahead cost map */
+                // store the smallest-delay cost entry at each coordinate in the lookahead cost map
                 set_compressed_lookahead_map_costs(from_layer_num, segment_inf.seg_index, chan_type, routing_cost_map);
 
-                /* fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
-                 * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
+                // fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
+                // a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed)
                 fill_in_missing_compressed_lookahead_entries(sorted_sample_loc, segment_inf.seg_index, chan_type);
             }
         }
@@ -176,7 +176,7 @@ static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_i
         chan_index = 1;
     }
 
-    /* copy the smallest-delay cost entries from routing_cost_map into the lookahead cost map */
+    // copy the smallest-delay cost entries from routing_cost_map into the lookahead cost map
     int to_layer_dim = static_cast<int>(routing_cost_map.dim_size(0));
     for (int to_layer = 0; to_layer < to_layer_dim; to_layer++) {
         int x_dim = static_cast<int>(routing_cost_map.dim_size(1));
