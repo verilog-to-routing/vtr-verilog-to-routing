@@ -16,6 +16,14 @@
 /// @brief A unique ID of a group of clock domains with synchronous (analyzed) transfers between them.
 typedef vtr::StrongId<struct clock_domain_group_id_tag, size_t> ClockDomainGroupId;
 
+/// @brief The groups of clock domains with synchronous (analyzed) transfers between them.
+struct ClockDomainGroups {
+    /// @brief The group of every clock domain.
+    tatum::util::linear_map<tatum::DomainId, ClockDomainGroupId> domain_group;
+    /// @brief The number of groups. Group IDs are contiguous, from 0 to num_groups - 1.
+    size_t num_groups = 0;
+};
+
 /**
  * @brief Partitions the clock domains into groups, such that clock domains with analyzed setup or
  *        hold timing transfers between them are in the same group.
@@ -29,9 +37,9 @@ typedef vtr::StrongId<struct clock_domain_group_id_tag, size_t> ClockDomainGroup
  *  @param hold_analyzer
  *      A hold timing analyzer whose timing has been updated.
  *
- *  @return The group of every clock domain. Group IDs are contiguous, starting from 0.
+ *  @return The group of every clock domain, and the number of groups.
  */
-tatum::util::linear_map<tatum::DomainId, ClockDomainGroupId> group_synchronous_clock_domains(const tatum::TimingGraph& timing_graph,
-                                                                                             const tatum::TimingConstraints& timing_constraints,
-                                                                                             const tatum::SetupTimingAnalyzer& setup_analyzer,
-                                                                                             const tatum::HoldTimingAnalyzer& hold_analyzer);
+ClockDomainGroups group_synchronous_clock_domains(const tatum::TimingGraph& timing_graph,
+                                                  const tatum::TimingConstraints& timing_constraints,
+                                                  const tatum::SetupTimingAnalyzer& setup_analyzer,
+                                                  const tatum::HoldTimingAnalyzer& hold_analyzer);

@@ -28,17 +28,18 @@
 #include "vtr_assert.h"
 #include "concrete_timing_info.h"
 #include "route_budgets.h"
+#include "vtr_memory.h"
+#include "vtr_time.h"
+
+#include <limits>
+#include <map>
+#include <optional>
+
 #include "clock_domain_groups.h"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingConstraints.hpp"
 #include "vtr_util.h"
 #include "vtr_vector.h"
-
-#include <limits>
-#include <map>
-#include <optional>
-#include "vtr_memory.h"
-#include "vtr_time.h"
 
 #define SHORT_PATH_EXP 0.5
 
@@ -217,15 +218,10 @@ void route_budgets::set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay,
     VTR_ASSERT(setup_analyzer && hold_analyzer);
 
     // Group the clock domains which have analyzed (synchronous) transfers between them.
-    tatum::util::linear_map<tatum::DomainId, ClockDomainGroupId> domain_group = group_synchronous_clock_domains(timing_graph,
-                                                                                                                timing_constraints,
-                                                                                                                *setup_analyzer,
-                                                                                                                *hold_analyzer);
+    ClockDomainGroups groups = group_synchronous_clock_domains(timing_graph, timing_constraints, *setup_analyzer, *hold_analyzer);
+    const tatum::util::linear_map<tatum::DomainId, ClockDomainGroupId>& domain_group = groups.domain_group;
     size_t num_domains = timing_constraints.clock_domains().size();
-    size_t num_groups = 0;
-    for (tatum::DomainId domain_id : timing_constraints.clock_domains()) {
-        num_groups = std::max(num_groups, size_t(domain_group[domain_id]) + 1);
-    }
+    size_t num_groups = groups.num_groups;
 
     // The insertion delay of each domain is the latest time its clock reaches a clock pin. The
     // setup CLOCK_LAUNCH tags already include the (late) source latency and the max delay of the
