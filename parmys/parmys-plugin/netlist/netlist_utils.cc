@@ -1204,6 +1204,26 @@ npin_t *legalize_polarity(npin_t *pin, edge_type_e pin_polarity, nnode_t *node)
 }
 
 /**
+ * (function: extend_signal_list)
+ *
+ * @brief extend a signal list to the given size with zero pins (unsigned)
+ * or with copies of its most significant pin (signed)
+ *
+ * @param signals list of signals to extend
+ * @param size the requested size
+ * @param signedness the signedness of the port corresponding to the signal list
+ * @param netlist pointer to the current netlist
+ */
+static void extend_signal_list(signal_list_t *signals, int size, operation_list signedness, netlist_t *netlist)
+{
+    while (signals->count < size) {
+        npin_t *pin =
+          (signedness == operation_list::SIGNED && signals->count > 0) ? copy_input_npin(signals->pins[signals->count - 1]) : get_zero_pin(netlist);
+        add_pin_to_signal_list(signals, pin);
+    }
+}
+
+/**
  * (function: reduce_input_ports)
  *
  * @brief reduce the input ports size by removing extra pad pins
@@ -1238,13 +1258,15 @@ void reduce_input_ports(nnode_t *&node, netlist_t *netlist)
     if (node->num_input_port_sizes == 2) {
         input_ports[1] = reduce_signal_list(input_ports[1], node->attributes->port_b_signed, netlist);
 
-        /* equalize port sizes */
-        int max = std::max(input_ports[0]->count, input_ports[1]->count);
+        /* equalize port sizes, and widen both operands to the result width so
+         * that no builder has to invent the missing high bits. The shorter
+         * operand is extended the way its signedness requires (zeros, or copies
+         * of its sign bit); PAD pins would feed undefined values into the
+         * arithmetic. */
+        int max = std::max(std::max((int)input_ports[0]->count, (int)input_ports[1]->count), node->output_port_sizes[0]);
 
-        while (input_ports[0]->count < max)
-            add_pin_to_signal_list(input_ports[0], get_pad_pin(netlist));
-        while (input_ports[1]->count < max)
-            add_pin_to_signal_list(input_ports[1], get_pad_pin(netlist));
+        extend_signal_list(input_ports[0], max, node->attributes->port_a_signed, netlist);
+        extend_signal_list(input_ports[1], max, node->attributes->port_b_signed, netlist);
     }
 
     /* creating a new node */
@@ -1316,7 +1338,8 @@ signal_list_t *reduce_signal_list(signal_list_t *signalvar, operation_list signe
     /* specify the extension net */
     nnet_t *extended_net = (signedness == operation_list::SIGNED) ? netlist->one_net : netlist->zero_net;
 
-    for (int i = signalvar->count - 1; i > -1; i--) {
+    /* keep at least the least significant pin so that a constant operand never vanishes */
+    for (int i = signalvar->count - 1; i > 0; i--) {
         npin_t *pin = signalvar->pins[i];
         if (pin->net == extended_net) {
             delete_npin(pin);
