@@ -44,7 +44,7 @@ class route_budgets {
 
     /*main loader function*/
     void load_route_budgets(NetPinsMatrix<float>& net_delay,
-                            std::shared_ptr<SetupTimingInfo> timing_info,
+                            std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                             const t_router_opts& router_opts);
 
@@ -80,10 +80,25 @@ class route_budgets {
                                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                                        const t_router_opts& router_opts);
     void allocate_slack_using_weights(NetPinsMatrix<float>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, bool negative_hold_slack);
-    /*Sets the target (and min/max) delay of every clock connection to the maximum observed
-     * clock delay, to encourage the router to equalize clock delays and reduce skew. All
-     * other connections are left at their initial (unconstrained) budgets.*/
-    void set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay);
+    /**
+     * @brief Sets RCV delay targets on the connections of clock nets to clock pins, to reduce the
+     *        clock skew within and between clock domains which have timing paths between them.
+     *        All other connections do not use RCV.
+     *
+     *  @param net_delay
+     *      The current (max) delay of every connection, from the first routing iteration.
+     *  @param timing_info
+     *      Setup and hold timing information which has been updated for the current routing.
+     *  @param netlist_pin_lookup
+     *      Lookup from clustered netlist pins to the atom pins they connect to.
+     *  @param route_verbosity
+     *      The router's verbosity. The clock domain groups and their targets are printed when it
+     *      is greater than 1.
+     */
+    void set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay,
+                                    const SetupHoldTimingInfo& timing_info,
+                                    const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                    int route_verbosity);
     /*Sometimes want to allocate only positive or negative slack.
      * By default, allocate both*/
     float minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timing_info,

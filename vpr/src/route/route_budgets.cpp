@@ -28,6 +28,15 @@
 #include "vtr_assert.h"
 #include "concrete_timing_info.h"
 #include "route_budgets.h"
+#include "clock_domain_groups.h"
+#include "tatum/TimingGraph.hpp"
+#include "tatum/TimingConstraints.hpp"
+#include "vtr_util.h"
+#include "vtr_vector.h"
+
+#include <limits>
+#include <map>
+#include <optional>
 #include "vtr_memory.h"
 #include "vtr_time.h"
 
@@ -99,7 +108,7 @@ void route_budgets::load_initial_budgets() {
 }
 
 void route_budgets::load_route_budgets(NetPinsMatrix<float>& net_delay,
-                                       std::shared_ptr<SetupTimingInfo> timing_info,
+                                       std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                        const t_router_opts& router_opts) {
     /*This function loads the routing budgets depending on the option selected by the user
@@ -130,61 +139,208 @@ void route_budgets::load_route_budgets(NetPinsMatrix<float>& net_delay,
     } else if (router_opts.routing_budgets_algorithm == SCALE_DELAY) {
         allocate_slack_using_delays_and_criticalities(net_delay, timing_info, netlist_pin_lookup, router_opts);
     } else if (router_opts.routing_budgets_algorithm == LOW_SKEW_CLOCK) {
-        set_low_skew_clock_budgets(net_delay);
+        set_low_skew_clock_budgets(net_delay, *timing_info, netlist_pin_lookup, router_opts.route_verbosity);
     }
     set = true;
 }
 
-void route_budgets::set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay) {
-    /*Sets the target delay of every clock connection to the maximum delay currently seen within
-     * its own clock net, so the router (via RCV) is pushed to equalize clock delays
-     * and reduce skew. Non-clock connections do not have RCV applied to them, so they route using
-     * the default routing algorithm.*/
-    auto& route_ctx = g_vpr_ctx.routing();
+/**
+ * @brief Finds the latest setup clock launch arrival of each clock domain at the clock pins (CPINs)
+ *        reached by the given net sink pin.
+ *
+ * In the clustered netlist, a sink pin may connect to several atom pins inside its cluster; all of
+ * them are considered. In the flat netlist the sink pin is itself an atom pin.
+ *
+ *  @param pin_id
+ *      The sink pin of the routed net.
+ *  @param is_flat
+ *      True if the routed netlist is the (flat) atom netlist.
+ *  @param netlist_pin_lookup
+ *      Lookup from clustered netlist pins to the atom pins they connect to.
+ *  @param timing_graph
+ *      The timing graph.
+ *  @param setup_analyzer
+ *      A setup timing analyzer whose timing has been updated.
+ *
+ *  @return The latest arrival (in seconds) of each clock domain over the reached clock pins, or
+ *          std::nullopt if the sink pin reaches no clock pin. The map is empty if the reached clock
+ *          pins have no clock arrivals (i.e. their clock is unconstrained).
+ */
+static std::optional<std::map<tatum::DomainId, float>> find_sink_clock_pin_arrivals(ParentPinId pin_id,
+                                                                                    bool is_flat,
+                                                                                    const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                                                                    const tatum::TimingGraph& timing_graph,
+                                                                                    const tatum::SetupTimingAnalyzer& setup_analyzer) {
+    const AtomLookup& atom_lookup = g_vpr_ctx.atom().lookup();
 
-    // Maximum observed clock-connection delay within each clock net.
-    std::map<ParentNetId, float> max_clock_delay_by_net;
-
-    for (auto net_id : net_list_.nets()) {
-        if (!route_ctx.is_clock_net[net_id]) continue;
-
-        float max_clock_net_delay = 0.;
-        for (auto pin_id : net_list_.net_sinks(net_id)) {
-            int ipin = net_list_.pin_net_index(pin_id);
-            max_clock_net_delay = std::max(max_clock_net_delay, net_delay[net_id][ipin]);
+    std::vector<AtomPinId> atom_pins;
+    if (is_flat) {
+        atom_pins.push_back(convert_to_atom_pin_id(pin_id));
+    } else {
+        for (const AtomPinId atom_pin : netlist_pin_lookup.connected_atom_pins(convert_to_cluster_pin_id(pin_id))) {
+            atom_pins.push_back(atom_pin);
         }
-        max_clock_delay_by_net[net_id] = max_clock_net_delay;
     }
 
-    for (auto net_id : net_list_.nets()) {
-        if (!route_ctx.is_clock_net[net_id]) continue;
+    std::optional<std::map<tatum::DomainId, float>> arrivals;
+    for (const AtomPinId atom_pin : atom_pins) {
+        tatum::NodeId tnode = atom_lookup.atom_pin_tnode(atom_pin);
+        if (!tnode || timing_graph.node_type(tnode) != tatum::NodeType::CPIN)
+            continue;
 
-        float target_delay = max_clock_delay_by_net[net_id];
+        if (!arrivals)
+            arrivals.emplace();
+        for (const tatum::TimingTag& tag : setup_analyzer.setup_tags(tnode, tatum::TagType::CLOCK_LAUNCH)) {
+            tatum::DomainId domain_id = tag.launch_clock_domain();
+            if (!domain_id || !tag.time().valid())
+                continue;
 
-        use_rcv[net_id][0] = true;
-        for (auto pin_id : net_list_.net_sinks(net_id)) {
+            auto [iter, inserted] = arrivals->emplace(domain_id, tag.time().value());
+            if (!inserted)
+                iter->second = std::max(iter->second, tag.time().value());
+        }
+    }
+
+    return arrivals;
+}
+
+void route_budgets::set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay,
+                                               const SetupHoldTimingInfo& timing_info,
+                                               const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                               int route_verbosity) {
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
+    const TimingContext& timing_ctx = g_vpr_ctx.timing();
+    const tatum::TimingGraph& timing_graph = *timing_ctx.graph;
+    const tatum::TimingConstraints& timing_constraints = *timing_ctx.constraints;
+    std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer = timing_info.setup_analyzer();
+    std::shared_ptr<const tatum::HoldTimingAnalyzer> hold_analyzer = timing_info.hold_analyzer();
+    VTR_ASSERT(setup_analyzer && hold_analyzer);
+
+    // Group the clock domains which have analyzed (synchronous) transfers between them.
+    tatum::util::linear_map<tatum::DomainId, ClockDomainGroupId> domain_group = group_synchronous_clock_domains(timing_graph,
+                                                                                                                timing_constraints,
+                                                                                                                *setup_analyzer,
+                                                                                                                *hold_analyzer);
+    size_t num_domains = timing_constraints.clock_domains().size();
+    size_t num_groups = 0;
+    for (tatum::DomainId domain_id : timing_constraints.clock_domains()) {
+        num_groups = std::max(num_groups, size_t(domain_group[domain_id]) + 1);
+    }
+
+    // The insertion delay of each domain is the latest time its clock reaches a clock pin. The
+    // setup CLOCK_LAUNCH tags already include the (late) source latency and the max delay of the
+    // clock network. Virtual clocks have no clock pins, so they only contribute their source latency.
+    tatum::util::linear_map<tatum::DomainId, float> domain_insertion_delay(num_domains, 0.f);
+    for (tatum::DomainId domain_id : timing_constraints.clock_domains()) {
+        domain_insertion_delay[domain_id] = timing_constraints.source_latency(domain_id, tatum::ArrivalType::LATE).value();
+    }
+    for (tatum::NodeId node_id : timing_graph.nodes()) {
+        if (timing_graph.node_type(node_id) != tatum::NodeType::CPIN)
+            continue;
+        for (const tatum::TimingTag& tag : setup_analyzer->setup_tags(node_id, tatum::TagType::CLOCK_LAUNCH)) {
+            tatum::DomainId domain_id = tag.launch_clock_domain();
+            if (!domain_id || !tag.time().valid())
+                continue;
+            domain_insertion_delay[domain_id] = std::max(domain_insertion_delay[domain_id], tag.time().value());
+        }
+    }
+
+    // Every domain in a group targets the largest insertion delay in its group.
+    vtr::vector<ClockDomainGroupId, float> group_target_delay(num_groups, 0.f);
+    for (tatum::DomainId domain_id : timing_constraints.clock_domains()) {
+        ClockDomainGroupId group = domain_group[domain_id];
+        group_target_delay[group] = std::max(group_target_delay[group], domain_insertion_delay[domain_id]);
+    }
+
+    if (route_verbosity > 1) {
+        VTR_LOG("Low-skew clock budgets: %zu clock domain(s) in %zu synchronous group(s)\n", num_domains, num_groups);
+        for (ClockDomainGroupId group : group_target_delay.keys()) {
+            std::string group_domains;
+            for (tatum::DomainId domain_id : timing_constraints.clock_domains()) {
+                if (domain_group[domain_id] != group)
+                    continue;
+                group_domains += vtr::string_fmt(" %s (%g ns)",
+                                                 timing_constraints.clock_domain_name(domain_id).c_str(),
+                                                 domain_insertion_delay[domain_id] * 1e9);
+            }
+            VTR_LOG("  Group %zu: target insertion delay %g ns, domains (insertion delay):%s\n",
+                    size_t(group), group_target_delay[group] * 1e9, group_domains.c_str());
+        }
+    }
+
+    // Set the per-connection budgets.
+    size_t num_clock_pin_connections = 0;
+    size_t num_unconstrained_clock_pin_connections = 0;
+    size_t num_nets_with_unconstrained_clock_pins = 0;
+    size_t num_clock_logic_connections = 0;
+    for (ParentNetId net_id : net_list_.nets()) {
+        // By default, connections do not use RCV and route using the default routing algorithm.
+        use_rcv[net_id][0] = false;
+        for (ParentPinId pin_id : net_list_.net_sinks(net_id)) {
+            use_rcv[net_id][net_list_.pin_net_index(pin_id)] = false;
+        }
+
+        if (!route_ctx.is_clock_net[net_id])
+            continue;
+
+        bool net_uses_rcv = false;
+        bool net_has_unconstrained_clock_pins = false;
+        for (ParentPinId pin_id : net_list_.net_sinks(net_id)) {
             int ipin = net_list_.pin_net_index(pin_id);
+
+            std::optional<std::map<tatum::DomainId, float>> arrivals = find_sink_clock_pin_arrivals(pin_id, is_flat_, netlist_pin_lookup,
+                                                                                                    timing_graph, *setup_analyzer);
+            if (!arrivals) {
+                // This clock drives logic through this sink; route it like any other connection.
+                num_clock_logic_connections++;
+                continue;
+            }
+
+            if (arrivals->empty()) {
+                // The clock pins have no clock tags (no create_clock reaches them), so timing analysis
+                // does not analyze any path through them and balancing their skew could not improve
+                // the reported timing. Route this connection like any other connection.
+                num_unconstrained_clock_pin_connections++;
+                net_has_unconstrained_clock_pins = true;
+                continue;
+            }
+
+            // Shift this connection by how much its domain is short of its group's target. If it
+            // carries several domains (e.g. create_clock -add, or a clock mux), use the smallest
+            // shift so that no domain is pushed past its group's target.
+            float shift = std::numeric_limits<float>::infinity();
+            for (const auto& [domain_id, arrival] : *arrivals) {
+                shift = std::min(shift, group_target_delay[domain_group[domain_id]] - arrival);
+            }
+            VTR_ASSERT_MSG(shift >= 0.f, "A group's target insertion delay must not be less than any of its domains' arrivals");
+
+            float target_delay = net_delay[net_id][ipin] + shift;
             delay_min_budget[net_id][ipin] = target_delay;
             delay_max_budget[net_id][ipin] = target_delay;
             delay_target[net_id][ipin] = target_delay;
             use_rcv[net_id][ipin] = true;
+            net_uses_rcv = true;
+            num_clock_pin_connections++;
         }
 
-        // An already-routed, non-critical, non-congested clock net would otherwise never be
-        // revisited by should_route_net(), so it would keep its pre-budget shortest-path delay
-        // forever. Force it through the router once so it picks up the new target.
-        should_reroute_for_skew[net_id] = true;
+        if (net_has_unconstrained_clock_pins)
+            num_nets_with_unconstrained_clock_pins++;
+
+        if (net_uses_rcv) {
+            use_rcv[net_id][0] = true;
+
+            // An already-routed, non-critical, non-congested clock net would otherwise never be
+            // revisited by should_route_net(), so it would keep its pre-budget delays forever.
+            // Force it through the router once so it picks up the new targets.
+            should_reroute_for_skew[net_id] = true;
+        }
     }
 
-    // Non-clock connections do not use RCV and route for shortest path as usual.
-    for (auto net_id : net_list_.nets()) {
-        if (route_ctx.is_clock_net[net_id]) continue;
-
-        use_rcv[net_id][0] = false;
-        for (auto pin_id : net_list_.net_sinks(net_id)) {
-            int ipin = net_list_.pin_net_index(pin_id);
-            use_rcv[net_id][ipin] = false;
-        }
+    VTR_LOGV(route_verbosity > 1, "Low-skew clock budgets: %zu clock pin connection(s) targeted, %zu clock-to-logic connection(s) left without RCV\n",
+             num_clock_pin_connections, num_clock_logic_connections);
+    if (num_unconstrained_clock_pin_connections > 0) {
+        VTR_LOG("Low-skew clock budgets: %zu clock pin connection(s) on %zu net(s) reach no constrained clock (check for a missing create_clock); routed without RCV\n",
+                num_unconstrained_clock_pin_connections, num_nets_with_unconstrained_clock_pins);
     }
 }
 
