@@ -881,6 +881,10 @@ struct t_physical_tile_port {
 
 /** Describes a pb graph edge
  *
+ *  Note: This class must be fully defined before t_logical_block_type, which
+ *  stores these edges in a std::deque (std::deque does not support incomplete
+ *  element types).
+ *
  *  An edge connects one input pin to one output pin.
  *
  *  Data members:
@@ -951,7 +955,6 @@ class t_pb_graph_edge {
     /// The pin that this edge drives
     t_pb_graph_pin* output_pin_ = nullptr;
 };
-
 
 /* Describes the type for a logical block
  * name: unique identifier for type
