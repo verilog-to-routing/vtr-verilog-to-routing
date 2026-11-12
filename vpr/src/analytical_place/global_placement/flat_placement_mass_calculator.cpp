@@ -22,21 +22,6 @@
 #include "vtr_vector.h"
 
 /**
- * @brief Returns true if the given pb_type is a primitive and is a memory class.
- */
-static bool is_primitive_memory_pb_type(const t_pb_type* pb_type) {
-    VTR_ASSERT_SAFE(pb_type != nullptr);
-
-    if (!pb_type->is_primitive())
-        return false;
-
-    if (pb_type->class_type != MEMORY_CLASS)
-        return false;
-
-    return true;
-}
-
-/**
  * @brief Calculate the cost of the given pb_type. This cost is a value that
  *        represents how much mass in a specific dimension a physical block
  *        takes up.
@@ -44,7 +29,7 @@ static bool is_primitive_memory_pb_type(const t_pb_type* pb_type) {
 static float calc_pb_type_cost(const t_pb_type* pb_type) {
     // If this primitive represents a memory, count the number of bits this memory
     // can store and return that as the cost.
-    if (is_primitive_memory_pb_type(pb_type)) {
+    if (pb_type->is_memory_primitive()) {
         // Get the number of address and data pins to compute the number of bits
         // this memory can store.
         //      number_bits = num_data_out_pins * 2^num_address_pins
@@ -142,7 +127,7 @@ static float get_atom_mass(AtomBlockId blk_id, const Prepacker& prepacker, const
     // Get the mass of this atom (i.e. how much resources on the device this atom
     // will likely use).
     float mass = 0.0f;
-    if (!is_primitive_memory_pb_type(primitive->pb_type)) {
+    if (!primitive->pb_type->is_memory_primitive()) {
         // If this is not a memory, we use a weighted sum of the physical cost
         // (how much resources we expect it to use physically on the device) and
         // the logical cost (how much resources is it actually using).
