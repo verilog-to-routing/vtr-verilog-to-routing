@@ -673,6 +673,7 @@ void setup_packer_opts(const t_options& Options,
     PackerOpts->use_ram_mapper = Options.use_ram_mapper;
     PackerOpts->memoize_cluster_packings = Options.memoize_cluster_packings;
     PackerOpts->cluster_router_hot_start = Options.cluster_router_hot_start;
+    PackerOpts->cluster_router_lookahead = Options.cluster_router_lookahead;
     PackerOpts->enable_pin_feasibility_filter = Options.enable_clustering_pin_feasibility_filter;
     PackerOpts->balance_block_type_utilization = Options.balance_block_type_utilization;
     PackerOpts->target_external_pin_util = Options.target_external_pin_util;

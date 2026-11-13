@@ -1003,7 +1003,19 @@ For people not working on CAD, you can probably leave all the options to their d
     This can reduce router runtime when many candidate molecules are tried and rejected: after a failed molecule is removed, the cluster returns to a known-good state without re-routing nets that did not change.
     Enabling this option should not significantly affect circuit quality metrics like routed wirelength or critical path delay, though minor variations are possible.
 
-    **Default:** ``on``
+    **Default:** ``off``
+
+.. option:: --cluster_router_lookahead {none | hops}
+
+    Controls the estimate of the remaining cost to the sink that orders the intra-cluster router search during packing.
+
+    * ``none``: The search is ordered by the cost of the path so far only.
+    * ``hops``: A lower bound computed from the fewest edges between each node and the sink is added to the path cost, and nodes with no path to the sink are skipped.
+
+    The estimate never exceeds the real cost, so the router still finds a lowest cost path.
+    Which of several equal cost paths it finds first can change, so circuit quality metrics may vary slightly.
+
+    **Default:** ``hops``
 
 .. option:: --pack_verbosity <int>
 

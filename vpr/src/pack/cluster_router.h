@@ -9,11 +9,13 @@
  */
 
 #include <cstdio>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include "atom_netlist_fwd.h"
 #include "atom_pb_bimap.h"
+#include "cluster_router_lookahead.h"
 #include "lb_type_rr_graph.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -111,11 +113,17 @@ struct t_expansion_node {
     /// @brief Index of logic cluster_ctx.blocks rr node that drives this expansion node.
     LbRRNodeId prev_index;
 
+    /// @brief Cost of the path from the route tree to this node.
+    float path_cost;
+
+    /// @brief path_cost plus a lower bound on the cost from this node to the
+    ///        sink. Orders the priority queue.
     float cost;
 
     t_expansion_node() {
         node_index = LbRRNodeId::INVALID();
         prev_index = LbRRNodeId::INVALID();
+        path_cost = 0;
         cost = 0;
     }
 };
@@ -157,7 +165,7 @@ struct t_explored_node_tb {
     /// @brief ID used to determine if this node has been pushed on exploration priority queue.
     int enqueue_id;
 
-    /// @brief Cost of node pushed on exploration priority queue.
+    /// @brief Path cost of node pushed on exploration priority queue.
     float enqueue_cost;
 
     t_explored_node_tb() noexcept {
@@ -199,7 +207,7 @@ enum class e_commit_remove {
  *
  * Example usage:
  *      // Construct the router object.
- *      ClusterRouter cluster_router(lb_type_rr_graphs[cluster_type->index], cluster_type, valid_feedback_pins);
+ *      ClusterRouter cluster_router(lb_type_rr_graphs[cluster_type->index], cluster_type, valid_feedback_pins, nullptr);
  *
  *      // Add atoms as targets for the router.
  *      cluster_router.add_atom_as_target(blk_id1, atom_to_pb);
@@ -234,9 +242,12 @@ class ClusterRouter {
     ClusterRouter()
         : lb_type_graph_(nullptr)
         , valid_feedback_pins_(nullptr)
+        , lookahead_(nullptr)
         , explore_id_index_(0)
         , lb_type_(nullptr)
         , pres_con_fac_(0.0f)
+        , sink_hops_(nullptr)
+        , hop_cost_(0.0f)
         , is_clean_(true)
         , is_valid_(false)
         , enable_hot_start_(false) {}
@@ -249,6 +260,8 @@ class ClusterRouter {
      *  @param valid_feedback_pins  Pre-computed set of top-level output pin
      *                              indices with Fc_out > 0; owned by the
      *                              caller and must outlive this router.
+     *  @param lookahead            Hop counts to the sinks of this type.
+     *                              Owned by the caller and must outlive this router.
      *  @param enable_hot_start     When true, each call to try_intra_lb_route
      *                              seeds unchanged nets from the last successful
      *                              route before running pathfinder, reducing
@@ -257,6 +270,7 @@ class ClusterRouter {
     ClusterRouter(const LbTypeRRGraph& lb_type_graph,
                   t_logical_block_type_ptr type,
                   const std::unordered_set<int>& valid_feedback_pins,
+                  ClusterRouterLookahead* lookahead,
                   bool enable_hot_start = false);
 
     /**
@@ -404,6 +418,9 @@ class ClusterRouter {
     /**
      * @brief Expand all nodes found in route tree into the priority queue.
      *
+     * Route tree nodes with no path to the current sink are left out of the
+     * queue when the lookahead is on.
+     *
      *  @param inet     The net to expand the route tree for.
      */
     void expand_rt_(IntraLbNetIdx inet);
@@ -469,9 +486,12 @@ class ClusterRouter {
      * @brief Explore all edges of an expansion node and insert connected nodes
      *        into the priority queue (i.e. connection routing).
      *
+     * Nodes with no path to the current sink are skipped when the lookahead
+     * is on.
+     *
      *  @param mode                      The mode the node that is being explored is in.
      *  @param cur_inode                 The node that is being explored.
-     *  @param cur_cost                  The cost of the node that is being explored.
+     *  @param cur_cost                  The path cost of the node that is being explored.
      *  @param net_fanout                The fanout of the net being routed.
      *  @param target_is_internal_sink   True iff the sink is inside this cluster;
      *                                   gates feedback through Fc_out==0 output pins.
@@ -481,6 +501,9 @@ class ClusterRouter {
                        float cur_cost,
                        int net_fanout,
                        bool target_is_internal_sink);
+
+    /// @brief Lower bound on the cost from node to the current sink, or nullopt if node has no path to it.
+    std::optional<float> remaining_cost_(LbRRNodeId node) const;
 
     /**
      * @brief Determine if a completed route is valid.
@@ -545,6 +568,10 @@ class ClusterRouter {
     ///        into the map owned by ClusterLegalizer, valid for packing lifetime.
     const std::unordered_set<int>* valid_feedback_pins_;
 
+    /// @brief Hop counts to the sinks of this block type.
+    ///        Null when the cluster router lookahead option is off.
+    ClusterRouterLookahead* lookahead_;
+
     // =========================================================================
     // Logical Netlist Info
     // =========================================================================
@@ -597,6 +624,14 @@ class ClusterRouter {
 
     /// @brief Priority queue used during path search.
     vtr::priority_queue<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node> pq_;
+
+    /// @brief Hop counts to the sink of the current search, from lookahead_.
+    ///        Stays null when the router has no lookahead.
+    const ClusterRouterLookahead::t_cost_to_sink* sink_hops_;
+
+    /// @brief Lower bound on the cost of one edge. A node h hops from the
+    ///        sink is at least hop_cost_ * h away from it.
+    float hop_cost_;
 
     /// @brief Flag that indicates if this object has been cleaned or not.
     bool is_clean_;

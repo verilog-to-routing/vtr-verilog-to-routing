@@ -1014,6 +1014,7 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
         vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
         false, // --memoize_cluster_packings is not yet supported for flat-recon
         vpr_setup_.PackerOpts.cluster_router_hot_start,
+        vpr_setup_.PackerOpts.cluster_router_lookahead,
         arch_.models,
         g_vpr_ctx.device().logical_block_types,
         vpr_setup_.PackerOpts.pack_verbosity);
@@ -1054,6 +1055,7 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
                                        vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
                                        vpr_setup_.PackerOpts.memoize_cluster_packings,
                                        vpr_setup_.PackerOpts.cluster_router_hot_start,
+                                       vpr_setup_.PackerOpts.cluster_router_lookahead,
                                        arch_.models,
                                        g_vpr_ctx.device().logical_block_types,
                                        vpr_setup_.PackerOpts.pack_verbosity);
