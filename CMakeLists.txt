@@ -57,7 +57,7 @@ option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 # Yosys plugins. Yosys is built when WITH_PARMYS or WITH_MOSAIC is on.
 option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" ON)
 option(WITH_MOSAIC "Enable mosaic yosys plugin as an alternative synthesis frontend" ON)
-option(SLANG_SYSTEMVERILOG "Enable building and installing Yosys-Slang plugin for parsing SystemVerilog" ON)
+option(SLANG_SYSTEMVERILOG "Enable Yosys' built-in slang SystemVerilog frontend (read_slang)" ON)
 
 
 if(${WITH_PARMYS} OR ${WITH_MOSAIC})
@@ -66,9 +66,9 @@ else()
     set(WITH_YOSYS OFF)
 endif()
 
-# slang is a yosys plugin, so skip it when neither frontend builds yosys
+# the slang frontend is part of yosys, so it is moot when yosys isn't built
 if(${SLANG_SYSTEMVERILOG} AND NOT ${WITH_YOSYS})
-    message(WARNING "Yosys is not enabled, disabling Yosys-Slang as well.")
+    message(WARNING "Yosys is not enabled, disabling the slang SystemVerilog frontend as well.")
     set(SLANG_SYSTEMVERILOG OFF)
 endif()
 

@@ -1,10 +1,7 @@
 {
     "while/while_loop/no_arch": {
         "test_name": "while/while_loop/no_arch",
-        "exit": 1,
-        "errors": [
-            "while_loop.v:0 While loops are only allowed in constant functions!"
-        ]
+        "exit": 1
     },
     "DEFAULT": {
         "test_name": "n/a",

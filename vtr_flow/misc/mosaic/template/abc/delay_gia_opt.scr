@@ -4,6 +4,11 @@
 # then (pass2):   abc -luts <cost>
 # LF-only ASCII.
 #
+# delay_scratch.blif is written relative to yosys' working directory and is
+# shared by every ABC run of the same `abc` call (one per module and clock
+# domain). Those runs must not execute concurrently; mosaic.py sets
+# YOSYS_MAX_THREADS=1 for that reason.
+#
 time
 echo " "
 echo "** Starting ABC DELAY LUT6 optimization and mapping (Zero Asic Corp.)"

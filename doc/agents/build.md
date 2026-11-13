@@ -43,3 +43,18 @@ Pass via `CMAKE_PARAMS="-DOPTION=value"`:
 - `VTR_IPO_BUILD` — interprocedural optimization (default auto/on); set to `off` during development to reduce build times and improve debuggability
 
 Yosys is built when `WITH_PARMYS` or `WITH_MOSAIC` is on. At least one of those two options must be on.
+
+## Yosys Build Requirements
+
+Yosys (`libs/EXTERNAL/yosys`, a CMake project since 0.67) is built as an external project from `libs/EXTERNAL/CMakeLists.txt` and installed into `build/` (`build/bin/yosys`, `build/share/yosys/`). The parmys and mosaic plugins compile against the installed headers through the `yosys_plugin_api` interface target. Yosys needs:
+
+- CMake ≥ 3.28, a C++20 compiler (GCC ≥ 13 / Clang ≥ 16), Python ≥ 3.11
+- Bison ≥ 3.8 and Flex (with a matching `FlexLexer.h`)
+- `pkg-config` plus `tcl-dev`, `zlib1g-dev`, and optionally `libffi-dev`/`libreadline-dev` — Yosys finds Tcl **only** through pkg-config, and the VTR flow drives Yosys with Tcl scripts, so a Yosys built without Tcl is unusable
+- The slang SystemVerilog frontend (`read_slang`) is built into Yosys; `SLANG_SYSTEMVERILOG` toggles it
+
+On macOS, Apple's bison (2.3) and flex headers are too old. Install `cmake bison flex pkgconf tcl-tk zlib` with Homebrew. Yosys' CMake finds Homebrew's keg-only packages on its own, but VTR's own CMake needs to be told:
+
+```shell
+make CMAKE_PARAMS="-DBISON_EXECUTABLE=/opt/homebrew/opt/bison/bin/bison -DFLEX_EXECUTABLE=/opt/homebrew/opt/flex/bin/flex"
+```

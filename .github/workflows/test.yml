@@ -1084,6 +1084,13 @@ jobs:
     - name: Install Dependencies
       run: ./install_apt_packages.sh
 
+    # Yosys needs CMake >= 3.28; Jammy ships 3.22. Everything else, including
+    # Yosys itself, builds with the stock gcc-11.
+    - name: Install CMake >= 3.28
+      run: |
+        pip install "cmake>=3.28"
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
     - uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         key: ${{ github.job }}-gcc-11
