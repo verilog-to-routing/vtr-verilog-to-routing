@@ -625,7 +625,7 @@ Grid Layout Example
     To reconnect the two sides, this tag can have multiple ``<interdie_wire>`` tags as children to specify the connection between the two sides.
     This tag may appear inside ``<auto_layout>`` or ``<fixed_layout>`` as a grid location tag.
 
-.. arch:tag:: <interdie_wire sg_name="string" sg_link="string" offset_start="int" offset_end="int" offset_increment="int" num="expr"/>
+.. arch:tag:: <interdie_wire sg_name="string" sg_link="string" offset_start="int" offset_end="int" offset_increment="int" num="expr" start="expr" end="expr" repeat="expr" incr="expr"/>
 
     :req_param sg_name: Name of the scatter-gather pattern to be used for the interdie connection.
     :req_param sg_link: Name of the scatter-gather link to be used for the interdie connection.
@@ -633,9 +633,48 @@ Grid Layout Example
     :req_param offset_end: Ending point of scatter-gather instantiations. Must be larger than 'offset_start'.
     :req_param offset_increment: Increment/distance between scatter-gather instantiations. Must be a positive number.
     :req_param num: Number of scatter-gather instantiations per switchblock location. May be an integer or a formula; the variable ``W`` denotes the routing channel width when the expression is evaluated.
+    :opt_param start:
+        An expression specifying the starting position (inclusive) along the cut at which this interdie wire is instantiated.
+        For a vertical cut (``x``) this is a y-coordinate; for a horizontal cut (``y``) this is an x-coordinate.
+        Value is an expression (see :ref:`grid_expressions`); variables ``W`` and ``H`` are device width and height.
+
+        **Default:** ``0``
+
+    :opt_param end:
+        An expression specifying the ending position (inclusive) along the cut at which this interdie wire is instantiated.
+
+        **Default:** ``H-1`` for a vertical cut, ``W-1`` for a horizontal cut
+
+    :opt_param repeat:
+        An expression specifying the repeat distance of the [``start``, ``end``] range along the cut.
+        The range is repeated wherever :math:`p = start + k*repeat` is satisfied for any positive integer :math:`k`.
+
+        **Default:** ``H`` for a vertical cut, ``W`` for a horizontal cut (i.e. no repetition)
+
+    :opt_param incr:
+        An expression specifying the increment between interdie wire instantiations along the cut within each [``start``, ``end``] range.
+
+        **Default:** ``1`` (every switchblock location along the cut)
 
     Defines the interdie wiring between the two sides of the cut. Connectivity is defined using scatter-gather patterns. Starting at 'offset_start' from location of the cut and moving by 'offset_increment' until we reach the location of 'offset_end' away from the cut, 'num' scatter-gather patterns defined by 'sg_name' and 'sg_link' will be instantiated.
     Note that these offset points always define the starting point of the scatter-gather pattern's sg_link. offset_start, offset_end and offset_increment are integer values.
+
+    The ``offset_*`` attributes select positions *across* the cut (perpendicular to it), while ``start``, ``end``, ``repeat`` and ``incr`` select positions *along* the cut (parallel to it), in the same way a single axis of a ``<region>`` tag does.
+    By default, interdie wires are instantiated at every switchblock location along the whole length of the cut.
+
+    Multiple ``<interdie_wire>`` tags under the same cut are additive: where their locations overlap, the scatter-gather patterns of all of them are instantiated.
+
+    Example:
+
+    .. code-block:: xml
+
+        <interposer_cut x="W/2">
+            <!-- Baseline connectivity along the whole cut -->
+            <interdie_wire sg_name="interposer_sg" sg_link="L3_link" offset_start="-2" offset_end="0" offset_increment="1" num="3"/>
+            <!-- Additional connectivity in every 10th row, added on top of the baseline -->
+            <interdie_wire sg_name="interposer_sg" sg_link="L3_link" offset_start="-2" offset_end="0" offset_increment="1" num="1"
+                           start="0" end="0" repeat="10"/>
+        </interposer_cut>
 
     .. figure:: scatter_gather_images/interposer_diagram.png
         

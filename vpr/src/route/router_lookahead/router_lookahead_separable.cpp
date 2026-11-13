@@ -206,7 +206,7 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
 
     // Sample along a line through the middle of the device, perpendicular to the profiling axis:
     // a middle-height row when profiling x, a middle-width column when profiling y.
-    const int fixed_coord = profile_x ? (int)(2 * grid.height() / 3) : (int)grid.width() / 2;
+    const int fixed_coord = profile_x ? (int)(grid.height() / 8) : (int)(grid.width() / 8);
 
     for (size_t from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
         // If arch file specifies die_number="layer_num" doesn't have inter-cluster

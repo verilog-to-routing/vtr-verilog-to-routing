@@ -597,28 +597,45 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
                 // Must exist; SG pattern names must match between interposer XML and SG patterns
                 VTR_ASSERT(sg_it != sg_patterns.end());
 
-                // Step 5: Define the spatial region (X/Y span) for this SG link
+                // Step 5: Evaluate the location specification parallel to the cut
+                const t_grid_loc_spec& parallel_loc = wire_inf.parallel_to_cut_loc;
+                formula_data.clear();
+                formula_data.set_var_value("W", grid_width);
+                formula_data.set_var_value("H", grid_height);
+
+                t_sb_loc_spec parallel_spec;
+                parallel_spec.start = formula_parser.parse_formula(parallel_loc.start_expr, formula_data);
+                parallel_spec.end = formula_parser.parse_formula(parallel_loc.end_expr, formula_data);
+                parallel_spec.incr = formula_parser.parse_formula(parallel_loc.incr_expr, formula_data);
+                parallel_spec.repeat = formula_parser.parse_formula(parallel_loc.repeat_expr, formula_data);
+
+                // Step 6: Define the spatial region (X/Y span) for this SG link.
+                // The offset defines the span perpendicular to the cut; parallel_spec defines the span along the cut.
+                t_sb_loc_spec perpendicular_spec;
+                perpendicular_spec.start = start;
+                perpendicular_spec.end = end;
+                perpendicular_spec.incr = incr;
+                perpendicular_spec.repeat = std::numeric_limits<int>::max();
+
                 t_specified_loc region;
+                if (cut_type == e_interposer_cut_type::VERT) {
+                    // Vertical cut: X crosses the cut, Y runs along it
+                    region.reg_x = perpendicular_spec;
+                    region.reg_y = parallel_spec;
+                } else {
+                    VTR_ASSERT(cut_type == e_interposer_cut_type::HORZ);
+                    // Horizontal cut: Y crosses the cut, X runs along it
+                    region.reg_x = parallel_spec;
+                    region.reg_y = perpendicular_spec;
+                }
 
-                // For vertical cuts, X varies along the cut; Y covers full height
-                region.reg_x.start = (cut_type == e_interposer_cut_type::VERT) ? start : 0;
-                region.reg_x.end = (cut_type == e_interposer_cut_type::VERT) ? end : grid_width - 1;
-                region.reg_x.incr = (cut_type == e_interposer_cut_type::VERT) ? incr : 1;
-                region.reg_x.repeat = std::numeric_limits<int>::max();
-
-                // For horizontal cuts, Y varies along the cut; X covers full width
-                region.reg_y.start = (cut_type == e_interposer_cut_type::HORZ) ? start : 0;
-                region.reg_y.end = (cut_type == e_interposer_cut_type::HORZ) ? end : grid_height - 1;
-                region.reg_y.incr = (cut_type == e_interposer_cut_type::HORZ) ? incr : 1;
-                region.reg_y.repeat = std::numeric_limits<int>::max();
-
-                // Step 6: Build an SG location entry describing where to instantiate links
+                // Step 7: Build an SG location entry describing where to instantiate links
                 t_sg_location sg_location{.type = e_sb_location::E_XY_SPECIFIED,
                                           .region = region,
                                           .num = wire_inf.num,
                                           .sg_link_name = wire_inf.sg_link};
 
-                // Step 7: Append this region definition to the matched SG pattern
+                // Step 8: Append this region definition to the matched SG pattern
                 sg_it->sg_locations.push_back(std::move(sg_location));
             }
         }
