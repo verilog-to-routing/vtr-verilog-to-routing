@@ -123,15 +123,17 @@ void FasmWriterVisitor::check_interconnect(const t_pb_routes &pb_routes, int ino
 
   const t_pb_graph_pin *prev_pin = logical_block_->pb_graph_pin(prev_node);
 
-  int prev_edge;
-  for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
-      if(prev_pin->output_edges[prev_edge]->output_pin()->pin_count_in_cluster == inode) {
+  bool found = false;
+  t_interconnect* interconnect = nullptr;
+  for (const t_pb_graph_edge* prev_edge : prev_pin->output_edges) {
+      if (prev_edge->output_pin()->pin_count_in_cluster == inode) {
+          interconnect = prev_edge->interconnect;
+          found = true;
           break;
       }
   }
-  VTR_ASSERT(prev_edge < prev_pin->num_output_edges);
+  VTR_ASSERT(found);
 
-  auto *interconnect = prev_pin->output_edges[prev_edge]->interconnect;
   if(interconnect->meta.has(fasm_mux)) {
     auto* value = interconnect->meta.get(fasm_mux);
     VTR_ASSERT(value != nullptr);

@@ -1103,8 +1103,7 @@ static void add_intra_tile_switches() {
             pb_graph_node_q.pop_front();
 
             for (const t_pb_graph_pin& pb_pin : pb_graph_node->pins()) {
-                for (int out_edge_idx = 0; out_edge_idx < pb_pin.num_output_edges; out_edge_idx++) {
-                    t_pb_graph_edge* pb_graph_edge = pb_pin.output_edges[out_edge_idx];
+                for (t_pb_graph_edge* pb_graph_edge : pb_pin.output_edges) {
                     float max_delay = pb_graph_edge->delay_max;
 
                     if (pb_edge_delays.find(max_delay) == pb_edge_delays.end()) {

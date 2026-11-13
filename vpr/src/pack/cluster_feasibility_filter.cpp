@@ -214,13 +214,11 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(t_pb_graph
                                                                       t_pb_graph_pin* reference_pin,
                                                                       const int depth,
                                                                       std::unordered_set<t_pb_graph_pin*>& seen_pins) {
-    int i;
-
     if (seen_pins.count(current_pb_graph_pin) == 0
         && current_pb_graph_pin->parent_node->pb_type->depth > depth) {
         seen_pins.insert(current_pb_graph_pin);
-        for (i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
-            expand_pb_graph_node_and_load_output_to_input_connections(current_pb_graph_pin->output_edges[i]->output_pin(),
+        for (t_pb_graph_edge* out_edge : current_pb_graph_pin->output_edges) {
+            expand_pb_graph_node_and_load_output_to_input_connections(out_edge->output_pin(),
                                                                       reference_pin, depth,
                                                                       seen_pins);
         }
@@ -235,11 +233,10 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(t_pb_graph
  */
 static void unmark_fanout_intermediate_nodes(t_pb_graph_pin* current_pb_graph_pin,
                                              std::unordered_set<t_pb_graph_pin*>& seen_pins) {
-    int i;
     if (seen_pins.count(current_pb_graph_pin) != 0) {
         seen_pins.erase(current_pb_graph_pin);
-        for (i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
-            unmark_fanout_intermediate_nodes(current_pb_graph_pin->output_edges[i]->output_pin(),
+        for (t_pb_graph_edge* out_edge : current_pb_graph_pin->output_edges) {
+            unmark_fanout_intermediate_nodes(out_edge->output_pin(),
                                              seen_pins);
         }
     }
@@ -298,15 +295,15 @@ static size_t assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
         if (pin_node_depth > node_depth) {
             // Pin inside the subtree of provided pb_graph_node. Expand in both
             // directions (input and output edges) from that pin.
-            for (int edge_idx = 0; edge_idx < pin->num_input_edges; edge_idx++) {
-                t_pb_graph_pin* neighbor_pin = pin->input_edges[edge_idx]->input_pin();
+            for (t_pb_graph_edge* in_edge : pin->input_edges) {
+                t_pb_graph_pin* neighbor_pin = in_edge->input_pin();
                 if (!visited.count(neighbor_pin)) {
                     visited.insert(neighbor_pin);
                     queue.push(neighbor_pin);
                 }
             }
-            for (int edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
-                t_pb_graph_pin* neighbor_pin = pin->output_edges[edge_idx]->output_pin();
+            for (t_pb_graph_edge* out_edge : pin->output_edges) {
+                t_pb_graph_pin* neighbor_pin = out_edge->output_pin();
                 if (!visited.count(neighbor_pin)) {
                     visited.insert(neighbor_pin);
                     queue.push(neighbor_pin);
@@ -318,8 +315,8 @@ static size_t assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
             if (pin->port->type == IN_PORT || pin->port->is_clock) {
                 // Expand using the output edges if this pin is an input or
                 // clock pin of the provided pb_graph_node.
-                for (int edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
-                    t_pb_graph_pin* neighbor_pin = pin->output_edges[edge_idx]->output_pin();
+                for (t_pb_graph_edge* out_edge : pin->output_edges) {
+                    t_pb_graph_pin* neighbor_pin = out_edge->output_pin();
                     if (!visited.count(neighbor_pin)) {
                         visited.insert(neighbor_pin);
                         queue.push(neighbor_pin);
@@ -328,8 +325,8 @@ static size_t assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
             } else {
                 // Expand using the input edges if this pin is an output pin of
                 // the provided pb_graph_node.
-                for (int edge_idx = 0; edge_idx < pin->num_input_edges; edge_idx++) {
-                    t_pb_graph_pin* neighbor_pin = pin->input_edges[edge_idx]->input_pin();
+                for (t_pb_graph_edge* in_edge : pin->input_edges) {
+                    t_pb_graph_pin* neighbor_pin = in_edge->input_pin();
                     if (!visited.count(neighbor_pin)) {
                         visited.insert(neighbor_pin);
                         queue.push(neighbor_pin);
@@ -433,10 +430,10 @@ static void discover_all_forced_connections(t_pb_graph_node* pb_graph_node) {
  * Given an output pin, determine if it connects to only one input pin and nothing else.
  */
 static bool is_forced_connection(const t_pb_graph_pin* pb_graph_pin) {
-    if (pb_graph_pin->num_output_edges > 1) {
+    if (pb_graph_pin->output_edges.size() > 1) {
         return false;
     }
-    if (pb_graph_pin->num_output_edges == 0) {
+    if (pb_graph_pin->output_edges.empty()) {
         if (pb_graph_pin->is_primitive_pin()) {
             /* Check that this pin belongs to a primitive */
             return true;

@@ -145,15 +145,15 @@ static void load_pack_pattern_annotations(const int line_num,
         for (int j = 0; j < num_in_ptrs[i]; j++) {
             for (int m = 0; m < num_out_sets; m++) {
                 for (int n = 0; n < num_out_ptrs[m]; n++) {
-                    int iedge;
-                    for (iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
+                    size_t iedge;
+                    for (iedge = 0; iedge < in_port[i][j]->output_edges.size(); iedge++) {
                         if (in_port[i][j]->output_edges[iedge]->output_pin() == out_port[m][n]) {
                             break;
                         }
                     }
                     /* jluu Todo: This is inefficient, I know the interconnect so I know what edges exist
                      * can use this info to only annotate existing edges */
-                    if (iedge != in_port[i][j]->num_output_edges) {
+                    if (iedge != in_port[i][j]->output_edges.size()) {
                         t_pb_graph_edge* edge = in_port[i][j]->output_edges[iedge];
                         edge->pack_pattern_names.push_back(value.data()); // TODO: convert to std::string
                         edge->pack_pattern_allow_multi_fanout.push_back(allow_multi_fanout);
@@ -315,8 +315,7 @@ static void load_delay_annotations(const int line_num,
             for (i = 0; i < num_in_sets; i++) {
                 for (j = 0; j < num_in_ptrs[i]; j++) {
                     int p = 0;
-                    for (int iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
-                        t_pb_graph_edge* pb_edge = in_port[i][j]->output_edges[iedge];
+                    for (t_pb_graph_edge* pb_edge : in_port[i][j]->output_edges) {
                         if (out_pins.contains(pb_edge->output_pin())) {
                             if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX) {
                                 if (!std::isnan(pb_edge->delay_max)) {
@@ -523,12 +522,12 @@ static void inferr_unspecified_pb_graph_pin_delays(t_pb_graph_pin* pb_graph_pin)
     /*
      * Edges (i.e. intra-pb interconnect)
      */
-    for (int iedge = 0; iedge < pb_graph_pin->num_input_edges; ++iedge) {
-        inferr_unspecified_pb_graph_edge_delays(pb_graph_pin->input_edges[iedge]);
+    for (t_pb_graph_edge* in_edge : pb_graph_pin->input_edges) {
+        inferr_unspecified_pb_graph_edge_delays(in_edge);
     }
 
-    for (int iedge = 0; iedge < pb_graph_pin->num_output_edges; ++iedge) {
-        inferr_unspecified_pb_graph_edge_delays(pb_graph_pin->output_edges[iedge]);
+    for (t_pb_graph_edge* out_edge : pb_graph_pin->output_edges) {
+        inferr_unspecified_pb_graph_edge_delays(out_edge);
     }
 }
 

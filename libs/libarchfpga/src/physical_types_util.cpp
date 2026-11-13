@@ -240,12 +240,10 @@ static std::vector<int> get_pb_pin_src_pins(t_physical_tile_type_ptr physical_ty
                                             int relative_cap,
                                             const t_pb_graph_pin* pin) {
     std::vector<int> driving_pins;
-    const auto& edges = pin->input_edges;
-    int num_edges = pin->num_input_edges;
-    driving_pins.reserve(num_edges);
+    driving_pins.reserve(pin->input_edges.size());
 
-    for (int edge_idx = 0; edge_idx < num_edges; edge_idx++) {
-        const t_pb_graph_pin* conn_pin = edges[edge_idx]->input_pin();
+    for (const t_pb_graph_edge* edge : pin->input_edges) {
+        const t_pb_graph_pin* conn_pin = edge->input_pin();
         if (conn_pin->is_root_block_pin()) {
             driving_pins.push_back(get_physical_pin_at_sub_tile_location(physical_type,
                                                                          logical_block,

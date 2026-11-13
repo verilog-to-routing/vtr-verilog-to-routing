@@ -187,8 +187,7 @@ void LbTypeRRGraphBuilder::build_pb_pin_node_(const t_pb_graph_pin& pb_pin, e_lb
     // Each mode holds the edges whose interconnect belongs to that mode, in pb graph order.
     for (int imode = 0; imode < num_modes; imode++) {
         begin_mode_();
-        for (int iedge = 0; iedge < pb_pin.num_output_edges; iedge++) {
-            const t_pb_graph_edge* edge = pb_pin.output_edges[iedge];
+        for (const t_pb_graph_edge* edge : pb_pin.output_edges) {
             int edge_mode = edge->interconnect->parent_mode->index;
             VTR_ASSERT(edge_mode >= 0 && edge_mode < num_modes);
             if (edge_mode != imode) {

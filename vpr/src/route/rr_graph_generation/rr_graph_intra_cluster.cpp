@@ -1132,8 +1132,7 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
         const e_rr_type out_type = device_ctx.rr_graph.node_type(out_node);
         VTR_ASSERT_MSG(out_type == e_rr_type::IPIN || out_type == e_rr_type::OPIN,
                        "Bus-based mux output bit is not an IPIN or OPIN node");
-        for (int iedge = 0; iedge < out_pin->num_input_edges; iedge++) {
-            const t_pb_graph_edge* edge = out_pin->input_edges[iedge];
+        for (const t_pb_graph_edge* edge : out_pin->input_edges) {
             if (!edge->is_bus_mux()) {
                 continue;
             }

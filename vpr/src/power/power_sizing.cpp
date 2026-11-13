@@ -659,7 +659,6 @@ static void power_size_pin_to_interconnect(t_interconnect* interc,
 
 static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
                                              bool pin_is_an_input) {
-    int edge_idx;
     int list_cnt;
     std::vector<t_interconnect*> list;
     bool found;
@@ -717,11 +716,11 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
 
     /* Loop through all edges, building a list of interconnect that this pin drives */
     list_cnt = 0;
-    for (edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
+    for (t_pb_graph_edge* edge : pin->output_edges) {
         /* Check if its already in the list */
         found = false;
         for (i = 0; i < list_cnt; i++) {
-            if (list[i] == pin->output_edges[edge_idx]->interconnect) {
+            if (list[i] == edge->interconnect) {
                 found = true;
                 break;
             }
@@ -730,7 +729,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
         if (!found) {
             list_cnt++;
             list.resize(list_cnt);
-            list[list_cnt - 1] = pin->output_edges[edge_idx]->interconnect;
+            list[list_cnt - 1] = edge->interconnect;
         }
     }
 

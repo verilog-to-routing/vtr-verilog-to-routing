@@ -619,10 +619,10 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
     temp_pin = nullptr;
     dest_pin = nullptr;
     if (forward) {
-        for (int i = 0; i < cur_pin->num_output_edges; i++) {
+        for (t_pb_graph_edge* out_edge : cur_pin->output_edges) {
             /* one fanout assumption */
-            if (cur_pin->output_edges[i]->infer_pattern) {
-                t_pb_graph_pin* out_pin = cur_pin->output_edges[i]->output_pin();
+            if (out_edge->infer_pattern) {
+                t_pb_graph_pin* out_pin = out_edge->output_pin();
                 if (out_pin->parent_node->pb_type->num_modes == 0) {
                     temp_pin = out_pin;
                 } else {
@@ -633,10 +633,10 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                     dest_pin = temp_pin;
                 }
             } else {
-                for (size_t j = 0; j < cur_pin->output_edges[i]->pack_pattern_names.size(); j++) {
-                    if (cur_pin->output_edges[i]->pack_pattern_indices[j]
+                for (size_t j = 0; j < out_edge->pack_pattern_names.size(); j++) {
+                    if (out_edge->pack_pattern_indices[j]
                         == pattern_id) {
-                        t_pb_graph_pin* out_pin = cur_pin->output_edges[i]->output_pin();
+                        t_pb_graph_pin* out_pin = out_edge->output_pin();
                         if (out_pin->parent_node->pb_type->num_modes == 0) {
                             temp_pin = out_pin;
                         } else {
@@ -651,10 +651,10 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
             }
         }
     } else {
-        for (int i = 0; i < cur_pin->num_input_edges; i++) {
+        for (t_pb_graph_edge* in_edge : cur_pin->input_edges) {
             /* one fanout assumption */
-            if (cur_pin->input_edges[i]->infer_pattern) {
-                t_pb_graph_pin* in_pin = cur_pin->input_edges[i]->input_pin();
+            if (in_edge->infer_pattern) {
+                t_pb_graph_pin* in_pin = in_edge->input_pin();
                 if (in_pin->parent_node->pb_type->num_modes == 0) {
                     temp_pin = in_pin;
                 } else {
@@ -665,10 +665,10 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                     dest_pin = temp_pin;
                 }
             } else {
-                for (size_t j = 0; j < cur_pin->input_edges[i]->pack_pattern_names.size(); j++) {
-                    if (cur_pin->input_edges[i]->pack_pattern_indices[j]
+                for (size_t j = 0; j < in_edge->pack_pattern_names.size(); j++) {
+                    if (in_edge->pack_pattern_indices[j]
                         == pattern_id) {
-                        t_pb_graph_pin* in_pin = cur_pin->input_edges[i]->input_pin();
+                        t_pb_graph_pin* in_pin = in_edge->input_pin();
                         if (in_pin->parent_node->pb_type->num_modes == 0) {
                             temp_pin = in_pin;
                         } else {

@@ -216,7 +216,7 @@ static std::string clustering_xml_interconnect_text(t_logical_block_type_ptr typ
     }
 
     int prev_node = pb_route[inode].driver_pb_pin_id;
-    int prev_edge;
+    size_t prev_edge;
     if (prev_node == UNDEFINED) {
         /* No previous driver implies that this is either a top-level input pin or a primitive output pin */
         const t_pb_graph_pin* cur_pin = type->pb_graph_pin(inode);
@@ -226,12 +226,12 @@ static std::string clustering_xml_interconnect_text(t_logical_block_type_ptr typ
         const t_pb_graph_pin* cur_pin = type->pb_graph_pin(inode);
         const t_pb_graph_pin* prev_pin = type->pb_graph_pin(prev_node);
 
-        for (prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
+        for (prev_edge = 0; prev_edge < prev_pin->output_edges.size(); prev_edge++) {
             if (prev_pin->output_edges[prev_edge]->output_pin()->pin_count_in_cluster == inode) {
                 break;
             }
         }
-        VTR_ASSERT(prev_edge < prev_pin->num_output_edges);
+        VTR_ASSERT(prev_edge < prev_pin->output_edges.size());
 
         const char* name = prev_pin->output_edges[prev_edge]->interconnect->name.c_str();
         if (prev_pin->port->parent_pb_type->depth

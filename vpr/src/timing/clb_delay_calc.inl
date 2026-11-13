@@ -91,8 +91,7 @@ inline const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(const t_pb_graph_
     VTR_ASSERT(sink);
 
     const t_pb_graph_edge* pb_edge = nullptr;
-    for(int iedge = 0; iedge < driver->num_output_edges; ++iedge) {
-        const t_pb_graph_edge* check_edge = driver->output_edges[iedge];
+    for (const t_pb_graph_edge* check_edge : driver->output_edges) {
         VTR_ASSERT(check_edge);
 
         if(check_edge->output_pin() == sink) {

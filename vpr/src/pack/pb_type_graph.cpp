@@ -804,7 +804,7 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
 
 static void store_pin_sinks_edge_id(t_pb_graph_node* pb_graph_node) {
     for (t_pb_graph_pin& pb_pin : pb_graph_node->mutable_pins()) {
-        for (int edge_idx = 0; edge_idx < pb_pin.num_output_edges; ++edge_idx) {
+        for (int edge_idx = 0; edge_idx < (int)pb_pin.output_edges.size(); ++edge_idx) {
             t_pb_graph_edge* output_edge = pb_pin.output_edges[edge_idx];
             pb_pin.sink_pin_edge_idx_map.insert(std::make_pair(output_edge->output_pin(), edge_idx));
         }
@@ -1454,11 +1454,11 @@ static void echo_pb_pins(const std::vector<std::span<t_pb_graph_pin>>& pb_graph_
             VTR_ASSERT(j == pb_graph_pins[i][j].pin_number);
             VTR_ASSERT(pb_graph_pins[i][j].port == port);
             fprintf(fp,
-                    "Pin %d port name \"%s\" num input edges %d num output edges %d parent type \"%s\" parent index %d\n",
+                    "Pin %d port name \"%s\" num input edges %zu num output edges %zu parent type \"%s\" parent index %d\n",
                     pb_graph_pins[i][j].pin_number,
                     pb_graph_pins[i][j].port->name,
-                    pb_graph_pins[i][j].num_input_edges,
-                    pb_graph_pins[i][j].num_output_edges,
+                    pb_graph_pins[i][j].input_edges.size(),
+                    pb_graph_pins[i][j].output_edges.size(),
                     pb_graph_pins[i][j].parent_node->pb_type->name,
                     pb_graph_pins[i][j].parent_node->placement_index);
             print_tabs(fp, level + 2);
@@ -1487,10 +1487,10 @@ static void echo_pb_pins(const std::vector<std::span<t_pb_graph_pin>>& pb_graph_
             } else {
                 fprintf(fp, "pin class %d \n", pb_graph_pins[i][j].pin_class);
             }
-            for (int k = 0; k < pb_graph_pins[i][j].num_input_edges; k++) {
+            for (size_t k = 0; k < pb_graph_pins[i][j].input_edges.size(); k++) {
                 const t_pb_graph_edge* edge = pb_graph_pins[i][j].input_edges[k];
                 print_tabs(fp, level + 2);
-                fprintf(fp, "Input edge %d\n", k);
+                fprintf(fp, "Input edge %zu\n", k);
                 print_tabs(fp, level + 3);
                 fprintf(fp, "Input edge inputs\n");
                 print_tabs(fp, level + 3);
@@ -1507,10 +1507,10 @@ static void echo_pb_pins(const std::vector<std::span<t_pb_graph_pin>>& pb_graph_
                         edge->output_pin()->parent_node->pb_type->name,
                         edge->output_pin()->parent_node->placement_index);
             }
-            for (int k = 0; k < pb_graph_pins[i][j].num_output_edges; k++) {
+            for (size_t k = 0; k < pb_graph_pins[i][j].output_edges.size(); k++) {
                 const t_pb_graph_edge* edge = pb_graph_pins[i][j].output_edges[k];
                 print_tabs(fp, level + 2);
-                fprintf(fp, "Output edge %d\n", k);
+                fprintf(fp, "Output edge %zu\n", k);
                 print_tabs(fp, level + 3);
                 fprintf(fp, "Output edge inputs\n");
                 print_tabs(fp, level + 3);
@@ -1570,8 +1570,7 @@ static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin) {
     std::map<t_pb_graph_edge_comparator, int> edges_map;
 
     // First check the incoming edges into cur_pin
-    for (int i_edge = 0; i_edge < cur_pin->num_input_edges; i_edge++) {
-        t_pb_graph_edge* cur_edge = cur_pin->input_edges[i_edge];
+    for (t_pb_graph_edge* cur_edge : cur_pin->input_edges) {
         // Populate the edge_comparator struct and attempt to insert it into STL map
         edges_info.parent_edge = cur_edge;
         edges_info.input_pin = cur_edge->input_pin();
@@ -1617,8 +1616,7 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
         VTR_ASSERT(logic_equivalent_pins_map.empty());
     }
     int edge_count = 0;
-    for (int i = 0; i < cur_pin->num_output_edges; i++) {
-        t_pb_graph_edge* cur_edge = cur_pin->output_edges[i];
+    for (t_pb_graph_edge* cur_edge : cur_pin->output_edges) {
         *line_num = cur_edge->interconnect->line_num;
         int out_pin_num = cur_edge->output_pin()->pin_count_in_cluster;
         if (i_pin == 0) {
@@ -1650,8 +1648,7 @@ const t_pb_graph_edge* get_edge_between_pins(const t_pb_graph_pin* driver_pin, c
     }
 
     int node_index = pin->pin_count_in_cluster;
-    for (int iedge = 0; iedge < driver_pin->num_output_edges; iedge++) {
-        t_pb_graph_edge* edge = driver_pin->output_edges[iedge];
+    for (t_pb_graph_edge* edge : driver_pin->output_edges) {
         if (edge->output_pin()->pin_count_in_cluster == node_index) {
             return edge;
         }

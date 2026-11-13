@@ -248,8 +248,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
     for (int i = 0; i < pb_graph_node->num_input_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
             bool hasPattern = false;
-            for (int k = 0; k < pb_graph_node->pins_by_input_port[i][j].num_output_edges; k++) {
-                t_pb_graph_edge* output_edge = pb_graph_node->pins_by_input_port[i][j].output_edges[k];
+            for (t_pb_graph_edge* output_edge : pb_graph_node->pins_by_input_port[i][j].output_edges) {
                 output_edge->pack_pattern_indices.resize(output_edge->pack_pattern_names.size());
                 for (size_t m = 0; m < output_edge->pack_pattern_names.size(); m++) {
                     hasPattern = true;
@@ -267,7 +266,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             }
             // if the output edge to this pin is annotated with a pack pattern
             // trace the inputs to this pin and mark them to infer pattern
-            // if they are direct connections (num_input_edges == 1)
+            // if they are direct connections (input_edges.size() == 1)
             if (hasPattern) {
                 backward_infer_pattern(&pb_graph_node->pins_by_input_port[i][j]);
             }
@@ -277,8 +276,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
     for (int i = 0; i < pb_graph_node->num_output_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
             bool hasPattern = false;
-            for (int k = 0; k < pb_graph_node->pins_by_output_port[i][j].num_output_edges; k++) {
-                t_pb_graph_edge* output_edge = pb_graph_node->pins_by_output_port[i][j].output_edges[k];
+            for (t_pb_graph_edge* output_edge : pb_graph_node->pins_by_output_port[i][j].output_edges) {
                 output_edge->pack_pattern_indices.resize(output_edge->pack_pattern_names.size());
                 for (size_t m = 0; m < output_edge->pack_pattern_names.size(); m++) {
                     hasPattern = true;
@@ -296,7 +294,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             }
             // if the output edge to this pin is annotated with a pack pattern
             // trace the inputs to this pin and mark them to infer pattern
-            // if they are direct connections (num_input_edges == 1)
+            // if they are direct connections (input_edges.size() == 1)
             if (hasPattern) {
                 backward_infer_pattern(&pb_graph_node->pins_by_output_port[i][j]);
             }
@@ -306,8 +304,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
     for (int i = 0; i < pb_graph_node->num_clock_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
             bool hasPattern = false;
-            for (int k = 0; k < pb_graph_node->pins_by_clock_port[i][j].num_output_edges; k++) {
-                t_pb_graph_edge* output_edge = pb_graph_node->pins_by_clock_port[i][j].output_edges[k];
+            for (t_pb_graph_edge* output_edge : pb_graph_node->pins_by_clock_port[i][j].output_edges) {
                 output_edge->pack_pattern_indices.resize(output_edge->pack_pattern_names.size());
                 for (size_t m = 0; m < output_edge->pack_pattern_names.size(); m++) {
                     hasPattern = true;
@@ -325,7 +322,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             }
             // if the output edge to this pin is annotated with a pack pattern
             // trace the inputs to this pin and mark them to infer pattern
-            // if they are direct connections (num_input_edges == 1)
+            // if they are direct connections (input_edges.size() == 1)
             if (hasPattern) {
                 backward_infer_pattern(&pb_graph_node->pins_by_clock_port[i][j]);
             }
@@ -337,13 +334,13 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
  * In obvious cases where a pattern edge has only one path to go, set that path to be inferred
  */
 static void forward_infer_pattern(t_pb_graph_pin* pb_graph_pin) {
-    if (pb_graph_pin->num_output_edges == 1 && pb_graph_pin->output_edges[0]->pack_pattern_names.empty() && pb_graph_pin->output_edges[0]->infer_pattern == false) {
+    if (pb_graph_pin->output_edges.size() == 1 && pb_graph_pin->output_edges[0]->pack_pattern_names.empty() && pb_graph_pin->output_edges[0]->infer_pattern == false) {
         pb_graph_pin->output_edges[0]->infer_pattern = true;
         forward_infer_pattern(pb_graph_pin->output_edges[0]->output_pin());
     }
 }
 static void backward_infer_pattern(t_pb_graph_pin* pb_graph_pin) {
-    if (pb_graph_pin->num_input_edges == 1 && pb_graph_pin->input_edges[0]->pack_pattern_names.empty() && pb_graph_pin->input_edges[0]->infer_pattern == false) {
+    if (pb_graph_pin->input_edges.size() == 1 && pb_graph_pin->input_edges[0]->pack_pattern_names.empty() && pb_graph_pin->input_edges[0]->infer_pattern == false) {
         pb_graph_pin->input_edges[0]->infer_pattern = true;
         backward_infer_pattern(pb_graph_pin->input_edges[0]->input_pin());
     }
@@ -417,10 +414,10 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern_in_node(const int pattern
     for (int i = 0; i < pb_graph_node->num_input_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
             t_pb_graph_pin& input_pin = pb_graph_node->pins_by_input_port[i][j];
-            for (int k = 0; k < input_pin.num_output_edges; k++) {
-                for (size_t m = 0; m < input_pin.output_edges[k]->pack_pattern_names.size(); m++) {
-                    if (input_pin.output_edges[k]->pack_pattern_indices[m] == pattern_index) {
-                        return input_pin.output_edges[k];
+            for (t_pb_graph_edge* out_edge : input_pin.output_edges) {
+                for (size_t m = 0; m < out_edge->pack_pattern_names.size(); m++) {
+                    if (out_edge->pack_pattern_indices[m] == pattern_index) {
+                        return out_edge;
                     }
                 }
             }
@@ -430,10 +427,10 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern_in_node(const int pattern
     for (int i = 0; i < pb_graph_node->num_output_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
             t_pb_graph_pin& output_pin = pb_graph_node->pins_by_output_port[i][j];
-            for (int k = 0; k < output_pin.num_output_edges; k++) {
-                for (size_t m = 0; m < output_pin.output_edges[k]->pack_pattern_names.size(); m++) {
-                    if (output_pin.output_edges[k]->pack_pattern_indices[m] == pattern_index) {
-                        return output_pin.output_edges[k];
+            for (t_pb_graph_edge* out_edge : output_pin.output_edges) {
+                for (size_t m = 0; m < out_edge->pack_pattern_names.size(); m++) {
+                    if (out_edge->pack_pattern_indices[m] == pattern_index) {
+                        return out_edge;
                     }
                 }
             }
@@ -443,10 +440,10 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern_in_node(const int pattern
     for (int i = 0; i < pb_graph_node->num_clock_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
             t_pb_graph_pin& clock_pin = pb_graph_node->pins_by_clock_port[i][j];
-            for (int k = 0; k < clock_pin.num_output_edges; k++) {
-                for (size_t m = 0; m < clock_pin.output_edges[k]->pack_pattern_names.size(); m++) {
-                    if (clock_pin.output_edges[k]->pack_pattern_indices[m] == pattern_index) {
-                        return clock_pin.output_edges[k];
+            for (t_pb_graph_edge* out_edge : clock_pin.output_edges) {
+                for (size_t m = 0; m < out_edge->pack_pattern_names.size(); m++) {
+                    if (out_edge->pack_pattern_indices[m] == pattern_index) {
+                        return out_edge;
                     }
                 }
             }
@@ -476,8 +473,7 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
                                                   int* L_num_blocks,
                                                   bool make_root_of_chain,
                                                   std::unordered_map<t_pb_graph_node*, t_pack_pattern_block*>& last_added_pattern_block) {
-    int j;
-    int iport, ipin, iedge;
+    int iport, ipin;
     bool found; /* Error checking, ensure only one fan-out for each pattern net */
     t_pack_pattern_block* destination_block = nullptr;
     t_pb_graph_node* destination_pb_graph_node = nullptr;
@@ -522,8 +518,8 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
             // explore the inputs to this primitive
             for (iport = 0; iport < destination_pb_graph_node->num_input_ports; iport++) {
                 for (ipin = 0; ipin < destination_pb_graph_node->num_input_pins[iport]; ipin++) {
-                    for (iedge = 0; iedge < destination_pb_graph_node->pins_by_input_port[iport][ipin].num_input_edges; iedge++) {
-                        backward_expand_pack_pattern_from_edge(destination_pb_graph_node->pins_by_input_port[iport][ipin].input_edges[iedge],
+                    for (t_pb_graph_edge* in_edge : destination_pb_graph_node->pins_by_input_port[iport][ipin].input_edges) {
+                        backward_expand_pack_pattern_from_edge(in_edge,
                                                                packing_pattern,
                                                                &destination_pb_graph_node->pins_by_input_port[iport][ipin],
                                                                destination_block, L_num_blocks,
@@ -536,8 +532,8 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
             // explore the outputs of this primitive
             for (iport = 0; iport < destination_pb_graph_node->num_output_ports; iport++) {
                 for (ipin = 0; ipin < destination_pb_graph_node->num_output_pins[iport]; ipin++) {
-                    for (iedge = 0; iedge < destination_pb_graph_node->pins_by_output_port[iport][ipin].num_output_edges; iedge++) {
-                        forward_expand_pack_pattern_from_edge(destination_pb_graph_node->pins_by_output_port[iport][ipin].output_edges[iedge],
+                    for (t_pb_graph_edge* out_edge : destination_pb_graph_node->pins_by_output_port[iport][ipin].output_edges) {
+                        forward_expand_pack_pattern_from_edge(out_edge,
                                                               packing_pattern, L_num_blocks, false,
                                                               last_added_pattern_block);
                     }
@@ -547,8 +543,8 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
             // explore the clock pins of this primitive
             for (iport = 0; iport < destination_pb_graph_node->num_clock_ports; iport++) {
                 for (ipin = 0; ipin < destination_pb_graph_node->num_clock_pins[iport]; ipin++) {
-                    for (iedge = 0; iedge < destination_pb_graph_node->pins_by_clock_port[iport][ipin].num_input_edges; iedge++) {
-                        backward_expand_pack_pattern_from_edge(destination_pb_graph_node->pins_by_clock_port[iport][ipin].input_edges[iedge],
+                    for (t_pb_graph_edge* in_edge : destination_pb_graph_node->pins_by_clock_port[iport][ipin].input_edges) {
+                        backward_expand_pack_pattern_from_edge(in_edge,
                                                                packing_pattern,
                                                                &destination_pb_graph_node->pins_by_clock_port[iport][ipin],
                                                                destination_block, L_num_blocks, last_added_pattern_block,
@@ -570,16 +566,16 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
         // the expansion_edge parent node is not a primitive
     } else {
         // continue expanding forward
-        for (j = 0; j < out_pin->num_output_edges; j++) {
-            if (out_pin->output_edges[j]->infer_pattern == true) {
-                forward_expand_pack_pattern_from_edge(out_pin->output_edges[j],
+        for (t_pb_graph_edge* out_edge : out_pin->output_edges) {
+            if (out_edge->infer_pattern == true) {
+                forward_expand_pack_pattern_from_edge(out_edge,
                                                       packing_pattern,
                                                       L_num_blocks,
                                                       make_root_of_chain,
                                                       last_added_pattern_block);
             } else {
-                for (size_t k = 0; k < out_pin->output_edges[j]->pack_pattern_names.size(); k++) {
-                    if (out_pin->output_edges[j]->pack_pattern_indices[k] == curr_pattern_index) {
+                for (size_t k = 0; k < out_edge->pack_pattern_names.size(); k++) {
+                    if (out_edge->pack_pattern_indices[k] == curr_pattern_index) {
                         if (found == true) {
                             // Check assumption that each forced net has only one fan-out
                             VPR_FATAL_ERROR(VPR_ERROR_PACK,
@@ -592,7 +588,7 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
                                             packing_pattern.name.c_str());
                         }
                         found = true;
-                        forward_expand_pack_pattern_from_edge(out_pin->output_edges[j],
+                        forward_expand_pack_pattern_from_edge(out_edge,
                                                               packing_pattern,
                                                               L_num_blocks,
                                                               make_root_of_chain,
@@ -628,8 +624,7 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                                                    int* L_num_blocks,
                                                    std::unordered_map<t_pb_graph_node*, t_pack_pattern_block*>& last_added_pattern_block,
                                                    bool path_allow_multi_fanout) {
-    int j;
-    int iport, ipin, iedge;
+    int iport, ipin;
     bool found; /* Error checking, ensure only one fan-out for each pattern net */
     t_pack_pattern_block* source_block = nullptr;
     t_pb_graph_node* source_pb_graph_node = nullptr;
@@ -682,8 +677,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             // explore the inputs of this primitive
             for (iport = 0; iport < source_pb_graph_node->num_input_ports; iport++) {
                 for (ipin = 0; ipin < source_pb_graph_node->num_input_pins[iport]; ipin++) {
-                    for (iedge = 0; iedge < source_pb_graph_node->pins_by_input_port[iport][ipin].num_input_edges; iedge++) {
-                        backward_expand_pack_pattern_from_edge(source_pb_graph_node->pins_by_input_port[iport][ipin].input_edges[iedge],
+                    for (t_pb_graph_edge* in_edge : source_pb_graph_node->pins_by_input_port[iport][ipin].input_edges) {
+                        backward_expand_pack_pattern_from_edge(in_edge,
                                                                packing_pattern,
                                                                &source_pb_graph_node->pins_by_input_port[iport][ipin],
                                                                source_block,
@@ -697,8 +692,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             // explore the outputs of this primitive
             for (iport = 0; iport < source_pb_graph_node->num_output_ports; iport++) {
                 for (ipin = 0; ipin < source_pb_graph_node->num_output_pins[iport]; ipin++) {
-                    for (iedge = 0; iedge < source_pb_graph_node->pins_by_output_port[iport][ipin].num_output_edges; iedge++) {
-                        forward_expand_pack_pattern_from_edge(source_pb_graph_node->pins_by_output_port[iport][ipin].output_edges[iedge],
+                    for (t_pb_graph_edge* out_edge : source_pb_graph_node->pins_by_output_port[iport][ipin].output_edges) {
+                        forward_expand_pack_pattern_from_edge(out_edge,
                                                               packing_pattern,
                                                               L_num_blocks,
                                                               false,
@@ -710,8 +705,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             // explore the clock pins of this primitive
             for (iport = 0; iport < source_pb_graph_node->num_clock_ports; iport++) {
                 for (ipin = 0; ipin < source_pb_graph_node->num_clock_pins[iport]; ipin++) {
-                    for (iedge = 0; iedge < source_pb_graph_node->pins_by_clock_port[iport][ipin].num_input_edges; iedge++) {
-                        backward_expand_pack_pattern_from_edge(source_pb_graph_node->pins_by_clock_port[iport][ipin].input_edges[iedge],
+                    for (t_pb_graph_edge* in_edge : source_pb_graph_node->pins_by_clock_port[iport][ipin].input_edges) {
+                        backward_expand_pack_pattern_from_edge(in_edge,
                                                                packing_pattern,
                                                                &source_pb_graph_node->pins_by_clock_port[iport][ipin],
                                                                source_block,
@@ -739,7 +734,7 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
         // expansion edge parent is not a primitive
     } else {
         // check if this input pin of the expansion edge has no driving pin
-        if (in_pin->num_input_edges == 0) {
+        if (in_pin->input_edges.empty()) {
             // check if this input pin of the expansion edge belongs to a root block (i.e doesn't have a parent block)
             if (in_pin->parent_node->pb_type->is_root()) {
                 // This pack pattern extends to CLB (root pb block) input pin,
@@ -755,10 +750,10 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             // this input pin of the expansion edge has a driving pin
         } else {
             // iterate over all the driving edges of this input pin
-            for (j = 0; j < in_pin->num_input_edges; j++) {
+            for (t_pb_graph_edge* in_edge : in_pin->input_edges) {
                 // if pattern should be inferred for this edge continue the expansion backwards
-                if (in_pin->input_edges[j]->infer_pattern == true) {
-                    backward_expand_pack_pattern_from_edge(in_pin->input_edges[j],
+                if (in_edge->infer_pattern == true) {
+                    backward_expand_pack_pattern_from_edge(in_edge,
                                                            packing_pattern,
                                                            destination_pin,
                                                            destination_block,
@@ -768,12 +763,12 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                     // if pattern shouldn't be inferred
                 } else {
                     // check if this input pin edge is annotated with the current pattern
-                    for (size_t k = 0; k < in_pin->input_edges[j]->pack_pattern_names.size(); k++) {
-                        if (in_pin->input_edges[j]->pack_pattern_indices[k] == curr_pattern_index) {
+                    for (size_t k = 0; k < in_edge->pack_pattern_names.size(); k++) {
+                        if (in_edge->pack_pattern_indices[k] == curr_pattern_index) {
                             VTR_ASSERT(found == false);
                             // Check assumption that each forced net has only one fan-out
                             found = true;
-                            backward_expand_pack_pattern_from_edge(in_pin->input_edges[j],
+                            backward_expand_pack_pattern_from_edge(in_edge,
                                                                    packing_pattern,
                                                                    destination_pin,
                                                                    destination_block,
@@ -1474,7 +1469,7 @@ static std::vector<t_pb_graph_pin*> find_end_of_path(t_pb_graph_pin* input_pin, 
     VTR_ASSERT(input_pin->is_root_block_pin());
 
     // 2) this pin is an input pin to the root block
-    VTR_ASSERT(input_pin->num_input_edges == 0);
+    VTR_ASSERT(input_pin->input_edges.empty());
 
     // create a queue of pin pointers for the breadth first search
     std::queue<t_pb_graph_pin*> pins_queue;
@@ -1500,7 +1495,7 @@ static std::vector<t_pb_graph_pin*> find_end_of_path(t_pb_graph_pin* input_pin, 
         // if this is an output pin of a root block
         // add to reachable output pins
         if (current_pin->is_root_block_pin()
-            && current_pin->num_output_edges == 0) {
+            && current_pin->output_edges.empty()) {
             reachable_pins.push_back(current_pin);
         }
     }
@@ -1513,8 +1508,7 @@ static void expand_search(const t_pb_graph_pin* input_pin, std::queue<t_pb_graph
     // -----------------------------------------------
 
     // iterate over all output edges at this pin
-    for (int iedge = 0; iedge < input_pin->num_output_edges; iedge++) {
-        const t_pb_graph_edge* pin_edge = input_pin->output_edges[iedge];
+    for (const t_pb_graph_edge* pin_edge : input_pin->output_edges) {
         // if this edge is not annotated with this pattern and its pattern cannot be inferred, ignore it.
         if (!pin_edge->annotated_with_pattern(pattern_index) && !pin_edge->infer_pattern) {
             continue;
@@ -1531,7 +1525,7 @@ static void expand_search(const t_pb_graph_pin* input_pin, std::queue<t_pb_graph
 
     // if this is an input pin to a primitive, it won't have
     // output edges so the previous for loop won't be entered
-    if (input_pin->is_primitive_pin() && input_pin->num_output_edges == 0) {
+    if (input_pin->is_primitive_pin() && input_pin->output_edges.empty()) {
         // iterate over the output ports of the primitive
         const t_pb_graph_node* pin_pb_graph_node = input_pin->parent_node;
         for (int iport = 0; iport < pin_pb_graph_node->num_output_ports; iport++) {
@@ -1590,8 +1584,8 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
     for (int iports = 0; iports < root_block->num_input_ports; iports++) {
         for (int ipins = 0; ipins < root_block->num_input_pins[iports]; ipins++) {
             t_pb_graph_pin& input_pin = root_block->pins_by_input_port[iports][ipins];
-            for (int iedge = 0; iedge < input_pin.num_output_edges; iedge++) {
-                if (input_pin.output_edges[iedge]->belongs_to_pattern(chain_pattern->index)) {
+            for (t_pb_graph_edge* out_edge : input_pin.output_edges) {
+                if (out_edge->belongs_to_pattern(chain_pattern->index)) {
                     chain_input_pins.push_back(&input_pin);
                 }
             }
@@ -1690,8 +1684,7 @@ static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input
         return;
     }
 
-    for (int iedge = 0; iedge < cluster_input_pin->num_output_edges; iedge++) {
-        const t_pb_graph_edge* output_edge = cluster_input_pin->output_edges[iedge];
+    for (const t_pb_graph_edge* output_edge : cluster_input_pin->output_edges) {
         t_pb_graph_pin* out_pin = output_edge->output_pin();
         if (out_pin->is_primitive_pin()) {
             // Add the output pin to the vector only if it belongs to a pb_type registered in the pattern_blocks set

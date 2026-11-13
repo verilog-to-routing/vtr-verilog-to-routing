@@ -753,8 +753,8 @@ static void process_ports(pugi::xml_node Parent,
                     VTR_ASSERT(pb_route[rr_node_index].pb_graph_pin->pin_number == i);
 
                     bool found = false;
-                    for (int j = 0; j < pin_node[0][0]->num_output_edges; j++) {
-                        if (interconnect_name == pin_node[0][0]->output_edges[j]->interconnect->name) {
+                    for (t_pb_graph_edge* out_edge : pin_node[0][0]->output_edges) {
+                        if (interconnect_name == out_edge->interconnect->name) {
                             found = true;
                             break;
                         }
@@ -824,8 +824,8 @@ static void process_ports(pugi::xml_node Parent,
                     pb_route[rr_node_index].pb_graph_pin = &pb->pb_graph_node->pins_by_output_port[out_port][i];
 
                     bool found = false;
-                    for (int j = 0; j < pin_node[0][0]->num_output_edges; j++) {
-                        if (interconnect_name == pin_node[0][0]->output_edges[j]->interconnect->name) {
+                    for (t_pb_graph_edge* out_edge : pin_node[0][0]->output_edges) {
+                        if (interconnect_name == out_edge->interconnect->name) {
                             found = true;
                             break;
                         }

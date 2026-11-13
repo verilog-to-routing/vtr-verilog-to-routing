@@ -363,8 +363,8 @@ std::string t_pb_graph_pin::to_string(const bool full_description) const {
 }
 
 bool t_pb_graph_pin::is_bus_mux_output() const {
-    for (int iedge = 0; iedge < num_input_edges; iedge++) {
-        if (input_edges[iedge]->is_bus_mux()) {
+    for (const t_pb_graph_edge* edge : input_edges) {
+        if (edge->is_bus_mux()) {
             return true;
         }
     }

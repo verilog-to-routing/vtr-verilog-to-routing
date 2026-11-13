@@ -479,8 +479,7 @@ static void check_cluster_bus_mux_selects(ClusterBlockId clb_blk_id, const t_pb_
         }
         const t_pb_graph_pin* pin = route.pb_graph_pin;
         // Match the incoming edge to the recorded driver pin.
-        for (int iedge = 0; iedge < pin->num_input_edges; iedge++) {
-            const t_pb_graph_edge* edge = pin->input_edges[iedge];
+        for (const t_pb_graph_edge* edge : pin->input_edges) {
             if (edge->input_pin()->pin_count_in_cluster != route.driver_pb_pin_id) {
                 continue;
             }

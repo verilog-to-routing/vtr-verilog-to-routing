@@ -378,7 +378,7 @@ static const t_pb_graph_pin* find_unused_pb_graph_pin_in_the_same_port(const t_p
  * Identify if this pb_graph pin only drives 1 edge
  *******************************************************************/
 static bool is_single_fanout_pb_pin(const t_pb_graph_pin* pb_pin) {
-    return 1 == pb_pin->num_output_edges;
+    return 1 == pb_pin->output_edges.size();
 }
 
 /********************************************************************
@@ -390,11 +390,11 @@ static t_pb_graph_pin* find_used_sink_pb_pin(t_pb_graph_pin* driver_pb_pin,
     t_pb_graph_pin* sink_pb_pin = nullptr;
     int num_cand_pins = 0;
 
-    for (int iedge = 0; iedge < driver_pb_pin->num_output_edges; ++iedge) {
-        if (mode != driver_pb_pin->output_edges[iedge]->interconnect->parent_mode_index) {
+    for (t_pb_graph_edge* out_edge : driver_pb_pin->output_edges) {
+        if (mode != out_edge->interconnect->parent_mode_index) {
             continue;
         }
-        sink_pb_pin = driver_pb_pin->output_edges[iedge]->output_pin();
+        sink_pb_pin = out_edge->output_pin();
         num_cand_pins++;
     }
 
@@ -709,8 +709,8 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
         std::map<int, bool> sink_pb_pin_accessibility;
         t_pb_graph_pin* sink_pb_pin_to_add = nullptr;
 
-        for (int iedge = 0; iedge < pb_graph_pin->num_output_edges; ++iedge) {
-            sink_pb_pin_accessibility[pb_graph_pin->output_edges[iedge]->output_pin()->pin_count_in_cluster] = true;
+        for (t_pb_graph_edge* edge : pb_graph_pin->output_edges) {
+            sink_pb_pin_accessibility[edge->output_pin()->pin_count_in_cluster] = true;
         }
 
         if (is_single_fanout_pb_pin(const_cast<const t_pb_graph_pin*>(pb_graph_pin))) {
