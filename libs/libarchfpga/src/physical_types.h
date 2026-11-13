@@ -1515,6 +1515,10 @@ class t_pb_graph_node {
     /// Returns true if this pb_graph_node represents a root graph node (ex. clb)
     bool is_root() const { return this->parent_pb_graph_node == nullptr; }
 
+    /// Returns the root pb_graph_node of the pb graph containing this node,
+    /// i.e. the pb_graph_head of its logical block type.
+    const t_pb_graph_node* root() const;
+
     /// Returns the number of pins on this graph node
     /// Note this is the total for all ports on this node excluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)
     int num_pins() const;

@@ -37,8 +37,10 @@
  */
 
 #include "greedy_clusterer.h"
+#include <algorithm>
 #include <cstdio>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 #include "appack_context.h"
@@ -52,6 +54,7 @@
 #include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
+#include "relative_macro_packing.h"
 #include "logical_ram_infer.h"
 #include "vpr_context.h"
 #include "vtr_math.h"
@@ -172,7 +175,8 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                      max_molecule_stats,
                                      arch_.models,
                                      pre_cluster_timing_manager_,
-                                     ram_mapper);
+                                     ram_mapper,
+                                     cluster_legalizer.relative_macro_packer());
 
     // Pick the first seed molecule.
     PackMoleculeId seed_mol_id = seed_selector.get_next_seed(cluster_legalizer);
@@ -286,6 +290,24 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster_(PackMoleculeId seed_mol
                                                                                        legalization_cluster_id,
                                                                                        cluster_legalizer,
                                                                                        attraction_groups);
+
+    // A relative placement group must share one cluster. If this seed belongs
+    // to a group, try its remaining molecules before the normal candidate search
+    // can fill the cluster with other atoms.
+    const std::optional<RelativeMacroPacker>& relative_macro_packer = cluster_legalizer.relative_macro_packer();
+    if (relative_macro_packer) {
+        UserRelativeGroupId seed_group = relative_macro_packer->molecule_group(seed_mol_id);
+        if (seed_group.is_valid()) {
+            pack_relative_group_into_cluster_(seed_group,
+                                              *relative_macro_packer,
+                                              legalization_cluster_id,
+                                              cluster_legalizer,
+                                              prepacker,
+                                              candidate_selector,
+                                              cluster_gain_stats,
+                                              attraction_groups);
+        }
+    }
 
     // Select the first candidate molecule to try to add to this cluster.
     PackMoleculeId candidate_mol_id = candidate_selector.get_next_candidate_for_cluster(
@@ -501,18 +523,25 @@ LegalizationClusterId GreedyClusterer::start_new_cluster_(
     }
 
     if (!success) {
-        //Explored all candidates
+        // Include site-specific failures in the error if the seed is locked.
+        std::string locked_site_reason;
+        if (cluster_legalizer.relative_macro_packer())
+            locked_site_reason = cluster_legalizer.relative_macro_packer()->describe_locked_site_failure(seed_mol_id, candidate_types);
+
+        // All candidate block types and modes have failed.
         if (seed_mol.type == e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK) {
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "Can not find any logic block that can implement molecule.\n"
-                            "\tPattern %s %s\n",
+                            "\tPattern %s %s\n%s",
                             seed_mol.pack_pattern->name.c_str(),
-                            root_atom_name.c_str());
+                            root_atom_name.c_str(),
+                            locked_site_reason.c_str());
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "Can not find any logic block that can implement molecule.\n"
-                            "\tAtom %s (%s)\n",
-                            root_atom_name.c_str(), arch_.models.model_name(root_model_id).c_str());
+                            "\tAtom %s (%s)\n%s",
+                            root_atom_name.c_str(), arch_.models.model_name(root_model_id).c_str(),
+                            locked_site_reason.c_str());
         }
     }
 
@@ -581,6 +610,43 @@ bool GreedyClusterer::try_add_candidate_mol_to_cluster_(PackMoleculeId candidate
     }
 
     return pack_status == e_block_pack_status::BLK_PASSED;
+}
+
+void GreedyClusterer::pack_relative_group_into_cluster_(UserRelativeGroupId group,
+                                                        const RelativeMacroPacker& relative_macro_packer,
+                                                        LegalizationClusterId legalization_cluster_id,
+                                                        ClusterLegalizer& cluster_legalizer,
+                                                        const Prepacker& prepacker,
+                                                        GreedyCandidateSelector& candidate_selector,
+                                                        ClusterGainStats& cluster_gain_stats,
+                                                        AttractionInfo& attraction_groups) {
+    std::vector<PackMoleculeId> group_mols = relative_macro_packer.group_molecules_to_pack(group,
+                                                                                           legalization_cluster_id,
+                                                                                           cluster_legalizer,
+                                                                                           log_verbosity_);
+    for (PackMoleculeId mol_id : group_mols) {
+        e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(mol_id, legalization_cluster_id);
+        if (pack_status == e_block_pack_status::BLK_PASSED) {
+            // Update gains and attraction groups as for any other added molecule.
+            candidate_selector.update_cluster_gain_stats_candidate_success(cluster_gain_stats,
+                                                                           mol_id,
+                                                                           legalization_cluster_id,
+                                                                           cluster_legalizer,
+                                                                           attraction_groups);
+        } else {
+            // Don't record this as a failed candidate.
+            // This would permanently exclude the molecule from this cluster, potentially
+            // splitting the group. Normal candidate selection can retry the molecule and
+            // record the failure if needed. Any remaining splits are reported by
+            // report_split_relative_groups().
+            VTR_LOGV(log_verbosity_ > 2,
+                     "\tCould not add relative placement group molecule rooted at '%s' to cluster %zu (%s); "
+                     "it remains eligible for later candidate selection\n",
+                     atom_netlist_.block_name(prepacker.get_molecule_root_atom(mol_id)).c_str(),
+                     (size_t)legalization_cluster_id,
+                     block_pack_status_name(pack_status));
+        }
+    }
 }
 
 void GreedyClusterer::report_le_physical_block_usage_(const ClusterLegalizer& cluster_legalizer) {

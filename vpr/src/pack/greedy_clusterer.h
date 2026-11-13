@@ -21,10 +21,12 @@ struct APPackContext;
 class AtomNetId;
 class AtomNetlist;
 class AttractionInfo;
+struct ClusterGainStats;
 struct DeviceContext;
 class GreedyCandidateSelector;
 class PreClusterTimingManager;
 class RamMapper;
+class RelativeMacroPacker;
 class t_pack_high_fanout_thresholds;
 struct t_analysis_opts;
 struct t_clustering_data;
@@ -201,6 +203,26 @@ class GreedyClusterer {
                                            LegalizationClusterId legalization_cluster_id,
                                            ClusterLegalizer& cluster_legalizer,
                                            const Prepacker& prepacker);
+
+    /**
+     * @brief Try to add the seed group's remaining molecules before selecting
+     *        other candidates.
+     *
+     * Updates candidate gains for successful additions. Rejected molecules
+     * remain available to the normal candidate search. If the group's atoms
+     * end up in different clusters, final packing checks report an error.
+     *
+     *  @param group               The seed's relative placement group.
+     *  @param cluster_gain_stats  The gain stats of the cluster being grown.
+     */
+    void pack_relative_group_into_cluster_(UserRelativeGroupId group,
+                                           const RelativeMacroPacker& relative_macro_packer,
+                                           LegalizationClusterId legalization_cluster_id,
+                                           ClusterLegalizer& cluster_legalizer,
+                                           const Prepacker& prepacker,
+                                           GreedyCandidateSelector& candidate_selector,
+                                           ClusterGainStats& cluster_gain_stats,
+                                           AttractionInfo& attraction_groups);
 
     /**
      * @brief Log the physical block usage of the logic element in the

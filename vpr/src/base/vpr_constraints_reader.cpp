@@ -46,8 +46,8 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
         for (UserRelativeGroupId group_id : relative_macros.groups()) {
             const t_user_relative_group& group = relative_macros.get_group(group_id);
             num_atoms += group.atoms.size();
-            for (const std::string& site_path : group.atom_site_paths) {
-                if (!site_path.empty())
+            for (const t_pb_graph_node* site : group.atom_sites) {
+                if (site != nullptr)
                     num_locked_atoms++;
             }
         }

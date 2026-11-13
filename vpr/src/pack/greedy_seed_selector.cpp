@@ -19,6 +19,7 @@
 #include "logic_types.h"
 #include "logical_ram_infer.h"
 #include "prepack.h"
+#include "relative_macro_packing.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
@@ -178,7 +179,8 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
                                        const t_molecule_stats& max_molecule_stats,
                                        const LogicalModels& models,
                                        const PreClusterTimingManager& pre_cluster_timing_manager,
-                                       const RamMapper& ram_mapper)
+                                       const RamMapper& ram_mapper,
+                                       const std::optional<RelativeMacroPacker>& relative_macro_packer)
     : seed_mols_(prepacker.molecules().begin(), prepacker.molecules().end()) {
     // Seed molecule list is initialized with all molecule in the netlist.
 
@@ -245,6 +247,10 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
                                   return ram_mapper.group_id_of(root).is_valid();
                               });
     }
+
+    // Seed relative placement groups first, with locked seeds leading.
+    if (relative_macro_packer)
+        relative_macro_packer->prioritize_seeds(seed_mols_);
 
     // Print the seed gains if requested.
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES)) {

@@ -182,8 +182,12 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         if (!writing_relative_macros_) {
             return nullptr;
         }
-        const std::string& site_path = constraints_.relative_macros().get_atom_locked_site_path(blk_id);
-        return site_path.empty() ? nullptr : site_path.c_str();
+        const t_pb_graph_node* site = constraints_.relative_macros().get_atom_locked_site(blk_id);
+        if (site == nullptr) {
+            return nullptr;
+        }
+        temp_site_path_string_ = site->hierarchical_type_name();
+        return temp_site_path_string_.c_str();
     }
 
     virtual inline void set_add_atom_site_path(const char* site_path, void*& /*ctx*/) final {
@@ -1043,15 +1047,10 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     /**
-     * @brief Append an atom, with the site it is locked to, to the relative
-     *        placement group being loaded.
+     * @brief Add a matched atom and its optional site lock to the group being read.
      *
-     * An atom matched by several patterns of the same group is stored once. A
-     * pattern without a site_path has no opinion on the atom's site, so it
-     * neither conflicts with nor clears an earlier lock, and a locked pattern
-     * upgrades an earlier unlocked match. Two different sites for the same atom
-     * are contradictory placement intent, so that is a load error rather than a
-     * silent first-wins.
+     * Repeated matches store the atom once and preserve any site lock. Rejects
+     * incompatible primitives and conflicting locks on the same atom.
      *
      * The feasibility check requires a compressed atom netlist, which VPR
      * guarantees before the constraints file is read.
@@ -1073,25 +1072,25 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         }
 
         std::vector<AtomBlockId>& atoms = loaded_relative_group_.atoms;
-        std::vector<std::string>& atom_site_paths = loaded_relative_group_.atom_site_paths;
+        std::vector<const t_pb_graph_node*>& atom_sites = loaded_relative_group_.atom_sites;
         auto [itr, first_time] = loaded_relative_group_atom_index_.insert({blk_id, atoms.size()});
         if (first_time) {
             atoms.push_back(blk_id);
-            atom_site_paths.push_back(site_path_);
+            atom_sites.push_back(site);
             return;
         }
 
-        if (site_path_.empty()) {
+        if (site == nullptr) {
             return;
         }
-        std::string& prev_site_path = atom_site_paths[itr->second];
-        if (prev_site_path.empty()) {
-            prev_site_path = site_path_;
-        } else if (prev_site_path != site_path_) {
+        const t_pb_graph_node*& prev_site = atom_sites[itr->second];
+        if (prev_site == nullptr) {
+            prev_site = site;
+        } else if (prev_site != site) {
             report_constraints_load_error("Relative macro '" + loaded_relative_macro_name_
                                           + "': atom '" + netlist.block_name(blk_id)
                                           + "' is matched twice in the same group with two different site paths ('"
-                                          + prev_site_path + "' and '" + site_path_
+                                          + prev_site->hierarchical_type_name() + "' and '" + site_path_
                                           + "'); an atom can only be locked to one primitive site.");
         }
     }
@@ -1191,6 +1190,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     std::string temp_name_string_;
     std::string temp_macro_string_;
     std::string temp_logical_block_location_string_;
+    std::string temp_site_path_string_; ///< Keeps the generated site_path alive until the writer consumes it.
 
     /*
      * Temp data for loads and writes.
