@@ -287,16 +287,6 @@ const t_pb_graph_node* RelativeMacroPacker::molecule_locked_site(PackMoleculeId 
     return relative_macros_.get_atom_locked_site(prepacker_.get_molecule_root_atom(molecule_id));
 }
 
-bool site_in_cluster_type(const t_pb_graph_node* site, t_logical_block_type_ptr cluster_type) {
-    VTR_ASSERT_SAFE(site != nullptr && cluster_type != nullptr);
-    // Each logical block type has its own pb graph, so the site's root node
-    // identifies its type.
-    const t_pb_graph_node* node = site;
-    while (!node->is_root())
-        node = node->parent_pb_graph_node;
-    return node == cluster_type->pb_graph_head;
-}
-
 void RelativeMacroPacker::log_locked_site_failure(PackMoleculeId molecule_id,
                                                   const LegalizationCluster& cluster,
                                                   const AtomPBBimap& atom_pb_lookup,
@@ -355,7 +345,7 @@ std::string RelativeMacroPacker::describe_locked_site_failure(PackMoleculeId see
     bool any_does_not_fit = false;
     for (t_logical_block_type_ptr cluster_type : candidate_types) {
         const std::string& type_name = cluster_type->name;
-        if (!site_in_cluster_type(site, cluster_type)) {
+        if (site->root() != cluster_type->pb_graph_head) {
             // Suggest sites compatible with the root atom. These examples do
             // not guarantee that the whole molecule can be packed there.
             std::vector<std::string> available_paths;

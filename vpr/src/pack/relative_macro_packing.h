@@ -62,12 +62,6 @@ bool long_chain_ownership_allows(bool molecule_is_long_chain,
                                  UserRelativeGroupId cluster_long_chain_owner);
 
 /**
- * @brief Return whether a primitive site belongs to the given cluster type's
- *        pb graph.
- */
-bool site_in_cluster_type(const t_pb_graph_node* site, t_logical_block_type_ptr cluster_type);
-
-/**
  * @brief Relative placement compatibility and proposed state for a molecule
  *        being added to a cluster.
  */

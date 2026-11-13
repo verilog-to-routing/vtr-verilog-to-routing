@@ -952,7 +952,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             effective_external_pin_util = t_ext_pin_util(1.f, 1.f);
 
             force_site_node = relative_macro_packer_->molecule_locked_site(molecule_id);
-            if (force_site_node != nullptr && !site_in_cluster_type(force_site_node, cluster.type)) {
+            if (force_site_node != nullptr && force_site_node->root() != cluster.type->pb_graph_head) {
                 // Site nodes belong to one block type's pb graph. Reject a
                 // different type before looking up its placement primitives.
                 if (log_verbosity_ > 2) {

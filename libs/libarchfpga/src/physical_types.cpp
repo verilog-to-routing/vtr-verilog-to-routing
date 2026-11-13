@@ -308,6 +308,13 @@ bool t_pb_type::has_bus_mux() const {
  * t_pb_graph_node
  */
 
+const t_pb_graph_node* t_pb_graph_node::root() const {
+    const t_pb_graph_node* node = this;
+    while (!node->is_root())
+        node = node->parent_pb_graph_node;
+    return node;
+}
+
 std::string t_pb_graph_node::hierarchical_type_name() const {
     std::vector<std::string> names;
     std::string child_mode_name;
