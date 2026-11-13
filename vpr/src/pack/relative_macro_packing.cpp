@@ -24,16 +24,18 @@ static constexpr size_t MAX_REPORTED_SITE_PATHS = 3;
 
 RelativeMacroPacker::RelativeMacroPacker(const UserRelativeMacros& relative_macros,
                                          const Prepacker& prepacker,
-                                         const AtomNetlist& atom_netlist)
+                                         const AtomNetlist& atom_netlist,
+                                         int log_verbosity)
     : relative_macros_(relative_macros)
     , prepacker_(prepacker)
     , atom_netlist_(atom_netlist)
+    , log_verbosity_(log_verbosity)
     , chain_owners_(prepacker.get_num_molecule_chains(), UserRelativeGroupId::INVALID()) {
     VTR_ASSERT(relative_macros.get_num_macros() != 0);
     init_chain_owners_();
     validate_molecule_groups_();
     validate_locked_sites_();
-    warn_non_root_locked_sites_();
+    log_non_root_locked_sites_();
 }
 
 void RelativeMacroPacker::init_chain_owners_() {
@@ -148,9 +150,9 @@ void RelativeMacroPacker::validate_locked_sites_() const {
     }
 }
 
-void RelativeMacroPacker::warn_non_root_locked_sites_() const {
+void RelativeMacroPacker::log_non_root_locked_sites_() const {
     // The root selects the molecule's placement; its pack pattern determines
-    // the remaining sites. Report all non-root locks in a single warning.
+    // the remaining sites. Report all non-root locks in a single message.
     size_t num_non_root_sites = 0;
     AtomBlockId first_non_root_site;
 
@@ -170,13 +172,13 @@ void RelativeMacroPacker::warn_non_root_locked_sites_() const {
         }
     }
 
-    VTR_LOGV_WARN(num_non_root_sites > 0,
-                  "VPR cannot select sites independently for %zu constrained atom(s) (first: '%s'). Each is packed "
-                  "with other atoms according to an architecture pack pattern; the root atom's site determines "
-                  "the others. These site_path constraints will be checked after packing, and a mismatch will "
-                  "stop VPR. Check that the constraints agree with the pack pattern.\n",
-                  num_non_root_sites,
-                  atom_netlist_.block_name(first_non_root_site).c_str());
+    VTR_LOGV(log_verbosity_ > 1 && num_non_root_sites > 0,
+             "VPR cannot select sites independently for %zu constrained atom(s) (first: '%s'). Each is packed "
+             "with other atoms according to an architecture pack pattern; the root atom's site determines "
+             "the others. These site_path constraints will be checked after packing, and a mismatch will "
+             "stop VPR. Check that the constraints agree with the pack pattern.\n",
+             num_non_root_sites,
+             atom_netlist_.block_name(first_non_root_site).c_str());
 }
 
 UserRelativeGroupId RelativeMacroPacker::molecule_group(PackMoleculeId molecule_id) const {

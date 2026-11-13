@@ -95,7 +95,8 @@ class RelativeMacroPacker {
      */
     RelativeMacroPacker(const UserRelativeMacros& relative_macros,
                         const Prepacker& prepacker,
-                        const AtomNetlist& atom_netlist);
+                        const AtomNetlist& atom_netlist,
+                        int log_verbosity);
 
     /**
      * @brief Return the group containing the molecule's constrained atoms,
@@ -215,13 +216,14 @@ class RelativeMacroPacker {
     void validate_locked_sites_() const;
 
     /**
-     * @brief Warn once when non-root atoms have site locks.
+     * @brief Log how many non-root atoms have site locks when the verbosity
+     *        is above 1.
      *
      * The pack pattern determines where non-root atoms are placed.
      * verify_clustering() checks whether their site locks are satisfied
      * after packing.
      */
-    void warn_non_root_locked_sites_() const;
+    void log_non_root_locked_sites_() const;
 
     /**
      * @brief Return the chain's owning group, or an invalid group if unconstrained.
@@ -245,6 +247,8 @@ class RelativeMacroPacker {
     const Prepacker& prepacker_; ///< Prepacked molecules and chains.
 
     const AtomNetlist& atom_netlist_; ///< Atom netlist being packed.
+
+    int log_verbosity_; ///< Packer log verbosity, as in ClusterLegalizer.
 
     vtr::vector<MoleculeChainId, UserRelativeGroupId> chain_owners_; ///< Owning group of each chain; invalid if the chain has no constrained atoms.
 };

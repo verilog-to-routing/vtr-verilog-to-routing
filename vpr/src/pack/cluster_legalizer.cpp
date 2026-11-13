@@ -1539,7 +1539,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     , intra_lb_pb_pin_lookup_(logical_block_types) {
     // Only check the relative macro rules when the design has relative macros.
     if (relative_macros.get_num_macros() != 0)
-        relative_macro_packer_.emplace(relative_macros, prepacker, atom_netlist);
+        relative_macro_packer_.emplace(relative_macros, prepacker, atom_netlist, log_verbosity);
 
     // Get the target external pin utilization
     // NOTE: Be careful with this constructor, it may throw a VPR_FATAL_ERROR.
