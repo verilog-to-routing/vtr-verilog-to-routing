@@ -155,11 +155,8 @@ static void load_pack_pattern_annotations(const int line_num,
                      * can use this info to only annotate existing edges */
                     if (iedge != in_port[i][j]->num_output_edges) {
                         t_pb_graph_edge* edge = in_port[i][j]->output_edges[iedge];
-                        edge->num_pack_patterns++;
-                        edge->pack_pattern_names.resize(edge->num_pack_patterns);
-                        edge->pack_pattern_names[edge->num_pack_patterns - 1] = value.data(); // TODO: convert to std::string
-                        edge->pack_pattern_allow_multi_fanout.resize(edge->num_pack_patterns, false);
-                        edge->pack_pattern_allow_multi_fanout[edge->num_pack_patterns - 1] = allow_multi_fanout;
+                        edge->pack_pattern_names.push_back(value.data()); // TODO: convert to std::string
+                        edge->pack_pattern_allow_multi_fanout.push_back(allow_multi_fanout);
                     }
                 }
             }

@@ -615,12 +615,11 @@ static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stat
 static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                                                      const t_pb_graph_pin* cur_pin,
                                                      const bool forward) {
-    int i, j;
     t_pb_graph_pin *temp_pin, *dest_pin;
     temp_pin = nullptr;
     dest_pin = nullptr;
     if (forward) {
-        for (i = 0; i < cur_pin->num_output_edges; i++) {
+        for (int i = 0; i < cur_pin->num_output_edges; i++) {
             /* one fanout assumption */
             if (cur_pin->output_edges[i]->infer_pattern) {
                 t_pb_graph_pin* out_pin = cur_pin->output_edges[i]->output_pin();
@@ -634,8 +633,7 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                     dest_pin = temp_pin;
                 }
             } else {
-                for (j = 0; j < cur_pin->output_edges[i]->num_pack_patterns;
-                     j++) {
+                for (size_t j = 0; j < cur_pin->output_edges[i]->pack_pattern_names.size(); j++) {
                     if (cur_pin->output_edges[i]->pack_pattern_indices[j]
                         == pattern_id) {
                         t_pb_graph_pin* out_pin = cur_pin->output_edges[i]->output_pin();
@@ -653,7 +651,7 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
             }
         }
     } else {
-        for (i = 0; i < cur_pin->num_input_edges; i++) {
+        for (int i = 0; i < cur_pin->num_input_edges; i++) {
             /* one fanout assumption */
             if (cur_pin->input_edges[i]->infer_pattern) {
                 t_pb_graph_pin* in_pin = cur_pin->input_edges[i]->input_pin();
@@ -667,8 +665,7 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                     dest_pin = temp_pin;
                 }
             } else {
-                for (j = 0; j < cur_pin->input_edges[i]->num_pack_patterns;
-                     j++) {
+                for (size_t j = 0; j < cur_pin->input_edges[i]->pack_pattern_names.size(); j++) {
                     if (cur_pin->input_edges[i]->pack_pattern_indices[j]
                         == pattern_id) {
                         t_pb_graph_pin* in_pin = cur_pin->input_edges[i]->input_pin();

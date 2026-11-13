@@ -398,7 +398,7 @@ const t_pb_graph_node* t_pb_graph_edge::bus_mux_owner() const {
 }
 
 bool t_pb_graph_edge::annotated_with_pattern(int pattern_index) const {
-    for (int ipattern = 0; ipattern < this->num_pack_patterns; ipattern++) {
+    for (size_t ipattern = 0; ipattern < this->pack_pattern_names.size(); ipattern++) {
         if (this->pack_pattern_indices[ipattern] == pattern_index) {
             return true;
         }

@@ -888,9 +888,6 @@ struct t_physical_tile_port {
  *  An edge connects one input pin to one output pin.
  *
  *  Data members:
- *      num_pack_patterns: number of pack patterns this edge belongs to
- *      pack_pattern_names: [0..num_pack_patterns-1] name of each pack pattern
- *      pack_pattern_indices: [0..num_pack_patterns-1] id of each pack pattern
  *      infer_pattern: if true, pattern of this edge could be inferred by checking
  *                     input/output edges. This is true when the edge is a single
  *                     fanout edge and is driven or driving another edge which is
@@ -907,10 +904,12 @@ class t_pb_graph_edge {
     int driver_set;
 
     /* pack pattern info */
-    int num_pack_patterns;
+    /// name of each pack pattern this edge belongs to
     std::vector<const char*> pack_pattern_names;
+    /// id of each pack pattern
+    /// [0..pack_pattern_names.size()-1]
     std::vector<int> pack_pattern_indices;
-    /* [0..num_pack_patterns-1] parallel to pack_pattern_names: true if the
+    /* [0..pack_pattern_names.size()-1] parallel to pack_pattern_names: true if the
      * pattern annotation on this edge is marked allow_multi_fanout */
     std::vector<bool> pack_pattern_allow_multi_fanout;
     bool infer_pattern;
