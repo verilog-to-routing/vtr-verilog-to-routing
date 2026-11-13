@@ -1626,10 +1626,6 @@ enum e_pb_graph_pin_type {
  *  Data Members:
  *      port: pointer to the port that this pin is associated with
  *      pin_number: pin number of the port that this pin is associated with
- *      input edges: [0..num_input_edges - 1]edges incoming
- *      num_input_edges: number edges incoming
- *      output edges: [0..num_output_edges - 1]edges out_going
- *      num_output_edges: number edges out_going
  *      parent_node: parent pb_graph_node
  *      pin_count_in_cluster: Unique number for pin inside cluster
  */
@@ -1642,13 +1638,13 @@ class t_pb_graph_pin {
 
     t_port* port = nullptr;
     int pin_number = 0;
-    std::vector<t_pb_graph_edge*> input_edges; /* [0..num_input_edges] */
-    int num_input_edges = 0;
+    /// incoming edges
+    std::vector<t_pb_graph_edge*> input_edges;
     /// This map is initialized only if flat_routing is enabled
     std::unordered_map<const t_pb_graph_pin*, int> sink_pin_edge_idx_map; /* [t_pb_graph_pin*] -> edge_idx - This is the index of the corresponding edge stored in output_edges vector */
 
-    std::vector<t_pb_graph_edge*> output_edges; /* [0..num_output_edges] */
-    int num_output_edges = 0;
+    /// outgoing edges
+    std::vector<t_pb_graph_edge*> output_edges;
 
     t_pb_graph_node* parent_node = nullptr;
     int pin_count_in_cluster = 0;

@@ -929,9 +929,7 @@ static void alloc_and_load_complete_interc_edges(t_interconnect* interconnect,
                     t_pb_graph_pin* out_pin = output_pb_graph_node_pin_ptrs[i_outset][i_outpin];
                     t_pb_graph_edge& edge = pb_graph_edges.emplace_back();
                     in_pin->output_edges.push_back(&edge);
-                    in_pin->num_output_edges++;
                     out_pin->input_edges.push_back(&edge);
-                    out_pin->num_input_edges++;
 
                     edge.set_pins(in_pin, out_pin);
                     edge.interconnect = interconnect;
@@ -980,7 +978,6 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
             int iedge = iset * pins_per_set + ipin;
             input_pin->output_edges.push_back(&pb_graph_edges[first_edge + iedge]);
         }
-        input_pin->num_output_edges += num_output_sets;
     }
 
     for (int iset = 0; iset < num_output_sets; ++iset) {
@@ -990,7 +987,6 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
             // Associate each output pin with it's incoming edge (one edge per pin)
             int iedge = iset * pins_per_set + ipin;
             output_pin->input_edges.push_back(&pb_graph_edges[first_edge + iedge]);
-            output_pin->num_input_edges += 1;
         }
     }
 
@@ -1057,9 +1053,7 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
             edge.driver_set = i_inset;
 
             in_pin->output_edges.push_back(&edge);
-            in_pin->num_output_edges++;
             out_pin->input_edges.push_back(&edge);
-            out_pin->num_input_edges++;
         }
     }
 }
