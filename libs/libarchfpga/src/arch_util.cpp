@@ -212,6 +212,7 @@ static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_desc
         }
 
         type.pb_graph_edges.clear();
+        type.set_pb_graph_pins({});
     }
 }
 

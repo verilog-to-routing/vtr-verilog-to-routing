@@ -1469,7 +1469,7 @@ void ClusterLegalizer::clean_cluster(LegalizationClusterId cluster_id) {
     free_pb_stats_recursive(cluster.pb);
     // Load the pb_route so we can free the cluster router data.
     // The pb_route is used when creating a netlist from the legalized clusters.
-    cluster.pb->pb_route = cluster.cluster_router.alloc_and_load_pb_route(intra_lb_pb_pin_lookup_);
+    cluster.pb->pb_route = cluster.cluster_router.alloc_and_load_pb_route();
     // Free the router data.
     cluster.cluster_router.clean_router_data();
     // Free the cluster placement stats.
@@ -1535,8 +1535,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    const std::vector<t_logical_block_type>& logical_block_types,
                                    int log_verbosity)
     : lb_type_rr_graphs_(alloc_and_load_all_lb_type_rr_graph())
-    , prepacker_(prepacker)
-    , intra_lb_pb_pin_lookup_(logical_block_types) {
+    , prepacker_(prepacker) {
     // Only check the relative macro rules when the design has relative macros.
     if (relative_macros.get_num_macros() != 0)
         relative_macro_packer_.emplace(relative_macros, prepacker, atom_netlist, log_verbosity);

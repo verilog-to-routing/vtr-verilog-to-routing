@@ -99,9 +99,6 @@ class AnnealerDetailedPlacer : public DetailedPlacer {
     /// @brief The placer class, which contains the annealer.
     std::unique_ptr<Placer> placer_;
 
-    /// @brief A lookup between the block pin indices and pb graph pins.
-    IntraLbPbPinLookup pb_gpin_lookup_;
-
     /// @brief A lookup between CLB pins and atom pins.
     ClusteredPinAtomPinsLookup netlist_pin_lookup_;
 };

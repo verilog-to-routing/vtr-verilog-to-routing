@@ -614,8 +614,6 @@ class ClusterLegalizer {
     inline const AtomPBBimap& atom_pb_lookup() const { return atom_pb_lookup_; }
     inline AtomPBBimap& mutable_atom_pb_lookup() { return atom_pb_lookup_; }
 
-    inline const IntraLbPbPinLookup& intra_lb_pb_pin_lookup() const { return intra_lb_pb_pin_lookup_; }
-
     /// @brief Destructor of the class. Frees allocated data.
     ~ClusterLegalizer();
 
@@ -708,9 +706,6 @@ class ClusterLegalizer {
     /// @brief A two way map between AtomBlockIds and pb types. This is a copy
     /// of the AtomPBBimap in the global context's AtomLookup
     AtomPBBimap atom_pb_lookup_;
-
-    /// @brief A lookup table for the pin mapping of the intra-lb pb pins.
-    IntraLbPbPinLookup intra_lb_pb_pin_lookup_;
 
     /// @brief A structure for tracking and identifying cluster packing
     ///        patterns that have been previously tested for routing
