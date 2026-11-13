@@ -5,7 +5,7 @@
 | Directory | Purpose |
 |-----------|---------|
 | `vpr/` | Core FPGA CAD tool: pack, place, route, timing |
-| `parmys/` | Yosys-based synthesis frontend (replaces Odin) |
+| `parmys/` | Parmys, the Yosys partial-mapper plugin (first-party code, built by `parmys/CMakeLists.txt`; see `parmys/README.md`) |
 | `mosaic/` | Yosys mosaic frontend (`-start mosaic`; see `mosaic/README.md`) |
 | `odin_ii/` | Legacy synthesis frontend (disabled by default) |
 | `abc/` | Logic optimization (external, do not modify directly) |
