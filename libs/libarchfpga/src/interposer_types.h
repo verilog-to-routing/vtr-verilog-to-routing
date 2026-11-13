@@ -9,6 +9,8 @@
 #include <vector>
 #include <string>
 
+#include "grid_types.h"
+
 /// @brief Enum for direction of an interposer cut.
 enum class e_interposer_cut_type {
     HORZ,
@@ -35,6 +37,16 @@ struct t_interdie_wire_inf {
     } offset;
 
     std::string num; ///< Formula (variable W = channel width) for number of scatter-gather instantiations per switchblock location
+
+    /**
+     * @brief Location specification along the cut (i.e. parallel to the cut line), analogous to one axis of a <region> tag.
+     *
+     * For a vertical cut (x=...) this is along the y-axis; for a horizontal cut (y=...) this is along the x-axis.
+     * Each member is a formula string (see t_grid_loc_spec) defining start/end (inclusive), repeat distance and increment
+     * of the switchblock locations along the cut where this interdie wire is instantiated.
+     * Multiple interdie wires on the same cut are additive: overlapping locations get the patterns of all of them.
+     */
+    t_grid_loc_spec parallel_to_cut_loc;
 };
 
 /**

@@ -33,7 +33,8 @@ t_interposer_cut_inf parse_interposer_cut_tag(pugi::xml_node interposer_cut_tag,
     pugiutil::expect_only_children(interposer_cut_tag, {"interdie_wire"}, loc_data);
 
     for (pugi::xml_node interdie_wire_tag : interposer_cut_tag.children()) {
-        const std::vector<std::string> interdie_wire_attributes = {"sg_name", "sg_link", "offset_start", "offset_end", "offset_increment", "num"};
+        const std::vector<std::string> interdie_wire_attributes = {"sg_name", "sg_link", "offset_start", "offset_end", "offset_increment", "num",
+                                                                       "start", "end", "repeat", "incr"};
         pugiutil::expect_only_attributes(interdie_wire_tag, interdie_wire_attributes, loc_data);
 
         t_interdie_wire_inf interdie_wire;
@@ -60,6 +61,34 @@ t_interposer_cut_inf parse_interposer_cut_tag(pugi::xml_node interposer_cut_tag,
         if (interdie_wire.num.empty()) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(interdie_wire_tag),
                            "The `num` attribute of an `interdie_wire` must be specified (formula or positive integer).");
+        }
+
+        // Location specification along the cut, similar to one axis of a <region> tag.
+        // Defaults cover the whole length of the cut at every switchblock location, with no repetition.
+        const bool is_vert_cut = (interposer.dim == e_interposer_cut_type::VERT);
+        interdie_wire.parallel_to_cut_loc.start_expr = "0";
+        interdie_wire.parallel_to_cut_loc.end_expr = is_vert_cut ? "H-1" : "W-1";
+        interdie_wire.parallel_to_cut_loc.repeat_expr = is_vert_cut ? "H" : "W";
+        interdie_wire.parallel_to_cut_loc.incr_expr = "1";
+
+        pugi::xml_attribute start_attr = pugiutil::get_attribute(interdie_wire_tag, "start", loc_data, pugiutil::ReqOpt::OPTIONAL);
+        if (start_attr) {
+            interdie_wire.parallel_to_cut_loc.start_expr = start_attr.value();
+        }
+
+        pugi::xml_attribute end_attr = pugiutil::get_attribute(interdie_wire_tag, "end", loc_data, pugiutil::ReqOpt::OPTIONAL);
+        if (end_attr) {
+            interdie_wire.parallel_to_cut_loc.end_expr = end_attr.value();
+        }
+
+        pugi::xml_attribute repeat_attr = pugiutil::get_attribute(interdie_wire_tag, "repeat", loc_data, pugiutil::ReqOpt::OPTIONAL);
+        if (repeat_attr) {
+            interdie_wire.parallel_to_cut_loc.repeat_expr = repeat_attr.value();
+        }
+
+        pugi::xml_attribute incr_attr = pugiutil::get_attribute(interdie_wire_tag, "incr", loc_data, pugiutil::ReqOpt::OPTIONAL);
+        if (incr_attr) {
+            interdie_wire.parallel_to_cut_loc.incr_expr = incr_attr.value();
         }
 
         interposer.interdie_wires.push_back(interdie_wire);
