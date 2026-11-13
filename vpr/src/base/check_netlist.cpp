@@ -47,7 +47,7 @@ static int check_clb_conn(ClusterBlockId iblk,
                           int& num_input_only_blocks,
                           int& num_output_only_blocks);
 
-static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup& intra_lb_pb_pini_lookup);
+static int check_clb_internal_nets(ClusterBlockId iblk);
 
 /** @brief Checks Fc_out = 0 top-level OUT pins are only used by legal external <direct>s. */
 static int check_external_directs_legality(const t_arch& arch);
@@ -112,16 +112,13 @@ void check_netlist(int verbosity, const t_arch& arch) {
         VTR_LOG("Netlist contains %d global net to non-global architecture pin connections\n", global_to_non_global_connection_count);
     }
 
-    auto& device_ctx = g_vpr_ctx.device();
-    IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
-
     /* Check that each block makes sense. */
     int num_input_only_blocks = 0;
     int num_output_only_blocks = 0;
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         num_conn = (int)cluster_ctx.clb_nlist.block_pins(blk_id).size();
         error += check_clb_conn(blk_id, num_conn, verbosity, num_input_only_blocks, num_output_only_blocks);
-        error += check_clb_internal_nets(blk_id, intra_lb_pb_pin_lookup);
+        error += check_clb_internal_nets(blk_id);
         if (error >= ERROR_THRESHOLD) {
             VPR_ERROR(VPR_ERROR_OTHER,
                       "Too many errors in netlist, exiting.\n");
@@ -236,7 +233,7 @@ static int check_clb_conn(ClusterBlockId iblk,
 }
 
 ///@brief Check that internal-to-logic-block connectivity is continuous and logically consistent
-static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup& pb_graph_pin_lookup) {
+static int check_clb_internal_nets(ClusterBlockId iblk) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     int error = 0;
@@ -251,7 +248,7 @@ static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup
         VTR_ASSERT(pb_route.count(i));
 
         if (pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id != UNDEFINED) {
-            const t_pb_graph_pin* pb_gpin = pb_graph_pin_lookup.pb_gpin(type->index, i);
+            const t_pb_graph_pin* pb_gpin = type->pb_graph_pin(i);
             if ((pb_gpin->port->type == IN_PORT && pb_gpin->is_root_block_pin())
                 || (pb_gpin->port->type == OUT_PORT && pb_gpin->parent_node->is_primitive())) {
                 if (pb_route[i].driver_pb_pin_id != UNDEFINED) {

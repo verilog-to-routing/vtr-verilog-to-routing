@@ -212,7 +212,7 @@ static int get_logical_block_physical_pin_num_offset(t_physical_tile_type_ptr ph
     for (t_logical_block_type_ptr eq_site : curr_sub_tile->equivalent_sites) {
         if (eq_site == curr_logical_block)
             break;
-        offset += (int)eq_site->pin_logical_num_to_pb_pin_mapping.size();
+        offset += (int)eq_site->pb_graph_pins().size();
     }
     return offset;
 }
@@ -994,7 +994,7 @@ const t_pb_graph_node* get_pb_graph_node_from_pin_physical_num(t_physical_tile_t
     VTR_ASSERT(logical_block != nullptr);
 
     int pin_logical_num = get_pin_logical_num_from_pin_physical_num(physical_type, pin_physical_num);
-    auto pb_graph_pin = logical_block->pin_logical_num_to_pb_pin_mapping.at(pin_logical_num);
+    const t_pb_graph_pin* pb_graph_pin = logical_block->pb_graph_pin(pin_logical_num);
 
     return pb_graph_pin->parent_node;
 }

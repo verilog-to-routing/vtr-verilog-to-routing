@@ -433,7 +433,7 @@ int t_sub_tile::total_num_internal_pins() const {
     int num_pins = 0;
 
     for (t_logical_block_type_ptr eq_site : equivalent_sites) {
-        num_pins += (int)eq_site->pin_logical_num_to_pb_pin_mapping.size();
+        num_pins += (int)eq_site->pb_graph_pins().size();
     }
 
     num_pins *= capacity.total();

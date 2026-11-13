@@ -136,32 +136,14 @@ std::string rr_node_arch_name(RRNodeId inode, bool is_flat);
  * Intra-Logic Block Utility Functions
  **************************************************************/
 
-//Class for looking up pb graph pins from block pin indices
-class IntraLbPbPinLookup {
-  public:
-    IntraLbPbPinLookup(const std::vector<t_logical_block_type>& block_types);
-    IntraLbPbPinLookup(const IntraLbPbPinLookup& rhs);
-    IntraLbPbPinLookup& operator=(const IntraLbPbPinLookup&) = delete;
-    ~IntraLbPbPinLookup();
-
-    //Returns the pb graph pin associated with the specified type (index into block types array) and
-    // pb pin index (index into block_pb().pb_route)
-    const t_pb_graph_pin* pb_gpin(unsigned int itype, int ipin) const;
-
-  private:
-    const std::vector<t_logical_block_type>& block_types_;
-
-    std::vector<t_pb_graph_pin**> intra_lb_pb_pin_lookup_;
-};
-
 //Find the atom pins (driver or sinks) connected to the specified top-level CLB pin
-std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int logical_pin);
 
 //Find the atom pin driving to the specified top-level CLB pin
-AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int logical_pin);
 
 //Find the atom pins driven by the specified top-level CLB pin
-std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int logical_pin);
 
 std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockId clb, int sink_pb_route_id);
 
@@ -197,9 +179,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
 ///        pb_graph_node.
 t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node, int ipin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin);
-t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
 vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping();
-void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping);
 
 /// @brief Where a cluster block is placed: its tile type, sub-tile and sub-tile instance, and its logical block type.

@@ -91,7 +91,6 @@ class FasmWriterVisitor : public NetlistVisitor {
       std::string clb_prefix_;
       std::map<const t_pb_graph_node *, std::string> clb_prefix_map_;
       ClusterBlockId current_blk_id_;
-      IntraLbPbPinLookup pb_graph_pin_lookup_from_index_by_type_;
       std::map<const t_pb_type*, std::vector<std::pair<std::string, LutOutputDefinition>>> lut_definitions_;
       std::map<const t_pb_type*, Parameters> parameters_;
 
