@@ -917,31 +917,8 @@ static void alloc_and_load_complete_interc_edges(t_interconnect* interconnect,
                                                  const int* num_output_ptrs,
                                                  std::deque<t_pb_graph_edge>& pb_graph_edges) {
     int i_inset, i_outset, i_inpin, i_outpin;
-    int in_count, out_count;
 
     VTR_ASSERT(interconnect->infer_annotations == false);
-
-    /* Allocate memory for edges, and reallocate more memory for pins connecting to those edges */
-    in_count = out_count = 0;
-
-    for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
-        in_count += num_input_ptrs[i_inset];
-    }
-    for (i_outset = 0; i_outset < num_output_sets; i_outset++) {
-        out_count += num_output_ptrs[i_outset];
-    }
-
-    for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
-        for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {
-            input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->output_edges.resize(input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->num_output_edges + out_count);
-        }
-    }
-
-    for (i_outset = 0; i_outset < num_output_sets; i_outset++) {
-        for (i_outpin = 0; i_outpin < num_output_ptrs[i_outset]; i_outpin++) {
-            output_pb_graph_node_pin_ptrs[i_outset][i_outpin]->input_edges.resize(output_pb_graph_node_pin_ptrs[i_outset][i_outpin]->num_input_edges + in_count);
-        }
-    }
 
     /* Load connections between pins and record these updates in the edges */
     for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
@@ -951,9 +928,9 @@ static void alloc_and_load_complete_interc_edges(t_interconnect* interconnect,
                     t_pb_graph_pin* in_pin = input_pb_graph_node_pin_ptrs[i_inset][i_inpin];
                     t_pb_graph_pin* out_pin = output_pb_graph_node_pin_ptrs[i_outset][i_outpin];
                     t_pb_graph_edge& edge = pb_graph_edges.emplace_back();
-                    in_pin->output_edges[in_pin->num_output_edges] = &edge;
+                    in_pin->output_edges.push_back(&edge);
                     in_pin->num_output_edges++;
-                    out_pin->input_edges[out_pin->num_input_edges] = &edge;
+                    out_pin->input_edges.push_back(&edge);
                     out_pin->num_input_edges++;
 
                     edge.set_pins(in_pin, out_pin);
@@ -994,18 +971,14 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
     const size_t first_edge = pb_graph_edges.size();
     pb_graph_edges.resize(first_edge + pins_per_set * num_output_sets);
 
-    /* Reallocate memory for pins and load connections between pins and record these updates in the edges */
+    // Load connections between pins and record these updates in the edges
     for (int ipin = 0; ipin < pins_per_set; ++ipin) {
         t_pb_graph_pin* input_pin = input_pb_graph_node_pin_ptrs[0][ipin];
 
-        //Allocate space for input pin set's out-going edges (one to each out-set)
-        input_pin->output_edges.resize(input_pin->num_output_edges + num_output_sets);
-
-        //Associate each input pin with it's new out-going edges
+        // Associate each input pin with it's new out-going edges
         for (int iset = 0; iset < num_output_sets; ++iset) {
             int iedge = iset * pins_per_set + ipin;
-            int ipin_edge = input_pin->num_output_edges + iset;
-            input_pin->output_edges[ipin_edge] = &pb_graph_edges[first_edge + iedge];
+            input_pin->output_edges.push_back(&pb_graph_edges[first_edge + iedge]);
         }
         input_pin->num_output_edges += num_output_sets;
     }
@@ -1014,12 +987,9 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
         for (int ipin = 0; ipin < pins_per_set; ++ipin) {
             t_pb_graph_pin* output_pin = output_pb_graph_node_pin_ptrs[iset][ipin];
 
-            //Allocate space for output pin set's in-coming edge (one edge per pin)
-            output_pin->input_edges.resize(output_pin->num_input_edges + 1);
-
-            int ipin_edge = output_pin->num_input_edges;
+            // Associate each output pin with it's incoming edge (one edge per pin)
             int iedge = iset * pins_per_set + ipin;
-            output_pin->input_edges[ipin_edge] = &pb_graph_edges[first_edge + iedge];
+            output_pin->input_edges.push_back(&pb_graph_edges[first_edge + iedge]);
             output_pin->num_input_edges += 1;
         }
     }
@@ -1049,7 +1019,7 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
                                             const int num_output_sets,
                                             const int* num_output_ptrs,
                                             std::deque<t_pb_graph_edge>& pb_graph_edges) {
-    int i_inset, i_inpin, i_outpin;
+    int i_inset, i_inpin;
 
     VTR_ASSERT(interconnect->infer_annotations == false);
 
@@ -1075,20 +1045,6 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
      * For a 1-bit mux this is identical to the original behaviour. */
     const int pins_per_set = num_output_ptrs[0];
 
-    /* Pre-size all pin edge arrays to their exact final count before wiring.
-     * Each input pin gains exactly 1 new output edge (appears in one set only).
-     * Each output pin gains exactly num_input_sets new input edges. */
-    for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
-        for (i_inpin = 0; i_inpin < pins_per_set; i_inpin++) {
-            t_pb_graph_pin* in_pin = input_pb_graph_node_pin_ptrs[i_inset][i_inpin];
-            in_pin->output_edges.resize(in_pin->num_output_edges + 1);
-        }
-    }
-    for (i_outpin = 0; i_outpin < pins_per_set; i_outpin++) {
-        t_pb_graph_pin* out_pin = output_pb_graph_node_pin_ptrs[0][i_outpin];
-        out_pin->input_edges.resize(out_pin->num_input_edges + num_input_sets);
-    }
-
     /* Create one single-pin edge per (input_set, pin) pair */
     for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
         for (i_inpin = 0; i_inpin < pins_per_set; i_inpin++) {
@@ -1100,9 +1056,9 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
             edge.interconnect = interconnect;
             edge.driver_set = i_inset;
 
-            in_pin->output_edges[in_pin->num_output_edges] = &edge;
+            in_pin->output_edges.push_back(&edge);
             in_pin->num_output_edges++;
-            out_pin->input_edges[out_pin->num_input_edges] = &edge;
+            out_pin->input_edges.push_back(&edge);
             out_pin->num_input_edges++;
         }
     }
