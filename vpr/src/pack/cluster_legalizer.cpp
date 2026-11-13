@@ -979,10 +979,9 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 // The required site failed; no other primitive is allowed.
                 if (log_verbosity_ > 2)
                     relative_macro_packer_->log_locked_site_failure(molecule_id, cluster, atom_pb_lookup_, force_site_node);
-                block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
-                break;
+            } else {
+                VTR_LOGV(log_verbosity_ > 3, "\t\tFAILED No candidate primitives available\n");
             }
-            VTR_LOGV(log_verbosity_ > 3, "\t\tFAILED No candidate primitives available\n");
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
             break; /* no more candidate primitives available, this molecule will not pack, return fail */
         }
