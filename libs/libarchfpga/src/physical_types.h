@@ -1671,10 +1671,14 @@ class t_pb_graph_pin {
     std::unordered_set<int> connected_sinks_ptc; /* ptc numbers of sinks which are directly or indirectly connected to this pin */
 
     /* combinational timing information */
-    int num_pin_timing = 0;                   /* Number of ipin to opin timing edges*/
-    std::vector<t_pb_graph_pin*> pin_timing;  /* timing edge sink pins  [0..num_pin_timing-1]*/
-    std::vector<float> pin_timing_del_max;    /* primitive ipin to opin max-delay [0..num_pin_timing-1]*/
-    std::vector<float> pin_timing_del_min;    /* primitive ipin to opin min-delay [0..num_pin_timing-1]*/
+    /// timing edge sink pins, one per ipin to opin timing edge
+    std::vector<t_pb_graph_pin*> pin_timing;
+    /// primitive ipin to opin max-delay
+    /// [0..pin_timing.size()-1]
+    std::vector<float> pin_timing_del_max;
+    /// primitive ipin to opin min-delay
+    /// [0..pin_timing.size()-1]
+    std::vector<float> pin_timing_del_min;
     int num_pin_timing_del_max_annotated = 0; ///< The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_max_annotated-1]
     int num_pin_timing_del_min_annotated = 0; ///< The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_min_annotated-1]
 

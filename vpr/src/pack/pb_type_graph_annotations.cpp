@@ -348,8 +348,7 @@ static void load_delay_annotations(const int line_num,
             for (i = 0; i < num_in_sets; i++) {
                 for (j = 0; j < num_in_ptrs[i]; j++) {
                     t_pb_graph_pin* src_pin = in_port[i][j];
-                    for (k = 0; k < src_pin->num_pin_timing; ++k) {
-                        t_pb_graph_pin* sink_pin = src_pin->pin_timing[k];
+                    for (t_pb_graph_pin* sink_pin : src_pin->pin_timing) {
                         std::pair<t_pb_graph_pin*, t_pb_graph_pin*> edge_pair = std::make_pair(src_pin, sink_pin);
                         VTR_ASSERT_MSG(!existing_edges.contains(edge_pair), "No duplicates");
                         existing_edges.emplace(src_pin, sink_pin);
@@ -383,19 +382,19 @@ static void load_delay_annotations(const int line_num,
                     auto new_sink_range = new_edges.equal_range(src_pin);
                     size_t num_new_sinks = std::distance(new_sink_range.first, new_sink_range.second);
                     if (num_new_sinks > 0) {
-                        //Reallocate
-                        src_pin->num_pin_timing += num_new_sinks;
-                        src_pin->pin_timing.resize(src_pin->num_pin_timing);
-                        src_pin->pin_timing_del_max.resize(src_pin->num_pin_timing);
-                        src_pin->pin_timing_del_min.resize(src_pin->num_pin_timing);
+                        // Reallocate
+                        size_t new_sink_idx = src_pin->pin_timing.size();
+                        size_t num_pin_timing = new_sink_idx + num_new_sinks;
+                        src_pin->pin_timing.resize(num_pin_timing);
+                        src_pin->pin_timing_del_max.resize(num_pin_timing);
+                        src_pin->pin_timing_del_min.resize(num_pin_timing);
 
-                        //Store the sink pins and initial delays to invalid
-                        size_t ipin_timing = src_pin->num_pin_timing - num_new_sinks;
+                        // Store the sink pins and initial delays to invalid
                         for (auto iter = new_sink_range.first; iter != new_sink_range.second; ++iter) {
-                            src_pin->pin_timing[ipin_timing] = iter->second;
-                            src_pin->pin_timing_del_max[ipin_timing] = std::numeric_limits<float>::quiet_NaN();
-                            src_pin->pin_timing_del_min[ipin_timing] = std::numeric_limits<float>::quiet_NaN();
-                            ++ipin_timing;
+                            src_pin->pin_timing[new_sink_idx] = iter->second;
+                            src_pin->pin_timing_del_max[new_sink_idx] = std::numeric_limits<float>::quiet_NaN();
+                            src_pin->pin_timing_del_min[new_sink_idx] = std::numeric_limits<float>::quiet_NaN();
+                            ++new_sink_idx;
                         }
                     }
 
@@ -404,7 +403,7 @@ static void load_delay_annotations(const int line_num,
                     for (int m = 0; m < num_out_sets; m++) {
                         for (int n = 0; n < num_out_ptrs[m]; n++) {
                             if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX) {
-                                if (src_pin->num_pin_timing_del_max_annotated >= src_pin->num_pin_timing) {
+                                if (src_pin->num_pin_timing_del_max_annotated >= (int)src_pin->pin_timing.size()) {
                                     vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                                               "Max delay already appears annotated on '%s' port '%s' (duplicate delay annotations?)",
                                               src_pin->parent_node->pb_type->name,
@@ -421,7 +420,7 @@ static void load_delay_annotations(const int line_num,
 
                             } else {
                                 VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MIN);
-                                if (src_pin->num_pin_timing_del_min_annotated >= src_pin->num_pin_timing) {
+                                if (src_pin->num_pin_timing_del_min_annotated >= (int)src_pin->pin_timing.size()) {
                                     vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                                               "Min delay already appears annotated on '%s' port '%s' (duplicate delay annotations?)",
                                               src_pin->parent_node->pb_type->name,
@@ -514,7 +513,7 @@ static void inferr_unspecified_pb_graph_pin_delays(t_pb_graph_pin* pb_graph_pin)
     /*
      * Combinational delays (i.e. pin_timing)
      */
-    for (int ipin_timing = 0; ipin_timing < pb_graph_pin->num_pin_timing; ++ipin_timing) {
+    for (size_t ipin_timing = 0; ipin_timing < pb_graph_pin->pin_timing.size(); ++ipin_timing) {
         if (std::isnan(pb_graph_pin->pin_timing_del_min[ipin_timing]) && !std::isnan(pb_graph_pin->pin_timing_del_max[ipin_timing])) {
             //min missing, inferr from max
             pb_graph_pin->pin_timing_del_min[ipin_timing] = pb_graph_pin->pin_timing_del_max[ipin_timing];

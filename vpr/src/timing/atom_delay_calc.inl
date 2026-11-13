@@ -20,11 +20,11 @@ inline float AtomDelayCalc::atom_combinational_delay(const AtomPinId src_pin, co
     //  By convention the delay is annotated on the corresponding input pg_graph_pin
     const t_pb_graph_pin* src_gpin = find_pb_graph_pin(src_pin);
     const t_pb_graph_pin* sink_gpin = find_pb_graph_pin(sink_pin);
-    VTR_ASSERT(src_gpin->num_pin_timing > 0);
+    VTR_ASSERT(!src_gpin->pin_timing.empty());
 
     //Find the annotation on the source that matches the sink
     float delay = NAN;
-    for(int i = 0; i < src_gpin->num_pin_timing; ++i) {
+    for (size_t i = 0; i < src_gpin->pin_timing.size(); ++i) {
         const t_pb_graph_pin* timing_sink_gpin = src_gpin->pin_timing[i]; 
 
         if(timing_sink_gpin == sink_gpin) {

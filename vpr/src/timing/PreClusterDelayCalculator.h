@@ -229,7 +229,7 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         const t_pb_graph_pin* output_gpin = find_pb_graph_pin(output_pin);
 
         tatum::Time time;
-        for (int i = 0; i < input_gpin->num_pin_timing; ++i) {
+        for (size_t i = 0; i < input_gpin->pin_timing.size(); ++i) {
             const t_pb_graph_pin* sink_gpin = input_gpin->pin_timing[i];
 
             if (sink_gpin == output_gpin) {
