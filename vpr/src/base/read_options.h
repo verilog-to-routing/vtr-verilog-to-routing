@@ -21,6 +21,7 @@ struct t_options {
     argparse::ArgValue<std::string> PowerFile;
     argparse::ArgValue<std::string> CmosTechFile;
     argparse::ArgValue<std::string> SDCFile;
+    argparse::ArgValue<std::string> options_file; ///< YAML file of additional command-line options (--options_file).
 
     argparse::ArgValue<e_arch_format> arch_format;
     argparse::ArgValue<e_circuit_format> circuit_format;
@@ -38,6 +39,8 @@ struct t_options {
     argparse::ArgValue<std::string> read_flat_place_file;
     argparse::ArgValue<std::string> write_flat_place_file;
     argparse::ArgValue<std::string> write_legalized_flat_place_file;
+    argparse::ArgValue<std::string> write_post_gp_flat_place_file;
+    argparse::ArgValue<int> flat_place_verbosity;
 
     argparse::ArgValue<std::string> write_placement_delay_lookup;
     argparse::ArgValue<std::string> read_placement_delay_lookup;
@@ -55,13 +58,14 @@ struct t_options {
     argparse::ArgValue<bool> do_legalize;
     argparse::ArgValue<bool> do_placement;
     argparse::ArgValue<bool> do_analytical_placement;
+    argparse::ArgValue<bool> do_global_placement;
     argparse::ArgValue<bool> do_routing;
     argparse::ArgValue<bool> do_analysis;
     argparse::ArgValue<bool> do_power;
 
     // Graphics Options
     argparse::ArgValue<bool> show_graphics; ///<Enable argparse::ArgValue<int>eractive graphics?
-    argparse::ArgValue<int> GraphPause;
+    argparse::ArgValue<e_graphics_pause> GraphPause;
     argparse::ArgValue<bool> save_graphics;
     argparse::ArgValue<std::string> graphics_commands;
     argparse::ArgValue<std::string> graphics_renderer;
@@ -73,7 +77,7 @@ struct t_options {
     argparse::ArgValue<size_t> num_workers;
     argparse::ArgValue<bool> timing_analysis;
     argparse::ArgValue<e_timing_update_type> timing_update_type;
-    argparse::ArgValue<bool> CreateEchoFile;
+    argparse::ArgValue<std::vector<std::string>> echo_file;
     argparse::ArgValue<bool> verify_file_digests;
     argparse::ArgValue<bool> verify_route_file_switch_id;
     argparse::ArgValue<std::string> device_layout;
@@ -95,6 +99,7 @@ struct t_options {
 
     // Atom netlist options
     argparse::ArgValue<bool> absorb_buffer_luts;
+    argparse::ArgValue<bool> merge_constant_generators;
     argparse::ArgValue<e_const_gen_inference> const_gen_inference;
     argparse::ArgValue<bool> sweep_dangling_primary_ios;
     argparse::ArgValue<bool> sweep_dangling_nets;
@@ -104,6 +109,7 @@ struct t_options {
 
     // Analytical Placement options
     argparse::ArgValue<e_ap_analytical_solver> ap_analytical_solver;
+    argparse::ArgValue<e_ap_solver_threading> ap_solver_threading;
     argparse::ArgValue<e_ap_partial_legalizer> ap_partial_legalizer;
     argparse::ArgValue<e_ap_full_legalizer> ap_full_legalizer;
     argparse::ArgValue<e_ap_detailed_placer> ap_detailed_placer;
@@ -111,6 +117,7 @@ struct t_options {
     argparse::ArgValue<std::vector<std::string>> appack_max_dist_th;
     argparse::ArgValue<std::vector<std::string>> appack_unrelated_clustering_args;
     argparse::ArgValue<float> appack_inter_die_gain_multiplier;
+    argparse::ArgValue<e_appack_gain_attenuation_fn_type> appack_gain_attenuation_fn;
     argparse::ArgValue<int> ap_verbosity;
     argparse::ArgValue<float> ap_timing_tradeoff;
     argparse::ArgValue<int> ap_high_fanout_threshold;
@@ -157,7 +164,6 @@ struct t_options {
     argparse::ArgValue<e_place_delta_delay_algorithm> place_delta_delay_matrix_calculation_method;
     argparse::ArgValue<std::vector<float>> place_static_move_prob;
     argparse::ArgValue<int> place_high_fanout_net;
-    argparse::ArgValue<e_place_bounding_box_mode> place_bounding_box_mode;
     argparse::ArgValue<e_place_freq> place_placement_freq;
 
     argparse::ArgValue<bool> RL_agent_placement;
@@ -271,6 +277,7 @@ struct t_options {
     argparse::ArgValue<float> router_init_wirelength_abort_threshold;
     argparse::ArgValue<e_incr_reroute_delay_ripup> incr_reroute_delay_ripup;
     argparse::ArgValue<e_routing_failure_predictor> routing_failure_predictor;
+    argparse::ArgValue<int> routing_predictor_min_history;
     argparse::ArgValue<e_routing_budgets_algorithm> routing_budgets_algorithm;
     argparse::ArgValue<bool> save_routing_per_iteration;
     argparse::ArgValue<float> congested_routing_iteration_threshold_frac;
@@ -300,6 +307,7 @@ struct t_options {
     argparse::ArgValue<int> timing_report_npaths;
     argparse::ArgValue<e_timing_report_detail> timing_report_detail;
     argparse::ArgValue<bool> timing_report_skew;
+    argparse::ArgValue<std::vector<std::string>> timing_report_path_categories;
     argparse::ArgValue<std::string> echo_dot_timing_graph_node;
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_input_handling;
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_output_handling;
@@ -314,6 +322,9 @@ struct t_options {
     argparse::ArgValue<bool> annotated_rr_graph;
     argparse::ArgValue<bool> remove_dangling_nodes;
     argparse::ArgValue<e_gsb_version> gsb_version;
+
+    // Not set directly by an option
+    std::vector<std::string> expanded_args; ///< Command-line arguments (without argv[0]), with --options_file replaced by the file's arguments.
 };
 
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);

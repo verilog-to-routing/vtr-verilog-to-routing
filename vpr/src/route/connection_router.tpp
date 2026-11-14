@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "describe_rr_node.h"
 #include "route_common.h"
+#include "bus_mux_routing.h"
 #include "rr_graph_fwd.h"
 #include "vpr_context.h"
 #include "vpr_utils.h"
@@ -57,6 +58,7 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
     const t_conn_cost_params& cost_params,
     const t_bb& net_bounding_box,
     const SpatialRouteTreeLookup& spatial_rt_lookup,
+    const std::vector<bool>& has_3d_switchblocks,
     RouterStats& router_stats,
     const ConnectionParameters& conn_params) {
     router_stats_ = &router_stats;
@@ -64,7 +66,7 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
-    t_bb high_fanout_bb = add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, spatial_rt_lookup, net_bounding_box);
+    t_bb high_fanout_bb = add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, spatial_rt_lookup, net_bounding_box, has_3d_switchblocks);
     heap_.build_heap();
 
     RRNodeId source_node = rt_root.inode;
@@ -232,8 +234,6 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
                                                           float backwards_cong,
                                                           float R_upstream) {
     const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
-    // TODO: This function is not tested for is_flat == true
-    VTR_ASSERT(is_flat_ != true);
     const auto [expected_delay, expected_cong] = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, cost_params, R_upstream);
 
     float expected_total_cong = expected_cong + backwards_cong;
@@ -249,7 +249,12 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
 
     float expected_total_delay_cost = expected_total_delay;
     expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - expected_total_delay);
-    // expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / NORMALIZATION_CONSTANT;
+    if (delay_budget->routing_budgets_algorithm == LOW_SKEW_CLOCK) {
+        // Unlike the other budgeting algorithms, low-skew clock budgets set min == target == max for
+        // every clock connection, so this term is needed to symmetrically discourage overshooting the
+        // target delay (otherwise nothing stops the router from drifting arbitrarily far above it).
+        expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / NORMALIZATION_CONSTANT;
+    }
     expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / NORMALIZATION_CONSTANT;
     float expected_total_cong_cost = expected_total_cong;
 
@@ -277,7 +282,7 @@ float ConnectionRouter<Heap>::evaluate_timing_driven_backward_costs(RTExploredNo
     float switch_Cinternal = rr_switch_inf_[iswitch].Cinternal;
 
     // To node info
-    int16_t rc_index = rr_graph_->node_rc_index(to->index);
+    NodeRCIndex rc_index = rr_graph_->node_rc_index(to->index);
     float node_R = rr_rc_data_[rc_index].R;
 
     // From node info
@@ -315,6 +320,10 @@ float ConnectionRouter<Heap>::evaluate_timing_driven_backward_costs(RTExploredNo
     float cong_cost = 0.;
     if (reached_configurably) {
         cong_cost = get_rr_cong_cost(to->index, cost_params.pres_fac);
+        if (has_bus_muxes_) {
+            // Control congestion: bits of a bus mux already routed on other input sets.
+            cong_cost += get_bus_mux_cong_cost(from_node, to->index, cost_params.pres_fac);
+        }
     } else {
         // Reached by a non-configurable edge.
         // Therefore the from_node and to_node are part of the same non-configurable node set.
@@ -353,6 +362,7 @@ float ConnectionRouter<Heap>::evaluate_timing_driven_backward_costs(RTExploredNo
 template<typename Heap>
 void ConnectionRouter<Heap>::evaluate_timing_driven_total_cost(RTExploredNode* to,
                                                                const t_conn_cost_params& cost_params,
+                                                               RRNodeId from_node,
                                                                RRNodeId target_node,
                                                                float Tdel) {
     // to->total_cost: is the "known" backward cost + an expected cost to get to the target.
@@ -361,7 +371,12 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_total_cost(RTExploredNode* t
 
     if (rcv_path_manager.is_enabled() && to->path_data != nullptr) {
         to->path_data->backward_delay += cost_params.criticality * Tdel;
-        to->path_data->backward_cong += (1. - cost_params.criticality) * get_rr_cong_cost(to->index, cost_params.pres_fac);
+        float cong_cost = get_rr_cong_cost(to->index, cost_params.pres_fac);
+        if (has_bus_muxes_) {
+            // Keep the RCV congestion term consistent with the backward cost: add the control congestion.
+            cong_cost += get_bus_mux_cong_cost(from_node, to->index, cost_params.pres_fac);
+        }
+        to->path_data->backward_cong += (1. - cost_params.criticality) * cong_cost;
 
         total_cost = compute_node_cost_using_rcv(cost_params, to->index, target_node, to->path_data->backward_delay, to->path_data->backward_cong, to->R_upstream);
     } else {
@@ -386,7 +401,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
                                                                RRNodeId from_node,
                                                                RRNodeId target_node) {
     float Tdel = evaluate_timing_driven_backward_costs(to, cost_params, from_node);
-    evaluate_timing_driven_total_cost(to, cost_params, target_node, Tdel);
+    evaluate_timing_driven_total_cost(to, cost_params, from_node, target_node, Tdel);
 }
 
 template<typename Heap>
@@ -398,6 +413,9 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     /* Puts the entire partial routing below and including rt_node onto the heap *
      * (except for those parts marked as not to be expanded) by calling itself   *
      * recursively.                                                              */
+
+    // Register every node already in the route tree for RCV.
+    rcv_path_manager.mark_node_visited(rt_node.inode);
 
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
@@ -444,7 +462,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     RRNodeId target_node,
     const t_conn_cost_params& cost_params,
     const SpatialRouteTreeLookup& spatial_rt_lookup,
-    const t_bb& net_bounding_box) {
+    const t_bb& net_bounding_box,
+    const std::vector<bool>& has_3d_switchblocks) {
     //For high fanout nets we only add those route tree nodes which are spatially close
     //to the sink.
     //
@@ -476,7 +495,6 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     //If the target's bin has insufficient existing routing add from the surrounding bins
     constexpr int SINGLE_BIN_MIN_NODES = 2;
     bool done = false;
-    bool found_node_on_same_layer = false;
     for (int dx : {0, -1, +1}) {
         size_t bin_x = target_bin_x + dx;
 
@@ -492,20 +510,40 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                     continue;
                 RRNodeId rr_node_to_add = rt_node.inode;
 
-                /* Flat router: don't go into clusters other than the target one */
+                // Flat router: don't go into clusters other than the target one
                 if (is_flat_) {
                     if (!relevant_node_to_target(rr_graph_, rr_node_to_add, target_node))
                         continue;
                 }
 
-                /* In case of the parallel router, we may be dealing with a virtual net
-                 * so prune the nodes from the HF lookup against the bounding box just in case */
-                if (!inside_bb(rr_node_to_add, net_bounding_box))
+                // In case of the parallel router, we may be dealing with a virtual net
+                // so prune the nodes from the HF lookup against the bounding box just in case
+                if (!inside_bb(rr_nodes_, rr_node_to_add, net_bounding_box))
                     continue;
 
                 short rt_node_layer_num = rr_graph_->node_layer_low(rr_node_to_add);
-                if (rt_node_layer_num == target_layer)
-                    found_node_on_same_layer = true;
+
+                // CHANZ wires span multiple layers, so their layer_num is the end they deliver
+                // their signal to.
+                if (rr_graph_->node_type(rr_node_to_add) == e_rr_type::CHANZ) {
+                    short layer_low = rr_graph_->node_layer_low(rr_node_to_add);
+                    short layer_high = rr_graph_->node_layer_high(rr_node_to_add);
+                    Direction direction = rr_graph_->node_direction(rr_node_to_add);
+
+                    if (direction == Direction::INC) {
+                        rt_node_layer_num = layer_high;
+                    } else if (direction == Direction::DEC) {
+                        rt_node_layer_num = layer_low;
+                    } else if (target_layer == layer_low || target_layer == layer_high) {
+                        // Bidirectional wires can deliver their signal to either end.
+                        rt_node_layer_num = target_layer;
+                    }
+                }
+
+                // Without 3D switch blocks, routing wires can't change layers, so a node that
+                // leads to another layer can't reach the target.
+                if (rt_node_layer_num != target_layer && !has_3d_switchblocks[rt_node_layer_num])
+                    continue;
 
                 // Put the node onto the heap
                 add_route_tree_node_to_heap(rt_node, target_node, cost_params, net_bounding_box);
@@ -518,7 +556,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 }
             }
 
-            if (dx == 0 && dy == 0 && chan_nodes_added > SINGLE_BIN_MIN_NODES && found_node_on_same_layer) {
+            if (dx == 0 && dy == 0 && chan_nodes_added > SINGLE_BIN_MIN_NODES) {
                 //Target bin contained at least minimum amount of routing
                 //
                 //We require at least SINGLE_BIN_MIN_NODES to be added.
@@ -531,9 +569,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
         }
         if (done) break;
     }
-    /* If we didn't find enough nodes to branch off near the target
-     * or they are on the wrong grid layer, just add the full route tree */
-    if (chan_nodes_added <= SINGLE_BIN_MIN_NODES || !found_node_on_same_layer) {
+    // If we didn't find enough nodes to branch off near the target, just add the full route tree
+    if (chan_nodes_added <= SINGLE_BIN_MIN_NODES) {
         add_route_tree_to_heap(rt_root, target_node, cost_params, net_bounding_box);
         return net_bounding_box;
     } else {

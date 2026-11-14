@@ -1,6 +1,7 @@
 
 #include "pack.h"
 
+#include <map>
 #include <unordered_set>
 #include "PreClusterTimingManager.h"
 #include "device_grid.h"
@@ -17,6 +18,7 @@
 #include "partition_region.h"
 #include "prepack.h"
 #include "stats.h"
+#include "relative_macro_packing.h"
 #include "verify_flat_placement.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
@@ -229,17 +231,17 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
 }
 
 bool try_pack(const t_packer_opts& packer_opts,
-              const t_analysis_opts& analysis_opts,
               const t_ap_opts& ap_opts,
               const t_arch& arch,
-              const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
               const Prepacker& prepacker,
               const PreClusterTimingManager& pre_cluster_timing_manager,
               const FlatPlacementInfo& flat_placement_info,
               const t_vpr_setup& vpr_setup,
-              const RamMapper& ram_mapper) {
+              const RamMapper& ram_mapper,
+              const std::map<t_logical_block_type_ptr, size_t>& estimated_type_instance_counts) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
     // The clusterer modifies the device context by increasing the size of the
     // device if needed.
     DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
@@ -319,7 +321,7 @@ bool try_pack(const t_packer_opts& packer_opts,
     // Initialize the cluster legalizer.
     ClusterLegalizer cluster_legalizer(atom_ctx.netlist(),
                                        prepacker,
-                                       lb_type_rr_graphs,
+                                       floorplanning_ctx.relative_macros,
                                        packer_opts.target_external_pin_util,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
@@ -327,6 +329,7 @@ bool try_pack(const t_packer_opts& packer_opts,
                                        packer_opts.memoize_cluster_packings,
                                        packer_opts.cluster_router_hot_start,
                                        arch.models,
+                                       device_ctx.logical_block_types,
                                        packer_opts.pack_verbosity);
     // Construct the APPack Context.
     APPackContext appack_ctx(flat_placement_info,
@@ -334,9 +337,13 @@ bool try_pack(const t_packer_opts& packer_opts,
                              device_ctx.logical_block_types,
                              device_ctx.grid);
 
+    // Adjust the APPack parameters according to the estimated device density.
+    appack_ctx.adjust_for_device_size_estimate(estimated_type_instance_counts,
+                                               device_ctx.logical_block_types,
+                                               device_ctx.grid);
+
     // Initialize the greedy clusterer.
     GreedyClusterer clusterer(packer_opts,
-                              analysis_opts,
                               atom_ctx.netlist(),
                               arch,
                               high_fanout_thresholds,
@@ -352,6 +359,8 @@ bool try_pack(const t_packer_opts& packer_opts,
     e_packer_state current_packer_state = e_packer_state::DEFAULT;
 
     while (current_packer_state != e_packer_state::SUCCESS && current_packer_state != e_packer_state::FAILURE) {
+        if (appack_ctx.appack_options.use_appack)
+            appack_ctx.max_distance_threshold_manager.print_max_dist_thresholds(device_ctx.logical_block_types);
         VTR_LOG("Packing with pin utilization targets: %s\n", cluster_legalizer.get_target_external_pin_util().to_string().c_str());
         VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds.to_string().c_str());
         //Cluster the netlist
@@ -394,6 +403,16 @@ bool try_pack(const t_packer_opts& packer_opts,
                                                                  packer_opts,
                                                                  appack_ctx);
 
+        // On the final packing pass, check that all atoms in each relative placement
+        // group share a cluster. Report split groups as an error if packing succeeded,
+        // or as a warning if packing already failed.
+        if (next_packer_state == e_packer_state::SUCCESS || next_packer_state == e_packer_state::FAILURE) {
+            report_split_relative_groups(cluster_legalizer,
+                                         floorplanning_ctx.relative_macros,
+                                         atom_ctx.netlist(),
+                                         next_packer_state == e_packer_state::SUCCESS);
+        }
+
         // Set up for the options used for the next packer state.
         // NOTE: This must be done here (and not at the start of the next packer
         //       iteration) since we need to know information about the current
@@ -402,13 +421,16 @@ bool try_pack(const t_packer_opts& packer_opts,
             case e_packer_state::SET_UNRELATED_AND_BALANCED: {
                 // 1st pack attempt was unsuccessful (i.e. not dense enough) and we have control of unrelated clustering
                 //
-                // Turn it on to increase packing density
+                // Turn it on to increase packing density.
+                // NOTE: allow_unrelated_clustering may already be true here (e.g. APPack
+                //       may have pre-enabled it for specific block types before the first
+                //       attempt based on the pre-packing density estimate) if this state was
+                //       reached only because balance_block_type_utilization needed enabling;
+                //       setting it again is a harmless no-op in that case.
                 if (packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
-                    VTR_ASSERT(allow_unrelated_clustering == false);
                     allow_unrelated_clustering = true;
                 }
                 if (packer_opts.balance_block_type_utilization == e_balance_block_type_util::AUTO) {
-                    VTR_ASSERT(balance_block_type_util == false);
                     balance_block_type_util = true;
                 }
                 if (appack_ctx.appack_options.use_appack) {

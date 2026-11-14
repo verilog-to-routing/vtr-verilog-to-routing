@@ -229,7 +229,7 @@ static bool primitive_has_external_output(const t_pb_graph_node* prim) {
 
     for (int port_idx = 0; port_idx < prim->num_output_ports; port_idx++) {
         for (int pin_idx = 0; pin_idx < prim->num_output_pins[port_idx]; pin_idx++) {
-            bfs_queue.push(&prim->output_pins[port_idx][pin_idx]);
+            bfs_queue.push(&prim->pins_by_output_port[port_idx][pin_idx]);
         }
     }
 
@@ -244,22 +244,22 @@ static bool primitive_has_external_output(const t_pb_graph_node* prim) {
             return true;
 
         for (t_pb_graph_edge* edge : cur_pin->output_edges) {
-            for (int sink_idx = 0; sink_idx < edge->num_output_pins; sink_idx++) {
-                bfs_queue.push(edge->output_pins[sink_idx]);
-            }
+            bfs_queue.push(edge->output_pin());
         }
     }
     return false;
 }
 
-std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resource_requirement(const Prepacker& prepacker) {
+std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resource_requirement(const Prepacker& prepacker, bool store_ram_groups) {
     vtr::ScopedStartFinishTimer timer("Estimate Resource Requirement");
     const auto& atom_ctx = g_vpr_ctx.atom();
 
     // Group RAM atoms and assign to minimum-area types.
-    // Results are stored in ram_groups_ for later use by RamMapper.
-    ram_groups_ = group_ram_atoms(atom_ctx.netlist(), prepacker);
-    assign_ram_groups_by_min_area(ram_groups_, false /*is_fixed_device*/);
+    // If requested, results are stored in ram_groups_ for later use by RamMapper.
+    vtr::vector<LogicalRamGroupId, LogicalRamGroup> ram_groups = group_ram_atoms(atom_ctx.netlist(), prepacker);
+    assign_ram_groups_by_min_area(ram_groups, false /*is_fixed_device*/);
+    if (store_ram_groups)
+        ram_groups_ = ram_groups;
 
     // Group non-RAM molecules by their logical block type.
     vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>
@@ -286,8 +286,7 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
         // if none qualifies (e.g. outpad atoms with no output pins).
         t_logical_block_type_ptr mapped_type = nullptr;
         for (t_logical_block_type_ptr cand : primitive_candidate_block_types[root_model_id]) {
-            std::vector<t_logical_block_type> candidate_logical_type = {*cand};
-            const t_pb_graph_node* current_type_prim = prepacker.get_expected_lowest_cost_primitive_for_atom_block(root_atom, candidate_logical_type);
+            const t_pb_graph_node* current_type_prim = prepacker.get_expected_lowest_cost_primitive_for_atom_block(root_atom, *cand);
             if (current_type_prim && primitive_has_external_output(current_type_prim)) {
                 mapped_type = cand;
                 break;
@@ -306,8 +305,8 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
     }
 
     // Estimate instance counts for RAM types using logical RAM groups.
-    for (LogicalRamGroupId ram_group_id : ram_groups_.keys()) {
-        const LogicalRamGroup& ram_group = ram_groups_[ram_group_id];
+    for (LogicalRamGroupId ram_group_id : ram_groups.keys()) {
+        const LogicalRamGroup& ram_group = ram_groups[ram_group_id];
         t_logical_block_type_ptr logical_type = ram_group.pre_assigned_type ? ram_group.pre_assigned_type : ram_group.candidate_types[0];
         size_t inferred_number_of_instances = std::ceil(vtr::safe_ratio<float>(ram_group.total_memory_slices, ram_group.candidate_capacity.at(logical_type)));
         num_type_instances[logical_type] += inferred_number_of_instances;
@@ -378,7 +377,8 @@ static std::pair<size_t, size_t> read_rr_graph_grid_dims(const std::string& file
 
 DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
                                          const t_arch& arch,
-                                         const Prepacker& prepacker) {
+                                         const Prepacker& prepacker,
+                                         bool always_estimate_resource_requirement) {
     vtr::ScopedStartFinishTimer timer("Estimate Device Size");
     const std::string& device_layout = vpr_setup.PackerOpts.device_layout;
     const t_packer_opts& packer_opts = vpr_setup.PackerOpts;
@@ -416,6 +416,8 @@ DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
         // resizing during and after packing.
         device_ctx.grid = create_device_grid(device_layout, arch.grid_layouts, width, height);
         device_ctx.grid.set_fixed_by_rr_graph(true);
+        if (always_estimate_resource_requirement)
+            estimated_num_type_instances_ = estimate_resource_requirement(prepacker, /*store_ram_groups=*/false);
         return;
     }
 
@@ -426,6 +428,8 @@ DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
         device_ctx.grid = create_device_grid(device_layout, arch.grid_layouts,
                                              num_type_instances,
                                              packer_opts.target_device_utilization);
+        if (always_estimate_resource_requirement)
+            estimated_num_type_instances_ = estimate_resource_requirement(prepacker, /*store_ram_groups=*/false);
         return;
     }
 
@@ -437,12 +441,15 @@ DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
                                              {}, packer_opts.target_device_utilization,
                                              vpr_setup.device_width);
         report_device_grid_stats(device_ctx.grid);
+        if (always_estimate_resource_requirement)
+            estimated_num_type_instances_ = estimate_resource_requirement(prepacker, /*store_ram_groups=*/false);
         return;
     }
 
     VTR_LOG("Device layout '%s' selected. Need to estimate device size.\n", device_layout.c_str());
 
     std::map<t_logical_block_type_ptr, size_t> num_type_instances = estimate_resource_requirement(prepacker);
+    estimated_num_type_instances_ = num_type_instances;
     VTR_LOG("Estimated resource requirements:\n");
     for (auto& [type_ptr, count] : num_type_instances)
         VTR_LOG("  %s: %zu requested instances\n", type_ptr->name.c_str(), count);

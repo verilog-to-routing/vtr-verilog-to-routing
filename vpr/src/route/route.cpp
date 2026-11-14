@@ -1,3 +1,4 @@
+#include "choke_points.h"
 #include "concrete_timing_info.h"
 #include "connection_based_routing.h"
 #include "draw.h"
@@ -76,15 +77,11 @@ bool route(const Netlist<>& net_list,
 
     init_route_structs(net_list,
                        router_opts.bb_factor,
-                       router_opts.has_choke_point,
                        is_flat);
 
-    IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
-    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.netlist(), intra_lb_pb_pin_lookup);
+    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.netlist());
 
     auto choking_spots = set_nets_choking_spots(net_list,
-                                                route_ctx.net_terminal_groups,
-                                                route_ctx.net_terminal_group_num,
                                                 router_opts.has_choke_point,
                                                 is_flat);
 
@@ -98,15 +95,7 @@ bool route(const Netlist<>& net_list,
     /*
      * Configure the routing predictor
      */
-    RoutingPredictor routing_predictor;
-    float abort_iteration_threshold = std::numeric_limits<float>::infinity(); //Default no early abort
-    if (router_opts.routing_failure_predictor == SAFE) {
-        abort_iteration_threshold = ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_SAFE * router_opts.max_router_iterations;
-    } else if (router_opts.routing_failure_predictor == AGGRESSIVE) {
-        abort_iteration_threshold = ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_AGGRESSIVE * router_opts.max_router_iterations;
-    } else {
-        VTR_ASSERT_MSG(router_opts.routing_failure_predictor == OFF, "Unrecognized routing failure predictor setting");
-    }
+    RoutingPredictor routing_predictor(router_opts);
 
     float high_effort_congestion_mode_iteration_threshold = router_opts.congested_routing_iteration_threshold_frac * router_opts.max_router_iterations;
 
@@ -308,7 +297,6 @@ bool route(const Netlist<>& net_list,
          * Calculate metrics for the current routing
          */
         bool routing_is_feasible = feasible_routing();
-        float est_success_iteration = routing_predictor.estimate_success_iteration();
 
         //Update resource costs and overuse info
         if (itry == 1) {
@@ -318,7 +306,8 @@ bool route(const Netlist<>& net_list,
         }
 
         wirelength_info = calculate_wirelength_info(net_list, available_wirelength);
-        routing_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes);
+        routing_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes + overuse_info.control_congested_bus_muxes);
+        float est_success_iteration = routing_predictor.estimate_success_iteration();
 
         //Update timing based on the new routing
         //Note that the net delays have already been updated by timing_driven_route_net
@@ -343,6 +332,11 @@ bool route(const Netlist<>& net_list,
 
         //Output progress
         print_route_status(itry, iter_elapsed_time, pres_fac, num_net_bounding_boxes_updated, iter_results.stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
+        // Show mux conflicts only in verbose mode to keep the status table readable.
+        // print_overused_nodes_status() lists affected muxes if routing fails.
+        VTR_LOGV(router_opts.route_verbosity > 2 && overuse_info.control_congested_bus_muxes > 0,
+                 "  %zu bus-based mux(es) driven from more than one input set\n",
+                 overuse_info.control_congested_bus_muxes);
 
         prev_iter_cumm_time = iter_cumm_time;
 
@@ -427,14 +421,9 @@ bool route(const Netlist<>& net_list,
             break;
         }
 
-        //Estimate at what iteration we will converge to a legal routing
-        if (overuse_info.overused_nodes > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
-            //Only consider aborting if we have a significant number of overused resources
-
-            if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold && router_opts.routing_budgets_algorithm != YOYO) {
-                VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
-                break; //Abort
-            }
+        //Give up if a legal routing is predicted to take too many more iterations
+        if (routing_predictor.should_abort_routing()) {
+            break; //Abort
         }
 
         if (itry == 1 && router_opts.exit_after_first_routing_iteration) {
@@ -536,9 +525,6 @@ bool route(const Netlist<>& net_list,
 
                 //load budgets using information from uncongested delay information
                 budgeting_inf.load_route_budgets(net_delay, timing_info, netlist_pin_lookup, router_opts);
-
-                if (router_opts.routing_budgets_algorithm == YOYO)
-                    netlist_router->set_rcv_enabled(true);
             } else {
                 bool stable_routing_configuration = true;
 

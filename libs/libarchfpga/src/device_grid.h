@@ -303,14 +303,14 @@ class DeviceGrid {
 
     /// Returns the list of horizontal interposer cut locations for each layer,
     /// i.e. y value of the tile row just below each cut
-    /// Accessed as [layer][cut_idx]
+    /// Accessed as [layer][cut_idx]. Cuts in each layer are sorted in ascending order.
     inline const std::vector<std::vector<int>>& get_horizontal_interposer_cuts() const {
         return horizontal_interposer_cuts_;
     }
 
     /// Returns the list of vertical interposer cut locations for each layer,
     /// i.e. x value of the tile column just to the left each cut
-    /// Accessed as [layer][cut_idx]
+    /// Accessed as [layer][cut_idx]. Cuts in each layer are sorted in ascending order.
     inline const std::vector<std::vector<int>>& get_vertical_interposer_cuts() const {
         return vertical_interposer_cuts_;
     }

@@ -3,6 +3,14 @@ include(ProcessorCount)
 
 find_package(Git REQUIRED)
 
+# Eigen is header-only. Expose the pinned submodule without configuring its
+# standalone project, which would add Eigen's own tests and install rules.
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/eigen/Eigen/Core")
+    message(FATAL_ERROR "Eigen submodule is missing. Run: git submodule update")
+endif()
+add_library(Eigen3::Eigen INTERFACE IMPORTED GLOBAL)
+target_include_directories(Eigen3::Eigen SYSTEM INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/eigen")
+
 #Manually synchronized external libraries
 add_subdirectory(libpugixml)
 
@@ -10,9 +18,17 @@ add_subdirectory(libpugixml)
 add_subdirectory(libargparse)
 add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
+# Build Tatum's unit tests so they run with the rest of VTR's unit tests
+set(TATUM_BUILD_UNIT_TESTS ON CACHE BOOL "" FORCE)
 add_subdirectory(libtatum)
 add_subdirectory(libcatch2)
 
+# Don't build yaml-cpp command line tools since we don't use them
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+if(MSVC)
+    # yaml-cpp defaults to the static MSVC runtime (/MT) for static builds; match the rest of VTR (/MD)
+    set(YAML_MSVC_SHARED_RT ON CACHE BOOL "" FORCE)
+endif()
 add_subdirectory(yaml-cpp)
 # Treat yaml-cpp headers as system headers to suppress warnings
 if(TARGET yaml-cpp)

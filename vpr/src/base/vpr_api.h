@@ -143,7 +143,6 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 ///@brief Create routing graph at specified channel width
 void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width, bool is_flat);
 
-void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat);
 void vpr_init_server(const t_vpr_setup& vpr_setup);
 
 void vpr_close_graphics(const t_vpr_setup& vpr_setup);
@@ -160,6 +159,18 @@ void vpr_free_all(t_arch& Arch,
 /* Display general info to user */
 void vpr_print_title();
 void vpr_print_args(int argc, const char** argv);
+
+/**
+ * @brief Prints the command-line arguments after expanding --options_file.
+ *
+ * The --options_file option is replaced by the arguments read from the file, and arguments are
+ * quoted where needed, so the printed command-line can be re-run without the file. Prints
+ * nothing if --options_file was not used.
+ *
+ * @param prog    The program name (argv[0]).
+ * @param options The parsed options.
+ */
+void vpr_print_expanded_args(const char* prog, const t_options& options);
 
 /****************************************************************************************************
  * Advanced functions
@@ -185,11 +196,10 @@ void vpr_setup_vpr(t_options* Options,
                    t_noc_opts* NocOpts,
                    t_server_opts* ServerOpts,
                    t_det_routing_arch& RoutingArch,
-                   std::vector<std::vector<t_lb_type_rr_node>>* PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
                    t_timing_inf* Timing,
                    bool* ShowGraphics,
-                   int* GraphPause,
+                   e_graphics_pause* GraphPause,
                    bool* SaveGraphics,
                    std::string* GraphicsCommands,
                    std::string* RendererType,

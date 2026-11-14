@@ -4,6 +4,8 @@
  * @brief Timing update routines used by the VPR placer.
  */
 
+#include <optional>
+
 class PlacerState;
 struct PlaceCritParams;
 class PlacerCriticalities;
@@ -17,7 +19,7 @@ class t_placer_costs;
 void initialize_timing_info(const PlaceCritParams& crit_params,
                             const PlaceDelayModel* delay_model,
                             PlacerCriticalities* criticalities,
-                            PlacerSetupSlacks* setup_slacks,
+                            std::optional<PlacerSetupSlacks>& setup_slacks,
                             NetPinTimingInvalidator* pin_timing_invalidator,
                             SetupTimingInfo* timing_info,
                             t_placer_costs* costs,
@@ -27,7 +29,7 @@ void initialize_timing_info(const PlaceCritParams& crit_params,
 void perform_full_timing_update(const PlaceCritParams& crit_params,
                                 const PlaceDelayModel* delay_model,
                                 PlacerCriticalities* criticalities,
-                                PlacerSetupSlacks* setup_slacks,
+                                std::optional<PlacerSetupSlacks>& setup_slacks,
                                 NetPinTimingInvalidator* pin_timing_invalidator,
                                 SetupTimingInfo* timing_info,
                                 t_placer_costs* costs,
@@ -37,7 +39,7 @@ void perform_full_timing_update(const PlaceCritParams& crit_params,
 void update_timing_classes(const PlaceCritParams& crit_params,
                            SetupTimingInfo* timing_info,
                            PlacerCriticalities* criticalities,
-                           PlacerSetupSlacks* setup_slacks,
+                           std::optional<PlacerSetupSlacks>& setup_slacks,
                            NetPinTimingInvalidator* pin_timing_invalidator);
 
 ///@brief Updates the timing driven (td) costs.
@@ -62,9 +64,9 @@ void comp_td_costs(const PlaceDelayModel* delay_model,
  * @brief Commit all the setup slack values from the PlacerSetupSlacks
  *        class to `connection_setup_slack`.
  */
-void commit_setup_slacks(const PlacerSetupSlacks* setup_slacks,
+void commit_setup_slacks(const PlacerSetupSlacks& setup_slacks,
                          PlacerState& placer_state);
 
 ///@brief Verify that the values in `connection_setup_slack` matches PlacerSetupSlacks.
-bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks,
+bool verify_connection_setup_slacks(const PlacerSetupSlacks& setup_slacks,
                                     const PlacerState& placer_state);

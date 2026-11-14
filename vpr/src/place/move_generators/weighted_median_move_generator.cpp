@@ -7,10 +7,11 @@
 #include "placer_state.h"
 #include "move_utils.h"
 
-#include <algorithm>
 #include <cmath>
+#include <tuple>
 
-#define CRIT_MULT_FOR_W_MEDIAN 10
+/// Number of copies of a bounding box edge added to the median vectors when its criticality is 1
+static constexpr int CRIT_MULT_FOR_W_MEDIAN = 10;
 
 WeightedMedianMoveGenerator::WeightedMedianMoveGenerator(PlacerState& placer_state,
                                                          const PlaceMacros& place_macros,
@@ -50,6 +51,9 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     t_logical_block_type_ptr cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     t_physical_tile_type_ptr grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
+
+    // Layer coordinates only need to be collected when the device has more than one layer
+    const bool is_multi_layer = g_vpr_ctx.device().grid.get_num_layers() > 1;
 
     /* Calculate the Edge weighted median region */
     t_pl_loc to;
@@ -92,42 +96,25 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         X_coord.insert(X_coord.end(), ceil(coords.xmax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmax.edge);
         Y_coord.insert(Y_coord.end(), ceil(coords.ymin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymin.edge);
         Y_coord.insert(Y_coord.end(), ceil(coords.ymax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymax.edge);
-        layer_coord.insert(layer_coord.end(), ceil(coords.layer_min.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_min.edge);
-        layer_coord.insert(layer_coord.end(), ceil(coords.layer_max.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_max.edge);
+        if (is_multi_layer) {
+            layer_coord.insert(layer_coord.end(), ceil(coords.layer_min.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_min.edge);
+            layer_coord.insert(layer_coord.end(), ceil(coords.layer_max.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_max.edge);
+        }
     }
 
-    if ((X_coord.empty()) || (Y_coord.empty()) || (layer_coord.empty())) {
+    if (X_coord.empty() || Y_coord.empty() || (is_multi_layer && layer_coord.empty())) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord or y_coord or layer_coord are empty\n");
         return e_create_move::ABORT;
     }
 
-    //calculate the weighted median region
-    std::stable_sort(X_coord.begin(), X_coord.end());
-    std::stable_sort(Y_coord.begin(), Y_coord.end());
-    std::stable_sort(layer_coord.begin(), layer_coord.end());
-
-    if (X_coord.size() == 1) {
-        limit_coords.xmin = X_coord[0];
-        limit_coords.xmax = limit_coords.xmin;
+    // Calculate the weighted median region
+    std::tie(limit_coords.xmin, limit_coords.xmax) = find_middle_pair(X_coord);
+    std::tie(limit_coords.ymin, limit_coords.ymax) = find_middle_pair(Y_coord);
+    if (is_multi_layer) {
+        std::tie(limit_coords.layer_min, limit_coords.layer_max) = find_middle_pair(layer_coord);
     } else {
-        limit_coords.xmin = X_coord[((X_coord.size() - 1) / 2)];
-        limit_coords.xmax = X_coord[((X_coord.size() - 1) / 2) + 1];
-    }
-
-    if (Y_coord.size() == 1) {
-        limit_coords.ymin = Y_coord[0];
-        limit_coords.ymax = limit_coords.ymin;
-    } else {
-        limit_coords.ymin = Y_coord[((Y_coord.size() - 1) / 2)];
-        limit_coords.ymax = Y_coord[((Y_coord.size() - 1) / 2) + 1];
-    }
-
-    if (layer_coord.size() == 1) {
-        limit_coords.layer_min = layer_coord[0];
-        limit_coords.layer_max = limit_coords.layer_min;
-    } else {
-        limit_coords.layer_min = layer_coord[((layer_coord.size() - 1) / 2)];
-        limit_coords.layer_max = layer_coord[((layer_coord.size() - 1) / 2) + 1];
+        limit_coords.layer_min = from.layer;
+        limit_coords.layer_max = from.layer;
     }
 
     t_range_limiters range_limiters{rlim,
@@ -157,8 +144,8 @@ bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNet
                                                                       ClusterPinId moving_pin_id,
                                                                       const PlacerCriticalities* criticalities,
                                                                       t_bb_cost* coords) {
-    const auto& blk_loc_registry = placer_state_.get().blk_loc_registry();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const BlkLocRegistry& blk_loc_registry = placer_state_.get().blk_loc_registry();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     bool skip_net = true;
 

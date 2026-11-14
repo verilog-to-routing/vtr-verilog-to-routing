@@ -65,10 +65,6 @@ sudo dnf install --refresh -y \
     boost-filesystem \
     zlib-ng-devel
 
-# Required to run the analytical placement flow
-sudo dnf install --refresh -y \
-    eigen3-devel
-
 if [ "$install_dev" = true ]; then
     # required for functional simulation (run_func_sim_flow.py)
     sudo dnf install --refresh -y \

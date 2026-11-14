@@ -1,6 +1,7 @@
 #pragma once
 
 #include "user_place_constraints.h"
+#include "user_relative_macros.h"
 #include "user_route_constraints.h"
 
 /**
@@ -21,6 +22,10 @@
  *
  * UserPlaceConstraints: Stores block and region constraints for packing and placement stages.
  * See vpr/src/base/user_place_constraints.h for more detail.
+ *
+ * UserRelativeMacros: Stores relative placement macros, which constrain groups of atoms
+ * to be packed into distinct clusters placed at fixed offsets from each other.
+ * See vpr/src/base/user_relative_macros.h for more detail.
  */
 class VprConstraints {
   public:
@@ -44,7 +49,18 @@ class VprConstraints {
      */
     const UserRouteConstraints& route_constraints() const;
 
+    /**
+     * @brief Get a mutable reference to the UserRelativeMacros instance.
+     */
+    UserRelativeMacros& mutable_relative_macros();
+
+    /**
+     * @brief Get a const reference to the UserRelativeMacros instance.
+     */
+    const UserRelativeMacros& relative_macros() const;
+
   private:
     UserRouteConstraints route_constraints_;
     UserPlaceConstraints placement_constraints_;
+    UserRelativeMacros relative_macros_;
 };

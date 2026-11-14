@@ -114,7 +114,7 @@ struct ParmysArchPass : public Pass {
                 xml_read_arch(arch_file_path.c_str(), false, &arch, physical_tile_types, logical_block_types, /*device_model_warnings=*/true);
             } catch (vtr::VtrError &vtr_error) {
                 log_error("Parmys Failed to load architecture file: %s with exit code %s at line: %ld\n", vtr_error.what(), "ERROR_PARSE_ARCH",
-                        vtr_error.line());
+                          vtr_error.line());
             }
 
             const char *arch_info_file = "arch.info";
@@ -127,9 +127,9 @@ struct ParmysArchPass : public Pass {
             std::vector<LogicalModelId> user_models(arch.models.user_models().begin(), arch.models.user_models().end());
             std::reverse(user_models.begin(), user_models.end());
             for (LogicalModelId model_id : user_models) {
-                t_model* hb = &arch.models.get_model(model_id);
-                if (strcmp(hb->name.c_str(), SINGLE_PORT_RAM_string) && strcmp(hb->name.c_str(), DUAL_PORT_RAM_string) && strcmp(hb->name.c_str(), "multiply") &&
-                    strcmp(hb->name.c_str(), "adder")) {
+                t_model *hb = &arch.models.get_model(model_id);
+                if (strcmp(hb->name.c_str(), SINGLE_PORT_RAM_string) && strcmp(hb->name.c_str(), DUAL_PORT_RAM_string) &&
+                    strcmp(hb->name.c_str(), "multiply") && strcmp(hb->name.c_str(), "adder")) {
                     add_hb_to_design(hb, design);
                     log("Hard block added to the Design ---> `%s`\n", hb->name.c_str());
                 }

@@ -73,7 +73,7 @@ static RRNodeId create_virtual_clock_network_sink_node(int layer, int x, int y) 
     const RRGraphView& rr_graph = device_ctx.rr_graph;
     RRGraphBuilder& rr_graph_builder = device_ctx.rr_graph_builder;
     RRSpatialLookup& node_lookup = device_ctx.rr_graph_builder.node_lookup();
-    std::vector<t_rr_rc_data>& rr_rc_data = device_ctx.rr_rc_data;
+    RRRCData& rr_rc_data = device_ctx.rr_rc_data;
     const t_arch* arch = device_ctx.arch;
     rr_graph_builder.emplace_back();
     RRNodeId node_index = RRNodeId(rr_graph.num_nodes() - 1);
@@ -95,7 +95,7 @@ static RRNodeId create_virtual_clock_network_sink_node(int layer, int x, int y) 
     rr_graph_builder.set_node_capacity(node_index, 1);
     rr_graph_builder.set_node_cost_index(node_index, RRIndexedDataId(SINK_COST_INDEX));
 
-    const NodeRCIndex rc_index = find_create_rr_rc_data(0, 0, rr_rc_data);
+    const NodeRCIndex rc_index = rr_rc_data.find_create(0, 0);
     rr_graph_builder.set_node_rc_index(node_index, rc_index);
 
     // Use a generic way when adding nodes to lookup.
@@ -170,12 +170,16 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
         // Connect to x-channel wires
         unsigned num_wires_x = x_wire_indices.size() * fc;
         for (size_t i = 0; i < num_wires_x; i++) {
+            // Prevent self-edges.
+            if (x_wire_indices[i] == RRNodeId(clock_index)) continue;
             clock_graph.add_edge(rr_edges_to_create, x_wire_indices[i], RRNodeId(clock_index), arch_switch_idx, false);
         }
 
         // Connect to y-channel wires
         unsigned num_wires_y = y_wire_indices.size() * fc;
         for (size_t i = 0; i < num_wires_y; i++) {
+            // Prevent self-edges.
+            if (y_wire_indices[i] == RRNodeId(clock_index)) continue;
             clock_graph.add_edge(rr_edges_to_create, y_wire_indices[i], RRNodeId(clock_index), arch_switch_idx, false);
         }
 
@@ -302,13 +306,15 @@ void TileToClockConnection::create_switches(const ClockRRGraphBuilder& clock_gra
 
     // Gather the OPIN rr nodes for every (sub tile instance, pin) pair in range.
     std::vector<RRNodeId> pin_nodes;
-    std::vector<e_side> all_sides(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end());
+    std::vector<int> x_offsets;
+    std::vector<int> y_offsets;
+    std::vector<e_side> sides;
     for (int capacity = subtile_low; capacity <= subtile_high; capacity++) {
         for (int pin_in_port = pin_low; pin_in_port <= pin_high; pin_in_port++) {
             int relative_pin = port->absolute_first_pin_index + pin_in_port;
             int physical_pin = get_physical_pin_from_capacity_location(type, relative_pin, capacity);
 
-            auto [x_offsets, y_offsets, sides] = get_pin_coordinates(type, physical_pin, all_sides);
+            get_pin_coordinates(type, physical_pin, TOTAL_2D_SIDES, x_offsets, y_offsets, sides);
             for (size_t i = 0; i < sides.size(); i++) {
                 RRNodeId node = node_lookup.find_node(location.layer_num,
                                                       location.x + x_offsets[i],

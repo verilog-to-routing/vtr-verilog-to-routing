@@ -1,6 +1,6 @@
 #include "describe_rr_node.h"
 
-#include "rr_node.h"
+#include "rr_graph_cost.h"
 #include "physical_types_util.h"
 #include "vtr_util.h"
 
@@ -38,7 +38,7 @@ std::string describe_rr_node(const RRGraphView& rr_graph,
                                pin_name.c_str());
     } else if (rr_graph.node_type(inode) == e_rr_type::MUX) {
         int index = rr_graph.node_ptc_num(inode);
-        
+
         msg += vtr::string_fmt(" mux index: %d",
                                index);
     } else {

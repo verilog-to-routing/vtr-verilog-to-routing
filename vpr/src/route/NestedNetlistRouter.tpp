@@ -128,13 +128,6 @@ void NestedNetlistRouter<HeapType>::handle_bb_updated_nets(const std::vector<Par
 }
 
 template<typename HeapType>
-void NestedNetlistRouter<HeapType>::set_rcv_enabled(bool x) {
-    for (auto& [_, router] : _routers_th) {
-        router->set_rcv_enabled(x);
-    }
-}
-
-template<typename HeapType>
 void NestedNetlistRouter<HeapType>::set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info) {
     _timing_info = timing_info;
 }

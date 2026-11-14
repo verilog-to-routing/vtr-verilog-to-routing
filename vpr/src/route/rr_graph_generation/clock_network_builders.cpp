@@ -31,7 +31,9 @@ void populate_segment_values(int seg_index,
                              e_directionality directionality) {
     segment_inf[seg_index].name = name;
     segment_inf[seg_index].length = length;
-    segment_inf[seg_index].frequency = 1;
+    // We set the frequency to zero to indicate that this segment
+    // is not part of the general routing fabric.
+    segment_inf[seg_index].frequency = 0;
     segment_inf[seg_index].Rmetal = layer.r_metal;
     segment_inf[seg_index].Cmetal = layer.c_metal;
     segment_inf[seg_index].directionality = directionality;
@@ -413,7 +415,7 @@ int ClockRib::create_chanx_wire(int layer,
     // the one exception, correctly kept at 0 since it represents switch hardware, not a
     // tile of metal wire.
     int node_length = (direction == Direction::BIDIR) ? 0 : (x_end - x_start + 1);
-    const NodeRCIndex rc_index = find_create_rr_rc_data(x_chan_wire_.layer.r_metal * node_length, x_chan_wire_.layer.c_metal * node_length, g_vpr_ctx.mutable_device().rr_rc_data);
+    const NodeRCIndex rc_index = g_vpr_ctx.mutable_device().rr_rc_data.find_create(x_chan_wire_.layer.r_metal * node_length, x_chan_wire_.layer.c_metal * node_length);
     rr_graph_builder.set_node_rc_index(chanx_node, rc_index);
     rr_graph_builder.set_node_direction(chanx_node, direction);
 
@@ -811,7 +813,7 @@ int ClockSpine::create_chany_wire(int layer,
     // (y_end - y_start + 1) tiles; the drive point's degenerate zero-length hub
     // (y_start == y_end, BIDIR) stays at 0.
     int node_length = (direction == Direction::BIDIR) ? 0 : (y_end - y_start + 1);
-    const NodeRCIndex rc_index = find_create_rr_rc_data(y_chan_wire_.layer.r_metal * node_length, y_chan_wire_.layer.c_metal * node_length, g_vpr_ctx.mutable_device().rr_rc_data);
+    const NodeRCIndex rc_index = g_vpr_ctx.mutable_device().rr_rc_data.find_create(y_chan_wire_.layer.r_metal * node_length, y_chan_wire_.layer.c_metal * node_length);
     rr_graph_builder.set_node_rc_index(chany_node, rc_index);
     rr_graph_builder.set_node_direction(chany_node, direction);
 
@@ -1555,7 +1557,7 @@ int ClockSwitchGrid::create_chan_node(int layer,
     // gives hub nodes (start == end) 0 R/C, which is correct since they represent
     // switch hardware rather than metal wire.
     int node_length = end - start;
-    const NodeRCIndex rc_index = find_create_rr_rc_data(layer_.r_metal * node_length, layer_.c_metal * node_length, g_vpr_ctx.mutable_device().rr_rc_data);
+    const NodeRCIndex rc_index = g_vpr_ctx.mutable_device().rr_rc_data.find_create(layer_.r_metal * node_length, layer_.c_metal * node_length);
     rr_graph_builder.set_node_rc_index(chan_node, rc_index);
     rr_graph_builder.set_node_direction(chan_node, direction);
     rr_graph_builder.set_node_cost_index(chan_node, cost_index);

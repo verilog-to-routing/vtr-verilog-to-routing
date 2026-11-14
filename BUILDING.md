@@ -25,10 +25,10 @@ For Fedora or RHEL-based systems:
 To build with GCC on Windows
 
 - Please ensure the [MSYS2](https://www.msys2.org/) has been properly installed
-- Install dependencies in MINGW64 shell by
+- Install dependencies in a UCRT64 shell by
 
 ```
-./install_win_msys2_mingw64_packages.sh
+./install_win_msys2_ucrt64_packages.sh
 ```
 
 ### Windows (MSVC)
@@ -47,6 +47,16 @@ vcpkg install
 ```
 choco install winflexbison3 wget
 choco install magicsplat-tcl-tk --version=1.16.0
+```
+
+### MacOS
+
+To build with Clang on MacOS
+
+- Install dependencies through
+
+```
+./install_macos_packages.sh
 ```
 
 ### Python Packages
@@ -110,6 +120,7 @@ The complete VTR flow has been tested on:
 
 The VPR engine has been tested on 
 - Windows 10/11 (MSYS2, MSVC)
+- Mac OS 26
 
 *Full information about building VTR, including setting up required system packages and Python packages, can be found in [Optional Build Information](doc/src/vtr/optional_build_info.md) page.*
 
@@ -134,4 +145,3 @@ The expected output is::
     k6_N10_mem32K_40nm/diffeq1              OK
     k6_N10_mem32K_40nm/ch_intrinsics                OK
     k6_N10_mem32K_40nm/ch_intrinsics                OK
-

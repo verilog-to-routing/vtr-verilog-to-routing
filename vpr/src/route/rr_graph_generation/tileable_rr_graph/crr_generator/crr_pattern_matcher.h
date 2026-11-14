@@ -113,6 +113,14 @@ class CRRPatternMatcher {
         return value;
     }
 
+    // Strip leading and trailing spaces and tabs.
+    static std::string_view trim_blanks(std::string_view s) {
+        const size_t first = s.find_first_not_of(" \t");
+        if (first == std::string_view::npos) return {};
+        const size_t last = s.find_last_not_of(" \t");
+        return s.substr(first, last - first + 1);
+    }
+
     // Parse one coordinate spec: "*", all-digits literal, "[a,b,...]",
     // "[start:end:step]" or "[value]". Returns nullopt when the spec does not
     // fit these shapes.
@@ -135,7 +143,7 @@ class CRRPatternMatcher {
             }
             std::vector<int> ints;
             for (std::string_view part : parts) {
-                std::optional<int> v = parse_strict_int(part);
+                std::optional<int> v = parse_strict_int(trim_blanks(part));
                 if (!v.has_value()) return std::nullopt;
                 ints.push_back(*v);
             }

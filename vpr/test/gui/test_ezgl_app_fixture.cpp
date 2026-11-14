@@ -4,6 +4,7 @@
  */
 
 #include "test_ezgl_app_fixture.hpp"
+#include "test_main_ui.hpp"
 
 #include <QMainWindow>
 #include <stdexcept>
@@ -34,7 +35,7 @@ EzglAppFixture::EzglAppFixture() {
             "Catch2 enters any TEST_CASE body.");
     }
 
-    ezgl::MainWindow mw; // loads ":/ezgl/main.ui" by default
+    auto mw = vpr_gui_test::load_main_ui();
     main_window_.reset(mw.release());
     if (!main_window_) {
         throw std::runtime_error(

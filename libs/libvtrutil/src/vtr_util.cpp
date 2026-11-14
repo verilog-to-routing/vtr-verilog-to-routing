@@ -54,10 +54,6 @@ std::string replace_all(std::string_view input, std::string_view search, std::st
     return output;
 }
 
-bool starts_with(const std::string& str, std::string_view prefix) {
-    return str.find(prefix) == 0;
-}
-
 std::string string_fmt(const char* fmt, ...) {
     // Make a variable argument list
     va_list va_args;
@@ -276,35 +272,10 @@ int get_file_line_number_of_last_opened_file() {
     return file_line_number;
 }
 
-bool file_exists(const char* filename) {
-    FILE* file;
-
-    if (filename == nullptr) {
-        return false;
-    }
-
-    file = std::fopen(filename, "r");
-    if (file) {
-        std::fclose(file);
-        return true;
-    }
-    return false;
-}
-
 bool check_file_name_extension(std::string_view file_name,
                                std::string_view file_extension) {
     auto ext = std::filesystem::path(file_name).extension();
     return ext == file_extension;
-}
-
-std::vector<std::string> ReadLineTokens(FILE* InFile, int* LineNum) {
-    std::unique_ptr<char[]> buf(new char[vtr::bufsize]);
-
-    const char* line = vtr::fgets(buf.get(), vtr::bufsize, InFile);
-
-    ++(*LineNum);
-
-    return vtr::StringToken(line).split(" \t\n");
 }
 
 int get_pid() {

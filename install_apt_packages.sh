@@ -25,7 +25,6 @@ packages_to_install=(
 packages_to_install+=(
     libxml2-utils
     libtbb-dev
-    libeigen3-dev
 )
 
 # Required for parsing SDC files (see LibSDCParse)

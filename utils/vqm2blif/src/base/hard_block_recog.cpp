@@ -1161,6 +1161,12 @@ static int identify_port_index_within_hard_block_type_port_array(t_hard_block_po
    // this should result in a valid value as we already verified whether the port exists
    found_port_size = curr_hard_block_type_port_info->port_name_to_port_size.find(curr_module_node_info->hard_block_port_name);
 
+   // the port start index and port size maps are expected to always be populated together, so a missing size indicates an internal error
+   if (found_port_size == (curr_hard_block_type_port_info->port_name_to_port_size.end()))
+   {
+        throw vtr::VtrError("Internal error: the port: '" + curr_module_node_info->hard_block_port_name + "' within hard block model: '" + curr_module_node_info->hard_block_type + "' has a start index but no recorded port size.");
+   }
+
    // calculate port end index
    port_end_index = found_port_start_index->second + (found_port_size->second - 1);
 

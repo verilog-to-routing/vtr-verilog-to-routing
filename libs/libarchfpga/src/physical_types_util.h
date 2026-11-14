@@ -110,6 +110,8 @@
  * and CLK_2 (physical pin) from the BUFG (logical block) and CLOCK TILE (physical tile).
  */
 
+#include <span>
+
 #include "physical_types.h"
 
 ///@brief Returns true if the absolute physical pin index is an output of the given physical tile type
@@ -348,9 +350,17 @@ PortEquivalence get_port_equivalency_from_pin_physical_num(t_physical_tile_type_
 
 e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
-std::tuple<std::vector<int>, std::vector<int>, std::vector<e_side>> get_pin_coordinates(t_physical_tile_type_ptr physical_type,
-                                                                                        int pin_physical_num,
-                                                                                        const std::vector<e_side>& sides);
+/**
+ * @brief Fill pin coordinates in reusable output vectors.
+ *
+ * Clears the vectors before filling them, retaining their capacity.
+ */
+void get_pin_coordinates(t_physical_tile_type_ptr physical_type,
+                         int pin_physical_num,
+                         std::span<const e_side> sides,
+                         std::vector<int>& x_offsets,
+                         std::vector<int>& y_offsets,
+                         std::vector<e_side>& pin_sides);
 
 int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num);
 
@@ -359,10 +369,6 @@ bool is_primitive_pin(t_physical_tile_type_ptr physical_tile, int pin_physical_n
 inline bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_num) {
     return (physical_num < physical_tile->num_pins);
 }
-
-int get_pb_graph_node_num_pins(const t_pb_graph_node* pb_graph_node);
-
-std::vector<t_pb_graph_pin*> get_mutable_pb_graph_node_pb_pins(t_pb_graph_node* pb_graph_node);
 
 t_pin_range get_pb_graph_node_pins(t_physical_tile_type_ptr physical_tile,
                                    const t_sub_tile* sub_tile,
@@ -378,12 +384,11 @@ std::vector<int> get_physical_pin_src_pins(t_physical_tile_type_ptr physical_typ
                                            t_logical_block_type_ptr logical_block,
                                            int pin_physical_num);
 
-std::vector<int> get_physical_pin_sink_pins(t_physical_tile_type_ptr physical_type,
-                                            t_logical_block_type_ptr logical_block,
-                                            int pin_physical_num);
-
-int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
-                            const t_sub_tile* sub_tile,
+/**
+ * @brief Return the physical number of a pb-graph pin of a logical block placed in the given instance of a sub-tile.
+ *        Only valid when flat routing is enabled.
+ */
+int get_pb_pin_physical_num(const t_sub_tile* sub_tile,
                             t_logical_block_type_ptr logical_block,
                             int relative_cap,
                             const t_pb_graph_pin* pin);
@@ -407,29 +412,7 @@ bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,
                                 int pin_physical_num,
                                 int sink_physical_num);
 
-float get_edge_delay(t_physical_tile_type_ptr physical_type,
-                     t_logical_block_type_ptr logical_block,
-                     int src_pin_physical_num,
-                     int sink_pin_physical_num);
-
 // iterate over pin_timing_del_max of the pb_pin related to pin_physical_pin and return the minimum element
 float get_pin_primitive_comb_delay(t_physical_tile_type_ptr physical_type,
                                    t_logical_block_type_ptr logical_block,
                                    int pin_physical_num);
-
-/**
- * @brief This function is used during reachability analysis to check whether two classes should be put in the same group
- */
-bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
-                           int first_class_ptc_num,
-                           int second_class_ptc_num,
-                           bool is_flat);
-
-/**
- * @brief Given the sink group, identify the pins which can reach both sink_ptc_num and at least one of the sinks,
- * in the grp.
- * @return Key is the pin number and value is the number of sinks, including sink_ptc_num, in the grp reachable by the pin
- */
-std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physical_tile,
-                                           int sink_ptc_num,
-                                           const std::vector<int>& grp);

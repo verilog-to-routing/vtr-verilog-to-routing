@@ -5,12 +5,6 @@
  *
  * Defines core data structures used in packing
  */
-#include <vector>
-
-#include "atom_netlist_fwd.h"
-#include "lb_type_rr_node_types.h"
-#include "physical_types.h"
-#include "vpr_types.h"
 
 /**************************************************************************
  * Packing Algorithm Data Structures

@@ -353,8 +353,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
 
 /**
  * @brief Get the the compressed loc from the uncompressed loc (grid_loc)
- * @note This assumes the grid_loc corresponds to a location of the block type that compressed_block_grid stores its
- * compressed location. Otherwise, it would raise an assertion error.
+ * @note grid_loc might not be a compatible type on all layers. For example, while location (2, 5, 0) might be a DSP block, (2, 5, 1) might be a CLB.
+ * In that case, the return vector would contain an invalid t_physical_tile_loc. Callers should check for this.
  * @param compressed_block_grid The class that stores the compressed block grid of the block
  * @param grid_loc The actual location of the block
  * @param num_layers The number of layers (dice) of the FPGA
@@ -434,6 +434,11 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
 std::string e_move_result_to_string(e_move_result move_outcome);
 
 int get_random_layer(t_logical_block_type_ptr logical_block, vtr::RngContainer& rng);
+
+/// @brief Returns the values at indices (n-1)/2 and (n-1)/2 + 1 of coords as if it were sorted.
+/// If coords has one element, both values are that element.
+/// @note The order of coords is changed.
+std::pair<int, int> find_middle_pair(std::vector<int>& coords);
 
 /**
  * @brief If the block ID passed to the placer_debug_net parameter of the command line is equal to blk_id, or if any of the nets

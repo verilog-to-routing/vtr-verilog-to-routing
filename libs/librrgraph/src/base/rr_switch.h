@@ -5,13 +5,11 @@
 
 #include "physical_types.h"
 
-/**
- * @brief Lists all the important information about an RR switch type.
- *
- * The t_rr_switch_inf describes a switch derived from a switch described
- * by t_arch_switch_inf. This indirection allows us to vary properties of a
- * given switch, such as varying delay with switch fan-in.
-  */
+/// @brief Lists all the important information about an RR switch type.
+///
+/// The t_rr_switch_inf describes a switch derived from a switch described
+/// by t_arch_switch_inf. This indirection allows us to vary properties of a
+/// given switch, such as varying delay with switch fan-in.
 struct t_rr_switch_inf {
     /// Equivalent resistance of the buffer/switch.
     float R = 0.;
@@ -21,8 +19,12 @@ struct t_rr_switch_inf {
     float Cout = 0.;
     /// Internal capacitance.
     float Cinternal = 0.;
-    /// Intrinsic delay.  The delay through an unloaded switch is Tdel + R * Cout.
-    float Tdel = 0.;
+    /// Minimum intrinsic delay, used for hold analysis.
+    /// The minimum delay through an unloaded switch is Tdel_min + R * Cout.
+    float Tdel_min = 0.;
+    /// Maximum intrinsic delay, used for setup analysis and by the router, placer and router lookahead.
+    /// The maximum delay through an unloaded switch is Tdel_max + R * Cout.
+    float Tdel_max = 0.;
     /// The area of each transistor in the segment's driving mux measured in minimum width transistor units
     float mux_trans_size = 0.;
     /// The area of the buffer. If set to zero, area should be calculated from R

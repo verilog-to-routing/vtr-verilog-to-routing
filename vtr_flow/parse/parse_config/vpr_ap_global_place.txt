@@ -1,0 +1,15 @@
+# Metrics for the Analytical Placement flow when only Global Placement is run
+# (i.e. --global_place).
+
+%include "common/vtr_flow.txt"
+%include "common/vpr.common.txt"
+
+# Post-Global Placement quality estimates
+post_gp_wirelength;vpr.out;\s*Placement estimated wirelength: (.*)
+post_gp_cpd;vpr.out;\s*Placement estimated CPD: (.*) ns
+post_gp_sTNS;vpr.out;\s*Placement estimated sTNS: (.*) ns
+
+# Run-time Metrics
+ap_mem;vpr.out;.*Analytical Placement took.*\(max_rss (.*), .*\)
+ap_time;vpr.out;\s*Analytical Placement took (.*) seconds
+ap_gp_time;vpr.out;\s*AP Global Placer took (.*) seconds

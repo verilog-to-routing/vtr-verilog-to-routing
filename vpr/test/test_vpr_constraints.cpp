@@ -1,15 +1,24 @@
+#include <cstdio>
+#include <fstream>
 #include <sstream>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "../src/base/partition_region.h"
 
 #include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers_string.hpp"
 
+#include "globals.h"
 #include "user_place_constraints.h"
+#include "user_relative_macros.h"
+#include "relative_macro_packing.h"
 #include "partition.h"
 #include "region.h"
 #include "place_constraints.h"
+#include "vpr_constraints_serializer.h"
+#include "vpr_constraints_uxsdcxx.h"
 
 /**
  * This file contains unit tests that check the functionality of all classes related to vpr constraints. These classes include
@@ -571,6 +580,429 @@ TEST_CASE("MacroConstraints", "[vpr]") {
     REQUIRE(mac_first_reg_coord.ymin() == 3);
     REQUIRE(mac_first_reg_coord.xmax() == 11);
     REQUIRE(mac_first_reg_coord.ymax() == 7);
+}
+
+// Check group compatibility for chains that span multiple clusters.
+TEST_CASE("RelativeMacroLongChainOwnership", "[vpr]") {
+    const UserRelativeGroupId unowned;
+    const UserRelativeGroupId group_g(0);
+    const UserRelativeGroupId group_h(2);
+
+    SECTION("a cluster with no long chain accepts anything") {
+        REQUIRE(long_chain_ownership_allows(false, unowned, unowned, false, unowned));
+        REQUIRE(long_chain_ownership_allows(false, unowned, group_g, false, unowned));
+        REQUIRE(long_chain_ownership_allows(true, unowned, unowned, false, unowned));
+        REQUIRE(long_chain_ownership_allows(true, group_g, group_g, false, unowned));
+    }
+
+    SECTION("unconstrained long chains are mutually compatible") {
+        // Unowned chains pass this check. The packer's separate limit of one
+        // long chain per cluster still applies.
+        REQUIRE(long_chain_ownership_allows(true, unowned, unowned, true, unowned));
+    }
+
+    SECTION("a long chain may not join a cluster hosting a different group") {
+        REQUIRE_FALSE(long_chain_ownership_allows(true, unowned, group_g, false, unowned));
+        REQUIRE_FALSE(long_chain_ownership_allows(true, group_h, group_g, false, unowned));
+        // The chain may join its own group.
+        REQUIRE(long_chain_ownership_allows(true, group_g, group_g, false, unowned));
+    }
+
+    SECTION("long chains with different owners may not share a cluster") {
+        REQUIRE_FALSE(long_chain_ownership_allows(true, group_g, unowned, true, group_h));
+        REQUIRE_FALSE(long_chain_ownership_allows(true, unowned, unowned, true, group_g));
+        REQUIRE_FALSE(long_chain_ownership_allows(true, group_g, unowned, true, unowned));
+        // Chains with the same owner are compatible.
+        REQUIRE(long_chain_ownership_allows(true, group_g, group_g, true, group_g));
+    }
+
+    SECTION("a group may not move into a cluster whose long chain it does not own") {
+        REQUIRE_FALSE(long_chain_ownership_allows(false, unowned, group_g, true, unowned));
+        REQUIRE_FALSE(long_chain_ownership_allows(false, unowned, group_g, true, group_h));
+        // The owning group may join the cluster.
+        REQUIRE(long_chain_ownership_allows(false, unowned, group_g, true, group_g));
+        // An unconstrained molecule may join without adopting the chain's group.
+        REQUIRE(long_chain_ownership_allows(false, unowned, unowned, true, group_g));
+    }
+}
+
+// Test the UserRelativeMacros storage class: macro and group storage and the
+// atom -> group reverse lookup
+TEST_CASE("UserRelativeMacros", "[vpr]") {
+    UserRelativeMacros relative_macros;
+    REQUIRE(relative_macros.get_num_macros() == 0);
+
+    // An atom that belongs to no macro resolves to an invalid group
+    REQUIRE(!relative_macros.get_atom_group(AtomBlockId(42)).is_valid());
+
+    // Build a macro: reference group (2 atoms), one relative group (1 atom)
+    std::vector<t_user_relative_group> macro1_groups;
+
+    t_user_relative_group ref_group;
+    ref_group.atoms = {AtomBlockId(0), AtomBlockId(1)};
+    // No atom of this macro is locked to a site, but there is still one (empty)
+    // site path per atom
+    ref_group.atom_site_paths = {"", ""};
+    ref_group.offset = t_pl_offset(0, 0, 0, 0);
+    macro1_groups.push_back(ref_group);
+
+    t_user_relative_group rel_group;
+    rel_group.atoms = {AtomBlockId(2)};
+    rel_group.atom_site_paths = {""};
+    rel_group.offset = t_pl_offset(1, -2, 0, 0);
+    macro1_groups.push_back(rel_group);
+
+    UserRelativeMacroId macro1_id = relative_macros.add_macro("macro1", macro1_groups);
+    REQUIRE(relative_macros.get_num_macros() == 1);
+
+    // Stored macro matches what was added
+    const t_user_relative_macro& stored_macro = relative_macros.get_macro(macro1_id);
+    REQUIRE(stored_macro.name == "macro1");
+    REQUIRE(stored_macro.groups.size() == 2);
+    REQUIRE(relative_macros.get_num_groups() == 2);
+    const t_user_relative_group& stored_ref_group = relative_macros.get_group(stored_macro.groups[0]);
+    const t_user_relative_group& stored_rel_group = relative_macros.get_group(stored_macro.groups[1]);
+    REQUIRE(stored_ref_group.macro_id == macro1_id);
+    REQUIRE(stored_rel_group.macro_id == macro1_id);
+    REQUIRE(stored_ref_group.offset == t_pl_offset(0, 0, 0, 0));
+    REQUIRE(stored_rel_group.offset == t_pl_offset(1, -2, 0, 0));
+
+    // Reverse lookup: each atom maps to its group
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(0)) == stored_macro.groups[0]);
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(1)) == stored_macro.groups[0]);
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(2)) == stored_macro.groups[1]);
+
+    // A second macro gets a distinct id and its atoms resolve to it
+    std::vector<t_user_relative_group> macro2_groups;
+    t_user_relative_group ref_group2;
+    ref_group2.atoms = {AtomBlockId(3)};
+    ref_group2.atom_site_paths = {""};
+    macro2_groups.push_back(ref_group2);
+    t_user_relative_group rel_group2;
+    rel_group2.atoms = {AtomBlockId(4)};
+    rel_group2.atom_site_paths = {""};
+    rel_group2.offset = t_pl_offset(0, 3, 0, 0);
+    macro2_groups.push_back(rel_group2);
+
+    UserRelativeMacroId macro2_id = relative_macros.add_macro("macro2", macro2_groups);
+    REQUIRE(relative_macros.get_num_macros() == 2);
+    REQUIRE(macro2_id != macro1_id);
+    const t_user_relative_macro& stored_macro2 = relative_macros.get_macro(macro2_id);
+    REQUIRE(relative_macros.get_num_groups() == 4);
+    // Group ids are unique across macros
+    REQUIRE(stored_macro2.groups[0] != stored_macro.groups[0]);
+    REQUIRE(relative_macros.get_group(stored_macro2.groups[0]).macro_id == macro2_id);
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(3)) == stored_macro2.groups[0]);
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(4)) == stored_macro2.groups[1]);
+
+    // Atoms of the first macro are unaffected
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(2)) == stored_macro.groups[1]);
+
+    // Atoms of macros authored without site information are unlocked
+    REQUIRE(relative_macros.get_atom_locked_site_path(AtomBlockId(0)).empty());
+    REQUIRE(relative_macros.get_atom_locked_site_path(AtomBlockId(2)).empty());
+
+    // A third macro pins some of its atoms to primitive sites, given as the
+    // hierarchical path of the primitive inside the cluster; atom_site_paths[i]
+    // is the site of atoms[i], and an empty path leaves that atom free
+    const std::string site_a = "clb[0][default]/lab[0][default]/fle[0][n1_lut6]/ble6[0][default]/lut6[0]";
+    const std::string site_b = "clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]";
+    std::vector<t_user_relative_group> macro3_groups;
+    t_user_relative_group ref_group3;
+    ref_group3.atoms = {AtomBlockId(5), AtomBlockId(6)};
+    ref_group3.atom_site_paths = {site_a, ""};
+    macro3_groups.push_back(ref_group3);
+    t_user_relative_group rel_group3;
+    rel_group3.atoms = {AtomBlockId(7)};
+    rel_group3.atom_site_paths = {site_b};
+    rel_group3.offset = t_pl_offset(0, 1, 0, 0);
+    macro3_groups.push_back(rel_group3);
+
+    UserRelativeMacroId macro3_id = relative_macros.add_macro("macro3", macro3_groups);
+    REQUIRE(relative_macros.get_num_macros() == 3);
+
+    REQUIRE(relative_macros.get_atom_locked_site_path(AtomBlockId(5)) == site_a);
+    REQUIRE(relative_macros.get_atom_locked_site_path(AtomBlockId(6)).empty());
+    REQUIRE(relative_macros.get_atom_locked_site_path(AtomBlockId(7)) == site_b);
+
+    // The site paths are stored on the group, parallel to its atoms
+    const t_user_relative_macro& stored_macro3 = relative_macros.get_macro(macro3_id);
+    REQUIRE(relative_macros.get_group(stored_macro3.groups[0]).atom_site_paths == std::vector<std::string>{site_a, ""});
+    REQUIRE(relative_macros.get_group(stored_macro3.groups[1]).atom_site_paths == std::vector<std::string>{site_b});
+
+    // Adding a macro with sites does not pin the atoms of the earlier macros
+    REQUIRE(relative_macros.get_atom_locked_site_path(AtomBlockId(0)).empty());
+
+    // An atom outside every macro is unlocked
+    REQUIRE(relative_macros.get_atom_locked_site_path(AtomBlockId(42)).empty());
+}
+
+namespace {
+
+// Load a constraints file holding the given <relative_macro_list> body through
+// the same uxsdcxx path as --read_vpr_constraints, and return what was read.
+// The XML goes through a real file because uxsdcxx reopens it to compute the
+// line number it reports with an error.
+VprConstraints load_relative_macro_constraints(const std::string& macro_list_body) {
+    const char* filename = "test_relative_macro_constraints.xml";
+    {
+        std::ofstream xml(filename);
+        xml << "<vpr_constraints tool_name=\"vpr\">\n"
+            << "<relative_macro_list>\n"
+            << macro_list_body
+            << "</relative_macro_list>\n"
+            << "</vpr_constraints>\n";
+    }
+
+    VprConstraintsSerializer reader;
+    std::ifstream xml(filename);
+    void* context = nullptr;
+    try {
+        uxsd::load_vpr_constraints_xml(reader, context, filename, xml);
+    } catch (...) {
+        std::remove(filename);
+        throw;
+    }
+    std::remove(filename);
+    return reader.constraints_;
+}
+
+// Fill the global atom netlist with atoms of the given names, so the loader's
+// name patterns have something to resolve against.
+void setup_test_atom_netlist(const std::vector<std::string>& atom_names) {
+    AtomNetlist& netlist = g_vpr_ctx.mutable_atom().mutable_netlist();
+    netlist = AtomNetlist("test_netlist", "");
+    for (const std::string& atom_name : atom_names) {
+        netlist.create_block(atom_name, LogicalModelId::INVALID());
+    }
+}
+
+} // namespace
+
+// Test the relative placement macro loader: how a <relative_macro_list> is
+// turned into UserRelativeMacros, and which malformed inputs are rejected
+TEST_CASE("RelativeMacroConstraintsLoader", "[vpr]") {
+    using Catch::Matchers::ContainsSubstring;
+
+    setup_test_atom_netlist({"dsp0_out_0", "lb_0", "lb_1", "lb_2", "lb_3", "lb_4", "ff_a", "ff_b"});
+    const AtomNetlist& netlist = g_vpr_ctx.atom().netlist();
+    AtomBlockId dsp0 = netlist.find_block("dsp0_out_0");
+    AtomBlockId lb_0 = netlist.find_block("lb_0");
+    AtomBlockId lb_1 = netlist.find_block("lb_1");
+    AtomBlockId lb_2 = netlist.find_block("lb_2");
+    AtomBlockId lb_3 = netlist.find_block("lb_3");
+    AtomBlockId lb_4 = netlist.find_block("lb_4");
+    AtomBlockId ff_b = netlist.find_block("ff_b");
+
+    SECTION("groups, offsets and atom lookups") {
+        VprConstraints constraints = load_relative_macro_constraints(R"(
+            <relative_macro name="m1">
+                <reference_group>
+                    <add_atom name_pattern="dsp0_out_0"/>
+                </reference_group>
+                <relative_group x_offset="1" y_offset="0" sub_tile_offset="0">
+                    <add_atom name_pattern="^lb_[0-2]$" is_regex="true"/>
+                </relative_group>
+                <relative_group x_offset="-1" y_offset="2" sub_tile_offset="1" layer_offset="0">
+                    <add_atom name_pattern="lb_3"/>
+                    <add_atom name_pattern="lb_4"/>
+                    <add_atom name_pattern="lb_3"/>
+                </relative_group>
+            </relative_macro>
+            <relative_macro name="m2">
+                <reference_group>
+                    <add_atom name_pattern="ff_a"/>
+                </reference_group>
+                <relative_group x_offset="0" y_offset="1" sub_tile_offset="0">
+                    <add_atom name_pattern="ff_b"/>
+                    <add_atom name_pattern="no_such_atom"/>
+                </relative_group>
+            </relative_macro>
+        )");
+        const UserRelativeMacros& macros = constraints.relative_macros();
+        REQUIRE(macros.get_num_macros() == 2);
+        UserRelativeMacroId m1_id(0);
+        UserRelativeMacroId m2_id(1);
+
+        const t_user_relative_macro& m1 = macros.get_macro(m1_id);
+        REQUIRE(m1.name == "m1");
+        REQUIRE(m1.groups.size() == 3);
+        const t_user_relative_group& m1_g0 = macros.get_group(m1.groups[0]);
+        const t_user_relative_group& m1_g1 = macros.get_group(m1.groups[1]);
+        const t_user_relative_group& m1_g2 = macros.get_group(m1.groups[2]);
+        REQUIRE(m1_g0.macro_id == m1_id);
+        // groups[0] is the reference group at the implicit zero offset
+        REQUIRE(m1_g0.offset == t_pl_offset(0, 0, 0, 0));
+        REQUIRE(m1_g0.atoms == std::vector<AtomBlockId>{dsp0});
+        REQUIRE(m1_g1.offset == t_pl_offset(1, 0, 0, 0));
+        REQUIRE(m1_g1.atoms == std::vector<AtomBlockId>{lb_0, lb_1, lb_2});
+        REQUIRE(m1_g2.offset == t_pl_offset(-1, 2, 1, 0));
+        // lb_3 is matched twice by the same group and stored once
+        REQUIRE(m1_g2.atoms == std::vector<AtomBlockId>{lb_3, lb_4});
+        // no site_path anywhere: one unlocked entry per atom
+        REQUIRE(m1_g2.atom_site_paths == std::vector<std::string>{"", ""});
+
+        const t_user_relative_macro& m2 = macros.get_macro(m2_id);
+        REQUIRE(m2.name == "m2");
+        REQUIRE(m2.groups.size() == 2);
+        REQUIRE(macros.get_group(m2.groups[1]).macro_id == m2_id);
+        // the pattern that matched nothing is skipped, the group survives
+        REQUIRE(macros.get_group(m2.groups[1]).atoms == std::vector<AtomBlockId>{ff_b});
+
+        // reverse lookups
+        REQUIRE(macros.get_atom_group(dsp0) == m1.groups[0]);
+        REQUIRE(macros.get_atom_group(lb_2) == m1.groups[1]);
+        REQUIRE(macros.get_atom_group(lb_3) == m1.groups[2]);
+        REQUIRE(macros.get_atom_group(ff_b) == m2.groups[1]);
+        REQUIRE(macros.get_atom_locked_site_path(lb_3).empty());
+    }
+
+    SECTION("groups and macros that match no atom are dropped") {
+        VprConstraints constraints = load_relative_macro_constraints(R"(
+            <relative_macro name="keeps_one_group">
+                <reference_group>
+                    <add_atom name_pattern="lb_0"/>
+                </reference_group>
+                <relative_group x_offset="1" y_offset="0" sub_tile_offset="0">
+                    <add_atom name_pattern="no_such_atom"/>
+                </relative_group>
+                <relative_group x_offset="2" y_offset="0" sub_tile_offset="0">
+                    <add_atom name_pattern="lb_1"/>
+                </relative_group>
+            </relative_macro>
+            <relative_macro name="no_relative_group_left">
+                <reference_group>
+                    <add_atom name_pattern="lb_2"/>
+                </reference_group>
+                <relative_group x_offset="1" y_offset="0" sub_tile_offset="0">
+                    <add_atom name_pattern="no_such_atom"/>
+                </relative_group>
+            </relative_macro>
+            <relative_macro name="nothing_matched">
+                <reference_group>
+                    <add_atom name_pattern="no_such_atom"/>
+                </reference_group>
+                <relative_group x_offset="1" y_offset="0" sub_tile_offset="0">
+                    <add_atom name_pattern="no_such_atom_either"/>
+                </relative_group>
+            </relative_macro>
+        )");
+        const UserRelativeMacros& macros = constraints.relative_macros();
+        REQUIRE(macros.get_num_macros() == 1);
+        const t_user_relative_macro& macro = macros.get_macro(UserRelativeMacroId(0));
+        REQUIRE(macro.name == "keeps_one_group");
+        REQUIRE(macro.groups.size() == 2);
+        REQUIRE(macros.get_group(macro.groups[1]).offset == t_pl_offset(2, 0, 0, 0));
+        REQUIRE(macros.get_group(macro.groups[1]).atoms == std::vector<AtomBlockId>{lb_1});
+        // atoms of a dropped macro are left unconstrained
+        REQUIRE(!macros.get_atom_group(lb_2).is_valid());
+    }
+
+    SECTION("malformed macros are rejected with a specific error") {
+        // duplicate macro name
+        REQUIRE_THROWS_WITH(load_relative_macro_constraints(R"(
+            <relative_macro name="m">
+                <reference_group><add_atom name_pattern="lb_0"/></reference_group>
+                <relative_group x_offset="1" y_offset="0" sub_tile_offset="0"><add_atom name_pattern="lb_1"/></relative_group>
+            </relative_macro>
+            <relative_macro name="m">
+                <reference_group><add_atom name_pattern="lb_2"/></reference_group>
+                <relative_group x_offset="1" y_offset="0" sub_tile_offset="0"><add_atom name_pattern="lb_3"/></relative_group>
+            </relative_macro>
+        )"),
+                            ContainsSubstring("Relative macro name 'm' is used more than once"));
+
+        // cross-layer macros are not supported
+        REQUIRE_THROWS_WITH(load_relative_macro_constraints(R"(
+            <relative_macro name="m">
+                <reference_group><add_atom name_pattern="lb_0"/></reference_group>
+                <relative_group x_offset="1" y_offset="0" sub_tile_offset="0" layer_offset="1"><add_atom name_pattern="lb_1"/></relative_group>
+            </relative_macro>
+        )"),
+                            ContainsSubstring("layer_offset must be 0"));
+
+        // a relative group on top of the reference group
+        REQUIRE_THROWS_WITH(load_relative_macro_constraints(R"(
+            <relative_macro name="m">
+                <reference_group><add_atom name_pattern="lb_0"/></reference_group>
+                <relative_group x_offset="0" y_offset="0" sub_tile_offset="0"><add_atom name_pattern="lb_1"/></relative_group>
+            </relative_macro>
+        )"),
+                            ContainsSubstring("a relative_group is at offset (0, 0, sub_tile 0), the reference group's location"));
+
+        // two relative groups at the same offset, reported by offset even though
+        // an empty group before them was dropped
+        REQUIRE_THROWS_WITH(load_relative_macro_constraints(R"(
+            <relative_macro name="m">
+                <reference_group><add_atom name_pattern="lb_0"/></reference_group>
+                <relative_group x_offset="1" y_offset="0" sub_tile_offset="0"><add_atom name_pattern="no_such_atom"/></relative_group>
+                <relative_group x_offset="2" y_offset="0" sub_tile_offset="0"><add_atom name_pattern="lb_1"/></relative_group>
+                <relative_group x_offset="2" y_offset="0" sub_tile_offset="0"><add_atom name_pattern="lb_2"/></relative_group>
+            </relative_macro>
+        )"),
+                            ContainsSubstring("two relative groups are at the same offset (2, 0, sub_tile 0)"));
+
+        // an atom in two groups of one macro
+        REQUIRE_THROWS_WITH(load_relative_macro_constraints(R"(
+            <relative_macro name="m">
+                <reference_group><add_atom name_pattern="lb_0"/></reference_group>
+                <relative_group x_offset="1" y_offset="0" sub_tile_offset="0"><add_atom name_pattern="^lb_[0-1]$" is_regex="true"/></relative_group>
+            </relative_macro>
+        )"),
+                            ContainsSubstring("atom 'lb_0' appears in the reference group and in the relative_group at offset (1, 0, sub_tile 0)"));
+
+        // an atom in two macros
+        REQUIRE_THROWS_WITH(load_relative_macro_constraints(R"(
+            <relative_macro name="m1">
+                <reference_group><add_atom name_pattern="lb_0"/></reference_group>
+                <relative_group x_offset="1" y_offset="0" sub_tile_offset="0"><add_atom name_pattern="lb_1"/></relative_group>
+            </relative_macro>
+            <relative_macro name="m2">
+                <reference_group><add_atom name_pattern="lb_1"/></reference_group>
+                <relative_group x_offset="1" y_offset="0" sub_tile_offset="0"><add_atom name_pattern="lb_2"/></relative_group>
+            </relative_macro>
+        )"),
+                            ContainsSubstring("Atom 'lb_1' appears in relative macro 'm2' and in relative macro 'm1'"));
+
+        // a reference group that matches nothing while a relative group does
+        REQUIRE_THROWS_WITH(load_relative_macro_constraints(R"(
+            <relative_macro name="m">
+                <reference_group><add_atom name_pattern="no_such_atom"/></reference_group>
+                <relative_group x_offset="1" y_offset="0" sub_tile_offset="0"><add_atom name_pattern="lb_1"/></relative_group>
+            </relative_macro>
+        )"),
+                            ContainsSubstring("The macro has no anchor"));
+
+        // an invalid regular expression
+        REQUIRE_THROWS_WITH(load_relative_macro_constraints(R"(
+            <relative_macro name="m">
+                <reference_group><add_atom name_pattern="lb_[" is_regex="true"/></reference_group>
+                <relative_group x_offset="1" y_offset="0" sub_tile_offset="0"><add_atom name_pattern="lb_1"/></relative_group>
+            </relative_macro>
+        )"),
+                            ContainsSubstring("invalid atom name_pattern regex 'lb_['"));
+
+        // a present but empty site_path
+        REQUIRE_THROWS_WITH(load_relative_macro_constraints(R"(
+            <relative_macro name="m">
+                <reference_group><add_atom name_pattern="lb_0" site_path=""/></reference_group>
+                <relative_group x_offset="1" y_offset="0" sub_tile_offset="0"><add_atom name_pattern="lb_1"/></relative_group>
+            </relative_macro>
+        )"),
+                            ContainsSubstring("reference group: the site_path of atom pattern 'lb_0' is '', which is empty or contains whitespace"));
+
+        // a site_path naming no primitive
+        REQUIRE_THROWS_WITH(load_relative_macro_constraints(R"(
+            <relative_macro name="m">
+                <reference_group><add_atom name_pattern="lb_0"/></reference_group>
+                <relative_group x_offset="1" y_offset="0" sub_tile_offset="0"><add_atom name_pattern="lb_1" site_path="no_such_type[0][default]/nope[0]"/></relative_group>
+            </relative_macro>
+        )"),
+                            ContainsSubstring("relative_group at offset (1, 0, sub_tile 0): the site_path 'no_such_type[0][default]/nope[0]' of atom pattern 'lb_1' does not name a primitive of any logical block type"));
+    }
+
+    // leave the global atom netlist as other tests expect to find it
+    g_vpr_ctx.mutable_atom().mutable_netlist() = AtomNetlist();
 }
 
 #if 0

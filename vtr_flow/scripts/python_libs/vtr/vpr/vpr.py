@@ -108,7 +108,8 @@ def run_relax_w(
     # skip the relaxed-W second invocation.
     if graphics_exit_requested(str(temp_dir / vpr_min_w_log)):
         return
-    explicit = "pack" in vpr_args or "place" in vpr_args or "analysis" in vpr_args
+    explicit_stages = ("pack", "place", "analytical_place", "global_place", "analysis")
+    explicit = any(stage in vpr_args for stage in explicit_stages)
     if explicit and "route" not in vpr_args:
         # Don't look for min W if routing was not run
         return

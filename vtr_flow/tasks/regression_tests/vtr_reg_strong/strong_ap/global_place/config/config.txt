@@ -1,0 +1,37 @@
+###############################################################################
+# Configuration file for running only the Global Placement stage of the AP
+# flow (--global_place).
+#
+# This tests:
+#   - Running only global placement and reporting the post-GP estimates.
+#   - Writing the post-GP flat placement (--write_post_gp_flat_place).
+###############################################################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/blif/wiremap6
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_40nm.xml
+
+# Add circuits to list to sweep
+circuit_list_add=apex4.pre-vpr.blif
+
+# Constrain the circuits to their devices
+circuit_constraint_list_add=(apex4.pre-vpr.blif,    device=mcnc_medium)
+
+# Parse info and how to parse
+parse_file=vpr_ap_global_place.txt
+
+# How to parse QoR info
+qor_parse_file=qor_ap_fixed_chan_width.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_ap_global_place.txt
+
+# Script parameters
+script_params_common=-starting_stage vpr -track_memory_usage --global_place
+script_params_list_add=
+script_params_list_add=--write_post_gp_flat_place apex4_post_gp.fplace
