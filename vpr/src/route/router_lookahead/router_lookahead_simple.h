@@ -12,10 +12,17 @@
  * cost map for sources/opins or intra-cluster estimates.
  */
 class SimpleLookahead final : public RouterLookahead {
+  private:
+    /**
+     * @brief (delay, congestion) cost from from_node to the to_node SINK. Congestion is scaled by (1 - criticality);
+     *        delay is scaled by criticality only when scale_delay is true, otherwise it is the unscaled delay.
+     */
+    std::pair<float, float> calculate_delay_and_cong(bool scale_delay, RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params) const;
+
   protected:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
-
+    std::pair<float, float> get_expected_pure_delay_and_scaled_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
     void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
         VPR_THROW(VPR_ERROR_ROUTE, "SimpleLookahead::compute unsupported, try to load lookahead from a file.");
     }

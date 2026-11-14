@@ -240,8 +240,8 @@ bool route(const Netlist<>& net_list,
 
     // When RCV is enabled the router will not stop unless negative hold slack is 0
     // In some cases this isn't doable, due to global nets or intracluster routing issues
-    // In these cases RCV will finish early if it goes RCV_FINISH_EARLY_COUNTDOWN iterations without detecting resolvable negative hold slack
-    // Increasing this will make the router fail occasionally, decreasing will sometimes not let all hold violations be resolved
+    // In these cases RCV will finish early if the hold slack doesn't improve on its best value for RCV_FINISH_EARLY_COUNTDOWN consecutive iterations
+    // Increasing this gives RCV more time to resolve hold violations, decreasing it makes the router give up on hold sooner
     constexpr int RCV_FINISH_EARLY_COUNTDOWN = 15;
 
     int rcv_finished_count = RCV_FINISH_EARLY_COUNTDOWN;
@@ -251,6 +251,9 @@ bool route(const Netlist<>& net_list,
     // Reset router iteration in the current route attempt.
     get_bp_state_globals()->get_glob_breakpoint_state()->router_iter = 0;
 #endif
+    // Hold TNS of the most recent routing while budgets are set, 0 otherwise.
+    float worst_negative_slack = 0;
+
     for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
         /* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
         for (auto net_id : net_list.nets()) {
@@ -260,12 +263,6 @@ bool route(const Netlist<>& net_list,
 
         if (itry_since_last_convergence >= 0) {
             ++itry_since_last_convergence;
-        }
-
-        // Calculate this once and pass it into net routing to check if should reroute for hold
-        float worst_negative_slack = 0;
-        if (budgeting_inf.if_set()) {
-            worst_negative_slack = timing_info->hold_total_negative_slack();
         }
 
 #ifndef NO_GRAPHICS
@@ -314,6 +311,9 @@ bool route(const Netlist<>& net_list,
         timing_info->update();
         timing_info->set_warn_unconstrained(false); //Don't warn again about unconstrained nodes again during routing
         pin_timing_invalidator->reset();
+        if (budgeting_inf.if_set()) {
+            worst_negative_slack = timing_info->hold_total_negative_slack(); //update here so it always contains the most recent value
+        }
 
         critical_path = timing_info->least_slack_critical_path();
 
@@ -358,7 +358,7 @@ bool route(const Netlist<>& net_list,
         /*
          * Are we finished?
          */
-        if (is_iteration_complete(routing_is_feasible, router_opts, itry, timing_info, rcv_finished_count == 0)) {
+        if (is_iteration_complete(routing_is_feasible, router_opts, itry, timing_info, rcv_finished_count <= 0)) {
             auto& router_ctx = g_vpr_ctx.routing();
 
             if (is_better_quality_routing(best_routing, best_routing_metrics, wirelength_info, timing_info)) {
@@ -462,6 +462,10 @@ bool route(const Netlist<>& net_list,
             if (budgeting_inf.if_set()) {
                 bool rcv_finished = false;
 
+                // Pick up connections whose hold slack went negative in the last iteration
+                if (router_opts.routing_budgets_algorithm == YOYO)
+                    budgeting_inf.enable_rcv_on_hold_violations(timing_info, netlist_pin_lookup);
+
                 /* This constant represents how much extra delay the budget increaser adds to the minimum and maximum delay budgets
                  * Experimentally this value delivers fast hold slack resolution, while not overwhelming the router
                  * Increasing this will make it resolve hold faster, but could result in lower circuit quality */
@@ -525,6 +529,13 @@ bool route(const Netlist<>& net_list,
 
                 //load budgets using information from uncongested delay information
                 budgeting_inf.load_route_budgets(net_delay, timing_info, netlist_pin_lookup, router_opts);
+
+                // Budgets were not set at this iteration's timing update, so read hold TNS now that they are
+                if (budgeting_inf.if_set())
+                    worst_negative_slack = timing_info->hold_total_negative_slack();
+
+                if (router_opts.routing_budgets_algorithm == YOYO)
+                    budgeting_inf.enable_rcv_on_hold_violations(timing_info, netlist_pin_lookup);
             } else {
                 bool stable_routing_configuration = true;
 

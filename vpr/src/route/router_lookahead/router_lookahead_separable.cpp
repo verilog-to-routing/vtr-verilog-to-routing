@@ -434,30 +434,17 @@ static void min_opin_axis_delay_map(const util::t_src_opin_delays& src_opin_dela
     }
 }
 
-SeparableLookahead::SeparableLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings, float interposer_base_cost_multiplier)
-    : map_lookahead_(std::make_unique<MapLookahead>(det_routing_arch, is_flat, route_verbosity, device_model_warnings, interposer_base_cost_multiplier))
-    , is_flat_(is_flat)
-    , route_verbosity_(route_verbosity)
-    , device_model_warnings_(device_model_warnings) {
-    if (is_flat_) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "SeparableLookahead does not support flat routing");
-    }
-}
-
-float SeparableLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
-    VTR_ASSERT_SAFE(g_vpr_ctx.device().rr_graph.node_type(target_node) == e_rr_type::SINK);
-    auto [delay_cost, cong_cost] = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
-    return delay_cost + cong_cost;
-}
-
-std::pair<float, float> SeparableLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const {
+std::pair<float, float> SeparableLookahead::calculate_delay_and_cong(bool scale_delay, RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     e_rr_type from_type = rr_graph.node_type(from_node);
     if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::OPIN) {
         // TODO: remove dependency on map lookahead
-        return map_lookahead_->get_expected_delay_and_cong(from_node, to_node, params, R_upstream);
+        if (scale_delay)
+            return map_lookahead_->get_expected_delay_and_cong(from_node, to_node, params, R_upstream);
+        else
+            return map_lookahead_->get_expected_pure_delay_and_scaled_cong(from_node, to_node, params, R_upstream);
     }
     if (from_type == e_rr_type::IPIN) {
         return {0.f, device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost};
@@ -505,12 +492,40 @@ std::pair<float, float> SeparableLookahead::get_expected_delay_and_cong(RRNodeId
         || expected_delay_cost == ROUTER_LOOKAHEAD_NO_PATH_SENTINEL
         || expected_cong_cost == ROUTER_LOOKAHEAD_NO_PATH_SENTINEL) {
         // TODO: remove dependency on map lookahead
-        return map_lookahead_->get_expected_delay_and_cong(from_node, to_node, params, R_upstream);
+        if (scale_delay)
+            return map_lookahead_->get_expected_delay_and_cong(from_node, to_node, params, R_upstream);
+        else
+            return map_lookahead_->get_expected_pure_delay_and_scaled_cong(from_node, to_node, params, R_upstream);
     }
-    expected_delay_cost *= params.criticality;
+    if (scale_delay)
+        expected_delay_cost *= params.criticality;
     expected_cong_cost *= (1.0f - params.criticality);
 
     return {expected_delay_cost, expected_cong_cost};
+}
+
+SeparableLookahead::SeparableLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings, float interposer_base_cost_multiplier)
+    : map_lookahead_(std::make_unique<MapLookahead>(det_routing_arch, is_flat, route_verbosity, device_model_warnings, interposer_base_cost_multiplier))
+    , is_flat_(is_flat)
+    , route_verbosity_(route_verbosity)
+    , device_model_warnings_(device_model_warnings) {
+    if (is_flat_) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "SeparableLookahead does not support flat routing");
+    }
+}
+
+float SeparableLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
+    VTR_ASSERT_SAFE(g_vpr_ctx.device().rr_graph.node_type(target_node) == e_rr_type::SINK);
+    auto [delay_cost, cong_cost] = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
+    return delay_cost + cong_cost;
+}
+
+std::pair<float, float> SeparableLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const {
+    return calculate_delay_and_cong(/*scale_delay*/ true, from_node, to_node, params, R_upstream);
+}
+
+std::pair<float, float> SeparableLookahead::get_expected_pure_delay_and_scaled_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const {
+    return calculate_delay_and_cong(/*scale_delay*/ false, from_node, to_node, params, R_upstream);
 }
 
 void SeparableLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {

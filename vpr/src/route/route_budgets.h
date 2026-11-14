@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <queue>
+#include <limits>
 #include "RoutingDelayCalculator.h"
 #include "clustered_netlist_utils.h"
 #include "timing_info.h"
@@ -41,6 +42,15 @@ class route_budgets {
      *        specified by its net_id and ipin.
      */
     bool should_use_rcv(ParentNetId net_id, int ipin) const;
+
+    /**
+     * @brief Enables RCV for every connection whose hold slack is negative,
+     *        and marks its net for rerouting. Connections are never disabled
+     *        once enabled, so a fixed connection is not rerouted back onto a
+     *        short path that violates hold again.
+     */
+    void enable_rcv_on_hold_violations(std::shared_ptr<SetupHoldTimingInfo> timing_info,
+                                       const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
 
     /*main loader function*/
     void load_route_budgets(NetPinsMatrix<float>& net_delay,
@@ -150,6 +160,8 @@ class route_budgets {
     /*used to keep count the number of continuous time this node was congested*/
     vtr::vector<ParentNetId, int> num_times_congested; //[0..num_nets]
     std::queue<float> negative_hold_slacks;
+    /*best (least negative) hold slack seen so far, used to detect when RCV stops making progress*/
+    float best_hold_slack_ = -std::numeric_limits<float>::infinity();
 
     const Netlist<>& net_list_;
     bool is_flat_;

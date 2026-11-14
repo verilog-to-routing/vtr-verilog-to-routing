@@ -54,11 +54,16 @@ class SeparableLookahead final : public RouterLookahead {
     int route_verbosity_;        ///< Verbosity for SOURCE/OPIN profiling.
     bool device_model_warnings_; ///< Whether to report device model warnings during profiling.
 
+    /// @brief Return delay and criticality-weighted congestion; the delay is weighted by criticality only when scale_delay is true.
+    std::pair<float, float> calculate_delay_and_cong(bool scale_delay, RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const;
+
   protected:
     /// @brief Return the combined delay and congestion estimate; flat routing is unsupported.
     float get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
     /// @brief Return criticality-weighted delay and congestion estimates.
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
+    /// @brief Return delay and criticality-weighted congestion estimates.
+    std::pair<float, float> get_expected_pure_delay_and_scaled_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
 
     /// @brief Profile wire costs and precompute the minimum OPIN delay along each axis.
     void compute(const std::vector<t_segment_inf>& segment_inf) override;
