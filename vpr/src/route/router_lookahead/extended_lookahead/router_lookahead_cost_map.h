@@ -1,8 +1,31 @@
 #pragma once
 
+#include <unordered_map>
 #include <vector>
 #include "router_lookahead_map_utils.h"
 #include "vtr_geometry.h"
+#include "vtr_hash.h"
+
+/// @brief Key of the t_routing_costs map
+struct t_routing_cost_key {
+    int seg_index;         ///<Segment type index
+    vtr::Point<int> delta; ///<Offset of the destination connection box from the starting segment
+
+    bool operator==(const t_routing_cost_key& other) const = default;
+};
+
+/// @brief Hash implementation for t_routing_cost_key
+struct t_routing_cost_key_hash {
+    std::size_t operator()(t_routing_cost_key const& key) const noexcept {
+        std::size_t hash = std::hash<int>{}(key.seg_index);
+        vtr::hash_combine(hash, key.delta.x());
+        vtr::hash_combine(hash, key.delta.y());
+        return hash;
+    }
+};
+
+/// @brief Map used to store intermediate routing costs
+typedef std::unordered_map<t_routing_cost_key, float, t_routing_cost_key_hash> t_routing_costs;
 
 /**
  * @brief Dense cost maps per source segment and destination nodes
@@ -52,7 +75,7 @@ class CostMap {
      * @param delay_costs delay costs calculated with the dijkstra expansions
      * @param base_costs congestion costs calculated with the dijkstra expansions
      */
-    void set_cost_map(const util::RoutingCosts& delay_costs, const util::RoutingCosts& base_costs, bool device_model_warnings);
+    void set_cost_map(const t_routing_costs& delay_costs, const t_routing_costs& base_costs, bool device_model_warnings);
 
     /**
      * @brief Gets the cost of an entry that is close to a hole in the cost map

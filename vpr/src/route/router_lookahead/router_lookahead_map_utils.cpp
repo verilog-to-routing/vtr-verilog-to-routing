@@ -124,237 +124,27 @@ static constexpr int DIRECT_CONNECT_SPECIAL_SEG_TYPE = -1;
 
 namespace util {
 
-PQ_Entry::PQ_Entry(RRNodeId set_rr_node, int /*switch_ind*/, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node) {
-    this->rr_node = set_rr_node;
-
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-    this->delay = parent_delay;
-    this->congestion_upstream = parent_congestion_upstream;
-    this->R_upstream = parent_R_upstream;
-    if (!starting_node) {
-        RRIndexedDataId cost_index = rr_graph.node_cost_index(RRNodeId(set_rr_node));
-        //this->delay += rr_graph.node_C(RRNodeId(set_rr_node)) * (g_rr_switch_inf[switch_ind].R + 0.5*rr_graph.node_R(RRNodeId(set_rr_node))) +
-        //              g_rr_switch_inf[switch_ind].Tdel;
-
-        //FIXME going to use the delay data that the VPR7 lookahead uses. For some reason the delay calculation above calculates
-        //    a value that's just a little smaller compared to what VPR7 lookahead gets. While the above calculation should be more accurate,
-        //    I have found that it produces the same CPD results but with worse runtime.
-        //
-        //    TODO: figure out whether anything's wrong with the calculation above and use that instead. If not, add the other
-        //          terms like T_quadratic and R_upstream to the calculation below (they are == 0 or UNDEFINED for buffered archs I think)
-
-        //NOTE: We neglect the T_quadratic and C_load terms and Switch R, so this lookahead is likely
-        //      less accurate on unbuffered (e.g. pass-gate) architectures
-
-        this->delay += device_ctx.rr_indexed_data[cost_index].T_linear;
-
-        this->congestion_upstream += device_ctx.rr_indexed_data[cost_index].base_cost;
+PQEntry::PQEntry(RRNodeId node, const PQEntry* parent)
+    : rr_node(node)
+    , delay(0.f)
+    , congestion_upstream(0.f) {
+    if (parent == nullptr) {
+        return;
     }
 
-    if (this->delay < 0) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    RRIndexedDataId cost_index = device_ctx.rr_graph.node_cost_index(node);
+
+    // We use the delay data that the VPR 7 lookahead uses, neglecting the T_quadratic and C_load terms
+    // and switch R. A more detailed RC calculation was found to give the same CPD with worse runtime,
+    // but this lookahead is likely less accurate on unbuffered (e.g. pass-gate) architectures.
+    delay = parent->delay + device_ctx.rr_indexed_data[cost_index].T_linear;
+    congestion_upstream = parent->congestion_upstream + device_ctx.rr_indexed_data[cost_index].base_cost;
+
+    if (delay < 0) {
         VTR_LOG("NEGATIVE DELAY!\n");
     }
-
-    /* set the cost of this node */
-    this->cost = this->delay;
 }
-
-PQ_Entry_Delay::PQ_Entry_Delay(
-    RRNodeId set_rr_node,
-    int switch_ind,
-    const PQ_Entry_Delay* parent) {
-    this->rr_node = set_rr_node;
-
-    if (parent != nullptr) {
-        auto& device_ctx = g_vpr_ctx.device();
-        const auto& rr_graph = device_ctx.rr_graph;
-        float Tsw = rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).Tdel_max;
-        float Rsw = rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).R;
-        float Cnode = rr_graph.node_C(set_rr_node);
-        float Rnode = rr_graph.node_R(set_rr_node);
-
-        float T_linear = 0.f;
-        if (rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).buffered()) {
-            T_linear = Tsw + Rsw * Cnode + 0.5 * Rnode * Cnode;
-        } else { /* Pass transistor */
-            T_linear = Tsw + 0.5 * Rsw * Cnode;
-        }
-
-        VTR_ASSERT(T_linear >= 0.);
-        this->delay_cost = parent->delay_cost + T_linear;
-    } else {
-        this->delay_cost = 0.f;
-    }
-}
-
-PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
-    RRNodeId set_rr_node,
-    int switch_ind,
-    const PQ_Entry_Base_Cost* parent) {
-    this->rr_node = set_rr_node;
-
-    if (parent != nullptr) {
-        auto& device_ctx = g_vpr_ctx.device();
-        const auto& rr_graph = device_ctx.rr_graph;
-        if (rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).configurable()) {
-            this->base_cost = parent->base_cost + get_single_rr_cong_base_cost(set_rr_node);
-        } else {
-            this->base_cost = parent->base_cost;
-        }
-    } else {
-        this->base_cost = 0.f;
-    }
-}
-
-/* returns cost entry with the smallest delay */
-Cost_Entry Expansion_Cost_Entry::get_smallest_entry() const {
-    Cost_Entry smallest_entry;
-
-    for (auto entry : this->cost_vector) {
-        if (!smallest_entry.valid() || entry.delay < smallest_entry.delay) {
-            smallest_entry = entry;
-        }
-    }
-
-    return smallest_entry;
-}
-
-/* returns a cost entry that represents the average of all the recorded entries */
-Cost_Entry Expansion_Cost_Entry::get_average_entry() const {
-    float avg_delay = 0;
-    float avg_congestion = 0;
-
-    for (auto cost_entry : this->cost_vector) {
-        avg_delay += cost_entry.delay;
-        avg_congestion += cost_entry.congestion;
-    }
-
-    avg_delay /= (float)this->cost_vector.size();
-    avg_congestion /= (float)this->cost_vector.size();
-
-    return Cost_Entry(avg_delay, avg_congestion);
-}
-
-/* returns a cost entry that represents the geomean of all the recorded entries */
-Cost_Entry Expansion_Cost_Entry::get_geomean_entry() const {
-    float geomean_delay = 0;
-    float geomean_cong = 0;
-    for (auto cost_entry : this->cost_vector) {
-        geomean_delay += log(cost_entry.delay);
-        geomean_cong += log(cost_entry.congestion);
-    }
-
-    geomean_delay = exp(geomean_delay / (float)this->cost_vector.size());
-    geomean_cong = exp(geomean_cong / (float)this->cost_vector.size());
-
-    return Cost_Entry(geomean_delay, geomean_cong);
-}
-
-/* returns a cost entry that represents the medial of all recorded entries */
-Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
-    /* find median by binning the delays of all entries and then choosing the bin
-     * with the largest number of entries */
-
-    // This is code that needs to be revisited. For the time being, if the median entry
-    // method calculation is used an error is thrown.
-    VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                    "Get median entry calculation method is not implemented!");
-
-    int num_bins = 10;
-
-    /* find entries with smallest and largest delays */
-    Cost_Entry min_del_entry;
-    Cost_Entry max_del_entry;
-    for (auto entry : this->cost_vector) {
-        if (!min_del_entry.valid() || entry.delay < min_del_entry.delay) {
-            min_del_entry = entry;
-        }
-        if (!max_del_entry.valid() || entry.delay > max_del_entry.delay) {
-            max_del_entry = entry;
-        }
-    }
-
-    /* get the bin size */
-    float delay_diff = max_del_entry.delay - min_del_entry.delay;
-    float bin_size = delay_diff / (float)num_bins;
-
-    /* sort the cost entries into bins */
-    std::vector<std::vector<Cost_Entry>> entry_bins(num_bins, std::vector<Cost_Entry>());
-    for (auto entry : this->cost_vector) {
-        float bin_num = floor((entry.delay - min_del_entry.delay) / bin_size);
-
-        VTR_ASSERT(vtr::nint(bin_num) >= 0 && vtr::nint(bin_num) <= num_bins);
-        if (vtr::nint(bin_num) == num_bins) {
-            /* largest entry will otherwise have an out-of-bounds bin number */
-            bin_num -= 1;
-        }
-        entry_bins[vtr::nint(bin_num)].push_back(entry);
-    }
-
-    /* find the bin with the largest number of elements */
-    int largest_bin = 0;
-    int largest_size = 0;
-    for (int ibin = 0; ibin < num_bins; ibin++) {
-        if (entry_bins[ibin].size() > (unsigned)largest_size) {
-            largest_bin = ibin;
-            largest_size = (unsigned)entry_bins[ibin].size();
-        }
-    }
-
-    /* get the representative delay of the largest bin */
-    Cost_Entry representative_entry = entry_bins[largest_bin][0];
-
-    return representative_entry;
-}
-
-template<typename Entry>
-void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
-                                const Entry& parent_entry,
-                                std::vector<Search_Path>* paths,
-                                std::vector<bool>* node_expanded,
-                                std::priority_queue<Entry,
-                                                    std::vector<Entry>,
-                                                    std::greater<Entry>>* pq) {
-    RRNodeId parent = parent_entry.rr_node;
-
-    for (int iedge = 0; iedge < rr_graph.num_edges(parent); iedge++) {
-        int child_node_ind = size_t(rr_graph.edge_sink_node(RRNodeId(parent), iedge));
-        int switch_ind = rr_graph.edge_switch(parent, iedge);
-
-        /* skip this child if it has already been expanded from */
-        if ((*node_expanded)[child_node_ind]) {
-            continue;
-        }
-
-        Entry child_entry(RRNodeId(child_node_ind), switch_ind, &parent_entry);
-        VTR_ASSERT(child_entry.cost() >= 0);
-
-        /* Create (if it doesn't exist) or update (if the new cost is lower)
-         * to specified node */
-        Search_Path path_entry = {child_entry.cost(), size_t(parent), iedge};
-        auto& path = (*paths)[child_node_ind];
-        if (path_entry.cost < path.cost) {
-            pq->push(child_entry);
-            path = path_entry;
-        }
-    }
-}
-
-template void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
-                                         const PQ_Entry_Delay& parent_entry,
-                                         std::vector<Search_Path>* paths,
-                                         std::vector<bool>* node_expanded,
-                                         std::priority_queue<PQ_Entry_Delay,
-                                                             std::vector<PQ_Entry_Delay>,
-                                                             std::greater<PQ_Entry_Delay>>* pq);
-template void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
-                                         const PQ_Entry_Base_Cost& parent_entry,
-                                         std::vector<Search_Path>* paths,
-                                         std::vector<bool>* node_expanded,
-                                         std::priority_queue<PQ_Entry_Base_Cost,
-                                                             std::vector<PQ_Entry_Base_Cost>,
-                                                             std::greater<PQ_Entry_Base_Cost>>* pq);
 
 t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
                                                     int route_verbosity,
@@ -834,9 +624,6 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                       segment_inf.name.c_str(),
                       segment_inf.length);
     } else {
-        // reset cost for this segment
-        routing_cost_map.fill(Expansion_Cost_Entry());
-
         // to avoid multiple memory allocation and de-allocations in run_dijkstra()
         // dijkstra_data is created outside the for loop and passed by reference to dijkstra_data()
         t_dijkstra_data dijkstra_data;
@@ -850,7 +637,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                 sample_y = rr_graph.node_yhigh(sample_node);
             }
 
-            auto map_lookahead_add_sample_route_to_table = [&](PQ_Entry current) {
+            auto map_lookahead_add_sample_route_to_table = [&](PQEntry current) {
                 RRNodeId curr_node = current.rr_node;
 
                 VTR_ASSERT_SAFE(rr_graph.node_xlow(curr_node) == rr_graph.node_xhigh(curr_node));
@@ -876,9 +663,11 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                         }
                     }
 
-                    routing_cost_map[ipin_layer][delta_x][delta_y].add_cost_entry(util::e_representative_entry_method::SMALLEST,
-                                                                                  current.delay,
-                                                                                  current.congestion_upstream);
+                    // Keep the smallest-delay entry seen at this coordinate
+                    Cost_Entry& cost_entry = routing_cost_map[ipin_layer][delta_x][delta_y];
+                    if (!cost_entry.valid() || current.delay < cost_entry.delay) {
+                        cost_entry = Cost_Entry(current.delay, current.congestion_upstream);
+                    }
                 }
             };
 
@@ -951,7 +740,7 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
     return std::make_pair(expected_delay_cost, expected_cong_cost);
 }
 
-void dump_readable_router_lookahead_map(const std::string& file_name, const std::vector<int>& dim_sizes, WireCostCallBackFunction wire_cost_func) {
+void dump_readable_router_lookahead_map(const std::string& file_name, const std::vector<int>& dim_sizes, WireCostFunc wire_cost_func) {
     VTR_ASSERT(vtr::check_file_name_extension(file_name, ".csv"));
     const auto& grid = g_vpr_ctx.device().grid;
 

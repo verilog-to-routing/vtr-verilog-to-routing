@@ -222,7 +222,7 @@ void CostMap::fill_holes(vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int seg_ind
 }
 
 // set the cost map for a segment type and chan type, filling holes
-void CostMap::set_cost_map(const util::RoutingCosts& delay_costs, const util::RoutingCosts& base_costs, bool device_model_warnings) {
+void CostMap::set_cost_map(const t_routing_costs& delay_costs, const t_routing_costs& base_costs, bool device_model_warnings) {
     // Calculate the bounding boxes
     // Bounding boxes are used to reduce the cost map size. They are generated based on the minimum
     // and maximum coordinates of the x/y delta delays obtained for each segment.
