@@ -108,7 +108,7 @@ class BlkLocRegistry {
     /**
      * @brief Set chosen grid locations to EMPTY block id before each placement iteration
      *
-     * @param unplaced_blk_types_index Block types that their grid locations must be cleared.
+     * @param unplaced_blk_types_index Logical block types that their grid locations must be cleared.
      */
     void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_blk_types_index);
 

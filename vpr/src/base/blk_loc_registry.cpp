@@ -157,7 +157,6 @@ void BlkLocRegistry::clear_block_type_grid_locs(const std::unordered_set<int>& u
 
     // check if all types should be cleared
     // logical_block_types contain empty type, needs to be ignored.
-    // Not having any type in unplaced_blk_types_index means that it is the first iteration, hence all grids needs to be cleared
     if (unplaced_blk_types_index.size() == device_ctx.logical_block_types.size() - 1) {
         clear_all_block_types = true;
     }
@@ -166,15 +165,17 @@ void BlkLocRegistry::clear_block_type_grid_locs(const std::unordered_set<int>& u
     // blocks placed anywhere.
     for (const t_physical_tile_loc loc : device_ctx.grid.all_locations()) {
         const t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type(loc);
-        int itype = type->index;
-        if (clear_all_block_types || unplaced_blk_types_index.count(itype)) {
-            for (int k = 0; k < device_ctx.physical_tile_types[itype].capacity; k++) {
-                grid_blocks_.set_block_at_location({loc, k}, ClusterBlockId::INVALID());
+        for (int k = 0; k < type->capacity; k++) {
+            const t_pl_loc sub_tile_loc(loc, k);
+            const ClusterBlockId blk_id = grid_blocks_.block_at_location(sub_tile_loc);
+            if (clear_all_block_types
+                || (blk_id.is_valid() && unplaced_blk_types_index.count(cluster_ctx.clb_nlist.block_type(blk_id)->index))) {
+                grid_blocks_.set_block_at_location(sub_tile_loc, ClusterBlockId::INVALID());
             }
         }
     }
 
-    // Similarly, mark all blocks as not being placed yet.
+    // Similarly, mark the blocks of the given types as not being placed yet.
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         int blk_type = cluster_ctx.clb_nlist.block_type(blk_id)->index;
         if (clear_all_block_types || unplaced_blk_types_index.count(blk_type)) {
