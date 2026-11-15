@@ -322,10 +322,10 @@ static void set_final_graphics_stage(const t_vpr_setup& vpr_setup) {
 }
 
 static void draw_main_canvas_immediate(ezgl::renderer* g) {
-    #ifndef NO_SERVER
+#ifndef NO_SERVER
     if (g_vpr_ctx.server().gate_io.is_running())
         return;
-    #endif
+#endif
     draw_crit_path(g);
 }
 

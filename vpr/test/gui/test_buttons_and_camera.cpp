@@ -149,7 +149,7 @@ ezgl::canvas* ensure_main_canvas(ezgl::application* app,
         // save-graphics) whose canvas::render_to_image calls the callback
         // unconditionally and segfaults on the null call.
         cnv = app->add_canvas(id, /*draw_persistent_callback=*/[](ezgl::renderer*) noexcept {},
-                            /*draw_immediate_callback=*/[](ezgl::renderer*) noexcept {}, initial_world, ezgl::WHITE);
+                              /*draw_immediate_callback=*/[](ezgl::renderer*) noexcept {}, initial_world, ezgl::WHITE);
     }
     cnv->get_camera().set_world(initial_world);
     return cnv;
