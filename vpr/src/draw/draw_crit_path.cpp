@@ -422,7 +422,7 @@ void draw_crit_path(ezgl::renderer* g) {
     if (draw_state->show_crit_path_flylines) {
         draw_timing_edge_flylines(paths, g);
         if (draw_state->show_crit_path_delays) {
-            //calculate_and_draw_delay_labels(paths, g);
+            calculate_and_draw_delay_labels(paths, g);
             draw_total_delay_messages(paths, g);
         }
     }
@@ -433,6 +433,7 @@ void draw_crit_path(ezgl::renderer* g) {
     }
 }
 
+/*
 void draw_delay_labels_immediate(ezgl::renderer* g) {
     tatum::TimingPathCollector path_collector;
     t_draw_state* draw_state = get_draw_state_vars();
@@ -456,6 +457,7 @@ void draw_delay_labels_immediate(ezgl::renderer* g) {
     if (draw_state->show_crit_path_flylines && draw_state->show_crit_path_delays)
         calculate_and_draw_delay_labels(paths, g);
 }
+*/
 
 static void draw_timing_edge_flylines(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g) {
     g->set_line_dash(ezgl::line_dash::asymmetric_5_3);

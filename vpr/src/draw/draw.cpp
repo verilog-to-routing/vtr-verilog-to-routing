@@ -326,7 +326,7 @@ static void draw_main_canvas_immediate(ezgl::renderer* g) {
     if (g_vpr_ctx.server().gate_io.is_running())
         return;
     #endif
-    draw_delay_labels_immediate(g);
+    draw_crit_path(g);
 }
 
 static void draw_main_canvas_persistent(ezgl::renderer* g) {
@@ -375,11 +375,7 @@ static void draw_main_canvas_persistent(ezgl::renderer* g) {
         if (g_vpr_ctx.server().gate_io.is_running()) {
             const ServerContext& server_ctx = g_vpr_ctx.server(); // shortcut
             draw_crit_path_elements(server_ctx.crit_paths, server_ctx.crit_path_element_indexes, server_ctx.draw_crit_path_contour, g);
-        } else {
-            draw_crit_path(g);
         }
-#else
-        draw_crit_path(g);
 #endif /* NO_SERVER */
 
         draw_logical_connections(g);
@@ -399,7 +395,6 @@ static void draw_main_canvas_persistent(ezgl::renderer* g) {
         }
     } else {
         draw_analytical_place(g);
-        draw_crit_path(g);
     }
 
     // Zoom-Select preview: while the user is in window mode and has clicked
