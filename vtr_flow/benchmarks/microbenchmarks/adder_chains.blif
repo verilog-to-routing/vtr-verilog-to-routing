@@ -1,0 +1,278 @@
+# 20 independent carry chains of 12 full adders each, for the regression test of the
+# dense (second) pass of initial placement (vtr_reg_strong/strong_dense_initial_placement).
+#
+# The adders of a chain are connected cout -> cin and share the chain's two primary inputs;
+# only the last sum bit of each chain is a primary output. On arch/timing/soft_fpu_arch_timing_chain.xml
+# each chain packs into a placement macro of 3 clb, so the 20 chains fill the 60 clb locations
+# of its dense_initial_placement layout exactly.
+.model adder_chains
+.inputs a0 b0 a1 b1 a2 b2 a3 b3 a4 b4 a5 b5 a6 b6 a7 b7 a8 b8 a9 b9 a10 b10 a11 b11 a12 b12 a13 b13 a14 b14 a15 b15 a16 b16 a17 b17 a18 b18 a19 b19
+.outputs s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 s16 s17 s18 s19
+
+.subckt adder a=a0 b=b0 cin=unconn cout=c0_0 sumout=s0_0
+.subckt adder a=a0 b=b0 cin=c0_0 cout=c0_1 sumout=s0_1
+.subckt adder a=a0 b=b0 cin=c0_1 cout=c0_2 sumout=s0_2
+.subckt adder a=a0 b=b0 cin=c0_2 cout=c0_3 sumout=s0_3
+.subckt adder a=a0 b=b0 cin=c0_3 cout=c0_4 sumout=s0_4
+.subckt adder a=a0 b=b0 cin=c0_4 cout=c0_5 sumout=s0_5
+.subckt adder a=a0 b=b0 cin=c0_5 cout=c0_6 sumout=s0_6
+.subckt adder a=a0 b=b0 cin=c0_6 cout=c0_7 sumout=s0_7
+.subckt adder a=a0 b=b0 cin=c0_7 cout=c0_8 sumout=s0_8
+.subckt adder a=a0 b=b0 cin=c0_8 cout=c0_9 sumout=s0_9
+.subckt adder a=a0 b=b0 cin=c0_9 cout=c0_10 sumout=s0_10
+.subckt adder a=a0 b=b0 cin=c0_10 cout=c0_11 sumout=s0
+
+.subckt adder a=a1 b=b1 cin=unconn cout=c1_0 sumout=s1_0
+.subckt adder a=a1 b=b1 cin=c1_0 cout=c1_1 sumout=s1_1
+.subckt adder a=a1 b=b1 cin=c1_1 cout=c1_2 sumout=s1_2
+.subckt adder a=a1 b=b1 cin=c1_2 cout=c1_3 sumout=s1_3
+.subckt adder a=a1 b=b1 cin=c1_3 cout=c1_4 sumout=s1_4
+.subckt adder a=a1 b=b1 cin=c1_4 cout=c1_5 sumout=s1_5
+.subckt adder a=a1 b=b1 cin=c1_5 cout=c1_6 sumout=s1_6
+.subckt adder a=a1 b=b1 cin=c1_6 cout=c1_7 sumout=s1_7
+.subckt adder a=a1 b=b1 cin=c1_7 cout=c1_8 sumout=s1_8
+.subckt adder a=a1 b=b1 cin=c1_8 cout=c1_9 sumout=s1_9
+.subckt adder a=a1 b=b1 cin=c1_9 cout=c1_10 sumout=s1_10
+.subckt adder a=a1 b=b1 cin=c1_10 cout=c1_11 sumout=s1
+
+.subckt adder a=a2 b=b2 cin=unconn cout=c2_0 sumout=s2_0
+.subckt adder a=a2 b=b2 cin=c2_0 cout=c2_1 sumout=s2_1
+.subckt adder a=a2 b=b2 cin=c2_1 cout=c2_2 sumout=s2_2
+.subckt adder a=a2 b=b2 cin=c2_2 cout=c2_3 sumout=s2_3
+.subckt adder a=a2 b=b2 cin=c2_3 cout=c2_4 sumout=s2_4
+.subckt adder a=a2 b=b2 cin=c2_4 cout=c2_5 sumout=s2_5
+.subckt adder a=a2 b=b2 cin=c2_5 cout=c2_6 sumout=s2_6
+.subckt adder a=a2 b=b2 cin=c2_6 cout=c2_7 sumout=s2_7
+.subckt adder a=a2 b=b2 cin=c2_7 cout=c2_8 sumout=s2_8
+.subckt adder a=a2 b=b2 cin=c2_8 cout=c2_9 sumout=s2_9
+.subckt adder a=a2 b=b2 cin=c2_9 cout=c2_10 sumout=s2_10
+.subckt adder a=a2 b=b2 cin=c2_10 cout=c2_11 sumout=s2
+
+.subckt adder a=a3 b=b3 cin=unconn cout=c3_0 sumout=s3_0
+.subckt adder a=a3 b=b3 cin=c3_0 cout=c3_1 sumout=s3_1
+.subckt adder a=a3 b=b3 cin=c3_1 cout=c3_2 sumout=s3_2
+.subckt adder a=a3 b=b3 cin=c3_2 cout=c3_3 sumout=s3_3
+.subckt adder a=a3 b=b3 cin=c3_3 cout=c3_4 sumout=s3_4
+.subckt adder a=a3 b=b3 cin=c3_4 cout=c3_5 sumout=s3_5
+.subckt adder a=a3 b=b3 cin=c3_5 cout=c3_6 sumout=s3_6
+.subckt adder a=a3 b=b3 cin=c3_6 cout=c3_7 sumout=s3_7
+.subckt adder a=a3 b=b3 cin=c3_7 cout=c3_8 sumout=s3_8
+.subckt adder a=a3 b=b3 cin=c3_8 cout=c3_9 sumout=s3_9
+.subckt adder a=a3 b=b3 cin=c3_9 cout=c3_10 sumout=s3_10
+.subckt adder a=a3 b=b3 cin=c3_10 cout=c3_11 sumout=s3
+
+.subckt adder a=a4 b=b4 cin=unconn cout=c4_0 sumout=s4_0
+.subckt adder a=a4 b=b4 cin=c4_0 cout=c4_1 sumout=s4_1
+.subckt adder a=a4 b=b4 cin=c4_1 cout=c4_2 sumout=s4_2
+.subckt adder a=a4 b=b4 cin=c4_2 cout=c4_3 sumout=s4_3
+.subckt adder a=a4 b=b4 cin=c4_3 cout=c4_4 sumout=s4_4
+.subckt adder a=a4 b=b4 cin=c4_4 cout=c4_5 sumout=s4_5
+.subckt adder a=a4 b=b4 cin=c4_5 cout=c4_6 sumout=s4_6
+.subckt adder a=a4 b=b4 cin=c4_6 cout=c4_7 sumout=s4_7
+.subckt adder a=a4 b=b4 cin=c4_7 cout=c4_8 sumout=s4_8
+.subckt adder a=a4 b=b4 cin=c4_8 cout=c4_9 sumout=s4_9
+.subckt adder a=a4 b=b4 cin=c4_9 cout=c4_10 sumout=s4_10
+.subckt adder a=a4 b=b4 cin=c4_10 cout=c4_11 sumout=s4
+
+.subckt adder a=a5 b=b5 cin=unconn cout=c5_0 sumout=s5_0
+.subckt adder a=a5 b=b5 cin=c5_0 cout=c5_1 sumout=s5_1
+.subckt adder a=a5 b=b5 cin=c5_1 cout=c5_2 sumout=s5_2
+.subckt adder a=a5 b=b5 cin=c5_2 cout=c5_3 sumout=s5_3
+.subckt adder a=a5 b=b5 cin=c5_3 cout=c5_4 sumout=s5_4
+.subckt adder a=a5 b=b5 cin=c5_4 cout=c5_5 sumout=s5_5
+.subckt adder a=a5 b=b5 cin=c5_5 cout=c5_6 sumout=s5_6
+.subckt adder a=a5 b=b5 cin=c5_6 cout=c5_7 sumout=s5_7
+.subckt adder a=a5 b=b5 cin=c5_7 cout=c5_8 sumout=s5_8
+.subckt adder a=a5 b=b5 cin=c5_8 cout=c5_9 sumout=s5_9
+.subckt adder a=a5 b=b5 cin=c5_9 cout=c5_10 sumout=s5_10
+.subckt adder a=a5 b=b5 cin=c5_10 cout=c5_11 sumout=s5
+
+.subckt adder a=a6 b=b6 cin=unconn cout=c6_0 sumout=s6_0
+.subckt adder a=a6 b=b6 cin=c6_0 cout=c6_1 sumout=s6_1
+.subckt adder a=a6 b=b6 cin=c6_1 cout=c6_2 sumout=s6_2
+.subckt adder a=a6 b=b6 cin=c6_2 cout=c6_3 sumout=s6_3
+.subckt adder a=a6 b=b6 cin=c6_3 cout=c6_4 sumout=s6_4
+.subckt adder a=a6 b=b6 cin=c6_4 cout=c6_5 sumout=s6_5
+.subckt adder a=a6 b=b6 cin=c6_5 cout=c6_6 sumout=s6_6
+.subckt adder a=a6 b=b6 cin=c6_6 cout=c6_7 sumout=s6_7
+.subckt adder a=a6 b=b6 cin=c6_7 cout=c6_8 sumout=s6_8
+.subckt adder a=a6 b=b6 cin=c6_8 cout=c6_9 sumout=s6_9
+.subckt adder a=a6 b=b6 cin=c6_9 cout=c6_10 sumout=s6_10
+.subckt adder a=a6 b=b6 cin=c6_10 cout=c6_11 sumout=s6
+
+.subckt adder a=a7 b=b7 cin=unconn cout=c7_0 sumout=s7_0
+.subckt adder a=a7 b=b7 cin=c7_0 cout=c7_1 sumout=s7_1
+.subckt adder a=a7 b=b7 cin=c7_1 cout=c7_2 sumout=s7_2
+.subckt adder a=a7 b=b7 cin=c7_2 cout=c7_3 sumout=s7_3
+.subckt adder a=a7 b=b7 cin=c7_3 cout=c7_4 sumout=s7_4
+.subckt adder a=a7 b=b7 cin=c7_4 cout=c7_5 sumout=s7_5
+.subckt adder a=a7 b=b7 cin=c7_5 cout=c7_6 sumout=s7_6
+.subckt adder a=a7 b=b7 cin=c7_6 cout=c7_7 sumout=s7_7
+.subckt adder a=a7 b=b7 cin=c7_7 cout=c7_8 sumout=s7_8
+.subckt adder a=a7 b=b7 cin=c7_8 cout=c7_9 sumout=s7_9
+.subckt adder a=a7 b=b7 cin=c7_9 cout=c7_10 sumout=s7_10
+.subckt adder a=a7 b=b7 cin=c7_10 cout=c7_11 sumout=s7
+
+.subckt adder a=a8 b=b8 cin=unconn cout=c8_0 sumout=s8_0
+.subckt adder a=a8 b=b8 cin=c8_0 cout=c8_1 sumout=s8_1
+.subckt adder a=a8 b=b8 cin=c8_1 cout=c8_2 sumout=s8_2
+.subckt adder a=a8 b=b8 cin=c8_2 cout=c8_3 sumout=s8_3
+.subckt adder a=a8 b=b8 cin=c8_3 cout=c8_4 sumout=s8_4
+.subckt adder a=a8 b=b8 cin=c8_4 cout=c8_5 sumout=s8_5
+.subckt adder a=a8 b=b8 cin=c8_5 cout=c8_6 sumout=s8_6
+.subckt adder a=a8 b=b8 cin=c8_6 cout=c8_7 sumout=s8_7
+.subckt adder a=a8 b=b8 cin=c8_7 cout=c8_8 sumout=s8_8
+.subckt adder a=a8 b=b8 cin=c8_8 cout=c8_9 sumout=s8_9
+.subckt adder a=a8 b=b8 cin=c8_9 cout=c8_10 sumout=s8_10
+.subckt adder a=a8 b=b8 cin=c8_10 cout=c8_11 sumout=s8
+
+.subckt adder a=a9 b=b9 cin=unconn cout=c9_0 sumout=s9_0
+.subckt adder a=a9 b=b9 cin=c9_0 cout=c9_1 sumout=s9_1
+.subckt adder a=a9 b=b9 cin=c9_1 cout=c9_2 sumout=s9_2
+.subckt adder a=a9 b=b9 cin=c9_2 cout=c9_3 sumout=s9_3
+.subckt adder a=a9 b=b9 cin=c9_3 cout=c9_4 sumout=s9_4
+.subckt adder a=a9 b=b9 cin=c9_4 cout=c9_5 sumout=s9_5
+.subckt adder a=a9 b=b9 cin=c9_5 cout=c9_6 sumout=s9_6
+.subckt adder a=a9 b=b9 cin=c9_6 cout=c9_7 sumout=s9_7
+.subckt adder a=a9 b=b9 cin=c9_7 cout=c9_8 sumout=s9_8
+.subckt adder a=a9 b=b9 cin=c9_8 cout=c9_9 sumout=s9_9
+.subckt adder a=a9 b=b9 cin=c9_9 cout=c9_10 sumout=s9_10
+.subckt adder a=a9 b=b9 cin=c9_10 cout=c9_11 sumout=s9
+
+.subckt adder a=a10 b=b10 cin=unconn cout=c10_0 sumout=s10_0
+.subckt adder a=a10 b=b10 cin=c10_0 cout=c10_1 sumout=s10_1
+.subckt adder a=a10 b=b10 cin=c10_1 cout=c10_2 sumout=s10_2
+.subckt adder a=a10 b=b10 cin=c10_2 cout=c10_3 sumout=s10_3
+.subckt adder a=a10 b=b10 cin=c10_3 cout=c10_4 sumout=s10_4
+.subckt adder a=a10 b=b10 cin=c10_4 cout=c10_5 sumout=s10_5
+.subckt adder a=a10 b=b10 cin=c10_5 cout=c10_6 sumout=s10_6
+.subckt adder a=a10 b=b10 cin=c10_6 cout=c10_7 sumout=s10_7
+.subckt adder a=a10 b=b10 cin=c10_7 cout=c10_8 sumout=s10_8
+.subckt adder a=a10 b=b10 cin=c10_8 cout=c10_9 sumout=s10_9
+.subckt adder a=a10 b=b10 cin=c10_9 cout=c10_10 sumout=s10_10
+.subckt adder a=a10 b=b10 cin=c10_10 cout=c10_11 sumout=s10
+
+.subckt adder a=a11 b=b11 cin=unconn cout=c11_0 sumout=s11_0
+.subckt adder a=a11 b=b11 cin=c11_0 cout=c11_1 sumout=s11_1
+.subckt adder a=a11 b=b11 cin=c11_1 cout=c11_2 sumout=s11_2
+.subckt adder a=a11 b=b11 cin=c11_2 cout=c11_3 sumout=s11_3
+.subckt adder a=a11 b=b11 cin=c11_3 cout=c11_4 sumout=s11_4
+.subckt adder a=a11 b=b11 cin=c11_4 cout=c11_5 sumout=s11_5
+.subckt adder a=a11 b=b11 cin=c11_5 cout=c11_6 sumout=s11_6
+.subckt adder a=a11 b=b11 cin=c11_6 cout=c11_7 sumout=s11_7
+.subckt adder a=a11 b=b11 cin=c11_7 cout=c11_8 sumout=s11_8
+.subckt adder a=a11 b=b11 cin=c11_8 cout=c11_9 sumout=s11_9
+.subckt adder a=a11 b=b11 cin=c11_9 cout=c11_10 sumout=s11_10
+.subckt adder a=a11 b=b11 cin=c11_10 cout=c11_11 sumout=s11
+
+.subckt adder a=a12 b=b12 cin=unconn cout=c12_0 sumout=s12_0
+.subckt adder a=a12 b=b12 cin=c12_0 cout=c12_1 sumout=s12_1
+.subckt adder a=a12 b=b12 cin=c12_1 cout=c12_2 sumout=s12_2
+.subckt adder a=a12 b=b12 cin=c12_2 cout=c12_3 sumout=s12_3
+.subckt adder a=a12 b=b12 cin=c12_3 cout=c12_4 sumout=s12_4
+.subckt adder a=a12 b=b12 cin=c12_4 cout=c12_5 sumout=s12_5
+.subckt adder a=a12 b=b12 cin=c12_5 cout=c12_6 sumout=s12_6
+.subckt adder a=a12 b=b12 cin=c12_6 cout=c12_7 sumout=s12_7
+.subckt adder a=a12 b=b12 cin=c12_7 cout=c12_8 sumout=s12_8
+.subckt adder a=a12 b=b12 cin=c12_8 cout=c12_9 sumout=s12_9
+.subckt adder a=a12 b=b12 cin=c12_9 cout=c12_10 sumout=s12_10
+.subckt adder a=a12 b=b12 cin=c12_10 cout=c12_11 sumout=s12
+
+.subckt adder a=a13 b=b13 cin=unconn cout=c13_0 sumout=s13_0
+.subckt adder a=a13 b=b13 cin=c13_0 cout=c13_1 sumout=s13_1
+.subckt adder a=a13 b=b13 cin=c13_1 cout=c13_2 sumout=s13_2
+.subckt adder a=a13 b=b13 cin=c13_2 cout=c13_3 sumout=s13_3
+.subckt adder a=a13 b=b13 cin=c13_3 cout=c13_4 sumout=s13_4
+.subckt adder a=a13 b=b13 cin=c13_4 cout=c13_5 sumout=s13_5
+.subckt adder a=a13 b=b13 cin=c13_5 cout=c13_6 sumout=s13_6
+.subckt adder a=a13 b=b13 cin=c13_6 cout=c13_7 sumout=s13_7
+.subckt adder a=a13 b=b13 cin=c13_7 cout=c13_8 sumout=s13_8
+.subckt adder a=a13 b=b13 cin=c13_8 cout=c13_9 sumout=s13_9
+.subckt adder a=a13 b=b13 cin=c13_9 cout=c13_10 sumout=s13_10
+.subckt adder a=a13 b=b13 cin=c13_10 cout=c13_11 sumout=s13
+
+.subckt adder a=a14 b=b14 cin=unconn cout=c14_0 sumout=s14_0
+.subckt adder a=a14 b=b14 cin=c14_0 cout=c14_1 sumout=s14_1
+.subckt adder a=a14 b=b14 cin=c14_1 cout=c14_2 sumout=s14_2
+.subckt adder a=a14 b=b14 cin=c14_2 cout=c14_3 sumout=s14_3
+.subckt adder a=a14 b=b14 cin=c14_3 cout=c14_4 sumout=s14_4
+.subckt adder a=a14 b=b14 cin=c14_4 cout=c14_5 sumout=s14_5
+.subckt adder a=a14 b=b14 cin=c14_5 cout=c14_6 sumout=s14_6
+.subckt adder a=a14 b=b14 cin=c14_6 cout=c14_7 sumout=s14_7
+.subckt adder a=a14 b=b14 cin=c14_7 cout=c14_8 sumout=s14_8
+.subckt adder a=a14 b=b14 cin=c14_8 cout=c14_9 sumout=s14_9
+.subckt adder a=a14 b=b14 cin=c14_9 cout=c14_10 sumout=s14_10
+.subckt adder a=a14 b=b14 cin=c14_10 cout=c14_11 sumout=s14
+
+.subckt adder a=a15 b=b15 cin=unconn cout=c15_0 sumout=s15_0
+.subckt adder a=a15 b=b15 cin=c15_0 cout=c15_1 sumout=s15_1
+.subckt adder a=a15 b=b15 cin=c15_1 cout=c15_2 sumout=s15_2
+.subckt adder a=a15 b=b15 cin=c15_2 cout=c15_3 sumout=s15_3
+.subckt adder a=a15 b=b15 cin=c15_3 cout=c15_4 sumout=s15_4
+.subckt adder a=a15 b=b15 cin=c15_4 cout=c15_5 sumout=s15_5
+.subckt adder a=a15 b=b15 cin=c15_5 cout=c15_6 sumout=s15_6
+.subckt adder a=a15 b=b15 cin=c15_6 cout=c15_7 sumout=s15_7
+.subckt adder a=a15 b=b15 cin=c15_7 cout=c15_8 sumout=s15_8
+.subckt adder a=a15 b=b15 cin=c15_8 cout=c15_9 sumout=s15_9
+.subckt adder a=a15 b=b15 cin=c15_9 cout=c15_10 sumout=s15_10
+.subckt adder a=a15 b=b15 cin=c15_10 cout=c15_11 sumout=s15
+
+.subckt adder a=a16 b=b16 cin=unconn cout=c16_0 sumout=s16_0
+.subckt adder a=a16 b=b16 cin=c16_0 cout=c16_1 sumout=s16_1
+.subckt adder a=a16 b=b16 cin=c16_1 cout=c16_2 sumout=s16_2
+.subckt adder a=a16 b=b16 cin=c16_2 cout=c16_3 sumout=s16_3
+.subckt adder a=a16 b=b16 cin=c16_3 cout=c16_4 sumout=s16_4
+.subckt adder a=a16 b=b16 cin=c16_4 cout=c16_5 sumout=s16_5
+.subckt adder a=a16 b=b16 cin=c16_5 cout=c16_6 sumout=s16_6
+.subckt adder a=a16 b=b16 cin=c16_6 cout=c16_7 sumout=s16_7
+.subckt adder a=a16 b=b16 cin=c16_7 cout=c16_8 sumout=s16_8
+.subckt adder a=a16 b=b16 cin=c16_8 cout=c16_9 sumout=s16_9
+.subckt adder a=a16 b=b16 cin=c16_9 cout=c16_10 sumout=s16_10
+.subckt adder a=a16 b=b16 cin=c16_10 cout=c16_11 sumout=s16
+
+.subckt adder a=a17 b=b17 cin=unconn cout=c17_0 sumout=s17_0
+.subckt adder a=a17 b=b17 cin=c17_0 cout=c17_1 sumout=s17_1
+.subckt adder a=a17 b=b17 cin=c17_1 cout=c17_2 sumout=s17_2
+.subckt adder a=a17 b=b17 cin=c17_2 cout=c17_3 sumout=s17_3
+.subckt adder a=a17 b=b17 cin=c17_3 cout=c17_4 sumout=s17_4
+.subckt adder a=a17 b=b17 cin=c17_4 cout=c17_5 sumout=s17_5
+.subckt adder a=a17 b=b17 cin=c17_5 cout=c17_6 sumout=s17_6
+.subckt adder a=a17 b=b17 cin=c17_6 cout=c17_7 sumout=s17_7
+.subckt adder a=a17 b=b17 cin=c17_7 cout=c17_8 sumout=s17_8
+.subckt adder a=a17 b=b17 cin=c17_8 cout=c17_9 sumout=s17_9
+.subckt adder a=a17 b=b17 cin=c17_9 cout=c17_10 sumout=s17_10
+.subckt adder a=a17 b=b17 cin=c17_10 cout=c17_11 sumout=s17
+
+.subckt adder a=a18 b=b18 cin=unconn cout=c18_0 sumout=s18_0
+.subckt adder a=a18 b=b18 cin=c18_0 cout=c18_1 sumout=s18_1
+.subckt adder a=a18 b=b18 cin=c18_1 cout=c18_2 sumout=s18_2
+.subckt adder a=a18 b=b18 cin=c18_2 cout=c18_3 sumout=s18_3
+.subckt adder a=a18 b=b18 cin=c18_3 cout=c18_4 sumout=s18_4
+.subckt adder a=a18 b=b18 cin=c18_4 cout=c18_5 sumout=s18_5
+.subckt adder a=a18 b=b18 cin=c18_5 cout=c18_6 sumout=s18_6
+.subckt adder a=a18 b=b18 cin=c18_6 cout=c18_7 sumout=s18_7
+.subckt adder a=a18 b=b18 cin=c18_7 cout=c18_8 sumout=s18_8
+.subckt adder a=a18 b=b18 cin=c18_8 cout=c18_9 sumout=s18_9
+.subckt adder a=a18 b=b18 cin=c18_9 cout=c18_10 sumout=s18_10
+.subckt adder a=a18 b=b18 cin=c18_10 cout=c18_11 sumout=s18
+
+.subckt adder a=a19 b=b19 cin=unconn cout=c19_0 sumout=s19_0
+.subckt adder a=a19 b=b19 cin=c19_0 cout=c19_1 sumout=s19_1
+.subckt adder a=a19 b=b19 cin=c19_1 cout=c19_2 sumout=s19_2
+.subckt adder a=a19 b=b19 cin=c19_2 cout=c19_3 sumout=s19_3
+.subckt adder a=a19 b=b19 cin=c19_3 cout=c19_4 sumout=s19_4
+.subckt adder a=a19 b=b19 cin=c19_4 cout=c19_5 sumout=s19_5
+.subckt adder a=a19 b=b19 cin=c19_5 cout=c19_6 sumout=s19_6
+.subckt adder a=a19 b=b19 cin=c19_6 cout=c19_7 sumout=s19_7
+.subckt adder a=a19 b=b19 cin=c19_7 cout=c19_8 sumout=s19_8
+.subckt adder a=a19 b=b19 cin=c19_8 cout=c19_9 sumout=s19_9
+.subckt adder a=a19 b=b19 cin=c19_9 cout=c19_10 sumout=s19_10
+.subckt adder a=a19 b=b19 cin=c19_10 cout=c19_11 sumout=s19
+
+.end
+
+.model adder
+.inputs a b cin
+.outputs cout sumout
+.blackbox
+.end

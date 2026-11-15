@@ -1,0 +1,4 @@
+%include "vpr_standard.txt"
+
+#Initial placement pass (0 = first pass, 1 = dense second pass) after which all blocks were placed
+initial_place_success_iteration;vpr.out;Initial placement iteration (\d+) has finished successfully

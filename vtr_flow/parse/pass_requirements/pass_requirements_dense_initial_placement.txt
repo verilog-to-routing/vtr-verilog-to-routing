@@ -1,0 +1,15 @@
+#Pass requirements for the strong_dense_initial_placement test.
+#The test only covers the dense (second) pass of initial placement if the first pass fails to
+#place every block, so the pass after which all blocks were placed must match the golden result.
+
+#Common VPR status metrics
+%include "common/pass_requirements.vpr_status.txt"
+
+#Packing and placement metrics
+%include "timing/pass_requirements.vpr_pack_place.txt"
+
+#VTR benchmark metrics
+%include "common/pass_requirements.vtr_benchmarks.txt"
+
+#Initial placement
+initial_place_success_iteration;Equal()
