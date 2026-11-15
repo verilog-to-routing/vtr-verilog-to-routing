@@ -1,20 +1,15 @@
 yosys -import
 plugin -i parmys
+yosys -import
 
-# yosys-slang plugin error handling
+# The slang SystemVerilog frontend (read_slang) is built into yosys when it
+# is configured with -DSLANG_SYSTEMVERILOG=ON (the default).
 if {$env(PARSER) == "slang" } {
-	if {![info exists ::env(yosys_slang_path)]} {
-		puts "Error: $err"
-		puts "yosys_slang_path is not set"
-	} elseif {![file exists $::env(yosys_slang_path)]} {
-		error "Error: cannot find plugin at '$::env(yosys_slang_path)'. Run make with CMake param -DSLANG_SYSTEMVERILOG=ON to enable yosys-slang plugin."
-	} else {
-		plugin -i slang
-		yosys -import
-		puts "Using yosys-slang as yosys frontend"
+	if {[llength [info commands read_slang]] == 0} {
+		error "Error: this yosys was built without the slang frontend. Run make with CMake param -DSLANG_SYSTEMVERILOG=ON."
 	}
+	puts "Using Yosys' built-in slang frontend"
 } elseif {$env(PARSER) == "default" } {
-	yosys -import
 	puts "Using Yosys read_verilog as yosys frontend"
 } else {
 	error "Invalid PARSER"

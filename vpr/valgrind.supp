@@ -1566,3 +1566,9 @@
    fun:read_history_range
    fun:main
 }
+{
+   yosys_hierarchy_sigspec_extract_uninitialised
+   Memcheck:Cond
+   fun:*Yosys*RTLIL*SigSpec*extract*
+   fun:*HierarchyPass*execute*
+}

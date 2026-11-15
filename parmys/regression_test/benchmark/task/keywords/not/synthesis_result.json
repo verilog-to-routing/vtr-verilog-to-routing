@@ -93,24 +93,15 @@
     },
     "not/replicate_not_int_wide/no_arch": {
         "test_name": "not/replicate_not_int_wide/no_arch",
-        "exit": 1,
-        "errors": [
-            "uncaught exception during Yosys command invoked from TCL"
-        ]
+        "exit": 1
     },
     "not/replicate_not_ultra_wide/no_arch": {
         "test_name": "not/replicate_not_ultra_wide/no_arch",
-        "exit": 1,
-        "errors": [
-            "uncaught exception during Yosys command invoked from TCL"
-        ]
+        "exit": 1
     },
     "not/replicate_not_wide/no_arch": {
         "test_name": "not/replicate_not_wide/no_arch",
-        "exit": 1,
-        "errors": [
-            "uncaught exception during Yosys command invoked from TCL"
-        ]
+        "exit": 1
     },
     "DEFAULT": {
         "test_name": "n/a",

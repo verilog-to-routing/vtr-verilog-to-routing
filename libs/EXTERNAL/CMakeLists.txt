@@ -76,95 +76,95 @@ endif ()
 # The VTR root CMakeFile sets WITH_YOSYS when parmys and/or mosaic is enabled
 if (${WITH_YOSYS})
 
-	cmake_minimum_required(VERSION 3.16)
+    # Yosys (>= 0.67) is a CMake project. Build it as an external project and
+    # install it into the VTR build tree so the layout matches what the flow
+    # scripts and the old Makefile-based build expected:
+    #   bin/yosys, bin/yosys-abc, share/yosys/{include,plugins,...}
+    set(YOSYS_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys)
+    set(YOSYS_BINARY_DIR ${CMAKE_BINARY_DIR}/yosys-build)
+    set(YOSYS_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
+    set(YOSYS_DATDIR ${YOSYS_INSTALL_PREFIX}/share/yosys)
 
-	#project(yosys)
-
-	# Create a target out of the library compilation result
-	SET(YOSYS_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys)
-	SET(YOSYS_BUILD_DIR ${CMAKE_BINARY_DIR}/bin/yosys)
-
-    add_definitions("-D_YOSYS_")
-    if(${CMAKE_GENERATOR} STREQUAL "Ninja")
-        set(MAKE_PROGRAM "$$MAKE") # Escaped for Ninja
-    else()
-        set(MAKE_PROGRAM "$(MAKE)")
+    if(NOT EXISTS "${YOSYS_SRC_DIR}/CMakeLists.txt")
+        message(FATAL_ERROR "Yosys submodule is missing. Run: git submodule update --init --recursive")
     endif()
 
-    set(CURRENT_CPPFLAGS "$(CPPFLAGS)-w")
-	if(${CMAKE_GENERATOR} STREQUAL "Ninja")
-	    set(CURRENT_CPPFLAGS "-w")
-	endif()
+    # Yosys carries its own submodules (abc, slang, sv-elab, fmt, ...).
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+        WORKING_DIRECTORY ${YOSYS_SRC_DIR}
+    )
 
-	#Initialize yosys submodules
-	execute_process(
-	 COMMAND ${GIT_EXECUTABLE} submodule update --init
-	 WORKING_DIRECTORY ${YOSYS_SRC_DIR}
-	)
-	execute_process(
-	  COMMAND ${GIT_EXECUTABLE} submodule foreach --recursive ${GIT_EXECUTABLE}\ submodule\ update\ --init
-	  WORKING_DIRECTORY ${YOSYS_SRC_DIR}
-	)
+    # Since 0.67 the slang SystemVerilog frontend (read_slang) is built into
+    # Yosys, so SLANG_SYSTEMVERILOG now toggles that instead of a separate plugin.
+    if(${SLANG_SYSTEMVERILOG})
+        set(YOSYS_WITHOUT_SLANG OFF)
+    else()
+        set(YOSYS_WITHOUT_SLANG ON)
+    endif()
 
-	# how to build the result of the library
-	# ENABLE_ABC=1 builds yosys's in-yosys abc pass so the mosaic
-	# synthesis template can run `abc` inside yosys. this is yosys's own
-	# bundled abc submodule; vtr's standalone abc binary is unaffected.
-	add_custom_command(OUTPUT ${YOSYS_BUILD_DIR}
-		COMMAND ${MAKE_PROGRAM} -C ${YOSYS_SRC_DIR}
-		    ENABLE_ABC=1
-		    PREFIX=${CMAKE_BINARY_DIR}
-            > /dev/null 2>&1
-		 COMMAND ${MAKE_PROGRAM}
-		    -C ${YOSYS_SRC_DIR}
-		    install
-		    ENABLE_ABC=1
-		    PREFIX=${CMAKE_BINARY_DIR}
-            > /dev/null 2>&1
-		WORKING_DIRECTORY ${YOSYS_SRC_DIR})
+    # Yosys' bundled abc (yosys-abc) is built by default so the mosaic synthesis
+    # template can run `abc` inside yosys. VTR's standalone abc binary is unaffected.
+    ExternalProject_Add(yosys
+        SOURCE_DIR ${YOSYS_SRC_DIR}
+        BINARY_DIR ${YOSYS_BINARY_DIR}
+        INSTALL_DIR ${YOSYS_INSTALL_PREFIX}
+        CMAKE_ARGS
+            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+            # Yosys is not our code; don't surface its warnings in VTR builds.
+            -DCMAKE_CXX_FLAGS=-w
+            -DCMAKE_C_FLAGS=-w
+            -DYOSYS_USE_BUNDLED_LIBS=ON
+            -DYOSYS_ENABLE_UNIT_TESTS=OFF
+            -DYOSYS_WITHOUT_SLANG=${YOSYS_WITHOUT_SLANG}
+        # Yosys' own build is incremental, so re-running it is cheap and keeps
+        # the installed copy in sync with the submodule checkout.
+        BUILD_ALWAYS ON
+        USES_TERMINAL_BUILD ON
+        LOG_CONFIGURE ON
+        LOG_INSTALL ON
+        LOG_OUTPUT_ON_FAILURE ON
+    )
 
-	add_custom_target(yosys ALL DEPENDS ${YOSYS_BUILD_DIR})
+    # Compile/link interface for Yosys plugins (parmys, mosaic). Equivalent to
+    # what `yosys-config --cxxflags --linkflags` reports: the installed headers
+    # (including the generated kernel/yosys_config.h), -D_YOSYS_, and Tcl
+    # headers since kernel/yosys.h includes <tcl.h> when Yosys has Tcl support.
+    add_library(yosys_plugin_api INTERFACE)
+    target_include_directories(yosys_plugin_api SYSTEM INTERFACE ${YOSYS_DATDIR}/include)
+    target_compile_definitions(yosys_plugin_api INTERFACE _YOSYS_)
 
-    if (${SLANG_SYSTEMVERILOG})
-        set(SLANG_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys-slang)
-        set(SLANG_BUILD_DIR ${CMAKE_BINARY_DIR}/yosys-slang)
-        #Initialize yosys-slang submodules
-        execute_process(
-	        COMMAND ${GIT_EXECUTABLE} submodule update --init
-	        WORKING_DIRECTORY ${SLANG_SRC_DIR}
-	    )
-	    execute_process(
-	        COMMAND ${GIT_EXECUTABLE} submodule foreach --recursive ${GIT_EXECUTABLE}\ submodule\ update\ --init
-	        WORKING_DIRECTORY ${SLANG_SRC_DIR}
-	    )
-        set(SLANG_FE "${SLANG_SRC_DIR}/src/slang_frontend.cc")
-        ExternalProject_Add(
-            yosys-slang
-            SOURCE_DIR ${SLANG_SRC_DIR}
-            BINARY_DIR ${SLANG_BUILD_DIR}
-                
-            CONFIGURE_COMMAND ""
-            
-            # Sets location of yosys-config required by slang and suppresses warnings
-            BUILD_COMMAND 
-                ${CMAKE_COMMAND} -E env
-                    YOSYS_PREFIX=${CMAKE_BINARY_DIR}/bin/
-                ${MAKE_PROGRAM} -C ${SLANG_SRC_DIR}
-                    CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-w"
-                install
-
-            INSTALL_COMMAND ""
-
-            DEPENDS yosys
-
-            LOG_BUILD OFF
-            LOG_UPDATE ON
-            LOG_INSTALL ON
-            LOG_CONFIGURE OFF
-            LOG_OUTPUT_ON_FAILURE ON
-            
-        )
-    endif ()
+    # Plugins must compile against the same Tcl that yosys links, or Tcl API
+    # calls resolve to the wrong (or no) symbol at plugin load time. Yosys finds
+    # Tcl through pkg-config, so do the same here and only fall back to CMake's
+    # FindTCL when pkg-config has nothing. Like yosys, let pkg-config see
+    # Homebrew's keg-only packages (tcl-tk, zlib) on macOS.
+    if(APPLE)
+        file(GLOB homebrew_pkg_roots /opt/homebrew/opt/* /usr/local/opt/*)
+        list(APPEND CMAKE_PREFIX_PATH ${homebrew_pkg_roots})
+    endif()
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(YOSYS_TCL QUIET tcl)
+    endif()
+    if(YOSYS_TCL_FOUND)
+        message(STATUS "Yosys plugins: using Tcl ${YOSYS_TCL_VERSION} from pkg-config")
+        target_include_directories(yosys_plugin_api SYSTEM INTERFACE ${YOSYS_TCL_INCLUDE_DIRS})
+        target_compile_options(yosys_plugin_api INTERFACE ${YOSYS_TCL_CFLAGS_OTHER})
+    else()
+        find_package(TCL)
+        if(TCL_FOUND)
+            message(STATUS "Yosys plugins: using Tcl headers from ${TCL_INCLUDE_PATH}")
+            target_include_directories(yosys_plugin_api SYSTEM INTERFACE ${TCL_INCLUDE_PATH})
+        endif()
+    endif()
+    if(APPLE)
+        # Plugin symbols resolve against the yosys executable at dlopen time.
+        target_link_options(yosys_plugin_api INTERFACE -undefined dynamic_lookup)
+    endif()
 endif ()
 
 

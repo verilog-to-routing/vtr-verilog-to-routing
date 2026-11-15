@@ -70,14 +70,11 @@ The parser for these runs is considered the Yosys conventional Verilog/SystemVer
 
 .. code-block:: bash
 
-    # Using the Yosys-Slang plugin for Yosys, otherwise the Yosys conventional Verilog parser
+    # Using Yosys' built-in slang SystemVerilog frontend, otherwise the Yosys conventional Verilog parser
     ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -parser slang
 
-Will run the VTR flow (default configuration) with Yosys-Slang plugin for Yosys frontend using Parmys plugin as partial mapper.
-The Yosys-Slang SystemVerilog parser supports the (i.e., ``read_slang``) command. Yosys-Slang builds on top of the slang library to provide comprehensive SystemVerilog support.
-Enable the Yosys-Slang plugin with the ``-DSLANG_SYSTEMVERILOG=ON`` compile flag while building the VTR project with yosys as a frontend.
-
-.. note:: Yosys-Slang is currently **experimental**.
+Will run the VTR flow (default configuration) with Yosys' slang frontend (the ``read_slang`` command, built on top of the slang library) using the Parmys plugin as partial mapper.
+The slang frontend is part of Yosys itself and is enabled by default; it can be left out of the Yosys build with the ``-DSLANG_SYSTEMVERILOG=OFF`` compile flag.
 
 .. code-block:: bash
 
@@ -266,10 +263,10 @@ Detailed Command-line Options
 
 .. note::
 
-    Yosys-Slang is a Yosys plugin that is built on top of the slang library to provide comprehensive SystemVerilog support.
-    It supports the ``read_slang`` command, used with the ``-C`` command-line option to read include-files from a text file containing include-file names.
+    The slang frontend (sv-elab, formerly the Yosys-Slang plugin) is built into Yosys and is built on top of the slang library to provide comprehensive SystemVerilog support.
+    It provides the ``read_slang`` command, used with the ``-C`` command-line option to read include-files from a text file containing include-file names.
     It is used to read SystemVerilog files directly in Yosys.
-    For more information on Yosys-Slang, see `[Yosys-Slang] <https://github.com/povik/yosys-slang.git>`_
+    For more information, see `[sv-elab] <https://github.com/povik/sv-elab>`_
 
 .. note::
 

@@ -25,9 +25,6 @@
     "integer/integer_outside/no_arch": {
         "test_name": "integer/integer_outside/no_arch",
         "exit": 1,
-        "errors": [
-            "integer_outside.v:1 Incompatible re-declaration of wire \\c."
-        ],
         "warnings": [
             "wire '\\c' is assigned in a block at regression_test/benchmark/verilog/keywords/integer/integer_outside.v:11.5-11.14."
         ],

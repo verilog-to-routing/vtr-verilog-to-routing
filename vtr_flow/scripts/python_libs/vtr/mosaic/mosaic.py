@@ -269,6 +269,12 @@ def run(
 
     cmd += ["-c", yosys_script]
 
+    # Yosys >= 0.58 runs the per-module/per-clock-domain ABC processes of one
+    # `abc` call concurrently. The mosaic ABC scripts (template/abc/*.scr) save
+    # and restore the netlist through a scratch blif named relative to the run
+    # directory, so concurrent runs would corrupt it. Keep Yosys single-threaded.
+    os.environ["YOSYS_MAX_THREADS"] = "1"
+
     command_runner.run_system_command(
         cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1
     )

@@ -5,9 +5,7 @@ import sys
 from collections import OrderedDict
 import json
 
-PRE_HOOKS = [
-    # nothing
-]
+PRE_HOOKS = ["normalize_yosys_stat_line"]
 
 POST_HOOKS = ["drop_entries_on_failure", "patch_logs", "inverse_result_from_expectation"]
 
@@ -16,6 +14,47 @@ def do_something_on_the_raw_log(line: str):
     """
     this is an example preprocessing hook.
     """
+    return line
+
+
+# Yosys >= 0.58 prints the `stat` report as "<count> <name>", e.g.
+#     698 wires
+#      53   $_AND_
+# where older versions printed
+#     Number of wires:                698
+#       $_AND_                         53
+# The regexes in parmys.toml, cell_*.toml, std_mem.toml and arch_blocks.toml
+# are written for the old layout, so rewrite new-style lines into it.
+_STAT_TOTALS = (
+    "wires",
+    "wire bits",
+    "public wires",
+    "public wire bits",
+    "ports",
+    "port bits",
+    "memories",
+    "memory bits",
+    "processes",
+    "cells",
+)
+_NEW_STAT_TOTAL_RE = re.compile(
+    r"^\s*(\d+)\s+(" + "|".join(re.escape(total) for total in _STAT_TOTALS) + r")\s*$"
+)
+_NEW_STAT_CELL_RE = re.compile(r"^\s*(\d+)\s+(\S+)\s*$")
+
+
+def normalize_yosys_stat_line(line: str):
+    """
+    pre-processing hook: rewrite new-style Yosys stat lines into the old layout
+    """
+    match = _NEW_STAT_TOTAL_RE.match(line)
+    if match is not None:
+        return "   Number of {}: {}\n".format(match.group(2), match.group(1))
+
+    match = _NEW_STAT_CELL_RE.match(line)
+    if match is not None:
+        return "     {} {}\n".format(match.group(2), match.group(1))
+
     return line
 
 

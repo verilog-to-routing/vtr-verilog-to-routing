@@ -3860,14 +3860,14 @@
         "Average Path": 4,
         "Estimated LUTs": 10,
         "Total Node": 10,
-        "Wires": 22,
-        "Wire Bits": 23,
+        "Wires": 24,
+        "Wire Bits": 25,
         "Public Wires": 11,
         "Public Wire Bits": 11,
-        "Total Cells": 16,
+        "Total Cells": 18,
         "MUX": 5,
         "XOR": 2,
-        "AND": 5,
+        "AND": 7,
         "DFFs": [
             "$_DFF_P_ 4"
         ]
@@ -3896,14 +3896,14 @@
         "Average Path": 4,
         "Estimated LUTs": 10,
         "Total Node": 10,
-        "Wires": 22,
-        "Wire Bits": 23,
+        "Wires": 24,
+        "Wire Bits": 25,
         "Public Wires": 11,
         "Public Wire Bits": 11,
-        "Total Cells": 16,
+        "Total Cells": 18,
         "MUX": 5,
         "XOR": 2,
-        "AND": 5,
+        "AND": 7,
         "DFFs": [
             "$_DFF_P_ 4"
         ]
@@ -3930,14 +3930,14 @@
         "Average Path": 4,
         "Estimated LUTs": 10,
         "Total Node": 10,
-        "Wires": 22,
-        "Wire Bits": 23,
+        "Wires": 24,
+        "Wire Bits": 25,
         "Public Wires": 11,
         "Public Wire Bits": 11,
-        "Total Cells": 16,
+        "Total Cells": 18,
         "MUX": 5,
         "XOR": 2,
-        "AND": 5,
+        "AND": 7,
         "DFFs": [
             "$_DFF_P_ 4"
         ]

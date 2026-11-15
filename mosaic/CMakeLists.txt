@@ -4,9 +4,6 @@ cmake_minimum_required(VERSION 3.16)
 
 project("mosaic")
 
-# max_level reads the tcl global templateDir when yosys is built with tcl.
-find_package(TCL)
-
 # wildebeest-originated sources (clk_domains / max_level)
 add_subdirectory(wildebeest)
 
@@ -25,15 +22,10 @@ add_library(mosaic SHARED
 target_include_directories(mosaic PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-target_include_directories(mosaic SYSTEM PRIVATE
-    ${VTR_SOURCE_DIR}/libs/EXTERNAL/yosys
-    ${VTR_SOURCE_DIR}/libs/EXTERNAL/yosys/share/include
-)
-target_compile_definitions(mosaic PRIVATE
-    _YOSYS_
-)
+# yosys_plugin_api (libs/EXTERNAL) supplies the installed yosys headers and -D_YOSYS_
 target_link_libraries(mosaic
     PRIVATE
+        yosys_plugin_api
         wildebeest
         libpugixml
         ${CMAKE_DL_LIBS}

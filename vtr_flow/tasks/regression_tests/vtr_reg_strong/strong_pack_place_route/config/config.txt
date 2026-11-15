@@ -31,4 +31,7 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params_common = --pack --place --route --analysis -track_memory_usage
+# The minimum-channel-width search on the COFFE architecture can land on a width
+# that is not reliably routable (ch_intrinsics: finds 36, but 46 fails and 52 is
+# needed), so relax the critical-path routing width further than the default 1.3x.
+script_params_common = --pack --place --route --analysis -track_memory_usage -relax_w_factor 1.6

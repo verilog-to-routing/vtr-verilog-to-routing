@@ -245,13 +245,6 @@ def run(
         synthesis_params=synthesis_params,
     )
 
-    # Set the slang exe script path in the environment variable
-    # (handle if it is not set or yosys-slang OFF)
-    try:
-        os.environ["yosys_slang_path"] = str(vtr.paths.yosys_slang_path)
-    except KeyError:
-        os.environ["yosys_slang_path"] = "/dummy/path"
-
     # set the parser
     if parmys_args["parser"] in YOSYS_PARSERS:
         os.environ["PARSER"] = parmys_args["parser"]

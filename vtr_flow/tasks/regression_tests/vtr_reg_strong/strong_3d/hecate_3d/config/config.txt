@@ -27,6 +27,8 @@ qor_parse_file=qor_fixed_chan_width.txt
 pass_requirements_file=pass_requirements_strict_rr_graph.txt
 
 # Script parameters
-script_params_common = -track_memory_usage --route_chan_width 66 --target_utilization 0.1 --device_width 30
+# ch_intrinsics as synthesized by Yosys 0.70 needs a channel width of 68 on these
+# architectures; 74 leaves margin for placement differences across platforms.
+script_params_common = -track_memory_usage --route_chan_width 74 --target_utilization 0.1 --device_width 30
 script_params_list_add = --pack --place --route --analysis
 script_params_list_add = --analytical_place --route --analysis
