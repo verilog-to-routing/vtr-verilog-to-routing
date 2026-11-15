@@ -422,7 +422,7 @@ void draw_crit_path(ezgl::renderer* g) {
     if (draw_state->show_crit_path_flylines) {
         draw_timing_edge_flylines(paths, g);
         if (draw_state->show_crit_path_delays) {
-            calculate_and_draw_delay_labels(paths, g);
+            //calculate_and_draw_delay_labels(paths, g);
             draw_total_delay_messages(paths, g);
         }
     }
@@ -431,6 +431,30 @@ void draw_crit_path(ezgl::renderer* g) {
     if (draw_state->show_crit_path_routing && draw_state->pic_on_screen == e_pic_type::ROUTING) {
         draw_routed_timing_connections(paths, g);
     }
+}
+
+void draw_delay_labels_immediate(ezgl::renderer* g) {
+    tatum::TimingPathCollector path_collector;
+    t_draw_state* draw_state = get_draw_state_vars();
+    const TimingContext& timing_ctx = g_vpr_ctx.timing();
+
+    if (!draw_state->show_crit_path) {
+        return;
+    }
+
+    if (!draw_state->setup_timing_info) {
+        // No timing to draw
+        return;
+    }
+
+    // Request a number of critical paths set by the user through draw_state->num_crit_paths.
+    // If the number exceeds the currently available critical paths, only the available ones are returned.
+    auto paths = path_collector.collect_worst_setup_timing_paths(
+        *timing_ctx.graph,
+        *(draw_state->setup_timing_info->setup_analyzer()), draw_state->num_crit_paths);
+
+    if (draw_state->show_crit_path_flylines && draw_state->show_crit_path_delays)
+        calculate_and_draw_delay_labels(paths, g);
 }
 
 static void draw_timing_edge_flylines(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g) {

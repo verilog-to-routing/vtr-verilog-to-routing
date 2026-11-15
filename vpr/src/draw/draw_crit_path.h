@@ -37,6 +37,8 @@
  */
 void draw_crit_path(ezgl::renderer* g);
 
+void draw_delay_labels_immediate(ezgl::renderer* g);
+
 #ifndef NO_SERVER
 
 /**
