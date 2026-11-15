@@ -31,6 +31,7 @@
 
 class AtomNetlist;
 class Prepacker;
+class RamMapper;
 struct t_logical_block_type;
 struct t_physical_tile_type;
 
@@ -66,6 +67,12 @@ class FlatPlacementMassCalculator {
      *      The prepacker used to pack atoms into the molecules. The AP netlist
      *      contains molecules; this class is needed to get information on these
      *      molecules.
+     *  @param ram_mapper
+     *      The RAM mapper used to get the physical RAM groups and their
+     *      pre-assigned block types. Each AP block formed from a physical RAM
+     *      group takes one instance of its pre-assigned type, and only tiles
+     *      of that type provide capacity for it. Has no effect if the mapper
+     *      created no physical RAM groups.
      *  @param atom_netlist
      *      The netlist of atoms for the circuit.
      *  @param logical_block_types
@@ -84,6 +91,7 @@ class FlatPlacementMassCalculator {
      */
     FlatPlacementMassCalculator(const APNetlist& ap_netlist,
                                 const Prepacker& prepacker,
+                                const RamMapper& ram_mapper,
                                 const AtomNetlist& atom_netlist,
                                 const std::vector<t_logical_block_type>& logical_block_types,
                                 const std::vector<t_physical_tile_type>& physical_tile_types,

@@ -25,6 +25,7 @@ class AtomNetlist;
 class DeviceGrid;
 class LogicalModels;
 class Prepacker;
+class RamMapper;
 struct PartialPlacement;
 struct t_logical_block_type;
 struct t_physical_tile_type;
@@ -65,6 +66,7 @@ class FlatPlacementDensityManager {
      *
      *  @param ap_netlist
      *  @param prepacker
+     *  @param ram_mapper
      *  @param atom_netlist
      *  @param device_grid
      *  @param logical_block_types
@@ -75,6 +77,7 @@ class FlatPlacementDensityManager {
      */
     FlatPlacementDensityManager(const APNetlist& ap_netlist,
                                 const Prepacker& prepacker,
+                                const RamMapper& ram_mapper,
                                 const AtomNetlist& atom_netlist,
                                 const DeviceGrid& device_grid,
                                 const std::vector<t_logical_block_type>& logical_block_types,

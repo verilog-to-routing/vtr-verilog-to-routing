@@ -14,6 +14,7 @@
 #include "atom_netlist.h"
 #include "atom_netlist_fwd.h"
 #include "logic_types.h"
+#include "logical_ram_infer.h"
 #include "physical_types.h"
 #include "prepack.h"
 #include "primitive_dim_manager.h"
@@ -631,6 +632,7 @@ static void initialize_dim_manager(PrimitiveDimManager& dim_manager,
 
 FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_netlist,
                                                          const Prepacker& prepacker,
+                                                         const RamMapper& ram_mapper,
                                                          const AtomNetlist& atom_netlist,
                                                          const std::vector<t_logical_block_type>& logical_block_types,
                                                          const std::vector<t_physical_tile_type>& physical_tile_types,
@@ -648,9 +650,25 @@ FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_net
                            atom_netlist,
                            log_verbosity_);
 
-    // Precompute the capacity of each logical block type.
+    // Create one dim per RAM block type that is pre-assigned to a physical RAM
+    // group. These dims count RAM instances rather than memory bits, so each
+    // physical RAM group occupies a whole instance of its pre-assigned type
+    // and can only be placed into tiles which provide that type.
+    std::vector<PrimitiveVectorDim> ram_type_dim(logical_block_types.size());
+    for (const PhysicalRamGroup& phys_group : ram_mapper.physical_ram_groups()) {
+        t_logical_block_type_ptr ram_type = ram_mapper.group(phys_group.logical_ram_group_id).pre_assigned_type;
+        VTR_ASSERT_MSG(ram_type != nullptr,
+                       "Every physical RAM group should have a pre-assigned type");
+        if (!ram_type_dim[ram_type->index].is_valid())
+            ram_type_dim[ram_type->index] = primitive_dim_manager_.create_empty_dim("ram_instance[" + ram_type->name + "]");
+    }
+
+    // Precompute the capacity of each logical block type. Each RAM block type
+    // used by a physical RAM group can hold exactly one such group.
     for (const t_logical_block_type& logical_block_type : logical_block_types) {
         logical_block_type_capacity_[logical_block_type.index] = calc_logical_block_type_capacity(logical_block_type, primitive_dim_manager_);
+        if (ram_type_dim[logical_block_type.index].is_valid())
+            logical_block_type_capacity_[logical_block_type.index].add_val_to_dim(1.0f, ram_type_dim[logical_block_type.index]);
     }
 
     // Precompute the capacity of each physical tile type.
@@ -661,6 +679,17 @@ FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_net
     // Precompute the mass of each block in the APNetlist
     VTR_LOGV(log_verbosity_ >= 10, "Pre-computing the block masses...\n");
     for (APBlockId ap_block_id : ap_netlist.blocks()) {
+        // Blocks formed from a physical RAM group take one instance of their
+        // pre-assigned RAM type, regardless of how many bits they use.
+        const t_pack_molecule& first_mol = prepacker.get_molecule(ap_netlist.block_molecules(ap_block_id)[0]);
+        PhysicalRamGroupId phys_group_id = ram_mapper.physical_group_id_of(first_mol.atom_block_ids[first_mol.root]);
+        if (phys_group_id.is_valid()) {
+            LogicalRamGroupId logical_group_id = ram_mapper.physical_ram_group(phys_group_id).logical_ram_group_id;
+            t_logical_block_type_ptr ram_type = ram_mapper.group(logical_group_id).pre_assigned_type;
+            block_mass_[ap_block_id].add_val_to_dim(1.0f, ram_type_dim[ram_type->index]);
+            continue;
+        }
+
         block_mass_[ap_block_id] = calc_block_mass(ap_block_id,
                                                    primitive_dim_manager_,
                                                    ap_netlist,
