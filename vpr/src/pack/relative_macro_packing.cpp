@@ -347,7 +347,7 @@ std::string RelativeMacroPacker::describe_locked_site_failure(PackMoleculeId see
     bool any_does_not_fit = false;
     for (t_logical_block_type_ptr cluster_type : candidate_types) {
         const std::string& type_name = cluster_type->name;
-        if (site->root() != cluster_type->pb_graph_head) {
+        if (site->find_root() != cluster_type->pb_graph_head) {
             // Suggest sites compatible with the root atom. These examples do
             // not guarantee that the whole molecule can be packed there.
             std::vector<std::string> available_paths;
