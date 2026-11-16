@@ -1,1 +1,0 @@
-../../../third_party/VexRiscv_Lite/VexRiscv_Lite.v
