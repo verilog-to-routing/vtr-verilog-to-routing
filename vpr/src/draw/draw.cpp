@@ -1,8 +1,8 @@
 /*********************************** Top-level Summary *************************************
  * This is VPR's main graphics application program. The program interacts with ezgl/graphics.hpp,
  * which provides an API for displaying graphics on both X11 and Win32. The most important
- * subroutine in this file is draw_main_canvas(), which is a callback function that will be called
- * whenever the screen needs to be updated. Then, draw_main_canvas() will decide what
+ * subroutine in this file is draw_main_canvas_persistent(), which is a callback function that will be called
+ * whenever the screen needs to be updated. Then, draw_main_canvas_persistent() will decide what
  * drawing subroutines to call depending on whether PLACEMENT or ROUTING is shown on screen.
  * The initial_setup_X() functions link the menu button signals to the corresponding drawing functions.
  * As a note, looks into draw_global.c for understanding the data structures associated with drawing->
@@ -98,7 +98,12 @@ static float get_router_expansion_cost(const t_rr_node_route_inf& node_inf,
                                        e_draw_router_expansion_cost draw_router_expansion_cost);
 static void draw_router_expansion_costs(ezgl::renderer* g);
 
-static void draw_main_canvas(ezgl::renderer* g);
+static void draw_main_canvas_persistent(ezgl::renderer* g);
+
+/**
+ * @brief Draws immediate elements on the main canvas.
+ */
+static void draw_main_canvas_immediate(ezgl::renderer* g);
 
 /**
  * @brief A callback function that tells the ezgl renderer if the cached geometry can be reused for a camera-only redraw.
@@ -316,7 +321,15 @@ static void set_final_graphics_stage(const t_vpr_setup& vpr_setup) {
     }
 }
 
-static void draw_main_canvas(ezgl::renderer* g) {
+static void draw_main_canvas_immediate(ezgl::renderer* g) {
+#ifndef NO_SERVER
+    if (g_vpr_ctx.server().gate_io.is_running())
+        return;
+#endif
+    draw_crit_path(g);
+}
+
+static void draw_main_canvas_persistent(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     // init_graphics() builds the UI before any stage has set up a picture,
@@ -362,11 +375,7 @@ static void draw_main_canvas(ezgl::renderer* g) {
         if (g_vpr_ctx.server().gate_io.is_running()) {
             const ServerContext& server_ctx = g_vpr_ctx.server(); // shortcut
             draw_crit_path_elements(server_ctx.crit_paths, server_ctx.crit_path_element_indexes, server_ctx.draw_crit_path_contour, g);
-        } else {
-            draw_crit_path(g);
         }
-#else
-        draw_crit_path(g);
 #endif /* NO_SERVER */
 
         draw_logical_connections(g);
@@ -386,7 +395,6 @@ static void draw_main_canvas(ezgl::renderer* g) {
         }
     } else {
         draw_analytical_place(g);
-        draw_crit_path(g);
     }
 
     // Zoom-Select preview: while the user is in window mode and has clicked
@@ -420,23 +428,11 @@ static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::rende
     // The current zoom level.
     double world_units_per_pixel = g->world_units_per_pixel();
 
-    // Whether critical path delay labels were drawn in the previous full redraw.
-    // Calculated in advance to avoid code repetition.
-    bool crit_path_delay_labels_drawn = draw_state->show_crit_path
-                                        && draw_state->show_crit_path_flylines
-                                        && draw_state->show_crit_path_delays;
-
     // Pure panning does not change the level of detail, so the existing
     // geometry can be reused with only a camera-only redraw.
     if (reason == ezgl::view_change_reason::pan) {
         return true;
     } else if (reason == ezgl::view_change_reason::zoom_in || reason == ezgl::view_change_reason::pan_zoom_in) {
-        // Critical-path delay labels depend on screen-space placement, so
-        // their geometry must be rebuilt when zoom changes.
-        // TODO: Make the drawing of critical-path delay labels as an overlay feature to avoid a full redraw.
-        if (crit_path_delay_labels_drawn)
-            return false;
-
         // Zooming in past the RR decluttering threshold makes previously
         // decluttered (hidden) routing resources visible, so cached geometry is incomplete.
         if (draw_state->show_rr
@@ -453,9 +449,6 @@ static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::rende
             && !(draw_state->no_blk_internal_decluttered_yet))
             return false;
     } else if (reason == ezgl::view_change_reason::zoom_out || reason == ezgl::view_change_reason::pan_zoom_out) {
-        if (crit_path_delay_labels_drawn)
-            return false;
-
         // Zooming out past the RR decluttering threshold removes normal RR
         // resources from the drawing, so reuse would leave stale geometry.
         if (draw_state->show_rr
@@ -481,7 +474,7 @@ static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::rende
 static void add_main_canvas() {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas, initial_world);
+    auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas_persistent, draw_main_canvas_immediate, initial_world);
     if (canvas != nullptr) {
         ezgl::renderer_type rt = ezgl::renderer_type::rhi;
         if (draw_state->renderer_type == "immediate")
@@ -1139,7 +1132,7 @@ void act_on_mouse_move(ezgl::application* app, QMouseEvent* /* event */, double 
     // user has clicked the window button, in window mode
     if (window_point_1_collected) {
         // Update the preview cursor position and let the regular draw flow
-        // paint the dashed-rectangle preview (see draw_main_canvas). Drawing
+        // paint the dashed-rectangle preview (see draw_main_canvas_persistent). Drawing
         // it as part of the main draw works uniformly across all backends —
         // the immediate-renderer "animation" pattern used by GTK does not
         // translate cleanly to RHI's GPU-composited overlay.

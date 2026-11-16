@@ -4,7 +4,7 @@
  *
  * Locks the GATE contract of the two rendering entry points the
  * GUI canvas's draw callback dispatches to in
- * ``vpr/src/draw/draw.cpp::draw_main_canvas``:
+ * ``vpr/src/draw/draw.cpp::draw_main_canvas_persistent``:
  *
  *   * ``vpr/src/draw/draw_rr.cpp::draw_rr(ezgl::renderer*)`` — the
  *     routing-resource overlay. The very first thing the function
@@ -26,7 +26,7 @@
  * Why this is real, behaviour-relevant coverage rather than
  * structural noise (per section 4 of the vpr_gui_test_plan):
  *
- *   ``draw_main_canvas`` is invoked on every ezgl repaint, panning
+ *   ``draw_main_canvas_persistent`` is invoked on every ezgl repaint, panning
  *   gesture, and zoom step. If the gate at the top of either
  *   function regresses (gate moved below a renderer-method call,
  *   or the gate's predicate inverted), the GUI either crashes on

@@ -131,10 +131,11 @@ ezgl::canvas* ensure_main_canvas(ezgl::application* app) {
     ezgl::canvas* cnv = app->get_canvas(id);
     if (!cnv) {
         // No-op lambda rather than nullptr: the canvas map is process-global,
-        // and a null draw_callback would persist into later tests (e.g.
+        // and a null draw_persistent_callback would persist into later tests (e.g.
         // save-graphics) whose canvas::render_to_image path calls the
         // callback unconditionally and would segfault on the null call.
-        cnv = app->add_canvas(id, /*draw_callback=*/[](ezgl::renderer*) {}, ezgl::rectangle({0, 0}, 100, 100), ezgl::WHITE);
+        cnv = app->add_canvas(id, /*draw_persistent_callback=*/[](ezgl::renderer*) noexcept {},
+                              /*draw_immediate_callback=*/[](ezgl::renderer*) noexcept {}, ezgl::rectangle({0, 0}, 100, 100), ezgl::WHITE);
     }
     return cnv;
 }
