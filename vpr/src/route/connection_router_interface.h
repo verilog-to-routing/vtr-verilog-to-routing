@@ -101,10 +101,13 @@ class ConnectionRouterInterface {
     // Sets whether router debug information should be on.
     virtual void set_router_debug(bool router_debug) = 0;
 
-    // Empty the route tree set used for RCV node detection
-    // Will return if RCV is disabled
-    // Called after each net is finished routing to flush the set
+    // Empty the net-level route tree set used for RCV loop detection
+    // Called at the start of each net; the set is rebuilt by the net's first RCV connection
     virtual void empty_rcv_route_tree_set() = 0;
+
+    // Add a branch just added to the route tree to the net-level RCV route tree set
+    // Call for every new branch, whether or not RCV was used to route it
+    virtual void add_branch_to_rcv_route_tree_set(const RouteTreeNode& new_branch) = 0;
 
     // Enable or disable RCV in connection router
     // Enabling this will utilize extra path structures, as well as the RCV cost function

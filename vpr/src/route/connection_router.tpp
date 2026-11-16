@@ -39,7 +39,6 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
         out.prev_edge = rr_node_route_inf_[sink_node].prev_edge;
         if (rcv_path_manager.is_enabled()) {
             out.rcv_path_backward_delay = rcv_path_data[sink_node]->backward_delay;
-            rcv_path_manager.update_route_tree_set(rcv_path_data[sink_node]);
             rcv_path_manager.empty_heap();
         }
         heap_.empty_heap();
@@ -113,7 +112,6 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
     out.prev_edge = rr_node_route_inf_[sink_node].prev_edge;
     if (rcv_path_manager.is_enabled()) {
         out.rcv_path_backward_delay = rcv_path_data[sink_node]->backward_delay;
-        rcv_path_manager.update_route_tree_set(rcv_path_data[sink_node]);
         rcv_path_manager.empty_heap();
     }
     heap_.empty_heap();
@@ -418,9 +416,6 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
      * (except for those parts marked as not to be expanded) by calling itself   *
      * recursively.                                                              */
 
-    // Register every node already in the route tree for RCV.
-    rcv_path_manager.mark_node_visited(rt_node.inode);
-
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node.re_expand) {
@@ -440,15 +435,11 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
 
 template<typename Heap>
 void ConnectionRouter<Heap>::register_route_tree_for_rcv(const RouteTreeNode& rt_root) {
-    if (!rcv_path_manager.is_enabled())
+    // Built once per net, then kept up to date by add_branch_to_rcv_route_tree_set()
+    if (!rcv_path_manager.is_enabled() || rcv_path_manager.route_tree_set_valid())
         return;
 
-    // Clear first so nodes from a previously routed net don't leak in
-    rcv_path_manager.empty_route_tree_nodes();
-    rcv_path_manager.mark_node_visited(rt_root.inode);
-    for (const RouteTreeNode& rt_node : rt_root.all_nodes()) {
-        rcv_path_manager.mark_node_visited(rt_node.inode);
-    }
+    rcv_path_manager.build_route_tree_set(rt_root);
 }
 
 /* Expand bb by inode's extents and clip against net_bb */
