@@ -10,6 +10,7 @@
  */
 
 #include "verify_clustering.h"
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include "atom_lookup.h"
@@ -436,6 +437,7 @@ static unsigned check_clustering_floorplanning_consistency(
  *
  * Each group must occupy one cluster, with no unclustered atoms.
  * Groups must use distinct clusters to preserve their placement offsets.
+ * Each atom with a site constraint must map to that primitive.
  *
  *  @param atom_nlist       The atom netlist used to create the clustering.
  *  @param atom_lookup      Maps atoms to their clusters.
@@ -479,6 +481,29 @@ static unsigned check_clustering_relative_group_consistency(const AtomNetlist& a
                     macro.name.c_str(), size_t(group_id));
                 num_errors++;
                 group_split_reported = true;
+            }
+
+            // Check all site constraints, including non-root atoms whose sites
+            // are determined by the molecule's pack pattern.
+            const t_pb_graph_node* site = relative_macros.get_atom_locked_site(atom_blk_id);
+            if (site != nullptr) {
+                const t_pb* atom_pb = atom_lookup.atom_pb_bimap().atom_pb(atom_blk_id);
+                if (atom_pb == nullptr || atom_pb->pb_graph_node == nullptr) {
+                    VTR_LOG_ERROR(
+                        "Atom block '%s' of relative macro '%s' group %zu is locked to "
+                        "primitive site '%s' but is not mapped to a primitive.\n",
+                        atom_nlist.block_name(atom_blk_id).c_str(),
+                        macro.name.c_str(), size_t(group_id), site->hierarchical_type_name().c_str());
+                    num_errors++;
+                } else if (atom_pb->pb_graph_node != site) {
+                    VTR_LOG_ERROR(
+                        "Atom block '%s' of relative macro '%s' group %zu is locked to "
+                        "primitive site '%s', but it was placed on '%s'.\n",
+                        atom_nlist.block_name(atom_blk_id).c_str(),
+                        macro.name.c_str(), size_t(group_id), site->hierarchical_type_name().c_str(),
+                        atom_pb->pb_graph_node->hierarchical_type_name().c_str());
+                    num_errors++;
+                }
             }
 
             // A cluster may host atoms of at most one group.
@@ -535,7 +560,7 @@ unsigned verify_clustering(const ClusteredNetlist& clb_nlist,
                                                              clb_atoms,
                                                              cluster_constraints,
                                                              constraints);
-    // Verify that each group occupies one distinct cluster.
+    // Check group membership and primitive-site constraints.
     num_errors += check_clustering_relative_group_consistency(atom_nlist,
                                                               atom_lookup,
                                                               relative_macros);

@@ -319,6 +319,17 @@ class Prepacker {
     }
 
     /**
+     * @brief Get the number of valid atoms in the given molecule.
+     *
+     * Ignores invalid IDs for unused positions in the molecule's pack pattern.
+     */
+    inline size_t get_molecule_num_valid_atoms(PackMoleculeId molecule_id) const {
+        const t_pack_molecule& mol = get_molecule(molecule_id);
+        return std::count_if(mol.atom_block_ids.begin(), mol.atom_block_ids.end(),
+                             [](AtomBlockId blk_id) noexcept { return blk_id.is_valid(); });
+    }
+
+    /**
      * @brief Get information about the chain associated with the given ID.
      */
     inline const t_chain_info& get_molecule_chain_info(MoleculeChainId chain_id) const {
