@@ -68,9 +68,15 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro) {
 
                 Region modified_reg(block_reg_rect, layer_low, layer_high);
 
-                //check that subtile is not an invalid value before changing, otherwise it just stays -1
+                // Move the region's subtile, if it has one, to the head. A negative subtile
+                // cannot hold the head, so skip the region: storing -1 would read as
+                // NO_SUBTILE and allow any subtile.
                 if (block_region.get_sub_tile() != NO_SUBTILE) {
-                    modified_reg.set_sub_tile(block_region.get_sub_tile() - offset.sub_tile);
+                    int head_sub_tile = block_region.get_sub_tile() - offset.sub_tile;
+                    if (head_sub_tile < 0) {
+                        continue;
+                    }
+                    modified_reg.set_sub_tile(head_sub_tile);
                 }
 
                 modified_pr.add_to_part_region(modified_reg);
@@ -110,9 +116,15 @@ PartitionRegion update_macro_member_pr(const PartitionRegion& head_pr,
 
         Region modified_reg(block_reg_rect, layer_low, layer_high);
 
-        //check that subtile is not an invalid value before changing, otherwise it just stays -1
+        // Move the region's subtile, if it has one, to the member. A negative subtile
+        // cannot hold the member, so skip the region: storing -1 would read as
+        // NO_SUBTILE and allow any subtile.
         if (block_region.get_sub_tile() != NO_SUBTILE) {
-            modified_reg.set_sub_tile(block_region.get_sub_tile() + offset.sub_tile);
+            int member_sub_tile = block_region.get_sub_tile() + offset.sub_tile;
+            if (member_sub_tile < 0) {
+                continue;
+            }
+            modified_reg.set_sub_tile(member_sub_tile);
         }
 
         macro_pr.add_to_part_region(modified_reg);
