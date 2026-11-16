@@ -34,33 +34,6 @@ class ExtendedMapLookahead final : public RouterLookahead {
      */
     std::pair<float, float> get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, int to_layer_num, const t_conn_cost_params& params) const;
 
-    /**
-     * @brief Returns the CHAN -> IPIN delay that gets added to the final expected delay
-     * @param to_node target node for which we query the IPIN delay
-     * @return IPIN delay relative to the input destination node
-     *
-     * The CHAN -> IPIN delay was removed from the cost map calculation, as it might tamper the addition
-     * of a smaller cost to this node location. This might happen as not all the CHAN -> IPIN connection
-     * have a delay, therefore, a different cost than the correct one might have been added to the cost
-     * map location of the input node.
-     * 
-     * The CHAN -> IPIN delay gets re-added to the final calculation as it effectively is a valid delay
-     * to reach the destination.
-     */
-    float get_chan_ipin_delays(RRNodeId to_node) const;
-
-    template<typename Entry>
-    bool add_paths(RRNodeId start_node,
-                   Entry current,
-                   const std::vector<util::Search_Path>& paths,
-                   util::RoutingCosts* routing_costs);
-
-    template<typename Entry>
-    std::pair<float, int> run_dijkstra(RRNodeId start_node,
-                                       std::vector<bool>* node_expanded,
-                                       std::vector<util::Search_Path>* paths,
-                                       util::RoutingCosts* routing_costs);
-
     CostMap cost_map_; ///<Cost map containing all data to extract the entry cost when querying the lookahead.
   public:
     /**
