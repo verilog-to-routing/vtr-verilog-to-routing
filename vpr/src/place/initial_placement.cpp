@@ -31,6 +31,7 @@
 #include <limits>
 #include <optional>
 #include <queue>
+#include <utility>
 #include <vector>
 
 #ifdef VERBOSE
@@ -2067,17 +2068,27 @@ void initial_placement(const t_placer_opts& placer_opts,
 
         // First try to place all of the blocks using AP
         if (flat_placement_info.valid) {
+            // The blocks placed so far: fixed blocks, blocks from the constraints file and
+            // NoC routers, whose traffic flows were routed for these locations
+            std::vector<std::pair<ClusterBlockId, t_pl_loc>> placed_blocks;
+            for (ClusterBlockId blk_id : g_vpr_ctx.clustering().clb_nlist.blocks()) {
+                if (is_block_placed(blk_id, blk_loc_registry.block_locs())) {
+                    placed_blocks.emplace_back(blk_id, blk_loc_registry.block_locs()[blk_id].loc);
+                }
+            }
+
             all_blocks_placed = place_all_blocks_ap(placer_opts.pad_loc_type,
                                                     blk_loc_registry,
                                                     place_macros,
                                                     flat_placement_info);
 
-            // If AP failed to place all of the blocks, reset the placement solution
-            // so we can fall back on the original initial placement algorithm.
+            // If AP failed to place all of the blocks, reset the placement solution to the
+            // blocks placed before AP so we can fall back on the original initial placement
+            // algorithm.
             if (!all_blocks_placed) {
                 blk_loc_registry.clear_all_grid_locs();
-                if (strlen(constraints_file) != 0) {
-                    read_constraints(constraints_file, blk_loc_registry);
+                for (const auto& [blk_id, loc] : placed_blocks) {
+                    blk_loc_registry.set_block_location(blk_id, loc);
                 }
             }
         }
