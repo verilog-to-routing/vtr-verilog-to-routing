@@ -49,6 +49,16 @@ choco install winflexbison3 wget
 choco install magicsplat-tcl-tk --version=1.16.0
 ```
 
+### MacOS
+
+To build with Clang on MacOS
+
+- Install dependencies through
+
+```
+./install_macos_packages.sh
+```
+
 ### Python Packages
 
 You will also need several Python packages.  You can optionally install and activate a Python virtual environment so that you do not need to modify your system Python installation:
@@ -110,6 +120,7 @@ The complete VTR flow has been tested on:
 
 The VPR engine has been tested on 
 - Windows 10/11 (MSYS2, MSVC)
+- Mac OS 26
 
 *Full information about building VTR, including setting up required system packages and Python packages, can be found in [Optional Build Information](doc/src/vtr/optional_build_info.md) page.*
 

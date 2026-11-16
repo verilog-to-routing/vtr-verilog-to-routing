@@ -964,10 +964,6 @@ class t_pb_graph_edge {
  * index: Keep track of type in array for easy access
  * physical_tile_index: index of the corresponding physical tile type
  *
- * pin_logical_num_to_pb_pin_mapping: Contains all the pins, including pins on the root-level block and internal pins, in
- * the logical block. The key of this map is the logical number of the pin, and the value is a pointer to the
- * corresponding pb_graph_pin
- *
  * primitive_pb_pin_to_logical_class_num_mapping: Maps each pin to its corresponding class's logical number. To retrieve the actual class, use this number as an
  * index to logical_class_inf.
  *
@@ -1007,7 +1003,6 @@ struct t_logical_block_type {
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///< List of physical tiles at which one could
                                                             ///< place this type of netlist block.
 
-    std::unordered_map<int, t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;                    /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
     std::unordered_map<const t_pb_graph_pin*, int> primitive_pb_pin_to_logical_class_num_mapping;  /* primitive_pb_pin_to_logical_class_num_mapping[pb_graph_pin ptr] -> class logical number */
     std::vector<t_class> primitive_logical_class_inf;                                              /* primitive_logical_class_inf[class_logical_number] -> class */
     std::unordered_map<const t_pb_graph_node*, t_class_range> primitive_pb_graph_node_class_range; /* primitive_pb_graph_node_class_range[primitive_pb_graph_node ptr] -> class range for that primitive*/
@@ -1017,6 +1012,18 @@ struct t_logical_block_type {
 
     /// Returns true if this logical block type is an IO block
     bool is_io() const;
+
+    /// @brief Returns the pb graph pin with the given pin_count_in_cluster.
+    const t_pb_graph_pin* pb_graph_pin(int pin_index) const {
+        VTR_ASSERT_SAFE(pin_index >= 0 && pin_index < (int)pb_graph_pins_.size());
+        return pb_graph_pins_[pin_index];
+    }
+
+    /// @brief Returns all pins of the pb graph, indexed by pin_count_in_cluster.
+    std::span<t_pb_graph_pin* const> pb_graph_pins() const { return pb_graph_pins_; }
+
+    /// @brief Replaces the pins of the pb graph. The index of each pin must be its pin_count_in_cluster.
+    void set_pb_graph_pins(std::vector<t_pb_graph_pin*>&& pins) { pb_graph_pins_ = std::move(pins); }
 
     /**
      * @brief Check if this logical block type contains a bus-based mux (<mux bus="true">).
@@ -1035,6 +1042,13 @@ struct t_logical_block_type {
      * @brief Returns the logical block port given the pin name and the corresponding logical block type
      */
     const t_port* get_port_by_pin(int pin) const;
+
+  private:
+    /// All pins of the pb graph under pb_graph_head, including pins on the
+    /// root-level block and internal pins. The index is the pin's
+    /// pin_count_in_cluster, which is also its logical number.
+    /// [0..total_pb_pins-1]
+    std::vector<t_pb_graph_pin*> pb_graph_pins_;
 };
 
 /*************************************************************************************************

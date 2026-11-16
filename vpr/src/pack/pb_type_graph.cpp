@@ -46,12 +46,10 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster,
                                     int& primitive_num,
-                                    std::deque<t_pb_graph_edge>& pb_graph_edges);
+                                    std::deque<t_pb_graph_edge>& pb_graph_edges,
+                                    std::vector<t_pb_graph_pin*>& pb_graph_pins);
 
 static void alloc_and_load_pb_graph_pin_sinks(t_pb_graph_node* pb_graph_node);
-
-/* Assign a unique id to each IPIN/OPIN pin at logical block level (i.e. fill pin_logical_num_to_pb_pin_mapping in logical_block)*/
-static void set_pins_logical_num(t_logical_block_type* logical_block);
 
 /* Return all pb_graph_nodes, in all modes and sub-blocks, contained in the given logical_block */
 static std::vector<const t_pb_graph_node*> get_primitive_pb_graph_nodes(t_logical_block_type_ptr logical_block);
@@ -205,6 +203,7 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
             type.pb_graph_head = new t_pb_graph_node();
             int pin_count_in_cluster = 0;
             int primitive_num = 0;
+            std::vector<t_pb_graph_pin*> pb_graph_pins;
             alloc_and_load_pb_graph(type.pb_graph_head,
                                     /*parent_pb_graph_node=*/nullptr,
                                     type.pb_type,
@@ -212,12 +211,14 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
                                     load_power_structures,
                                     pin_count_in_cluster,
                                     primitive_num,
-                                    type.pb_graph_edges);
+                                    type.pb_graph_edges,
+                                    pb_graph_pins);
             type.pb_graph_head->total_pb_pins = pin_count_in_cluster;
+            VTR_ASSERT((int)pb_graph_pins.size() == pin_count_in_cluster);
+            type.set_pb_graph_pins(std::move(pb_graph_pins));
             load_pin_classes_in_pb_graph_head(type.pb_graph_head);
             if (is_flat) {
                 alloc_and_load_pb_graph_pin_sinks(type.pb_graph_head);
-                set_pins_logical_num(&type);
                 add_primitive_logical_classes(&type);
             }
         } else {
@@ -290,7 +291,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster,
                                     int& primitive_num,
-                                    std::deque<t_pb_graph_edge>& pb_graph_edges) {
+                                    std::deque<t_pb_graph_edge>& pb_graph_edges,
+                                    std::vector<t_pb_graph_pin*>& pb_graph_pins) {
     int i, j, k, i_input, i_output, i_clockport;
 
     pb_graph_node->placement_index = index;
@@ -403,6 +405,13 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     VTR_ASSERT(unassigned_pins.empty());
     pb_graph_node->pin_num_range.high = (pin_count_in_cluster - 1);
 
+    // The node's pins are stored in numbering order, so appending them keeps
+    // the table indexed by pin_count_in_cluster
+    for (t_pb_graph_pin& pin : pb_graph_node->mutable_pins()) {
+        VTR_ASSERT_SAFE(pin.pin_count_in_cluster == (int)pb_graph_pins.size());
+        pb_graph_pins.push_back(&pin);
+    }
+
     /* Power */
     if (load_power_structures) {
         pb_graph_node->pb_node_power = new t_pb_graph_node_power();
@@ -434,7 +443,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                         load_power_structures,
                                         pin_count_in_cluster,
                                         primitive_num,
-                                        pb_graph_edges);
+                                        pb_graph_edges,
+                                        pb_graph_pins);
             }
         }
     }
@@ -466,17 +476,6 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 static void alloc_and_load_pb_graph_pin_sinks(t_pb_graph_node* pb_graph_node) {
     for (t_pb_graph_node& curr_pb_graph_node : pb_graph_node->subtree())
         store_pin_sinks_edge_id(&curr_pb_graph_node);
-}
-
-static void set_pins_logical_num(t_logical_block_type* logical_block) {
-    std::unordered_map<int, t_pb_graph_pin*>& pb_pin_idx_map = logical_block->pin_logical_num_to_pb_pin_mapping;
-
-    // The logical number of a pin is its pin_count_in_cluster, which is unique within the logical block.
-    for (t_pb_graph_node& pb_graph_node : logical_block->pb_graph_head->subtree()) {
-        for (t_pb_graph_pin& pb_graph_pin : pb_graph_node.mutable_pins()) {
-            pb_pin_idx_map.insert(std::make_pair(pb_graph_pin.pin_count_in_cluster, &pb_graph_pin));
-        }
-    }
 }
 
 static std::vector<const t_pb_graph_node*> get_primitive_pb_graph_nodes(t_logical_block_type_ptr logical_block) {
