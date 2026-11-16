@@ -48,7 +48,8 @@ bool is_macro_constrained(const t_pl_macro& pl_macro);
  * This function calculates the PartitionRegion for the head of a macro by considering the
  * floorplan constraints of all blocks in the macro. For example, if a macro has two blocks
  * and each block has a constraint, this routine will shift and intersect the two constraint
- * regions to determine the tightest region constraint for the macro's head.
+ * regions to determine the tightest region constraint for the macro's head. A region whose
+ * shifted subtile would be negative is dropped, since no location can satisfy it.
  *
  * @param pl_macro The macro whose head's PartitionRegion is to be calculated.
  * @return PartitionRegion The calculated PartitionRegion for the head of the macro.
@@ -61,7 +62,8 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro);
  *
  * The constraint on the head region must be the tightest possible (i.e., implied by the
  * entire macro) before this routine is called. For each macro member, the updated constraint
- * is essentially the head constraint with the member's offset applied.
+ * is essentially the head constraint with the member's offset applied. A region whose shifted
+ * subtile would be negative is dropped, since no location can satisfy it.
  *
  * @param head_pr The PartitionRegion constraint of the macro's head.
  * @param offset The offset of the macro member from the head.
