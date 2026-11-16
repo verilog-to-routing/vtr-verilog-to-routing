@@ -358,7 +358,11 @@ float current_hold_slack = 0;
         /*
          * Are we finished?
          */
-        if (is_iteration_complete(routing_is_feasible, router_opts, itry, timing_info, rcv_finished_count <= 0)) {
+        // RCV is also done if this iteration rerouted nothing: the remaining hold violations can't be fixed by
+        // routing (e.g. they are intra-cluster), and the loop exits below on connections_routed == 0. Without this,
+        // a legal routing that converges before the RCV countdown expires would be reported as a routing failure.
+        bool rcv_done = rcv_finished_count <= 0 || iter_results.stats.connections_routed == 0;
+        if (is_iteration_complete(routing_is_feasible, router_opts, itry, timing_info, rcv_done)) {
             auto& router_ctx = g_vpr_ctx.routing();
 
             if (is_better_quality_routing(best_routing, best_routing_metrics, wirelength_info, timing_info)) {
