@@ -208,6 +208,8 @@ void route_budgets::calculate_delay_targets() {
             if (delay_max_budget[net_id][ipin] < delay_min_budget[net_id][ipin])
                 delay_max_budget[net_id][ipin] = delay_min_budget[net_id][ipin];
             calculate_delay_targets(net_id, pin_id);
+            if (delay_target[net_id][ipin] != 0)
+                short_path_crit[net_id][ipin] = pow(((delay_target[net_id][ipin] - delay_lower_bound[net_id][ipin]) / delay_target[net_id][ipin]), SHORT_PATH_EXP);
         }
     }
 }
@@ -889,8 +891,8 @@ float route_budgets::get_crit_short_path(ParentNetId net_id, int ipin) {
     if (delay_target[net_id][ipin] == 0) {
         return 0;
     }
-    return pow(((delay_target[net_id][ipin] - delay_lower_bound[net_id][ipin]) / delay_target[net_id][ipin]), SHORT_PATH_EXP);
-    // return short_path_crit[net_id][ipin];
+    // return pow(((delay_target[net_id][ipin] - delay_lower_bound[net_id][ipin]) / delay_target[net_id][ipin]), SHORT_PATH_EXP);
+    return short_path_crit[net_id][ipin];
 }
 
 float route_budgets::get_normalized_crit_short_path(ParentNetId net_id, int ipin) {
@@ -898,6 +900,7 @@ float route_budgets::get_normalized_crit_short_path(ParentNetId net_id, int ipin
         return 0.f;
     }
     float normalized_crit = get_crit_short_path(net_id, ipin) / max_crit_short_path_;
+    if (normalized_crit > 1.f) normalized_crit = 1.f;
     VTR_ASSERT_SAFE(normalized_crit >= 0.f && normalized_crit <= 1.f);
     return normalized_crit;
 }

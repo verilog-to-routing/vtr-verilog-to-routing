@@ -152,7 +152,8 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
     for (int ipin : remaining_targets) {
         if (budgeting_inf.should_use_rcv(net_id, ipin)) {
             float hold_criticality = budgeting_inf.get_normalized_crit_short_path(net_id, ipin);
-            pin_sort_priority[ipin] = std::max(pin_sort_priority[ipin], hold_criticality);
+            if (hold_criticality > 0.9)
+                pin_sort_priority[ipin] = std::max(pin_sort_priority[ipin], hold_criticality);
         }
     }
 
