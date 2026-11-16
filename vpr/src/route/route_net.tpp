@@ -144,6 +144,18 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
     // router's cost function.
     std::vector<float> pin_sort_priority = pin_criticality;
 
+    // For connections routed with RCV, order by whichever is larger: the setup
+    // criticality or the short-path (hold) criticality. This lets connections that
+    // are more hold critical than setup critical be routed earlier, while leaving
+    // pin_criticality (and thus the cost function) untouched. The short path
+    // criticality is normalized to [0, 1] so it is comparable to setup criticality.
+    for (int ipin : remaining_targets) {
+        if (budgeting_inf.should_use_rcv(net_id, ipin)) {
+            float hold_criticality = budgeting_inf.get_normalized_crit_short_path(net_id, ipin);
+            pin_sort_priority[ipin] = std::max(pin_sort_priority[ipin], hold_criticality);
+        }
+    }
+
     const DeviceGrid& device_grid = device_ctx.grid;
     bool has_interposer_cuts = device_grid.has_interposer_cuts();
     bool has_multiple_layers = device_grid.get_num_layers() > 1;

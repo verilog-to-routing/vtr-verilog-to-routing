@@ -142,6 +142,7 @@ void route_budgets::load_route_budgets(NetPinsMatrix<float>& net_delay,
     } else if (router_opts.routing_budgets_algorithm == LOW_SKEW_CLOCK) {
         set_low_skew_clock_budgets(net_delay);
     }
+    update_max_crit_short_path_();
     set = true;
 }
 
@@ -821,6 +822,9 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
                 }
             }
 
+            // Budgets changed, so refresh the normalization factor for short path criticality
+            update_max_crit_short_path_();
+
             // Empty queue so we are giving the router time to re stabilize
             // std::queue<float> empty;
             // std::swap(empty, negative_hold_slacks);
@@ -885,8 +889,28 @@ float route_budgets::get_crit_short_path(ParentNetId net_id, int ipin) {
     if (delay_target[net_id][ipin] == 0) {
         return 0;
     }
-    // return pow(((delay_target[net_id][ipin] - delay_lower_bound[net_id][ipin]) / delay_target[net_id][ipin]), SHORT_PATH_EXP);
-    return short_path_crit[net_id][ipin];
+    return pow(((delay_target[net_id][ipin] - delay_lower_bound[net_id][ipin]) / delay_target[net_id][ipin]), SHORT_PATH_EXP);
+    // return short_path_crit[net_id][ipin];
+}
+
+float route_budgets::get_normalized_crit_short_path(ParentNetId net_id, int ipin) {
+    if (max_crit_short_path_ <= 0.f) {
+        return 0.f;
+    }
+    float normalized_crit = get_crit_short_path(net_id, ipin) / max_crit_short_path_;
+    VTR_ASSERT_SAFE(normalized_crit >= 0.f && normalized_crit <= 1.f);
+    return normalized_crit;
+}
+
+void route_budgets::update_max_crit_short_path_() {
+    max_crit_short_path_ = 0.f;
+    for (ParentNetId net_id : net_list_.nets()) {
+        if (net_list_.net_is_ignored(net_id)) continue;
+        for (ParentPinId pin_id : net_list_.net_sinks(net_id)) {
+            int ipin = net_list_.pin_net_index(pin_id);
+            max_crit_short_path_ = std::max(max_crit_short_path_, get_crit_short_path(net_id, ipin));
+        }
+    }
 }
 
 void route_budgets::print_route_budget(std::string filename, NetPinsMatrix<float>& net_delay) {

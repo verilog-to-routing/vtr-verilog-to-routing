@@ -35,6 +35,16 @@ class route_budgets {
     float get_min_delay_budget(ParentNetId net_id, int ipin);
     float get_max_delay_budget(ParentNetId net_id, int ipin);
     float get_crit_short_path(ParentNetId net_id, int ipin);
+
+    /**
+     * @brief Returns the short path (hold) criticality of the given connection,
+     *        normalized to [0, 1] by the largest short path criticality in the design.
+     *
+     * The largest value is cached and refreshed whenever the budgets change
+     * (see update_max_crit_short_path_()). Returns 0 if no connection has a
+     * positive short path criticality.
+     */
+    float get_normalized_crit_short_path(ParentNetId net_id, int ipin);
     bool if_set() const;
 
     /**
@@ -137,6 +147,13 @@ class route_budgets {
     void calculate_delay_targets(ParentNetId net_id, ParentPinId pin_id);
     tatum::EdgeId get_edge_from_nets(ParentNetId net_id, int ipin);
 
+    /**
+     * @brief Recomputes max_crit_short_path_ as the largest short path criticality
+     *        over all sinks of all non-ignored nets. Must be called after any change
+     *        to the values get_crit_short_path() depends on.
+     */
+    void update_max_crit_short_path_();
+
     /*debugging tools*/
     void print_temporary_budgets_to_file(NetPinsMatrix<float>& temp_budgets) const;
 
@@ -147,6 +164,9 @@ class route_budgets {
     NetPinsMatrix<float> delay_lower_bound; //[0..num_nets][0..clb_net[inet].pins]
     NetPinsMatrix<float> delay_upper_bound; //[0..num_nets][0..clb_net[inet].pins]
     NetPinsMatrix<float> short_path_crit;   //[0..num_nets][0..clb_net[inet].pins]
+
+    /// Largest short path criticality in the design, used to normalize it to [0, 1]
+    float max_crit_short_path_ = 0.f;
 
     /// Per-connection flag to signify if RCV should be used for that connection.
     /// Connections are uniquely identified by their sink pins. Driver pins are
