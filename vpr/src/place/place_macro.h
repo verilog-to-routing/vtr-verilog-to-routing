@@ -121,6 +121,7 @@
 
 #include "clustered_netlist_fwd.h"
 #include "physical_types.h"
+#include "user_relative_macros.h"
 #include "vpr_types.h"
 
 class AtomLookup;
@@ -140,6 +141,13 @@ struct t_pl_macro_member {
 struct t_pl_macro {
     ///@brief A vector of blocks in this macro [0:num_macro-1].
     std::vector<t_pl_macro_member> members;
+
+    ///@brief The user's relative placement macro this macro was built from; invalid
+    ///       if the macro was derived from the architecture's direct connections.
+    UserRelativeMacroId user_macro_id;
+
+    ///@brief Whether the macro comes from the user's relative placement constraints.
+    bool is_user_defined() const { return user_macro_id.is_valid(); }
 };
 
 class PlaceMacros {
