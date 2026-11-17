@@ -859,7 +859,7 @@ void PlaceMacros::write_place_macros_(std::string filename,
     fprintf(f, "Num_Macros: %zu\n", macros.size());
     for (size_t imacro = 0; imacro < macros.size(); ++imacro) {
         const t_pl_macro* macro = &macros[imacro];
-        fprintf(f, "Macro_Id: %zu, Num_Blocks: %zu\n", imacro, macro->members.size());
+        fprintf(f, "Macro_Id: %zu, Num_Blocks: %zu%s\n", imacro, macro->members.size(), macro->is_user_defined() ? ", user_defined" : "");
         fprintf(f, "------------------------------------------------------\n");
         for (size_t imember = 0; imember < macro->members.size(); ++imember) {
             const t_pl_macro_member* macro_memb = &macro->members[imember];
