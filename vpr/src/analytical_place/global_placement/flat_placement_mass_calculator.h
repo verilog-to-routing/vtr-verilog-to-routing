@@ -76,8 +76,8 @@ class FlatPlacementMassCalculator {
      *  @param use_ram_group_density
      *      If true, each physical RAM group takes one instance of its
      *      pre-assigned type as described above. If false, RAM blocks use
-     *      the same bit-based mass as all other blocks. Has no effect if the
-     *      mapper created no physical RAM groups.
+     *      the bit-based mass. Has no effect if the mapper created no physical
+     *      RAM groups.
      *  @param atom_netlist
      *      The netlist of atoms for the circuit.
      *  @param logical_block_types
