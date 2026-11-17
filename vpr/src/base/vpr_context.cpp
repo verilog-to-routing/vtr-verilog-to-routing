@@ -45,6 +45,7 @@ void PlacementContext::init_placement_context(const std::vector<t_direct_inf>& d
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
     compressed_block_grids = create_compressed_block_grids();
 
@@ -53,7 +54,8 @@ void PlacementContext::init_placement_context(const std::vector<t_direct_inf>& d
                                                  device_ctx.physical_tile_types,
                                                  cluster_ctx.clb_nlist,
                                                  atom_ctx.netlist(),
-                                                 atom_ctx.lookup());
+                                                 atom_ctx.lookup(),
+                                                 floorplanning_ctx.relative_macros);
 }
 
 void PlacementContext::clean_placement_context_post_place() {

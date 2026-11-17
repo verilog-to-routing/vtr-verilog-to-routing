@@ -15,8 +15,9 @@
  * treated as a unit and regular routing would not be used to connect the carry_in's and
  * carry_out's. Floorplanning constraints may also be an example of placement macros.
  *
- * The only placement macros supported at the moment are the carry chains with limited
- * functionality.
+ * The only placement macros derived from the architecture are the carry chains, with limited
+ * functionality. A user can also define placement macros through the relative placement
+ * constraints of a VPR constraints file.
  *
  * Current support for placement macros are:
  * (1) The arch parser for direct connections is working. The specifications of the direct
@@ -167,13 +168,16 @@ class PlaceMacros {
      * with criteria depending on the type of placement macros. For carry chains, the
      * tails are blocks with carry_out's not connected to any nets (OPEN) while the
      * carry_in's is connected to the netlist which has only 1 SINK.
+     * (4) Append the macros defined by the user's relative placement constraints.
      * @param directs
+     * @param relative_macros The user's relative placement macros; may be empty.
      */
     PlaceMacros(const std::vector<t_direct_inf>& directs,
                 const std::vector<t_physical_tile_type>& physical_tile_types,
                 const ClusteredNetlist& clb_nlist,
                 const AtomNetlist& atom_nlist,
-                const AtomLookup& atom_lookup);
+                const AtomLookup& atom_lookup,
+                const UserRelativeMacros& relative_macros);
 
     /**
      * @brief Returns the placement macro index to which the given block belongs.
@@ -238,6 +242,15 @@ class PlaceMacros {
                             std::vector<int>& pl_macro_idirect,
                             std::vector<int>& pl_macro_num_members,
                             std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num);
+
+    /**
+     * @brief Adds user-defined relative placement macros to pl_macros_.
+     *
+     * Each user macro contains the clusters of its groups, positioned relative
+     * to the reference group's cluster (the macro head).
+     */
+    void append_user_defined_macros_(const UserRelativeMacros& relative_macros,
+                                     const AtomLookup& atom_lookup);
 
     void alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>& macros,
                                           const ClusteredNetlist& clb_nlist);

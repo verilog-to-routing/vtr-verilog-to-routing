@@ -14,6 +14,7 @@
 #include "atom_netlist_utils.h"
 #include "clustered_netlist.h"
 #include "physical_types_util.h"
+#include "user_relative_macros.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vpr_utils.h"
@@ -139,7 +140,8 @@ PlaceMacros::PlaceMacros(const std::vector<t_direct_inf>& directs,
                          const std::vector<t_physical_tile_type>& physical_tile_types,
                          const ClusteredNetlist& clb_nlist,
                          const AtomNetlist& atom_nlist,
-                         const AtomLookup& atom_lookup) {
+                         const AtomLookup& atom_lookup,
+                         const UserRelativeMacros& relative_macros) {
     /* Allocates allocates and loads placement macros and returns
      * the total number of macros in 2 steps.
      *   1) Allocate temporary data structure for maximum possible
@@ -191,6 +193,8 @@ PlaceMacros::PlaceMacros(const std::vector<t_direct_inf>& directs,
         }
     }
 
+    append_user_defined_macros_(relative_macros, atom_lookup);
+
     if (isEchoFileEnabled(E_ECHO_PLACE_MACROS)) {
         write_place_macros_(getEchoFileName(E_ECHO_PLACE_MACROS),
                             pl_macros_,
@@ -201,6 +205,58 @@ PlaceMacros::PlaceMacros(const std::vector<t_direct_inf>& directs,
     validate_macros(pl_macros_, clb_nlist);
 
     alloc_and_load_imacro_from_iblk_(pl_macros_, clb_nlist);
+}
+
+/**
+ * @brief Returns the cluster containing each relative placement group.
+ *
+ * All atoms in a group must belong to the same cluster, as enforced by
+ * verify_clustering(), including for loaded .net files. Therefore, any
+ * atom in the group can be used to identify its cluster.
+ */
+
+static vtr::vector<UserRelativeGroupId, ClusterBlockId> find_group_clusters(const UserRelativeMacros& relative_macros,
+                                                                            const AtomLookup& atom_lookup) {
+    vtr::vector<UserRelativeGroupId, ClusterBlockId> group_cluster(relative_macros.get_num_groups());
+    for (UserRelativeGroupId group_id : relative_macros.groups()) {
+        const t_user_relative_group& group = relative_macros.get_group(group_id);
+        VTR_ASSERT(!group.atoms.empty());
+
+        ClusterBlockId clb_id = atom_lookup.atom_clb(group.atoms[0]);
+        VTR_ASSERT_MSG(clb_id.is_valid(), "Every atom of a relative placement group is clustered");
+        group_cluster[group_id] = clb_id;
+    }
+    return group_cluster;
+}
+
+void PlaceMacros::append_user_defined_macros_(const UserRelativeMacros& relative_macros,
+                                              const AtomLookup& atom_lookup) {
+    const size_t num_user_macros = relative_macros.get_num_macros();
+    if (num_user_macros == 0)
+        return;
+
+    vtr::vector<UserRelativeGroupId, ClusterBlockId> group_cluster = find_group_clusters(relative_macros, atom_lookup);
+
+    for (UserRelativeMacroId macro_id : relative_macros.macros()) {
+        const t_user_relative_macro& user_macro = relative_macros.get_macro(macro_id);
+
+        // The macro's members: the reference group's cluster (the head, at offset zero)
+        // followed by the relative groups' clusters
+        std::vector<t_pl_macro_member> members;
+        for (UserRelativeGroupId group_id : user_macro.groups) {
+            members.push_back({group_cluster[group_id], relative_macros.get_group(group_id).offset});
+        }
+        // The loader requires a reference group and at least one relative group
+        VTR_ASSERT(members.size() >= 2);
+        VTR_ASSERT(members[0].offset == t_pl_offset(0, 0, 0, 0));
+
+        t_pl_macro pl_macro;
+        pl_macro.user_macro_id = macro_id;
+        pl_macro.members = std::move(members);
+        pl_macros_.push_back(std::move(pl_macro));
+    }
+
+    VTR_LOG("Created %zu placement macro(s) from the relative placement constraints.\n", num_user_macros);
 }
 
 ClusterBlockId PlaceMacros::macro_head(ClusterBlockId blk) const {
