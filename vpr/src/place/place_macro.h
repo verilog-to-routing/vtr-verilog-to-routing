@@ -168,7 +168,8 @@ class PlaceMacros {
      * with criteria depending on the type of placement macros. For carry chains, the
      * tails are blocks with carry_out's not connected to any nets (OPEN) while the
      * carry_in's is connected to the netlist which has only 1 SINK.
-     * (4) Append the macros defined by the user's relative placement constraints.
+     * (4) Append the macros defined by the user's relative placement constraints,
+     * merging each with any architecture-derived macro it shares a cluster with.
      * @param directs
      * @param relative_macros The user's relative placement macros; may be empty.
      */
@@ -248,8 +249,18 @@ class PlaceMacros {
      *
      * Each user macro contains the clusters of its groups, positioned relative
      * to the reference group's cluster (the macro head).
+     *
+     * If a user macro overlaps an architecture-derived macro (e.g., a carry
+     * chain), the two are merged into the user macro, preserving the offsets
+     * imposed by the architecture.
+     *
+     * An error is reported if an architecture-derived macro overlaps multiple
+     * user macros or if their placement offsets conflict.
+     *
+     * Assumes pl_macros_ initially contains only architecture-derived macros.
      */
     void append_user_defined_macros_(const UserRelativeMacros& relative_macros,
+                                     const ClusteredNetlist& clb_nlist,
                                      const AtomLookup& atom_lookup);
 
     void alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>& macros,
