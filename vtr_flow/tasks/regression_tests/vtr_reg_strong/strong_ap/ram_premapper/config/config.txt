@@ -1,0 +1,53 @@
+###############################################################################
+# Configuration file for running VTR benchmarks which contain RAMs through the
+# AP flow with the RAM pre-mapper on and off.
+#
+# The RAM pre-mapper groups the RAM slices into physical RAMs and assigns each
+# group a RAM type. The AP flow uses these groups when building the AP netlist
+# and in global placement.
+###############################################################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
+
+# Add circuits to list to sweep (each include at least 1 memory block)
+circuit_list_add=boundtop.v
+circuit_list_add=ch_intrinsics.v
+circuit_list_add=spree.v
+
+# Constrain the circuits to their device widths
+circuit_constraint_list_add=(ch_intrinsics.v,    device_width=20)
+circuit_constraint_list_add=(spree.v,            device_width=20)
+circuit_constraint_list_add=(boundtop.v,         device_width=20)
+
+# Constrain the IOs
+circuit_constraint_list_add=(ch_intrinsics.v,    constraints=../../../../../vtr_chain/constraints/ch_intrinsics_io_constraint.xml)
+circuit_constraint_list_add=(spree.v,            constraints=../../../../../vtr_chain/constraints/spree_io_constraint.xml)
+circuit_constraint_list_add=(boundtop.v,         constraints=../../../../../vtr_chain/constraints/boundtop_io_constraint.xml)
+
+# Constrain the circuits to their channel widths
+#       1.3 * minW
+circuit_constraint_list_add=(ch_intrinsics.v,    route_chan_width=52)
+circuit_constraint_list_add=(spree.v,            route_chan_width=78)
+circuit_constraint_list_add=(boundtop.v,         route_chan_width=50)
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_ap_fixed_chan_width.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_ap_fixed_chan_width.txt
+
+# Pass the script params while writing the vpr constraints.
+# Run with the RAM pre-mapper both on (the default) and off.
+script_params_common=-track_memory_usage -crit_path_router_iterations 100 --analytical_place --route --analysis
+script_params_list_add=--use_ram_premapper on
+script_params_list_add=--use_ram_premapper off
