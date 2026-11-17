@@ -726,6 +726,7 @@ static void show_analytical_placer_opts(const t_ap_opts& ap_opts) {
 
     VTR_LOG("AnalyticalPlacerOpts.ap_timing_tradeoff: %f\n", ap_opts.ap_timing_tradeoff);
     VTR_LOG("AnalyticalPlacerOpts.ap_high_fanout_threshold: %d\n", ap_opts.ap_high_fanout_threshold);
+    VTR_LOG("AnalyticalPlacerOpts.ap_ram_group_density: %s\n", ap_opts.ap_ram_group_density ? "true" : "false");
     VTR_LOG("AnalyticalPlacerOpts.log_verbosity: %d\n", ap_opts.log_verbosity);
 }
 

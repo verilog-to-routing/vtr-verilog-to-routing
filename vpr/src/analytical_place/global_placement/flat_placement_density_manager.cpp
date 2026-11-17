@@ -112,6 +112,7 @@ static std::vector<float> get_physical_type_target_densities(const std::vector<s
 FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_netlist,
                                                          const Prepacker& prepacker,
                                                          const RamMapper& ram_mapper,
+                                                         bool use_ram_group_density,
                                                          const AtomNetlist& atom_netlist,
                                                          const DeviceGrid& device_grid,
                                                          const std::vector<t_logical_block_type>& logical_block_types,
@@ -121,7 +122,7 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_net
                                                          int log_verbosity)
     : ap_netlist_(ap_netlist)
     , bins_(ap_netlist)
-    , mass_calculator_(ap_netlist, prepacker, ram_mapper, atom_netlist, logical_block_types, physical_tile_types, models, log_verbosity)
+    , mass_calculator_(ap_netlist, prepacker, ram_mapper, use_ram_group_density, atom_netlist, logical_block_types, physical_tile_types, models, log_verbosity)
     , log_verbosity_(log_verbosity) {
     // Initialize the bin spatial lookup object.
     size_t num_layers, width, height;

@@ -633,6 +633,7 @@ static void initialize_dim_manager(PrimitiveDimManager& dim_manager,
 FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_netlist,
                                                          const Prepacker& prepacker,
                                                          const RamMapper& ram_mapper,
+                                                         bool use_ram_group_density,
                                                          const AtomNetlist& atom_netlist,
                                                          const std::vector<t_logical_block_type>& logical_block_types,
                                                          const std::vector<t_physical_tile_type>& physical_tile_types,
@@ -653,16 +654,18 @@ FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_net
     // Create one dim per RAM block type that is pre-assigned to a physical RAM
     // group. These dims count RAM instances rather than memory bits, so each
     // physical RAM group occupies a whole instance of its pre-assigned type
-    // and can only be placed into tiles which provide that type. If there are
-    // no physical RAM groups (e.g. the RAM pre-mapper is off), no dims are
-    // created and RAMs keep their bit-based mass.
+    // and can only be placed into tiles which provide that type. If this is
+    // turned off, or there are no physical RAM groups (e.g. the RAM pre-mapper
+    // is off), no dims are created and RAMs keep their bit-based mass.
     std::vector<PrimitiveVectorDim> ram_type_dim(logical_block_types.size());
-    for (const PhysicalRamGroup& phys_group : ram_mapper.physical_ram_groups()) {
-        t_logical_block_type_ptr ram_type = ram_mapper.group(phys_group.logical_ram_group_id).pre_assigned_type;
-        VTR_ASSERT_MSG(ram_type != nullptr,
-                       "Every physical RAM group should have a pre-assigned type");
-        if (!ram_type_dim[ram_type->index].is_valid())
-            ram_type_dim[ram_type->index] = primitive_dim_manager_.create_empty_dim("ram_instance[" + ram_type->name + "]");
+    if (use_ram_group_density) {
+        for (const PhysicalRamGroup& phys_group : ram_mapper.physical_ram_groups()) {
+            t_logical_block_type_ptr ram_type = ram_mapper.group(phys_group.logical_ram_group_id).pre_assigned_type;
+            VTR_ASSERT_MSG(ram_type != nullptr,
+                           "Every physical RAM group should have a pre-assigned type");
+            if (!ram_type_dim[ram_type->index].is_valid())
+                ram_type_dim[ram_type->index] = primitive_dim_manager_.create_empty_dim("ram_instance[" + ram_type->name + "]");
+        }
     }
 
     // Precompute the capacity of each logical block type. Each RAM block type
@@ -683,13 +686,15 @@ FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_net
     for (APBlockId ap_block_id : ap_netlist.blocks()) {
         // Blocks formed from a physical RAM group take one instance of their
         // pre-assigned RAM type, regardless of how many bits they use.
-        const t_pack_molecule& first_mol = prepacker.get_molecule(ap_netlist.block_molecules(ap_block_id)[0]);
-        PhysicalRamGroupId phys_group_id = ram_mapper.physical_group_id_of(first_mol.atom_block_ids[first_mol.root]);
-        if (phys_group_id.is_valid()) {
-            LogicalRamGroupId logical_group_id = ram_mapper.physical_ram_group(phys_group_id).logical_ram_group_id;
-            t_logical_block_type_ptr ram_type = ram_mapper.group(logical_group_id).pre_assigned_type;
-            block_mass_[ap_block_id].add_val_to_dim(1.0f, ram_type_dim[ram_type->index]);
-            continue;
+        if (use_ram_group_density) {
+            const t_pack_molecule& first_mol = prepacker.get_molecule(ap_netlist.block_molecules(ap_block_id)[0]);
+            PhysicalRamGroupId phys_group_id = ram_mapper.physical_group_id_of(first_mol.atom_block_ids[first_mol.root]);
+            if (phys_group_id.is_valid()) {
+                LogicalRamGroupId logical_group_id = ram_mapper.physical_ram_group(phys_group_id).logical_ram_group_id;
+                t_logical_block_type_ptr ram_type = ram_mapper.group(logical_group_id).pre_assigned_type;
+                block_mass_[ap_block_id].add_val_to_dim(1.0f, ram_type_dim[ram_type->index]);
+                continue;
+            }
         }
 
         block_mass_[ap_block_id] = calc_block_mass(ap_block_id,

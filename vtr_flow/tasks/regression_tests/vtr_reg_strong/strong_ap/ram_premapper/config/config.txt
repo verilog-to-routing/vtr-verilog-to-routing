@@ -3,8 +3,9 @@
 # AP flow with the RAM pre-mapper on and off.
 #
 # The RAM pre-mapper groups the RAM slices into physical RAMs and assigns each
-# group a RAM type. The AP flow uses these groups when building the AP netlist
-# and in global placement.
+# group a RAM type. The AP flow uses these groups when building the AP netlist.
+# With --ap_ram_group_density on, global placement also counts each group as
+# one instance of its RAM type instead of by its memory bits.
 ###############################################################################
 
 # Path to directory of circuits to use
@@ -47,7 +48,9 @@ qor_parse_file=qor_ap_fixed_chan_width.txt
 pass_requirements_file=pass_requirements_ap_fixed_chan_width.txt
 
 # Pass the script params while writing the vpr constraints.
-# Run with the RAM pre-mapper both on (the default) and off.
+# Run with the RAM pre-mapper off, on (the default) with the RAM group density
+# in global placement off (the default), and on with the RAM group density on.
 script_params_common=-track_memory_usage -crit_path_router_iterations 100 --analytical_place --route --analysis
-script_params_list_add=--use_ram_premapper on
 script_params_list_add=--use_ram_premapper off
+script_params_list_add=--use_ram_premapper on --ap_ram_group_density off
+script_params_list_add=--use_ram_premapper on --ap_ram_group_density on
