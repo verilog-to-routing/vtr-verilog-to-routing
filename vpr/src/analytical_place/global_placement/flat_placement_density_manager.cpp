@@ -191,6 +191,7 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_net
         PrimitiveVectorDim dim = dim_manager.get_model_dim(model_id);
         used_dims_mask_.set_dim_val(dim, 1);
     }
+
     // Some dims are not tied to any atom model (e.g. the RAM instance dims of
     // physical RAM groups). Mark every dim with block mass as used as well.
     for (APBlockId blk_id : ap_netlist.blocks()) {

@@ -653,7 +653,9 @@ FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_net
     // Create one dim per RAM block type that is pre-assigned to a physical RAM
     // group. These dims count RAM instances rather than memory bits, so each
     // physical RAM group occupies a whole instance of its pre-assigned type
-    // and can only be placed into tiles which provide that type.
+    // and can only be placed into tiles which provide that type. If there are
+    // no physical RAM groups (e.g. the RAM pre-mapper is off), no dims are
+    // created and RAMs keep their bit-based mass.
     std::vector<PrimitiveVectorDim> ram_type_dim(logical_block_types.size());
     for (const PhysicalRamGroup& phys_group : ram_mapper.physical_ram_groups()) {
         t_logical_block_type_ptr ram_type = ram_mapper.group(phys_group.logical_ram_group_id).pre_assigned_type;
