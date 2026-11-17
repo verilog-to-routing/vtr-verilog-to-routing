@@ -1,6 +1,6 @@
 .model top
 .inputs a b clk
-.outputs o_dff
+.outputs o_dff o_or
 
 .names a b a_and_b
 11 1
@@ -10,6 +10,11 @@
 .param test_names_param_num 2.0
 .attr test_names_attrib "test_names_param_attrib"
 
+.names a b a_or_b
+1- 1
+-1 1
+.cname a_or_b
+
 .latch a_and_b dff_q re clk 0
 .cname my_dff
 .param test_latch_param "test_latch_param_str_value"
@@ -18,6 +23,6 @@
 .attr test_latch_attrib "test_latch_param_attrib"
 
 .conn dff_q o_dff
+.conn a_or_b o_or
 
 .end
-
