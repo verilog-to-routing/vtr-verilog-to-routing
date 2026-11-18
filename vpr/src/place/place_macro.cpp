@@ -210,13 +210,15 @@ PlaceMacros::PlaceMacros(const std::vector<t_direct_inf>& directs,
 }
 
 /**
- * @brief Returns the cluster containing each relative placement group.
+ * @brief Finds the cluster that the atoms of each relative placement group
+ *        were packed into.
  *
- * All atoms in a group must belong to the same cluster, as enforced by
- * verify_clustering(), including for loaded .net files. Therefore, any
+ * All atoms in a group must belong to the same cluster
+ * including for loaded .net files. Therefore, any
  * atom in the group can be used to identify its cluster.
+ *
+ * @return A vector indexed by group ID, holding the cluster of that group.
  */
-
 static vtr::vector<UserRelativeGroupId, ClusterBlockId> find_group_clusters(const UserRelativeMacros& relative_macros,
                                                                             const AtomLookup& atom_lookup) {
     vtr::vector<UserRelativeGroupId, ClusterBlockId> group_cluster(relative_macros.get_num_groups());

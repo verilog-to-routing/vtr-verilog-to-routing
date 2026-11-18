@@ -17,7 +17,7 @@
  *
  * The only placement macros derived from the architecture are the carry chains, with limited
  * functionality. A user can also define placement macros through the relative placement
- * constraints of a VPR constraints file.
+ * constraints.
  *
  * Current support for placement macros are:
  * (1) The arch parser for direct connections is working. The specifications of the direct
@@ -251,8 +251,7 @@ class PlaceMacros {
      * to the reference group's cluster (the macro head).
      *
      * If a user macro overlaps an architecture-derived macro (e.g., a carry
-     * chain), the two are merged into the user macro, preserving the offsets
-     * imposed by the architecture.
+     * chain), the two are merged into the user macro.
      *
      * An error is reported if an architecture-derived macro overlaps multiple
      * user macros or if their placement offsets conflict.
