@@ -1,0 +1,24 @@
+# Circuit with a LUT-based clock mux: sel selects between clk1 and clk2, and
+# the muxed clock (mclk) clocks two flip-flops.
+#
+# This file is the shared circuit for the clkmux_* tests in this directory,
+# which are symlinks to this file, each paired with a different .sdc file.
+
+.model clkmux
+.inputs in1 in2 sel clk1 clk2
+.outputs out1 out2
+# LUT-based clock mux driving the flip-flop clocks
+.names sel clk1 clk2 mclk
+01- 1
+1-1 1
+.latch to_FFA FFA re mclk 0
+.latch to_FFB FFB re mclk 0
+.names FFA in2 to_FFB
+11 1
+.names in1 to_FFA
+1 1
+.names FFA out1
+1 1
+.names FFB out2
+1 1
+.end

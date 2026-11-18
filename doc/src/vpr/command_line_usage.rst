@@ -2216,7 +2216,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``8``
 
-.. option:: --routing_budgets_algorithm { disable | minimax | yoyo | scale_delay }
+.. option:: --routing_budgets_algorithm { disable | minimax | yoyo | scale_delay | low_skew_clock }
 
     .. warning:: Experimental
 
@@ -2229,6 +2229,9 @@ The following options are only valid when the router is in timing-driven mode (t
     ``yoyo`` allocates budgets using minimax algorithm (as above), and enables hold slack resolution in the router using the Routing Cost Valleys (RCV) algorithm :cite:`RCV_algorithm`.
 
     ``scale_delay`` has the minimum budgets set to 0 and the maximum budgets is set to the delay of a net scaled by the pin criticality (net delay/pin criticality).
+
+    ``low_skew_clock`` uses the Routing Cost Valleys (RCV) algorithm :cite:`RCV_algorithm` on clock connections to reduce the clock skew within and between clock domains which have timing paths between them.
+    Other connections are routed as usual.
 
     **Default:** ``disable``
 

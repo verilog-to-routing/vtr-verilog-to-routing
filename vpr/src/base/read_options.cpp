@@ -3472,7 +3472,7 @@ static void add_timing_driven_routing_options(argparse::ArgumentParser& parser, 
             " * yoyo: Allocates budgets using minimax algorithm, and enables hold slack resolution in the router using the RCV algorithm. [EXPERIMENTAL]\n"
             " * minimax: Sets the budgets depending on the amount slack between connections and the current delay values. [EXPERIMENTAL]\n"
             " * scale_delay: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality) [EXPERIMENTAL]\n"
-            " * low_skew_clock: Sets the target delay of all clock connections to the maximum observed clock delay to reduce clock skew, and enables the RCV algorithm. Non-clock connections are left unconstrained. [EXPERIMENTAL]\n"
+            " * low_skew_clock: Uses the RCV algorithm on clock connections to reduce the clock skew within and between clock domains which have timing paths between them. Other connections route as usual. [EXPERIMENTAL]\n"
             " * disable: Removes the routing budgets, use the default VPR and ignore hold time constraints\n")
         .default_value("disable")
         .choices({"minimax", "scale_delay", "yoyo", "low_skew_clock", "disable"})

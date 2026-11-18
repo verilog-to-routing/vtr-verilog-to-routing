@@ -1242,7 +1242,7 @@ enum e_routing_budgets_algorithm {
     MINIMAX, // Use MINIMAX-PERT algorithm to allocate budgets
     YOYO,    // Use MINIMAX as above, and enable RCV algorithm to resolve negative hold slack
     SCALE_DELAY,
-    LOW_SKEW_CLOCK, // Sets budgets on clock connections to the max clock delay to reduce clock skew, and enables RCV. Non-clock connections are left unconstrained (shortest path).
+    LOW_SKEW_CLOCK, // Sets RCV budgets on clock connections to reduce clock skew within and between synchronous clock domains. Other connections do not use RCV.
     DISABLE         // Do not allocate budgets and run default router
 };
 
