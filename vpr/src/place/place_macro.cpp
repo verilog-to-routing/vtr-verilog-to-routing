@@ -6,6 +6,7 @@
 #include <cmath>
 #include <sstream>
 #include <map>
+#include <optional>
 #include <string_view>
 #include <unordered_map>
 #include <utility>
@@ -233,72 +234,49 @@ static vtr::vector<UserRelativeGroupId, ClusterBlockId> find_group_clusters(cons
     return group_cluster;
 }
 
+/// @brief A cluster that two macros being merged place at different offsets.
+struct t_macro_offset_conflict {
+    ClusterBlockId clb_id;   ///< The cluster both macros contain.
+    t_pl_offset into_offset; ///< The cluster's offset in the macro being merged into.
+    t_pl_offset from_offset; ///< The cluster's offset in the merged macro, rebased onto the head of the macro being merged into.
+};
+
 /**
- * @brief Merges an architecture-derived macro into a relative placement macro.
+ * @brief Merges the macro `from` into the macro `into`, which share the cluster shared_clb_id.
  *
- * The macros share a cluster (shared_clb_id). All clusters from the
- * architecture-derived macro are added to the relative placement macro, with
- * their offsets adjusted relative to its head.
+ * The members of `from` that `into` does not already contain are appended to `into`,
+ * with their offsets rebased onto the head of `into` through the shared cluster.
  *
- * An error is reported if the offsets conflict or if the architecture-derived
- * macro contains a group belonging to another relative placement macro.
- *
- * @param arch_macro                          The architecture-derived macro to merge.
- * @param shared_clb_id                       The cluster shared by both macros.
- * @param macro_id                            The relative placement macro receiving the clusters.
- * @param relative_placement_macro_of_cluster Maps group clusters to their relative placement macros.
- * @param relative_macros                     Relative placement macros, used for error messages.
- * @param clb_nlist                           Clustered netlist, used for error messages.
- * @param members                             Relative placement macro members; new clusters are appended.
- * @param offset_of_cluster                   Cluster offsets, kept in sync with members.
+ * @return The first cluster that both macros contain but place at different offsets, if
+ *         any. `into` is left unchanged in that case.
  */
+static std::optional<t_macro_offset_conflict> merge_macros(t_pl_macro& into,
+                                                           const t_pl_macro& from,
+                                                           ClusterBlockId shared_clb_id) {
+    std::unordered_map<ClusterBlockId, t_pl_offset> into_offset_of_cluster;
+    for (const t_pl_macro_member& member : into.members) {
+        into_offset_of_cluster.emplace(member.blk_index, member.offset);
+    }
 
-static void absorb_arch_macro(const t_pl_macro& arch_macro,
-                              ClusterBlockId shared_clb_id,
-                              UserRelativeMacroId macro_id,
-                              const std::unordered_map<ClusterBlockId, UserRelativeMacroId>& relative_placement_macro_of_cluster,
-                              const UserRelativeMacros& relative_macros,
-                              const ClusteredNetlist& clb_nlist,
-                              std::vector<t_pl_macro_member>& members,
-                              std::unordered_map<ClusterBlockId, t_pl_offset>& offset_of_cluster) {
-    const std::string& macro_name = relative_macros.get_macro(macro_id).name;
-    const std::string& chain_head_name = clb_nlist.block_name(arch_macro.members[0].blk_index);
+    // Rebase the offsets of `from` onto the head of `into` through the shared cluster
+    auto into_shared_it = into_offset_of_cluster.find(shared_clb_id);
+    auto from_shared_it = std::ranges::find(from.members, shared_clb_id, &t_pl_macro_member::blk_index);
+    VTR_ASSERT(into_shared_it != into_offset_of_cluster.end() && from_shared_it != from.members.end());
+    t_pl_offset base = into_shared_it->second - from_shared_it->offset;
 
-    // Rebase the chain's offsets onto the relative placement macro's head through the shared cluster
-    auto shared_it = std::ranges::find(arch_macro.members, shared_clb_id, &t_pl_macro_member::blk_index);
-    VTR_ASSERT(shared_it != arch_macro.members.end());
-    t_pl_offset base = offset_of_cluster.at(shared_clb_id) - shared_it->offset;
-
-    for (const t_pl_macro_member& arch_member : arch_macro.members) {
-        auto other_macro_it = relative_placement_macro_of_cluster.find(arch_member.blk_index);
-        if (other_macro_it != relative_placement_macro_of_cluster.end() && other_macro_it->second != macro_id) {
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                            "Relative placement macros '%s' and '%s' both have a group in the chain of directly "
-                            "connected clusters starting at cluster '%s' (e.g. a carry chain), which must be placed as "
-                            "one unit. Put these groups in one macro, or re-run packing if the packed netlist was "
-                            "produced with other constraints.\n",
-                            macro_name.c_str(), relative_macros.get_macro(other_macro_it->second).name.c_str(),
-                            chain_head_name.c_str());
-        }
-
-        t_pl_offset chain_offset = base + arch_member.offset;
-        auto [existing_it, inserted] = offset_of_cluster.emplace(arch_member.blk_index, chain_offset);
-        if (inserted) {
-            members.push_back({arch_member.blk_index, chain_offset});
-        } else if (existing_it->second != chain_offset) {
-            // The cluster holds a group of this macro, and the chain and the constraints
-            // disagree on its offset
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                            "Relative placement macro '%s' places cluster '%s' at offset (%d, %d, sub_tile %d) from "
-                            "cluster '%s', but the chain of directly connected clusters starting at cluster '%s' (e.g. "
-                            "a carry chain) requires (%d, %d, sub_tile %d). Change the group's offset to match the "
-                            "chain, or re-run packing if the packed netlist was produced with other constraints.\n",
-                            macro_name.c_str(), clb_nlist.block_name(arch_member.blk_index).c_str(),
-                            existing_it->second.x, existing_it->second.y, existing_it->second.sub_tile,
-                            clb_nlist.block_name(members[0].blk_index).c_str(), chain_head_name.c_str(),
-                            chain_offset.x, chain_offset.y, chain_offset.sub_tile);
+    std::vector<t_pl_macro_member> new_members;
+    for (const t_pl_macro_member& from_member : from.members) {
+        t_pl_offset offset = base + from_member.offset;
+        auto into_it = into_offset_of_cluster.find(from_member.blk_index);
+        if (into_it == into_offset_of_cluster.end()) {
+            new_members.push_back({from_member.blk_index, offset});
+        } else if (into_it->second != offset) {
+            return t_macro_offset_conflict{from_member.blk_index, into_it->second, offset};
         }
     }
+
+    into.members.insert(into.members.end(), new_members.begin(), new_members.end());
+    return std::nullopt;
 }
 
 void PlaceMacros::append_relative_placement_macros_(const UserRelativeMacros& relative_macros,
@@ -339,14 +317,12 @@ void PlaceMacros::append_relative_placement_macros_(const UserRelativeMacros& re
         const t_user_relative_macro& relative_placement_macro = relative_macros.get_macro(macro_id);
 
         // The macro's members: the reference group's cluster (the head, at offset zero)
-        // followed by the relative groups' clusters, plus a cluster -> offset lookup
-        std::vector<t_pl_macro_member> members;
-        std::unordered_map<ClusterBlockId, t_pl_offset> offset_of_cluster;
+        // followed by the relative groups' clusters
+        t_pl_macro pl_macro;
+        pl_macro.relative_placement_macro_id = macro_id;
+        std::vector<t_pl_macro_member>& members = pl_macro.members;
         for (UserRelativeGroupId group_id : relative_placement_macro.groups) {
-            ClusterBlockId clb_id = group_cluster[group_id];
-            t_pl_offset offset = relative_macros.get_group(group_id).offset;
-            members.push_back({clb_id, offset});
-            offset_of_cluster.emplace(clb_id, offset);
+            members.push_back({group_cluster[group_id], relative_macros.get_group(group_id).offset});
         }
         // The loader requires a reference group and at least one relative group
         VTR_ASSERT(members.size() >= 2);
@@ -363,14 +339,44 @@ void PlaceMacros::append_relative_placement_macros_(const UserRelativeMacros& re
             // A chain can hold several groups of this macro; it is absorbed once
             if (arch_macro_absorbed_by[iarch] == macro_id)
                 continue;
-            // A chain holding groups of two macros is a fatal error in absorb_arch_macro()
-            // when the first of them absorbs it, so it is never reached by the second
+            // A chain holding groups of two macros is a fatal error below when the
+            // first of them absorbs it, so it is never reached by the second
             VTR_ASSERT(!arch_macro_absorbed_by[iarch].is_valid());
             arch_macro_absorbed_by[iarch] = macro_id;
             num_absorbed_arch_macros++;
 
-            absorb_arch_macro(pl_macros_[iarch], shared_clb_id, macro_id, relative_placement_macro_of_cluster,
-                              relative_macros, clb_nlist, members, offset_of_cluster);
+            const t_pl_macro& arch_macro = pl_macros_[iarch];
+            const std::string& chain_head_name = clb_nlist.block_name(arch_macro.members[0].blk_index);
+
+            // The chain is placed as one unit with this macro, so it cannot hold a group of another macro
+            for (const t_pl_macro_member& arch_member : arch_macro.members) {
+                auto other_macro_it = relative_placement_macro_of_cluster.find(arch_member.blk_index);
+                if (other_macro_it != relative_placement_macro_of_cluster.end() && other_macro_it->second != macro_id) {
+                    VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                                    "Relative placement macros '%s' and '%s' both have a group in the chain of directly "
+                                    "connected clusters starting at cluster '%s' (e.g. a carry chain), which must be placed as "
+                                    "one unit. Put these groups in one macro, or re-run packing if the packed netlist was "
+                                    "produced with other constraints.\n",
+                                    relative_placement_macro.name.c_str(),
+                                    relative_macros.get_macro(other_macro_it->second).name.c_str(),
+                                    chain_head_name.c_str());
+                }
+            }
+
+            std::optional<t_macro_offset_conflict> conflict = merge_macros(pl_macro, arch_macro, shared_clb_id);
+            if (conflict.has_value()) {
+                // The cluster holds a group of this macro, and the chain and the constraints
+                // disagree on its offset
+                VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                                "Relative placement macro '%s' places cluster '%s' at offset (%d, %d, sub_tile %d) from "
+                                "cluster '%s', but the chain of directly connected clusters starting at cluster '%s' (e.g. "
+                                "a carry chain) requires (%d, %d, sub_tile %d). Change the group's offset to match the "
+                                "chain, or re-run packing if the packed netlist was produced with other constraints.\n",
+                                relative_placement_macro.name.c_str(), clb_nlist.block_name(conflict->clb_id).c_str(),
+                                conflict->into_offset.x, conflict->into_offset.y, conflict->into_offset.sub_tile,
+                                clb_nlist.block_name(members[0].blk_index).c_str(), chain_head_name.c_str(),
+                                conflict->from_offset.x, conflict->from_offset.y, conflict->from_offset.sub_tile);
+            }
         }
 
         // Two clusters at one offset would occupy the same location. The constraints
@@ -392,9 +398,6 @@ void PlaceMacros::append_relative_placement_macros_(const UserRelativeMacros& re
             }
         }
 
-        t_pl_macro pl_macro;
-        pl_macro.relative_placement_macro_id = macro_id;
-        pl_macro.members = std::move(members);
         new_macros.push_back(std::move(pl_macro));
     }
 
