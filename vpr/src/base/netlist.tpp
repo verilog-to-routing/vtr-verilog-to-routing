@@ -880,6 +880,13 @@ void Netlist<BlockId, PortId, PinId, NetId>::set_block_name(const BlockId blk_id
 
     //Names must be unique -- no duplicates allowed
     BlockId existing_blk_id = find_block(new_name);
+
+    if (existing_blk_id == blk_id) {
+        // Naming the same block the same thing twice is okay
+        // and not an error
+        return;
+    }
+
     if (existing_blk_id) {
         VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "Can not re-name block '%s' to '%s' (a block named '%s' already exists).",
                         block_name(blk_id).c_str(),
