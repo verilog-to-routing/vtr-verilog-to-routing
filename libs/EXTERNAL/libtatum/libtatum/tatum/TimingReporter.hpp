@@ -219,8 +219,8 @@ class TimingReporter {
          *   @param path_helper     Formats the report lines and tracks the reported path time.
          *   @param subpath         The clock path to report. Empty for primary inputs and outputs.
          *   @param domain          The clock domain of the clock path.
-         *   @param timing_type     Whether this is a setup or hold report (selects max or min edge delays).
-         *   @param latency_type    Which source latency (early or late) to report. Launch and capture
+         *   @param arrival_type    Whether the clock arrives late (late source latency, max edge delays)
+         *                          or early (early source latency, min edge delays). Launch and capture
          *                          clocks use opposite ones: setup launches late and captures early,
          *                          while hold launches early and captures late.
          *   @param path            The path time at the clock's rising edge.
@@ -232,8 +232,7 @@ class TimingReporter {
                                          detail::ReportTimingPathHelper& path_helper,
                                          const TimingSubPath& subpath,
                                          DomainId domain,
-                                         TimingType timing_type,
-                                         ArrivalType latency_type,
+                                         ArrivalType arrival_type,
                                          Time path,
                                          Time offset) const;
 
