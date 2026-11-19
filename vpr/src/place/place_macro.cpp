@@ -227,7 +227,7 @@ static vtr::vector<UserRelativeGroupId, ClusterBlockId> find_group_clusters(cons
         VTR_ASSERT(!group.atoms.empty());
 
         ClusterBlockId clb_id = atom_lookup.atom_clb(group.atoms[0]);
-        VTR_ASSERT_MSG(clb_id.is_valid(), "Every atom of a relative placement group is clustered");
+        VTR_ASSERT_SAFE_MSG(clb_id.is_valid(), "Every atom of a relative placement group is clustered");
         group_cluster[group_id] = clb_id;
     }
     return group_cluster;
