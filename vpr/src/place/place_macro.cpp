@@ -312,11 +312,11 @@ void PlaceMacros::append_relative_placement_macros_(const UserRelativeMacros& re
     // are collected in new_macros and appended once the merges are known.
     const size_t num_arch_macros = pl_macros_.size();
 
-    // The architecture-derived macro each cluster is a member of, if any
-    std::unordered_map<ClusterBlockId, size_t> arch_macro_of_cluster;
+    // The index in pl_macros_ of the architecture-derived macro each cluster is a member of, if any
+    std::unordered_map<ClusterBlockId, size_t> arch_macro_idx_of_cluster;
     for (size_t iarch = 0; iarch < num_arch_macros; iarch++) {
         for (const t_pl_macro_member& member : pl_macros_[iarch].members) {
-            arch_macro_of_cluster.emplace(member.blk_index, iarch);
+            arch_macro_idx_of_cluster.emplace(member.blk_index, iarch);
         }
     }
 
@@ -355,8 +355,8 @@ void PlaceMacros::append_relative_placement_macros_(const UserRelativeMacros& re
         // Absorb the architecture-derived macro, if any, that each group's cluster is part of
         for (UserRelativeGroupId group_id : relative_placement_macro.groups) {
             ClusterBlockId shared_clb_id = group_cluster[group_id];
-            auto arch_it = arch_macro_of_cluster.find(shared_clb_id);
-            if (arch_it == arch_macro_of_cluster.end())
+            auto arch_it = arch_macro_idx_of_cluster.find(shared_clb_id);
+            if (arch_it == arch_macro_idx_of_cluster.end())
                 continue;
             size_t iarch = arch_it->second;
 
