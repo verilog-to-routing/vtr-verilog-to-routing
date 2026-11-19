@@ -143,12 +143,12 @@ struct t_pl_macro {
     ///@brief A vector of blocks in this macro [0:num_macro-1].
     std::vector<t_pl_macro_member> members;
 
-    ///@brief The user's relative placement macro this macro was built from; invalid
+    ///@brief The relative placement macro this macro was built from; invalid
     ///       if the macro was derived from the architecture's direct connections.
-    UserRelativeMacroId user_macro_id;
+    UserRelativeMacroId relative_placement_macro_id;
 
-    ///@brief Whether the macro comes from the user's relative placement constraints.
-    bool is_user_defined() const { return user_macro_id.is_valid(); }
+    ///@brief Whether the macro was built from a relative placement macro.
+    bool is_relative_placement_macro() const { return relative_placement_macro_id.is_valid(); }
 };
 
 class PlaceMacros {
@@ -168,10 +168,10 @@ class PlaceMacros {
      * with criteria depending on the type of placement macros. For carry chains, the
      * tails are blocks with carry_out's not connected to any nets (OPEN) while the
      * carry_in's is connected to the netlist which has only 1 SINK.
-     * (4) Append the macros defined by the user's relative placement constraints,
+     * (4) Append the macros defined by the relative placement constraints,
      * merging each with any architecture-derived macro it shares a cluster with.
      * @param directs
-     * @param relative_macros The user's relative placement macros; may be empty.
+     * @param relative_macros The relative placement macros; may be empty.
      */
     PlaceMacros(const std::vector<t_direct_inf>& directs,
                 const std::vector<t_physical_tile_type>& physical_tile_types,
@@ -245,22 +245,22 @@ class PlaceMacros {
                             std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num);
 
     /**
-     * @brief Adds user-defined relative placement macros to pl_macros_.
+     * @brief Adds the relative placement macros to pl_macros_.
      *
-     * Each user macro contains the clusters of its groups, positioned relative
-     * to the reference group's cluster (the macro head).
+     * Each relative placement macro contains the clusters of its groups, positioned
+     * relative to the reference group's cluster (the macro head).
      *
-     * If a user macro overlaps an architecture-derived macro (e.g., a carry
-     * chain), the two are merged into the user macro.
+     * If a relative placement macro overlaps an architecture-derived macro (e.g.,
+     * a carry chain), the two are merged into the relative placement macro.
      *
      * An error is reported if an architecture-derived macro overlaps multiple
-     * user macros or if their placement offsets conflict.
+     * relative placement macros or if their placement offsets conflict.
      *
      * Assumes pl_macros_ initially contains only architecture-derived macros.
      */
-    void append_user_defined_macros_(const UserRelativeMacros& relative_macros,
-                                     const ClusteredNetlist& clb_nlist,
-                                     const AtomLookup& atom_lookup);
+    void append_relative_placement_macros_(const UserRelativeMacros& relative_macros,
+                                           const ClusteredNetlist& clb_nlist,
+                                           const AtomLookup& atom_lookup);
 
     void alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>& macros,
                                           const ClusteredNetlist& clb_nlist);
