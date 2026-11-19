@@ -95,6 +95,15 @@ struct t_range_limiters {
     float dm_rlim;
 };
 
+/**
+ * @brief Tracks the state of a macro swap inversion for cycle detection.
+ */
+struct t_inverted_macro {
+    int imacro;              ///< Index of the macro being moved after the inversion.
+    t_pl_offset offset;      ///< Offset applied to the macro after the inversion.
+    size_t num_moved_blocks; ///< Number of block moves recorded before the inversion.
+};
+
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
                           t_pl_loc to,
@@ -120,15 +129,6 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
                                              t_pl_loc to,
                                              const BlkLocRegistry& blk_loc_registry,
                                              const PlaceMacros& place_macros);
-
-/**
- * @brief Tracks the state of a macro swap inversion for cycle detection.
- */
-struct t_inverted_macro {
-    int imacro;              ///< Index of the macro being moved after the inversion.
-    t_pl_offset offset;      ///< Offset applied to the macro after the inversion.
-    size_t num_moved_blocks; ///< Number of block moves recorded before the inversion.
-};
 
 /**
  * @brief Records the block moves needed to shift macro imacro_from by swap_offset,
