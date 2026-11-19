@@ -300,14 +300,6 @@ void PlaceMacros::append_relative_placement_macros_(const UserRelativeMacros& re
 
     vtr::vector<UserRelativeGroupId, ClusterBlockId> group_cluster = find_group_clusters(relative_macros, atom_lookup);
 
-    // The relative placement macro each group's cluster belongs to. The packer puts at most one
-    // group into a cluster, which verify_clustering() also checks.
-    std::unordered_map<ClusterBlockId, UserRelativeMacroId> relative_placement_macro_of_cluster;
-    for (UserRelativeGroupId group_id : relative_macros.group_ids()) {
-        bool cluster_unclaimed = relative_placement_macro_of_cluster.emplace(group_cluster[group_id], relative_macros.get_group(group_id).macro_id).second;
-        VTR_ASSERT_MSG(cluster_unclaimed, "A cluster holds at most one relative placement group");
-    }
-
     // The relative placement macro each architecture-derived macro has been absorbed into, if any
     std::vector<UserRelativeMacroId> arch_macro_absorbed_by(num_arch_macros, UserRelativeMacroId::INVALID());
     size_t num_absorbed_arch_macros = 0;
@@ -339,29 +331,24 @@ void PlaceMacros::append_relative_placement_macros_(const UserRelativeMacros& re
             // A chain can hold several groups of this macro; it is absorbed once
             if (arch_macro_absorbed_by[iarch] == macro_id)
                 continue;
-            // A chain holding groups of two macros is a fatal error below when the
-            // first of them absorbs it, so it is never reached by the second
-            VTR_ASSERT(!arch_macro_absorbed_by[iarch].is_valid());
-            arch_macro_absorbed_by[iarch] = macro_id;
-            num_absorbed_arch_macros++;
 
             const t_pl_macro& arch_macro = pl_macros_[iarch];
             const std::string& chain_head_name = clb_nlist.block_name(arch_macro.members[0].blk_index);
 
-            // The chain is placed as one unit with this macro, so it cannot hold a group of another macro
-            for (const t_pl_macro_member& arch_member : arch_macro.members) {
-                auto other_macro_it = relative_placement_macro_of_cluster.find(arch_member.blk_index);
-                if (other_macro_it != relative_placement_macro_of_cluster.end() && other_macro_it->second != macro_id) {
-                    VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                                    "Relative placement macros '%s' and '%s' both have a group in the chain of directly "
-                                    "connected clusters starting at cluster '%s' (e.g. a carry chain), which must be placed as "
-                                    "one unit. Put these groups in one macro, or re-run packing if the packed netlist was "
-                                    "produced with other constraints.\n",
-                                    relative_placement_macro.name.c_str(),
-                                    relative_macros.get_macro(other_macro_it->second).name.c_str(),
-                                    chain_head_name.c_str());
-                }
+            // The chain is placed as one unit with the macro that absorbed it, so it
+            // cannot also hold a group of this macro
+            if (arch_macro_absorbed_by[iarch].is_valid()) {
+                VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                                "Relative placement macros '%s' and '%s' both have a group in the chain of directly "
+                                "connected clusters starting at cluster '%s' (e.g. a carry chain), which must be placed as "
+                                "one unit. Put these groups in one macro, or re-run packing if the packed netlist was "
+                                "produced with other constraints.\n",
+                                relative_macros.get_macro(arch_macro_absorbed_by[iarch]).name.c_str(),
+                                relative_placement_macro.name.c_str(),
+                                chain_head_name.c_str());
             }
+            arch_macro_absorbed_by[iarch] = macro_id;
+            num_absorbed_arch_macros++;
 
             std::optional<t_macro_offset_conflict> conflict = merge_macros(pl_macro, arch_macro, shared_clb_id);
             if (conflict.has_value()) {
