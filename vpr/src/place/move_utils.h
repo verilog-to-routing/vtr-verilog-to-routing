@@ -102,6 +102,8 @@ struct t_inverted_macro {
     int imacro;              ///< Index of the macro being moved after the inversion.
     t_pl_offset offset;      ///< Offset applied to the macro after the inversion.
     size_t num_moved_blocks; ///< Number of block moves recorded before the inversion.
+
+    bool operator==(const t_inverted_macro&) const = default;
 };
 
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,

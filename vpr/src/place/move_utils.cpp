@@ -279,19 +279,15 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         // land on each other's non-head members can repeatedly invert the swap
         // without recording a block move. Abort if the same macro and offset recur
         // with the same number of recorded moves to prevent infinite recursion.
-        t_pl_offset inverted_offset = -swap_offset;
-        size_t num_moved_blocks = blocks_affected.moved_blocks.size();
-        bool repeated = std::ranges::any_of(inverted_macros, [&](const t_inverted_macro& inverted) noexcept {
-            return inverted.imacro == imacro_to && inverted.offset == inverted_offset && inverted.num_moved_blocks == num_moved_blocks;
-        });
-        if (repeated) {
+        t_inverted_macro inversion{imacro_to, -swap_offset, blocks_affected.moved_blocks.size()};
+        if (std::ranges::find(inverted_macros, inversion) != inverted_macros.end()) {
             blocks_affected.move_abortion_logger.log_move_abort("macro swap cycle");
             return e_block_move_result::ABORT;
         }
 
-        inverted_macros.push_back({imacro_to, inverted_offset, num_moved_blocks});
+        inverted_macros.push_back(inversion);
         int imember_to = 0;
-        auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, inverted_offset, blk_loc_registry, pl_macros, inverted_macros);
+        auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, inversion.offset, blk_loc_registry, pl_macros, inverted_macros);
         inverted_macros.pop_back();
         if (outcome == e_block_move_result::INVERT) {
             blocks_affected.move_abortion_logger.log_move_abort("invert recursion2");
