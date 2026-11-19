@@ -503,7 +503,18 @@ struct ParMYSPass : public Pass {
             for (auto &conn : cell->connections()) {
 
                 if (cell->input(conn.first) && conn.second.size() > 0) {
-                    map_input_port(conn.first, conn.second, new_node, cstr_bits_seen);
+                    SigSpec in_port = conn.second;
+                    /* Yosys $add/$sub semantics: when both operands are signed, A and B are
+                     * sign-extended to the result width before the operation. The adder
+                     * builders pad missing operand bits with zeros, so extend here. */
+                    if ((new_node->type == ADD || new_node->type == MINUS) && (conn.first == ID::A || conn.first == ID::B) &&
+                        cell->getParam(ID::A_SIGNED).as_bool() && cell->getParam(ID::B_SIGNED).as_bool()) {
+                        int y_width = cell->getParam(ID::Y_WIDTH).as_int();
+                        if (in_port.size() < y_width) {
+                            in_port.extend_u0(y_width, true);
+                        }
+                    }
+                    map_input_port(conn.first, in_port, new_node, cstr_bits_seen);
                 }
 
                 if (cell->output(conn.first) && conn.second.size() > 0) {
