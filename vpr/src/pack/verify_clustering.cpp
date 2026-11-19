@@ -453,7 +453,7 @@ static unsigned check_clustering_relative_group_consistency(const AtomNetlist& a
     // Track the group assigned to each cluster.
     std::unordered_map<ClusterBlockId, UserRelativeGroupId> cluster_rel_group;
 
-    for (UserRelativeGroupId group_id : relative_macros.groups()) {
+    for (UserRelativeGroupId group_id : relative_macros.group_ids()) {
         const t_user_relative_group& group = relative_macros.get_group(group_id);
         const t_user_relative_macro& macro = relative_macros.get_macro(group.macro_id);
         ClusterBlockId group_clb_id;

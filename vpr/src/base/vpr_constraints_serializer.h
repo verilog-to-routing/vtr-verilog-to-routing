@@ -685,7 +685,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         VTR_ASSERT(!groups.empty()); // the reference group is always present
 
         // macro names must be unique since they identify macros in error messages
-        for (UserRelativeMacroId other_macro_id : constraints_.relative_macros().macros()) {
+        for (UserRelativeMacroId other_macro_id : constraints_.relative_macros().macro_ids()) {
             if (constraints_.relative_macros().get_macro(other_macro_id).name == macro_name) {
                 report_constraints_load_error("Relative macro name '" + macro_name + "' is used more than once. Macro names must be unique.");
             }

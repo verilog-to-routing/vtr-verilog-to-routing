@@ -222,7 +222,7 @@ PlaceMacros::PlaceMacros(const std::vector<t_direct_inf>& directs,
 static vtr::vector<UserRelativeGroupId, ClusterBlockId> find_group_clusters(const UserRelativeMacros& relative_macros,
                                                                             const AtomLookup& atom_lookup) {
     vtr::vector<UserRelativeGroupId, ClusterBlockId> group_cluster(relative_macros.get_num_groups());
-    for (UserRelativeGroupId group_id : relative_macros.groups()) {
+    for (UserRelativeGroupId group_id : relative_macros.group_ids()) {
         const t_user_relative_group& group = relative_macros.get_group(group_id);
         VTR_ASSERT(!group.atoms.empty());
 
@@ -325,7 +325,7 @@ void PlaceMacros::append_relative_placement_macros_(const UserRelativeMacros& re
     // The relative placement macro each group's cluster belongs to. The packer puts at most one
     // group into a cluster, which verify_clustering() also checks.
     std::unordered_map<ClusterBlockId, UserRelativeMacroId> relative_placement_macro_of_cluster;
-    for (UserRelativeGroupId group_id : relative_macros.groups()) {
+    for (UserRelativeGroupId group_id : relative_macros.group_ids()) {
         bool cluster_unclaimed = relative_placement_macro_of_cluster.emplace(group_cluster[group_id], relative_macros.get_group(group_id).macro_id).second;
         VTR_ASSERT_MSG(cluster_unclaimed, "A cluster holds at most one relative placement group");
     }
@@ -335,7 +335,7 @@ void PlaceMacros::append_relative_placement_macros_(const UserRelativeMacros& re
     size_t num_absorbed_arch_macros = 0;
 
     std::vector<t_pl_macro> new_macros;
-    for (UserRelativeMacroId macro_id : relative_macros.macros()) {
+    for (UserRelativeMacroId macro_id : relative_macros.macro_ids()) {
         const t_user_relative_macro& relative_placement_macro = relative_macros.get_macro(macro_id);
 
         // The macro's members: the reference group's cluster (the head, at offset zero)
