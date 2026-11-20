@@ -185,16 +185,9 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_net
     }
 
     // Get the used primitive dims. This is used to ignore the unused dims during
-    // partial legalization.
-    const PrimitiveDimManager& dim_manager = mass_calculator_.get_dim_manager();
-    for (AtomBlockId blk_id : atom_netlist.blocks()) {
-        LogicalModelId model_id = atom_netlist.block_model(blk_id);
-        PrimitiveVectorDim dim = dim_manager.get_model_dim(model_id);
-        used_dims_mask_.set_dim_val(dim, 1);
-    }
-
-    // Some dims are not tied to any atom model (e.g. the RAM instance dims of
-    // physical RAM groups). Mark every dim with block mass as used as well.
+    // partial legalization. A dim is used if any block has mass in it including
+    // dims that are not tied to an atom model (e.g. the RAM instance dims of
+    // physical RAM groups when we treat RAM groups as one block).
     for (APBlockId blk_id : ap_netlist.blocks()) {
         for (PrimitiveVectorDim dim : mass_calculator_.get_block_mass(blk_id).get_non_zero_dims())
             used_dims_mask_.set_dim_val(dim, 1);
