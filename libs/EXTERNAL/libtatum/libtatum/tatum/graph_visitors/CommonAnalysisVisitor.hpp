@@ -562,9 +562,14 @@ bool CommonAnalysisVisitor<AnalysisOps>::mark_sink_required_times(const TimingGr
                     //We apply the clock uncertainty to the generated required time tag
                     Time clock_uncertainty = ops_.clock_uncertainty(tc, data_launch_domain, clock_capture_domain);
 
+                    // Credit back the pessimism of treating the shared part of the launch and capture
+                    // clock paths as both early and late
+                    Time ccpp_credit = ops_.common_clock_path_pessimism(tc, data_launch_domain, clock_capture_domain);
+
                     Time req_time =   src_capture_clk_tag.time() //Latency + propagated clock network delay to CPIN
                                     + clock_constraint_offset    //Period constraint adjustment
                                     + capture_edge_delay         //CPIN to sink delay (Thld, or Tsu)
+                                    + ccpp_credit                // Common clock path pessimism removal
                                     + Time(clock_uncertainty);   //Clock period uncertainty
 
                     TimingTag node_data_req_tag(req_time, 

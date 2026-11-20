@@ -88,6 +88,33 @@ class TimingConstraints {
         //Corresponds to the delay from the clock's true source to it's definition point on-chip
         Time source_latency(const DomainId domain_id, ArrivalType arrival_type) const;
 
+        /**
+         * @brief Returns the common clock path pessimism of a clock domain: the late - early delay
+         *        variation of the part of its clock path shared by every clock sink of the domain.
+         *
+         *   @param domain_id  The clock domain. Must be valid.
+         *
+         *   @return The domain's variation, or zero if it was never set.
+         *
+         * @see set_common_clock_path_pessimism()
+         */
+        Time clock_domain_common_clock_path_pessimism(const DomainId domain_id) const;
+
+        /**
+         * @brief Returns the common clock path pessimism (CCPP) credit for paths launched by
+         *        launch_domain and captured by capture_domain.
+         *
+         * The credit is only given when both domains have the same (valid) clock source node, so it is
+         * zero between different physical clocks and for virtual clocks. See timing_analyzers.hpp for how
+         * it is applied.
+         *
+         *   @param launch_domain   The clock domain launching the path.
+         *   @param capture_domain  The clock domain capturing the path.
+         *
+         *   @return The (non-negative) credit.
+         */
+        Time common_clock_path_pessimism(const DomainId launch_domain, const DomainId capture_domain) const;
+
         ///\returns A range of all constant generator nodes
         constant_generator_range constant_generators() const;
 
@@ -147,6 +174,20 @@ class TimingConstraints {
         ///Sets the source latency of the specified clock domain
         void set_source_latency(const DomainId domain_id, const ArrivalType arrival_type, const Time latency);
 
+        /**
+         * @brief Sets the common clock path pessimism credit of a clock domain.
+         *
+         * The credit is the late - early delay variation of the domain's clock path from its source to
+         * the point where the clock path first branches (i.e. the part shared by every clock sink of the
+         * domain). Domains without a value get no credit.
+         *
+         *   @param domain_id  The clock domain. Must be valid.
+         *   @param variation  The late - early delay variation. Must be non-negative.
+         *
+         * @see common_clock_path_pessimism()
+         */
+        void set_common_clock_path_pessimism(const DomainId domain_id, const Time variation);
+
         ///Sets the source node for the specified clock domain
         void set_clock_domain_source(const NodeId node_id, const DomainId domain_id);
 
@@ -191,6 +232,8 @@ class TimingConstraints {
 
         std::map<DomainId,Time> source_latencies_early_;
         std::map<DomainId,Time> source_latencies_late_;
+
+        tatum::util::linear_map<DomainId,Time> common_clock_path_pessimism_; ///< Late - early variation of each domain's shared clock path (zero if never set)
 };
 
 /*

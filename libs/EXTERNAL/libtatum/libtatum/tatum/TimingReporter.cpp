@@ -505,9 +505,9 @@ Time TimingReporter::report_timing_clock_launch_subpath(std::ostream& os,
     }
 
     // Setup clock launches late, hold clock launches early
-    ArrivalType latency_type = (timing_type == TimingType::SETUP) ? ArrivalType::LATE : ArrivalType::EARLY;
+    ArrivalType arrival_type = (timing_type == TimingType::SETUP) ? ArrivalType::LATE : ArrivalType::EARLY;
 
-    return report_timing_clock_subpath(os, path_helper, subpath, domain, timing_type, latency_type, path, Time(0.));
+    return report_timing_clock_subpath(os, path_helper, subpath, domain, arrival_type, path, Time(0.));
 }
 
 Time TimingReporter::report_timing_clock_capture_subpath(std::ostream& os,
@@ -540,12 +540,23 @@ Time TimingReporter::report_timing_clock_capture_subpath(std::ostream& os,
         path_helper.update_print_path(os, point, path);
     }
 
-    // Setup clock captures early, hold clock captures late (matches the analyzer's capture_source_latency()).
-    // This matters when the capture subpath is empty (e.g. primary outputs), since the source latency
-    // is then not overwritten by the analyzer's clock tag times.
-    ArrivalType latency_type = (timing_type == TimingType::SETUP) ? ArrivalType::EARLY : ArrivalType::LATE;
+    // Setup clock captures early, hold clock captures late (matches the analyzer's capture_source_latency()
+    // and capture_clock_edge_delay()). The latency matters when the capture subpath is empty (e.g. primary
+    // outputs), since it is then not overwritten by the analyzer's clock tag times.
+    ArrivalType arrival_type = (timing_type == TimingType::SETUP) ? ArrivalType::EARLY : ArrivalType::LATE;
 
-    path = report_timing_clock_subpath(os, path_helper, subpath, capture_domain, timing_type, latency_type, path, offset);
+    path = report_timing_clock_subpath(os, path_helper, subpath, capture_domain, arrival_type, path, offset);
+
+    if (!subpath.elements().empty()) {
+        // Common clock path pessimism removal (only applies to clocked captures, matching the analyzer's
+        // mark_sink_required_times())
+        Time ccpp_credit = timing_constraints_.common_clock_path_pessimism(launch_domain, capture_domain);
+        if (timing_type == TimingType::HOLD) {
+            ccpp_credit = -ccpp_credit;
+        }
+        path += ccpp_credit;
+        path_helper.update_print_path(os, "common clock path pessimism", path + offset);
+    }
 
     {
         //Uncertainty
@@ -567,27 +578,21 @@ Time TimingReporter::report_timing_clock_subpath(std::ostream& os,
                                                  detail::ReportTimingPathHelper& path_helper,
                                                  const TimingSubPath& subpath,
                                                  DomainId domain,
-                                                 TimingType timing_type,
-                                                 ArrivalType latency_type,
+                                                 ArrivalType arrival_type,
                                                  Time path,
                                                  Time offset) const {
     {
         // Clock source latency
-        Time latency = Time(timing_constraints_.source_latency(domain, latency_type));
+        Time latency = Time(timing_constraints_.source_latency(domain, arrival_type));
         path += latency;
         std::string point = "clock source latency";
         path_helper.update_print_path(os, point, path);
     }
 
+    // Late clocks use max edge delays, early clocks use min edge delays
+    DelayType delay_type = (arrival_type == ArrivalType::LATE) ? DelayType::MAX : DelayType::MIN;
 
-    DelayType delay_type;
-    if (timing_type == TimingType::SETUP) {
-        delay_type = DelayType::MAX;
-    } else {
-        delay_type = DelayType::MIN;
-    }
-
-    //Launch clock path
+    // Clock path
     for(const TimingPathElem& path_elem : subpath.elements()) {
 
         //Ask the application for a detailed breakdown of the edge delays

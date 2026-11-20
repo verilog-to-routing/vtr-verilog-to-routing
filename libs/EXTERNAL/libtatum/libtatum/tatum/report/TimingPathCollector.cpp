@@ -135,11 +135,14 @@ std::vector<SkewPath> collect_worst_skew_paths(const TimingGraph& timing_graph, 
                 //FF capture
                 path.clock_capture_arrival = path_end(path.clock_capture_path);
 
-                //Adjust for clock uncertainty
+                // Adjust for common clock path pessimism and clock uncertainty
+                Time ccpp_credit = timing_constraints.common_clock_path_pessimism(path.launch_domain, path.capture_domain);
                 if (timing_type == TimingType::SETUP) {
+                    path.clock_capture_arrival += ccpp_credit;
                     path.clock_capture_arrival -= timing_constraints.setup_clock_uncertainty(path.launch_domain, path.capture_domain);
                 } else {
                     TATUM_ASSERT(timing_type == TimingType::HOLD);
+                    path.clock_capture_arrival -= ccpp_credit;
                     path.clock_capture_arrival += timing_constraints.hold_clock_uncertainty(path.launch_domain, path.capture_domain);
                 }
             }
