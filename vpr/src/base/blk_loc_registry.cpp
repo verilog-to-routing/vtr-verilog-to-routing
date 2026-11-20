@@ -187,6 +187,26 @@ void BlkLocRegistry::clear_block_type_grid_locs(const std::unordered_set<int>& u
     }
 }
 
+BlkLocRegistry::t_checkpoint BlkLocRegistry::checkpoint() const {
+    VTR_ASSERT(expected_transaction_ == e_expected_transaction::APPLY);
+    return {block_locs_};
+}
+
+void BlkLocRegistry::restore_checkpoint(const t_checkpoint& saved) {
+    VTR_ASSERT(expected_transaction_ == e_expected_transaction::APPLY);
+    VTR_ASSERT(saved.block_locs.size() == block_locs_.size());
+
+    clear_all_grid_locs();
+
+    for (ClusterBlockId blk_id : g_vpr_ctx.clustering().clb_nlist.blocks()) {
+        const t_block_loc& saved_loc = saved.block_locs[blk_id];
+        block_locs_[blk_id].is_fixed = saved_loc.is_fixed;
+        if (saved_loc.loc.x != INVALID_X) {
+            set_block_location(blk_id, saved_loc.loc);
+        }
+    }
+}
+
 void BlkLocRegistry::place_sync_external_block_connections(ClusterBlockId iblk) {
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const ClusteredNetlist& clb_nlist = cluster_ctx.clb_nlist;
