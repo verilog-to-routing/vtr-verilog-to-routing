@@ -8,9 +8,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <unordered_map>
 
 #include "lb_type_rr_graph.h"
+#include "vpr_types.h"
 #include "vtr_vector.h"
 
 /**
@@ -100,3 +102,7 @@ class ClusterRouterHopsLookahead final : public ClusterRouterLookahead {
     /// @brief Hop table of the current sink. The all-zero table until set_sink is called.
     const t_cost_to_sink* sink_hops_;
 };
+
+/// @brief Creates the lookahead of the given kind for one block type's RR graph.
+std::unique_ptr<ClusterRouterLookahead> make_cluster_router_lookahead(e_cluster_router_lookahead lookahead_type,
+                                                                      const LbTypeRRGraph& lb_type_graph);

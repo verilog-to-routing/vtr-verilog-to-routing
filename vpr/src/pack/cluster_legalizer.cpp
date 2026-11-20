@@ -1557,15 +1557,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     // Build the cluster router lookahead of each block type.
     lookaheads_by_type_.reserve(lb_type_rr_graphs_.size());
     for (const LbTypeRRGraph& lb_type_rr_graph : lb_type_rr_graphs_) {
-        switch (cluster_router_lookahead) {
-            case e_cluster_router_lookahead::NONE:
-                lookaheads_by_type_.push_back(std::make_unique<ClusterRouterNoOpLookahead>());
-                break;
-            case e_cluster_router_lookahead::HOPS:
-                lookaheads_by_type_.push_back(std::make_unique<ClusterRouterHopsLookahead>(lb_type_rr_graph,
-                                                                                           cluster_router_min_cost_per_edge(lb_type_rr_graph)));
-                break;
-        }
+        lookaheads_by_type_.push_back(make_cluster_router_lookahead(cluster_router_lookahead, lb_type_rr_graph));
     }
 }
 

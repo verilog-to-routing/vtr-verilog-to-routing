@@ -206,7 +206,7 @@ enum class e_commit_remove {
  *
  * Example usage:
  *      // Construct the router object.
- *      ClusterRouter cluster_router(lb_type_rr_graphs[cluster_type->index], cluster_type, valid_feedback_pins, nullptr);
+ *      ClusterRouter cluster_router(lb_type_rr_graphs[cluster_type->index], cluster_type, valid_feedback_pins, lookahead);
  *
  *      // Add atoms as targets for the router.
  *      cluster_router.add_atom_as_target(blk_id1, atom_to_pb);

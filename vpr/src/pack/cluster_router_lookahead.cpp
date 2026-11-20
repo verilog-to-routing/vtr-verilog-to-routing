@@ -3,8 +3,24 @@
 #include <algorithm>
 #include <queue>
 
+#include "cluster_router.h"
+#include "vpr_error.h"
+
 /// @brief Most memory the hop tables of one block type may use.
 static constexpr size_t MAX_HOP_TABLE_BYTES = 128 * 1024 * 1024;
+
+std::unique_ptr<ClusterRouterLookahead> make_cluster_router_lookahead(e_cluster_router_lookahead lookahead_type,
+                                                                      const LbTypeRRGraph& lb_type_graph) {
+    switch (lookahead_type) {
+        case e_cluster_router_lookahead::NONE:
+            return std::make_unique<ClusterRouterNoOpLookahead>();
+        case e_cluster_router_lookahead::HOPS:
+            return std::make_unique<ClusterRouterHopsLookahead>(lb_type_graph, cluster_router_min_cost_per_edge(lb_type_graph));
+    }
+
+    VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unrecognized cluster router lookahead type");
+    return nullptr;
+}
 
 ClusterRouterHopsLookahead::ClusterRouterHopsLookahead(const LbTypeRRGraph& lb_type_graph, float min_cost_per_hop)
     : lb_type_graph_(lb_type_graph)
