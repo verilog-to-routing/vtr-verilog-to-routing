@@ -266,6 +266,10 @@ static PrimitiveVector calc_pb_type_capacity(const t_pb_type* pb_type,
 
 /**
  * @brief Calculate the capacity of the given logical block type.
+ *
+ * If this block type has an instance dim, the capacity also includes room for
+ * one block that takes up a whole instance of this type (e.g. a physical RAM
+ * group when --ap_ram_group_density is on).
  */
 static PrimitiveVector calc_logical_block_type_capacity(const t_logical_block_type& logical_block_type,
                                                         const PrimitiveDimManager& dim_manager) {
@@ -273,13 +277,22 @@ static PrimitiveVector calc_logical_block_type_capacity(const t_logical_block_ty
     if (logical_block_type.is_empty())
         return PrimitiveVector();
 
+    // The primitive capacity of a logical block is the primitive capacity of
+    // its root pb.
     std::set<PrimitiveVectorDim> memory_model_dims;
     PrimitiveVector capacity = calc_pb_type_capacity(logical_block_type.pb_type,
                                                      memory_model_dims,
                                                      dim_manager);
 
-    // The primitive capacity of a logical block is the primitive capacity of
-    // its root pb.
+    // If this block type has an instance dim, it can also hold one block that
+    // takes up a whole instance of this type (e.g. a physical RAM group when
+    // --ap_ram_group_density is on). The capacity above is still kept for
+    // blocks that use the normal per-primitive mass on this type (e.g. RAMs
+    // that are not in a RAM group or not marked as memory class).
+    PrimitiveVectorDim block_type_dim = dim_manager.get_block_type_dim(&logical_block_type);
+    if (block_type_dim.is_valid())
+        capacity.add_val_to_dim(1.0f, block_type_dim);
+
     return capacity;
 }
 
@@ -340,13 +353,39 @@ static PrimitiveVector calc_physical_tile_type_capacity(const t_physical_tile_ty
  * This returns an M-dimensional vector with each entry indicating the mass of
  * that primitive type in this block. M is the number of unique models
  * (primitive types) in the architecture.
+ *
+ * Some blocks instead take up a whole instance of a logical block type, no
+ * matter which primitives they use (e.g. a physical RAM group when
+ * --ap_ram_group_density is on). These blocks have a mass of 1 in the
+ * instance dim of that block type.
  */
 static PrimitiveVector calc_block_mass(APBlockId blk_id,
                                        const PrimitiveDimManager& dim_manager,
                                        const APNetlist& netlist,
                                        const Prepacker& prepacker,
+                                       const RamMapper& ram_mapper,
                                        const AtomNetlist& atom_netlist) {
     PrimitiveVector mass;
+
+    // Get the RAM group of this block, if any. A RAM group block contains only
+    // the molecules of that group, so checking its first atom is enough.
+    const t_pack_molecule& first_mol = prepacker.get_molecule(netlist.block_molecules(blk_id)[0]);
+    PhysicalRamGroupId phys_group_id = ram_mapper.physical_group_id_of(first_mol.atom_block_ids[first_mol.root]);
+    if (phys_group_id.is_valid()) {
+        // If the RAM type of this group has an instance dim, the whole group
+        // takes up one instance of that type. This dim only exists when
+        // --ap_ram_group_density is on.
+        LogicalRamGroupId logical_group_id = ram_mapper.physical_ram_group(phys_group_id).logical_ram_group_id;
+        t_logical_block_type_ptr ram_type = ram_mapper.group(logical_group_id).pre_assigned_type;
+        PrimitiveVectorDim block_type_dim = dim_manager.get_block_type_dim(ram_type);
+        if (block_type_dim.is_valid()) {
+            mass.add_val_to_dim(1.0f, block_type_dim);
+            return mass;
+        }
+    }
+
+    // Otherwise, the mass of this block is the sum of the mass of its atoms.
+    // Each atom adds its mass to the dim of its model.
     for (PackMoleculeId mol_id : netlist.block_molecules(blk_id)) {
         const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
         for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
@@ -533,11 +572,18 @@ static std::vector<OneHotPbType> find_one_hot_pb_types(const std::vector<t_logic
 /**
  * @brief Initialize the dim manager such that every model in the architecture
  *        has a valid dimension in the primitive vector.
+ *
+ * Some logical block types also get an instance dim, which counts blocks that
+ * take up a whole instance of that type (e.g. the RAM types used by physical
+ * RAM groups when --ap_ram_group_density is on). All dims are ordered by how
+ * often they are used in the netlist.
  */
 static void initialize_dim_manager(PrimitiveDimManager& dim_manager,
                                    const LogicalModels& models,
                                    const std::vector<t_logical_block_type>& logical_block_types,
                                    const AtomNetlist& atom_netlist,
+                                   const RamMapper& ram_mapper,
+                                   bool use_ram_group_density,
                                    int log_verbosity) {
     // Set the mapping between model IDs and Primitive Vector IDs
 
@@ -555,9 +601,14 @@ static void initialize_dim_manager(PrimitiveDimManager& dim_manager,
         }
     }
 
-    // Count the number of occurrences of each model in the netlist.
+    // Count the number of occurrences of each model in the netlist. If
+    // --ap_ram_group_density is on, skip the atoms in physical RAM groups,
+    // since they add no mass to the dim of their model.
     vtr::vector<LogicalModelId, unsigned> num_model_occurence(models.all_models().size(), 0);
     for (AtomBlockId blk_id : atom_netlist.blocks()) {
+        if (use_ram_group_density && ram_mapper.physical_group_id_of(blk_id).is_valid())
+            continue;
+
         LogicalModelId model_id = atom_netlist.block_model(blk_id);
 
         // If this model is not part of a shared dimension, just accumulate its
@@ -576,19 +627,57 @@ static void initialize_dim_manager(PrimitiveDimManager& dim_manager,
         num_model_occurence[first_model_id]++;
     }
 
-    // Create a list of models, sorted by their frequency in the netlist.
+    // Count the number of blocks that take up a whole instance of each logical
+    // block type. Each block type with at least one such block gets its own
+    // instance dim. If --ap_ram_group_density is on, each physical RAM group
+    // takes up a whole instance of its RAM type.
+    std::vector<unsigned> num_block_type_instances(logical_block_types.size(), 0);
+    if (use_ram_group_density) {
+        for (const PhysicalRamGroup& phys_group : ram_mapper.physical_ram_groups()) {
+            t_logical_block_type_ptr ram_type = ram_mapper.group(phys_group.logical_ram_group_id).pre_assigned_type;
+            VTR_ASSERT_MSG(ram_type == &logical_block_types[ram_type->index],
+                           "The pre-assigned RAM types should be the logical block types of this device");
+            num_block_type_instances[ram_type->index]++;
+        }
+    }
+
+    // A dim to create, either for a model or for the instances of a logical
+    // block type.
+    struct DimCandidate {
+        LogicalModelId model_id;
+        t_logical_block_type_ptr block_type;
+        unsigned num_occurence;
+    };
+    std::vector<DimCandidate> dim_candidates;
+    for (LogicalModelId model_id : models.all_models())
+        dim_candidates.push_back({model_id, nullptr, num_model_occurence[model_id]});
+    for (const t_logical_block_type& logical_block_type : logical_block_types) {
+        unsigned num_instances = num_block_type_instances[logical_block_type.index];
+        if (num_instances > 0)
+            dim_candidates.push_back({LogicalModelId::INVALID(), &logical_block_type, num_instances});
+    }
+
+    // Sort the dims by their frequency in the netlist.
     // By sorting by frequency, we make the early dimensions more common,
     // which can reduce the overall size of the sparse vector.
     // NOTE: We use stable sort here to keep the order of models the same
     //       as what the user provided in the arch file in the event of a tie.
-    std::vector<LogicalModelId> logical_models(models.all_models().begin(), models.all_models().end());
-    std::stable_sort(logical_models.begin(), logical_models.end(), [&](LogicalModelId a, LogicalModelId b) {
-        return num_model_occurence[a] > num_model_occurence[b];
+    std::stable_sort(dim_candidates.begin(), dim_candidates.end(), [](const DimCandidate& a, const DimCandidate& b) {
+        return a.num_occurence > b.num_occurence;
     });
 
-    // Create a primitive vector dim for each model that occurs in the netlist
-    // and is not part of a shared dimension.
-    for (LogicalModelId model_id : logical_models) {
+    // Create a primitive vector dim for each candidate. Models which are part
+    // of a shared dimension get one dim for the whole shared group.
+    for (const DimCandidate& dim_candidate : dim_candidates) {
+        // If this is a logical block type, create a dim which counts its
+        // instances.
+        if (dim_candidate.block_type != nullptr) {
+            dim_manager.create_block_type_dim(dim_candidate.block_type, dim_candidate.block_type->name + "_ap_instance");
+            continue;
+        }
+
+        LogicalModelId model_id = dim_candidate.model_id;
+
         // If this model is not part of a shared dimension, create a single
         // dimension just for it.
         int one_hot_id = model_one_hot_id[model_id];
@@ -644,36 +733,19 @@ FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_net
     , block_mass_(ap_netlist.blocks().size())
     , log_verbosity_(log_verbosity) {
 
-    // Initialize the mapping between model IDs and Primitive Vector dims
+    // Initialize the mapping between model IDs and Primitive Vector dims. This
+    // also creates the instance dims of logical block types, if any.
     initialize_dim_manager(primitive_dim_manager_,
                            models,
                            logical_block_types,
                            atom_netlist,
+                           ram_mapper,
+                           use_ram_group_density,
                            log_verbosity_);
 
-    // Create one dim per RAM block type that is pre-assigned to a physical RAM
-    // group. These dims count RAM instances rather than memory bits, so each
-    // physical RAM group occupies a whole instance of its pre-assigned type
-    // and can only be placed into tiles which provide that type. If this is
-    // turned off, or there are no physical RAM groups (e.g. the RAM pre-mapper
-    // is off), no dims are created and RAMs keep their bit-based mass.
-    std::vector<PrimitiveVectorDim> ram_type_dim(logical_block_types.size());
-    if (use_ram_group_density) {
-        for (const PhysicalRamGroup& phys_group : ram_mapper.physical_ram_groups()) {
-            t_logical_block_type_ptr ram_type = ram_mapper.group(phys_group.logical_ram_group_id).pre_assigned_type;
-            VTR_ASSERT_MSG(ram_type != nullptr,
-                           "Every physical RAM group should have a pre-assigned type");
-            if (!ram_type_dim[ram_type->index].is_valid())
-                ram_type_dim[ram_type->index] = primitive_dim_manager_.create_empty_dim("ram_instance[" + ram_type->name + "]");
-        }
-    }
-
-    // Precompute the capacity of each logical block type. Each RAM block type
-    // used by a physical RAM group can hold exactly one such group.
+    // Precompute the capacity of each logical block type.
     for (const t_logical_block_type& logical_block_type : logical_block_types) {
         logical_block_type_capacity_[logical_block_type.index] = calc_logical_block_type_capacity(logical_block_type, primitive_dim_manager_);
-        if (ram_type_dim[logical_block_type.index].is_valid())
-            logical_block_type_capacity_[logical_block_type.index].add_val_to_dim(1.0f, ram_type_dim[logical_block_type.index]);
     }
 
     // Precompute the capacity of each physical tile type.
@@ -684,23 +756,11 @@ FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_net
     // Precompute the mass of each block in the APNetlist
     VTR_LOGV(log_verbosity_ >= 10, "Pre-computing the block masses...\n");
     for (APBlockId ap_block_id : ap_netlist.blocks()) {
-        // Blocks formed from a physical RAM group take one instance of their
-        // pre-assigned RAM type, regardless of how many bits they use.
-        if (use_ram_group_density) {
-            const t_pack_molecule& first_mol = prepacker.get_molecule(ap_netlist.block_molecules(ap_block_id)[0]);
-            PhysicalRamGroupId phys_group_id = ram_mapper.physical_group_id_of(first_mol.atom_block_ids[first_mol.root]);
-            if (phys_group_id.is_valid()) {
-                LogicalRamGroupId logical_group_id = ram_mapper.physical_ram_group(phys_group_id).logical_ram_group_id;
-                t_logical_block_type_ptr ram_type = ram_mapper.group(logical_group_id).pre_assigned_type;
-                block_mass_[ap_block_id].add_val_to_dim(1.0f, ram_type_dim[ram_type->index]);
-                continue;
-            }
-        }
-
         block_mass_[ap_block_id] = calc_block_mass(ap_block_id,
                                                    primitive_dim_manager_,
                                                    ap_netlist,
                                                    prepacker,
+                                                   ram_mapper,
                                                    atom_netlist);
     }
     VTR_LOGV(log_verbosity_ >= 10, "Finished pre-computing the block masses.\n");
