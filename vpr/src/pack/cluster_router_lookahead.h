@@ -58,6 +58,8 @@ class ClusterRouterNoOpLookahead final : public ClusterRouterLookahead {
 class ClusterRouterHopsLookahead final : public ClusterRouterLookahead {
   public:
     /// @brief Hop count of a node that has no path to the sink.
+    /// Paths with this many edges are rare. A longer path is capped at
+    /// UNREACHABLE_HOPS - 1, which is still a lower bound.
     static constexpr uint8_t UNREACHABLE_HOPS = 255;
 
     /// @brief Lower bound on the cost from every node to one sink, indexed by node.
