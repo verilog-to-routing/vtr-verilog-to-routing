@@ -48,6 +48,69 @@ To use the traditional sequential flow (pack, place, route, analysis), pass all 
 
 By default VPR will perform a binary search routing to find the minimum channel width required to route the circuit.
 
+.. _vpr_options_file:
+
+Options File
+------------
+
+Instead of passing every option on the command-line, options can be read from a YAML file.
+
+.. option:: --options_file <file>
+
+    Reads additional command-line options from the YAML file ``<file>``.
+
+    The file is a map from option name to value.
+    For example, the file ``my_options.yaml``:
+
+    .. code-block:: yaml
+
+        # Comments may be on their own line...
+        architecture: my_arch.xml   # ...or at the end of a line.
+        circuit: my_circuit.blif    # Positional arguments: give both or neither.
+        route_chan_width: 100
+        --seed: 7                   # The leading "--" is optional.
+
+        # Flags: true sets the flag, false leaves it out.
+        pack: true
+        place: true
+        analytical_place: false
+
+        timing_analysis: on         # Passed as "on", not as the YAML boolean true.
+        timing_report_detail: "detailed"  # Quotes are optional.
+
+        # Options which take multiple values are given as a list,
+        # either as [in2reg, reg2reg] or as one "- item" per line:
+        timing_report_path_categories:
+          - in2reg
+          - reg2reg
+
+    can be used as::
+
+        vpr --options_file my_options.yaml
+
+    which is equivalent to::
+
+        vpr my_arch.xml my_circuit.blif --route_chan_width 100 --seed 7 --pack --place --timing_analysis on --timing_report_detail detailed --timing_report_path_categories in2reg reg2reg
+
+    The options in the file are used exactly as if they were written on the command-line in place of ``--options_file <file>``, and follow the usual rules:
+
+    * An option which takes a single value may only be given once, so it can not be given both in the file and on the command-line.
+    * Flags (options which take no value, such as ``--pack``) are given as ``true`` (set the flag) or ``false`` (do not set it).
+      YAML's other boolean words (``yes``/``no``, ``on``/``off``) are also accepted.
+    * Options which take multiple values are given as a YAML list, either on one line (``[a, b]``) or with one ``- item`` per line.
+      Values given both in the file and on the command-line are combined, in the order they appear.
+    * Values are passed to VPR as the text written in the file (without any quotes), so they take the same values as on the command-line.
+      For example, ``--timing_analysis`` takes ``on`` or ``off``, not ``true`` or ``false``.
+    * Relative file paths are relative to the directory VPR is run from, not to the location of the options file.
+    * The positional arguments (``architecture`` and ``circuit``) may be given in the file.
+      If either is given in the file, both must be, and neither may then be given on the command-line.
+    * Only one options file may be given, and it may not contain ``options_file``.
+    * Comments (``# ...``) may be used, on their own line or at the end of a line.
+    * The leading ``--`` of an option name is optional (``seed`` and ``--seed`` are equivalent).
+      Positional arguments have no leading ``--`` (``architecture``, not ``--architecture``).
+
+    The VPR log shows both the command-line VPR was run with and an equivalent command-line with the options file replaced by its options, which can be re-run without the file.
+
 Detailed Command-line Options
 -----------------------------
 VPR has a lot of options. Running :option:`vpr --help` will display all the available options and their usage information.

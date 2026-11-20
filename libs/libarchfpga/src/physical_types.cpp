@@ -308,6 +308,13 @@ bool t_pb_type::has_bus_mux() const {
  * t_pb_graph_node
  */
 
+const t_pb_graph_node* t_pb_graph_node::find_root() const {
+    const t_pb_graph_node* node = this;
+    while (!node->is_root())
+        node = node->parent_pb_graph_node;
+    return node;
+}
+
 std::string t_pb_graph_node::hierarchical_type_name() const {
     std::vector<std::string> names;
     std::string child_mode_name;
@@ -433,7 +440,7 @@ int t_sub_tile::total_num_internal_pins() const {
     int num_pins = 0;
 
     for (t_logical_block_type_ptr eq_site : equivalent_sites) {
-        num_pins += (int)eq_site->pin_logical_num_to_pb_pin_mapping.size();
+        num_pins += (int)eq_site->pb_graph_pins().size();
     }
 
     num_pins *= capacity.total();

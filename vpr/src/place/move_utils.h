@@ -118,6 +118,17 @@ struct t_range_limiters {
     float dm_rlim;
 };
 
+/**
+ * @brief Tracks the state of a macro swap inversion for cycle detection.
+ */
+struct t_inverted_macro {
+    int imacro;              ///< Index of the macro being moved after the inversion.
+    t_pl_offset offset;      ///< Offset applied to the macro after the inversion.
+    size_t num_moved_blocks; ///< Number of block moves recorded before the inversion.
+
+    bool operator==(const t_inverted_macro&) const = default;
+};
+
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
                           t_pl_loc to,
@@ -144,13 +155,27 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
                                              const BlkLocRegistry& blk_loc_registry,
                                              const PlaceMacros& place_macros);
 
+/**
+ * @brief Records the block moves needed to shift macro imacro_from by swap_offset,
+ *        starting at member imember_from and handling any displaced blocks or macros.
+ *
+ * @param inverted_macros Stack of active macro swap inversions used to detect cycles.
+ *                        Pass an empty vector for the initial call.
+ */
 e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                        const int imacro_from,
                                        int& imember_from,
                                        t_pl_offset swap_offset,
                                        const BlkLocRegistry& blk_loc_registry,
-                                       const PlaceMacros& place_macros);
+                                       const PlaceMacros& place_macros,
+                                       std::vector<t_inverted_macro>& inverted_macros);
 
+/**
+ * @brief Records a swap between macro imacro_from, starting at member imember_from,
+ *        and macro imacro_to, whose member blk_to occupies the destination.
+ *
+ * @param inverted_macros Stack of active macro swap inversions
+ */
 e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                              const int imacro_from,
                                              int& imember_from,
@@ -158,7 +183,8 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
                                              ClusterBlockId blk_to,
                                              t_pl_offset swap_offset,
                                              const BlkLocRegistry& blk_loc_registry,
-                                             const PlaceMacros& pl_macros);
+                                             const PlaceMacros& pl_macros,
+                                             std::vector<t_inverted_macro>& inverted_macros);
 
 e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       std::vector<ClusterBlockId>& displaced_blocks,

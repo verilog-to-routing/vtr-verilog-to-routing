@@ -22,7 +22,6 @@
 namespace fasm {
 
 FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f, bool /*is_flat*/) : strings_(strings), os_(f),
-    pb_graph_pin_lookup_from_index_by_type_(g_vpr_ctx.device().logical_block_types),
     fasm_lut(strings->intern_string("fasm_lut")),
     fasm_features(strings->intern_string("fasm_features")),
     fasm_params(strings->intern_string("fasm_params")),
@@ -122,7 +121,7 @@ void FasmWriterVisitor::check_interconnect(const t_pb_routes &pb_routes, int ino
     return;
   }
 
-  const t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type_.pb_gpin(logical_block_->index, prev_node);
+  const t_pb_graph_pin *prev_pin = logical_block_->pb_graph_pin(prev_node);
 
   int prev_edge;
   for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {

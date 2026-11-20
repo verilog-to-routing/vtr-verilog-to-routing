@@ -11,6 +11,7 @@
  * that doing so can break the correctness of VPR
  */
 
+#include <cctype>
 #include <cstdio>
 #include <cstring>
 #include <cmath>
@@ -155,6 +156,49 @@ void vpr_print_args(int argc, const char** argv) {
     VTR_LOG("\n\n");
 }
 
+/**
+ * @brief Returns the argument quoted for a POSIX shell, if it needs to be.
+ */
+static std::string shell_quote(const std::string& arg) {
+    constexpr const char* safe_chars = "_-+=./:,@%";
+    bool is_safe = !arg.empty();
+    for (char c : arg) {
+        if (!std::isalnum(static_cast<unsigned char>(c)) && (c == '\0' || std::strchr(safe_chars, c) == nullptr)) {
+            is_safe = false;
+            break;
+        }
+    }
+    if (is_safe) {
+        return arg;
+    }
+
+    // Within single quotes nothing is special except the single quote itself, which is written as '\''.
+    std::string quoted = "'";
+    for (char c : arg) {
+        if (c == '\'') {
+            quoted += "'\\''";
+        } else {
+            quoted += c;
+        }
+    }
+    quoted += "'";
+    return quoted;
+}
+
+void vpr_print_expanded_args(const char* prog, const t_options& options) {
+    if (options.options_file.provenance() != argparse::Provenance::SPECIFIED) {
+        return;
+    }
+
+    VTR_LOG("Options were read from %s (--options_file). The equivalent command-line, which can be re-run without the file, is:\n",
+            options.options_file.value().c_str());
+    VTR_LOG("%s", shell_quote(prog).c_str());
+    for (const std::string& arg : options.expanded_args) {
+        VTR_LOG(" %s", shell_quote(arg).c_str());
+    }
+    VTR_LOG("\n\n");
+}
+
 void vpr_initialize_logging() {
     {
         //Allow the default vpr log file to be overwritten
@@ -194,6 +238,7 @@ void vpr_init(const int argc, const char** argv, t_options* options, t_vpr_setup
     //This provides a reference in the log file to exactly
     //how VPR was run, aiding in re-producibility
     vpr_print_args(argc, argv);
+    vpr_print_expanded_args(argv[0], *options);
 
     vpr_init_with_options(options, vpr_setup, arch);
 }

@@ -215,7 +215,7 @@ enum class e_commit_remove {
  *      bool success = cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
  *
  *      // Output the routing solution.
- *      auto pb_route = cluster_router.alloc_and_load_pb_route(intra_lb_pb_pin_lookup_);
+ *      auto pb_route = cluster_router.alloc_and_load_pb_route();
  *
  *      // (optional) Clean the router data to save space if this object will
  *      //            have a long lifetime and no further routes will be performed.
@@ -332,10 +332,9 @@ class ClusterRouter {
      * t_pb_route describes a route for a given atom net in the pb graph. This
      * function returns the t_pb_route for all atom nets within the cluster.
      *
-     * @param intra_lb_pb_pin_lookup Intra-logic block pin lookup to get t_pb_graph_pin from a pin ID.
      * @return t_pb_routes An array [0..num_pb_graph_pins-1] for intra-logic block routing lookup.
      */
-    t_pb_routes alloc_and_load_pb_route(const IntraLbPbPinLookup& intra_lb_pb_pin_lookup);
+    t_pb_routes alloc_and_load_pb_route();
 
     /**
      * @brief Returns true if the saved route from the last successful

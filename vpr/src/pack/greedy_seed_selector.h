@@ -7,6 +7,7 @@
  *          seed molecules for starting new clusters in the greedy clusterer.
  */
 
+#include <optional>
 #include "prepack.h"
 #include "vpr_types.h"
 
@@ -16,6 +17,7 @@ class ClusterLegalizer;
 class LogicalModels;
 class PreClusterTimingManager;
 class RamMapper;
+class RelativeMacroPacker;
 struct t_molecule_stats;
 
 /**
@@ -53,6 +55,9 @@ class GreedySeedSelector {
      *              The RAM mapper which contains the pre-assigned RAM groups.
      *              If there are any RAM groups, RAM seeds are moved to the
      *              front of the seed list so that RAM clusters are formed first.
+     *  @param relative_macro_packer
+     *              Provides seed priorities for relative placement constraints.
+     *              Empty when the design has no relative placement macros.
      */
     GreedySeedSelector(const AtomNetlist& atom_netlist,
                        const Prepacker& prepacker,
@@ -60,7 +65,8 @@ class GreedySeedSelector {
                        const t_molecule_stats& max_molecule_stats,
                        const LogicalModels& models,
                        const PreClusterTimingManager& pre_cluster_timing_manager,
-                       const RamMapper& ram_mapper);
+                       const RamMapper& ram_mapper,
+                       const std::optional<RelativeMacroPacker>& relative_macro_packer);
 
     /**
      * @brief Propose a new seed molecule to start a new cluster with. If no

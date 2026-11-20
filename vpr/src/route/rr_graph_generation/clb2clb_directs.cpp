@@ -23,24 +23,32 @@ std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::v
 
         // Load from pins
         // Parse out the pb_type name, port name, and pin range
-        auto [start_pin_index, end_pin_index, tile_name, port_name] = parse_direct_pin_name(directs[i].from_pin, directs[i].line);
+        t_direct_pin_spec from_pin = parse_direct_pin_name(directs[i].from_pin, directs[i].line);
 
         // Figure out which type, port, and pin is used
-        t_physical_tile_type_ptr physical_tile = find_tile_type_by_name(tile_name, device_ctx.physical_tile_types);
+        t_physical_tile_type_ptr physical_tile = find_tile_type_by_name(from_pin.pb_type_name, device_ctx.physical_tile_types);
         if (physical_tile == nullptr) {
-            VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name.c_str());
+            VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", from_pin.pb_type_name.c_str());
         }
         clb_to_clb_directs[i].from_clb_type = physical_tile;
 
-        t_physical_tile_port tile_port = find_tile_port_by_name(physical_tile, port_name);
+        t_physical_tile_port tile_port = find_tile_port_by_name(physical_tile, from_pin.port_name);
         /* Find the sub tile indices */
-        clb_to_clb_directs[i].from_sub_tiles = find_sub_tile_indices_by_port_name(physical_tile, port_name);
+        clb_to_clb_directs[i].from_sub_tiles = find_sub_tile_indices_by_port_name(physical_tile, from_pin.port_name);
         if (clb_to_clb_directs[i].from_sub_tiles.empty()) {
-            VPR_THROW(VPR_ERROR_ARCH, "Unable to find sub tile under tile '%s' which contains the port %s.\n", tile_name.c_str(), port_name.data());
+            VPR_THROW(VPR_ERROR_ARCH, "Unable to find sub tile under tile '%s' which contains the port %s.\n", from_pin.pb_type_name.c_str(), from_pin.port_name.c_str());
         }
 
-        if (start_pin_index == UNDEFINED) {
-            VTR_ASSERT(start_pin_index == end_pin_index);
+        if (!from_pin.fits_in_port(tile_port.num_pins)) {
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line,
+                      "Invalid pin - %s, the pin range [end_pin_index:start_pin_index] "
+                      "must lie within the %d pins of the port.\n",
+                      directs[i].from_pin.c_str(), tile_port.num_pins);
+        }
+
+        int start_pin_index = from_pin.start_pin_index;
+        int end_pin_index = from_pin.end_pin_index;
+        if (!from_pin.has_pin_range()) {
             start_pin_index = 0;
             end_pin_index = tile_port.num_pins - 1;
         }
@@ -52,21 +60,29 @@ std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::v
 
         // Load to pins
         // Parse out the pb_type name, port name, and pin range
-        std::tie(start_pin_index, end_pin_index, tile_name, port_name) = parse_direct_pin_name(directs[i].to_pin, directs[i].line);
+        t_direct_pin_spec to_pin = parse_direct_pin_name(directs[i].to_pin, directs[i].line);
 
         // Figure out which type, port, and pin is used
-        physical_tile = find_tile_type_by_name(tile_name, device_ctx.physical_tile_types);
+        physical_tile = find_tile_type_by_name(to_pin.pb_type_name, device_ctx.physical_tile_types);
         if (physical_tile == nullptr) {
-            VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name.c_str());
+            VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", to_pin.pb_type_name.c_str());
         }
         clb_to_clb_directs[i].to_clb_type = physical_tile;
 
-        tile_port = find_tile_port_by_name(physical_tile, port_name);
+        tile_port = find_tile_port_by_name(physical_tile, to_pin.port_name);
         // Cache the destination port name as the pin index is not enough to identify if the destination subtile is the one we want
-        clb_to_clb_directs[i].to_port = port_name;
+        clb_to_clb_directs[i].to_port = to_pin.port_name;
 
-        if (start_pin_index == UNDEFINED) {
-            VTR_ASSERT(start_pin_index == end_pin_index);
+        if (!to_pin.fits_in_port(tile_port.num_pins)) {
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line,
+                      "Invalid pin - %s, the pin range [end_pin_index:start_pin_index] "
+                      "must lie within the %d pins of the port.\n",
+                      directs[i].to_pin.c_str(), tile_port.num_pins);
+        }
+
+        start_pin_index = to_pin.start_pin_index;
+        end_pin_index = to_pin.end_pin_index;
+        if (!to_pin.has_pin_range()) {
             start_pin_index = 0;
             end_pin_index = tile_port.num_pins - 1;
         }

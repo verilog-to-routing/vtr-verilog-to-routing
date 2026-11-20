@@ -76,14 +76,12 @@ static t_lb_trace* find_node_in_rt(t_lb_trace& rt, LbRRNodeId rt_index);
  * @param prev_pin_id ID of the previous pin in the route tree trace.
  * @param trace Current trace node in the route tree.
  * @param logic_block_type Logic block type of the current cluster.
- * @param intra_lb_pb_pin_lookup Intra-logic block pin lookup to get t_pb_graph_pin from a pin ID.
  */
 static void load_trace_to_pb_route(t_pb_routes& pb_route,
                                    const AtomNetId net_id,
                                    const int prev_pin_id,
                                    const t_lb_trace& trace,
-                                   t_logical_block_type_ptr logic_block_type,
-                                   const IntraLbPbPinLookup& intra_lb_pb_pin_lookup);
+                                   t_logical_block_type_ptr logic_block_type);
 
 /**
  * @brief Debugging function used to find congested RR nodes in the lb type
@@ -648,13 +646,13 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
 // Accessor Functions
 // =============================================================================
 
-t_pb_routes ClusterRouter::alloc_and_load_pb_route(const IntraLbPbPinLookup& intra_lb_pb_pin_lookup) {
+t_pb_routes ClusterRouter::alloc_and_load_pb_route() {
     VTR_ASSERT_MSG(!is_clean_ && is_valid_, "Cannot operate on a cleaned / invalid router.");
     t_pb_routes pb_route;
 
     for (const t_intra_lb_net& lb_net : saved_lb_nets_) {
         VTR_ASSERT(lb_net.rt_tree.current_node.is_valid());
-        load_trace_to_pb_route(pb_route, lb_net.atom_net_id, UNDEFINED, lb_net.rt_tree, lb_type_, intra_lb_pb_pin_lookup);
+        load_trace_to_pb_route(pb_route, lb_net.atom_net_id, UNDEFINED, lb_net.rt_tree, lb_type_);
     }
 
     return pb_route;
@@ -675,8 +673,7 @@ static void load_trace_to_pb_route(t_pb_routes& pb_route,
                                    const AtomNetId net_id,
                                    const int prev_pin_id,
                                    const t_lb_trace& trace,
-                                   t_logical_block_type_ptr logic_block_type,
-                                   const IntraLbPbPinLookup& intra_lb_pb_pin_lookup) {
+                                   t_logical_block_type_ptr logic_block_type) {
     int ipin = int(trace.current_node);
     int driver_pb_pin_id = prev_pin_id;
     int cur_pin_id = UNDEFINED;
@@ -690,13 +687,13 @@ static void load_trace_to_pb_route(t_pb_routes& pb_route,
         if (inserted) {
             pin_route.atom_net_id = net_id;
             pin_route.driver_pb_pin_id = driver_pb_pin_id;
-            pin_route.pb_graph_pin = intra_lb_pb_pin_lookup.pb_gpin(logic_block_type->index, cur_pin_id);
+            pin_route.pb_graph_pin = logic_block_type->pb_graph_pin(cur_pin_id);
         } else {
             VTR_ASSERT(pin_route.atom_net_id == net_id);
         }
     }
     for (const t_lb_trace& nxt_trace : trace.next_nodes) {
-        load_trace_to_pb_route(pb_route, net_id, cur_pin_id, nxt_trace, logic_block_type, intra_lb_pb_pin_lookup);
+        load_trace_to_pb_route(pb_route, net_id, cur_pin_id, nxt_trace, logic_block_type);
     }
 }
 

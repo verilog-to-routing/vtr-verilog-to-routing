@@ -1395,7 +1395,6 @@ void equalize_ports_size(nnode_t *&node, uintptr_t traverse_mark_number, netlist
     /* new port size */
     int new_out_size = port_y_size;
 
-
     /* creating the new node */
     nnode_t *new_node = (port_b_size == -1) ? make_1port_gate(node->type, port_a_size, new_out_size, node, traverse_mark_number)
                                             : make_2port_gate(node->type, port_a_size, port_b_size, new_out_size, node, traverse_mark_number);

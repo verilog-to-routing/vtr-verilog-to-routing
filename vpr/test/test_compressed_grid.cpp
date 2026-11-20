@@ -212,6 +212,28 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
         REQUIRE(grid_loc == t_physical_tile_loc{17, 3, 0});
     }
 
+    SECTION("Exact lookup including incompatible and out-of-bounds locations") {
+        t_physical_tile_loc comp_loc = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc({25, 33, 0});
+        REQUIRE(comp_loc.is_valid());
+        REQUIRE(compressed_grids[large_logical_type.index].compressed_loc_to_grid_loc(comp_loc) == t_physical_tile_loc{25, 33, 0});
+
+        comp_loc = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc({76, 85, 0});
+        REQUIRE(comp_loc.is_valid());
+        REQUIRE(compressed_grids[large_logical_type.index].compressed_loc_to_grid_loc(comp_loc) == t_physical_tile_loc{76, 85, 0});
+
+        // Incompatible in-range grid locations
+        REQUIRE(!compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc({26, 33, 0}).is_valid());
+        REQUIRE(!compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc({25, 34, 0}).is_valid());
+
+        // Grid locations beyond the maximum compressed coordinates (lower_bound == end())
+        REQUIRE(!compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc({99, 33, 0}).is_valid());
+        REQUIRE(!compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc({25, 99, 0}).is_valid());
+        REQUIRE(!compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc({99, 99, 0}).is_valid());
+
+        // Empty compressed grid
+        REQUIRE(!compressed_grids[EMPTY_LOGICAL_BLOCK_TYPE.index].grid_loc_to_compressed_loc({0, 0, 0}).is_valid());
+    }
+
     SECTION("Round to the nearest mapped location in the compressed grid") {
         t_physical_tile_loc comp_loc = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx({25, 33, 0});
         t_physical_tile_loc grid_loc = compressed_grids[large_logical_type.index].compressed_loc_to_grid_loc(comp_loc);

@@ -5,7 +5,7 @@ pandas
 numpy
 scipy
 # Python linter and formatter
-click==8.5.0
+click==8.5.1
 black==26.10.1
 pylint==4.1.3
 

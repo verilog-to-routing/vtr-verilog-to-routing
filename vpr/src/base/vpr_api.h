@@ -160,6 +160,18 @@ void vpr_free_all(t_arch& Arch,
 void vpr_print_title();
 void vpr_print_args(int argc, const char** argv);
 
+/**
+ * @brief Prints the command-line arguments after expanding --options_file.
+ *
+ * The --options_file option is replaced by the arguments read from the file, and arguments are
+ * quoted where needed, so the printed command-line can be re-run without the file. Prints
+ * nothing if --options_file was not used.
+ *
+ * @param prog    The program name (argv[0]).
+ * @param options The parsed options.
+ */
+void vpr_print_expanded_args(const char* prog, const t_options& options);
+
 /****************************************************************************************************
  * Advanced functions
  *  Used when you need fine-grained control over VPR that the main VPR operations do not enable

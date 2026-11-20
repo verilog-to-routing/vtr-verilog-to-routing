@@ -879,6 +879,83 @@ struct t_physical_tile_port {
     }
 };
 
+/** Describes a pb graph edge
+ *
+ *  Note: This class must be fully defined before t_logical_block_type, which
+ *  stores these edges in a std::deque (std::deque does not support incomplete
+ *  element types).
+ *
+ *  An edge connects one input pin to one output pin.
+ *
+ *  Data members:
+ *      num_pack_patterns: number of pack patterns this edge belongs to
+ *      pack_pattern_names: [0..num_pack_patterns-1] name of each pack pattern
+ *      pack_pattern_indices: [0..num_pack_patterns-1] id of each pack pattern
+ *      infer_pattern: if true, pattern of this edge could be inferred by checking
+ *                     input/output edges. This is true when the edge is a single
+ *                     fanout edge and is driven or driving another edge which is
+ *                     annotated with a pack pattern.
+ */
+class t_pb_graph_edge {
+  public:
+    /* timing information (NaN until loaded from the architecture's delay annotations) */
+    float delay_max = std::numeric_limits<float>::quiet_NaN();
+    float delay_min = std::numeric_limits<float>::quiet_NaN();
+
+    /* who drives this edge */
+    t_interconnect* interconnect;
+    int driver_set;
+
+    /* pack pattern info */
+    int num_pack_patterns;
+    std::vector<const char*> pack_pattern_names;
+    std::vector<int> pack_pattern_indices;
+    /* [0..num_pack_patterns-1] parallel to pack_pattern_names: true if the
+     * pattern annotation on this edge is marked allow_multi_fanout */
+    std::vector<bool> pack_pattern_allow_multi_fanout;
+    bool infer_pattern;
+
+    int switch_type_idx = ARCH_FPGA_UNDEFINED_VAL; /* architecture switch id of the edge - used when flat_routing is enabled */
+
+    // class member functions
+  public:
+    /// @brief Returns the pin that drives this edge.
+    t_pb_graph_pin* input_pin() const { return input_pin_; }
+
+    /// @brief Returns the pin that this edge drives.
+    t_pb_graph_pin* output_pin() const { return output_pin_; }
+
+    /// @brief Connects this edge from input_pin to output_pin.
+    void set_pins(t_pb_graph_pin* input_pin, t_pb_graph_pin* output_pin) {
+        input_pin_ = input_pin;
+        output_pin_ = output_pin;
+    }
+
+    /// Returns true if this edge implements one bit of a bus-based mux
+    /// (<mux bus="true">), whose single select drives every bit of its output bus.
+    bool is_bus_mux() const;
+
+    /// Returns the pb_graph_node instance whose mode contains this edge's
+    /// bus-based mux, i.e. the node that owns the one shared select.
+    /// Only valid when is_bus_mux() is true.
+    const t_pb_graph_node* bus_mux_owner() const;
+
+    /// Returns true is this edge is annotated with the given pattern_index
+    ///  pattern_index : index of the packing pattern
+    bool annotated_with_pattern(int pattern_index) const;
+
+    /// Returns true is this edge is annotated with pattern_index or its pattern
+    /// is inferred and a connected output edge is annotated with pattern_index
+    ///   pattern_index : index of the packing pattern
+    bool belongs_to_pattern(int pattern_index) const;
+
+  private:
+    /// The pin that drives this edge
+    t_pb_graph_pin* input_pin_ = nullptr;
+    /// The pin that this edge drives
+    t_pb_graph_pin* output_pin_ = nullptr;
+};
+
 /* Describes the type for a logical block
  * name: unique identifier for type
  * pb_type: Internal subblocks and routing information for this physical block
@@ -886,10 +963,6 @@ struct t_physical_tile_port {
  *
  * index: Keep track of type in array for easy access
  * physical_tile_index: index of the corresponding physical tile type
- *
- * pin_logical_num_to_pb_pin_mapping: Contains all the pins, including pins on the root-level block and internal pins, in
- * the logical block. The key of this map is the logical number of the pin, and the value is a pointer to the
- * corresponding pb_graph_pin
  *
  * primitive_pb_pin_to_logical_class_num_mapping: Maps each pin to its corresponding class's logical number. To retrieve the actual class, use this number as an
  * index to logical_class_inf.
@@ -930,7 +1003,6 @@ struct t_logical_block_type {
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///< List of physical tiles at which one could
                                                             ///< place this type of netlist block.
 
-    std::unordered_map<int, t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;                    /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
     std::unordered_map<const t_pb_graph_pin*, int> primitive_pb_pin_to_logical_class_num_mapping;  /* primitive_pb_pin_to_logical_class_num_mapping[pb_graph_pin ptr] -> class logical number */
     std::vector<t_class> primitive_logical_class_inf;                                              /* primitive_logical_class_inf[class_logical_number] -> class */
     std::unordered_map<const t_pb_graph_node*, t_class_range> primitive_pb_graph_node_class_range; /* primitive_pb_graph_node_class_range[primitive_pb_graph_node ptr] -> class range for that primitive*/
@@ -940,6 +1012,18 @@ struct t_logical_block_type {
 
     /// Returns true if this logical block type is an IO block
     bool is_io() const;
+
+    /// @brief Returns the pb graph pin with the given pin_count_in_cluster.
+    const t_pb_graph_pin* pb_graph_pin(int pin_index) const {
+        VTR_ASSERT_SAFE(pin_index >= 0 && pin_index < (int)pb_graph_pins_.size());
+        return pb_graph_pins_[pin_index];
+    }
+
+    /// @brief Returns all pins of the pb graph, indexed by pin_count_in_cluster.
+    std::span<t_pb_graph_pin* const> pb_graph_pins() const { return pb_graph_pins_; }
+
+    /// @brief Replaces the pins of the pb graph. The index of each pin must be its pin_count_in_cluster.
+    void set_pb_graph_pins(std::vector<t_pb_graph_pin*>&& pins) { pb_graph_pins_ = std::move(pins); }
 
     /**
      * @brief Check if this logical block type contains a bus-based mux (<mux bus="true">).
@@ -958,6 +1042,13 @@ struct t_logical_block_type {
      * @brief Returns the logical block port given the pin name and the corresponding logical block type
      */
     const t_port* get_port_by_pin(int pin) const;
+
+  private:
+    /// All pins of the pb graph under pb_graph_head, including pins on the
+    /// root-level block and internal pins. The index is the pin's
+    /// pin_count_in_cluster, which is also its logical number.
+    /// [0..total_pb_pins-1]
+    std::vector<t_pb_graph_pin*> pb_graph_pins_;
 };
 
 /*************************************************************************************************
@@ -1424,6 +1515,11 @@ class t_pb_graph_node {
     /// Returns true if this pb_graph_node represents a root graph node (ex. clb)
     bool is_root() const { return this->parent_pb_graph_node == nullptr; }
 
+    /// Returns the root pb_graph_node of the pb graph containing this node,
+    /// i.e. the pb_graph_head of its logical block type. Walks up the
+    /// parent nodes, so the cost grows with the depth of this node.
+    const t_pb_graph_node* find_root() const;
+
     /// Returns the number of pins on this graph node
     /// Note this is the total for all ports on this node excluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)
     int num_pins() const;
@@ -1640,79 +1736,6 @@ inline void t_pb_graph_node::alloc_pins(int num_pins) {
     VTR_ASSERT(pins_.empty());
     pins_ = std::vector<t_pb_graph_pin>(num_pins);
 }
-
-/** Describes a pb graph edge
- *
- *  An edge connects one input pin to one output pin.
- *
- *  Data members:
- *      num_pack_patterns: number of pack patterns this edge belongs to
- *      pack_pattern_names: [0..num_pack_patterns-1] name of each pack pattern
- *      pack_pattern_indices: [0..num_pack_patterns-1] id of each pack pattern
- *      infer_pattern: if true, pattern of this edge could be inferred by checking
- *                     input/output edges. This is true when the edge is a single
- *                     fanout edge and is driven or driving another edge which is
- *                     annotated with a pack pattern.
- */
-class t_pb_graph_edge {
-  public:
-    /* timing information (NaN until loaded from the architecture's delay annotations) */
-    float delay_max = std::numeric_limits<float>::quiet_NaN();
-    float delay_min = std::numeric_limits<float>::quiet_NaN();
-
-    /* who drives this edge */
-    t_interconnect* interconnect;
-    int driver_set;
-
-    /* pack pattern info */
-    int num_pack_patterns;
-    std::vector<const char*> pack_pattern_names;
-    std::vector<int> pack_pattern_indices;
-    /* [0..num_pack_patterns-1] parallel to pack_pattern_names: true if the
-     * pattern annotation on this edge is marked allow_multi_fanout */
-    std::vector<bool> pack_pattern_allow_multi_fanout;
-    bool infer_pattern;
-
-    int switch_type_idx = ARCH_FPGA_UNDEFINED_VAL; /* architecture switch id of the edge - used when flat_routing is enabled */
-
-    // class member functions
-  public:
-    /// @brief Returns the pin that drives this edge.
-    t_pb_graph_pin* input_pin() const { return input_pin_; }
-
-    /// @brief Returns the pin that this edge drives.
-    t_pb_graph_pin* output_pin() const { return output_pin_; }
-
-    /// @brief Connects this edge from input_pin to output_pin.
-    void set_pins(t_pb_graph_pin* input_pin, t_pb_graph_pin* output_pin) {
-        input_pin_ = input_pin;
-        output_pin_ = output_pin;
-    }
-
-    /// Returns true if this edge implements one bit of a bus-based mux
-    /// (<mux bus="true">), whose single select drives every bit of its output bus.
-    bool is_bus_mux() const;
-
-    /// Returns the pb_graph_node instance whose mode contains this edge's
-    /// bus-based mux, i.e. the node that owns the one shared select.
-    /// Only valid when is_bus_mux() is true.
-    const t_pb_graph_node* bus_mux_owner() const;
-
-    /// Returns true is this edge is annotated with the given pattern_index
-    ///  pattern_index : index of the packing pattern
-    bool annotated_with_pattern(int pattern_index) const;
-
-    /// Returns true is this edge is annotated with pattern_index or its pattern
-    /// is inferred and a connected output edge is annotated with pattern_index
-    ///   pattern_index : index of the packing pattern
-    bool belongs_to_pattern(int pattern_index) const;
-
-  private:
-    /// The pin that drives this edge
-    t_pb_graph_pin* input_pin_ = nullptr;
-    /// The pin that this edge drives
-    t_pb_graph_pin* output_pin_ = nullptr;
-};
 
 struct t_pb_graph_node_power {
     float transistor_cnt_pb_children; /* Total transistor size of this pb */
