@@ -28,6 +28,15 @@ class CompressedMapLookahead final : public RouterLookahead {
     int route_verbosity_;
     bool device_model_warnings_;
 
+    /**
+     * @brief (delay, congestion) cost from from_node to the to_node SINK. Congestion is scaled by (1 - criticality);
+     *        delay is scaled by criticality only when scale_delay is true, otherwise it is the unscaled delay.
+     */
+    std::pair<float, float> calculate_delay_and_cong(bool scale_delay,
+                                                     RRNodeId from_node,
+                                                     RRNodeId to_node,
+                                                     const t_conn_cost_params& params) const;
+
   protected:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
 
@@ -35,6 +44,11 @@ class CompressedMapLookahead final : public RouterLookahead {
                                                         RRNodeId to_node,
                                                         const t_conn_cost_params& params,
                                                         float R_upstream) const override;
+
+    std::pair<float, float> get_expected_pure_delay_and_scaled_cong(RRNodeId from_node,
+                                                                    RRNodeId to_node,
+                                                                    const t_conn_cost_params& params,
+                                                                    float R_upstream) const override;
 
     void compute(const std::vector<t_segment_inf>& segment_inf) override;
 

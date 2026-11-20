@@ -324,6 +324,15 @@ class ConnectionRouter : public ConnectionRouterInterface {
                                 RRNodeId target_node,
                                 const t_conn_cost_params& cost_params,
                                 const t_bb& net_bb);
+
+    /**
+     * @brief Rebuilds RCV's route tree node set from the whole route tree.
+     * RCV's loop check needs every node of the net's route tree, including
+     * branches routed without RCV and subtrees the heap seeding skips.
+     * No-op when RCV is disabled.
+     * @param rt_root Root of the net's route tree
+     */
+    void register_route_tree_for_rcv(const RouteTreeNode& rt_root);
     /**
      * @brief For high fanout nets, adds only route tree nodes which are
      * spatially close to the sink

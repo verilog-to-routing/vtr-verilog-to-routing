@@ -422,6 +422,20 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
                                                                             RRNodeId to_node,
                                                                             const t_conn_cost_params& params,
                                                                             float /* R_upstream */) const {
+    return calculate_delay_and_cong(/*scale_delay=*/true, from_node, to_node, params);
+}
+
+std::pair<float, float> CompressedMapLookahead::get_expected_pure_delay_and_scaled_cong(RRNodeId from_node,
+                                                                                        RRNodeId to_node,
+                                                                                        const t_conn_cost_params& params,
+                                                                                        float /* R_upstream */) const {
+    return calculate_delay_and_cong(/*scale_delay=*/false, from_node, to_node, params);
+}
+
+std::pair<float, float> CompressedMapLookahead::calculate_delay_and_cong(bool scale_delay,
+                                                                         RRNodeId from_node,
+                                                                         RRNodeId to_node,
+                                                                         const t_conn_cost_params& params) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 
@@ -456,9 +470,6 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
                                                                                          delta_y,
                                                                                          to_layer_num,
                                                                                          get_wire_cost_entry_compressed_lookahead);
-
-        expected_delay_cost *= params.criticality;
-        expected_cong_cost *= (1 - params.criticality);
 
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
@@ -499,13 +510,16 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
                                                              is_flat_)
                                                 .c_str())
                                 .c_str());
-        expected_delay_cost = cost_entry.delay * params.criticality;
-        expected_cong_cost = cost_entry.congestion * (1 - params.criticality);
     } else if (from_type == e_rr_type::IPIN) { /* Change if you're allowing route-throughs */
         return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
     } else { /* Change this if you want to investigate route-throughs */
         return std::make_pair(0., 0.);
     }
+
+    if (scale_delay) {
+        expected_delay_cost *= params.criticality;
+    }
+    expected_cong_cost *= (1 - params.criticality);
 
     return std::make_pair(expected_delay_cost, expected_cong_cost);
 }

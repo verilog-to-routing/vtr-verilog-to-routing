@@ -252,28 +252,32 @@ static const std::unordered_map<int, util::Cost_Entry>& pin_to_sink_costs(const 
 
 /**
  * @brief Weight a cost entry by criticality: {criticality * delay, (1 - criticality) * congestion}.
+ *        If scale_delay is false, the delay is returned unscaled: {delay, (1 - criticality) * congestion}.
  */
-static std::pair<float, float> criticality_weighted_cost(const t_conn_cost_params& params,
+static std::pair<float, float> criticality_weighted_cost(bool scale_delay,
+                                                         const t_conn_cost_params& params,
                                                          const util::Cost_Entry& cost_entry) {
-    float delay_cost = params.criticality * cost_entry.delay;
+    float delay_cost = scale_delay ? params.criticality * cost_entry.delay : cost_entry.delay;
     float cong_cost = (1. - params.criticality) * cost_entry.congestion;
     return {delay_cost, cong_cost};
 }
 
 float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
-    auto [delay_cost, cong_cost] = get_expected_delay_and_cong_flat_router(current_node, target_node, params, R_upstream);
+    auto [delay_cost, cong_cost] = get_expected_delay_and_cong_flat_router(/*scale_delay=*/true, current_node, target_node, params, R_upstream);
     return delay_cost + cong_cost;
 }
 
-std::pair<float, float> MapLookahead::add_target_sink_cost(std::pair<float, float> root_pin_cost,
+std::pair<float, float> MapLookahead::add_target_sink_cost(bool scale_delay,
+                                                           std::pair<float, float> root_pin_cost,
                                                            RRNodeId target_node,
                                                            const t_conn_cost_params& params) const {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
-    auto [delay_offset_cost, cong_offset_cost] = criticality_weighted_cost(params, target_sink_min_cost(tile_min_cost, device_ctx.grid, device_ctx.rr_graph, target_node));
+    auto [delay_offset_cost, cong_offset_cost] = criticality_weighted_cost(scale_delay, params, target_sink_min_cost(tile_min_cost, device_ctx.grid, device_ctx.rr_graph, target_node));
     return {root_pin_cost.first + delay_offset_cost, root_pin_cost.second + cong_offset_cost};
 }
 
-std::pair<float, float> MapLookahead::cost_to_sink_in_other_tile(RRNodeId current_node,
+std::pair<float, float> MapLookahead::cost_to_sink_in_other_tile(bool scale_delay,
+                                                                 RRNodeId current_node,
                                                                  RRNodeId target_node,
                                                                  const t_conn_cost_params& params) const {
     const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
@@ -282,13 +286,13 @@ std::pair<float, float> MapLookahead::cost_to_sink_in_other_tile(RRNodeId curren
     delta_y = abs(delta_y);
     int from_layer_num = rr_graph.node_layer_low(current_node);
     int to_layer_num = rr_graph.node_layer_low(target_node);
-    std::pair<float, float> wire_cost = criticality_weighted_cost(params, chann_distance_based_min_cost[from_layer_num][to_layer_num][delta_x][delta_y]);
-    return add_target_sink_cost(wire_cost, target_node, params);
+    std::pair<float, float> wire_cost = criticality_weighted_cost(scale_delay, params, chann_distance_based_min_cost[from_layer_num][to_layer_num][delta_x][delta_y]);
+    return add_target_sink_cost(scale_delay, wire_cost, target_node, params);
 }
 
 // RCV's ConnectionRouter::compute_node_cost_using_rcv() needs the delay and congestion costs to be kept separate.
 // This function returns the two costs separately to allow flat routing to be compatible with RCV.
-std::pair<float, float> MapLookahead::get_expected_delay_and_cong_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
+std::pair<float, float> MapLookahead::get_expected_delay_and_cong_flat_router(bool scale_delay, RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const DeviceGrid& grid = device_ctx.grid;
@@ -303,7 +307,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong_flat_router(RR
         || (from_rr_type == e_rr_type::OPIN && is_inter_cluster_node(rr_graph, current_node))) {
         // CHANX/CHANY and root-level OPINs: the wire lookahead only reaches the target tile's root-level pins;
         // add the intra-cluster cost to the sink
-        return add_target_sink_cost(get_expected_delay_and_cong_global(current_node, target_node, params, R_upstream), target_node, params);
+        return add_target_sink_cost(scale_delay, get_expected_delay_and_cong_global(scale_delay, current_node, target_node, params, R_upstream), target_node, params);
     } else if (from_rr_type == e_rr_type::OPIN) {
         // Intra-cluster OPIN
         if (node_in_same_physical_tile(current_node, target_node)) {
@@ -313,14 +317,14 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong_flat_router(RR
                 // There isn't any intra-cluster path to connect the current OPIN to the SINK, thus it has to outside.
                 // The best estimation we have now, it the minimum intra-cluster delay to the sink. However, this cost is incomplete,
                 // since it does not consider the cost of going outside of the cluster and, then, returning to it.
-                return criticality_weighted_cost(params, target_sink_min_cost(tile_min_cost, grid, rr_graph, target_node));
+                return criticality_weighted_cost(scale_delay, params, target_sink_min_cost(tile_min_cost, grid, rr_graph, target_node));
             }
-            return criticality_weighted_cost(params, pin_delay_itr->second);
+            return criticality_weighted_cost(scale_delay, params, pin_delay_itr->second);
         }
         // Since we don't know which type of wires are accessible from an OPIN inside the cluster, we use
         // distance_based_min_cost to get an estimation of the global cost, and then, add this cost to the tile_min_cost
         // to have an estimation of the cost of getting into a cluster - We don't have any estimation of the cost to get out of the cluster
-        return cost_to_sink_in_other_tile(current_node, target_node, params);
+        return cost_to_sink_in_other_tile(scale_delay, current_node, target_node, params);
     } else if (from_rr_type == e_rr_type::IPIN) {
         // Route-through is not supported and the router only pushes IPINs of the target tile (target_bb prune in
         // timing_driven_expand_neighbour, relevant_node_to_target when seeding), so the current tile's pin table
@@ -331,12 +335,12 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong_flat_router(RR
         if (pin_delay_itr == pin_delays.end()) {
             return {ROUTER_LOOKAHEAD_NO_PATH_SENTINEL, ROUTER_LOOKAHEAD_NO_PATH_SENTINEL};
         }
-        return criticality_weighted_cost(params, pin_delay_itr->second);
+        return criticality_weighted_cost(scale_delay, params, pin_delay_itr->second);
     } else if (from_rr_type == e_rr_type::SOURCE) {
         if (node_in_same_physical_tile(current_node, target_node)) {
             return {0., 0.};
         }
-        return cost_to_sink_in_other_tile(current_node, target_node, params);
+        return cost_to_sink_in_other_tile(scale_delay, current_node, target_node, params);
     } else {
         VTR_ASSERT(from_rr_type == e_rr_type::SINK);
         return {0., 0.};
@@ -348,12 +352,20 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong_flat_router(RR
  * from the specified source to the specified target */
 std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const {
     if (is_flat_) {
-        return get_expected_delay_and_cong_flat_router(from_node, to_node, params, R_upstream);
+        return get_expected_delay_and_cong_flat_router(/*scale_delay=*/true, from_node, to_node, params, R_upstream);
     }
-    return get_expected_delay_and_cong_global(from_node, to_node, params, R_upstream);
+    return get_expected_delay_and_cong_global(/*scale_delay=*/true, from_node, to_node, params, R_upstream);
 }
 
-std::pair<float, float> MapLookahead::get_expected_delay_and_cong_global(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
+// Same as get_expected_delay_and_cong(), but the delay is not scaled by criticality (RCV needs the unscaled delay)
+std::pair<float, float> MapLookahead::get_expected_pure_delay_and_scaled_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const {
+    if (is_flat_) {
+        return get_expected_delay_and_cong_flat_router(/*scale_delay=*/false, from_node, to_node, params, R_upstream);
+    }
+    return get_expected_delay_and_cong_global(/*scale_delay=*/false, from_node, to_node, params, R_upstream);
+}
+
+std::pair<float, float> MapLookahead::get_expected_delay_and_cong_global(bool scale_delay, RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
 
@@ -454,7 +466,9 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong_global(RRNodeI
                                             .c_str())
                             .c_str());
 
-    expected_delay_cost *= params.criticality;
+    if (scale_delay) {
+        expected_delay_cost *= params.criticality;
+    }
     expected_cong_cost *= (1.0f - params.criticality);
 
     return std::make_pair(expected_delay_cost, expected_cong_cost);
