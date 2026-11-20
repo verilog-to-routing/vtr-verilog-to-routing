@@ -105,7 +105,7 @@ LegalizationCluster::LegalizationCluster(t_logical_block_type_ptr cluster_type,
                                          int cluster_mode,
                                          const std::vector<LbTypeRRGraph>& lb_type_rr_graphs,
                                          const std::unordered_set<int>& valid_feedback_pins,
-                                         ClusterRouterLookahead* lookahead,
+                                         ClusterRouterLookahead& lookahead,
                                          bool enable_router_hot_start)
     : pb(new t_pb)
     , type(cluster_type)
@@ -1305,13 +1305,9 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
     // Create the new cluster
     VTR_ASSERT_MSG(cluster_type->index < (int)valid_feedback_pins_by_type_.size(),
                    ("Logical block type not found in feedback pin map: " + std::string(cluster_type->name)).c_str());
-    ClusterRouterLookahead* lookahead = nullptr;
-    if (!lookaheads_by_type_.empty()) {
-        lookahead = &lookaheads_by_type_[cluster_type->index];
-    }
     LegalizationCluster new_cluster(cluster_type, cluster_mode, lb_type_rr_graphs_,
                                     valid_feedback_pins_by_type_[cluster_type->index],
-                                    lookahead,
+                                    *lookaheads_by_type_[cluster_type->index],
                                     enable_cluster_router_hot_start_);
 
     // Try to pack the molecule into the new_cluster.
@@ -1559,10 +1555,16 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     init_feedback_pin_sets(logical_block_types);
 
     // Build the cluster router lookahead of each block type.
-    if (cluster_router_lookahead == e_cluster_router_lookahead::HOPS) {
-        lookaheads_by_type_.reserve(lb_type_rr_graphs_.size());
-        for (const LbTypeRRGraph& lb_type_rr_graph : lb_type_rr_graphs_) {
-            lookaheads_by_type_.emplace_back(lb_type_rr_graph);
+    lookaheads_by_type_.reserve(lb_type_rr_graphs_.size());
+    for (const LbTypeRRGraph& lb_type_rr_graph : lb_type_rr_graphs_) {
+        switch (cluster_router_lookahead) {
+            case e_cluster_router_lookahead::NONE:
+                lookaheads_by_type_.push_back(std::make_unique<ClusterRouterNoOpLookahead>());
+                break;
+            case e_cluster_router_lookahead::HOPS:
+                lookaheads_by_type_.push_back(std::make_unique<ClusterRouterHopsLookahead>(lb_type_rr_graph,
+                                                                                           cluster_router_min_cost_per_edge(lb_type_rr_graph)));
+                break;
         }
     }
 }

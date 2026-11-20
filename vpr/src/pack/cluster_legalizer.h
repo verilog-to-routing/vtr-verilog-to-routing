@@ -11,6 +11,7 @@
  * externally to the Packer in VPR.
  */
 
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -112,7 +113,7 @@ struct LegalizationCluster {
      *  @param lb_type_rr_graphs         The RR-graphs for each cluster type.
      *  @param valid_feedback_pins       Pre-computed feedback-pin set for this type;
      *                                   owned by ClusterLegalizer, must outlive this cluster.
-     *  @param lookahead                 Hop counts to the sinks of this type, or nullptr.
+     *  @param lookahead                 Estimate of the remaining cost to the sinks of this type;
      *                                   owned by ClusterLegalizer, must outlive this cluster.
      *  @param enable_router_hot_start   Forwarded to ClusterRouter; enables hot-start
      *                                   routing on each try_intra_lb_route call.
@@ -121,7 +122,7 @@ struct LegalizationCluster {
                         int cluster_mode,
                         const std::vector<LbTypeRRGraph>& lb_type_rr_graphs,
                         const std::unordered_set<int>& valid_feedback_pins,
-                        ClusterRouterLookahead* lookahead,
+                        ClusterRouterLookahead& lookahead,
                         bool enable_router_hot_start = false);
 
     /// @brief A list of the molecules in the cluster. By design, a cluster will
@@ -667,10 +668,10 @@ class ClusterLegalizer {
     ///        Indexed by t_logical_block_type::index.
     std::vector<std::unordered_set<int>> valid_feedback_pins_by_type_;
 
-    /// @brief Per-type hop counts to the sinks of the RR graph, used by the
-    ///        cluster router. Only created when the cluster router lookahead
-    ///        is enabled. Indexed by t_logical_block_type::index.
-    std::vector<ClusterRouterLookahead> lookaheads_by_type_;
+    /// @brief Per-type estimate of the remaining cost to the sinks of the RR
+    ///        graph, used by the cluster router. The kind is set by the cluster
+    ///        router lookahead option. Indexed by t_logical_block_type::index.
+    std::vector<std::unique_ptr<ClusterRouterLookahead>> lookaheads_by_type_;
 
     /// @brief The current legalization strategy of the cluster legalizer.
     ClusterLegalizationStrategy cluster_legalization_strategy_;

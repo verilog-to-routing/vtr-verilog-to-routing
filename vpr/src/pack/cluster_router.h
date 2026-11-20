@@ -9,7 +9,6 @@
  */
 
 #include <cstdio>
-#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -246,7 +245,6 @@ class ClusterRouter {
         , explore_id_index_(0)
         , lb_type_(nullptr)
         , pres_con_fac_(0.0f)
-        , hop_cost_(0.0f)
         , is_clean_(true)
         , is_valid_(false)
         , enable_hot_start_(false) {}
@@ -259,7 +257,7 @@ class ClusterRouter {
      *  @param valid_feedback_pins  Pre-computed set of top-level output pin
      *                              indices with Fc_out > 0; owned by the
      *                              caller and must outlive this router.
-     *  @param lookahead            Hop counts to the sinks of this type.
+     *  @param lookahead            Estimate of the remaining cost to the sinks of this type.
      *                              Owned by the caller and must outlive this router.
      *  @param enable_hot_start     When true, each call to try_intra_lb_route
      *                              seeds unchanged nets from the last successful
@@ -269,7 +267,7 @@ class ClusterRouter {
     ClusterRouter(const LbTypeRRGraph& lb_type_graph,
                   t_logical_block_type_ptr type,
                   const std::unordered_set<int>& valid_feedback_pins,
-                  ClusterRouterLookahead* lookahead,
+                  ClusterRouterLookahead& lookahead,
                   bool enable_hot_start = false);
 
     /**
@@ -500,9 +498,6 @@ class ClusterRouter {
                        int net_fanout,
                        bool target_is_internal_sink);
 
-    /// @brief Lower bound on the cost from node to the current sink, or nullopt if node has no path to it.
-    std::optional<float> remaining_cost_(LbRRNodeId node) const;
-
     /**
      * @brief Determine if a completed route is valid.
      *
@@ -566,8 +561,8 @@ class ClusterRouter {
     ///        into the map owned by ClusterLegalizer, valid for packing lifetime.
     const std::unordered_set<int>* valid_feedback_pins_;
 
-    /// @brief Hop counts to the sinks of this block type.
-    ///        Null when the cluster router lookahead option is off.
+    /// @brief Estimate of the remaining cost to the sinks of this block type.
+    ///        Owned by ClusterLegalizer, valid for packing lifetime.
     ClusterRouterLookahead* lookahead_;
 
     // =========================================================================
@@ -623,10 +618,6 @@ class ClusterRouter {
     /// @brief Priority queue used during path search.
     vtr::priority_queue<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node> pq_;
 
-    /// @brief Lower bound on the cost of one edge. A node h hops from the
-    ///        sink is at least hop_cost_ * h away from it.
-    float hop_cost_;
-
     /// @brief Flag that indicates if this object has been cleaned or not.
     bool is_clean_;
 
@@ -643,3 +634,6 @@ class ClusterRouter {
  * @brief Free the given pb route object.
  */
 void free_pb_route(t_pb_route* free_pb_route);
+
+/// @brief Lower bound on the cost the cluster router search adds for one edge of lb_type_graph.
+float cluster_router_min_cost_per_edge(const LbTypeRRGraph& lb_type_graph);

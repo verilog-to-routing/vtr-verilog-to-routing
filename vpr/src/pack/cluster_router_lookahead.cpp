@@ -6,14 +6,15 @@
 /// @brief Most memory the hop tables of one block type may use.
 static constexpr size_t MAX_HOP_TABLE_BYTES = 128 * 1024 * 1024;
 
-ClusterRouterLookahead::ClusterRouterLookahead(const LbTypeRRGraph& lb_type_graph)
-    : lb_type_graph_(lb_type_graph) {
+ClusterRouterHopsLookahead::ClusterRouterHopsLookahead(const LbTypeRRGraph& lb_type_graph, float min_cost_per_hop)
+    : lb_type_graph_(lb_type_graph)
+    , min_cost_per_hop_(min_cost_per_hop) {
     zero_hops_.resize(lb_type_graph.num_nodes(), 0);
     hop_table_bytes_ = 0;
     sink_hops_ = &zero_hops_;
 }
 
-void ClusterRouterLookahead::set_sink(LbRRNodeId sink) {
+void ClusterRouterHopsLookahead::set_sink(LbRRNodeId sink) {
     auto it = hop_tables_.find(sink);
     if (it != hop_tables_.end()) {
         sink_hops_ = &it->second;
@@ -34,8 +35,16 @@ void ClusterRouterLookahead::set_sink(LbRRNodeId sink) {
     sink_hops_ = &hops;
 }
 
-void ClusterRouterLookahead::build_hop_table_(LbRRNodeId sink, t_cost_to_sink& hops) const {
-    hops.assign(lb_type_graph_.num_nodes(), UNREACHABLE);
+float ClusterRouterHopsLookahead::remaining_cost(LbRRNodeId node) const {
+    uint8_t hops = (*sink_hops_)[node];
+    if (hops == UNREACHABLE_HOPS) {
+        return UNREACHABLE;
+    }
+    return min_cost_per_hop_ * hops;
+}
+
+void ClusterRouterHopsLookahead::build_hop_table_(LbRRNodeId sink, t_cost_to_sink& hops) const {
+    hops.assign(lb_type_graph_.num_nodes(), UNREACHABLE_HOPS);
     hops[sink] = 0;
 
     // Breadth-first search from the sink, following edges backwards. Nodes
@@ -46,10 +55,10 @@ void ClusterRouterLookahead::build_hop_table_(LbRRNodeId sink, t_cost_to_sink& h
         LbRRNodeId inode = to_visit.front();
         to_visit.pop();
 
-        // Counts stop growing one below UNREACHABLE so they stay a lower bound.
-        uint8_t next_hops = std::min<int>(hops[inode] + 1, UNREACHABLE - 1);
+        // Counts stop growing one below UNREACHABLE_HOPS so they stay a lower bound.
+        uint8_t next_hops = std::min<int>(hops[inode] + 1, UNREACHABLE_HOPS - 1);
         for (LbRRNodeId src : lb_type_graph_.fanin_nodes(inode)) {
-            if (hops[src] == UNREACHABLE) {
+            if (hops[src] == UNREACHABLE_HOPS) {
                 hops[src] = next_hops;
                 to_visit.push(src);
             }

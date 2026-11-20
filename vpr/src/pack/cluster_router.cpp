@@ -13,7 +13,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -137,10 +136,9 @@ static bool is_route_mode_compatible(const t_lb_trace& rt,
 ClusterRouter::ClusterRouter(const LbTypeRRGraph& lb_type_graph,
                              t_logical_block_type_ptr type,
                              const std::unordered_set<int>& valid_feedback_pins,
-                             ClusterRouterLookahead* lookahead,
+                             ClusterRouterLookahead& lookahead,
                              bool enable_hot_start)
-    : lookahead_(lookahead)
-    , hop_cost_(lookahead != nullptr ? MIN_FANOUT_FACTOR * lb_type_graph.min_edge_cost() : 0.0f) {
+    : lookahead_(&lookahead) {
     lb_type_graph_ = &lb_type_graph;
     lb_type_ = type;
     valid_feedback_pins_ = &valid_feedback_pins;
@@ -577,9 +575,7 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
                 // Tell the lookahead which sink this search is for. Its estimate
                 // of the remaining cost to the sink is added to the path cost
                 // of each node to order the queue.
-                if (lookahead_ != nullptr) {
-                    lookahead_->set_sink(intra_lb_nets_[idx].terminals[itarget]);
-                }
+                lookahead_->set_sink(intra_lb_nets_[idx].terminals[itarget]);
 
                 expand_rt_(idx);
 
@@ -695,6 +691,10 @@ void free_pb_route(t_pb_route* pb_route) {
     if (pb_route != nullptr) {
         delete[] pb_route;
     }
+}
+
+float cluster_router_min_cost_per_edge(const LbTypeRRGraph& lb_type_graph) {
+    return MIN_FANOUT_FACTOR * lb_type_graph.min_edge_cost();
 }
 
 // =============================================================================
@@ -1200,27 +1200,15 @@ void ClusterRouter::expand_rt_rec_(const t_lb_trace& rt, LbRRNodeId prev_index, 
 
     // Queue the node with its cost set to the lower bound on the cost to the sink.
     // A node with no path to the sink is left out of the queue.
-    std::optional<float> remaining_cost = remaining_cost_(enode.node_index);
-    if (remaining_cost.has_value()) {
-        enode.cost = *remaining_cost;
+    float remaining_cost = lookahead_->remaining_cost(enode.node_index);
+    if (remaining_cost != ClusterRouterLookahead::UNREACHABLE) {
+        enode.cost = remaining_cost;
         pq_.push(enode);
     }
 
     for (unsigned int i = 0; i < rt.next_nodes.size(); i++) {
         expand_rt_rec_(rt.next_nodes[i], rt.current_node, irt_net);
     }
-}
-
-std::optional<float> ClusterRouter::remaining_cost_(LbRRNodeId node) const {
-    if (lookahead_ == nullptr) {
-        return 0.0f;
-    }
-
-    uint8_t hops = lookahead_->remaining_cost(node);
-    if (hops == ClusterRouterLookahead::UNREACHABLE) {
-        return std::nullopt;
-    }
-    return hop_cost_ * hops;
 }
 
 void ClusterRouter::expand_edges_(int mode,
@@ -1253,8 +1241,8 @@ void ClusterRouter::expand_edges_(int mode,
         enode.node_index = edge.node_index;
 
         // Skip nodes with no path to the sink.
-        std::optional<float> remaining_cost = remaining_cost_(enode.node_index);
-        if (!remaining_cost.has_value()) {
+        float remaining_cost = lookahead_->remaining_cost(enode.node_index);
+        if (remaining_cost == ClusterRouterLookahead::UNREACHABLE) {
             continue;
         }
 
@@ -1281,7 +1269,7 @@ void ClusterRouter::expand_edges_(int mode,
 
         incr_cost *= fanout_factor;
         enode.path_cost = cur_cost + incr_cost;
-        enode.cost = enode.path_cost + *remaining_cost;
+        enode.cost = enode.path_cost + remaining_cost;
 
         // Add to queue if path cost is lower than lowest cost path to this enode
         if (explored_node_tb_[enode.node_index].enqueue_id == explore_id_index_) {
