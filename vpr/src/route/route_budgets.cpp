@@ -128,7 +128,8 @@ void route_budgets::load_route_budgets(NetPinsMatrix<float>& net_delay,
         allocate_slack_using_weights(net_delay, netlist_pin_lookup, use_negative_hold_slacks);
         calculate_delay_targets();
 
-        // YOYO starts with RCV off everywhere; enable_rcv_on_hold_violations() turns it on per connection
+        // YOYO starts with RCV off everywhere; a later call to enable_rcv_on_hold_violation
+        // will turn it on for connections that need hold fixing
         if (router_opts.routing_budgets_algorithm == YOYO) {
             set_rcv_flag_for_all(false);
         }
@@ -748,7 +749,7 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
     float hold_slack_diff = current_hold_slack - best_hold_slack_;
     bool hold_slack_improved = hold_slack_diff >= std::abs(best_hold_slack_) * IMPROVEMENT_THRES_PER
                                && hold_slack_diff >= IMPROVEMENT_THRES_VAL;
-    if (hold_slack_improved) best_hold_slack_ = current_hold_slack;
+    best_hold_slack_ = std::max(current_hold_slack, best_hold_slack_);
 
     // Keep a history of previous neg slacks
     // Instead track number of hold violating nets being resolved in the future?
@@ -826,8 +827,8 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
         return false;
     }
 
-    // Tell the router RCV is done if hold slack didn't improve. The router gives up on hold
-    // after RCV_FINISH_EARLY_COUNTDOWN consecutive iterations without an improvement
+    // Return whether or not hold slack improved a meaningful amount in the latest iteration of RCV;
+    // The router can use this to decide when to give up on hold
     return !hold_slack_improved;
 }
 
@@ -990,6 +991,8 @@ bool route_budgets::should_use_rcv(ParentNetId net_id, int ipin) const {
 
 void route_budgets::enable_rcv_on_hold_violations(std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                                   const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
+    // Return if the budget hasn't been loaded;
+    // use_rcv is only allocated when budget is loaded
     if (!set) return;
 
     for (auto net_id : net_list_.nets()) {

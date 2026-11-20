@@ -475,7 +475,7 @@ bool route(const Netlist<>& net_list,
                  * Increasing this will make it resolve hold faster, but could result in lower circuit quality */
                 constexpr float budget_increase_factor = 300e-12;
 
-                if (itry > 5 && current_hold_slack != 0)
+                if (itry > 5 && current_hold_slack < 0)
                     rcv_finished = budgeting_inf.increase_min_budgets_if_struggling(budget_increase_factor, timing_info, current_hold_slack, netlist_pin_lookup);
                 if (rcv_finished)
                     rcv_finished_count--;

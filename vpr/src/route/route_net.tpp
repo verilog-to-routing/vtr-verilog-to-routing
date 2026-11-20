@@ -604,7 +604,9 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
     /* update global occupancy from the new branch */
     if (new_branch) {
         pathfinder_update_cost_from_route_tree(new_branch.value(), 1);
-        // Keep the net-level RCV route tree set in sync, even if this connection didn't use RCV
+        // Keep the net-level RCV route tree set in sync, even if this connection didn't use RCV;
+        // Does not do anything if rcv has not been used for any connections on this net
+        // including this new one.
         router.add_branch_to_rcv_route_tree_set(new_branch.value());
     }
 

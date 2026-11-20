@@ -90,12 +90,36 @@ class route_budgets {
                                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                                        const t_router_opts& router_opts);
     void allocate_slack_using_weights(NetPinsMatrix<float>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, bool negative_hold_slack);
-    /*Sets the target (and min/max) delay of every clock connection to the maximum observed
-     * clock delay, to encourage the router to equalize clock delays and reduce skew. All
-     * other connections are left at their initial (unconstrained) budgets.*/
+
+    /**
+     * @brief Sets the target delay of every clock connection to the maximum observed
+     * clock delay.
+     * 
+     * Sets both target and min/max delay to encourage the router to equalize clock delays
+     * and reduce skew. All other connections are left at their initial (unconstrained) budgets.
+     *
+     * @param net_delay routed delay of each connection after first router iteration
+     */
     void set_low_skew_clock_budgets(NetPinsMatrix<float>& net_delay);
-    /*Sometimes want to allocate only positive or negative slack.
-     * By default, allocate both*/
+
+    /**
+     * @brief One pass of minimax-PERT slack allocation. Each connection c gets slack in
+     *        proportion to its share of its path's delay:
+     *        net_delay(c) * path_slack(c) / total_path_delay(c).
+     *
+     * setup adds this amount to the budget; hold subtracts it. Callers repeat the pass,
+     * re-running STA on @p temp_budgets each time, until the return value is below a threshold.
+     *
+     * @param orig_timing_info   STA on routed delays; gives the total path delay through each connection.
+     * @param timing_info        STA on the current budgets; gives the slack that gets allocated.
+     * @param temp_budgets       Budgets to update in place (delay_max_budget or delay_min_budget).
+     * @param net_delay          Routed delay of each connection, used as its weight.
+     * @param netlist_pin_lookup Clustered-to-atom pin lookup.
+     * @param analysis_type      SETUP (long-path slack) or HOLD (short-path slack).
+     * @param keep_in_bounds     Clamp budgets to [delay_lower_bound, delay_upper_bound].
+     * @param slack_type         Update only connections with POSITIVE or NEGATIVE slack, or BOTH.
+     * @return Largest absolute budget change in this pass, in seconds.
+     */
     float minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timing_info,
                        std::shared_ptr<SetupHoldTimingInfo> timing_info,
                        NetPinsMatrix<float>& temp_budgets,
@@ -136,6 +160,16 @@ class route_budgets {
     void calculate_delay_targets();
     void calculate_delay_targets(ParentNetId net_id, ParentPinId pin_id);
     tatum::EdgeId get_edge_from_nets(ParentNetId net_id, int ipin);
+    /**
+     * @brief Sets the RCV flag of every sink connection on every net to the same value.
+     *
+     * The source pin entry (index 0) of each net is always set to false, whatever
+     * @p flag is, because RCV only applies to sink connections.
+     *
+     * @note use_rcv must already be allocated (see alloc_budget_memory()).
+     *
+     * @param flag True to route every connection with RCV, false to turn RCV off everywhere.
+     */
     void set_rcv_flag_for_all(bool flag);
 
     /*debugging tools*/
@@ -161,7 +195,7 @@ class route_budgets {
     /*used to keep count the number of continuous time this node was congested*/
     vtr::vector<ParentNetId, int> num_times_congested; //[0..num_nets]
     std::queue<float> negative_hold_slacks;
-    /*best (least negative) hold slack seen so far, used to detect when RCV stops making progress*/
+    /// @brief best (least negative) hold slack seen so far, used to detect when RCV stops making progress
     float best_hold_slack_ = -std::numeric_limits<float>::infinity();
 
     const Netlist<>& net_list_;
