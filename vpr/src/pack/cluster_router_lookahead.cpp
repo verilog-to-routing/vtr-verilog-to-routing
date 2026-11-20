@@ -10,25 +10,28 @@ ClusterRouterLookahead::ClusterRouterLookahead(const LbTypeRRGraph& lb_type_grap
     : lb_type_graph_(lb_type_graph) {
     zero_hops_.resize(lb_type_graph.num_nodes(), 0);
     hop_table_bytes_ = 0;
+    sink_hops_ = &zero_hops_;
 }
 
-const ClusterRouterLookahead::t_cost_to_sink& ClusterRouterLookahead::hops_to(LbRRNodeId sink) {
+void ClusterRouterLookahead::set_sink(LbRRNodeId sink) {
     auto it = hop_tables_.find(sink);
     if (it != hop_tables_.end()) {
-        return it->second;
+        sink_hops_ = &it->second;
+        return;
     }
 
     // Past the memory budget, give no lower bound.
     const size_t bytes_per_hop_table = lb_type_graph_.num_nodes() * sizeof(uint8_t);
     if (hop_table_bytes_ + bytes_per_hop_table > MAX_HOP_TABLE_BYTES) {
-        return zero_hops_;
+        sink_hops_ = &zero_hops_;
+        return;
     }
 
     // Inserts an empty table for sink that build_hop_table_ fills.
     t_cost_to_sink& hops = hop_tables_[sink];
     build_hop_table_(sink, hops);
     hop_table_bytes_ += bytes_per_hop_table;
-    return hops;
+    sink_hops_ = &hops;
 }
 
 void ClusterRouterLookahead::build_hop_table_(LbRRNodeId sink, t_cost_to_sink& hops) const {

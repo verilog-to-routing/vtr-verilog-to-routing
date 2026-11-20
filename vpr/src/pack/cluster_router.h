@@ -246,7 +246,6 @@ class ClusterRouter {
         , explore_id_index_(0)
         , lb_type_(nullptr)
         , pres_con_fac_(0.0f)
-        , sink_hops_(nullptr)
         , hop_cost_(0.0f)
         , is_clean_(true)
         , is_valid_(false)
@@ -623,10 +622,6 @@ class ClusterRouter {
 
     /// @brief Priority queue used during path search.
     vtr::priority_queue<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node> pq_;
-
-    /// @brief Hop counts to the sink of the current search, from lookahead_.
-    ///        Stays null when the router has no lookahead.
-    const ClusterRouterLookahead::t_cost_to_sink* sink_hops_;
 
     /// @brief Lower bound on the cost of one edge. A node h hops from the
     ///        sink is at least hop_cost_ * h away from it.

@@ -21,7 +21,7 @@
  * Once the kept tables reach a memory budget, new sinks get an all-zero
  * table instead, which is a valid but useless bound.
  *
- * The cluster router runs single threaded. hops_to fills the cache on a miss
+ * The cluster router runs single threaded. set_sink fills the cache on a miss
  * and is not safe to call from several threads at once.
  */
 class ClusterRouterLookahead {
@@ -41,8 +41,15 @@ class ClusterRouterLookahead {
     /// @brief Hop tables are built on first use. lb_type_graph must outlive this object.
     explicit ClusterRouterLookahead(const LbTypeRRGraph& lb_type_graph);
 
-    /// @brief For each node, the fewest edges on any path to sink, or UNREACHABLE.
-    const t_cost_to_sink& hops_to(LbRRNodeId sink);
+    /// @brief Makes sink the sink that remaining_cost refers to.
+    /// The current sink is shared by every router of this block type, so each
+    /// search must call set_sink before it calls remaining_cost.
+    void set_sink(LbRRNodeId sink);
+
+    /// @brief The fewest edges on any path from node to the current sink, or UNREACHABLE.
+    uint8_t remaining_cost(LbRRNodeId node) const {
+        return (*sink_hops_)[node];
+    }
 
   private:
     /// @brief Fills hops with the fewest edges from every node to sink.
@@ -59,4 +66,7 @@ class ClusterRouterLookahead {
 
     /// @brief Total bytes held by the tables in hop_tables_.
     size_t hop_table_bytes_;
+
+    /// @brief Hop table of the current sink. The all-zero table until set_sink is called.
+    const t_cost_to_sink* sink_hops_;
 };

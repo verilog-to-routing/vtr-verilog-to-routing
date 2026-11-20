@@ -140,7 +140,6 @@ ClusterRouter::ClusterRouter(const LbTypeRRGraph& lb_type_graph,
                              ClusterRouterLookahead* lookahead,
                              bool enable_hot_start)
     : lookahead_(lookahead)
-    , sink_hops_(nullptr)
     , hop_cost_(lookahead != nullptr ? MIN_FANOUT_FACTOR * lb_type_graph.min_edge_cost() : 0.0f) {
     lb_type_graph_ = &lb_type_graph;
     lb_type_ = type;
@@ -174,7 +173,6 @@ void ClusterRouter::clean_router_data() {
     intra_lb_nets_.shrink_to_fit();
     saved_lb_nets_.clear();
     saved_lb_nets_.shrink_to_fit();
-    sink_hops_ = nullptr;
 
     is_clean_ = true;
     is_valid_ = false;
@@ -576,12 +574,11 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
             for (size_t itarget = 1; itarget < intra_lb_nets_[idx].terminals.size() && !is_impossible; itarget++) {
                 pq_.clear();
 
-                // Get the hop table of this sink. It holds the fewest edges
-                // from every node to the sink over the edges of all modes,
-                // which the search adds to the path cost of each node to
-                // order the queue.
+                // Tell the lookahead which sink this search is for. Its estimate
+                // of the remaining cost to the sink is added to the path cost
+                // of each node to order the queue.
                 if (lookahead_ != nullptr) {
-                    sink_hops_ = &lookahead_->hops_to(intra_lb_nets_[idx].terminals[itarget]);
+                    lookahead_->set_sink(intra_lb_nets_[idx].terminals[itarget]);
                 }
 
                 expand_rt_(idx);
@@ -1215,11 +1212,11 @@ void ClusterRouter::expand_rt_rec_(const t_lb_trace& rt, LbRRNodeId prev_index, 
 }
 
 std::optional<float> ClusterRouter::remaining_cost_(LbRRNodeId node) const {
-    if (sink_hops_ == nullptr) {
+    if (lookahead_ == nullptr) {
         return 0.0f;
     }
 
-    uint8_t hops = (*sink_hops_)[node];
+    uint8_t hops = lookahead_->remaining_cost(node);
     if (hops == ClusterRouterLookahead::UNREACHABLE) {
         return std::nullopt;
     }
