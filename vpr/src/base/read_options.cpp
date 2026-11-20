@@ -2350,6 +2350,16 @@ static void add_analytical_placement_options(argparse::ArgumentParser& parser, t
         .default_value("256")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument<bool, ParseOnOff>(args.ap_ram_group_density, "--ap_ram_group_density")
+        .help(
+            "Controls how global placement in the AP flow measures the density of RAMs.\n"
+            "When on, each physical RAM group created by the RAM pre-mapper takes one\n"
+            "instance of its pre-assigned RAM type, and only tiles of that type can hold it.\n"
+            "When off, RAMs are measured by the number of memory bits they use.\n"
+            "Has no effect unless --use_ram_premapper is on.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument(args.ap_partial_legalizer_target_density, "--ap_partial_legalizer_target_density")
         .help(
             "Sets the target density of different physical tiles on the FPGA device "

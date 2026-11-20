@@ -16,11 +16,14 @@
  */
 
 #include <string>
+#include <unordered_map>
 #include "logic_types.h"
 #include "primitive_vector_fwd.h"
 #include "vtr_assert.h"
 #include "vtr_range.h"
 #include "vtr_vector_map.h"
+
+struct t_logical_block_type;
 
 /**
  * @brief A manager class for keeping track of the mapping between logical models
@@ -93,6 +96,39 @@ class PrimitiveDimManager {
     }
 
     /**
+     * @brief Create a dimension which counts whole instances of the given
+     *        logical block type.
+     *
+     * This is used for blocks which should take up an entire instance of a
+     * logical block type, regardless of the primitives they use (e.g. physical
+     * RAM groups). The name is used only for printing debug information on
+     * this dimension.
+     */
+    inline PrimitiveVectorDim create_block_type_dim(const t_logical_block_type* block_type, const std::string& name) {
+        VTR_ASSERT_SAFE_MSG(block_type != nullptr,
+                            "Cannot create a dim for an invalid logical block type");
+        VTR_ASSERT_SAFE_MSG(block_type_dim_.count(block_type) == 0,
+                            "Each logical block type should have at most one instance dim");
+        PrimitiveVectorDim new_dim = create_empty_dim(name);
+        block_type_dim_[block_type] = new_dim;
+        return new_dim;
+    }
+
+    /**
+     * @brief Get the primitive vector dim which counts instances of the given
+     *        logical block type.
+     *
+     * Returns an invalid dim if no such dim was created for this block type.
+     */
+    inline PrimitiveVectorDim get_block_type_dim(const t_logical_block_type* block_type) const {
+        auto it = block_type_dim_.find(block_type);
+        if (it == block_type_dim_.end())
+            return PrimitiveVectorDim();
+
+        return it->second;
+    }
+
+    /**
      * @brief Get the name of the given primitive vector dim.
      */
     inline const std::string& get_dim_name(PrimitiveVectorDim dim) const {
@@ -107,6 +143,11 @@ class PrimitiveDimManager {
 
     /// @brief A lookup between logical models and their primitive dim.
     vtr::vector_map<LogicalModelId, PrimitiveVectorDim> model_dim_;
+
+    /// @brief A lookup between logical block types and the primitive dim which
+    ///        counts their instances. A block type only has such a dim if some
+    ///        blocks take up a whole instance of it (e.g. physical RAM groups).
+    std::unordered_map<const t_logical_block_type*, PrimitiveVectorDim> block_type_dim_;
 
     /// @brief A lookup between primitive dims and their names.
     vtr::vector_map<PrimitiveVectorDim, std::string> dim_name_;

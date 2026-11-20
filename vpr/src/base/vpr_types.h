@@ -1194,6 +1194,11 @@ struct t_ap_opts {
     /// The threshold to ignore nets with higher fanout than that value while constructing the solver.
     int ap_high_fanout_threshold;
 
+    /// Whether global placement treats each physical RAM group from the RAM
+    /// pre-mapper as one instance of its pre-assigned RAM type, instead of
+    /// using the bit-based mass of its RAM slices.
+    bool ap_ram_group_density;
+
     /// Vector of strings passed by the user to configure the target density of different physical tiles on the device.
     std::vector<std::string> ap_partial_legalizer_target_density;
 

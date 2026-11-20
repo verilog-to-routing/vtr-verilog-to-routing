@@ -1,0 +1,37 @@
+###############################################################################
+# Configuration file for running VTR benchmarks which contain RAMs through the
+# traditional flow with the RAM pre-mapper enabled.
+#
+# The RAM pre-mapper groups the RAM slices into physical RAMs and assigns each
+# group a RAM type before packing. The packer uses these groups to guide RAM
+# packing.
+###############################################################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
+
+# Add circuits to list to sweep (each include at least 1 memory block)
+circuit_list_add=boundtop.v
+circuit_list_add=ch_intrinsics.v
+circuit_list_add=spree.v
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+# Script parameters
+# Run with the RAM pre-mapper both on (the default) and off.
+script_params_common=-track_memory_usage --pack --place --route --analysis
+script_params_list_add=--use_ram_premapper on
+script_params_list_add=--use_ram_premapper off
