@@ -45,7 +45,7 @@ void ClusterRouterHopsLookahead::set_sink(LbRRNodeId sink) {
     }
 
     // Inserts an empty table for sink that build_hop_table_ fills.
-    t_cost_to_sink& hops = hop_tables_[sink];
+    vtr::vector<LbRRNodeId, uint8_t>& hops = hop_tables_[sink];
     build_hop_table_(sink, hops);
     hop_table_bytes_ += bytes_per_hop_table;
     sink_hops_ = &hops;
@@ -59,7 +59,7 @@ float ClusterRouterHopsLookahead::remaining_cost(LbRRNodeId node) const {
     return min_cost_per_hop_ * hops;
 }
 
-void ClusterRouterHopsLookahead::build_hop_table_(LbRRNodeId sink, t_cost_to_sink& hops) const {
+void ClusterRouterHopsLookahead::build_hop_table_(LbRRNodeId sink, vtr::vector<LbRRNodeId, uint8_t>& hops) const {
     hops.assign(lb_type_graph_.num_nodes(), UNREACHABLE_HOPS);
     hops[sink] = 0;
 

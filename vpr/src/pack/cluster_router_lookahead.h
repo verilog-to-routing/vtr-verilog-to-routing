@@ -54,6 +54,13 @@ class ClusterRouterNoOpLookahead final : public ClusterRouterLookahead {
  *
  * The cluster router runs single threaded. set_sink fills the cache on a miss
  * and is not safe to call from several threads at once.
+ *
+ * The cost is currently a hop count.
+ * TODO: Explore other costs:
+ *   - The sum of the edge costs on the path.
+ *   - A fanout factor per hop that depends on the net and node fanout.
+ *   - A delay cost.
+ *   - A cost for scarce pins.
  */
 class ClusterRouterHopsLookahead final : public ClusterRouterLookahead {
   public:
@@ -61,15 +68,6 @@ class ClusterRouterHopsLookahead final : public ClusterRouterLookahead {
     /// Paths with this many edges are rare. A longer path is capped at
     /// UNREACHABLE_HOPS - 1, which is still a lower bound.
     static constexpr uint8_t UNREACHABLE_HOPS = 255;
-
-    /// @brief Lower bound on the cost from every node to one sink, indexed by node.
-    /// The cost is currently a hop count.
-    /// TODO: Explore other costs:
-    ///   - The sum of the edge costs on the path.
-    ///   - A fanout factor per hop that depends on the net and node fanout.
-    ///   - A delay cost.
-    ///   - A cost for scarce pins.
-    typedef vtr::vector<LbRRNodeId, uint8_t> t_cost_to_sink;
 
     /// @brief Hop tables are built on first use. lb_type_graph must outlive this object.
     /// @param min_cost_per_hop Lower bound on the cost the router adds for one edge.
@@ -83,7 +81,7 @@ class ClusterRouterHopsLookahead final : public ClusterRouterLookahead {
 
   private:
     /// @brief Fills hops with the fewest edges from every node to sink.
-    void build_hop_table_(LbRRNodeId sink, t_cost_to_sink& hops) const;
+    void build_hop_table_(LbRRNodeId sink, vtr::vector<LbRRNodeId, uint8_t>& hops) const;
 
     /// @brief The graph the hop tables are computed over.
     const LbTypeRRGraph& lb_type_graph_;
@@ -93,16 +91,17 @@ class ClusterRouterHopsLookahead final : public ClusterRouterLookahead {
     float min_cost_per_hop_;
 
     /// @brief Hop tables built so far, keyed by sink node.
-    std::unordered_map<LbRRNodeId, t_cost_to_sink> hop_tables_;
+    /// Each table is indexed by node.
+    std::unordered_map<LbRRNodeId, vtr::vector<LbRRNodeId, uint8_t>> hop_tables_;
 
     /// @brief All-zero table handed out once the memory budget is used up.
-    t_cost_to_sink zero_hops_;
+    vtr::vector<LbRRNodeId, uint8_t> zero_hops_;
 
     /// @brief Total bytes held by the tables in hop_tables_.
     size_t hop_table_bytes_;
 
     /// @brief Hop table of the current sink. The all-zero table until set_sink is called.
-    const t_cost_to_sink* sink_hops_;
+    const vtr::vector<LbRRNodeId, uint8_t>* sink_hops_;
 };
 
 /// @brief Creates the lookahead of the given kind for one block type's RR graph.
