@@ -1,6 +1,8 @@
 #include "route_path_manager.h"
 #include "vpr_context.h"
 #include "route_common.h"
+#include "route_tree.h"
+#include "vtr_assert.h"
 
 PathManager::PathManager() {
     // Only init data structure if required by RCV
@@ -17,6 +19,8 @@ bool PathManager::node_exists_in_tree(t_heap_path* path_data,
     // Prevent seg faults for searching path data structures that haven't been created yet
     if (!path_data || !is_enabled_) return false;
 
+    VTR_ASSERT_DEBUG_MSG(route_tree_set_valid_, "RCV route tree set must be built before path search");
+
     // First check the smaller current path, the ordering of these checks might effect runtime slightly
     for (auto& node : path_data->path_rr) {
         if (node == to_node) {
@@ -32,12 +36,6 @@ bool PathManager::node_exists_in_tree(t_heap_path* path_data,
     }
 
     return false;
-}
-
-void PathManager::mark_node_visited(RRNodeId node) {
-    if (is_enabled_) {
-        route_tree_nodes_.insert(node);
-    }
 }
 
 void PathManager::insert_backwards_path_into_traceback(t_heap_path* path_data, float cost, float backward_path_cost, RoutingContext& route_ctx) {
@@ -111,15 +109,29 @@ void PathManager::empty_heap() {
     std::ranges::copy(alloc_list_, freed_nodes_.begin());
 }
 
-void PathManager::update_route_tree_set(t_heap_path* cheapest_path_struct) {
-    if (!is_enabled_) return;
-
-    // Add all values in path struct to the route tree nodes set
-    route_tree_nodes_.insert(cheapest_path_struct->path_rr.begin(), cheapest_path_struct->path_rr.end());
+bool PathManager::route_tree_set_valid() const {
+    return route_tree_set_valid_;
 }
 
-void PathManager::empty_route_tree_nodes() {
+void PathManager::build_route_tree_set(const RouteTreeNode& rt_root) {
     route_tree_nodes_.clear();
+    route_tree_set_valid_ = true;
+    add_branch_to_route_tree_set(rt_root);
+}
+
+void PathManager::add_branch_to_route_tree_set(const RouteTreeNode& new_branch) {
+    if (!route_tree_set_valid_) return;
+
+    // all_nodes() doesn't include the node it is called on
+    route_tree_nodes_.insert(new_branch.inode);
+    for (const RouteTreeNode& rt_node : new_branch.all_nodes()) {
+        route_tree_nodes_.insert(rt_node.inode);
+    }
+}
+
+void PathManager::clear_route_tree_set() {
+    route_tree_nodes_.clear();
+    route_tree_set_valid_ = false;
 }
 
 void PathManager::move(t_heap_path*& dest, t_heap_path*& src) {

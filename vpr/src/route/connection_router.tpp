@@ -27,6 +27,8 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
     router_stats_ = &router_stats;
     conn_params_ = &conn_params;
 
+    register_route_tree_for_rcv(rt_root);
+
     bool retry = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box);
 
     if (!std::isinf(rr_node_route_inf_[sink_node].path_cost)) {
@@ -37,7 +39,6 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
         out.prev_edge = rr_node_route_inf_[sink_node].prev_edge;
         if (rcv_path_manager.is_enabled()) {
             out.rcv_path_backward_delay = rcv_path_data[sink_node]->backward_delay;
-            rcv_path_manager.update_route_tree_set(rcv_path_data[sink_node]);
             rcv_path_manager.empty_heap();
         }
         heap_.empty_heap();
@@ -63,6 +64,8 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
     const ConnectionParameters& conn_params) {
     router_stats_ = &router_stats;
     conn_params_ = &conn_params;
+
+    register_route_tree_for_rcv(rt_root);
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
@@ -109,7 +112,6 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
     out.prev_edge = rr_node_route_inf_[sink_node].prev_edge;
     if (rcv_path_manager.is_enabled()) {
         out.rcv_path_backward_delay = rcv_path_data[sink_node]->backward_delay;
-        rcv_path_manager.update_route_tree_set(rcv_path_data[sink_node]);
         rcv_path_manager.empty_heap();
     }
     heap_.empty_heap();
@@ -414,9 +416,6 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
      * (except for those parts marked as not to be expanded) by calling itself   *
      * recursively.                                                              */
 
-    // Register every node already in the route tree for RCV.
-    rcv_path_manager.mark_node_visited(rt_node.inode);
-
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node.re_expand) {
@@ -432,6 +431,15 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
             add_route_tree_to_heap(child_node, target_node, cost_params, net_bb);
         }
     }
+}
+
+template<typename Heap>
+void ConnectionRouter<Heap>::register_route_tree_for_rcv(const RouteTreeNode& rt_root) {
+    // Built once per net, then kept up to date by add_branch_to_rcv_route_tree_set()
+    if (!rcv_path_manager.is_enabled() || rcv_path_manager.route_tree_set_valid())
+        return;
+
+    rcv_path_manager.build_route_tree_set(rt_root);
 }
 
 /* Expand bb by inode's extents and clip against net_bb */

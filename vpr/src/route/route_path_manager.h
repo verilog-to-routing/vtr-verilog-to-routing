@@ -26,6 +26,7 @@ struct t_heap_path {
 
 // Forward declaration of RoutingContext needed for traceback insertion
 struct RoutingContext;
+class RouteTreeNode;
 
 /* A class to manage the extra data required for RCV
  * It manages a set containing all the nodes that currently exist in the route tree
@@ -43,6 +44,13 @@ struct RoutingContext;
  * To stop this, we keep track of the route tree (route_tree_nodes_), and each node keeps track of it's current partial routing up to the route tree
  * Before expanding a node, we check to see if it exists in either the route tree, or the current partial path to eliminate these scenarios
  *
+ * The data managed here has two lifetimes:
+ *  - Net-level: route_tree_nodes_ holds every RR node in the net's route tree. Within a net the route tree only
+ *    grows, so the set is built once (by the first connection of the net that uses RCV) and then extended with
+ *    each newly routed branch. It is maintained whether or not RCV is enabled for the current connection, since
+ *    RCV is toggled per connection. It is cleared at the start of each net.
+ *  - Connection-level: the t_heap_path structures, which are torn down after every path search (empty_heap()).
+ *
  *
  * The t_heap_path structure was created to isolate the RCV specific data from the RTExploredNode struct
  * Having these in RTExploredNode creates significant performance issues when RCV is disabled
@@ -59,10 +67,6 @@ class PathManager {
     // By keeping a set of the current route tree for a net, as well as checking the current path we can prevent this
     bool node_exists_in_tree(t_heap_path* path_data,
                              RRNodeId to_node);
-
-    // Insert a node into the current route tree set indicating that it's currently in routing
-    // Use this whenever updating the route tree
-    void mark_node_visited(RRNodeId node);
 
     // Check if this structure is enabled/is RCV enabled
     bool is_enabled();
@@ -91,15 +95,26 @@ class PathManager {
     // This currently does NOT invalidate them
     void empty_heap();
 
-    // Clear the route tree nodes set, before moving onto the next net
-    void empty_route_tree_nodes();
+    /* Net-level route tree set. Unlike the functions above, these are not gated on
+     * is_enabled(), because RCV is enabled per connection but the set must describe
+     * the whole route tree, including branches routed with RCV disabled. */
 
-    // Update the route tree set using the last routing
-    // Call this after each sink is routed
-    void update_route_tree_set(t_heap_path* cheapest_path_struct);
+    // Has the route tree set been built for the net currently being routed?
+    bool route_tree_set_valid() const;
+
+    // Build the route tree set from the whole route tree rooted at rt_root.
+    // Called once per net, by the first connection that uses RCV
+    void build_route_tree_set(const RouteTreeNode& rt_root);
+
+    // Add a newly routed branch (new_branch and all nodes below it) to the route tree set.
+    // Call this every time a branch is added to the route tree. No-op until the set is built for this net
+    void add_branch_to_route_tree_set(const RouteTreeNode& new_branch);
+
+    // Clear and invalidate the route tree set. Call at the start of each net
+    void clear_route_tree_set();
 
   private:
-    // Is RCV enabled and thus route_tree_nodes in use
+    // Is RCV enabled for the current connection (gates the per-connection t_heap_path data)
     bool is_enabled_;
 
     // This is a list of all currently allocated heap path pointers
@@ -110,5 +125,9 @@ class PathManager {
 
     // Set containing the current route tree, for faster lookup
     // Required by RCV so the router doesn't expand already visited nodes
+    // Lives for the whole net (see class comment)
     std::set<RRNodeId> route_tree_nodes_;
+
+    // Whether route_tree_nodes_ has been built for the net currently being routed
+    bool route_tree_set_valid_ = false;
 };
