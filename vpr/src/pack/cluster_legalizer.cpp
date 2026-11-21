@@ -1555,9 +1555,9 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     init_feedback_pin_sets(logical_block_types);
 
     // Build the cluster router lookahead of each block type.
-    lookaheads_by_type_.reserve(lb_type_rr_graphs_.size());
-    for (const LbTypeRRGraph& lb_type_rr_graph : lb_type_rr_graphs_) {
-        lookaheads_by_type_.push_back(make_cluster_router_lookahead(cluster_router_lookahead, lb_type_rr_graph));
+    lookaheads_by_type_.resize(logical_block_types.size());
+    for (const t_logical_block_type& lb_type : logical_block_types) {
+        lookaheads_by_type_[lb_type.index] = make_cluster_router_lookahead(cluster_router_lookahead, lb_type_rr_graphs_[lb_type.index]);
     }
 }
 
