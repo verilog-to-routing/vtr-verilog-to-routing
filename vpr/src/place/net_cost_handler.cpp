@@ -39,6 +39,7 @@
 #include "place_timing_update.h"
 #include "vpr_context.h"
 #include "vtr_math.h"
+#include "vtr_memory.h"
 #include "vtr_ndmatrix.h"
 #include "PlacerCriticalities.h"
 #include "vtr_prefix_sum.h"
@@ -46,6 +47,7 @@
 
 #include <algorithm>
 #include <array>
+#include <memory>
 #include <vector>
 
 static constexpr int MAX_FANOUT_CROSSING_COUNT = 50;
@@ -315,6 +317,9 @@ void NetCostHandler::record_affected_net_(const ClusterNetId net) {
         net_ts_slot_[net] = slot;
         ts_nets_to_update_.push_back(net);
         ts_net_info_[slot].update_status = NetUpdateState::NOT_UPDATED_YET;
+
+        // Prefetch the net cost that set_bb_delta_cost_() reads later
+        VTR_PREFETCH(&net_bb_[net].cost, 0, 0);
     }
 }
 
@@ -908,6 +913,15 @@ bool NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
     // update_move_nets() or reset_move_nets() must have released the slots of the previous move.
     VTR_ASSERT_SAFE(!move_in_flight_());
     ts_nets_to_update_.clear();
+
+    // Prefetch the scratch slot and the first pins of every net connected to a moved block.
+    for (const t_pl_moved_block& moving_block : blocks_affected.moved_blocks) {
+        for (ClusterPinId blk_pin : clb_nlist.block_pins(moving_block.block_num)) {
+            ClusterNetId net_id = clb_nlist.pin_net(blk_pin);
+            VTR_PREFETCH(&net_ts_slot_[net_id], 0, 0);
+            VTR_PREFETCH(std::to_address(clb_nlist.net_pins(net_id).begin()), 0, 0);
+        }
+    }
 
     // Go through all the blocks moved.
     for (const t_pl_moved_block& moving_block : blocks_affected.moved_blocks) {
