@@ -16,9 +16,10 @@ std::unique_ptr<ClusterRouterLookahead> make_cluster_router_lookahead(e_cluster_
             return std::make_unique<ClusterRouterNoOpLookahead>();
         case e_cluster_router_lookahead::HOPS:
             return std::make_unique<ClusterRouterHopsLookahead>(lb_type_graph, cluster_router_min_cost_per_edge(lb_type_graph));
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unrecognized cluster router lookahead type");
     }
 
-    VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unrecognized cluster router lookahead type");
     return nullptr;
 }
 
