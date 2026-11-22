@@ -4,6 +4,8 @@
 #include "move_transactions.h"
 #include "compressed_grid.h"
 
+#include <cmath>
+
 class PlacerState;
 class BlkLocRegistry;
 class PlaceMacros;
@@ -25,6 +27,27 @@ enum class e_move_result {
     ACCEPTED,
     ABORTED
 };
+
+/// @brief Decides whether a swap is accepted.
+/// @param delta_c Cost change of the swap.
+/// @param t Annealing temperature.
+/// @param draw_rand Returns a uniform random number in [0, 1). Called only for uphill moves.
+template<typename RandFn>
+e_move_result assess_swap(double delta_c, double t, RandFn&& draw_rand) {
+    if (delta_c <= 0) {
+        return e_move_result::ACCEPTED;
+    }
+
+    if (t == 0.) {
+        return e_move_result::REJECTED;
+    }
+
+    float prob_fac = std::exp(-delta_c / t);
+    if (prob_fac > draw_rand()) {
+        return e_move_result::ACCEPTED;
+    }
+    return e_move_result::REJECTED;
+}
 
 //This is to list all the available moves
 enum class e_move_type {
