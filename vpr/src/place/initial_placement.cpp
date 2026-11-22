@@ -31,6 +31,8 @@
 #include <limits>
 #include <optional>
 #include <queue>
+#include <set>
+#include <string>
 #include <vector>
 
 #ifdef VERBOSE
@@ -281,12 +283,14 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
  * throws an error indicating that initial placement can not be done with the current device size or
  * floorplanning constraints.
  */
-static void check_initial_placement_legality(const BlkLocRegistry& blk_loc_registry) {
+static void check_initial_placement_legality(const BlkLocRegistry& blk_loc_registry,
+                                             const PlaceMacros& place_macros) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& block_locs = blk_loc_registry.block_locs();
 
     int unplaced_blocks = 0;
+    std::set<UserRelativeMacroId> unplaced_relative_placement_macros;
 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         if (block_locs[blk_id].loc.x == INVALID_X) {
@@ -296,14 +300,29 @@ static void check_initial_placement_legality(const BlkLocRegistry& blk_loc_regis
                     cluster_ctx.clb_nlist.block_type(blk_id)->name.c_str(),
                     MAX_INIT_PLACE_ATTEMPTS - 1);
             unplaced_blocks++;
+
+            int imacro = place_macros.get_imacro_from_iblk(blk_id);
+            if (imacro != -1 && place_macros[imacro].is_relative_placement_macro()) {
+                unplaced_relative_placement_macros.insert(place_macros[imacro].relative_placement_macro_id);
+            }
         }
     }
 
     if (unplaced_blocks > 0) {
+        // Name the relative placement macros that could not be placed; empty without them
+        const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
+        std::string unplaced_macros_msg;
+        for (UserRelativeMacroId macro_id : unplaced_relative_placement_macros) {
+            unplaced_macros_msg += "Relative placement macro '" + relative_macros.get_macro(macro_id).name
+                                   + "' could not be placed: no free position on the device fits all of its clusters. "
+                                     "Check its offsets against the device grid, the region constraints on its atoms, "
+                                     "and that its clusters are either all fixed or all free.\n";
+        }
+
         VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                         "%d blocks could not be placed during initial placement; no spaces were available for them on the grid.\n"
-                        "If VPR was run with floorplan constraints, the constraints may be too tight.\n",
-                        unplaced_blocks);
+                        "If VPR was run with floorplan constraints, the constraints may be too tight.\n%s",
+                        unplaced_blocks, unplaced_macros_msg.c_str());
     }
 
     for (auto movable_blk_id : blk_loc_registry.movable_blocks()) {
@@ -2112,5 +2131,5 @@ void initial_placement(const t_placer_opts& placer_opts,
     blk_loc_registry.alloc_and_load_movable_blocks();
 
     // ensure all blocks are placed and that NoC routing has no cycles
-    check_initial_placement_legality(blk_loc_registry);
+    check_initial_placement_legality(blk_loc_registry, place_macros);
 }
