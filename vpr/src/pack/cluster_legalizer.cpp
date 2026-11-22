@@ -1602,6 +1602,11 @@ void ClusterLegalizer::reset() {
     }
     mutable_atom_pb_lookup().reset_bimap();
     compress();
+
+    // Free the data the cluster router lookaheads.
+    for (std::unique_ptr<ClusterRouterLookahead>& lookahead : lookaheads_by_type_) {
+        lookahead->reset();
+    }
 }
 
 void ClusterLegalizer::verify() {

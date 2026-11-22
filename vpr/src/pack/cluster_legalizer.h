@@ -487,7 +487,8 @@ class ClusterLegalizer {
     /*
      * @brief Resets the legalizer to its initial state.
      *
-     * Destroys all clusters and resets the cluster placement stats.
+     * Destroys all clusters and resets the cluster placement stats. Also frees
+     * the data built by the cluster router lookaheads.
      */
     void reset();
 

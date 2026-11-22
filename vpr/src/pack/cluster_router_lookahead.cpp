@@ -60,6 +60,14 @@ float ClusterRouterHopsLookahead::remaining_cost(LbRRNodeId node) const {
     return min_cost_per_hop_ * hops;
 }
 
+void ClusterRouterHopsLookahead::reset() {
+    // The current sink's table is about to be freed, so point at the all-zero table.
+    sink_hops_ = &zero_hops_;
+
+    hop_tables_.clear();
+    hop_table_bytes_ = 0;
+}
+
 void ClusterRouterHopsLookahead::build_hop_table_(LbRRNodeId sink, vtr::vector<LbRRNodeId, uint8_t>& hops) const {
     hops.assign(lb_type_graph_.num_nodes(), UNREACHABLE_HOPS);
     hops[sink] = 0;

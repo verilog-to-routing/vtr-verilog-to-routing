@@ -33,6 +33,9 @@ class ClusterRouterLookahead {
 
     /// @brief Lower bound on the cost from node to the current sink, or UNREACHABLE.
     virtual float remaining_cost(LbRRNodeId node) const = 0;
+
+    /// @brief Frees the data kept from earlier searches.
+    virtual void reset() = 0;
 };
 
 /// @brief Gives no estimate.
@@ -41,6 +44,8 @@ class ClusterRouterNoOpLookahead final : public ClusterRouterLookahead {
     void set_sink(LbRRNodeId /*sink*/) override {}
 
     float remaining_cost(LbRRNodeId /*node*/) const override { return 0.0f; }
+
+    void reset() override {}
 };
 
 /**
@@ -78,6 +83,9 @@ class ClusterRouterHopsLookahead final : public ClusterRouterLookahead {
     /// @brief The fewest edges on any path from node to the current sink times
     ///        the lowest cost of one edge, or UNREACHABLE.
     float remaining_cost(LbRRNodeId node) const override;
+
+    /// @brief Frees the hop tables built so far. They are built again on the next use.
+    void reset() override;
 
   private:
     /// @brief Fills hops with the fewest edges from every node to sink.
