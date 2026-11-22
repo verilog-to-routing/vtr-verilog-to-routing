@@ -401,6 +401,7 @@ void PlaceMacros::append_relative_placement_macros_(const UserRelativeMacros& re
     for (t_pl_macro& new_macro : new_macros) {
         pl_macros_.push_back(std::move(new_macro));
     }
+    has_relative_placement_macros_ = true;
 
     VTR_LOG("Created %zu placement macro(s) from the relative placement constraints", num_relative_placement_macros);
     if (num_absorbed_arch_macros > 0) {
