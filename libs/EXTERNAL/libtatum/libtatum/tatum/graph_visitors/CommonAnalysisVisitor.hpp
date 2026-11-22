@@ -57,7 +57,7 @@ class CommonAnalysisVisitor : public GraphVisitor {
         AnalysisOps ops_;
 
     private:
-        bool do_arrival_traverse_edge(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalculator& dc, const NodeId node_id, const EdgeId edge_id);
+        bool do_arrival_traverse_edge(const TimingGraph& tg, const DelayCalculator& dc, const NodeId node_id, const EdgeId edge_id);
 
         bool do_required_traverse_edge(const TimingGraph& tg, const DelayCalculator& dc, const NodeId node_id, const EdgeId edge_id);
 
@@ -65,7 +65,7 @@ class CommonAnalysisVisitor : public GraphVisitor {
 
         bool mark_sink_required_times(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalculator& dc, const NodeId node);
 
-        bool should_propagate_clocks(const TimingGraph& tg, const TimingConstraints& tc, const EdgeId edge_id) const;
+        bool should_propagate_clocks(const TimingGraph& tg, const EdgeId edge_id) const;
         bool should_propagate_clock_launch_tags(const TimingGraph& tg, const EdgeId edge_id) const;
         bool should_propagate_clock_capture_tags(const TimingGraph& tg, const EdgeId edge_id) const;
         bool should_propagate_data(const TimingGraph& tg, const EdgeId edge_id) const;
@@ -282,7 +282,7 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_node(const TimingGr
 
         if(tg.edge_disabled(edge_id)) continue;
 
-        node_modified |= do_arrival_traverse_edge(tg, tc, dc, node_id, edge_id);
+        node_modified |= do_arrival_traverse_edge(tg, dc, node_id, edge_id);
     }
 
     if(tg.node_type(node_id) == NodeType::SINK) {
@@ -293,13 +293,13 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_node(const TimingGr
 }
 
 template<class AnalysisOps>
-bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalculator& dc, const NodeId node_id, const EdgeId edge_id) {
+bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGraph& tg, const DelayCalculator& dc, const NodeId node_id, const EdgeId edge_id) {
     bool timing_modified = false;
 
     //Pulling values from upstream source node
     NodeId src_node_id = tg.edge_src_node(edge_id);
 
-    if(should_propagate_clocks(tg, tc, edge_id)) {
+    if(should_propagate_clocks(tg, edge_id)) {
         /*
          * Clock tags
          */
@@ -645,26 +645,12 @@ bool CommonAnalysisVisitor<AnalysisOps>::mark_sink_required_times(const TimingGr
 }
 
 template<class AnalysisOps>
-bool CommonAnalysisVisitor<AnalysisOps>::should_propagate_clocks(const TimingGraph& tg, const TimingConstraints& tc, const EdgeId edge_id) const {
-    //We want to propagate clock tags through the arbitrary nodes making up the clock network until 
-    //we hit another source node (i.e. a FF's output source).
-    //
-    //To allow tags to propagte from the original source (i.e. the input clock pin) we also allow
-    //propagation from defined clock sources
-    NodeId src_node_id = tg.edge_src_node(edge_id);
+bool CommonAnalysisVisitor<AnalysisOps>::should_propagate_clocks(const TimingGraph& tg, const EdgeId edge_id) const {
+    // We want to propagate clock tags through the arbitrary nodes making up the clock network until
+    // we hit another source node (i.e. a FF's output source).
     NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
-    if (tg.node_type(sink_node_id) != NodeType::SOURCE) {
-        //Not a source, allow propagation
-
-        if (tc.node_is_clock_source(src_node_id)) {
-            //The source is a clock source
-            TATUM_ASSERT_MSG(tg.node_type(src_node_id) == NodeType::SOURCE, "Only SOURCEs can be clock sources");
-            TATUM_ASSERT_MSG(tg.node_in_edges(src_node_id).empty(), "Clock sources should have no incoming edges");
-        }
-        return true;
-    }
-    return false;
+    return tg.node_type(sink_node_id) != NodeType::SOURCE;
 }
 
 template<class AnalysisOps>
