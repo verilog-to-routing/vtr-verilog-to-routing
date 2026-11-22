@@ -1444,9 +1444,22 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
     //[0..device_ctx.logical_block_types.size()-1][0..num_of_grid_columns_containing_this_block_type-1]
     std::vector<std::vector<t_grid_empty_locs_block_type>> blk_types_empty_locs_in_grid;
 
+    // The placement before this function (e.g. NoC routers and fixed blocks), which a retry
+    // with relative placement macros restores
+    BlkLocRegistry preplaced_blk_loc_registry;
+    if (place_macros.has_relative_placement_macros()) {
+        preplaced_blk_loc_registry = blk_loc_registry;
+    }
+
     for (auto iter_no = 0; iter_no < MAX_INIT_PLACE_ATTEMPTS; iter_no++) {
-        //clear grid for a new placement iteration
-        blk_loc_registry.clear_block_type_grid_locs(unplaced_blk_type_in_curr_itr);
+        // clear grid for a new placement iteration
+        // A relative placement macro can mix block types, so clearing only the failed types
+        // could leave it partly placed. Restore the placement from before this function instead.
+        if (place_macros.has_relative_placement_macros() && !unplaced_blk_type_in_curr_itr.empty()) {
+            blk_loc_registry = preplaced_blk_loc_registry;
+        } else {
+            blk_loc_registry.clear_block_type_grid_locs(unplaced_blk_type_in_curr_itr);
+        }
         unplaced_blk_type_in_curr_itr.clear();
 
         // read the constraint file if the user has provided one and this is not the first attempt
