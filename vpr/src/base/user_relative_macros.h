@@ -91,7 +91,7 @@ class UserRelativeMacros {
     /**
      * @brief Return the ids of all stored macros, for range-based iteration.
      */
-    macro_range macros() const;
+    macro_range macro_ids() const;
 
     /**
      * @brief Return the macro with the given id.
@@ -106,7 +106,7 @@ class UserRelativeMacros {
     /**
      * @brief Return the ids of all stored groups, for range-based iteration.
      */
-    group_range groups() const;
+    group_range group_ids() const;
 
     /**
      * @brief Return the group with the given id.
