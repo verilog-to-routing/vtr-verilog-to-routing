@@ -281,8 +281,6 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
  * throws an error indicating that initial placement can not be done with the current device size or
  * floorplanning constraints.
  */
-static void check_initial_placement_legality(const BlkLocRegistry& blk_loc_registry);
-
 static void check_initial_placement_legality(const BlkLocRegistry& blk_loc_registry) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
