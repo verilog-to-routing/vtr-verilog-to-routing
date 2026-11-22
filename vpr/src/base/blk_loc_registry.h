@@ -112,23 +112,6 @@ class BlkLocRegistry {
      */
     void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_blk_types_index);
 
-    /// @brief Saved placement state of a BlkLocRegistry
-    struct t_checkpoint {
-        /// @brief Location and fixed flag of each clustered block when the checkpoint was taken.
-        vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
-    };
-
-    /**
-     * @brief Saves the current block locations.
-     * @return The checkpoint to pass to restore_checkpoint().
-     */
-    t_checkpoint checkpoint() const;
-
-    /**
-     * @brief Restores the block locations and fixed flags saved in the given checkpoint.
-     */
-    void restore_checkpoint(const t_checkpoint& saved);
-
     /**
      * @brief Syncs the logical block pins corresponding to the input iblk with the corresponding chosen physical tile
      * @param iblk cluster block ID to sync within the assigned physical tile

@@ -2069,7 +2069,8 @@ void initial_placement(const t_placer_opts& placer_opts,
         if (flat_placement_info.valid) {
             // Save the blocks placed so far: fixed blocks, blocks from the constraints file and
             // NoC routers, whose traffic flows were routed for these locations
-            const BlkLocRegistry::t_checkpoint pre_ap_checkpoint = blk_loc_registry.checkpoint();
+            BlkLocRegistry pre_ap_blk_loc_registry;
+            pre_ap_blk_loc_registry = blk_loc_registry;
 
             all_blocks_placed = place_all_blocks_ap(placer_opts.pad_loc_type,
                                                     blk_loc_registry,
@@ -2080,7 +2081,7 @@ void initial_placement(const t_placer_opts& placer_opts,
             // blocks placed before AP so we can fall back on the original initial placement
             // algorithm.
             if (!all_blocks_placed) {
-                blk_loc_registry.restore_checkpoint(pre_ap_checkpoint);
+                blk_loc_registry = pre_ap_blk_loc_registry;
             }
         }
 
