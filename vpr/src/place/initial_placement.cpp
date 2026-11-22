@@ -1340,9 +1340,11 @@ static bool place_macro(int macros_max_num_tries,
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug && is_cluster_constrained(blk_id),
                    "\t\t\tMacro's head is constrained\n");
 
-    //If blk_types_empty_locs_in_grid is not NULL, means that initial placement has been failed in first iteration for this block type
-    //We need to place densely in second iteration to be able to find a legal initial placement solution
-    if (blk_types_empty_locs_in_grid != nullptr && !blk_types_empty_locs_in_grid->empty()) {
+    // If blk_types_empty_locs_in_grid is not NULL, means that initial placement has been failed in first iteration for this block type
+    // We need to place densely in second iteration to be able to find a legal initial placement solution
+    // Dense placement assumes a macro of one block type stacked in one column (a carry chain), so a
+    // relative placement macro, which can mix block types and span both dimensions, skips it
+    if (blk_types_empty_locs_in_grid != nullptr && !blk_types_empty_locs_in_grid->empty() && !pl_macro.is_relative_placement_macro()) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry dense placement\n");
         macro_placed = try_dense_placement(pl_macro, pr, pad_loc_type, blk_types_empty_locs_in_grid, blk_loc_registry);
     }
