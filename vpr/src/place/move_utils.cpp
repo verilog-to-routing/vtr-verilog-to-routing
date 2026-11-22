@@ -109,8 +109,11 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
         // Record down the relative position of the swap
         t_pl_offset swap_offset = to - from;
 
+        // Track active macro swap inversions to detect cycles during move expansion.
+        std::vector<t_inverted_macro> inverted_macros;
+
         int imember_from = 0;
-        outcome = record_macro_swaps(blocks_affected, imacro_from, imember_from, swap_offset, blk_loc_registry, place_macros);
+        outcome = record_macro_swaps(blocks_affected, imacro_from, imember_from, swap_offset, blk_loc_registry, place_macros, inverted_macros);
 
         VTR_ASSERT_SAFE(outcome != e_block_move_result::VALID || imember_from == int(place_macros[imacro_from].members.size()));
 
@@ -191,7 +194,8 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                        int& imember_from,
                                        t_pl_offset swap_offset,
                                        const BlkLocRegistry& blk_loc_registry,
-                                       const PlaceMacros& place_macros) {
+                                       const PlaceMacros& place_macros,
+                                       std::vector<t_inverted_macro>& inverted_macros) {
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
@@ -228,7 +232,7 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                     imember_from = place_macros[imacro_from].members.size();
                     break; //record_macro_self_swaps() handles this case completely, so we don't need to continue the loop
                 } else {
-                    outcome = record_macro_macro_swaps(blocks_affected, imacro_from, imember_from, imacro_to, b_to, swap_offset, blk_loc_registry, place_macros);
+                    outcome = record_macro_macro_swaps(blocks_affected, imacro_from, imember_from, imacro_to, b_to, swap_offset, blk_loc_registry, place_macros, inverted_macros);
                     if (outcome == e_block_move_result::INVERT_VALID) {
                         break; //The move was inverted and successfully proposed, don't need to continue the loop
                     }
@@ -254,7 +258,8 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
                                              ClusterBlockId blk_to,
                                              t_pl_offset swap_offset,
                                              const BlkLocRegistry& blk_loc_registry,
-                                             const PlaceMacros& pl_macros) {
+                                             const PlaceMacros& pl_macros,
+                                             std::vector<t_inverted_macro>& inverted_macros) {
     //Adds the macro imacro_to to the set of affected block caused by swapping 'blk_to' to its
     //new position.
     //
@@ -270,8 +275,20 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
     //below the other (not a big limitation since swapping in the opposite direction
     //allows these blocks to swap)
     if (pl_macros[imacro_to].members[0].blk_index != blk_to) {
+        // Retry the swap by moving imacro_to in the opposite direction. Macros that
+        // land on each other's non-head members can repeatedly invert the swap
+        // without recording a block move. Abort if the same macro and offset recur
+        // with the same number of recorded moves to prevent infinite recursion.
+        t_inverted_macro inversion{imacro_to, -swap_offset, blocks_affected.moved_blocks.size()};
+        if (std::ranges::find(inverted_macros, inversion) != inverted_macros.end()) {
+            blocks_affected.move_abortion_logger.log_move_abort("macro swap cycle");
+            return e_block_move_result::ABORT;
+        }
+
+        inverted_macros.push_back(inversion);
         int imember_to = 0;
-        auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry, pl_macros);
+        auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, inversion.offset, blk_loc_registry, pl_macros, inverted_macros);
+        inverted_macros.pop_back();
         if (outcome == e_block_move_result::INVERT) {
             blocks_affected.move_abortion_logger.log_move_abort("invert recursion2");
             outcome = e_block_move_result::ABORT;
@@ -340,7 +357,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         //
         //Swap the remainder of the 'to' macro to locations after the 'from' macro.
         //Note that we are swapping in the opposite direction so the swap offsets are inverted.
-        return record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry, pl_macros);
+        return record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry, pl_macros, inverted_macros);
     }
 
     return e_block_move_result::VALID;

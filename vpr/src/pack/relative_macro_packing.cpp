@@ -461,7 +461,7 @@ static std::vector<UserRelativeGroupId> find_split_relative_groups(const Cluster
                                                                    const UserRelativeMacros& relative_macros) {
     std::vector<UserRelativeGroupId> split_groups;
 
-    for (UserRelativeGroupId group_id : relative_macros.groups()) {
+    for (UserRelativeGroupId group_id : relative_macros.group_ids()) {
         LegalizationClusterId group_cluster_id;
         for (AtomBlockId blk_id : relative_macros.get_group(group_id).atoms) {
             LegalizationClusterId cluster_id = cluster_legalizer.get_atom_cluster(blk_id);
