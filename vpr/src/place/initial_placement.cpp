@@ -1329,7 +1329,6 @@ static bool place_macro(int macros_max_num_tries,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
-    // Assume that all the blocks in the macro are of the same type
     auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
 
     const PartitionRegion& pr = (is_cluster_constrained(blk_id)) ? floorplanning_ctx.cluster_constraints[blk_id]
@@ -1840,8 +1839,10 @@ static inline bool place_blocks_min_displacement(std::vector<ClusterBlockId>& cl
             t_flat_pl_loc centroid_flat_loc = find_centroid_loc_from_flat_placement(pl_macro, flat_placement_info);
 
             // Find a legal, open site closest to the flat cenetroid location
-            // (within the displacement threshold).
-            auto block_type = cluster_netlist.block_type(blk_to_place);
+            // (within the displacement threshold). The site is for the macro's
+            // head, whose block type can differ from blk_to_place's in a
+            // relative placement macro.
+            t_logical_block_type_ptr block_type = cluster_netlist.block_type(pl_macro.members[0].blk_index);
             t_pl_loc centroid_loc = find_nearest_compatible_loc(centroid_flat_loc,
                                                                 max_displacement_threshold,
                                                                 block_type,
