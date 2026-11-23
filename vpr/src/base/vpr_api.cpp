@@ -578,8 +578,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     vpr_init_server(vpr_setup);
 
     { //Place
-        const auto& placement_net_list = (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
-        bool place_success = vpr_place_flow(placement_net_list, vpr_setup, arch);
+        bool place_success = vpr_place_flow(g_vpr_ctx.clustering().clb_nlist, vpr_setup, arch);
 
         if (!place_success) {
             return false; //Unimplementable
@@ -921,7 +920,7 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     return true;
 }
 
-bool vpr_place_flow(const Netlist<>& net_list,
+bool vpr_place_flow(const ClusteredNetlist& net_list,
                     t_vpr_setup& vpr_setup,
                     const t_arch& arch) {
     VTR_LOG("\n");
@@ -975,7 +974,7 @@ bool vpr_place_flow(const Netlist<>& net_list,
     return true;
 }
 
-void vpr_place(const Netlist<>& net_list,
+void vpr_place(const ClusteredNetlist& net_list,
                t_vpr_setup& vpr_setup,
                const t_arch& arch) {
     bool is_flat = false;
@@ -1269,7 +1268,7 @@ RouteStatus vpr_route_min_W(const Netlist<>& net_list,
 
     auto& router_opts = vpr_setup.RouterOpts;
     // Placement does not use atom_net list regardless of the status of flat_routing.
-    int min_W = binary_search_place_and_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+    int min_W = binary_search_place_and_route(g_vpr_ctx.clustering().clb_nlist,
                                               net_list,
                                               vpr_setup.PlacerOpts,
                                               router_opts,

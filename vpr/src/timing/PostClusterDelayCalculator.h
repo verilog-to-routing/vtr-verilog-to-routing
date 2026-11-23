@@ -15,10 +15,28 @@ class VprTimingGraphResolver; //Forward declaration
 class PostClusterDelayCalculator : public tatum::DelayCalculator {
   public:
     /**
+     * @brief Builds a delay calculator which uses the routing delays of the connections
+     *        of the clustered netlist (used during placement).
+     *
      * @param net_delay_min Min routing delay of each net connection, used for hold analysis.
      * @param net_delay_max Max routing delay of each net connection, used for setup analysis.
      *                      Callers without separate min delays (e.g. placement) pass the
      *                      same matrix for both.
+     */
+    PostClusterDelayCalculator(const AtomNetlist& netlist,
+                               const AtomLookup& netlist_lookup,
+                               const ClbNetPinsMatrix<float>& net_delay_min,
+                               const ClbNetPinsMatrix<float>& net_delay_max);
+
+    /**
+     * @brief Builds a delay calculator which uses the routing delays of the connections
+     *        of the netlist used by routing (during and after routing).
+     *
+     * @param net_delay_min Min routing delay of each net connection, used for hold analysis.
+     * @param net_delay_max Max routing delay of each net connection, used for setup analysis.
+     *                      Callers without separate min delays pass the same matrix for both.
+     * @param is_flat       True if the atom netlist is routed (flat routing), false if the
+     *                      clustered netlist is.
      */
     PostClusterDelayCalculator(const AtomNetlist& netlist,
                                const AtomLookup& netlist_lookup,
@@ -39,6 +57,11 @@ class PostClusterDelayCalculator : public tatum::DelayCalculator {
 
   private:
     friend VprTimingGraphResolver;
+
+    /// @brief Sets up the parts of the delay calculator which do not depend on where the routing delays come from
+    PostClusterDelayCalculator(const AtomNetlist& netlist,
+                               const AtomLookup& netlist_lookup,
+                               bool is_flat);
 
     //Returns the generic edge delay
     tatum::Time calc_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id, DelayType delay_type) const;
@@ -76,8 +99,16 @@ class PostClusterDelayCalculator : public tatum::DelayCalculator {
   private:
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
-    const NetPinsMatrix<float>& net_delay_min_;
-    const NetPinsMatrix<float>& net_delay_max_;
+
+    // The routing delays of the connections of the clustered netlist (nullptr if the
+    // delays of the connections of the netlist used by routing are taken)
+    const ClbNetPinsMatrix<float>* clb_net_delay_min_ = nullptr;
+    const ClbNetPinsMatrix<float>* clb_net_delay_max_ = nullptr;
+
+    // The routing delays of the connections of the netlist used by routing (nullptr if
+    // the delays of the connections of the clustered netlist are used)
+    const NetPinsMatrix<float>* net_delay_min_ = nullptr;
+    const NetPinsMatrix<float>* net_delay_max_ = nullptr;
 
     ClbDelayCalc clb_delay_calc_;
     AtomDelayCalc atom_delay_calc_;

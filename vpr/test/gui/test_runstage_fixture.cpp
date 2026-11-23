@@ -167,13 +167,9 @@ void VprRunStageFixture::run_to(Stage stage) {
     //   vpr_create_device -> init_graphics (skipped here, --disp off) ->
     //   vpr_place_flow
     vpr_create_device(vpr_setup_, arch_);
-    {
-        const auto& placement_net_list =
-            (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
-        if (!vpr_place_flow(placement_net_list, vpr_setup_, arch_)) {
-            throw std::runtime_error("VprRunStageFixture: vpr_place_flow "
-                                     "returned false (unimplementable)");
-        }
+    if (!vpr_place_flow(g_vpr_ctx.clustering().clb_nlist, vpr_setup_, arch_)) {
+        throw std::runtime_error("VprRunStageFixture: vpr_place_flow "
+                                 "returned false (unimplementable)");
     }
     reached_ = Stage::PostPlace;
     if (stage == Stage::PostPlace) return;

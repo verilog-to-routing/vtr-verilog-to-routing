@@ -41,7 +41,7 @@ class ScopedStartFinishTimer;
 
 class Placer {
   public:
-    Placer(const Netlist<>& net_list,
+    Placer(const ClusteredNetlist& net_list,
            std::optional<std::reference_wrapper<const BlkLocRegistry>> init_place,
            const t_placer_opts& placer_opts,
            const t_analysis_opts& analysis_opts,
@@ -50,7 +50,6 @@ class Placer {
            const FlatPlacementInfo& flat_placement_info,
            std::shared_ptr<PlaceDelayModel> place_delay_model,
            float anneal_auto_init_t_scale,
-           bool is_flat,
            bool quiet);
 
     /**
@@ -99,8 +98,6 @@ class Placer {
     const PlacementLogPrinter log_printer_;
     /// Indicates if the placement quench phase should be skipped.
     const bool quench_only_;
-    /// Indicates if flat routing resource graph and delay model is used. It should be false.
-    const bool is_flat_;
 
     /// Stores a placement state as a retrievable checkpoint in case the placement quality deteriorates later.
     t_placement_checkpoint placement_checkpoint_;
@@ -164,10 +161,10 @@ class Placer {
      *
      * 5. Performs a full timing analysis by marking all pins as invalid.
      *
-     * @param net_list The netlist used for iterating over pins.
+     * @param net_list The clustered netlist used for iterating over pins.
      * @param analysis_opts Analysis options, including whether to echo the timing graph.
      */
-    void alloc_and_init_timing_objects_(const Netlist<>& net_list,
+    void alloc_and_init_timing_objects_(const ClusteredNetlist& net_list,
                                         const t_analysis_opts& analysis_opts);
 
     /**

@@ -79,7 +79,7 @@ AnnealerDetailedPlacer::AnnealerDetailedPlacer(const BlkLocRegistry& curr_cluste
         }
     }
 
-    placer_ = std::make_unique<Placer>((const Netlist<>&)clustered_netlist,
+    placer_ = std::make_unique<Placer>(clustered_netlist,
                                        curr_clustered_placement,
                                        vpr_setup.PlacerOpts,
                                        vpr_setup.AnalysisOpts,
@@ -88,7 +88,6 @@ AnnealerDetailedPlacer::AnnealerDetailedPlacer(const BlkLocRegistry& curr_cluste
                                        FlatPlacementInfo(),
                                        place_delay_model,
                                        vpr_setup.PlacerOpts.place_auto_init_t_scale,
-                                       false /*is_flat*/,
                                        false /*quiet*/);
 }
 

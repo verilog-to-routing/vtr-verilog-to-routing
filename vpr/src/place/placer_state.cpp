@@ -11,7 +11,7 @@ PlacerTimingContext::PlacerTimingContext(bool placement_is_timing_driven, bool p
     const size_t num_nets = cluster_ctx.clb_nlist.nets().size();
 
     if (placement_is_timing_driven) {
-        connection_delay = make_net_pins_matrix<float>((const Netlist<>&)cluster_ctx.clb_nlist, 0.f);
+        connection_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, 0.f);
 
         if (placement_uses_setup_slacks) {
             connection_setup_slack = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, std::numeric_limits<float>::infinity());

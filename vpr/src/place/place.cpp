@@ -26,7 +26,7 @@ void print_clb_placement(const char* fname);
 #endif
 
 /*****************************************************************************/
-void try_place(const Netlist<>& net_list,
+void try_place(const ClusteredNetlist& net_list,
                const t_placer_opts& placer_opts,
                const t_router_opts& router_opts,
                const t_crr_opts& crr_opts,
@@ -109,7 +109,7 @@ void try_place(const Netlist<>& net_list,
 
     Placer placer(net_list, {}, placer_opts, analysis_opts, noc_opts, netlist_pin_lookup,
                   flat_placement_info, place_delay_model, placer_opts.place_auto_init_t_scale,
-                  is_flat, /*quiet=*/false);
+                  /*quiet=*/false);
 
     placer.place();
 

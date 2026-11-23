@@ -75,7 +75,7 @@ struct PlacerTimingContext : public Context {
      *
      * Index ranges: [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]
      */
-    NetPinsMatrix<float> connection_delay;
+    ClbNetPinsMatrix<float> connection_delay;
 
     /// @brief Proposed delay and timing cost of every connection whose delay
     /// changes under the move in flight.

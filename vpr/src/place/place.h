@@ -1,11 +1,11 @@
 #pragma once
 
-#include "netlist.h"
+#include "clustered_netlist_fwd.h"
 #include "vpr_types.h"
 
 class FlatPlacementInfo;
 
-void try_place(const Netlist<>& net_list,
+void try_place(const ClusteredNetlist& net_list,
                const t_placer_opts& placer_opts,
                const t_router_opts& router_opts,
                const t_crr_opts& crr_opts,
