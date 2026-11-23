@@ -207,18 +207,20 @@ int ParallelAnnealEngine::attempt_seed_(uint64_t attempt_id) const {
 void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
                                                          MoveGenerator& move_generator,
                                                          int slot_index) {
-    t_speculative_swap& attempt = attempts_[slot_index];
-
-    // Reset here rather than by the coordinator to avoid cache line bouncing.
-    attempt.reset();
-
     // Once a lower-id attempt is accepted, this one can neither win nor retire,
     // so its remaining work is skipped.
     const t_swap_cancel_token cancel_token{&first_accepted_id_, slot_index};
 
+    // Checked before the slot is touched. A cancelled slot is never read, so
+    // it may keep stale data.
     if (cancel_token.cancelled()) {
         return;
     }
+
+    t_speculative_swap& attempt = attempts_[slot_index];
+
+    // Reset here rather than by the coordinator to avoid cache line bouncing.
+    attempt.reset();
 
     // Reseed so the proposal depends only on the attempt id, not on which worker runs it.
     replica.rng.srandom(attempt_seed_(attempt_counter_ + slot_index));
@@ -255,21 +257,27 @@ void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
 
     attempt.move_result = assess_swap(attempt.deltas.delta_c, round_temperature_, [accept_rand]() { return accept_rand; });
 
-    // Capture the move and its commit record so a win can be committed
-    // everywhere without re-evaluating, then publish this id for early
-    // cancellation. Skipped once a lower id is accepted.
-    if (attempt.move_result == e_move_result::ACCEPTED && !cancel_token.cancelled()) {
-        VTR_ASSERT_SAFE(!attempt.deltas.update_interposer_costs);
-        attempt.moved_blocks = replica.blocks_affected.moved_blocks;
-        replica.evaluator->extract_commit_record(replica.blocks_affected,
-                                                 attempt.commit_record);
-
+    if (attempt.move_result == e_move_result::ACCEPTED) {
         // Lower first_accepted_id_ to this id unless another worker has
-        // already installed a lower one. On failure, compare_exchange_weak
-        // reloads the current value into current and the loop retries.
+        // already installed a lower one. This is done before the capture
+        // below so higher ids cancel without waiting for it. On failure,
+        // compare_exchange_weak reloads the current value into current and
+        // the loop retries.
+        bool published = false;
         int current = first_accepted_id_.load(std::memory_order_relaxed);
-        while (slot_index < current
-               && !first_accepted_id_.compare_exchange_weak(current, slot_index, std::memory_order_relaxed)) {
+        while (slot_index < current && !published) {
+            published = first_accepted_id_.compare_exchange_weak(current, slot_index, std::memory_order_relaxed);
+        }
+
+        // Capture the move and its commit record so a win can be committed
+        // everywhere without re-evaluating. Skipped once a lower id is
+        // accepted. The coordinator reads the capture only after every worker
+        // has finished the round.
+        if (published) {
+            VTR_ASSERT_SAFE(!attempt.deltas.update_interposer_costs);
+            attempt.moved_blocks = replica.blocks_affected.moved_blocks;
+            replica.evaluator->extract_commit_record(replica.blocks_affected,
+                                                     attempt.commit_record);
         }
     }
 
