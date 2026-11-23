@@ -47,8 +47,7 @@ static std::vector<e_side> find_physical_tile_pin_side(t_physical_tile_type_ptr 
  *    - find the net id for the node in clustering context
  *    - if the net id does not match, we update the clustering context
  *******************************************************************/
-static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_list,
-                                                         const DeviceContext& device_ctx,
+static void update_cluster_pin_with_post_routing_results(const DeviceContext& device_ctx,
                                                          ClusteringContext& clustering_ctx,
                                                          const vtr::vector<RRNodeId, ClusterNetId>& rr_node_nets,
                                                          const t_pl_loc& grid_coord,
@@ -151,7 +150,7 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
         /* We should have at least one side now after merging */
         VTR_ASSERT(!pin_sides.empty());
 
-        ParentNetId routing_net_id = ParentNetId::INVALID();
+        ClusterNetId routing_net_id = ClusterNetId::INVALID();
         std::vector<RRNodeId> visited_rr_nodes;
         short valid_routing_net_cnt = 0;
         for (const e_side& pin_side : pin_sides) {
@@ -186,8 +185,8 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
                     if (routing_net_id != rr_node_nets[rr_node]) {
                         VTR_LOG_ERROR("Pin '%s' is mapped to two nets: '%s' and '%s'\n",
                                       pb_graph_pin->to_string().c_str(),
-                                      net_list.net_name(routing_net_id).c_str(),
-                                      net_list.net_name(rr_node_nets[rr_node]).c_str());
+                                      clustering_ctx.clb_nlist.net_name(routing_net_id).c_str(),
+                                      clustering_ctx.clb_nlist.net_name(rr_node_nets[rr_node]).c_str());
                     }
                     VTR_ASSERT(routing_net_id == rr_node_nets[rr_node]);
                 }
@@ -208,21 +207,19 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
             continue;
         }
 
-        ClusterNetId cluster_equivalent_net_id = convert_to_cluster_net_id(routing_net_id);
-
         /* If the net from the routing results matches the net from the packing results,
          * nothing to be changed. Move on to the next net.
          */
-        if (cluster_equivalent_net_id == cluster_net_id) {
+        if (routing_net_id == cluster_net_id) {
             continue;
         }
 
         /* Update the clustering context with net modification */
-        clustering_ctx.post_routing_clb_pin_nets[blk_id][pb_graph_pin->pin_count_in_cluster] = cluster_equivalent_net_id;
+        clustering_ctx.post_routing_clb_pin_nets[blk_id][pb_graph_pin->pin_count_in_cluster] = routing_net_id;
 
         std::string routing_net_name("unmapped");
-        if (clustering_ctx.clb_nlist.valid_net_id(cluster_equivalent_net_id)) {
-            routing_net_name = clustering_ctx.clb_nlist.net_name(cluster_equivalent_net_id);
+        if (clustering_ctx.clb_nlist.valid_net_id(routing_net_id)) {
+            routing_net_name = clustering_ctx.clb_nlist.net_name(routing_net_id);
         }
 
         std::string cluster_net_name("unmapped");
@@ -1015,8 +1012,7 @@ static void update_cluster_routing_traces_with_post_routing_results(AtomContext&
     pb->pb_route = new_pb_routes;
 }
 
-void sync_netlists_to_routing(const Netlist<>& net_list,
-                              const DeviceContext& device_ctx,
+void sync_netlists_to_routing(const DeviceContext& device_ctx,
                               AtomContext& atom_ctx,
                               ClusteringContext& clustering_ctx,
                               const PlacementContext& placement_ctx,
@@ -1040,14 +1036,12 @@ void sync_netlists_to_routing(const Netlist<>& net_list,
     std::unordered_set<ClusterBlockId> seen_block_ids;
     seen_block_ids.reserve(clustering_ctx.clb_nlist.blocks().size());
     /* Update the core logic (center blocks of the FPGA) */
-    for (const ParentBlockId& blk_id : net_list.blocks()) {
+    for (ClusterBlockId clb_blk_id : clustering_ctx.clb_nlist.blocks()) {
         /* We know the entrance to grid info and mapping results, do the fix-up for this block */
-        ClusterBlockId clb_blk_id = convert_to_cluster_block_id(blk_id);
         VTR_ASSERT(clb_blk_id != ClusterBlockId::INVALID());
 
         if (seen_block_ids.insert(clb_blk_id).second) {
-            update_cluster_pin_with_post_routing_results(net_list,
-                                                         device_ctx,
+            update_cluster_pin_with_post_routing_results(device_ctx,
                                                          clustering_ctx,
                                                          rr_node_nets,
                                                          placement_ctx.block_locs()[clb_blk_id].loc,

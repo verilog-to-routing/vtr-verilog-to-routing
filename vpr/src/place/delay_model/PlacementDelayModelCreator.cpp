@@ -62,7 +62,6 @@ std::unique_ptr<PlaceDelayModel>
 PlacementDelayModelCreator::create_delay_model(const t_placer_opts& placer_opts,
                                                const t_router_opts& router_opts,
                                                const t_crr_opts& crr_opts,
-                                               const Netlist<>& net_list,
                                                t_det_routing_arch& det_routing_arch,
                                                const std::vector<t_segment_inf>& segment_inf,
                                                const t_chan_width_dist& chan_width_dist,
@@ -90,7 +89,7 @@ PlacementDelayModelCreator::create_delay_model(const t_placer_opts& placer_opts,
                                                                           router_opts.device_model_warnings,
                                                                           router_opts.router_lookahead_interposer_base_cut_multiplier);
 
-    RouterDelayProfiler route_profiler(net_list, router_lookahead, is_flat);
+    RouterDelayProfiler route_profiler(router_lookahead, is_flat);
 
     int longest_length = get_longest_segment_length(segment_inf);
 

@@ -1577,8 +1577,7 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
             if (is_flat) {
                 sync_netlists_to_routing_flat();
             } else {
-                sync_netlists_to_routing(net_list,
-                                         g_vpr_ctx.device(),
+                sync_netlists_to_routing(g_vpr_ctx.device(),
                                          g_vpr_ctx.mutable_atom(),
                                          g_vpr_ctx.mutable_clustering(),
                                          g_vpr_ctx.placement(),
