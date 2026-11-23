@@ -21,6 +21,13 @@ bool validate_timing_graph_constraints(const TimingGraph& timing_graph, const Ti
 
                 throw tatum::Error(msg, source_node);
             }
+
+            if (!timing_graph.node_in_edges(source_node).empty()) {
+                std::string msg = "Clock Domain " + std::to_string(size_t(domain)) + " (" + timing_constraints.clock_domain_name(domain) + ")"
+                                  " source node " + std::to_string(size_t(source_node)) + " has incoming edges, but clock sources should have none.";
+
+                throw tatum::Error(msg, source_node);
+            }
         }
     }
 
