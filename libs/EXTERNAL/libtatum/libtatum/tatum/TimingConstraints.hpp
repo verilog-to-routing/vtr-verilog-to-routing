@@ -163,6 +163,10 @@ class TimingConstraints {
         ///\returns A valid domain id if the node is a clock source
         DomainId find_node_source_clock_domain(const NodeId node_id) const;
 
+        /// @brief Recomputes the node_clock_domains_ entry of a node from the clock sources and the node's I/O constraints.
+        ///        Called after a clock source or an I/O constraint of the node changes.
+        void update_node_clock_domain_(const NodeId node_id);
+
         io_constraint_iterator find_io_constraint(const NodeId node_id, const DomainId domain_id, const std::multimap<NodeId,IoConstraint>& io_constraints) const;
         mutable_io_constraint_iterator find_io_constraint(const NodeId node_id, const DomainId domain_id, std::multimap<NodeId,IoConstraint>& io_constraints);
 
@@ -171,6 +175,11 @@ class TimingConstraints {
         tatum::util::linear_map<DomainId,DomainId> domain_ids_;
         tatum::util::linear_map<DomainId,std::string> domain_names_;
         tatum::util::linear_map<DomainId,NodeId> domain_sources_;
+
+        /// The clock domain of each node that is a clock source or has an I/O constraint.
+        /// Holds DomainId::INVALID() for other nodes. Nodes past the end have no domain.
+        /// [0..last node that was given a domain]
+        tatum::util::linear_map<NodeId, DomainId> node_clock_domains_;
 
         std::unordered_set<NodeId> constant_generators_;
 

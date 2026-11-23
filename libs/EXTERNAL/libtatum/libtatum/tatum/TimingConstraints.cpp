@@ -30,38 +30,13 @@ bool TimingConstraints::is_virtual_clock(const DomainId id) const {
 }
 
 DomainId TimingConstraints::node_clock_domain(const NodeId id) const {
-    //This is currenlty a linear search through all clock sources and
-    //I/O constraints, could be made more efficient but it is only called
-    //rarely (i.e. during pre-traversals)
-
-    //Is it a clock source?
-    DomainId source_domain = find_node_source_clock_domain(id);
-    if(source_domain) return source_domain;
-
-    //Does it have an input constarint?
-    for(DelayType delay_type : {DelayType::MAX, DelayType::MIN}) {
-        for(auto kv : input_constraints(delay_type)) {
-            auto node_id = kv.first;
-            auto domain_id = kv.second.domain;
-
-            //TODO: Assumes a single clock per node
-            if(node_id == id) return domain_id;
-        }
+    // Nodes past the end of the table are not clock sources and have no I/O constraints
+    auto iter = node_clock_domains_.find(id);
+    if (iter == node_clock_domains_.end()) {
+        return DomainId::INVALID();
     }
 
-    //Does it have an output constraint?
-    for(DelayType delay_type : {DelayType::MAX, DelayType::MIN}) {
-        for(auto kv : output_constraints(delay_type)) {
-            auto node_id = kv.first;
-            auto domain_id = kv.second.domain;
-
-            //TODO: Assumes a single clock per node
-            if(node_id == id) return domain_id;
-        }
-    }
-
-    //None found
-    return DomainId::INVALID();
+    return *iter;
 }
 
 bool TimingConstraints::node_is_clock_source(const NodeId id) const {
@@ -82,6 +57,30 @@ DomainId TimingConstraints::find_node_source_clock_domain(const NodeId node_id) 
     }
 
     return DomainId::INVALID();
+}
+
+void TimingConstraints::update_node_clock_domain_(const NodeId node_id) {
+    // A virtual clock has no source node, so it has no entry in the table
+    if (!node_id) {
+        return;
+    }
+
+    // Is it a clock source?
+    DomainId domain_id = find_node_source_clock_domain(node_id);
+
+    // Otherwise take the domain of its first I/O constraint.
+    // Inputs are checked before outputs, and max before min.
+    // TODO: Assumes a single clock per node
+    for (io_constraint_range node_constraints : {input_constraints(node_id, DelayType::MAX),
+                                                 input_constraints(node_id, DelayType::MIN),
+                                                 output_constraints(node_id, DelayType::MAX),
+                                                 output_constraints(node_id, DelayType::MIN)}) {
+        if (!domain_id && !node_constraints.empty()) {
+            domain_id = node_constraints.begin()->second.domain;
+        }
+    }
+
+    node_clock_domains_.insert(node_id, domain_id);
 }
 
 DomainId TimingConstraints::find_clock_domain(const std::string& name) const {
@@ -351,6 +350,9 @@ void TimingConstraints::set_input_constraint(const NodeId node_id, const DomainI
             min_input_constraints_.insert(std::make_pair(node_id, IoConstraint(domain_id, constraint)));
         }
     }
+
+    // The node may have gained its first constraint
+    update_node_clock_domain_(node_id);
 }
 
 void TimingConstraints::set_output_constraint(const NodeId node_id, const DomainId domain_id, const DelayType delay_type, const Time constraint) {
@@ -374,6 +376,9 @@ void TimingConstraints::set_output_constraint(const NodeId node_id, const Domain
             min_output_constraints_.insert(std::make_pair(node_id, IoConstraint(domain_id, constraint)));
         }
     }
+
+    // The node may have gained its first constraint
+    update_node_clock_domain_(node_id);
 }
 
 void TimingConstraints::set_source_latency(const DomainId domain, const ArrivalType arrival_type, const Time latency) {
@@ -386,7 +391,12 @@ void TimingConstraints::set_source_latency(const DomainId domain, const ArrivalT
 }
 
 void TimingConstraints::set_clock_domain_source(const NodeId node_id, const DomainId domain_id) {
+    NodeId old_node_id = domain_sources_[domain_id];
     domain_sources_[domain_id] = node_id;
+
+    // The domain's previous source node is no longer its source
+    update_node_clock_domain_(old_node_id);
+    update_node_clock_domain_(node_id);
 }
 
 void TimingConstraints::set_constant_generator(const NodeId node_id, bool is_constant_generator) {
@@ -410,6 +420,19 @@ void TimingConstraints::remap_nodes(const tatum::util::linear_map<NodeId,NodeId>
         }
     }
     domain_sources_ = std::move(remapped_domain_sources);
+
+    // Node clock domains
+    tatum::util::linear_map<NodeId,DomainId> remapped_node_clock_domains;
+    for (size_t node_idx = 0; node_idx < node_clock_domains_.size(); ++node_idx) {
+        NodeId old_node_id(node_idx);
+
+        DomainId domain_id = node_clock_domains_[old_node_id];
+        NodeId new_node_id = node_map[old_node_id];
+        if (domain_id && new_node_id) {
+            remapped_node_clock_domains.insert(new_node_id, domain_id);
+        }
+    }
+    node_clock_domains_ = std::move(remapped_node_clock_domains);
 
     //Constant generators
     std::unordered_set<NodeId> remapped_constant_generators;
