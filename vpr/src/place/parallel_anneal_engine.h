@@ -8,32 +8,38 @@
  *
  * Most swap attempts in simulated annealing are rejected, especially when it
  * starts from a good initial placement (e.g. an analytical placement), and a
- * rejected attempt leaves the placement state unchanged. The engine proposes a
- * batch of `W` swaps against the current committed placement state and
- * evaluates them concurrently. Each attempt has an id. Outcomes
- * are resolved in id order:
+ * rejected attempt leaves the placement state unchanged. The engine works in
+ * rounds. In a round, the workers propose and evaluate swaps concurrently
+ * against the current committed placement state. Each attempt has an id, and
+ * ids are claimed in increasing order. A worker whose attempt is rejected or
+ * aborted claims the next id, so it never waits for a slower worker. The round
+ * ends once an attempt is accepted and every lower id has finished, or once
+ * its attempt limit has been claimed. Outcomes are resolved in id order:
  *
  *  - The lowest-id accepted attempt wins and is committed. It and every
  *    lower-id attempt retire, so statistics and the RL agent are updated
  *    for them in id order.
  *  - Higher ids were evaluated against a state the winner invalidated. They
- *    are discarded and their ids reissued in the next batch. Still-running
+ *    are discarded and their ids reissued in the next round. Still-running
  *    higher ids cancel early once an acceptance is known.
- *  - If nothing accepts, all W attempts retire as rejections.
+ *  - If nothing accepts, every attempt up to the limit retires as a rejection.
  *
  * ## Determinism
  *
  * Each attempt seeds its RNG from (seed, id), and replica RL-agents are synced
- * from the master generator every batch. An attempt's outcome therefore does
- * not depend on which worker runs it. Runs with the same seed and worker count
- * produce identical results.
+ * from the master generator every round. An attempt's outcome therefore does
+ * not depend on which worker runs it or on when it runs. Every id below the
+ * winner was claimed before it and is never cancelled, so a round always
+ * retires the same attempts, whatever the timing or the worker count. Runs
+ * with the same seed and the same attempt limits produce identical results
+ * for any number of workers.
  *
  * ## Threading model
  *
  * Each worker owns a private replica of the state that swap evaluation mutates
  * (block locations, net costs, proposed timing data), plus a private RNG and
- * move generators. Everything else is shared and read-only during a batch.
- * Workers propose and evaluate their share of a batch on their own replica.
+ * move generators. Everything else is shared and read-only during a round.
+ * Workers propose and evaluate the attempts they claim on their own replica.
  * The coordinator is worker 0 and also resolves outcomes and commits. A winner
  * is applied to the master state and every replica, keeping all copies identical.
  *
@@ -71,9 +77,9 @@ struct t_placer_opts;
 /**
  * @brief One speculative swap attempt. All fields are filled by the worker that
  * proposes and evaluates the attempt; the coordinator only reads them when
- * resolving and committing the batch.
+ * resolving and committing the round.
  *
- * @note Adjacent slots of a batch are written concurrently by different workers.
+ * @note Adjacent slots of a round are written concurrently by different workers.
  * The cache-line alignment keeps them from false-sharing a line at slot boundaries.
  */
 struct alignas(64) t_speculative_swap {
@@ -105,10 +111,10 @@ struct alignas(64) t_speculative_swap {
     }
 };
 
-/// @brief Result of running one speculative batch.
-struct t_batch_outcome {
-    /// Number of attempts that retired (index of the winner + 1, or the full
-    /// batch size if no attempt was accepted).
+/// @brief Result of running one speculative round.
+struct t_round_outcome {
+    /// Number of attempts that retired (index of the winner + 1, or the
+    /// attempt limit if no attempt was accepted).
     int num_retired_attempts = 0;
     /// True when the last retired attempt was accepted and has been committed.
     bool committed = false;
@@ -116,10 +122,14 @@ struct t_batch_outcome {
 
 /**
  * @class ParallelAnnealEngine
- * @brief Worker pool and batch scheduler for speculative parallel swap evaluation.
+ * @brief Worker pool and round scheduler for speculative parallel swap evaluation.
  */
 class ParallelAnnealEngine {
   public:
+    /// Most attempts a round may issue. Rounds that end without an acceptance
+    /// retire this many attempts, so results depend on its value.
+    static constexpr int MAX_ATTEMPTS_PER_ROUND = 64;
+
     ParallelAnnealEngine() = delete;
     ParallelAnnealEngine(const ParallelAnnealEngine&) = delete;
     ParallelAnnealEngine& operator=(const ParallelAnnealEngine&) = delete;
@@ -161,7 +171,7 @@ class ParallelAnnealEngine {
 
     /**
      * @brief Copies the master state into every replica. Must be called
-     * before the first batch of each outer loop iteration.
+     * before the first round of each outer loop iteration.
      *
      * @note Only the very first call copies the full master state. Winning
      * moves keep the replicas identical to the master, so later calls only
@@ -179,15 +189,17 @@ class ParallelAnnealEngine {
     void sync_replicas_timing();
 
     /**
-     * @brief Proposes, evaluates, and resolves one speculative batch.
+     * @brief Proposes, evaluates, and resolves one speculative round.
      *
-     * Workers propose and evaluate their share of the batch on their private
-     * replicas. The lowest-id accepted attempt, if any, is committed to the
+     * Workers claim attempt ids in increasing order and evaluate them on their
+     * private replicas until one is accepted or `max_attempts` ids have been
+     * claimed. The lowest-id accepted attempt, if any, is committed to the
      * master state before returning. Replica commits may still be running
      * when this returns and are waited on before the engine touches any
      * replica or attempt state again.
      *
-     * @param batch_size Number of attempts to issue (>= 1).
+     * @param max_attempts Most attempts the round may retire (>= 1). Must not
+     * depend on the worker count, or results will.
      * @param master_move_generator The annealer's move generator for this inner
      * loop. It never proposes here and only serves as the sync source for the
      * replica generators' agent state.
@@ -197,16 +209,16 @@ class ParallelAnnealEngine {
      * @param rlim Current move range limit.
      * @return How many attempts retired and whether a move was committed.
      */
-    t_batch_outcome run_batch(int batch_size,
+    t_round_outcome run_round(int max_attempts,
                               MoveGenerator& master_move_generator,
                               bool use_second_generator,
                               float temperature,
                               float rlim);
 
     /**
-     * @brief Returns the attempts of the most recent batch. Only the retired
-     * prefix reported by run_batch() is meaningful. Later entries were discarded
-     * as stale speculation.
+     * @brief Returns the attempts of the most recent round, indexed by id
+     * within the round. Only the retired prefix reported by run_round() is
+     * meaningful. Later entries were discarded or never claimed.
      */
     const std::vector<t_speculative_swap>& attempts() const { return attempts_; }
 
@@ -237,7 +249,7 @@ class ParallelAnnealEngine {
         /// worker proposes and evaluates.
         vtr::RngContainer rng;
         /// Private copies of the annealer's two move generators. Their RL agent
-        /// state is synced from the master generator every batch.
+        /// state is synced from the master generator every round.
         std::unique_ptr<MoveGenerator> move_generator_1;
         std::unique_ptr<MoveGenerator> move_generator_2;
         /// Swap evaluator that operates on this replica's state.
@@ -259,7 +271,7 @@ class ParallelAnnealEngine {
     /// @brief Commands executed by the worker pool.
     enum class e_worker_job : uint8_t {
         NONE,
-        EVALUATE,      ///< Evaluate this worker's share of the current batch
+        EVALUATE,      ///< Claim and evaluate attempts of the current round
         COMMIT_WINNER, ///< Apply the winning move to this worker's replica
         SYNC_FULL,     ///< Synchronize this worker's replica with the full master state
         SYNC_TIMING,   ///< Synchronize this worker's replica timing data with the master state
@@ -302,6 +314,9 @@ class ParallelAnnealEngine {
     int attempt_seed_(uint64_t attempt_id) const;
 
   private:
+    /// Value of first_accepted_id_ while no attempt of the round has been accepted.
+    static constexpr int NO_ACCEPTED_ID = std::numeric_limits<int>::max();
+
     /// Number of parallel evaluators, including the coordinator.
     const int num_workers_;
     const t_placer_opts& placer_opts_;
@@ -327,7 +342,7 @@ class ParallelAnnealEngine {
 
     /// One replica per worker. Replica 0 belongs to the coordinator.
     std::vector<std::unique_ptr<EvalReplica>> replicas_;
-    /// Attempts of the most recent batch.
+    /// Attempts of the most recent round, indexed by id within the round.
     std::vector<t_speculative_swap> attempts_;
 
     // ---- Worker pool state ----
@@ -339,19 +354,22 @@ class ParallelAnnealEngine {
     /// Current job, written before it is published through dispatch_barrier_.
     e_worker_job job_ = e_worker_job::NONE;
     /// EVALUATE payload: whether replicas propose with their second generator.
-    bool batch_use_gen2_ = false;
-    /// EVALUATE payload: number of attempts in the current batch.
-    int batch_size_ = 0;
+    bool round_use_gen2_ = false;
+    /// EVALUATE payload: attempt limit of the current round.
+    int round_max_attempts_ = 0;
     /// EVALUATE payload: current annealing temperature.
-    float batch_temperature_ = 0.f;
+    float round_temperature_ = 0.f;
     /// EVALUATE payload: current move range limit.
-    float batch_rlim_ = 0.f;
+    float round_rlim_ = 0.f;
     /// EVALUATE payload: sync source for the replica generators' agent state.
-    const MoveGenerator* batch_master_generator_ = nullptr;
+    const MoveGenerator* round_master_generator_ = nullptr;
     /// COMMIT_WINNER payload: the winning attempt.
     const t_speculative_swap* winner_attempt_ = nullptr;
-    /// Lowest accepted attempt id in the current batch, or INT_MAX if none yet.
-    /// Attempts with a higher id cancel early. Written while a job runs, so it
-    /// gets its own cache line.
-    alignas(64) std::atomic<int> first_accepted_id_{std::numeric_limits<int>::max()};
+    /// Next unclaimed attempt id of the current round. Every worker writes it
+    /// on each claim, so it gets its own cache line.
+    alignas(64) std::atomic<int> next_attempt_id_{0};
+    /// Lowest accepted attempt id in the current round, or NO_ACCEPTED_ID if
+    /// none yet. Attempts with a higher id cancel early. Written while a job
+    /// runs, so it gets its own cache line.
+    alignas(64) std::atomic<int> first_accepted_id_{NO_ACCEPTED_ID};
 };

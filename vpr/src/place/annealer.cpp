@@ -932,16 +932,25 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
     int inner_crit_iter_count = 0;
 
     while (inner_iter < annealing_state_.move_lim) {
-        // Each batch issues one attempt per worker, so inner_iter and the
-        // recompute counters below can overshoot their limits by up to one batch.
-        t_batch_outcome batch_outcome = parallel_engine_->run_batch(placer_opts_.swap_eval_num_workers,
+        // A round must not retire attempts past the end of the inner loop, the
+        // next timing update, or the next cost recompute. None of these limits
+        // depends on the worker count.
+        int max_attempts = std::min(ParallelAnnealEngine::MAX_ATTEMPTS_PER_ROUND,
+                                    annealing_state_.move_lim - inner_iter);
+        if (timing_driven) {
+            max_attempts = std::min(max_attempts, std::max(recompute_limit - inner_crit_iter_count, 1));
+        }
+        max_attempts = std::min(max_attempts, MAX_MOVES_BEFORE_RECOMPUTE + 1 - moves_since_cost_recompute_);
+        VTR_ASSERT_SAFE(max_attempts >= 1);
+
+        t_round_outcome round_outcome = parallel_engine_->run_round(max_attempts,
                                                                     move_generator, use_second_generator,
                                                                     annealing_state_.t, annealing_state_.rlim);
 
         // Update statistics and the RL agent for each retired attempt, in id order.
         // This mirrors what the sequential loop does after each try_swap_() call.
         const std::vector<t_speculative_swap>& attempts = parallel_engine_->attempts();
-        for (int k = 0; k < batch_outcome.num_retired_attempts; ++k) {
+        for (int k = 0; k < round_outcome.num_retired_attempts; ++k) {
             const t_speculative_swap& attempt = attempts[k];
 
             swap_stats_.num_ts_called++;
@@ -974,14 +983,14 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
                                                                 REWARD_BB_TIMING_RELATIVE_WEIGHT);
         }
 
-        if (batch_outcome.committed) {
+        if (round_outcome.committed) {
             // Update statistics used by the annealing schedule.
             placer_stats_.single_swap_update(costs_);
         }
 
-        inner_iter += batch_outcome.num_retired_attempts;
-        inner_crit_iter_count += batch_outcome.num_retired_attempts;
-        moves_since_cost_recompute_ += batch_outcome.num_retired_attempts;
+        inner_iter += round_outcome.num_retired_attempts;
+        inner_crit_iter_count += round_outcome.num_retired_attempts;
+        moves_since_cost_recompute_ += round_outcome.num_retired_attempts;
 
         // Periodic timing update. Skipped once the loop is about to end.
         if (timing_driven && inner_crit_iter_count >= recompute_limit

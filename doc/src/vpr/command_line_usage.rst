@@ -1252,7 +1252,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 .. option:: --place_swap_eval_num_workers <int>
 
     Controls the number of workers used to speculatively evaluate placement swaps in parallel during simulated annealing.
-    Each batch proposes one swap per worker against the current placement, evaluates them concurrently, and commits at most one accepted swap.
+    The workers propose and evaluate swaps concurrently against the current placement until one of them is accepted, then that swap is committed and the others in flight are discarded.
     Since most swaps are rejected, this reduces placement run-time, most noticeably when annealing starts from a good initial placement (e.g. an analytical placement).
 
     The annealing thread itself acts as one of the workers.
@@ -1261,7 +1261,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     * ``>1`` sets the number of workers.
     * ``0`` uses the maximum concurrency supported by the host machine.
 
-    Results are deterministic for a fixed seed and number of workers, but differ between different numbers of workers.
+    Results are deterministic for a fixed seed and are the same for any number of workers greater than ``1``. They differ from the results of the sequential annealer.
 
     .. note:: The placer warns and falls back to the sequential annealer if any of the following apply:
 

@@ -54,7 +54,7 @@ struct t_net_cost_terms {
  * annealing trajectory.
  */
 struct t_swap_cancel_token {
-    /// Lowest accepted attempt id of the current batch. nullptr means never cancel.
+    /// Lowest accepted attempt id of the current round. nullptr means never cancel.
     const std::atomic<int>* first_accepted_id = nullptr;
     /// Id of the attempt this evaluation belongs to.
     int slot_index = 0;

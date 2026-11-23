@@ -2829,7 +2829,8 @@ static void add_placement_options(argparse::ArgumentParser& parser, t_options& a
             " *  1 (the default) uses the sequential annealer,\n"
             " * >1 sets the number of workers, and\n"
             " *  0 uses the maximum concurrency supported by the host machine.\n"
-            "Results are deterministic for a fixed value of this option.")
+            "Results are deterministic and are the same for any number of workers "
+            "greater than 1.")
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
