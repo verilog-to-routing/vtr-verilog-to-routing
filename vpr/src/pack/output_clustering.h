@@ -2,8 +2,8 @@
 
 #include <unordered_set>
 #include <string>
+#include "atom_netlist_fwd.h"
 
-class AtomNetId;
 class ClusterLegalizer;
 
 /// @brief Output the clustering, given by the ClusterLegalizer or a clustered

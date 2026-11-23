@@ -21,9 +21,7 @@
 
 #include "ezgl/point.hpp"
 #include "ezgl/graphics.hpp"
-
-// Forward Declaration
-class APBlockId;
+#include "ap_netlist_fwd.h"
 
 /**
  * @brief Draws all placed blocks on the device grid across visible layers.

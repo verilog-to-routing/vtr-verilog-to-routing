@@ -10,12 +10,12 @@
 
 #include <unordered_set>
 #include "vtr_vector.h"
+#include "atom_netlist_fwd.h"
+#include "clustered_netlist_fwd.h"
 
 // Forward declarations
-class AtomBlockId;
 class AtomLookup;
 class AtomNetlist;
-class ClusterBlockId;
 class ClusteredNetlist;
 class PartitionRegion;
 class UserPlaceConstraints;

@@ -9,9 +9,7 @@
 #include "physical_types.h"
 #include "prepack.h"
 #include "lazy_pop_unique_priority_queue.h"
-
-// Forward declarations
-class AtomBlockId;
+#include "atom_netlist_fwd.h"
 
 /**
  * Keeps track of locations that a primitive can go to during packing

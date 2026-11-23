@@ -14,10 +14,10 @@
  */
 
 #include "vtr_vector.h"
+#include "clustered_netlist_fwd.h"
 
 // Forward declarations
 class BlkLocRegistry;
-class ClusterBlockId;
 class ClusteredNetlist;
 class DeviceGrid;
 class PartitionRegion;

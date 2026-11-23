@@ -5,10 +5,10 @@
 #include "cluster_legalizer.h"
 #include "logic_types.h"
 #include "vtr_vector.h"
+#include "atom_netlist_fwd.h"
+#include "clustered_netlist_fwd.h"
 
-class AtomNetId;
 class AttractionInfo;
-class ClusterBlockId;
 class ClusterLegalizer;
 class ClusteredNetlist;
 struct AtomContext;

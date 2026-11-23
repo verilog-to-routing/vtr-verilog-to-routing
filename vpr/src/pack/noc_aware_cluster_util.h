@@ -17,9 +17,9 @@
 #include <vector>
 #include "noc_data_types.h"
 #include "vtr_vector.h"
+#include "atom_netlist_fwd.h"
 
 class AtomNetlist;
-class AtomBlockId;
 class LogicalModels;
 class t_pack_high_fanout_thresholds;
 
