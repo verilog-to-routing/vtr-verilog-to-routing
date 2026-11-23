@@ -474,8 +474,10 @@ static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::rende
 static void add_main_canvas() {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas_persistent, draw_main_canvas_immediate, initial_world);
+    auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas_persistent, initial_world);
     if (canvas != nullptr) {
+        canvas->set_draw_immediate_callback(draw_main_canvas_immediate);
+
         ezgl::renderer_type rt = ezgl::renderer_type::rhi;
         if (draw_state->renderer_type == "immediate")
             rt = ezgl::renderer_type::immediate;
