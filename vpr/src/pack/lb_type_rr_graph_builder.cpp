@@ -15,6 +15,7 @@
  * - pb: physical block (the top level physical block is the logic block, a leaf physical block is a primitive)
  */
 
+#include <algorithm>
 #include <limits>
 #include <utility>
 #include <vector>
@@ -107,11 +108,48 @@ void LbTypeRRGraphBuilder::build_graph_(const t_logical_block_type& lb_type) {
         VTR_ASSERT(graph_.types_[inode] != e_lb_rr_type::NUM_TYPES);
     }
 
+    build_fanin_();
+
     graph_.nodes_.shrink_to_fit();
     graph_.mode_edge_start_.shrink_to_fit();
     graph_.edges_.shrink_to_fit();
     graph_.types_.shrink_to_fit();
     graph_.pb_graph_pins_.shrink_to_fit();
+}
+
+void LbTypeRRGraphBuilder::build_fanin_() {
+    const size_t num_nodes = graph_.num_nodes();
+
+    // Count the fan-in of each node over the edges of all modes.
+    graph_.fanin_start_.assign(num_nodes + 1, 0);
+    graph_.min_edge_cost_ = std::numeric_limits<float>::max();
+    for (LbRRNodeId inode : graph_.nodes()) {
+        for (int mode = 0; mode < graph_.num_modes(inode); mode++) {
+            for (const LbTypeRRGraph::t_edge& edge : graph_.edges(inode, mode)) {
+                graph_.fanin_start_[size_t(edge.node_index) + 1]++;
+                graph_.min_edge_cost_ = std::min(graph_.min_edge_cost_, edge.cost);
+            }
+        }
+    }
+    if (graph_.edges_.empty()) {
+        graph_.min_edge_cost_ = 0;
+    }
+
+    // Turn the counts into the start index of each node's fan-in nodes.
+    for (size_t inode = 0; inode < num_nodes; inode++) {
+        graph_.fanin_start_[inode + 1] += graph_.fanin_start_[inode];
+    }
+
+    // Place the source of each edge in the group of the node it drives.
+    graph_.fanin_nodes_.resize(graph_.edges_.size());
+    std::vector<uint32_t> next_slot(graph_.fanin_start_.begin(), graph_.fanin_start_.end() - 1);
+    for (LbRRNodeId inode : graph_.nodes()) {
+        for (int mode = 0; mode < graph_.num_modes(inode); mode++) {
+            for (const LbTypeRRGraph::t_edge& edge : graph_.edges(inode, mode)) {
+                graph_.fanin_nodes_[next_slot[size_t(edge.node_index)]++] = inode;
+            }
+        }
+    }
 }
 
 void LbTypeRRGraphBuilder::begin_node_(LbRRNodeId node, e_lb_rr_type type, int capacity, int num_modes, const t_pb_graph_pin* pin) {
