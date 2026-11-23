@@ -718,7 +718,6 @@ if __name__ == "__main__":
                 parsed_data=vpr_placement_results, design_file=single_design, user_args=args
             )
 
-    # pylint: disable=broad-except
-    except Exception as error:
+    except Exception as error:  # pylint: disable=broad-exception-caught
         # the test failed so let user know why
         print("TEST FAILED: " + str(error))

@@ -13,9 +13,9 @@
 #include "rr_graph_uxsdcxx_serializer.h"
 #include "rr_graph_uxsdcxx.h"
 #ifdef VTR_ENABLE_CAPNPROTO
-#    include <capnp/schema.h>
-#    include "serdes_utils.h"
-#    include "rr_graph_uxsdcxx_capnp.h"
+#include <capnp/schema.h>
+#include "serdes_utils.h"
+#include "rr_graph_uxsdcxx_capnp.h"
 #endif
 
 /************************ Subroutine definitions ****************************/
@@ -30,7 +30,7 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     RRGraphView* rr_graph_view,
                     const std::vector<t_physical_tile_type>& physical_tile_types,
                     vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
-                    std::vector<t_rr_rc_data>* rr_rc_data,
+                    RRRCData& rr_rc_data,
                     const DeviceGrid& grid,
                     const std::vector<t_arch_switch_inf>& arch_switch_inf,
                     const t_arch* arch,
@@ -81,6 +81,7 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
         &arch->strings,
         schema_file_id,
         is_flat,
+        route_verbosity,
         device_model_warnings);
 
     if (vtr::check_file_name_extension(file_name, ".xml")) {

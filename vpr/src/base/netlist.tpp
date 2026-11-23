@@ -880,6 +880,13 @@ void Netlist<BlockId, PortId, PinId, NetId>::set_block_name(const BlockId blk_id
 
     //Names must be unique -- no duplicates allowed
     BlockId existing_blk_id = find_block(new_name);
+
+    if (existing_blk_id == blk_id) {
+        // Naming the same block the same thing twice is okay
+        // and not an error
+        return;
+    }
+
     if (existing_blk_id) {
         VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "Can not re-name block '%s' to '%s' (a block named '%s' already exists).",
                         block_name(blk_id).c_str(),
@@ -952,7 +959,10 @@ void Netlist<BlockId, PortId, PinId, NetId>::merge_nets(const NetId driver_net, 
     //
 
     //Move the sinks to the driver net
-    for (PinId sink_pin : net_sinks(sink_net)) {
+    // Note that the sinks are copied first since moving a sink removes it from
+    // sink_net's pins, which would invalidate the iteration.
+    std::vector<PinId> sink_pins(net_sinks(sink_net).begin(), net_sinks(sink_net).end());
+    for (PinId sink_pin : sink_pins) {
         //Update pin -> net references, also adds pins to driver_net
         set_pin_net(sink_pin, pin_type(sink_pin), driver_net);
     }

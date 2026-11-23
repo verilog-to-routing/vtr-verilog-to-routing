@@ -1,6 +1,7 @@
 /** @file Impls for non-templated net routing fns & utils */
 
 #include "route_net.h"
+#include "bus_mux_routing.h"
 #include "connection_based_routing.h"
 #include "timing_util.h"
 
@@ -18,18 +19,22 @@ void setup_net(int itry,
                const Netlist<>& net_list,
                CBRR& connections_inf,
                const t_router_opts& router_opts,
-               float worst_neg_slack) {
+               float worst_neg_slack,
+               const route_budgets& budgeting_inf) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     /* "tree" points to this net's spot in the global context here, so re-initializing it etc. changes the global state */
     vtr::optional<RouteTree>& tree = route_ctx.route_trees[net_id];
 
     bool ripup_high_fanout_nets = check_hold(router_opts, worst_neg_slack);
+    bool ripup_for_skew = budgeting_inf.if_set() && budgeting_inf.get_should_reroute_for_skew(net_id);
     int num_sinks = net_list.net_sinks(net_id).size();
 
     // for nets below a certain size (min_incremental_reroute_fanout), rip up any old routing
-    // otherwise, we incrementally reroute by reusing legal parts of the previous iteration
-    if (num_sinks < router_opts.min_incremental_reroute_fanout || itry == 1 || ripup_high_fanout_nets) {
+    // otherwise, we incrementally reroute by reusing legal parts of the previous iteration.
+    // ripup_for_skew forces a full rip-up when the low-skew clock algorithm has just loaded
+    // new per-connection delay budgets for this net.
+    if (num_sinks < router_opts.min_incremental_reroute_fanout || itry == 1 || ripup_high_fanout_nets || ripup_for_skew) {
         profiling::net_rerouted();
 
         /* rip up the whole net */
@@ -142,8 +147,11 @@ bool should_route_net(const Netlist<>& net_list,
         return true;
     if (worst_negative_slack != 0 && budgeting_inf.if_set() && budgeting_inf.get_should_reroute(net_id)) /* Reroute for hold */
         return true;
+    if (budgeting_inf.if_set() && budgeting_inf.get_should_reroute_for_skew(net_id)) /* Reroute for low-skew clock budgets */
+        return true;
 
     const RouteTree& tree = route_ctx.route_trees[net_id].value();
+    const bool has_bus_muxes = !device_ctx.rr_bus_muxes.empty();
 
     /* Walk over all rt_nodes in the net */
     for (auto& rt_node : tree.all_nodes()) {
@@ -153,6 +161,10 @@ bool should_route_net(const Netlist<>& net_list,
 
         if (occ > capacity) {
             return true; /* overuse detected */
+        }
+
+        if (has_bus_muxes && is_bus_mux_edge_control_congested(rt_node)) {
+            return true; // Reroute bits of a mux with conflicting selects.
         }
 
         if (rt_node.is_leaf()) { //End of a branch

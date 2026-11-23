@@ -209,13 +209,12 @@ static void draw_internal_pb(const ClusterBlockId clb_index,
         }
 
         g->set_color(ezgl::BLACK);
-        if (current_pb->name != nullptr) {
+        if (!current_pb->name.empty()) {
             g->set_font_size(10);
 
             std::string pb_type_name(pb_type->name);
-            std::string pb_name(current_pb->name);
 
-            std::string blk_tag = pb_name + " (" + pb_type_name + ")";
+            std::string blk_tag = current_pb->name + " (" + pb_type_name + ")";
 
             g->draw_text(
                 abs_bbox.center(),

@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<!-- minimal mosaic fixture: sp/dp bram + exotic my_mul (a/b/out, mode 8), no classic multiply -->
+<architecture>
+  <models>
+    <model name="single_port_ram">
+      <input_ports>
+        <port name="we" is_clock="true"/>
+        <port name="addr"/>
+        <port name="data"/>
+      </input_ports>
+      <output_ports>
+        <port name="out"/>
+      </output_ports>
+    </model>
+    <model name="dual_port_ram">
+      <input_ports>
+        <port name="we1" is_clock="true"/>
+        <port name="we2" is_clock="true"/>
+        <port name="addr1"/>
+        <port name="addr2"/>
+        <port name="data1"/>
+        <port name="data2"/>
+      </input_ports>
+      <output_ports>
+        <port name="out1"/>
+        <port name="out2"/>
+      </output_ports>
+    </model>
+    <model name="my_mul">
+      <input_ports>
+        <port name="a"/>
+        <port name="b"/>
+      </input_ports>
+      <output_ports>
+        <port name="out"/>
+      </output_ports>
+    </model>
+  </models>
+  <tiles>
+    <tile name="io" area="0">
+      <sub_tile name="io" capacity="1">
+        <equivalent_sites>
+          <site pb_type="io" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="outpad" num_pins="1"/>
+        <output name="inpad" num_pins="1"/>
+      </sub_tile>
+    </tile>
+    <tile name="clb" area="0">
+      <sub_tile name="clb" capacity="1">
+        <equivalent_sites>
+          <site pb_type="clb" pin_mapping="direct"/>
+        </equivalent_sites>
+      </sub_tile>
+    </tile>
+  </tiles>
+  <layout>
+    <auto_layout aspect_ratio="1.0">
+      <die name="core" width="2" height="2"/>
+      <region name="default" type="fill" xstart="0.0" xend="1.0" ystart="0.0" yend="1.0"/>
+    </auto_layout>
+    <fixed_layout name="2x2" width="2" height="2">
+      <region name="default" type="fill" xstart="0.0" xend="1.0" ystart="0.0" yend="1.0"/>
+      <fill type="io" priority="10" startx="0" starty="0"/>
+      <fill type="clb" priority="1"/>
+    </fixed_layout>
+  </layout>
+  <device>
+    <sizing R_minW_nmos="0.0" R_minW_pmos="0.0"/>
+    <area grid_logic_tile_area="0.0"/>
+    <chan_width_distr type="uniform" peak="1.0"/>
+    <switch_block type="wilton" fs="3"/>
+    <connection_block input_switch_name="ipin_cblock"/>
+  </device>
+  <complexblocklist>
+    <pb_type name="io" num_pb="1">
+      <input name="outpad" num_pins="1"/>
+      <output name="inpad" num_pins="1"/>
+      <clock name="clk" num_pins="1"/>
+    </pb_type>
+    <pb_type name="clb" num_pb="1">
+      <input name="I" num_pins="4"/>
+      <output name="O" num_pins="4"/>
+      <clock name="clk" num_pins="1"/>
+      <pb_type name="sp_ram" blif_model=".subckt single_port_ram" num_pb="1">
+        <input name="we" num_pins="1"/>
+        <input name="addr" num_pins="8"/>
+        <input name="data" num_pins="16"/>
+        <output name="out" num_pins="16"/>
+      </pb_type>
+      <pb_type name="dp_ram" blif_model=".subckt dual_port_ram" num_pb="1">
+        <input name="we1" num_pins="1"/>
+        <input name="we2" num_pins="1"/>
+        <input name="addr1" num_pins="8"/>
+        <input name="addr2" num_pins="8"/>
+        <input name="data1" num_pins="16"/>
+        <input name="data2" num_pins="16"/>
+        <output name="out1" num_pins="16"/>
+        <output name="out2" num_pins="16"/>
+      </pb_type>
+      <pb_type name="my_mul_pb" blif_model=".subckt my_mul" num_pb="1">
+        <input name="a" num_pins="8"/>
+        <input name="b" num_pins="8"/>
+        <output name="out" num_pins="16"/>
+      </pb_type>
+    </pb_type>
+  </complexblocklist>
+</architecture>

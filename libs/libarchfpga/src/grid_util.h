@@ -103,7 +103,7 @@ int adjust_interposer_cut_location(const DeviceGrid& grid,
                                    bool print_warning);
 
 /// @brief Resolve interposer cut locations so no cut goes through blocks.
-/// @return (horizontal_cuts_per_layer, vertical_cuts_per_layer).
+/// @return (horizontal_cuts_per_layer, vertical_cuts_per_layer), each layer's cuts sorted in ascending order.
 std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>>
 resolve_interposer_cut_locations(const DeviceGrid& grid,
                                  const t_grid_def& grid_def,

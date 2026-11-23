@@ -85,12 +85,12 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
             forcible_reroute_connection_flag[net_id][rr_sink_node] = false;
 
             // skip if connection is internal to a block such that SOURCE->OPIN->IPIN->SINK directly, which would have 0 time delay
-            if (lower_bound_connection_delay[net_id][ipin - 1] == 0)
+            if (lower_bound_connection_delay[net_id][ipin] == 0)
                 continue;
 
             // update if more optimal connection found
-            if (net_delay[net_id][ipin] < lower_bound_connection_delay[net_id][ipin - 1]) {
-                lower_bound_connection_delay[net_id][ipin - 1] = net_delay[net_id][ipin];
+            if (net_delay[net_id][ipin] < lower_bound_connection_delay[net_id][ipin]) {
+                lower_bound_connection_delay[net_id][ipin] = net_delay[net_id][ipin];
                 continue;
             }
 
@@ -101,7 +101,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
                 continue;
 
             // skip if connection's delay is close to optimal
-            if (net_delay[net_id][ipin] < (lower_bound_connection_delay[net_id][ipin - 1] * connection_delay_optimality_tolerance))
+            if (net_delay[net_id][ipin] < (lower_bound_connection_delay[net_id][ipin] * connection_delay_optimality_tolerance))
                 continue;
 
             forcible_reroute_connection_flag[net_id][rr_sink_node] = true;

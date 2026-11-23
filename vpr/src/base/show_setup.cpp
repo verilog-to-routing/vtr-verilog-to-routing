@@ -38,6 +38,9 @@ void show_setup(const t_vpr_setup& vpr_setup) {
     VTR_LOG("Packer: %s\n", stage_action_strings[vpr_setup.PackerOpts.doPacking]);
     VTR_LOG("Placer: %s\n", stage_action_strings[vpr_setup.PlacerOpts.do_placement]);
     VTR_LOG("Analytical Placer: %s\n", stage_action_strings[vpr_setup.APOpts.doAP]);
+    if (vpr_setup.APOpts.doAP != e_stage_action::SKIP && vpr_setup.APOpts.stop_after_global_placement) {
+        VTR_LOG("\tStopping after Global Placement\n");
+    }
     VTR_LOG("Router: %s\n", stage_action_strings[vpr_setup.RouterOpts.doRouting]);
     VTR_LOG("Analysis: %s\n", stage_action_strings[vpr_setup.AnalysisOpts.doAnalysis]);
     VTR_LOG("\n");
@@ -70,7 +73,7 @@ void ClusteredNetlistStats::write_human_(std::ostream& output) const {
     output << "Cluster level netlist and block usage statistics\n";
     output << "Netlist num_nets: " << num_nets << "\n";
     output << "Netlist num_blocks: " << num_blocks << "\n";
-    for (const t_logical_block_type& type : logical_block_types) {
+    for (const t_logical_block_type& type : logical_block_types_) {
         output << "Netlist " << type.name << " blocks: " << num_blocks_type[type.index] << ".\n";
     }
 
@@ -88,9 +91,9 @@ void ClusteredNetlistStats::write_json_(std::ostream& output) const {
 
     output << "  \"blocks\": {\n";
 
-    for (const t_logical_block_type& type : logical_block_types) {
+    for (const t_logical_block_type& type : logical_block_types_) {
         output << "    \"" << type.name << "\": " << num_blocks_type[type.index];
-        if ((int)type.index < (int)logical_block_types.size() - 1)
+        if ((int)type.index < (int)logical_block_types_.size() - 1)
             output << ",\n";
         else
             output << "\n";
@@ -106,7 +109,7 @@ void ClusteredNetlistStats::write_xml_(std::ostream& output) const {
     output << "  <nets num=\"" << num_nets << "\"></nets>\n";
     output << "  <blocks num=\"" << num_blocks << "\">\n";
 
-    for (const t_logical_block_type& type : logical_block_types) {
+    for (const t_logical_block_type& type : logical_block_types_) {
         output << "    <block type=\"" << type.name << "\" usage=\"" << num_blocks_type[type.index] << "\"></block>\n";
     }
     output << "  </blocks>\n";
@@ -117,7 +120,8 @@ void ClusteredNetlistStats::write_xml_(std::ostream& output) const {
     output << "</block_usage_report>\n";
 }
 
-ClusteredNetlistStats::ClusteredNetlistStats() {
+ClusteredNetlistStats::ClusteredNetlistStats()
+    : logical_block_types_(g_vpr_ctx.device().logical_block_types) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -126,7 +130,6 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
     num_blocks_type = std::vector<int>(device_ctx.logical_block_types.size(), 0);
     num_nets = (int)cluster_ctx.clb_nlist.nets().size();
     num_blocks = (int)cluster_ctx.clb_nlist.blocks().size();
-    logical_block_types = device_ctx.logical_block_types;
 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         t_logical_block_type_ptr logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
@@ -433,6 +436,9 @@ static void show_router_opts(const t_router_opts& router_opts) {
             case e_router_lookahead::SIMPLE:
                 VTR_LOG("SIMPLE\n");
                 break;
+            case e_router_lookahead::SEPARABLE:
+                VTR_LOG("SEPARABLE\n");
+                break;
             case e_router_lookahead::NO_OP:
                 VTR_LOG("NO_OP\n");
                 break;
@@ -475,6 +481,7 @@ static void show_router_opts(const t_router_opts& router_opts) {
             VTR_LOG("router_opts.routing_failure_predictor = AGGRESSIVE\n");
         else if (router_opts.routing_failure_predictor == OFF)
             VTR_LOG("router_opts.routing_failure_predictor = OFF\n");
+        VTR_LOG("router_opts.routing_predictor_min_history: %d\n", router_opts.routing_predictor_min_history);
 
         if (router_opts.routing_budgets_algorithm == DISABLE) {
             VTR_LOG("router_opts.routing_budgets_algorithm = DISABLE\n");
@@ -484,6 +491,8 @@ static void show_router_opts(const t_router_opts& router_opts) {
             VTR_LOG("router_opts.routing_budgets_algorithm = YOYO\n");
         } else if (router_opts.routing_budgets_algorithm == SCALE_DELAY) {
             VTR_LOG("router_opts.routing_budgets_algorithm = SCALE_DELAY\n");
+        } else if (router_opts.routing_budgets_algorithm == LOW_SKEW_CLOCK) {
+            VTR_LOG("router_opts.routing_budgets_algorithm = LOW_SKEW_CLOCK\n");
         }
     }
 
@@ -543,6 +552,28 @@ static void show_placer_opts(const t_placer_opts& placer_opts) {
         if (placer_opts.congestion_factor > 0.0f) {
             VTR_LOG("placer_opts.congestion_rlim_trigger_ratio: %f\n", placer_opts.congestion_rlim_trigger_ratio);
             VTR_LOG("placer_opts.congestion_chan_util_threshold: %f\n", placer_opts.congestion_chan_util_threshold);
+        }
+
+        auto interposer_net_cost_type_to_string = [](e_interposer_net_cost_type cost_type) {
+            switch (cost_type) {
+                case e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB:
+                    return "minimize_interposer_crossing_bb";
+                case e_interposer_net_cost_type::INTERPOSER_WIRE_AWARE_CROSSING_BB:
+                    return "interposer_wire_aware_crossing_bb";
+                case e_interposer_net_cost_type::TWO_STAGE:
+                    return "two_stage";
+                default:
+                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown interposer net cost type\n");
+            }
+        };
+
+        VTR_LOG("placer_opts.interposer_cost_params.net_cost_type: %s\n", interposer_net_cost_type_to_string(placer_opts.interposer_cost_params.net_cost_type));
+        if (placer_opts.interposer_cost_params.net_cost_type == e_interposer_net_cost_type::TWO_STAGE) {
+            VTR_LOG("placer_opts.interposer_cost_params.two_stage_net_cost_first_stage_type: %s\n",
+                    interposer_net_cost_type_to_string(placer_opts.interposer_cost_params.two_stage_net_cost_first_stage_type));
+            VTR_LOG("placer_opts.interposer_cost_params.two_stage_net_cost_second_stage_type: %s\n",
+                    interposer_net_cost_type_to_string(placer_opts.interposer_cost_params.two_stage_net_cost_second_stage_type));
+            VTR_LOG("placer_opts.interposer_cost_params.net_cost_change_threshold: %f\n", placer_opts.interposer_cost_params.net_cost_change_threshold);
         }
 
         if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -633,6 +664,21 @@ static void show_analytical_placer_opts(const t_ap_opts& ap_opts) {
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown analytical_solver_type\n");
     }
 
+    VTR_LOG("AnalyticalPlacerOpts.solver_threading: ");
+    switch (ap_opts.solver_threading) {
+        case e_ap_solver_threading::Auto:
+            VTR_LOG("auto\n");
+            break;
+        case e_ap_solver_threading::Sequential:
+            VTR_LOG("sequential\n");
+            break;
+        case e_ap_solver_threading::Concurrent:
+            VTR_LOG("concurrent\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown solver_threading\n");
+    }
+
     VTR_LOG("AnalyticalPlacerOpts.partial_legalizer_type: ");
     switch (ap_opts.partial_legalizer_type) {
         case e_ap_partial_legalizer::Identity:
@@ -685,6 +731,7 @@ static void show_analytical_placer_opts(const t_ap_opts& ap_opts) {
 
 static void show_netlist_opts(const t_netlist_opts& netlist_opts) {
     VTR_LOG("netlist_opts.absorb_buffer_luts            : %s\n", (netlist_opts.absorb_buffer_luts) ? "true" : "false");
+    VTR_LOG("netlist_opts.merge_constant_generators     : %s\n", (netlist_opts.merge_constant_generators) ? "true" : "false");
     VTR_LOG("netlist_opts.sweep_dangling_primary_ios    : %s\n", (netlist_opts.sweep_dangling_primary_ios) ? "true" : "false");
     VTR_LOG("netlist_opts.sweep_dangling_nets           : %s\n", (netlist_opts.sweep_dangling_nets) ? "true" : "false");
     VTR_LOG("netlist_opts.sweep_dangling_blocks         : %s\n", (netlist_opts.sweep_dangling_blocks) ? "true" : "false");
@@ -705,6 +752,7 @@ static void show_analysis_opts(const t_analysis_opts& analysis_opts) {
     VTR_LOG("analysis_opts.gen_post_implementation_sdc: %s\n", analysis_opts.gen_post_implementation_sdc ? "true" : "false");
     VTR_LOG("analysis_opts.timing_report_npaths: %d\n", analysis_opts.timing_report_npaths);
     VTR_LOG("analysis_opts.timing_report_skew: %s\n", analysis_opts.timing_report_skew ? "true" : "false");
+    VTR_LOG("analysis_opts.timing_report_path_categories: %s\n", analysis_opts.timing_report_path_categories.to_string().c_str());
     VTR_LOG("analysis_opts.echo_dot_timing_graph_node: %s\n", analysis_opts.echo_dot_timing_graph_node.c_str());
 
     VTR_LOG("analysis_opts.timing_report_detail: ");

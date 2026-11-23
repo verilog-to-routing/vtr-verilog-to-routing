@@ -46,7 +46,7 @@ void add_rr_graph_C_from_switches() {
 
     std::vector<float> rr_node_C(rr_graph.num_nodes(), 0.); //Stores the final C
 
-    for (const RRNodeId& rr_id : rr_graph.nodes()) {
+    for (RRNodeId rr_id : rr_graph.nodes()) {
         size_t inode = (size_t)rr_id;
         //The C may have already been partly initialized (e.g. with metal capacitance)
         rr_node_C[inode] += rr_graph.node_C(rr_id);
@@ -212,7 +212,7 @@ void add_rr_graph_C_from_switches() {
 
     // Create the final flywieghted t_rr_rc_data
     for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
-        mutable_device_ctx.rr_graph_builder.set_node_rc_index(rr_id, find_create_rr_rc_data(rr_graph.node_R(rr_id), rr_node_C[(size_t)rr_id], mutable_device_ctx.rr_rc_data));
+        mutable_device_ctx.rr_graph_builder.set_node_rc_index(rr_id, mutable_device_ctx.rr_rc_data.find_create(rr_graph.node_R(rr_id), rr_node_C[(size_t)rr_id]));
     }
 
     delete[] Couts_to_add;

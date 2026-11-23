@@ -10,6 +10,8 @@
  */
 
 #include "verify_clustering.h"
+#include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include "atom_lookup.h"
 #include "atom_netlist.h"
@@ -19,6 +21,7 @@
 #include "physical_types.h"
 #include "region.h"
 #include "user_place_constraints.h"
+#include "user_relative_macros.h"
 #include "vpr_context.h"
 #include "vtr_log.h"
 #include "vtr_vector.h"
@@ -244,18 +247,23 @@ static unsigned check_clustering_pb_consistency(const ClusteredNetlist& clb_nlis
  */
 
 /**
- * @brief Returns true if an atom is constrained to a region on the FPGA chip.
+ * @brief Returns the PartitionRegion an atom is constrained to on the FPGA chip,
+ *        or nullptr if the atom is not constrained to a region.
  *
- * True when the atom's partition has at least one add_region (non-empty PartitionRegion).
- * False when the atom is unconstrained, or has only logical_block_location with no add_region
+ * Non-null when the atom's partition has at least one add_region (non-empty PartitionRegion).
+ * Null when the atom is unconstrained, or has only logical_block_location with no add_region
  * (pack-only constraint: controls packing inside a logic block, not chip placement).
  */
-static bool atom_has_floorplan_constraint(const UserPlaceConstraints& constraints, AtomBlockId atom_blk_id) {
+static const PartitionRegion* get_atom_floorplan_pr(const UserPlaceConstraints& constraints, AtomBlockId atom_blk_id) {
     PartitionId part_id = constraints.get_atom_partition(atom_blk_id);
     if (!part_id.is_valid()) {
-        return false;
+        return nullptr;
     }
-    return !constraints.get_partition_pr(part_id).empty();
+    const PartitionRegion& part_pr = constraints.get_partition_pr(part_id);
+    if (part_pr.empty()) {
+        return nullptr;
+    }
+    return &part_pr;
 }
 
 static unsigned check_clustering_floorplanning_consistency(
@@ -281,7 +289,7 @@ static unsigned check_clustering_floorplanning_consistency(
             // If the cluster is unconstrained, make sure all the atoms it
             // contains are unconstrained.
             for (AtomBlockId atom_blk_id : atoms_in_clb) {
-                if (atom_has_floorplan_constraint(constraints, atom_blk_id)) {
+                if (get_atom_floorplan_pr(constraints, atom_blk_id) != nullptr) {
                     VTR_LOG_ERROR(
                         "Cluster block %zu is unconstrained but contains "
                         "constrained atom block %zu.\n",
@@ -294,7 +302,7 @@ static unsigned check_clustering_floorplanning_consistency(
             // At least one of the atoms in the cluster must be constrained.
             bool an_atom_is_constrained = false;
             for (AtomBlockId atom_blk_id : atoms_in_clb) {
-                if (atom_has_floorplan_constraint(constraints, atom_blk_id)) {
+                if (get_atom_floorplan_pr(constraints, atom_blk_id) != nullptr) {
                     an_atom_is_constrained = true;
                     break;
                 }
@@ -310,16 +318,15 @@ static unsigned check_clustering_floorplanning_consistency(
             // is non-empty. This implies that a placement could theoretically
             // exist.
             for (AtomBlockId atom_blk_id : atoms_in_clb) {
-                PartitionId atom_part_id = constraints.get_atom_partition(atom_blk_id);
                 // If the atom has no floorplan constraint, continue.
-                if (!atom_has_floorplan_constraint(constraints, atom_blk_id))
+                const PartitionRegion* atom_pr = get_atom_floorplan_pr(constraints, atom_blk_id);
+                if (atom_pr == nullptr)
                     continue;
                 // Check if an intersection exists between the atom's PR and the
                 // cluster's PR.
                 bool intersection_exists = false;
-                const PartitionRegion& atom_pr = constraints.get_partition_pr(atom_part_id);
-                for (const auto& cluster_region : cluster_pr.get_regions()) {
-                    for (const auto& atom_region : atom_pr.get_regions()) {
+                for (const Region& cluster_region : cluster_pr.get_regions()) {
+                    for (const Region& atom_region : atom_pr->get_regions()) {
                         Region intersect_region = intersection(cluster_region, atom_region);
                         if (!intersect_region.empty()) {
                             intersection_exists = true;
@@ -340,20 +347,19 @@ static unsigned check_clustering_floorplanning_consistency(
             // Compute the intersection of all the atom PRs in the cluster.
             PartitionRegion calc_cluster_pr;
             for (AtomBlockId atom_blk_id : atoms_in_clb) {
-                PartitionId atom_part_id = constraints.get_atom_partition(atom_blk_id);
                 // If the atom has no floorplan constraint, continue.
-                if (!atom_has_floorplan_constraint(constraints, atom_blk_id))
+                const PartitionRegion* atom_pr = get_atom_floorplan_pr(constraints, atom_blk_id);
+                if (atom_pr == nullptr)
                     continue;
                 // Get the intersection of the atom's PR and the intersection of
                 // all atom PRs that came before.
-                const PartitionRegion& atom_pr = constraints.get_partition_pr(atom_part_id);
                 if (calc_cluster_pr.empty()) {
-                    calc_cluster_pr = atom_pr;
+                    calc_cluster_pr = *atom_pr;
                     continue;
                 }
                 std::vector<Region> int_regions;
-                for (const auto& cluster_region : calc_cluster_pr.get_regions()) {
-                    for (const auto& atom_region : atom_pr.get_regions()) {
+                for (const Region& cluster_region : calc_cluster_pr.get_regions()) {
+                    for (const Region& atom_region : atom_pr->get_regions()) {
                         Region intersection_region = intersection(cluster_region, atom_region);
                         if (!intersection_region.empty()) {
                             int_regions.push_back(intersection_region);
@@ -380,9 +386,9 @@ static unsigned check_clustering_floorplanning_consistency(
             // constrains all the atoms within the cluster, if cluster_region
             // is a subset of that, it should be equal to or smaller (which
             // are both legal).
-            for (const auto& cluster_region : cluster_pr.get_regions()) {
+            for (const Region& cluster_region : cluster_pr.get_regions()) {
                 bool found_region = false;
-                for (const auto& calc_cluster_region : calc_cluster_pr.get_regions()) {
+                for (const Region& calc_cluster_region : calc_cluster_pr.get_regions()) {
                     // This equality is a deep check. it checks that the actual
                     // rectangles of the regions are equal.
                     if (calc_cluster_region == cluster_region) {
@@ -407,7 +413,7 @@ static unsigned check_clustering_floorplanning_consistency(
                     // If the atom partition exists and is constrained to some lb types,
                     // check that the cluster's logical block type is one of the types
                     // that this atom can implement.
-                    const auto& atom_lb_type_constraints = constraints.get_part_lb_type_constraints(atom_part_id);
+                    const std::unordered_set<t_logical_block_type_ptr>& atom_lb_type_constraints = constraints.get_part_lb_type_constraints(atom_part_id);
                     t_logical_block_type_ptr clb_block_type = clb_nlist.block_type(clb_blk_id);
                     if (!atom_lb_type_constraints.contains(clb_block_type)) {
                         VTR_LOG_ERROR(
@@ -426,12 +432,104 @@ static unsigned check_clustering_floorplanning_consistency(
     return num_errors;
 }
 
+/**
+ * @brief Check that clustering respects relative placement groups.
+ *
+ * Each group must occupy one cluster, with no unclustered atoms.
+ * Groups must use distinct clusters to preserve their placement offsets.
+ * Each atom with a site constraint must map to that primitive.
+ *
+ *  @param atom_nlist       The atom netlist used to create the clustering.
+ *  @param atom_lookup      Maps atoms to their clusters.
+ *  @param relative_macros  The user-defined relative placement macros.
+ *
+ *  @return The number of errors found.
+ */
+static unsigned check_clustering_relative_group_consistency(const AtomNetlist& atom_nlist,
+                                                            const AtomLookup& atom_lookup,
+                                                            const UserRelativeMacros& relative_macros) {
+    unsigned num_errors = 0;
+
+    // Track the group assigned to each cluster.
+    std::unordered_map<ClusterBlockId, UserRelativeGroupId> cluster_rel_group;
+
+    for (UserRelativeGroupId group_id : relative_macros.group_ids()) {
+        const t_user_relative_group& group = relative_macros.get_group(group_id);
+        const t_user_relative_macro& macro = relative_macros.get_macro(group.macro_id);
+        ClusterBlockId group_clb_id;
+        bool group_split_reported = false;
+
+        for (AtomBlockId atom_blk_id : group.atoms) {
+            ClusterBlockId clb_blk_id = atom_lookup.atom_clb(atom_blk_id);
+            if (!clb_blk_id.is_valid()) {
+                VTR_LOG_ERROR(
+                    "Atom block '%s' of relative macro '%s' group %zu is "
+                    "not clustered.\n",
+                    atom_nlist.block_name(atom_blk_id).c_str(),
+                    macro.name.c_str(), size_t(group_id));
+                num_errors++;
+                continue;
+            }
+
+            // Report a split group only once.
+            if (!group_clb_id.is_valid()) {
+                group_clb_id = clb_blk_id;
+            } else if (clb_blk_id != group_clb_id && !group_split_reported) {
+                VTR_LOG_ERROR(
+                    "The atoms of relative macro '%s' group %zu are split "
+                    "across multiple clusters.\n",
+                    macro.name.c_str(), size_t(group_id));
+                num_errors++;
+                group_split_reported = true;
+            }
+
+            // Check all site constraints, including non-root atoms whose sites
+            // are determined by the molecule's pack pattern.
+            const t_pb_graph_node* site = relative_macros.get_atom_locked_site(atom_blk_id);
+            if (site != nullptr) {
+                const t_pb* atom_pb = atom_lookup.atom_pb_bimap().atom_pb(atom_blk_id);
+                if (atom_pb == nullptr || atom_pb->pb_graph_node == nullptr) {
+                    VTR_LOG_ERROR(
+                        "Atom block '%s' of relative macro '%s' group %zu is locked to "
+                        "primitive site '%s' but is not mapped to a primitive.\n",
+                        atom_nlist.block_name(atom_blk_id).c_str(),
+                        macro.name.c_str(), size_t(group_id), site->hierarchical_type_name().c_str());
+                    num_errors++;
+                } else if (atom_pb->pb_graph_node != site) {
+                    VTR_LOG_ERROR(
+                        "Atom block '%s' of relative macro '%s' group %zu is locked to "
+                        "primitive site '%s', but it was placed on '%s'.\n",
+                        atom_nlist.block_name(atom_blk_id).c_str(),
+                        macro.name.c_str(), size_t(group_id), site->hierarchical_type_name().c_str(),
+                        atom_pb->pb_graph_node->hierarchical_type_name().c_str());
+                    num_errors++;
+                }
+            }
+
+            // A cluster may host atoms of at most one group.
+            auto [seen_itr, first_time] = cluster_rel_group.insert({clb_blk_id, group_id});
+            if (!first_time && seen_itr->second != group_id) {
+                const t_user_relative_macro& other_macro = relative_macros.get_macro(relative_macros.get_group(seen_itr->second).macro_id);
+                VTR_LOG_ERROR(
+                    "Cluster block %zu contains atoms of relative macro '%s' "
+                    "group %zu and of relative macro '%s' group %zu.\n",
+                    size_t(clb_blk_id), macro.name.c_str(), size_t(group_id),
+                    other_macro.name.c_str(), size_t(seen_itr->second));
+                num_errors++;
+            }
+        }
+    }
+
+    return num_errors;
+}
+
 unsigned verify_clustering(const ClusteredNetlist& clb_nlist,
                            const AtomNetlist& atom_nlist,
                            const AtomLookup& atom_lookup,
                            const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& clb_atoms,
                            const vtr::vector<ClusterBlockId, PartitionRegion>& cluster_constraints,
-                           const UserPlaceConstraints& constraints) {
+                           const UserPlaceConstraints& constraints,
+                           const UserRelativeMacros& relative_macros) {
     unsigned num_errors = 0;
     // Check that every cluster has an entry in the clb_atoms vector.
     if (clb_atoms.size() != clb_nlist.blocks().size()) {
@@ -462,6 +560,10 @@ unsigned verify_clustering(const ClusteredNetlist& clb_nlist,
                                                              clb_atoms,
                                                              cluster_constraints,
                                                              constraints);
+    // Check group membership and primitive-site constraints.
+    num_errors += check_clustering_relative_group_consistency(atom_nlist,
+                                                              atom_lookup,
+                                                              relative_macros);
     // TODO: There exists more checks for the clustering in base/check_netlist.cpp
     //       These checks check for duplicate names and that the nets between
     //       cluster blocks make sense. May be a good idea to bring this in here
@@ -476,5 +578,6 @@ unsigned verify_clustering(const VprContext& ctx) {
                              ctx.atom().lookup(),
                              ctx.clustering().atoms_lookup,
                              ctx.floorplanning().cluster_constraints,
-                             ctx.floorplanning().constraints);
+                             ctx.floorplanning().constraints,
+                             ctx.floorplanning().relative_macros);
 }

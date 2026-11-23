@@ -198,10 +198,10 @@ class t_placer_statistics {
     ///@brief Clear all data fields.
     void reset();
 
-    ///@brief Update stats when a single swap move has been accepted.
+    ///@brief Calculate placer success rate and cost std_dev for this iteration.
     void calc_iteration_stats(const t_placer_costs& costs, int move_lim);
 
-    ///@brief Calculate placer success rate and cost std_dev for this iteration.
+    ///@brief Update stats when a single swap move has been accepted.
     void single_swap_update(const t_placer_costs& costs);
 };
 

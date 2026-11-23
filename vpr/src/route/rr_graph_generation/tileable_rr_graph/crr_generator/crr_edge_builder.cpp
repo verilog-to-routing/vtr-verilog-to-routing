@@ -33,7 +33,8 @@ static t_arch_switch_inf create_crr_switch(const int delay_ps) {
     arch_switch_inf.R = 0.;
     arch_switch_inf.Cin = 0.;
     arch_switch_inf.Cout = 0;
-    arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, static_cast<float>(delay_ps) * 1e-12);
+    float delay = static_cast<float>(delay_ps) * 1e-12;
+    arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, delay, delay);
     arch_switch_inf.power_buffer_type = POWER_BUFFER_TYPE_NONE;
     arch_switch_inf.mux_trans_size = 0.;
     arch_switch_inf.buf_size_type = e_buffer_size::ABSOLUTE;
@@ -77,7 +78,7 @@ std::unordered_map<int, RRSwitchId> pre_create_crr_switches(const int min_delay_
 void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
                          size_t& num_edges_to_create,
                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
-                         const RRGSB& rr_gsb,
+                         const vtr::Point<size_t>& gsb_coord,
                          const crrgenerator::CRRConnectionBuilder& connection_builder,
                          const std::unordered_map<int, RRSwitchId>& delay_to_switch_id,
                          const int /*verbosity*/) {
@@ -85,8 +86,8 @@ void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "CRR only supports 2D architectures (num_layers must be 1)\n");
     }
 
-    size_t gsb_x = rr_gsb.get_sb_x();
-    size_t gsb_y = rr_gsb.get_sb_y();
+    size_t gsb_x = gsb_coord.x();
+    size_t gsb_y = gsb_coord.y();
 
     std::vector<crrgenerator::Connection> gsb_connections = connection_builder.get_tile_connections(gsb_x, gsb_y);
     for (const auto& connection : gsb_connections) {

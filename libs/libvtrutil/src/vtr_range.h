@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iterator>
+#include <ranges>
 
 namespace vtr {
 /**
@@ -45,15 +46,15 @@ class Range {
         : begin_(b)
         , end_(e) {}
     ///@brief Return an iterator to the start of the range
-    constexpr T begin() { return begin_; }
+    constexpr T begin() noexcept { return begin_; }
     ///@brief Return an iterator to the end of the range
-    constexpr T end() { return end_; }
+    constexpr T end() noexcept { return end_; }
     ///@brief Return an iterator to the start of the range (immutable)
-    constexpr const T begin() const { return begin_; }
+    constexpr const T begin() const noexcept { return begin_; }
     ///@brief Return an iterator to the end of the range (immutable)
-    constexpr const T end() const { return end_; }
+    constexpr const T end() const noexcept { return end_; }
     ///@brief Return true if empty
-    constexpr bool empty() { return begin_ == end_; }
+    constexpr bool empty() const noexcept { return begin_ == end_; }
     ///@brief Return the range size
     constexpr size_t size() const { return std::distance(begin_, end_); }
 
@@ -81,3 +82,13 @@ template<typename Container>
 inline auto make_range(const Container& c) { return make_range(std::begin(c), std::end(c)); }
 
 } // namespace vtr
+
+/**
+ * @brief Mark vtr::Range as a borrowed range.
+ *
+ * A vtr::Range only holds a pair of iterators, so those iterators stay valid
+ * after the Range object itself is destroyed. This lets temporary ranges be
+ * passed directly to std::ranges algorithms and views (e.g. std::views::filter).
+ */
+template<typename T>
+inline constexpr bool std::ranges::enable_borrowed_range<vtr::Range<T>> = true;

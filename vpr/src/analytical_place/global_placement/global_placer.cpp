@@ -12,16 +12,19 @@
 #include <memory>
 #include <vector>
 #include "ap_draw_manager.h"
+#include "PreClusterDelayCalculator.h"
 #include "PreClusterTimingManager.h"
 #include "analytical_solver.h"
 #include "ap_flow_enums.h"
 #include "ap_netlist.h"
 #include "ap_netlist_fwd.h"
+#include "ap_timing_estimation.h"
 #include "atom_netlist.h"
 #include "device_grid.h"
 #include "flat_placement_bins.h"
 #include "flat_placement_density_manager.h"
 #include "globals.h"
+#include "gp_solution_quality_estimation.h"
 #include "logic_types.h"
 #include "partial_legalizer.h"
 #include "partial_placement.h"
@@ -33,6 +36,7 @@
 #include "vtr_time.h"
 
 std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytical_solver_type,
+                                                 e_ap_solver_threading solver_threading,
                                                  e_ap_partial_legalizer partial_legalizer_type,
                                                  const APNetlist& ap_netlist,
                                                  const Prepacker& prepacker,
@@ -49,6 +53,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  unsigned num_threads,
                                                  int log_verbosity) {
     return std::make_unique<SimPLGlobalPlacer>(analytical_solver_type,
+                                               solver_threading,
                                                partial_legalizer_type,
                                                ap_netlist,
                                                prepacker,
@@ -67,6 +72,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
 }
 
 SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_type,
+                                     e_ap_solver_threading solver_threading,
                                      e_ap_partial_legalizer partial_legalizer_type,
                                      const APNetlist& ap_netlist,
                                      const Prepacker& prepacker,
@@ -84,7 +90,9 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                      int log_verbosity)
     : GlobalPlacer(ap_netlist, log_verbosity)
     , pre_cluster_timing_manager_(pre_cluster_timing_manager)
-    , place_delay_model_(place_delay_model) {
+    , place_delay_model_(place_delay_model)
+    , atom_netlist_(atom_netlist)
+    , prepacker_(prepacker) {
     // This can be a long method. Good to time this to see how long it takes to
     // construct the global placer.
     vtr::ScopedStartFinishTimer global_placer_building_timer("Constructing Global Placer");
@@ -99,6 +107,7 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                      place_delay_model_,
                                      ap_timing_tradeoff,
                                      num_threads,
+                                     solver_threading,
                                      log_verbosity_);
 
     // Build the density manager used by the partial legalizer.
@@ -131,17 +140,24 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
 static void print_placement_stats(const PartialPlacement& p_placement,
                                   const APNetlist& ap_netlist,
                                   FlatPlacementDensityManager& density_manager,
-                                  const PreClusterTimingManager& pre_cluster_timing_manager) {
+                                  PreClusterTimingManager& pre_cluster_timing_manager,
+                                  const PlaceDelayModel& place_delay_model) {
     // Print the placement HPWL
     VTR_LOG("\tPlacement objective HPWL: %f\n", p_placement.get_hpwl(ap_netlist));
-    VTR_LOG("\tPlacement estimated wirelength: %g\n", p_placement.estimate_post_placement_wirelength(ap_netlist));
+    VTR_LOG("\tPlacement estimated wirelength: %g\n", estimate_post_routing_wire_usage(p_placement, ap_netlist, g_vpr_ctx.device().grid));
 
-    // Print the timing information.
+    // Print the estimated post-routing timing.
     if (pre_cluster_timing_manager.is_valid()) {
-        float cpd_ns = pre_cluster_timing_manager.get_timing_info().least_slack_critical_path().delay() * 1e9;
-        float stns_ns = pre_cluster_timing_manager.get_timing_info().setup_total_negative_slack() * 1e9;
-        VTR_LOG("\tPlacement estimated CPD: %f ns\n", cpd_ns);
-        VTR_LOG("\tPlacement estimated sTNS: %f ns\n", stns_ns);
+        FlatPlacementArcDelayEstimator arc_delay_estimator(ap_netlist,
+                                                           *pre_cluster_timing_manager.get_delay_calculator_ptr(),
+                                                           place_delay_model,
+                                                           g_vpr_ctx.device().grid);
+        t_ap_timing_estimate timing_estimate = estimate_post_routing_timing(p_placement,
+                                                                            arc_delay_estimator,
+                                                                            pre_cluster_timing_manager.get_delay_calculator_ptr());
+        VTR_LOG("\tPlacement estimated CPD: %f ns\n", timing_estimate.cpd * 1e9);
+        VTR_LOG("\tPlacement estimated sTNS: %f ns\n", timing_estimate.stns * 1e9);
+        VTR_LOG("\tPlacement estimated sWNS: %f ns\n", timing_estimate.swns * 1e9);
     }
 
     // Print density information. Need to reset the density manager to ensure
@@ -397,12 +413,12 @@ PartialPlacement SimPLGlobalPlacer::place() {
     PartialPlacement best_p_placement(ap_netlist_);
     double best_ub_hpwl = std::numeric_limits<double>::max();
 
-    // Initialize graphics for analytical placement, setting the reference in
-    // the draw state.
-    APDrawManager draw_manager(p_placement);
+    // Initialize graphics for analytical placement, setting the references in the draw state.
+    APDrawManager draw_manager(atom_netlist_, ap_netlist_, prepacker_, p_placement);
 
-    // Pause to show initial FPGA state before any solving begins.
-    draw_manager.pause("Analytical Placement: Starting Global Placement");
+    // Pause to show initial FPGA state before any solving begins. Also pass in the pre-cluster timing manager
+    // so that the drawing code can prepare for critical path drawing.
+    draw_manager.pause_at_initial_scene("Analytical Placement: Starting Global Placement", pre_cluster_timing_manager_);
 
     // Run the global placer.
     for (size_t i = 0; i < max_num_iterations_; i++) {
@@ -423,9 +439,6 @@ PartialPlacement SimPLGlobalPlacer::place() {
         float legalizer_end_time = runtime_timer.elapsed_sec();
         double ub_hpwl = p_placement.get_hpwl(ap_netlist_);
 
-        // Update graphics after legalizer
-        draw_manager.update_graphics(i, APDrawType::Legalizer);
-
         // Perform a timing update
         float timing_update_start_time = runtime_timer.elapsed_sec();
         update_timing_info_with_gp_placement(pre_cluster_timing_manager_,
@@ -434,6 +447,9 @@ PartialPlacement SimPLGlobalPlacer::place() {
                                              ap_netlist_);
         solver_->update_net_weights(pre_cluster_timing_manager_);
         float timing_update_end_time = runtime_timer.elapsed_sec();
+
+        // Update graphics after legalizer and timing update
+        draw_manager.update_graphics(i, APDrawType::Legalizer);
 
         total_time_spent_in_solver += solver_end_time - solver_start_time;
         total_time_spent_in_legalizer += legalizer_end_time - legalizer_start_time;
@@ -502,14 +518,15 @@ PartialPlacement SimPLGlobalPlacer::place() {
     VTR_LOG("\tTime spent updating timing: %g seconds\n", total_time_spent_updating_timing);
 
     // Pause to show the final global placement result before handing off.
-    draw_manager.pause("Analytical Placement: Global Placement Complete");
+    draw_manager.pause_at_final_scene("Analytical Placement: Global Placement Complete");
 
     // Print some statistics on the final placement.
     VTR_LOG("Placement after Global Placement:\n");
     print_placement_stats(best_p_placement,
                           ap_netlist_,
                           *density_manager_,
-                          pre_cluster_timing_manager_);
+                          pre_cluster_timing_manager_,
+                          *place_delay_model_);
 
     // Return the placement from the final iteration.
     return best_p_placement;

@@ -15,3 +15,11 @@ const UserPlaceConstraints& VprConstraints::place_constraints() const {
 const UserRouteConstraints& VprConstraints::route_constraints() const {
     return route_constraints_;
 }
+
+UserRelativeMacros& VprConstraints::mutable_relative_macros() {
+    return relative_macros_;
+}
+
+const UserRelativeMacros& VprConstraints::relative_macros() const {
+    return relative_macros_;
+}

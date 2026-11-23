@@ -59,8 +59,8 @@ double t_placer_costs::get_total_cost(const t_placer_opts& placer_opts, const t_
     }
 
     total_cost += placer_opts.congestion_factor * congestion_cost * congestion_cost_norm;
-    total_cost += placer_opts.interposer_cost_factor * interposer_cost * interposer_cost_norm;
-    total_cost += placer_opts.interposer_cong_factor * interposer_cong_cost * interposer_cong_cost_norm;
+    total_cost += placer_opts.interposer_cost_params.net_cost_factor * interposer_cost * interposer_cost_norm;
+    total_cost += placer_opts.interposer_cost_params.cong_cost_factor * interposer_cong_cost * interposer_cong_cost_norm;
 
     if (noc_opts.noc) {
         // in noc mode we include noc aggregate bandwidth, noc latency, and noc congestion
@@ -111,7 +111,6 @@ void t_placer_statistics::reset() {
     std_dev = 0.;
 }
 
-///@brief Calculate placer success rate and cost std_dev for this iteration.
 void t_placer_statistics::single_swap_update(const t_placer_costs& costs) {
     success_sum++;
     av_cost += costs.cost;
@@ -123,7 +122,6 @@ void t_placer_statistics::single_swap_update(const t_placer_costs& costs) {
     sum_of_squares += (costs.cost) * (costs.cost);
 }
 
-///@brief Update stats when a single swap move has been accepted.
 void t_placer_statistics::calc_iteration_stats(const t_placer_costs& costs, int move_lim) {
     if (success_sum == 0) {
         av_cost = costs.cost;

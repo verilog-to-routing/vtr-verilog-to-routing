@@ -1,0 +1,13 @@
+%include "vpr_standard.txt"
+
+# Clock Skew Metrics
+worst_setup_skew;vpr.out;Final setup Worst Skew \(sWS\): (.*) ns
+worst_hold_skew;vpr.out;Final hold Worst Skew \(hWS\): (.*) ns
+worst_setup_reg2reg_skew;vpr.out;Final setup Worst reg2reg Skew: (.*) ns
+worst_hold_reg2reg_skew;vpr.out;Final hold Worst reg2reg Skew: (.*) ns
+
+# The categories of timing paths in each report (only stated in filtered reports)
+setup_timing_report_categories;report_timing.setup.rpt;Path categories: (.*)
+hold_timing_report_categories;report_timing.hold.rpt;Path categories: (.*)
+setup_skew_report_categories;report_skew.setup.rpt;Path categories: (.*)
+hold_skew_report_categories;report_skew.hold.rpt;Path categories: (.*)

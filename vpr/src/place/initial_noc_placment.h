@@ -17,6 +17,8 @@ class RngContainer;
  *   @param noc_opts NoC-related options. Used to calculate NoC-related costs.
  *   @param blk_loc_registry Placement block location information. To be filled
  *   with the location where pl_macro is placed.
+ *   @param place_macros Contains the placement macros.
+ *   @param noc_cost_handler Computes and updates the NoC-related cost terms.
  *   @param rng A random number generator used during simulated annealing.
  */
 void initial_noc_placement(const t_noc_opts& noc_opts,

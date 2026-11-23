@@ -388,6 +388,8 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
      * Also store the parent node so we can reconstruct a specific path. */
     std::fill(paths->begin(), paths->end(), util::Search_Path{std::numeric_limits<float>::infinity(), std::numeric_limits<size_t>::max(), -1});
     /* a priority queue for expansion */
+    // TODO: Try a vtr::priority_queue passed in by the caller and emptied with
+    // clear(), like node_expanded and paths, instead of a new queue for every call.
     std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> pq;
 
     /* first entry has no upstream delay or congestion */

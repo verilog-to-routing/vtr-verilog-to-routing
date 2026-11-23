@@ -1,6 +1,7 @@
 %include "common/vtr_flow.txt"
 %include "common/odin.txt"
 %include "common/parmys.txt"
+%include "common/mosaic.txt"
 %include "common/abc.txt"
 %include "common/ace.txt"
 

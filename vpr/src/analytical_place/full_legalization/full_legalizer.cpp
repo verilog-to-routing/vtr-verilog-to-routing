@@ -21,6 +21,7 @@
 #include "show_setup.h"
 #include "ap_flow_enums.h"
 #include "ap_netlist_fwd.h"
+#include "ap_netlist_utils.h"
 #include "blk_loc_registry.h"
 #include "check_netlist.h"
 #include "cluster_legalizer.h"
@@ -71,7 +72,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                    const RamMapper& ram_mapper,
                                                    const t_vpr_setup& vpr_setup,
                                                    const t_arch& arch,
-                                                   const DeviceGrid& device_grid) {
+                                                   const DeviceGrid& device_grid,
+                                                   const std::map<t_logical_block_type_ptr, size_t>& estimated_type_instance_counts) {
     switch (full_legalizer_type) {
         case e_ap_full_legalizer::Naive:
             return std::make_unique<NaiveFullLegalizer>(ap_netlist,
@@ -81,7 +83,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                         ram_mapper,
                                                         vpr_setup,
                                                         arch,
-                                                        device_grid);
+                                                        device_grid,
+                                                        estimated_type_instance_counts);
         case e_ap_full_legalizer::APPack:
             return std::make_unique<APPack>(ap_netlist,
                                             atom_netlist,
@@ -90,7 +93,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                             ram_mapper,
                                             vpr_setup,
                                             arch,
-                                            device_grid);
+                                            device_grid,
+                                            estimated_type_instance_counts);
         case e_ap_full_legalizer::FlatRecon:
             return std::make_unique<FlatRecon>(ap_netlist,
                                                atom_netlist,
@@ -99,7 +103,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                ram_mapper,
                                                vpr_setup,
                                                arch,
-                                               device_grid);
+                                               device_grid,
+                                               estimated_type_instance_counts);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized full legalizer type");
@@ -159,7 +164,7 @@ class APClusterPlacer {
                     const char* constraints_file)
         : place_macros_(place_macros) {
         // Initialize the block loc registry.
-        auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         blk_loc_registry.init();
 
         // Place the fixed blocks and mark them as fixed.
@@ -187,7 +192,7 @@ class APClusterPlacer {
         const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
         const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
         const auto& block_locs = g_vpr_ctx.placement().block_locs();
-        auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         // If this block has already been placed, just return true.
         // TODO: This should be investigated further. What I think is happening
         //       is that a macro is being placed which contains another cluster.
@@ -231,7 +236,7 @@ class APClusterPlacer {
     //       centroid, then random, then exhaustive.
     bool exhaustively_place_cluster(ClusterBlockId clb_blk_id) {
         const auto& block_locs = g_vpr_ctx.placement().block_locs();
-        auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         // If this block has already been placed, just return true.
         // TODO: See similar comment above.
         if (is_block_placed(clb_blk_id, block_locs))
@@ -342,7 +347,7 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     for (APBlockId blk_id : ap_netlist_.blocks()) {
         t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(blk_id);
         for (PackMoleculeId mol_id : ap_netlist_.block_molecules(blk_id)) {
-            const auto& mol = prepacker_.get_molecule(mol_id);
+            const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
 
             int num_ext_inputs = prepacker_.calc_molecule_stats(mol_id, atom_netlist_, arch_.models).num_used_ext_inputs;
             bool long_chain = mol.is_chain() && prepacker_.get_molecule_chain_info(mol.chain_id).is_long_chain;
@@ -373,7 +378,7 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     // Group the molecules by root tile. Any non-zero offset gets
     // pulled back to its root.
     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> tile_blocks;
-    mol_desired_physical_tile_loc.reserve(prepacker_.molecules().size());
+    mol_desired_physical_tile_loc.resize(prepacker_.molecules().size());
     for (const auto& [mol_id, ext_pins, is_long_chain, tile_loc] : sorted_blocks) {
         int width_offset = device_grid_.get_width_offset(tile_loc);
         int height_offset = device_grid_.get_height_offset(tile_loc);
@@ -921,7 +926,7 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
 
 void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
     // Setup the global variables for placement.
-    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
+    g_vpr_ctx.mutable_placement().init_placement_context(arch_.directs);
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
 
     // The placement will be stored in the global block loc registry.
@@ -938,20 +943,10 @@ void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
     // The partial placement has been set by the GP (if using internal VTR AP),
     // or by reading in the flat placement file. Cast / copy it to the flat
     // placement data structures so we can always use them.
-    FlatPlacementInfo flat_placement_info(atom_netlist_);
-    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-        for (PackMoleculeId mol_id : ap_netlist_.block_molecules(ap_blk_id)) {
-            const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
-            for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
-                if (!atom_blk_id.is_valid())
-                    continue;
-                flat_placement_info.blk_x_pos[atom_blk_id] = p_placement.block_x_locs[ap_blk_id];
-                flat_placement_info.blk_y_pos[atom_blk_id] = p_placement.block_y_locs[ap_blk_id];
-                flat_placement_info.blk_layer[atom_blk_id] = p_placement.block_layer_nums[ap_blk_id];
-                flat_placement_info.blk_sub_tile[atom_blk_id] = p_placement.block_sub_tiles[ap_blk_id];
-            }
-        }
-    }
+    FlatPlacementInfo flat_placement_info = convert_partial_to_flat_placement(p_placement,
+                                                                              ap_netlist_,
+                                                                              prepacker_,
+                                                                              atom_netlist_);
 
     // Run the initial placer on the clusters created.
     // TODO: Currently, the way initial placer sorts the blocks to place is aligned
@@ -997,6 +992,12 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
     // Start a scoped timer for the Full Legalizer stage.
     vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
 
+    // Snapshot the device grid size before clustering runs below.
+    const DeviceGrid& pre_pack_grid = g_vpr_ctx.device().grid;
+    size_t prev_grid_width = pre_pack_grid.width();
+    size_t prev_grid_height = pre_pack_grid.height();
+    size_t prev_grid_num_layers = pre_pack_grid.get_num_layers();
+
     // The target external pin utilization is set to 1.0 to avoid over-restricting
     // reconstruction due to conservative pin feasibility. The SKIP_INTRA_LB_ROUTE
     // strategy speeds up reconstruction by skipping intra-LB routing checks.
@@ -1006,14 +1007,16 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
     ClusterLegalizer cluster_legalizer(
         atom_netlist_,
         prepacker_,
-        vpr_setup_.PackerRRGraph,
+        g_vpr_ctx.floorplanning().relative_macros,
         target_ext_pin_util,
         high_fanout_thresholds,
         ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
         vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
         false, // --memoize_cluster_packings is not yet supported for flat-recon
         vpr_setup_.PackerOpts.cluster_router_hot_start,
+        vpr_setup_.PackerOpts.cluster_router_lookahead,
         arch_.models,
+        g_vpr_ctx.device().logical_block_types,
         vpr_setup_.PackerOpts.pack_verbosity);
 
     // Perform clustering using partial placement.
@@ -1030,7 +1033,7 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
-    recreate_device_if_needed();
+    recreate_device_if_needed(prev_grid_width, prev_grid_height, prev_grid_num_layers);
 
     // Perform the initial placement on created clusters.
     place_clusters(p_placement);
@@ -1045,14 +1048,16 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
     t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
     ClusterLegalizer cluster_legalizer(atom_netlist_,
                                        prepacker_,
-                                       vpr_setup_.PackerRRGraph,
+                                       g_vpr_ctx.floorplanning().relative_macros,
                                        vpr_setup_.PackerOpts.target_external_pin_util,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::FULL,
                                        vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
                                        vpr_setup_.PackerOpts.memoize_cluster_packings,
                                        vpr_setup_.PackerOpts.cluster_router_hot_start,
+                                       vpr_setup_.PackerOpts.cluster_router_lookahead,
                                        arch_.models,
+                                       g_vpr_ctx.device().logical_block_types,
                                        vpr_setup_.PackerOpts.pack_verbosity);
     // Create clusters for each tile.
     //  Start by giving each root tile a unique ID.
@@ -1150,24 +1155,12 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
 void NaiveFullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
                                         const PlaceMacros& place_macros,
                                         const PartialPlacement& p_placement) {
-    // PLACING:
-    // Create a lookup from the AtomBlockId to the APBlockId
-    vtr::vector<AtomBlockId, APBlockId> atom_to_ap_block(atom_netlist_.blocks().size());
-    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-        for (PackMoleculeId blk_mol_id : ap_netlist_.block_molecules(ap_blk_id)) {
-            const t_pack_molecule& blk_mol = prepacker_.get_molecule(blk_mol_id);
-            for (AtomBlockId atom_blk_id : blk_mol.atom_block_ids) {
-                // See issue #2791, some of the atom_block_ids may be invalid. They
-                // can safely be ignored.
-                if (!atom_blk_id.is_valid())
-                    continue;
-                // Ensure that this block is not in any other AP block. That would
-                // be weird.
-                VTR_ASSERT(!atom_to_ap_block[atom_blk_id].is_valid());
-                atom_to_ap_block[atom_blk_id] = ap_blk_id;
-            }
-        }
-    }
+
+    // Create a lookup from atom block id to AP block id.
+    AtomBlockAPBlockLookup atom_block_ap_block_lookup(atom_netlist_, ap_netlist_, prepacker_);
+    unsigned num_errors = atom_block_ap_block_lookup.verify(ap_netlist_, prepacker_);
+    VTR_ASSERT(num_errors == 0);
+
     // Move the clusters to where they want to be first.
     // TODO: The fixed clusters should probably be moved first for legality
     //       reasons.
@@ -1181,7 +1174,7 @@ void NaiveFullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
         const std::unordered_set<AtomBlockId>& atoms_in_cluster = g_vpr_ctx.clustering().atoms_lookup[cluster_blk_id];
         VTR_ASSERT(atoms_in_cluster.size() > 0);
         AtomBlockId first_atom_blk = *atoms_in_cluster.begin();
-        APBlockId first_ap_blk = atom_to_ap_block[first_atom_blk];
+        APBlockId first_ap_blk = atom_block_ap_block_lookup.get_ap_block(first_atom_blk);
         size_t blk_sub_tile = p_placement.block_sub_tiles[first_ap_blk];
         t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(first_ap_blk);
         bool placed = ap_cluster_placer.place_cluster(cluster_blk_id, tile_loc, blk_sub_tile);
@@ -1216,6 +1209,12 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
     // Create a scoped timer for the full legalizer
     vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
 
+    // Snapshot the device grid size before clustering runs below.
+    const DeviceGrid& pre_pack_grid = g_vpr_ctx.device().grid;
+    size_t prev_grid_width = pre_pack_grid.width();
+    size_t prev_grid_height = pre_pack_grid.height();
+    size_t prev_grid_num_layers = pre_pack_grid.get_num_layers();
+
     // Pack the atoms into clusters based on the partial placement.
     create_clusters(p_placement);
     // Verify that the clustering created by the full legalizer is valid.
@@ -1229,15 +1228,14 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
-    recreate_device_if_needed();
+    recreate_device_if_needed(prev_grid_width, prev_grid_height, prev_grid_num_layers);
 
     // Get the clustering from the global context.
     // TODO: Eventually should be returned from the create_clusters method.
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // Initialize the placement context.
-    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts,
-                                                         arch_.directs);
+    g_vpr_ctx.mutable_placement().init_placement_context(arch_.directs);
 
     const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
 
@@ -1269,21 +1267,17 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // Create a scoped timer for the full legalizer
     vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
 
+    // Snapshot the device grid size before clustering runs below.
+    const DeviceGrid& pre_pack_grid = g_vpr_ctx.device().grid;
+    size_t prev_grid_width = pre_pack_grid.width();
+    size_t prev_grid_height = pre_pack_grid.height();
+    size_t prev_grid_num_layers = pre_pack_grid.get_num_layers();
+
     // Convert the Partial Placement (APNetlist) to a flat placement (AtomNetlist).
-    FlatPlacementInfo flat_placement_info(atom_netlist_);
-    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-        for (PackMoleculeId mol_id : ap_netlist_.block_molecules(ap_blk_id)) {
-            const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
-            for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
-                if (!atom_blk_id.is_valid())
-                    continue;
-                flat_placement_info.blk_x_pos[atom_blk_id] = p_placement.block_x_locs[ap_blk_id];
-                flat_placement_info.blk_y_pos[atom_blk_id] = p_placement.block_y_locs[ap_blk_id];
-                flat_placement_info.blk_layer[atom_blk_id] = p_placement.block_layer_nums[ap_blk_id];
-                flat_placement_info.blk_sub_tile[atom_blk_id] = p_placement.block_sub_tiles[ap_blk_id];
-            }
-        }
-    }
+    FlatPlacementInfo flat_placement_info = convert_partial_to_flat_placement(p_placement,
+                                                                              ap_netlist_,
+                                                                              prepacker_,
+                                                                              atom_netlist_);
 
     {
         // Run the Packer stage with the flat placement as a hint.
@@ -1293,22 +1287,21 @@ void APPack::legalize(const PartialPlacement& p_placement) {
         //       non-AP flow, but it will be close.
         vtr::ScopedStartFinishTimer timer("Packing");
         try_pack(vpr_setup_.PackerOpts,
-                 vpr_setup_.AnalysisOpts,
                  vpr_setup_.APOpts,
                  arch_,
-                 vpr_setup_.PackerRRGraph,
                  prepacker_,
                  pre_cluster_timing_manager_,
                  flat_placement_info,
                  vpr_setup_,
-                 ram_mapper_);
+                 ram_mapper_,
+                 estimated_type_instance_counts_);
     }
 
     // The Packer stores the clusters into a .net file. Load the packing file.
     // FIXME: This should be removed. Reading from a file is strange.
     vpr_load_packing(vpr_setup_, arch_);
 
-    recreate_device_if_needed();
+    recreate_device_if_needed(prev_grid_width, prev_grid_height, prev_grid_num_layers);
 
     // Setup NoCs
     // TODO: We have some flow divergence. When the device grid is created the
@@ -1316,7 +1309,7 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     vpr_setup_noc(vpr_setup_, arch_);
 
     // Setup the global variables for placement.
-    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
+    g_vpr_ctx.mutable_placement().init_placement_context(arch_.directs);
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
 
     // The placement will be stored in the global block loc registry.
@@ -1377,8 +1370,8 @@ void FullLegalizer::update_drawing_data_structures() {
 #endif
 }
 
-void FullLegalizer::recreate_device_if_needed() {
-    const auto& device_ctx = g_vpr_ctx.device();
+void FullLegalizer::recreate_device_if_needed(size_t prev_grid_width, size_t prev_grid_height, size_t prev_grid_num_layers) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     // Capture before grid recreation: vpr_create_device_grid only writes
     // device_ctx.grid and does not touch the RR graph, so this flag remains
     // valid after the call.
@@ -1404,17 +1397,23 @@ void FullLegalizer::recreate_device_if_needed() {
         return;
     }
 
-    size_t old_width = device_ctx.grid.width();
-    size_t old_height = device_ctx.grid.height();
-
     vpr_create_device_grid(vpr_setup_, arch_);
 
+    // Detect if the device size has changed.
+    bool device_size_changed = (prev_grid_width != device_ctx.grid.width()
+                                || prev_grid_height != device_ctx.grid.height()
+                                || prev_grid_num_layers != device_ctx.grid.get_num_layers());
+
+    if (device_size_changed) {
+        // The dedicated clock network geometry is computed from the grid width/height,
+        // so it must be rebuilt to match the final device size before the RR graph
+        // (which embeds the clock network as a subgraph) is (re)built below.
+        // TODO: Cleanup these const casts. See comment below.
+        vpr_setup_clock_networks(const_cast<t_vpr_setup&>(vpr_setup_), arch_);
+    }
+
     // Build or rebuild the RR graph if needed. It must exist before placement.
-    // Rebuild only when the device size changed (to avoid the high cost of
-    // rebuilding unnecessarily on large architectures).
     if (vpr_setup_.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
-        bool device_size_changed = (device_ctx.grid.width() != old_width
-                                    || device_ctx.grid.height() != old_height);
         if (!rr_graph_exists || device_size_changed) {
             // vpr_create_rr_graph takes t_vpr_setup& even though it only reads from it.
             // TODO: This is not very clean to do this const cast, but the lifetime

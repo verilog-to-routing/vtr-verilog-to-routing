@@ -12,4 +12,5 @@ bool is_real_param(const std::string& param);
 
 AtomNetlist read_blif(e_circuit_format circuit_format,
                       const char* blif_file,
-                      const LogicalModels& models);
+                      const LogicalModels& models,
+                      int verbosity);

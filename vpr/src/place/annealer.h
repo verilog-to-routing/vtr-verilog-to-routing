@@ -5,8 +5,10 @@
 #include "move_generator.h" // movestats
 #include "net_cost_handler.h"
 #include "manual_move_generator.h"
+#include "swap_evaluator.h"
 #include "vtr_random.h"
 
+#include <memory>
 #include <optional>
 #include <tuple>
 
@@ -19,6 +21,7 @@ enum class e_agent_state;
 class NocCostHandler;
 class InterposerCostHandler;
 class NetPinTimingInvalidator;
+class ParallelAnnealEngine;
 class PlacerSetupSlacks;
 
 /**
@@ -192,11 +195,13 @@ class PlacementAnnealer {
                       std::unique_ptr<MoveGenerator>&& move_generator_2,
                       const PlaceDelayModel* delay_model,
                       PlacerCriticalities* criticalities,
-                      PlacerSetupSlacks* setup_slacks,
+                      std::optional<PlacerSetupSlacks>& setup_slacks,
                       SetupTimingInfo* timing_info,
                       NetPinTimingInvalidator* pin_timing_invalidator,
                       float auto_init_t_scale,
                       int move_lim);
+
+    ~PlacementAnnealer();
 
     /**
      * @brief Contains the inner loop of the simulated annealing that performs
@@ -209,7 +214,7 @@ class PlacementAnnealer {
      * of the annealing/quench. It also updates normalization factors for different
      * placement cost terms.
      */
-    void outer_loop_update_timing_info();
+    void outer_loop_update_timing_info_and_cost_terms();
 
     /**
      * @brief Update the annealing state according to the annealing schedule selected.
@@ -265,17 +270,6 @@ class PlacementAnnealer {
                             const t_place_algorithm& place_algorithm,
                             bool manual_move_enabled);
 
-    /**
-     * @brief Determines whether a move should be accepted or not.
-     * Moves with negative delta cost are always accepted, but
-     * moves that increase the total cost are accepted with a
-     * probability that diminishes as the temperature decreases.
-     * @param delta_c The cost difference if the move is accepted.
-     * @param t The annealer's temperature.
-     * @return Whether the move is accepted or not.
-     */
-    e_move_result assess_swap_(double delta_c, double t);
-
     /// @brief Find the starting temperature for the annealing loop.
     float estimate_starting_temperature_();
 
@@ -286,6 +280,18 @@ class PlacementAnnealer {
     /// @brief Estimate the starting temperature using the cost variance that
     ///        results from a set of trial swaps.
     float estimate_starting_temp_using_cost_variance_();
+
+    /// @brief Returns true when the inner loop should run with parallel swap evaluation.
+    ///
+    /// Requires more than one worker and a configuration the parallel engine
+    /// supports. Otherwise the sequential inner loop is used and a warning is
+    /// printed once.
+    bool should_use_parallel_inner_loop_();
+
+    /// @brief Parallel counterpart of placement_inner_loop().
+    ///
+    /// Runs the inner loop as a sequence of batches, each evaluating one swap per worker.
+    void placement_inner_loop_parallel_();
 
   private:
     const t_placer_opts& placer_opts_;
@@ -315,7 +321,8 @@ class PlacementAnnealer {
 
     const PlaceDelayModel* delay_model_;
     PlacerCriticalities* criticalities_;
-    PlacerSetupSlacks* setup_slacks_;
+    /// Empty unless the anneal or quench algorithm is slack-driven.
+    std::optional<PlacerSetupSlacks>& setup_slacks_;
     SetupTimingInfo* timing_info_;
     NetPinTimingInvalidator* pin_timing_invalidator_;
     std::unique_ptr<FILE, decltype(&vtr::fclose)> move_stats_file_;
@@ -329,6 +336,13 @@ class PlacementAnnealer {
 
     /// Keep record of moved blocks and affected pins in a swap
     t_pl_blocks_to_be_moved blocks_affected_;
+
+    /// Evaluates/commits/reverts swaps
+    SwapEvaluator swap_evaluator_;
+    /// Evaluates swaps in parallel. Created on the first parallel inner loop, null otherwise.
+    std::unique_ptr<ParallelAnnealEngine> parallel_engine_;
+    /// Whether the warning about falling back to the sequential inner loop has been printed
+    bool parallel_fallback_warned_ = false;
 
   private:
     /**

@@ -48,6 +48,69 @@ To use the traditional sequential flow (pack, place, route, analysis), pass all 
 
 By default VPR will perform a binary search routing to find the minimum channel width required to route the circuit.
 
+.. _vpr_options_file:
+
+Options File
+------------
+
+Instead of passing every option on the command-line, options can be read from a YAML file.
+
+.. option:: --options_file <file>
+
+    Reads additional command-line options from the YAML file ``<file>``.
+
+    The file is a map from option name to value.
+    For example, the file ``my_options.yaml``:
+
+    .. code-block:: yaml
+
+        # Comments may be on their own line...
+        architecture: my_arch.xml   # ...or at the end of a line.
+        circuit: my_circuit.blif    # Positional arguments: give both or neither.
+        route_chan_width: 100
+        --seed: 7                   # The leading "--" is optional.
+
+        # Flags: true sets the flag, false leaves it out.
+        pack: true
+        place: true
+        analytical_place: false
+
+        timing_analysis: on         # Passed as "on", not as the YAML boolean true.
+        timing_report_detail: "detailed"  # Quotes are optional.
+
+        # Options which take multiple values are given as a list,
+        # either as [in2reg, reg2reg] or as one "- item" per line:
+        timing_report_path_categories:
+          - in2reg
+          - reg2reg
+
+    can be used as::
+
+        vpr --options_file my_options.yaml
+
+    which is equivalent to::
+
+        vpr my_arch.xml my_circuit.blif --route_chan_width 100 --seed 7 --pack --place --timing_analysis on --timing_report_detail detailed --timing_report_path_categories in2reg reg2reg
+
+    The options in the file are used exactly as if they were written on the command-line in place of ``--options_file <file>``, and follow the usual rules:
+
+    * An option which takes a single value may only be given once, so it can not be given both in the file and on the command-line.
+    * Flags (options which take no value, such as ``--pack``) are given as ``true`` (set the flag) or ``false`` (do not set it).
+      YAML's other boolean words (``yes``/``no``, ``on``/``off``) are also accepted.
+    * Options which take multiple values are given as a YAML list, either on one line (``[a, b]``) or with one ``- item`` per line.
+      Values given both in the file and on the command-line are combined, in the order they appear.
+    * Values are passed to VPR as the text written in the file (without any quotes), so they take the same values as on the command-line.
+      For example, ``--timing_analysis`` takes ``on`` or ``off``, not ``true`` or ``false``.
+    * Relative file paths are relative to the directory VPR is run from, not to the location of the options file.
+    * The positional arguments (``architecture`` and ``circuit``) may be given in the file.
+      If either is given in the file, both must be, and neither may then be given on the command-line.
+    * Only one options file may be given, and it may not contain ``options_file``.
+    * Comments (``# ...``) may be used, on their own line or at the end of a line.
+    * The leading ``--`` of an option name is optional (``seed`` and ``--seed`` are equivalent).
+      Positional arguments have no leading ``--`` (``architecture``, not ``--architecture``).
+
+    The VPR log shows both the command-line VPR was run with and an equivalent command-line with the options file replaced by its options, which can be re-run without the file.
+
 Detailed Command-line Options
 -----------------------------
 VPR has a lot of options. Running :option:`vpr --help` will display all the available options and their usage information.
@@ -122,6 +185,23 @@ instead of the default analytical placement flow, pass all four stage flags expl
 
     **Default:** ``off``
 
+.. option:: --global_place
+
+    Run only the Global Placement stage of the analytical placement flow (see :option:`--analytical_place`).
+    The flow stops right after global placement; full legalization and detailed placement are skipped, so no
+    clustered netlist or placement is produced.
+    After global placement, post-global placement quality metrics are reported.
+
+    If a flat placement is provided with :option:`--read_flat_place`, the global placer is not run; instead,
+    the flat placement is read and used as the global placement solution.
+
+    The global placement solution can be written to a file using :option:`--write_post_gp_flat_place`.
+
+    This option cannot be combined with :option:`--route` or :option:`--analysis`.
+    If :option:`--analytical_place` is also specified, the full analytical placement flow is run.
+
+    **Default:** ``off``
+
 .. option:: --route
 
     Run routing stage.
@@ -146,13 +226,17 @@ Graphics Options
 
     **Default:** ``off``
 
-.. option:: --auto <int>
+.. option:: --graphics_pause {every_update | major | final_stage | never}
 
-    Can be 0, 1, or 2.
     This sets how often you must click Proceed to continue execution after viewing the graphics.
-    The higher the number, the more infrequently the program will pause.
 
-    **Default:** ``1``
+    * ``every_update``: pause at every step (e.g. each temperature or router iteration).
+    * ``major``: pause at major checkpoints, such as the end of each stage.
+    * ``final_stage``: skip graphics at intermediate stages and pause once the last requested stage completes: routing if it is run or loaded (e.g. with :option:`--route` or :option:`--analysis`), otherwise placement.
+      This applies to the interactive window, :option:`--save_graphics` and :option:`--graphics_commands` alike, and a ``wait_for_stage`` command for any other stage is an error.
+    * ``never``: never pause.
+
+    **Default:** ``major``
 
 .. option:: --save_graphics {on | off}
 
@@ -249,7 +333,7 @@ Graphics Options
 
     Note that drawing state is reset to its previous state after these commands are invoked.
 
-    Like the interactive graphics :option`<--disp>` option, the :option:`--auto` option controls how often the commands specified with this option are invoked.
+    Like the interactive graphics :option`<--disp>` option, the :option:`--graphics_pause` option controls how often the commands specified with this option are invoked.
 
 .. _general_options:
 
@@ -295,7 +379,7 @@ General Options
 
     * Timing Analysis
     * Routing (If routing algorithm is set to parallel or parallel_decomp; See :option:`--router_algorithm`)
-    * Portions of analytical placement (If using the analytical placement flow and compiled VPR with Eigen enabled; See :option:`--analytical_place`)
+    * Portions of analytical placement (If using the analytical placement flow; See :option:`--analytical_place`)
 
     .. note:: To compile VPR to allow the usage of parallel workers, ``libtbb-dev`` must be installed in the system.
 
@@ -308,10 +392,21 @@ General Options
 
     **Default:**  ``on``
 
-.. option:: --echo_file {on | off}
+.. option:: --echo_file {on | off | <echo_file_name> [<echo_file_name> ...]}
 
     Generates echo files of key internal data structures.
     These files are generally used for debugging vpr, and typically end in ``.echo``
+
+    * ``off``: No echo files are generated.
+    * ``on``: All echo files are generated.
+    * ``<echo_file_name> [<echo_file_name> ...]``: Only the listed echo files are generated, identified by their default file names.
+      This is useful when only a few echo files are needed, since some echo files can be very large.
+
+    For example, the following generates only the timing graph analysis and clusters echo files:
+
+    .. code-block:: none
+
+        --echo_file timing_graph.analysis.echo clusters.echo
 
     **Default:** ``off``
 
@@ -345,10 +440,12 @@ General Options
 
 .. option:: --constant_net_method {global | route}
 
-    Specifies how constant nets (i.e. those driven to a constant value) are handled:
+    Specifies how constant nets (i.e. those driven by a constant generator such as vcc/gnd) are handled:
 
-     * ``global``: Treat constant nets as globals (not routed)
+     * ``global``: Treat constant nets as ignored (not routed)
      * ``route``: Treat constant nets as normal nets (routed)
+
+    Nets which are only inferred to be constant (e.g. the output of a primitive whose inputs are all constant, see :option:`--const_gen_inference`) are always routed, since the primitive driving them is still implemented.
 
      **Default:** ``global``
 
@@ -466,6 +563,7 @@ Use the options below to override this default naming behaviour.
 .. option:: --read_rr_edge_override <file>
 
     Reads a file that overrides the intrinsic delay of specific edges in RR graph.
+    See the :ref:`file format <rr_edge_override_file_format>`.
 
     This option should be used with both :option:`--read_rr_graph` and :option:`--write_rr_graph`. When used this way,
     VPR reads the RR graph, updates the delays of selected edges using :option:`--read_rr_edge_override`,
@@ -493,7 +591,7 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --write_placement_delay_lookup <file>
 
-    Writes the placement delay lookup to the specified file. Expects a file extension of either ``.capnp`` or ``.bin``.
+    Writes the placement delay lookup to the specified file. Expects a file extension of either ``.capnp`` or ``.bin``. Not supported for the simple place delay model.
 
 .. option:: --read_initial_place_file <file>
 
@@ -567,6 +665,35 @@ Use the options below to override this default naming behaviour.
 
     * The x, y, and sub_tile location of the cluster that contains this atom.
 
+.. option:: --write_post_gp_flat_place <file>
+
+    Writes the flat placement produced by Global Placement in the analytical
+    placement flow (see :option:`--analytical_place` and :option:`--global_place`)
+    into a flat placement file (see :ref:`flat placement file format <vpr_flat_place_file>`).
+
+    For each atom in the netlist, the (x, y, layer) position and sub_tile chosen by
+    the global placer are stored. Since the global placement has not been legalized
+    yet, these positions may be fractional (off-grid). This file can be read back in
+    using :option:`--read_flat_place`.
+
+.. option:: --flat_place_verbosity <int>
+
+    Controls how much annotation is written into flat placement files
+    (see :ref:`flat placement file format <vpr_flat_place_file>`). Annotations are
+    written as a ``#`` comment after the ``<atom_sub_tile>`` column and are
+    informational only: :option:`vpr --read_flat_place` does not parse them. Each
+    level includes what the levels below it print.
+
+    * ``0``: No annotation and no header comments, i.e. only the columns the reader
+      parses. The output is then exactly the input format documented above, and
+      carries no build timestamp, so it is reproducible across runs.
+    * ``1``: Header comments, plus the cluster block number and the primitive type
+      of each atom.
+    * ``2``: Additionally each atom's ``site_path``, the hierarchical path of the
+      primitive it was placed on within its cluster.
+
+    **Default:** ``1``
+
 .. _netlist_options:
 
 Netlist Options
@@ -582,6 +709,21 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
     Occasionally buffer LUTs are inserted for other purposes, and this option can be used to preserve them.
     Disabling buffer absorption can also improve the matching between the input and post-synthesis netlist/SDF.
+
+    **Default**: ``on``
+
+.. option:: --merge_constant_generators {on | off}
+
+    Controls whether constant generators of the same value are merged into a single constant generator.
+
+    Synthesis tools may create a separate constant generator (a LUT with no inputs) for each signal tied to a constant (e.g. each constant primary output, or each constant input of a hard block).
+    When enabled, all constant-zero generators are merged into a single constant-zero generator, and all constant-one generators are merged into a single constant-one generator.
+    The generator with the highest fanout of each value (e.g. ``gnd`` / ``vcc``) is kept, and the names of the removed nets are kept as aliases of the merged net.
+
+    Since constant nets are not routed by default (see :option:`--constant_net_method`), the constant generators are assumed to be available within each tile and do not need to be duplicated.
+    However, each constant generator is still implemented as a physical block and uses tile pin resources, so merging them avoids wasting these resources.
+
+    Disabling merging can improve the matching between the input and post-synthesis netlist.
 
     **Default**: ``on``
 
@@ -614,6 +756,10 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
     Controls whether dangling nets (i.e. those who do not drive, or are not driven by anything) are swept and removed from the netlist.
 
+    .. note:: VPR cannot implement nets which have sinks but no driver.
+              If such undriven nets are found when this option is ``off``, VPR reports them as an error.
+              Undriven nets usually indicate a problem in the design or in synthesis.
+
     **Default**: ``on``
 
 .. option:: --sweep_dangling_blocks {on | off}
@@ -624,7 +770,8 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
 .. option:: --sweep_constant_primary_outputs {on | off}
 
-    Controls whether primary outputs driven by constant values are swept and removed from the netlist.
+    Controls whether primary outputs driven by constant generators (e.g. vcc/gnd) are swept and removed from the netlist.
+    Primary outputs driven by nets which are only inferred to be constant (see :option:`--const_gen_inference`) are not swept.
 
     .. seealso:: :option:`--sweep_dangling_primary_ios`
 
@@ -634,6 +781,9 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
     Controls the verbosity of netlist processing (constant generator detection, swept netlist components).
     High values produce more detailed output.
+
+    At ``1`` (the default) only summary counts are printed.
+    At ``2`` or higher the individual netlist components are also listed by name (e.g. every constant generator found while loading the circuit).
 
     **Default**: ``1``
 
@@ -855,10 +1005,26 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default:** ``off``
 
+.. option:: --cluster_router_lookahead {none | hops}
+
+    Controls the estimate of the remaining cost to the sink that orders the intra-cluster router search during packing.
+
+    * ``none``: The search is ordered by the cost of the path so far only.
+    * ``hops``: A lower bound computed from the fewest edges between each node and the sink is added to the path cost, and nodes with no path to the sink are skipped.
+
+    The estimate never exceeds the real cost, so the router still finds a lowest cost path.
+    Which of several equal cost paths it finds first can change, so circuit quality metrics may vary slightly.
+
+    ``hops`` reduces packing runtime but uses more memory.
+
+    **Default:** ``hops``
+
 .. option:: --pack_verbosity <int>
 
     Controls the verbosity of clustering output.
     Larger values produce more detailed output, which may be useful for debugging architecture packing problems.
+    At ``2`` (the default) the clustered-netlist check prints only aggregate counts of unusual blocks (e.g. single-output blocks that may be constant generators).
+    At ``3`` or higher these blocks are also listed individually.
 
     **Default:** ``2``
 
@@ -1015,19 +1181,6 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:**  ``criticality_timing``
 
-.. option:: --place_bounding_box_mode {auto_bb | cube_bb | per_layer_bb}
-
-    Specifies the type of the wirelength estimator used during placement. For single layer architectures, cube_bb (a 3D bounding box) is always used (and is the same as per_layer_bb).
-    For 3D architectures, cube_bb is appropriate if you can cross between layers at switch blocks, while if you can only cross between layers at output pins per_layer_bb (one bounding box per layer) is more accurate and appropriate.
-
-    ``auto_bb``: The bounding box type is determined automatically based on the cross-layer connections.
-
-    ``cube_bb``: ``cube_bb`` bounding box is used to estimate the wirelength.
-
-    ``per_layer_bb``: ``per_layer_bb`` bounding box is used to estimate the wirelength
-
-    **Default:** ``auto_bb``
-
 .. option:: --place_frequency {once | always}
 
     Specifies how often placement is performed during the minimum channel width search.
@@ -1109,6 +1262,29 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     annealing phase.
 
     **Default:** ``off``
+
+.. option:: --place_swap_eval_num_workers <int>
+
+    Controls the number of workers used to speculatively evaluate placement swaps in parallel during simulated annealing.
+    Each batch proposes one swap per worker against the current placement, evaluates them concurrently, and commits at most one accepted swap.
+    Since most swaps are rejected, this reduces placement run-time, most noticeably when annealing starts from a good initial placement (e.g. an analytical placement).
+
+    The annealing thread itself acts as one of the workers.
+
+    * ``1`` uses the sequential annealer.
+    * ``>1`` sets the number of workers.
+    * ``0`` uses the maximum concurrency supported by the host machine.
+
+    Results are deterministic for a fixed seed and number of workers, but differ between different numbers of workers.
+
+    .. note:: The placer warns and falls back to the sequential annealer if any of the following apply:
+
+        * :option:`--place_algorithm` is not ``criticality_timing`` or ``bounding_box``,
+        * congestion modeling, interposer cost terms, or NoC optimization is enabled,
+        * per-temperature placement saving or per-move statistics logging is enabled, or
+        * graphics are enabled.
+
+    **Default:** ``1``
 
 
 .. option:: --placer_debug_block <int>
@@ -1413,11 +1589,31 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
 
     .. note::
 
-        When VPR is compiled with Eigen and :option:`--num_workers` is set to more than one,
+        When :option:`--num_workers` is set to more than one,
         the solver step of the analytical solver can be parallelized across multiple threads.
         This reduces solver runtime while producing the identical placement result.
 
     **Default:** ``lp-b2b``
+
+.. option:: --ap_solver_threading {auto | sequential | concurrent}
+
+    Controls how the analytical solver uses the threads given by
+    :option:`--num_workers` when solving the linear systems of the global
+    placement. There is one linear system per dimension: x, y, and z on
+    multi-layer devices.
+
+    * ``auto`` Solve the systems concurrently when there are at least two
+      threads per system, otherwise sequentially. That is, at least 4 threads on
+      single-layer devices and 6 threads on multi-layer devices.
+
+    * ``sequential`` Solve the systems one after the other, each using every
+      thread. Eigen parallelizes the work inside each solve.
+
+    * ``concurrent`` Solve all systems at the same time, splitting the threads
+      evenly between them. This needs at least one thread per system. VPR
+      errors out when there are fewer threads than systems.
+
+    **Default:** ``auto``
 
 .. option:: --ap_partial_legalizer {none | bipartitioning | flow-based}
 
@@ -1605,6 +1801,21 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
    different layer in a 3D architecture without interposer cuts.
 
     **Default:** ``0.1``
+
+.. option:: --appack_gain_attenuation_fn {none | quad_sqrt_knee | gaussian}
+
+    Controls the function APPack uses to attenuate a candidate molecule's gain
+    based on its distance from the cluster being formed.
+
+    * ``none`` No attenuation is applied (the multiplier is always 1.0). Useful
+      as a baseline to measure the contribution of gain attenuation.
+
+    * ``quad_sqrt_knee`` Piecewise function which decays quadratically near the
+      cluster and transitions to an inverted sqrt decay farther away.
+
+    * ``gaussian`` Smooth Gaussian decay.
+
+    **Default:** ``quad_sqrt_knee``
 
 .. option:: --ap_high_fanout_threshold <int>
 
@@ -2034,6 +2245,14 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``safe``
 
+.. option:: --routing_predictor_min_history <int>
+
+    Number of routing iterations of overuse history the routing failure predictor must accumulate before it starts estimating the iteration at which a successful route will be found.
+
+    .. seealso:: :option:`--routing_failure_predictor`
+
+    **Default:** ``8``
+
 .. option:: --routing_budgets_algorithm { disable | minimax | yoyo | scale_delay }
 
     .. warning:: Experimental
@@ -2080,7 +2299,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``64``
 
-.. option:: --router_lookahead {classic | map | compressed_map | extended_map | simple}
+.. option:: --router_lookahead {classic | map | compressed_map | extended_map | separable | simple}
 
     Controls what lookahead the router uses to calculate cost of completing a connection.
 
@@ -2088,6 +2307,7 @@ The following options are only valid when the router is in timing-driven mode (t
      * ``map``: A more advanced lookahead which accounts for diverse wire types and their connectivity
      * ``compressed_map``: The algorithm is similar to map lookahead with the exception of sparse sampling of the chip to reduce the run-time to build the router lookahead and also its memory footprint.
      * ``extended_map``: A more advanced and extended lookahead which accounts for a more exhaustive node sampling method.
+     * ``separable``: An experimental lookahead which estimates delay and congestion by combining independently profiled costs along the x and y axes. It uses the map lookahead for SOURCE/OPIN estimates and as a fallback for unsampled wire costs. Flat routing and reading or writing lookahead files are currently unsupported.
      * ``simple``: A purely distance-based lookahead loaded from an external file using :option:`--read_router_lookahead`. This lookahead returns a cost estimate for channel nodes by querying a lookup table, while for any other node type it returns zero.
 
      **Default:** ``map``
@@ -2181,7 +2401,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
 .. option:: --router_lookahead_interposer_base_cut_multiplier
     .. note:: This option only works affects the map router lookahead and devices that have interposer cuts
-    
+
     A multiplier that's applied to the base cost of interposer wires for the router lookahead.
 
     **Default:** ``2``
@@ -2525,6 +2745,37 @@ Analysis Options
     Controls whether clock skew timing reports are generated.
 
     **Default:** ``off``
+
+.. option:: --timing_report_path_categories {all | <category> [<category> ...]}
+
+    Controls which categories of timing paths are included in the timing reports (``report_timing.setup.rpt`` and ``report_timing.hold.rpt``) and the clock skew reports (see :option:`--timing_report_skew`).
+
+    A timing path is categorized by its startpoint and endpoint, where a register is any clocked primitive (e.g. a flip-flop or the clocked ports of a RAM):
+
+    * ``in2reg``: From a primary input to a register.
+    * ``reg2reg``: From a register to a register.
+    * ``reg2out``: From a register to a primary output.
+    * ``in2out``: From a primary input to a primary output (i.e. purely combinational).
+
+    The values can be:
+
+    * ``all``: All timing paths are reported.
+    * ``<category> [<category> ...]``: Only the timing paths in the listed categories are reported.
+
+    The paths are filtered before choosing the worst :option:`--timing_report_npaths` paths, and filtered reports state which categories they contain.
+    This option only filters the reported paths; it does not affect the slack or criticality calculations (and hence the optimization), or the timing summary printed to the log.
+
+    For example, the following reports only the register to register paths, which is useful when looking at the clock skew between registers:
+
+    .. code-block:: none
+
+        --timing_report_skew on --timing_report_path_categories reg2reg
+
+    .. note:: Only the worst path into each endpoint (for each pair of launch and capture clock domains) is considered, so each endpoint is categorized by its worst path.
+              For example, a register whose worst incoming path starts at a primary input is not included in a ``reg2reg`` report, even if it is also reached from other registers.
+              Constraining the primary inputs and outputs on their own (virtual) clock in the SDC file separates these paths, so that both are reported.
+
+    **Default:** ``all``
 
 
 .. _power_estimation_options:

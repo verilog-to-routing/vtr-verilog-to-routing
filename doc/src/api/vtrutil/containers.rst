@@ -110,3 +110,9 @@ vtr_dynamic_bitset
 .. doxygenclass:: vtr::dynamic_bitset
    :project: vtr
    :members:
+
+vtr_circular_buffer
+------------------
+.. doxygenclass:: vtr::circular_buffer
+   :project: vtr
+   :members:

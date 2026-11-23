@@ -45,8 +45,6 @@ static bool is_non_empty_physical_tile(const DeviceGrid& grid,
     return true;
 }
 
-
-
 /**
  * @brief Returns true if the physical tile location is the root of a tile.
  */
@@ -178,15 +176,11 @@ static void collect_window_blocks(const t_compressed_block_grid& compressed_grid
     }
 }
 
-
-
-
 WindowedBiMatchingDetailedPlacer::WindowedBiMatchingDetailedPlacer(
     const BlkLocRegistry& curr_clustered_placement,
     const t_placer_opts& placer_opts)
-    : placer_state_(false)
+    : placer_state_(/*placement_is_timing_driven=*/false, /*placement_uses_setup_slacks=*/false)
     , net_cost_handler_(placer_state_,
-                        g_vpr_ctx.placement().cube_bb,
                         e_place_algorithm::BOUNDING_BOX_PLACE,
                         placer_opts.congestion_chan_util_threshold) {
     BlkLocRegistry& blk_loc_registry = placer_state_.mutable_blk_loc_registry();
@@ -196,7 +190,7 @@ WindowedBiMatchingDetailedPlacer::WindowedBiMatchingDetailedPlacer(
     for (ClusterBlockId block_id : clb_nlist.blocks()) {
         blk_loc_registry.place_sync_external_block_connections(block_id);
     }
-    // PlacerState(false) for now because timing cost updates are not needed
+    // PlacerState is not timing driven for now because timing cost updates are not needed
     (void)net_cost_handler_.comp_bb_cong_cost(e_cost_methods::NORMAL);
 }
 
@@ -214,7 +208,7 @@ bool WindowedBiMatchingDetailedPlacer::exhaustive_window(
     const std::vector<ClusterBlockId>& blocks,
     const std::vector<t_pl_loc>& locs) {
     //nothing to arrange
-    if(blocks.size() <= 1){
+    if (blocks.size() <= 1) {
         return false;
     }
 
@@ -226,16 +220,13 @@ bool WindowedBiMatchingDetailedPlacer::exhaustive_window(
     // shuffle block ordering once per window
     static std::mt19937 rng(32768);
     std::shuffle(shuffled_blocks.begin(), shuffled_blocks.end(), rng);
-    
-    
+
     // list of all locations within window
     std::vector<int> perm;
-    for (size_t i = 0; i < blocks.size(); i++){
+    for (size_t i = 0; i < blocks.size(); i++) {
         perm.push_back(static_cast<int>(i));
     }
 
-    
-    
     // track best result
     double best_delta = 0;
     std::vector<int> best_perm = perm;
@@ -246,32 +237,31 @@ bool WindowedBiMatchingDetailedPlacer::exhaustive_window(
     const size_t max_perms = 524288;
 
     bool more_perms = true;
-    while(more_perms) {
+    while (more_perms) {
         // checking if cap has been reached
-        if(num_perms_explored >= max_perms){
+        if (num_perms_explored >= max_perms) {
             VTR_LOG_WARN("Permutation cap reached: explored=%zu cap=%zu window_blocks=%zu\n",
-                        num_perms_explored,
-                        max_perms,
-                        blocks.size());
+                         num_perms_explored,
+                         max_perms,
+                         blocks.size());
             break;
         }
         num_perms_explored++;
 
-
         // exploring possible moves
 
-        //TODO: with empty locations? 
+        //TODO: with empty locations?
         t_pl_blocks_to_be_moved blocks_affected(blocks.size());
         bool valid_perm = true;
 
-        for(size_t i = 0; i < blocks.size(); i++) {
+        for (size_t i = 0; i < blocks.size(); i++) {
             ClusterBlockId block_id = shuffled_blocks[i];
             t_pl_loc target_loc = locs[perm[i]];
             //record proposed moves
             e_block_move_result result =
                 blocks_affected.record_block_move(block_id,
-                                                target_loc,
-                                                blk_loc_registry);
+                                                  target_loc,
+                                                  blk_loc_registry);
 
             if (result != e_block_move_result::VALID) {
                 valid_perm = false;
@@ -303,7 +293,7 @@ bool WindowedBiMatchingDetailedPlacer::exhaustive_window(
             blocks_affected,
             cost_terms_delta,
             timing_delta_cost);
-        
+
         // updating if we found a new best permutation
         if (cost_terms_delta.bb_cost < best_delta) {
             best_delta = cost_terms_delta.bb_cost;
@@ -317,7 +307,7 @@ bool WindowedBiMatchingDetailedPlacer::exhaustive_window(
         more_perms = std::next_permutation(perm.begin(), perm.end());
     }
 
-    // if no wirelength decrease, can just return 
+    // if no wirelength decrease, can just return
     if (best_delta >= 0.) {
         return false;
     }
@@ -327,8 +317,8 @@ bool WindowedBiMatchingDetailedPlacer::exhaustive_window(
     for (size_t i = 0; i < blocks.size(); i++) {
         e_block_move_result result =
             blocks_affected.record_block_move(shuffled_blocks[i],
-                                            locs[best_perm[i]],
-                                            blk_loc_registry);
+                                              locs[best_perm[i]],
+                                              blk_loc_registry);
 
         if (result != e_block_move_result::VALID) {
             blocks_affected.clear_move_blocks();
@@ -380,7 +370,6 @@ void WindowedBiMatchingDetailedPlacer::optimize_placement() {
 
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
-
     // building a unique list of block types
     std::vector<t_logical_block_type_ptr> logical_types;
     std::vector<int> seen_type_indices;
@@ -389,8 +378,8 @@ void WindowedBiMatchingDetailedPlacer::optimize_placement() {
         t_logical_block_type_ptr logical_type = clb_nlist.block_type(block_id);
 
         if (std::find(seen_type_indices.begin(),
-                    seen_type_indices.end(),
-                    logical_type->index)
+                      seen_type_indices.end(),
+                      logical_type->index)
             != seen_type_indices.end()) {
             continue;
         }
@@ -398,7 +387,6 @@ void WindowedBiMatchingDetailedPlacer::optimize_placement() {
         seen_type_indices.push_back(logical_type->index);
         logical_types.push_back(logical_type);
     }
-
 
     int num_windows_seen = 0;
     int num_windows_with_blocks = 0;
@@ -409,7 +397,6 @@ void WindowedBiMatchingDetailedPlacer::optimize_placement() {
         const t_compressed_block_grid& compressed_grid =
             compressed_block_grids[logical_type->index];
 
-        
         const int layer_num = placement_layer_;
 
         const int num_columns =
@@ -430,16 +417,16 @@ void WindowedBiMatchingDetailedPlacer::optimize_placement() {
                 num_windows_seen++;
 
                 collect_window_blocks(compressed_grid,
-                                    grid,
-                                    grid_blocks,
-                                    clb_nlist,
-                                    logical_type,
-                                    start_cx,
-                                    start_cy,
-                                    layer_num,
-                                    blocks,
-                                    locs);
-                
+                                      grid,
+                                      grid_blocks,
+                                      clb_nlist,
+                                      logical_type,
+                                      start_cx,
+                                      start_cy,
+                                      layer_num,
+                                      blocks,
+                                      locs);
+
                 if (blocks.size() > max_window_size) {
                     max_window_size = blocks.size();
 
@@ -488,5 +475,5 @@ void WindowedBiMatchingDetailedPlacer::optimize_placement() {
             final_bb_wirelength_estimate - initial_bb_wirelength_estimate);
     VTR_LOG("--Location moves/swaps committed: %d\n", num_committed_moves);
     VTR_LOG("--max window size: %zu\n", max_window_size);
-    VTR_LOG("--num commited: %d\n", num_committed_moves);
+    VTR_LOG("--num committed: %d\n", num_committed_moves);
 }

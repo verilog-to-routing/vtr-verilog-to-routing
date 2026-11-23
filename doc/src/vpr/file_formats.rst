@@ -727,6 +727,24 @@ multiple clusters can be stacked there). A sub-tile of -1 may be used when
 the sub-tile of an atom is unknown (allowing the packing algorithm to choose
 any sub-tile at the given (x, y, layer) location).
 
+Lines written by VPR (:option:`vpr --write_flat_place`) carry additional annotation
+after ``<atom_sub_tile>``, introduced by a pound symbol (``#``). Everything from the
+``#`` onwards is a comment: VPR does not parse it when the file is read back, it is
+only there to help a user understand and interpret the file. How much annotation is
+written is controlled by :option:`vpr --flat_place_verbosity`. By default the cluster
+block number the atom was packed into and the primitive type it was placed on are
+appended; at verbosity ``2`` the path of that primitive is appended as well:
+
+.. code-block:: none
+
+        <atom_name> <x> <y> <layer> <atom_sub_tile> #<clb_blk_id> <atom_pb_type> <site_path>
+
+        n523  6 8 0 0 #12 lut6 clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
+
+``site_path`` is the hierarchical path of the primitive the atom was placed on within its
+cluster (``t_pb_graph_node::hierarchical_type_name()``), including the mode selected at each
+level.
+
 When used with ``flat-recon`` full legalizer (see :option:`vpr --ap_full_legalizer`),
 each atom in a molecule should have compatible location information. It is legal to
 leave some molecules unconstrained; the reconstruction phase will choose where
@@ -888,7 +906,7 @@ A ``switches`` tag contains all the switches and its information within the FPGA
     :req_param type:
         See :ref:`architecture switch description <arch_switches>`.
 
-.. rrgraph:tag:: <timing R="float" cin="float" Cout="float" Tdel="float/>
+.. rrgraph:tag:: <timing R="float" Cin="float" Cout="float" Tdel="float" Tdel_min="float" Tdel_max="float"/>
 
         This optional subtag contains information used for timing analysis. Without it, the program assumes all subtags to contain a value of 0.
 
@@ -897,6 +915,32 @@ A ``switches`` tag contains all the switches and its information within the FPGA
 
     :opt_param Tdel:
         Switch's intrinsic delay. It can be outlined that the delay through an unloaded switch is Tdel + R * Cout.
+        It is used as both the minimum and maximum intrinsic delay of the switch.
+
+        .. note:: Cannot be specified together with ``Tdel_min`` or ``Tdel_max``.
+
+    :opt_param Tdel_min, Tdel_max:
+        Switch's minimum and maximum intrinsic delay.
+        ``Tdel_min`` must not be larger than ``Tdel_max``.
+        A missing value is 0, like the other timing values.
+
+        .. warning::
+            Unlike ``<Tdel>`` in the architecture file, a missing ``Tdel_min`` is **not** taken to be equal to ``Tdel_max``.
+            A switch with only ``Tdel_max="X"`` has a minimum delay of 0 and a maximum delay of X.
+            To give a single delay, used as both the minimum and maximum delay, use ``Tdel``.
+
+        The delays of a switch are:
+
+        * ``Tdel="X"``: minimum and maximum delay X.
+        * ``Tdel_min="Y" Tdel_max="X"``: minimum delay Y and maximum delay X.
+        * ``Tdel_max="X"`` only: minimum delay 0 and maximum delay X.
+        * ``Tdel_min="Y"`` only: an error if Y is not 0, since the maximum delay is 0.
+        * None of them: minimum and maximum delay 0.
+
+        .. note::
+            When writing an RR graph, VPR leaves out timing values that are 0.
+            It writes ``Tdel`` when the minimum and maximum delays are equal, and ``Tdel_min`` and ``Tdel_max`` otherwise.
+            So a switch with a minimum delay of 0 and a non-zero maximum delay is written with only ``Tdel_max``.
 
 .. rrgraph:tag:: <sizing mux_trans_size="int" buf_size="float"/>
 
@@ -1078,6 +1122,10 @@ An example of what a generated routing resource graph file would look like is sh
                 <timing R="100" Cin="1233-12" Cout="123e-12" Tdel="1e-9"/>
                 <sizing mux_trans_size="2.32" buf_size="23.54"/>
             </switch>
+            <switch id="1" name="my_min_max_switch" type="mux">
+                <timing R="100" Cin="1233-12" Cout="123e-12" Tdel_min="0.9e-9" Tdel_max="1e-9"/>
+                <sizing mux_trans_size="2.32" buf_size="23.54"/>
+            </switch>
         </switches>
         <segments>
             <segment id="0" name="L4">
@@ -1136,10 +1184,12 @@ To aid in handling large graphs, rr_graph files can also be :ref:`saved in <file
 
 .. _end:
 
+.. _rr_edge_override_file_format:
+
 RR Graph Edge Attribute Override File Format (.txt)
 ---------------------------------------------------
-This file lets users override attributes of specific edges in the RR graph. Currently, only the intrinsic delay (Tdel)
-can be changed. The expected format is:
+This file lets users override attributes of specific edges in the RR graph. Currently, only the intrinsic delay of
+the edge's switch (``Tdel``, or ``Tdel_min`` and ``Tdel_max``) can be changed. The expected format is:
 
 .. code-block:: none
 
@@ -1154,6 +1204,22 @@ can be changed. The expected format is:
 
 Lines starting with # are comments and ignored. Each other line should specify either: an edge ID and its new delay, or
 a source/sink node pair and its delay.
+
+A line can give either one delay or two delays:
+
+* One delay is used as both the minimum and maximum delay. It replaces both, even if the edge's switch had
+  different minimum and maximum delays.
+* Two delays are the minimum and maximum delay (``Tdel_min`` then ``Tdel_max``, in the same order as the
+  :ref:`RR graph <vpr_route_resource_file>` ``<timing>`` attributes). The minimum delay must not be larger than the maximum delay.
+
+.. code-block:: none
+
+    # edge    Tdel_min   Tdel_max
+    64812     5.6e-11    5.9e-11
+    9981      4.2e-11
+    (42, 64)  7.0e-11    7.3e-11
+
+Here edge ``9981`` has a single delay, so its minimum and maximum delay are both ``4.2e-11``.
 
 This allows more accurate modeling of switch delays in the RR graph without creating many switch types
 in the architecture file and limiting them to small regions. This can be useful for more detailed modeling of
@@ -1344,12 +1410,17 @@ This file is generated after the routing step with option: `--write_timing_summa
 It can be saved as a human readable text file or in XML or JSON file to provide
 machine readable output. Format is selected based on the extension of the `<filename>`.
 
-The summary consists of 4 parameters:
+The summary consists of 7 parameters:
 
 * `Critical Path Delay (cpd) [ns]`
 * `Max Circuit Frequency (Fmax) [MHz]`
+* `Critical Path Skew (cpd_skew) [ns]`: The clock skew on the critical path.
+* `Critical Path Category (cpd_category)`: The category of the critical path (``in2reg``, ``reg2reg``, ``reg2out`` or ``in2out``; see :option:`--timing_report_path_categories`).
+  The skew of an ``in2reg`` or ``reg2out`` critical path includes the full clock insertion delay of its register.
+  It is empty if the critical path has no clock skew (e.g. it is launched by a constant generator).
 * `setup Worst Negative Slack (sWNS) [ns]`
 * `setup Total Negative Slack (sTNS) [ns]`
+* `setup Worst Skew (sWS) [ns]`
 
 TXT
 ~~~
@@ -1361,8 +1432,10 @@ Presents the information in human readable format, the same as in log output:
     :linenos:
 
     Final critical path delay (least slack): <double> ns, Fmax: <double> MHz
+    Final critical path skew: <double> ns (<category>)
     Final setup Worst Negative Slack (sWNS): <double> ns
     Final setup Total Negative Slack (sTNS): <double> ns
+    Final setup Worst Skew (sWS): <double> ns
 
 .. _end:
 
@@ -1378,8 +1451,11 @@ One of two available machine readable formats. The information is written as fol
     {
       "cpd": <double>,
       "fmax": <double>,
+      "cpd_skew": <double>,
+      "cpd_category": "<category>",
       "swns": <double>,
-      "stns": <double>
+      "stns": <double>,
+      "sws": <double>
     }
 
 .. _end:
@@ -1395,10 +1471,13 @@ Second machine readable format. The information is written as follows:
 
     <?xml version="1.0" encoding="UTF-8"?>
     <timing_summary_report>
-      <cpd value="<double>" unit="ns" description="Final critical path delay"></nets>
+      <cpd value="<double>" unit="ns" description="Final critical path delay"></cpd>
       <fmax value="<double>" unit="MHz" description="Max circuit frequency"></fmax>
+      <cpd_skew value="<double>" unit="ns" description="Clock skew on the critical path"></cpd_skew>
+      <cpd_category value="<category>" description="Category of the critical path (e.g. reg2reg)"></cpd_category>
       <swns value="<double>" unit="ns" description="setup Worst Negative Slack (sWNS)"></swns>
       <stns value="<double>" unit="ns" description="setup Total Negative Slack (sTNS)"></stns>
-    </block_usage_report>
+      <sws value="<double>" unit="ns" description="setup Worst Skew (sWS)"></sws>
+    </timing_summary_report>
 
 .. _end:

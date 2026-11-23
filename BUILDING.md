@@ -20,6 +20,45 @@ For Fedora or RHEL-based systems:
 
     ./install_dnf_packages.sh
 
+### Windows (MSYS2)
+
+To build with GCC on Windows
+
+- Please ensure the [MSYS2](https://www.msys2.org/) has been properly installed
+- Install dependencies in a UCRT64 shell by
+
+```
+./install_win_msys2_ucrt64_packages.sh
+```
+
+### Windows (MSVC)
+
+To build with MSVC on Windows,
+
+- Install dependencies through vcpkg
+
+```
+vcpkg install
+```
+
+- Install part of dependencies (not available on vcpkg) through [chocolatry](https://chocolatey.org/install)
+
+
+```
+choco install winflexbison3 wget
+choco install magicsplat-tcl-tk --version=1.16.0
+```
+
+### MacOS
+
+To build with Clang on MacOS
+
+- Install dependencies through
+
+```
+./install_macos_packages.sh
+```
+
 ### Python Packages
 
 You will also need several Python packages.  You can optionally install and activate a Python virtual environment so that you do not need to modify your system Python installation:
@@ -40,6 +79,8 @@ From the top-level, run:
     make
 
 which will build all the required tools.
+
+Note that on Windows platform, all the required tools will be built except ABC, Parmys and Slang.
 
 For parallel builds (recommended):
 
@@ -77,6 +118,10 @@ Two convenience targets make the choice explicit:
 The complete VTR flow has been tested on:
 - 64-bit Linux (Debian, Ubuntu, Fedora)
 
+The VPR engine has been tested on 
+- Windows 10/11 (MSYS2, MSVC)
+- Mac OS 26
+
 *Full information about building VTR, including setting up required system packages and Python packages, can be found in [Optional Build Information](doc/src/vtr/optional_build_info.md) page.*
 
 Please [let us know](doc/src/contact.md) your experience with building VTR so that we can improve the experience for others.
@@ -100,4 +145,3 @@ The expected output is::
     k6_N10_mem32K_40nm/diffeq1              OK
     k6_N10_mem32K_40nm/ch_intrinsics                OK
     k6_N10_mem32K_40nm/ch_intrinsics                OK
-

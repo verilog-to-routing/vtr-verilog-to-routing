@@ -64,6 +64,13 @@ void check_setup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
                         "Timing analysis must be enabled for timing-driven placement.\n");
     }
 
+    // The placer only builds its timing data structures when the anneal is timing driven.
+    if (placer_opts.place_quench_algorithm.is_timing_driven()
+        && !placer_opts.place_algorithm.is_timing_driven()) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "A timing-driven --place_quench_algorithm requires a timing-driven --place_algorithm.\n");
+    }
+
     if (placer_opts.do_placement == e_stage_action::SKIP && (!placer_opts.constraints_file.empty())) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "A block location file requires that placement is enabled.\n");
@@ -86,6 +93,17 @@ void check_setup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
     if (placer_opts.place_auto_init_t_scale < 0.0) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "Cannot have negative annealer auto initial temperature scale.\n");
+    }
+
+    if (placer_opts.interposer_cost_params.net_cost_change_threshold < 0.0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "Cannot have negative interposer net cost change threshold.\n");
+    }
+
+    if (placer_opts.interposer_cost_params.two_stage_net_cost_first_stage_type == e_interposer_net_cost_type::TWO_STAGE
+        || placer_opts.interposer_cost_params.two_stage_net_cost_second_stage_type == e_interposer_net_cost_type::TWO_STAGE) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "Two-stage interposer net cost stage types must be concrete cost models.\n");
     }
 
     // Rules for doing Analytical Placement
@@ -111,6 +129,26 @@ void check_setup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
         if (ap_opts.ap_high_fanout_threshold <= 1) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "ap_high_fanout_threshold should be greater than 1");
+        }
+
+        // When only running global placement, there is no clustered placement
+        // for the later stages of the flow to use.
+        if (ap_opts.stop_after_global_placement) {
+            if (router_opts.doRouting != e_stage_action::SKIP
+                || vpr_setup.AnalysisOpts.doAnalysis != e_stage_action::SKIP) {
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "--global_place only runs global placement and cannot be combined with "
+                                "routing or analysis. Use --analytical_place to run the full analytical "
+                                "placement flow.\n");
+            }
+            if (!vpr_setup.FileNameOpts.write_flat_place_file.empty()) {
+                VTR_LOG_WARN("--write_flat_place is ignored when only running global placement "
+                             "(--global_place). Use --write_post_gp_flat_place instead.\n");
+            }
+            if (!vpr_setup.FileNameOpts.write_legalized_flat_place_file.empty()) {
+                VTR_LOG_WARN("--write_legalized_flat_place is ignored when only running global "
+                             "placement (--global_place). Use --write_post_gp_flat_place instead.\n");
+            }
         }
 
         // Delta delay override model is not supported for AP.

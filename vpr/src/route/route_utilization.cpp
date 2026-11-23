@@ -6,18 +6,16 @@
 #include "route_common.h"
 
 RoutingChanUtilEstimator::RoutingChanUtilEstimator(const BlkLocRegistry& blk_loc_registry) {
-    placer_state_ = std::make_unique<PlacerState>(/*placement_is_timing_driven=*/false);
+    placer_state_ = std::make_unique<PlacerState>(/*placement_is_timing_driven=*/false, /*placement_uses_setup_slacks=*/false);
     placer_state_->mutable_blk_loc_registry() = blk_loc_registry;
-    // RoutingChanUtilEstimator uses cube bounding box
     net_cost_handler_ = std::make_unique<NetCostHandler>(*placer_state_,
-                                                         /*cube_bb=*/true,
                                                          e_place_algorithm::BOUNDING_BOX_PLACE,
                                                          /*congestion_chan_util_threshold=*/0.);
 }
 
 ChannelMetric<vtr::NdMatrix<double, 3>> RoutingChanUtilEstimator::estimate_routing_chan_util() {
-    const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& block_locs = placer_state_->block_locs();
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = placer_state_->block_locs();
 
     bool placement_is_done = (block_locs.size() == clb_nlist.blocks().size());
 
@@ -30,7 +28,7 @@ ChannelMetric<vtr::NdMatrix<double, 3>> RoutingChanUtilEstimator::estimate_routi
 
         return net_cost_handler_->get_chan_util();
     } else {
-        const auto& device_ctx = g_vpr_ctx.device();
+        const DeviceContext& device_ctx = g_vpr_ctx.device();
 
         ChannelMetric<vtr::NdMatrix<double, 3>> chan_util;
 
@@ -51,10 +49,10 @@ ChannelMetric<vtr::NdMatrix<double, 3>> RoutingChanUtilEstimator::estimate_routi
 vtr::Matrix<float> calculate_routing_usage(e_rr_type rr_type, bool is_flat, bool is_print) {
     VTR_ASSERT(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
 
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& route_ctx = g_vpr_ctx.routing();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
     vtr::Matrix<float> usage({{device_ctx.grid.width(), device_ctx.grid.height()}}, 0.);
 
@@ -112,11 +110,11 @@ vtr::Matrix<float> calculate_routing_avail(e_rr_type rr_type) {
     // Calculate the number of available resources in each x/y channel
     VTR_ASSERT(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
 
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     vtr::Matrix<float> avail({{device_ctx.grid.width(), device_ctx.grid.height()}}, 0.);
-    for (const RRNodeId& rr_node : rr_graph.nodes()) {
+    for (RRNodeId rr_node : rr_graph.nodes()) {
         const short& rr_node_capacity = rr_graph.node_capacity(rr_node);
 
         if (rr_graph.node_type(rr_node) == e_rr_type::CHANX && rr_type == e_rr_type::CHANX) {

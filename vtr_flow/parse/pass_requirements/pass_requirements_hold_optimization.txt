@@ -1,0 +1,11 @@
+#Pass requirements for the strong_yoyo_flat_router tests.
+#These tests check whether the yoyo routing budgets algorithm can resolve
+#hold violations under flat routing. Only the VPR run status and the final
+#hold slack are checked. All other QoR metrics are not checked in this test.
+
+#Common VPR status metrics
+%include "common/pass_requirements.vpr_status.txt"
+
+#Hold slack should be equal to zero
+hold_TNS;Equal()
+hold_WNS;Equal()

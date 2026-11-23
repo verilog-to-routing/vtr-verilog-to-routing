@@ -42,12 +42,14 @@ struct NetlistReader {
                   const std::string netlist_id,
                   const char* netlist_file,
                   const LogicalModels& models,
-                  const t_arch& arch)
+                  const t_arch& arch,
+                  int verbosity)
         : main_netlist_(main_netlist)
         , nr_(netlist_reader)
         , netlist_file_(netlist_file)
         , models_(models)
-        , arch_(arch) {
+        , arch_(arch)
+        , verbosity_(verbosity) {
         // Define top module
         top_cell_instance_ = nr_.getTopInst();
 
@@ -56,11 +58,11 @@ struct NetlistReader {
 
         prepare_port_net_maps();
 
-        VTR_LOG("Reading IOs...\n");
+        VTR_LOGV(verbosity_ > 1, "Reading IOs...\n");
         read_ios();
-        VTR_LOG("Reading names...\n");
+        VTR_LOGV(verbosity_ > 1, "Reading names...\n");
         read_names();
-        VTR_LOG("Reading blocks...\n");
+        VTR_LOGV(verbosity_ > 1, "Reading blocks...\n");
         read_blocks();
     }
 
@@ -73,6 +75,8 @@ struct NetlistReader {
 
     const LogicalModels& models_;
     const t_arch& arch_;
+
+    int verbosity_ = 1; ///<Controls how much detail is printed while parsing the netlist
 
     LogicalNetlist::Netlist::CellInstance::Reader top_cell_instance_;
 
@@ -196,6 +200,10 @@ struct NetlistReader {
         auto port_list = nr_.getPortList();
         auto str_list = nr_.getStrList();
 
+        // Number of constant generators found while parsing (used for a summary message)
+        size_t num_const_zero_gens = 0;
+        size_t num_const_one_gens = 0;
+
         std::vector<std::tuple<size_t, int, std::string>> insts;
         for (auto cell_inst : top_cell.getInsts()) {
             auto cell = decl_list[inst_list[cell_inst].getCell()];
@@ -298,7 +306,8 @@ struct NetlistReader {
                 //  0
                 //
                 output_is_const = true;
-                VTR_LOG("Found constant-zero generator '%s'\n", inst_name.c_str());
+                ++num_const_zero_gens;
+                VTR_LOGV(verbosity_ > 1, "Found constant-zero generator '%s'\n", inst_name.c_str());
             } else if (truth_table.size() == 1 && is_const) {
                 //A single-entry truth table with value '1' in BLIF corresponds to a constant-one
                 //  e.g.
@@ -308,7 +317,8 @@ struct NetlistReader {
                 //  1
                 //
                 output_is_const = true;
-                VTR_LOG("Found constant-one generator '%s'\n", inst_name.c_str());
+                ++num_const_one_gens;
+                VTR_LOGV(verbosity_ > 1, "Found constant-one generator '%s'\n", inst_name.c_str());
             }
 
             AtomBlockId blk_id = main_netlist_.create_block(inst_name, blk_model_id, truth_table);
@@ -341,6 +351,17 @@ struct NetlistReader {
                         break;
                 }
             }
+        }
+
+        // Report a summary of the constant generators found while parsing. The
+        // individual generator names are only printed at higher verbosity, so
+        // provide a hint on how to see them.
+        size_t num_const_gens = num_const_zero_gens + num_const_one_gens;
+        if (num_const_gens > 0) {
+            VTR_LOGV(verbosity_ > 0,
+                     "Found %zu constant generator(s) in the netlist (%zu constant-zero, %zu constant-one)%s\n",
+                     num_const_gens, num_const_zero_gens, num_const_one_gens,
+                     verbosity_ > 1 ? "" : " (run with --netlist_verbosity 2 to list names)");
         }
     }
 
@@ -513,7 +534,8 @@ struct NetlistReader {
 #endif // VTR_ENABLE_CAPNPROTO
 
 AtomNetlist read_interchange_netlist(const char* ic_netlist_file,
-                                     t_arch& arch) {
+                                     t_arch& arch,
+                                     int verbosity) {
 #ifdef VTR_ENABLE_CAPNPROTO
     AtomNetlist netlist;
     std::string netlist_id = vtr::secure_digest_file(ic_netlist_file);
@@ -554,7 +576,7 @@ AtomNetlist read_interchange_netlist(const char* ic_netlist_file,
 
     auto netlist_reader = message_reader.getRoot<LogicalNetlist::Netlist>();
 
-    NetlistReader reader(netlist, netlist_reader, netlist_id, ic_netlist_file, arch.models, arch);
+    NetlistReader reader(netlist, netlist_reader, netlist_id, ic_netlist_file, arch.models, arch, verbosity);
 
     return netlist;
 
@@ -563,6 +585,7 @@ AtomNetlist read_interchange_netlist(const char* ic_netlist_file,
     // If CAPNPROTO is not enabled, throw an error
     (void)ic_netlist_file;
     (void)arch;
+    (void)verbosity;
     throw vtr::VtrError("Unable to read interchange netlist with CAPNPROTO disabled", __FILE__, __LINE__);
 
 #endif // VTR_ENABLE_CAPNPROTO

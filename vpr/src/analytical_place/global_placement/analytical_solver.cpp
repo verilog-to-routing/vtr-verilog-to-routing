@@ -7,6 +7,7 @@
  */
 
 #include "analytical_solver.h"
+#include <algorithm>
 #include <cstddef>
 #include <cstdio>
 #include <limits>
@@ -48,6 +49,38 @@
 #pragma GCC diagnostic pop
 #endif // EIGEN_INSTALLED
 
+#ifdef EIGEN_INSTALLED
+/**
+ * @brief Decides if the per dimension linear systems are solved at the same
+ *        time for the given threading mode.
+ *
+ * Errors out if the concurrent mode has fewer threads than linear systems.
+ */
+static bool should_solve_systems_concurrently(e_ap_solver_threading solver_threading,
+                                              unsigned num_threads,
+                                              unsigned num_systems) {
+    switch (solver_threading) {
+        case e_ap_solver_threading::Sequential:
+            return false;
+        case e_ap_solver_threading::Concurrent:
+            // The concurrent mode needs at least one thread per linear system.
+            if (num_threads < num_systems) {
+                VPR_FATAL_ERROR(VPR_ERROR_AP,
+                                "--ap_solver_threading concurrent needs at least %u threads (one per linear system), but only %u are available.\n"
+                                "Increase --num_workers or use a different --ap_solver_threading mode.\n",
+                                num_systems, num_threads);
+            }
+            return true;
+        case e_ap_solver_threading::Auto:
+            // Solve concurrently only when each system can get at least two threads.
+            return num_threads >= 2 * num_systems;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "Unrecognized analytical solver threading mode");
+    }
+    return false;
+}
+#endif // EIGEN_INSTALLED
+
 std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver solver_type,
                                                          const APNetlist& netlist,
                                                          const DeviceGrid& device_grid,
@@ -56,12 +89,43 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                          float ap_timing_tradeoff,
                                                          unsigned num_threads,
+                                                         e_ap_solver_threading solver_threading,
                                                          int log_verbosity) {
 #ifdef EIGEN_INSTALLED
-    // Set the number of threads that Eigen can use.
-    unsigned eigen_num_threads = num_threads;
+    // Get the total number of threads that the solver can use.
+    unsigned total_num_threads = num_threads;
     if (num_threads == 0) {
-        eigen_num_threads = std::thread::hardware_concurrency();
+        total_num_threads = std::thread::hardware_concurrency();
+    }
+
+    // Get the number of linear systems the solver solves in each iteration.
+    // There is one system per dimension. The z dimension is only solved on
+    // multi-layer devices.
+    unsigned num_systems = 2;
+    if (device_grid.get_num_layers() > 1) {
+        num_systems = 3;
+    }
+
+    // Decide if the linear systems are solved at the same time.
+    bool solve_systems_concurrently = should_solve_systems_concurrently(solver_threading,
+                                                                        total_num_threads,
+                                                                        num_systems);
+
+    // When the systems are solved concurrently, the threads are split evenly
+    // between them. Otherwise each solve uses every thread.
+    unsigned eigen_num_threads = total_num_threads;
+    if (solve_systems_concurrently) {
+        VTR_ASSERT(total_num_threads >= num_systems);
+        eigen_num_threads = total_num_threads / num_systems;
+
+        // Warn if the threads cannot be split evenly between the systems.
+        if (total_num_threads % num_systems != 0) {
+            VTR_LOG_WARN("The number of threads (%u) is not divisible by the number of "
+                         "linear systems solved concurrently (%u). The analytical solver "
+                         "will use %u threads per system (%u threads in total).\n",
+                         total_num_threads, num_systems,
+                         eigen_num_threads, eigen_num_threads * num_systems);
+        }
     }
     // Set the number of threads globally used by Eigen (if OpenMP is enabled).
     // NOTE: Since this is a global update, all solvers will have this number
@@ -69,6 +133,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
     Eigen::setNbThreads(eigen_num_threads);
 #else
     (void)num_threads;
+    (void)solver_threading;
 #endif // EIGEN_INSTALLED
 
     // Based on the solver type passed in, build the solver.
@@ -86,6 +151,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                     atom_netlist,
                                                     pre_cluster_timing_manager,
                                                     ap_timing_tradeoff,
+                                                    solve_systems_concurrently,
                                                     log_verbosity);
 #else
             (void)netlist;
@@ -107,6 +173,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                pre_cluster_timing_manager,
                                                place_delay_model,
                                                ap_timing_tradeoff,
+                                               solve_systems_concurrently,
                                                log_verbosity);
 #else
             VPR_FATAL_ERROR(VPR_ERROR_AP,
@@ -467,21 +534,30 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     VTR_ASSERT_SAFE_MSG(!b_x_diff.hasNaN(), "b_x has NaN!");
     VTR_ASSERT_SAFE_MSG(!b_y_diff.hasNaN(), "b_y has NaN!");
 
-    // Set up the ConjugateGradient Solver using the coefficient matrix.
-    // TODO: can change cg.tolerance to increase performance when needed
-    //  - This tolerance may need to be a function of the number of nets.
-    //  - Instead of normalizing the fixed blocks, the tolerance can be scaled
-    //    by the size of the device.
-    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg;
-    cg.compute(A_sparse_diff);
-    VTR_ASSERT(cg.info() == Eigen::Success && "Conjugate Gradient failed at compute!");
-    // Use the solver to solve for x and y using the constant vectors
-    Eigen::VectorXd x = cg.solveWithGuess(b_x_diff, guess_x);
-    total_num_cg_iters_ += cg.iterations();
-    VTR_ASSERT(cg.info() == Eigen::Success && "Conjugate Gradient failed at solving b_x!");
-    Eigen::VectorXd y = cg.solveWithGuess(b_y_diff, guess_y);
-    total_num_cg_iters_ += cg.iterations();
-    VTR_ASSERT(cg.info() == Eigen::Success && "Conjugate Gradient failed at solving b_y!");
+    // Solve for x and y using the constant vectors. Both dimensions share the
+    // same coefficient matrix.
+    Eigen::VectorXd x;
+    Eigen::VectorXd y;
+    unsigned x_cg_iters = 0;
+    unsigned y_cg_iters = 0;
+    bool x_solve_succeeded = false;
+    bool y_solve_succeeded = false;
+    if (!solve_systems_concurrently_) {
+        // Solve the systems one after the other, each using every thread.
+        x_solve_succeeded = solve_linear_system(A_sparse_diff, b_x_diff, guess_x, x, x_cg_iters);
+        y_solve_succeeded = solve_linear_system(A_sparse_diff, b_y_diff, guess_y, y, y_cg_iters);
+    } else {
+        // Solve the systems at the same time.
+        thread_pool_->schedule_work([&]() {
+            y_solve_succeeded = solve_linear_system(A_sparse_diff, b_y_diff, guess_y, y, y_cg_iters);
+        });
+        // The x system is solved on the calling thread.
+        x_solve_succeeded = solve_linear_system(A_sparse_diff, b_x_diff, guess_x, x, x_cg_iters);
+        thread_pool_->wait_for_all();
+    }
+    VTR_ASSERT_MSG(x_solve_succeeded, "Conjugate Gradient failed at solving b_x!");
+    VTR_ASSERT_MSG(y_solve_succeeded, "Conjugate Gradient failed at solving b_y!");
+    total_num_cg_iters_ += x_cg_iters + y_cg_iters;
 
     // Write the results back into the partial placement object.
     store_solution_into_placement(x, y, p_placement);
@@ -502,6 +578,27 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     // this iteration.
     guess_x = x;
     guess_y = y;
+}
+
+bool QPHybridSolver::solve_linear_system(const Eigen::SparseMatrix<double>& A,
+                                         const Eigen::VectorXd& b,
+                                         const Eigen::VectorXd& guess,
+                                         Eigen::VectorXd& solution,
+                                         unsigned& num_cg_iters) {
+    // Set up the ConjugateGradient Solver using the coefficient matrix.
+    // TODO: can change cg.tolerance to increase performance when needed
+    //  - This tolerance may need to be a function of the number of nets.
+    //  - Instead of normalizing the fixed blocks, the tolerance can be scaled
+    //    by the size of the device.
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg;
+    cg.compute(A);
+    if (cg.info() != Eigen::Success)
+        return false;
+
+    solution = cg.solveWithGuess(b, guess);
+    num_cg_iters = cg.iterations();
+
+    return cg.info() == Eigen::Success;
 }
 
 void QPHybridSolver::store_solution_into_placement(const Eigen::VectorXd& x_soln,
@@ -579,6 +676,45 @@ void QPHybridSolver::print_statistics() {
     VTR_LOG("\tTotal number of CG iterations: %u\n", total_num_cg_iters_);
 }
 
+B2BSolver::B2BSolver(const APNetlist& ap_netlist,
+                     const DeviceGrid& device_grid,
+                     const AtomNetlist& atom_netlist,
+                     const PreClusterTimingManager& pre_cluster_timing_manager,
+                     std::shared_ptr<PlaceDelayModel> place_delay_model,
+                     float ap_timing_tradeoff,
+                     bool solve_systems_concurrently,
+                     int log_verbosity)
+    : AnalyticalSolver(ap_netlist,
+                       atom_netlist,
+                       device_grid,
+                       ap_timing_tradeoff,
+                       log_verbosity)
+    , pre_cluster_timing_manager_(pre_cluster_timing_manager)
+    , place_delay_model_(place_delay_model)
+    , solve_systems_concurrently_(solve_systems_concurrently) {
+
+    // The calling thread solves the x system, so the pool needs one thread for
+    // each of the other systems.
+    if (solve_systems_concurrently_) {
+        size_t num_pool_threads = 1;
+        if (has_multiple_layers()) {
+            num_pool_threads = 2;
+        }
+        thread_pool_.emplace(num_pool_threads);
+    }
+
+    // Reserve space for the triplet lists once here, since their buffers are
+    // reused for every linear system built by this solver.
+    // Roughly 4 triplets are emitted per pin; reserving less than that was
+    // measured to cause several reallocations per build.
+    size_t triplet_reserve = (9 * ap_netlist.pins().size()) / 2;
+    triplet_list_x_.reserve(triplet_reserve);
+    triplet_list_y_.reserve(triplet_reserve);
+    if (has_multiple_layers()) {
+        triplet_list_z_.reserve(triplet_reserve);
+    }
+}
+
 void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     // Store an initial placement into the p_placement object as a starting point
     // for the B2B solver.
@@ -599,10 +735,8 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
 
             block_x_locs_solved = p_placement.block_x_locs;
             block_y_locs_solved = p_placement.block_y_locs;
-            if (is_multi_die()) {
-                std::fill(p_placement.block_layer_nums.begin(),
-                          p_placement.block_layer_nums.end(),
-                          (device_grid_num_layers_ - 1) / 2.0);
+            if (has_multiple_layers()) {
+                std::ranges::fill(p_placement.block_layer_nums, (device_grid_num_layers_ - 1) / 2.0);
                 block_z_locs_solved = p_placement.block_layer_nums;
             }
             return;
@@ -624,16 +758,22 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
         // Save the legalized solution; we need it for the anchors.
         block_x_locs_legalized = p_placement.block_x_locs;
         block_y_locs_legalized = p_placement.block_y_locs;
-        if (is_multi_die()) {
+        if (has_multiple_layers()) {
             block_z_locs_legalized = p_placement.block_layer_nums;
         }
 
         // Store last solved position into p_placement for b2b model
         p_placement.block_x_locs = block_x_locs_solved;
         p_placement.block_y_locs = block_y_locs_solved;
-        if (is_multi_die()) {
+        if (has_multiple_layers()) {
             p_placement.block_layer_nums = block_z_locs_solved;
         }
+    }
+
+    // Pre-compute the timing connection weights. They are constant for the whole
+    // B2B loop below, so this avoids recomputing them on every bound update.
+    if (pre_cluster_timing_manager_.is_valid() && iteration != 0) {
+        compute_timing_conn_weights();
     }
 
     // Run the B2B solver using p_placement as a starting point.
@@ -642,7 +782,7 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     // Store the solved solutions for the next iteration.
     block_x_locs_solved = p_placement.block_x_locs;
     block_y_locs_solved = p_placement.block_y_locs;
-    if (is_multi_die()) {
+    if (has_multiple_layers()) {
         block_z_locs_solved = p_placement.block_layer_nums;
     }
 }
@@ -682,7 +822,7 @@ void B2BSolver::initialize_placement_least_dense(PartialPlacement& p_placement) 
     for (APBlockId blk_id : disconnected_blocks_) {
         p_placement.block_x_locs[blk_id] = device_grid_width_ / 2.0;
         p_placement.block_y_locs[blk_id] = device_grid_height_ / 2.0;
-        if (is_multi_die()) {
+        if (has_multiple_layers()) {
             p_placement.block_layer_nums[blk_id] = (device_grid_num_layers_ - 1) / 2.0;
         }
     }
@@ -699,7 +839,7 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
         APBlockId blk_id = row_id_to_blk_id_[row_id];
         x_guess(row_id_idx) = p_placement.block_x_locs[blk_id];
         y_guess(row_id_idx) = p_placement.block_y_locs[blk_id];
-        if (is_multi_die()) {
+        if (has_multiple_layers()) {
             z_guess(row_id_idx) = p_placement.block_layer_nums[blk_id];
         }
     }
@@ -716,41 +856,35 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
     //         the bounds are likely to have changed after step 2.
     // We stop when it looks like the placement is converging (the change in
     // HPWL is sufficiently small for a few iterations).
-    double prev_hpwl = std::numeric_limits<double>::max();
+    // Seeding the convergence check with the HPWL of the incoming placement.
+    double prev_hpwl = p_placement.get_hpwl(netlist_);
     double curr_hpwl = prev_hpwl;
     unsigned num_convergence = 0;
     for (unsigned counter = 0; counter < max_num_bound_updates_; counter++) {
-        VTR_LOGV(log_verbosity_ >= 10,
-                 "\tPlacement HPWL in b2b loop: %f\n",
-                 p_placement.get_hpwl(netlist_));
+        // prev_hpwl is the HPWL of the placement currently in p_placement.
+        VTR_LOGV(log_verbosity_ >= 10, "\tPlacement HPWL in b2b loop: %f\n", prev_hpwl);
 
         // Set up the linear system, including anchor points.
         float build_linear_system_start_time = runtime_timer.elapsed_sec();
         init_linear_system(p_placement, iteration);
-        if (iteration != 0)
-            update_linear_system_with_anchors(iteration);
         total_time_spent_building_linear_system_ += runtime_timer.elapsed_sec() - build_linear_system_start_time;
         VTR_ASSERT_SAFE_MSG(!b_x.hasNaN(), "b_x has NaN!");
         VTR_ASSERT_SAFE_MSG(!b_y.hasNaN(), "b_y has NaN!");
         VTR_ASSERT_SAFE_MSG((b_x.array() >= 0).all(), "b_x has NaN!");
         VTR_ASSERT_SAFE_MSG((b_y.array() >= 0).all(), "b_y has NaN!");
 
-        // Build the solvers for each dimension.
-        // Note: Since we have two different connectivity matrices, we need to
-        //       different CG solver objects.
+        // Solve the linear system of each dimension.
         float solve_linear_system_start_time = runtime_timer.elapsed_sec();
-        Eigen::VectorXd x = solve_linear_system(A_sparse_x, b_x, x_guess);
-        Eigen::VectorXd y = solve_linear_system(A_sparse_y, b_y, y_guess);
+        Eigen::VectorXd x;
+        Eigen::VectorXd y;
         Eigen::VectorXd z;
-        if (is_multi_die()) {
-            z = solve_linear_system(A_sparse_z, b_z, z_guess);
-        }
+        solve_linear_systems(x_guess, y_guess, z_guess, x, y, z);
         total_time_spent_solving_linear_system_ += runtime_timer.elapsed_sec() - solve_linear_system_start_time;
 
         // Save the result into the partial placement object.
         store_solution_into_placement(x, p_placement.block_x_locs, device_grid_width_);
         store_solution_into_placement(y, p_placement.block_y_locs, device_grid_height_);
-        if (is_multi_die()) {
+        if (has_multiple_layers()) {
             store_solution_into_placement(z, p_placement.block_layer_nums, device_grid_num_layers_);
         }
 
@@ -774,7 +908,7 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
         // Update the guesses with the most recent answer
         x_guess = x;
         y_guess = y;
-        if (is_multi_die()) {
+        if (has_multiple_layers()) {
             z_guess = z;
         }
     }
@@ -787,7 +921,7 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
         for (APBlockId blk_id : disconnected_blocks_) {
             p_placement.block_x_locs[blk_id] = device_grid_width_ / 2.0;
             p_placement.block_y_locs[blk_id] = device_grid_height_ / 2.0;
-            if (is_multi_die()) {
+            if (has_multiple_layers()) {
                 p_placement.block_layer_nums[blk_id] = (device_grid_num_layers_ - 1) / 2.0;
             }
         }
@@ -797,7 +931,7 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
         for (APBlockId blk_id : disconnected_blocks_) {
             p_placement.block_x_locs[blk_id] = block_x_locs_legalized[blk_id];
             p_placement.block_y_locs[blk_id] = block_y_locs_legalized[blk_id];
-            if (is_multi_die()) {
+            if (has_multiple_layers()) {
                 p_placement.block_layer_nums[blk_id] = block_z_locs_legalized[blk_id];
             }
         }
@@ -806,7 +940,8 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
 
 Eigen::VectorXd B2BSolver::solve_linear_system(Eigen::SparseMatrix<double>& A,
                                                Eigen::VectorXd& b,
-                                               Eigen::VectorXd& guess) {
+                                               Eigen::VectorXd& guess,
+                                               unsigned& num_cg_iters) {
     // Set up the system of equation solver.
     Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg;
     cg.compute(A);
@@ -814,13 +949,51 @@ Eigen::VectorXd B2BSolver::solve_linear_system(Eigen::SparseMatrix<double>& A,
 
     // Solve.
     cg.setMaxIterations(max_cg_iterations_);
+    cg.setTolerance(cg_convergence_tolerance_);
     Eigen::VectorXd solution = cg.solveWithGuess(b, guess);
 
-    // Collect some metrics.
-    total_num_cg_iters_ += cg.iterations();
-    VTR_LOGV(log_verbosity_ >= 20, "\t\tNum CG iter: %zu\n", cg.iterations());
+    num_cg_iters = cg.iterations();
 
     return solution;
+}
+
+void B2BSolver::solve_linear_systems(Eigen::VectorXd& x_guess,
+                                     Eigen::VectorXd& y_guess,
+                                     Eigen::VectorXd& z_guess,
+                                     Eigen::VectorXd& x,
+                                     Eigen::VectorXd& y,
+                                     Eigen::VectorXd& z) {
+    unsigned x_cg_iters = 0;
+    unsigned y_cg_iters = 0;
+    unsigned z_cg_iters = 0;
+
+    if (!solve_systems_concurrently_) {
+        // Solve the systems one after the other, each using every thread.
+        x = solve_linear_system(A_sparse_x, b_x, x_guess, x_cg_iters);
+        y = solve_linear_system(A_sparse_y, b_y, y_guess, y_cg_iters);
+        if (has_multiple_layers()) {
+            z = solve_linear_system(A_sparse_z, b_z, z_guess, z_cg_iters);
+        }
+    } else {
+        // Solve the systems at the same time. The y and z systems are solved
+        // on the thread pool, each on its own thread.
+        VTR_ASSERT(thread_pool_.has_value());
+        thread_pool_->schedule_work([&]() {
+            y = solve_linear_system(A_sparse_y, b_y, y_guess, y_cg_iters);
+        });
+        if (has_multiple_layers()) {
+            thread_pool_->schedule_work([&]() {
+                z = solve_linear_system(A_sparse_z, b_z, z_guess, z_cg_iters);
+            });
+        }
+        // The x system is solved on the calling thread.
+        x = solve_linear_system(A_sparse_x, b_x, x_guess, x_cg_iters);
+
+        thread_pool_->wait_for_all();
+    }
+
+    total_num_cg_iters_ += x_cg_iters + y_cg_iters + z_cg_iters;
+    VTR_LOGV(log_verbosity_ >= 20, "\t\tNum CG iter: x=%u y=%u z=%u\n", x_cg_iters, y_cg_iters, z_cg_iters);
 }
 
 namespace {
@@ -932,6 +1105,7 @@ void B2BSolver::add_connection_to_system(APBlockId first_blk_id,
                                          double net_w,
                                          const vtr::vector<APBlockId, double>& blk_locs,
                                          std::vector<Eigen::Triplet<double>>& triplet_list,
+                                         std::vector<double>& matrix_diagonal,
                                          Eigen::VectorXd& b) {
     // To make the code below simpler, we assume that the first block is always
     // moveable.
@@ -956,15 +1130,18 @@ void B2BSolver::add_connection_to_system(APBlockId first_blk_id,
 
     // Update the connectivity matrix and the constant vector.
     // This is similar to how connections are added for the quadratic formulation.
+    // Diagonal contributions are accumulated in a dense vector instead of being
+    // emitted as triplets. This roughly halves the number of triplets that
+    // setFromTriplets must sort and merge when the matrix is assembled.
     size_t first_row_id = (size_t)blk_id_to_row_id_[first_blk_id];
     if (netlist_.block_mobility(second_blk_id) == APBlockMobility::MOVEABLE) {
         size_t second_row_id = (size_t)blk_id_to_row_id_[second_blk_id];
-        triplet_list.emplace_back(first_row_id, first_row_id, w);
-        triplet_list.emplace_back(second_row_id, second_row_id, w);
+        matrix_diagonal[first_row_id] += w;
+        matrix_diagonal[second_row_id] += w;
         triplet_list.emplace_back(first_row_id, second_row_id, -w);
         triplet_list.emplace_back(second_row_id, first_row_id, -w);
     } else {
-        triplet_list.emplace_back(first_row_id, first_row_id, w);
+        matrix_diagonal[first_row_id] += w;
         b(first_row_id) += w * blk_locs[second_blk_id];
     }
 }
@@ -1109,10 +1286,10 @@ std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId dri
     // can be implemented, which it currently does).
     t_physical_tile_loc driver_block_loc(block_x_locs_legalized[driver_blk],
                                          block_y_locs_legalized[driver_blk],
-                                         is_multi_die() ? block_z_locs_legalized[driver_blk] : 0);
+                                         has_multiple_layers() ? block_z_locs_legalized[driver_blk] : 0);
     t_physical_tile_loc sink_block_loc(block_x_locs_legalized[sink_blk],
                                        block_y_locs_legalized[sink_blk],
-                                       is_multi_die() ? block_z_locs_legalized[sink_blk] : 0);
+                                       has_multiple_layers() ? block_z_locs_legalized[sink_blk] : 0);
 
     // Get the delay of a wire going from the given driver block location to the
     // given sink block location.
@@ -1125,7 +1302,7 @@ std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId dri
     float d_delay_x = get_central_difference(driver_block_loc, sink_block_loc, current_edge_delay, CentralDifferenceDim::X);
     float d_delay_y = get_central_difference(driver_block_loc, sink_block_loc, current_edge_delay, CentralDifferenceDim::Y);
     float d_delay_z = 0.0;
-    if (is_multi_die()) {
+    if (has_multiple_layers()) {
         d_delay_z = get_central_difference(driver_block_loc, sink_block_loc, current_edge_delay, CentralDifferenceDim::Layer);
     }
 
@@ -1142,7 +1319,7 @@ std::tuple<double, double, double> B2BSolver::get_delay_normalization_facs(APBlo
     // of the driver block to try and estimate the delay from that block type.
     t_physical_tile_loc driver_block_loc(block_x_locs_legalized[driver_blk],
                                          block_y_locs_legalized[driver_blk],
-                                         is_multi_die() ? block_z_locs_legalized[driver_blk] : 0);
+                                         has_multiple_layers() ? block_z_locs_legalized[driver_blk] : 0);
 
     // Get the delay of exiting the block in each dimension. We pick the nearest
     // neighbor that stays on the device, or 0 if the dimension is one tile wide.
@@ -1176,7 +1353,7 @@ std::tuple<double, double, double> B2BSolver::get_delay_normalization_facs(APBlo
         norm_fac_inv_y = 1.0;
 
     double norm_fac_inv_z = 1.0;
-    if (is_multi_die()) {
+    if (has_multiple_layers()) {
         int dlayer = pick_step(driver_block_loc.layer_num, device_grid_num_layers_);
         norm_fac_inv_z = place_delay_model_->delay(driver_block_loc,
                                                    0 /*from_pin*/,
@@ -1206,27 +1383,91 @@ std::tuple<double, double, double> B2BSolver::get_delay_normalization_facs(APBlo
     return std::make_tuple(1.0 / norm_fac_inv_x, 1.0 / norm_fac_inv_y, 1.0 / norm_fac_inv_z);
 }
 
+void B2BSolver::compute_timing_conn_weights() {
+    timing_conn_weights_.resize(netlist_.pins().size());
+
+    for (APNetId net_id : netlist_.nets()) {
+        if (netlist_.net_is_ignored(net_id))
+            continue;
+
+        APPinId driver_pin = netlist_.net_driver(net_id);
+        APBlockId driver_blk = netlist_.pin_block(driver_pin);
+
+        // The normalization factors depend only on the driver block, so they
+        // are computed once for the whole net rather than once per sink.
+        auto [delay_x_norm, delay_y_norm, delay_z_norm] = get_delay_normalization_facs(driver_blk);
+
+        for (APPinId sink_pin : netlist_.net_sinks(net_id)) {
+            APBlockId sink_blk = netlist_.pin_block(sink_pin);
+
+            // Get the instantaneous derivative of delay at the given distance
+            // from driver to sink. This will provide a value which is higher
+            // if the tradeoff between delay and wirelength is better, and
+            // lower when the tradeoff between delay and wirelength is worse.
+            auto [d_delay_x, d_delay_y, d_delay_z] = get_delay_derivative(driver_blk,
+                                                                          sink_blk);
+
+            // Since the delay between two blocks may not monotonically increase
+            // (it may go down with distance due to different length wires), it
+            // is possible for the derivative of delay to be negative. The weight
+            // terms in this formulation should not be negative to prevent infinite
+            // answers. To prevent this, clamp the derivative to 0.
+            // TODO: If this is negative, it means that the sink should try to move
+            //       away from the driver. Perhaps add an anchor point to pull the
+            //       sink away.
+            d_delay_x = std::max(d_delay_x, 0.0);
+            d_delay_y = std::max(d_delay_y, 0.0);
+            d_delay_z = std::max(d_delay_z, 0.0);
+
+            // Get the criticality of this timing edge from driver to sink.
+            double crit = pre_cluster_timing_manager_.get_timing_info().setup_pin_criticality(netlist_.pin_atom_pin(sink_pin));
+
+            // Set the weight of the connection from driver to sink equal to:
+            //      weight_tradeoff_terms * (1 + crit) * d_delay * delay_norm
+            // The intuition is that we want the solver to shrink the distance
+            // from drivers to sinks (which would improve timing) for edges
+            // with the best tradeoff between delay and wire, with a focus
+            // on the more critical edges.
+            // The ap_timing_tradeoff serves to trade-off between the wirelength
+            // and timing net weights. The net weights are the general net weights
+            // based on prior knowledge about the nets.
+            double timing_net_w = ap_timing_tradeoff_ * net_weights_[net_id] * timing_slope_fac_ * (1.0 + crit);
+
+            // The units for delay are in seconds; however the units for
+            // the wirelength term are in tiles. To ensure the units match,
+            // the normalization factors above remove the time units.
+            timing_conn_weights_[sink_pin] = std::make_tuple(timing_net_w * d_delay_x * delay_x_norm,
+                                                             timing_net_w * d_delay_y * delay_y_norm,
+                                                             timing_net_w * d_delay_z * delay_z_norm);
+        }
+    }
+}
+
 void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned iteration) {
     // Reset the linear system
     A_sparse_x = Eigen::SparseMatrix<double>(num_moveable_blocks_, num_moveable_blocks_);
     A_sparse_y = Eigen::SparseMatrix<double>(num_moveable_blocks_, num_moveable_blocks_);
     b_x = Eigen::VectorXd::Zero(num_moveable_blocks_);
     b_y = Eigen::VectorXd::Zero(num_moveable_blocks_);
-    if (is_multi_die()) {
+    if (has_multiple_layers()) {
         A_sparse_z = Eigen::SparseMatrix<double>(num_moveable_blocks_, num_moveable_blocks_);
         b_z = Eigen::VectorXd::Zero(num_moveable_blocks_);
     }
 
-    // Create triplet lists to store the sparse positions to update and reserve
-    // space for them.
-    size_t total_num_pins_in_netlist = netlist_.pins().size();
-    std::vector<Eigen::Triplet<double>> triplet_list_x;
-    triplet_list_x.reserve(total_num_pins_in_netlist);
-    std::vector<Eigen::Triplet<double>> triplet_list_y;
-    triplet_list_y.reserve(total_num_pins_in_netlist);
-    std::vector<Eigen::Triplet<double>> triplet_list_z;
-    if (is_multi_die()) {
-        triplet_list_z.reserve(total_num_pins_in_netlist);
+    // The triplet lists hold the off-diagonal entries of the matrices. The
+    // diagonal entries are accumulated in dense vectors and appended later.
+    // NOTE: These are daata members, so their memory is reused between calls
+    //       (they are reserved in the constructor).
+    //       They must be cleared before any triplets are added below.
+    triplet_list_x_.clear();
+    triplet_list_y_.clear();
+    triplet_list_z_.clear();
+
+    std::vector<double> matrix_diagonal_x(num_moveable_blocks_, 0.0);
+    std::vector<double> matrix_diagonal_y(num_moveable_blocks_, 0.0);
+    std::vector<double> matrix_diagonal_z;
+    if (has_multiple_layers()) {
+        matrix_diagonal_z.assign(num_moveable_blocks_, 0.0);
     }
 
     for (APNetId net_id : netlist_.nets()) {
@@ -1256,25 +1497,25 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         for (APPinId pin_id : netlist_.net_pins(net_id)) {
             APBlockId blk_id = netlist_.pin_block(pin_id);
             if (blk_id != net_bounds.max_x_blk && blk_id != net_bounds.min_x_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
-                add_connection_to_system(blk_id, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
+                add_connection_to_system(blk_id, net_bounds.max_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x_, matrix_diagonal_x, b_x);
+                add_connection_to_system(blk_id, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x_, matrix_diagonal_x, b_x);
             }
             if (blk_id != net_bounds.max_y_blk && blk_id != net_bounds.min_y_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
-                add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
+                add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y_, matrix_diagonal_y, b_y);
+                add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y_, matrix_diagonal_y, b_y);
             }
-            if (is_multi_die() && blk_id != net_bounds.max_z_blk && blk_id != net_bounds.min_z_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z, b_z);
-                add_connection_to_system(blk_id, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z, b_z);
+            if (has_multiple_layers() && blk_id != net_bounds.max_z_blk && blk_id != net_bounds.min_z_blk) {
+                add_connection_to_system(blk_id, net_bounds.max_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z_, matrix_diagonal_z, b_z);
+                add_connection_to_system(blk_id, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z_, matrix_diagonal_z, b_z);
             }
         }
 
         // Connect the bounds to each other. Its just easier to put these here
         // instead of in the for loop above.
-        add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
-        add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
-        if (is_multi_die()) {
-            add_connection_to_system(net_bounds.max_z_blk, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z, b_z);
+        add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x_, matrix_diagonal_x, b_x);
+        add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y_, matrix_diagonal_y, b_y);
+        if (has_multiple_layers()) {
+            add_connection_to_system(net_bounds.max_z_blk, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z_, matrix_diagonal_z, b_z);
         }
 
         // ====================================================================
@@ -1293,73 +1534,56 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
             for (APPinId sink_pin : netlist_.net_sinks(net_id)) {
                 APBlockId sink_blk = netlist_.pin_block(sink_pin);
 
-                // Get the instantaneous derivative of delay at the given distance
-                // from driver to sink. This will provide a value which is higher
-                // if the tradeoff between delay and wirelength is better, and
-                // lower when the tradeoff between delay and wirelength is worse.
-                auto [d_delay_x, d_delay_y, d_delay_z] = get_delay_derivative(driver_blk,
-                                                                              sink_blk);
-
-                // Since the delay between two blocks may not monotonically increase
-                // (it may go down with distance due to different length wires), it
-                // is possible for the derivative of delay to be negative. The weight
-                // terms in this formulation should not be negative to prevent infinite
-                // answers. To prevent this, clamp the derivative to 0.
-                // TODO: If this is negative, it means that the sink should try to move
-                //       away from the driver. Perhaps add an anchor point to pull the
-                //       sink away.
-                d_delay_x = std::max(d_delay_x, 0.0);
-                d_delay_y = std::max(d_delay_y, 0.0);
-                d_delay_z = std::max(d_delay_z, 0.0);
-
-                // The units for delay are in seconds; however the units for
-                // the wirelength term are in tiles. To ensure the units match,
-                // we need to normalize away the time units. Get normalization
-                // factors to remove the time units.
-                auto [delay_x_norm, delay_y_norm, delay_z_norm] = get_delay_normalization_facs(driver_blk);
-
-                // Get the criticality of this timing edge from driver to sink.
-                double crit = pre_cluster_timing_manager_.get_timing_info().setup_pin_criticality(netlist_.pin_atom_pin(sink_pin));
-
-                // Set the weight of the connection from driver to sink equal to:
-                //      weight_tradeoff_terms * (1 + crit) * d_delay * delay_norm
-                // The intuition is that we want the solver to shrink the distance
-                // from drivers to sinks (which would improve timing) for edges
-                // with the best tradeoff between delay and wire, with a focus
-                // on the more critical edges.
-                // The ap_timing_tradeoff serves to trade-off between the wirelength
-                // and timing net weights. The net weights are the general net weights
-                // based on prior knowledge about the nets.
-                double timing_net_w = ap_timing_tradeoff_ * net_weights_[net_id] * timing_slope_fac_ * (1.0 + crit);
+                const auto& [timing_conn_w_x, timing_conn_w_y, timing_conn_w_z] = timing_conn_weights_[sink_pin];
 
                 add_connection_to_system(driver_blk, sink_blk,
-                                         2 /*num_pins*/, timing_net_w * d_delay_x * delay_x_norm,
-                                         p_placement.block_x_locs, triplet_list_x, b_x);
+                                         2 /*num_pins*/, timing_conn_w_x,
+                                         p_placement.block_x_locs, triplet_list_x_, matrix_diagonal_x, b_x);
 
                 add_connection_to_system(driver_blk, sink_blk,
-                                         2 /*num_pins*/, timing_net_w * d_delay_y * delay_y_norm,
-                                         p_placement.block_y_locs, triplet_list_y, b_y);
+                                         2 /*num_pins*/, timing_conn_w_y,
+                                         p_placement.block_y_locs, triplet_list_y_, matrix_diagonal_y, b_y);
 
-                if (is_multi_die()) {
+                if (has_multiple_layers()) {
                     add_connection_to_system(driver_blk, sink_blk,
-                                             2 /*num_pins*/, timing_net_w * d_delay_z * delay_z_norm,
-                                             p_placement.block_layer_nums, triplet_list_z, b_z);
+                                             2 /*num_pins*/, timing_conn_w_z,
+                                             p_placement.block_layer_nums, triplet_list_z_, matrix_diagonal_z, b_z);
                 }
             }
         }
     }
 
+    if (iteration != 0) {
+        update_linear_system_with_anchors(iteration, matrix_diagonal_x, matrix_diagonal_y, matrix_diagonal_z);
+    }
+
+    // Append the accumulated diagonal entries as one triplet per row.
+    for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
+        if (matrix_diagonal_x[row_id_idx] != 0.0) {
+            triplet_list_x_.emplace_back(row_id_idx, row_id_idx, matrix_diagonal_x[row_id_idx]);
+        }
+        if (matrix_diagonal_y[row_id_idx] != 0.0) {
+            triplet_list_y_.emplace_back(row_id_idx, row_id_idx, matrix_diagonal_y[row_id_idx]);
+        }
+        if (has_multiple_layers() && matrix_diagonal_z[row_id_idx] != 0.0) {
+            triplet_list_z_.emplace_back(row_id_idx, row_id_idx, matrix_diagonal_z[row_id_idx]);
+        }
+    }
+
     // Build the sparse connectivity matrices from the triplets.
-    A_sparse_x.setFromTriplets(triplet_list_x.begin(), triplet_list_x.end());
-    A_sparse_y.setFromTriplets(triplet_list_y.begin(), triplet_list_y.end());
-    if (is_multi_die()) {
-        A_sparse_z.setFromTriplets(triplet_list_z.begin(), triplet_list_z.end());
+    A_sparse_x.setFromTriplets(triplet_list_x_.begin(), triplet_list_x_.end());
+    A_sparse_y.setFromTriplets(triplet_list_y_.begin(), triplet_list_y_.end());
+    if (has_multiple_layers()) {
+        A_sparse_z.setFromTriplets(triplet_list_z_.begin(), triplet_list_z_.end());
     }
 }
 
 // This function adds anchors for legalized solution. Anchors are treated as fixed node,
 // each connecting to a movable node. Number of nodes in a anchor net is always 2.
-void B2BSolver::update_linear_system_with_anchors(unsigned iteration) {
+void B2BSolver::update_linear_system_with_anchors(unsigned iteration,
+                                                  std::vector<double>& matrix_diagonal_x,
+                                                  std::vector<double>& matrix_diagonal_y,
+                                                  std::vector<double>& matrix_diagonal_z) {
     VTR_ASSERT_SAFE_MSG(iteration != 0,
                         "no fixed solution to anchor to in the first iteration");
     // Get the anchor weight based on the iteration number. We want the anchor
@@ -1373,14 +1597,14 @@ void B2BSolver::update_linear_system_with_anchors(unsigned iteration) {
         APBlockId blk_id = row_id_to_blk_id_[row_id];
         double pseudo_w_x = coeff_pseudo_anchor * 2.0;
         double pseudo_w_y = coeff_pseudo_anchor * 2.0;
-        A_sparse_x.coeffRef(row_id_idx, row_id_idx) += pseudo_w_x;
-        A_sparse_y.coeffRef(row_id_idx, row_id_idx) += pseudo_w_y;
+        matrix_diagonal_x[row_id_idx] += pseudo_w_x;
+        matrix_diagonal_y[row_id_idx] += pseudo_w_y;
         b_x(row_id_idx) += pseudo_w_x * block_x_locs_legalized[blk_id];
         b_y(row_id_idx) += pseudo_w_y * block_y_locs_legalized[blk_id];
 
-        if (is_multi_die()) {
+        if (has_multiple_layers()) {
             double pseudo_w_z = coeff_pseudo_anchor * 2.0;
-            A_sparse_z.coeffRef(row_id_idx, row_id_idx) += pseudo_w_z;
+            matrix_diagonal_z[row_id_idx] += pseudo_w_z;
             b_z(row_id_idx) += pseudo_w_z * block_z_locs_legalized[blk_id];
         }
     }

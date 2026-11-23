@@ -92,6 +92,14 @@ int get_simple_switch_block_track(const enum e_side from_side,
     /* This routine returns the track number to which the from_tracks should     *
      * connect.  It supports three simple, Fs = 3, switch blocks.               */
 
+    // Only SUBSET/WILTON/UNIVERSAL/FULL are handled below; CUSTOM switch blocks are
+    // built through a separate path (alloc_and_load_switchblock_permutations), and
+    // UNKNOWN should never survive past architecture parsing.
+    VTR_ASSERT(switch_block_type == e_switch_block_type::SUBSET
+               || switch_block_type == e_switch_block_type::WILTON
+               || switch_block_type == e_switch_block_type::UNIVERSAL
+               || switch_block_type == e_switch_block_type::FULL);
+
     int to_track = -1; // Can check to see if it's not set later.
 
     if (switch_block_type == e_switch_block_type::SUBSET) { /* NB:  Global routing uses SUBSET too */

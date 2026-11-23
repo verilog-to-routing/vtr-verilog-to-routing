@@ -8,13 +8,16 @@
  */
 
 #include <memory>
+#include <optional>
 #include <tuple>
 #include "ap_flow_enums.h"
 #include "ap_netlist.h"
 #include "device_grid.h"
 #include "physical_types.h"
 #include "place_delay_model.h"
+#include "vtr_assert.h"
 #include "vtr_strong_id.h"
+#include "vtr_thread_pool.h"
 #include "vtr_vector.h"
 
 #ifdef EIGEN_INSTALLED
@@ -164,6 +167,10 @@ class AnalyticalSolver {
 
     /// @brief The verbosity of log messages in the Analytical Solver.
     int log_verbosity_;
+
+    /// @brief Thread pool that inheriting classes may use to parallelize
+    ///        linear system construction and solving.
+    std::optional<vtr::thread_pool> thread_pool_;
 };
 
 /**
@@ -177,6 +184,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                          float ap_timing_tradeoff,
                                                          unsigned num_threads,
+                                                         e_ap_solver_threading solver_threading,
                                                          int log_verbosity);
 
 /**
@@ -334,6 +342,20 @@ class QPHybridSolver : public AnalyticalSolver {
                                            unsigned iteration);
 
     /**
+     * @brief Solves the linear system Ax = b with CG, starting from the guess.
+     *
+     * The number of CG iterations used is written to num_cg_iters. This method
+     * touches no shared state so it can run on several threads at once.
+     *
+     *  @return True if the solver succeeded.
+     */
+    bool solve_linear_system(const Eigen::SparseMatrix<double>& A,
+                             const Eigen::VectorXd& b,
+                             const Eigen::VectorXd& guess,
+                             Eigen::VectorXd& solution,
+                             unsigned& num_cg_iters);
+
+    /**
      * @brief Store the x and y solutions in Eigen's vectors into the partial
      *        placement object.
      */
@@ -369,6 +391,10 @@ class QPHybridSolver : public AnalyticalSolver {
     /// @brief The total number of CG iterations this solver has performed so far.
     unsigned total_num_cg_iters_ = 0;
 
+    /// @brief If true, the x and y linear systems are solved at the same time.
+    ///        Otherwise they are solved one after the other.
+    bool solve_systems_concurrently_;
+
   public:
     /**
      * @brief Constructor of the QPHybridSolver
@@ -380,12 +406,24 @@ class QPHybridSolver : public AnalyticalSolver {
                    const AtomNetlist& atom_netlist,
                    const PreClusterTimingManager& pre_cluster_timing_manager,
                    float ap_timing_tradeoff,
+                   bool solve_systems_concurrently,
                    int log_verbosity)
         : AnalyticalSolver(netlist,
                            atom_netlist,
                            device_grid,
                            ap_timing_tradeoff,
-                           log_verbosity) {
+                           log_verbosity)
+        , solve_systems_concurrently_(solve_systems_concurrently) {
+        // This solver only solves for the x and y dimensions.
+        VTR_ASSERT_MSG(device_grid.get_num_layers() == 1,
+                       "The QP Hybrid solver does not support multi-layer devices");
+
+        // The calling thread solves the x system, so the pool only needs one
+        // thread for the y system.
+        if (solve_systems_concurrently_) {
+            thread_pool_.emplace(1);
+        }
+
         // Update the net weights. These net weights are used when the linear
         // system is initialized.
         update_net_weights(pre_cluster_timing_manager);
@@ -513,6 +551,15 @@ class B2BSolver : public AnalyticalSolver {
     // TODO: Should this be a proportion of the design size?
     static constexpr unsigned max_cg_iterations_ = 100;
 
+    /// @brief The relative residual (|Ax - b| / |b|) at which the CG solver is
+    ///        considered converged and stops iterating. Eigen's default
+    ///        tolerance is machine epsilon, which CG rarely reaches in
+    ///        practice; at that default, every solve runs all
+    ///        max_cg_iterations_ iterations, long after the solution has become
+    ///        accurate enough for global placement to use.
+    /// Increasing this number will save runtime at the expense of quality.
+    static constexpr double cg_convergence_tolerance_ = 1e-5;
+
     // The following constants are used to configure the anchor weighting.
     // The weights of anchors grow exponentially each iteration by the following
     // function:
@@ -540,14 +587,8 @@ class B2BSolver : public AnalyticalSolver {
               const PreClusterTimingManager& pre_cluster_timing_manager,
               std::shared_ptr<PlaceDelayModel> place_delay_model,
               float ap_timing_tradeoff,
-              int log_verbosity)
-        : AnalyticalSolver(ap_netlist,
-                           atom_netlist,
-                           device_grid,
-                           ap_timing_tradeoff,
-                           log_verbosity)
-        , pre_cluster_timing_manager_(pre_cluster_timing_manager)
-        , place_delay_model_(place_delay_model) {}
+              bool solve_systems_concurrently,
+              int log_verbosity);
 
     /**
      * @brief Perform an iteration of the B2B solver, storing the result into
@@ -634,9 +675,10 @@ class B2BSolver : public AnalyticalSolver {
      *      The number of pins in the hypernet connecting the two blocks.
      *  @param blk_locs
      *      The location of all blocks in a given dimension.
-     *  @param triplet_list
-     *      The triplet list which will be used to construct the connectivity
-     *      matrix for this dimension.
+     *  @param triplet_list The triplet list which will be used to construct
+     *      the off-diagonal entries of the connectivity matrix for this dimension.
+     *  @param matrix_diagonal Dense accumulator (indexed by row) for the
+     *      diagonal entries of the connectivity matrix for this dimension.
      *  @param b
      *      The constant vector for this dimension.
      */
@@ -646,6 +688,7 @@ class B2BSolver : public AnalyticalSolver {
                                   double net_w,
                                   const vtr::vector<APBlockId, double>& blk_locs,
                                   std::vector<Eigen::Triplet<double>>& triplet_list,
+                                  std::vector<double>& matrix_diagonal,
                                   Eigen::VectorXd& b);
 
     enum class CentralDifferenceDim {
@@ -713,6 +756,19 @@ class B2BSolver : public AnalyticalSolver {
     std::tuple<double, double, double> get_delay_normalization_facs(APBlockId driver_blk);
 
     /**
+     * @brief Pre-computes the timing connection weight of every sink pin into
+     *        timing_conn_weights_.
+     *
+     * The weights depend only on the legalized placement and the timing
+     * information, both fixed for the duration of a solve() call, so they are
+     * computed once here instead of once per bound update.
+     *
+     * Must be called after the legalized placement has been stored into
+     * block_*_locs_legalized and before the B2B loop is run.
+     */
+    void compute_timing_conn_weights();
+
+    /**
      * @brief Initializes the linear system with the given partial placement.
      *
      * Blocks will be connected to the bounding blocks of their nets using
@@ -721,23 +777,50 @@ class B2BSolver : public AnalyticalSolver {
      * approximates a linear equation.
      *
      * This will set the connectivity matrices (A) and constant vectors (b) to
-     * be solved by B2B.
+     * be solved by B2B. After the first iteration, this also folds the
+     * anchor-block connections into the system.
      */
     void init_linear_system(PartialPlacement& p_placement, unsigned iteration);
 
     /**
      * @brief Updates the linear system with anchor-blocks from the legalized
      *        solution.
+     *
+     * Anchors connect each moveable block to a fixed point, so they only add
+     * to the matrix diagonals (accumulated in the given dense vectors) and
+     * the constant vectors.
      */
-    void update_linear_system_with_anchors(unsigned iteration);
+    void update_linear_system_with_anchors(unsigned iteration,
+                                           std::vector<double>& matrix_diagonal_x,
+                                           std::vector<double>& matrix_diagonal_y,
+                                           std::vector<double>& matrix_diagonal_z);
 
     /**
      * @brief Solves the linear system of equations using the connectivity
      *        matrix (A), the constant vector (b), and a guess for the solution.
+     *
+     * The number of CG iterations used is written to num_cg_iters. This method
+     * touches no shared state so it can run on several threads at once.
      */
     Eigen::VectorXd solve_linear_system(Eigen::SparseMatrix<double>& A,
                                         Eigen::VectorXd& b,
-                                        Eigen::VectorXd& guess);
+                                        Eigen::VectorXd& guess,
+                                        unsigned& num_cg_iters);
+
+    /**
+     * @brief Solves the x, y, and (if multi-layer) z linear systems, storing the
+     *        results in x, y, and z.
+     *
+     * Whether the systems are solved at the same time (threads divided evenly
+     * between them) or one after the other (each using every thread) is
+     * decided by solve_systems_concurrently_.
+     */
+    void solve_linear_systems(Eigen::VectorXd& x_guess,
+                              Eigen::VectorXd& y_guess,
+                              Eigen::VectorXd& z_guess,
+                              Eigen::VectorXd& x,
+                              Eigen::VectorXd& y,
+                              Eigen::VectorXd& z);
 
     /**
      * @brief Store the solutions from the linear system into the partial
@@ -761,12 +844,21 @@ class B2BSolver : public AnalyticalSolver {
 
     /**
      * @brief Does the FPGA that the AP flow is currently targeting have more
-     *        than one die. Having multiple dies would imply that the solver
-     *        needs to add another dimension to solve for.
+     *        than one layer. Having multiple layers means the solver needs to
+     *        solve for the z dimension as well.
      */
-    inline bool is_multi_die() const {
+    inline bool has_multiple_layers() const {
         return device_grid_num_layers_ > 1;
     }
+
+    /// @brief Off-diagonal entries of each dimension's connectivity matrix while
+    ///        it is being assembled. Kept as members so their buffers are reused
+    ///        across bound updates instead of reallocated on each one. They are
+    ///        reserved in the constructor and cleared at the start of each call
+    ///        to init_linear_system.
+    std::vector<Eigen::Triplet<double>> triplet_list_x_;
+    std::vector<Eigen::Triplet<double>> triplet_list_y_;
+    std::vector<Eigen::Triplet<double>> triplet_list_z_;
 
     // The following are variables used to store the system of equations to be
     // solved in the x and y dimensions. The equations are of the form:
@@ -804,6 +896,11 @@ class B2BSolver : public AnalyticalSolver {
     // NOTE: For speed, this vector is unused if a device has only one die.
     vtr::vector<APBlockId, double> block_z_locs_legalized;
 
+    /// @brief The timing connection weight of each sink pin in the netlist, in
+    ///        the x, y, and z dimensions respectively. Recomputed once per
+    ///        solve() call by compute_timing_conn_weights().
+    vtr::vector<APPinId, std::tuple<double, double, double>> timing_conn_weights_;
+
     /// @brief The total number of CG iterations that this solver has performed
     ///        so far. This can be a useful metric for the amount of work the
     ///        solver performs.
@@ -827,6 +924,10 @@ class B2BSolver : public AnalyticalSolver {
     /// @brief The place delay model used for calculating the delay between
     ///        two tiles on the FPGA. Used for computing the timing terms.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
+
+    /// @brief If true, the per dimension linear systems are solved at the same
+    ///        time. Otherwise they are solved one after the other.
+    bool solve_systems_concurrently_;
 };
 
 #endif // EIGEN_INSTALLED

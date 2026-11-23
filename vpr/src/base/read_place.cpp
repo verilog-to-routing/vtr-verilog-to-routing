@@ -1,5 +1,4 @@
 #include <cstdio>
-#include <cstring>
 #include <fstream>
 
 #include "vtr_util.h"
@@ -382,8 +381,8 @@ std::string print_place(const char* net_file,
             if (!is_place_file && (block_locs[blk_id].loc.x == INVALID_X)) {
                 continue;
             }
-            fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_pb(blk_id)->name);
-            if (strlen(cluster_ctx.clb_nlist.block_pb(blk_id)->name) < 8)
+            fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_pb(blk_id)->name.c_str());
+            if (cluster_ctx.clb_nlist.block_pb(blk_id)->name.size() < 8)
                 fprintf(fp, "\t");
 
             fprintf(fp, "%d\t%d\t%d\t%d",

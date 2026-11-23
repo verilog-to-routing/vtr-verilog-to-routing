@@ -18,7 +18,7 @@
  *   2. ``libs/EXTERNAL/libezgl/src/control.cpp`` — the free
  *      ``ezgl::zoom_in / zoom_out / zoom_fit / translate*`` helpers
  *      bound to the toolbar Zoom/Pan buttons. Each rewrites
- *      ``canvas::camera::world`` and triggers a ``redraw_camera_only``.
+ *      ``canvas::camera::world`` and triggers a ``redraw_at_view_change``.
  *      A regression in the zoom-around-point math (different
  *      formula for the four corners) leaves the user unable to
  *      zoom into a specific feature; a sign error in
@@ -62,7 +62,7 @@
 // File-scope ``application`` pointer in vpr/src/draw/draw.cpp; buttons.cpp
 // reads it as ``application->find_widget("InnerGrid")``. The fixture
 // guarantees ``test_app()`` is non-null, but draw.cpp's own pointer is
-// only initialised by ``vpr_init_graphics`` (gated on ``--disp on``),
+// only initialised by ``init_graphics`` (gated on ``--disp on``),
 // so we wire it for the duration of each test.
 namespace ezgl {
 class application;
@@ -325,7 +325,7 @@ TEST_CASE("Control: zoom_in around an explicit point keeps that point fixed",
     // so the resulting rectangle depends on the widget mapping. We
     // assert only the invariant that the world rectangle changes
     // (zoom occurred) and remains finite — locking the entry-point
-    // and dispatch into ``redraw_camera_only`` without depending on
+    // and dispatch into ``redraw_at_view_change`` without depending on
     // the offscreen canvas size.
     ezgl::zoom_in(cnv, ezgl::point2d{10.0, 10.0}, /*zoom_factor=*/2.0);
 

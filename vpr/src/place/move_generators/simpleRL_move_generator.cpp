@@ -31,6 +31,14 @@ void SimpleRLMoveGenerator::process_outcome(double reward, e_reward_function rew
     karmed_bandit_agent->process_outcome(reward, reward_fun);
 }
 
+void SimpleRLMoveGenerator::copy_state_from(const MoveGenerator& other) {
+    // Callers always pass a generator of the same concrete type,
+    // and this runs once per sync rather than per move, so the cost is negligible.
+    const SimpleRLMoveGenerator* other_rl = dynamic_cast<const SimpleRLMoveGenerator*>(&other);
+    VTR_ASSERT_MSG(other_rl != nullptr, "Can only copy agent state from another SimpleRLMoveGenerator.");
+    karmed_bandit_agent->copy_state_from(*other_rl->karmed_bandit_agent);
+}
+
 /*                                        *
  *                                        *
  *  K-Armed bandit agent implementation   *
@@ -164,6 +172,15 @@ void KArmedBanditAgent::write_agent_info(int last_action, double reward) {
     fflush(agent_info_file_);
 }
 
+void KArmedBanditAgent::copy_state_from(const KArmedBanditAgent& other) {
+    VTR_ASSERT_SAFE(num_available_actions_ == other.num_available_actions_);
+    VTR_ASSERT_SAFE(q_.size() == other.q_.size());
+
+    exp_alpha_ = other.exp_alpha_;
+    q_ = other.q_;
+    num_action_chosen_ = other.num_action_chosen_;
+}
+
 void KArmedBanditAgent::set_step(float gamma, int move_lim) {
     if (gamma < 0) {
         exp_alpha_ = -1; //Use sample average
@@ -213,10 +230,10 @@ void EpsilonGreedyAgent::init_q_scores_() {
     num_action_chosen_ = std::vector<size_t>(num_available_actions_, 0);
     cumm_epsilon_action_prob_ = std::vector<float>(num_available_actions_, 1.0 / (num_available_actions_));
 
-    //agent_info_file_ = vtr::fopen("agent_info.txt", "w");
-    //write agent internal q-table and actions into file for debugging purposes
+    // agent_info_file_ = vtr::fopen("agent_info.txt", "w");
+    // write agent internal q-table and actions into file for debugging purposes
     if (agent_info_file_) {
-        //we haven't performed any moves yet, hence last_aciton and reward are 0
+        // we haven't performed any moves yet, hence last_action and reward are 0
         write_agent_info(0, 0);
     }
 
@@ -321,7 +338,7 @@ void SoftmaxAgent::init_q_scores_(const std::vector<int>& num_movable_blocks_per
     //    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
     //write agent internal q-table and actions into file for debugging purposes
     if (agent_info_file_) {
-        //we haven't performed any moves yet, hence last_aciton and reward are 0
+        // we haven't performed any moves yet, hence last_action and reward are 0
         write_agent_info(0, 0);
     }
 

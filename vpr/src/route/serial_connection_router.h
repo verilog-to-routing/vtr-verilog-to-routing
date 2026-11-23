@@ -15,7 +15,7 @@ class SerialConnectionRouter : public ConnectionRouter<HeapImplementation> {
         const RouterLookahead& router_lookahead,
         const t_rr_graph_storage& rr_nodes,
         const RRGraphView* rr_graph,
-        const std::vector<t_rr_rc_data>& rr_rc_data,
+        const RRRCData& rr_rc_data,
         const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
         vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
         bool is_flat,
@@ -44,7 +44,7 @@ class SerialConnectionRouter : public ConnectionRouter<HeapImplementation> {
         ::reset_path_costs(this->modified_rr_node_inf_);
         // Reset the node (RCV-related) info stored inside the connection router
         if (this->rcv_path_manager.is_enabled()) {
-            for (const auto& node : this->modified_rr_node_inf_) {
+            for (RRNodeId node : this->modified_rr_node_inf_) {
                 this->rcv_path_data[node] = nullptr;
             }
         }
@@ -245,7 +245,7 @@ std::unique_ptr<ConnectionRouterInterface> make_serial_connection_router(
     const RouterLookahead& router_lookahead,
     const t_rr_graph_storage& rr_nodes,
     const RRGraphView* rr_graph,
-    const std::vector<t_rr_rc_data>& rr_rc_data,
+    const RRRCData& rr_rc_data,
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
     vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
     bool is_flat,

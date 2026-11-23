@@ -316,7 +316,7 @@ void ParallelConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExpl
     // BB-pruning
     // Disable BB-pruning if RCV is enabled, as this can make it harder for circuits with high negative hold slack to resolve this
     // TODO: Only disable pruning if the net has negative hold slack, maybe go off budgets
-    if (!inside_bb(to_node, bounding_box)) {
+    if (!inside_bb(this->rr_nodes_, to_node, bounding_box)) {
         // Note: Logging are disabled for parallel connection router
         return; /* Node is outside (expanded) bounding box. */
     }
@@ -363,7 +363,10 @@ void ParallelConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost
                                                                const RREdgeId from_edge,
                                                                RRNodeId target_node,
                                                                size_t thread_idx) {
-    const RRNodeId& from_node = current.index;
+    const RRNodeId from_node = current.index;
+
+    // TODO: Port the pre-evaluation prune from SerialConnectionRouter::timing_driven_add_to_heap.
+    // Split evaluate_timing_driven_node_costs() into its backward-costs and total-cost halves.
 
     // Initialize the neighbor RTExploredNode
     RTExploredNode next;
@@ -416,8 +419,8 @@ void ParallelConnectionRouter<Heap>::add_route_tree_node_to_heap(
     float backward_path_cost = cost_params.criticality * rt_node.Tdel;
     float R_upstream = rt_node.R_upstream;
 
-    /* Don't push to heap if not in bounding box: no-op for serial router, important for parallel router */
-    if (!inside_bb(rt_node.inode, net_bb))
+    // Don't push to heap if not in bounding box: no-op for serial router, important for parallel router
+    if (!inside_bb(this->rr_nodes_, rt_node.inode, net_bb))
         return;
 
     // After budgets are loaded, calculate delay cost as described by RCV paper
@@ -451,7 +454,7 @@ std::unique_ptr<ConnectionRouterInterface> make_parallel_connection_router(e_hea
                                                                            const RouterLookahead& router_lookahead,
                                                                            const t_rr_graph_storage& rr_nodes,
                                                                            const RRGraphView* rr_graph,
-                                                                           const std::vector<t_rr_rc_data>& rr_rc_data,
+                                                                           const RRRCData& rr_rc_data,
                                                                            const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
                                                                            vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
                                                                            bool is_flat,

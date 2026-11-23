@@ -1052,7 +1052,7 @@ struct ArchReader {
         // TODO: Make this dynamic depending on data from the interchange
         auto EMPTY = get_empty_logical_type();
         EMPTY.index = index;
-        ltypes_.push_back(EMPTY);
+        ltypes_.push_back(std::move(EMPTY));
 
         for (auto site : siteTypeList) {
             auto bels = site.getBels();
@@ -1156,7 +1156,7 @@ struct ArchReader {
             }
 
             process_interconnects(mode, site);
-            ltypes_.push_back(ltype);
+            ltypes_.push_back(std::move(ltype));
         }
     }
 
@@ -2122,7 +2122,7 @@ struct ArchReader {
             count++;
         }
 
-        ltypes_.push_back(block);
+        ltypes_.push_back(std::move(block));
     }
 
     /** @brief Creates the models corresponding to the constant cells that are used in a given interchange device */
@@ -2393,7 +2393,7 @@ struct ArchReader {
             as->Cin = Cin;
             as->Cout = Cout;
             as->Cinternal = Cint;
-            as->set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel);
+            as->set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel, Tdel);
 
             if (as->type() == e_switch_type::SHORT || as->type() == e_switch_type::PASS_GATE) {
                 as->buf_size_type = e_buffer_size::ABSOLUTE;

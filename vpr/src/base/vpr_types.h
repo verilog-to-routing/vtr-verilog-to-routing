@@ -15,7 +15,7 @@
  * An understanding of libarchfpga/physical_types.h is crucial to understanding this file.  physical_types.h contains information about the architecture described in the architecture description language
  *
  * Key data structures:
- * t_rr_node - The basic building block of the interconnect in the FPGA architecture
+ * RRGraphView (librrgraph) - The routing resource graph, the basic building block of the interconnect in the FPGA architecture
  *
  * Cluster-specific main data structure:
  * t_pb: Stores the mapping between the user netlist and the logic blocks on the FPGA architecture.  For example, if a user design has 10 clusters of 5 LUTs each, you will have 10 t_pb instances of type cluster and within each of those clusters another 5 t_pb instances of type LUT.
@@ -24,8 +24,10 @@
 
 #include <vector>
 #include <set>
+#include <string>
 #include <string_view>
 #include "ap_flow_enums.h"
+#include "appack_gain_attenuation_fn_type.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
 #include "constant_nets.h"
@@ -39,6 +41,7 @@
 #include "rr_graph_fwd.h"
 #include "rr_graph_cost.h"
 #include "rr_graph_type.h"
+#include "tatum/report/TimingPathCategory.hpp"
 
 /*******************************************************************************
  * Global data types and constants
@@ -57,14 +60,6 @@
 
 //#define VERBOSE //Prints additional intermediate data
 
-/*
- * We need to define the maximum number of layers to address a specific issue.
- * For certain data structures, such as `num_sink_pin_layer` in the placer context, dynamically allocating
- * memory based on the number of layers can lead to a performance hit due to additional pointer chasing and
- * cache locality concerns. Defining a constant variable helps optimize the memory allocation process.
- */
-constexpr int MAX_NUM_LAYERS = 2;
-
 /**
  * @brief For update_screen. Denotes importance of update.
  *
@@ -74,6 +69,20 @@ constexpr int MAX_NUM_LAYERS = 2;
 enum class ScreenUpdatePriority {
     MINOR = 0,
     MAJOR = 1
+};
+
+/**
+ * @brief How often interactive graphics pause for the user (--graphics_pause).
+ *
+ * Set with --graphics_pause (every_update, major, final_stage, never). The values are
+ * ordered against ScreenUpdatePriority: an update pauses when
+ * int(priority) >= int(mode), except for FINAL_STAGE, which has its own rule.
+ */
+enum class e_graphics_pause {
+    EVERY_UPDATE = 0,  ///<Pause on every update, including MINOR ones (e.g. each temperature)
+    MAJOR_UPDATES = 1, ///<Pause on MAJOR updates only
+    FINAL_STAGE = 2,   ///<Skip graphics until the last requested stage completes, then pause once
+    NEVER = 3          ///<Never pause
 };
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
@@ -109,6 +118,8 @@ enum class e_router_lookahead {
     EXTENDED_MAP,
     ///@brief Simple distance-based lookahead
     SIMPLE,
+    ///@brief Lookahead which treats the x and y components of a route as separable
+    SEPARABLE,
     ///@brief A no-operation lookahead which always returns zero
     NO_OP
 };
@@ -155,6 +166,14 @@ enum class e_cluster_seed {
     MAX_PINS,
     MAX_INPUT_PINS,
     BLEND2
+};
+
+/// @brief Estimate of the remaining cost to the sink that orders the cluster router search.
+enum class e_cluster_router_lookahead {
+    /// @brief Order by the cost of the path so far only.
+    NONE,
+    /// @brief Add a lower bound from the fewest edges to the sink.
+    HOPS
 };
 
 struct t_ext_pin_util {
@@ -233,7 +252,6 @@ class t_pack_high_fanout_thresholds {
 };
 
 /* these are defined later, but need to declare here because it is used */
-class t_rr_node;
 struct t_pb_stats;
 struct t_pb_route;
 
@@ -255,7 +273,7 @@ typedef vtr::flat_map2<int, t_pb_route> t_pb_routes;
  */
 class t_pb {
   public:
-    char* name = nullptr;                     ///<Name of this physical block
+    std::string name;                         ///<Name of this physical block. Empty if the block is unused.
     t_pb_graph_node* pb_graph_node = nullptr; ///<pointer to pb_graph_node this pb corresponds to
 
     int mode = 0; ///<mode that this pb is set to
@@ -445,30 +463,6 @@ struct t_bb {
     int ymax = UNDEFINED;
     int layer_min = UNDEFINED;
     int layer_max = UNDEFINED;
-};
-
-/**
- * @brief Stores a 2D bounding box in terms of the minimum and maximum x and y
- * @note layer_num indicates the layer that the bounding box is on.
- */
-struct t_2D_bb {
-    t_2D_bb() = default;
-    t_2D_bb(int xmin_, int xmax_, int ymin_, int ymax_, int layer_num_)
-        : xmin(xmin_)
-        , xmax(xmax_)
-        , ymin(ymin_)
-        , ymax(ymax_)
-        , layer_num(layer_num_) {
-        VTR_ASSERT(xmax_ >= xmin_);
-        VTR_ASSERT(ymax_ >= ymin_);
-        VTR_ASSERT(layer_num_ >= 0);
-    }
-
-    int xmin = UNDEFINED;
-    int xmax = UNDEFINED;
-    int ymin = UNDEFINED;
-    int ymax = UNDEFINED;
-    int layer_num = UNDEFINED;
 };
 
 /**
@@ -683,14 +677,18 @@ struct t_file_name_opts {
     std::string read_flat_place_file;
     std::string write_flat_place_file;
     std::string write_legalized_flat_place_file;
+    std::string write_post_gp_flat_place_file;
     std::string write_block_usage;
     bool verify_file_digests;
+    ///@brief How much annotation to write into flat placement files.
+    int flat_place_verbosity;
 };
 
 ///@brief Options for netlist loading
 struct t_netlist_opts {
     e_const_gen_inference const_gen_inference = e_const_gen_inference::COMB;
     bool absorb_buffer_luts = true;
+    bool merge_constant_generators = true;
     bool sweep_dangling_primary_ios = true;
     bool sweep_dangling_blocks = true;
     bool sweep_dangling_nets = true;
@@ -800,6 +798,7 @@ struct t_packer_opts {
     bool use_ram_mapper;
     bool memoize_cluster_packings;
     bool cluster_router_hot_start;
+    e_cluster_router_lookahead cluster_router_lookahead;
     bool enable_pin_feasibility_filter;
     e_balance_block_type_util balance_block_type_utilization;
     std::vector<std::string> target_external_pin_util;
@@ -854,12 +853,6 @@ enum class e_place_algorithm {
     BOUNDING_BOX_PLACE,
     CRITICALITY_TIMING_PLACE,
     SLACK_TIMING_PLACE
-};
-
-enum class e_place_bounding_box_mode {
-    AUTO_BB,
-    CUBE_BB,
-    PER_LAYER_BB
 };
 
 /**
@@ -975,6 +968,48 @@ enum class e_place_delta_delay_algorithm {
     DIJKSTRA_EXPANSION,
 };
 
+enum class e_interposer_net_cost_type {
+    /// Net cost is delta_x * #vertical_interposer_crossings + delta_y * #horizontal_interposer_crossings.
+    /// The intuition behind this cost is to bring interposer-crossing nets closer and minimize interposer
+    /// crossings.
+    MINIMIZE_INTERPOSER_CROSSING_BB,
+    /// Net cost is |delta_x - vertical_interposer_seg_length| * #vertical_interposer_crossings +
+    ///             |delta_y - horizontal_interposer_seg_length| * #horizontal_interposer_crossings.
+    /// The intuition behind this cost is to keep nets that cross an interposer cut
+    /// one interposer segment away to avoid extra intra-die routing.
+    INTERPOSER_WIRE_AWARE_CROSSING_BB,
+    /// Two-stage cost mode. By default starts at MINIMIZE_INTERPOSER_CROSSING_BB and switches to
+    /// INTERPOSER_WIRE_AWARE_CROSSING_BB mid anneal.
+    TWO_STAGE
+};
+
+struct t_interposer_cost_params {
+    /// Unitless scaling for interposer crossing cost after normalization. Additive in the total cost.
+    /// Valid range is from 0 to infinity, with 0 completely ignoring the term and infinity completely
+    /// dominating all other terms. Setting this to 1 would make this term roughly as important as the
+    /// timing and wiring cost.
+    float net_cost_factor;
+    /// Formula used for interposer crossing cost; two-stage mode can switch formulas during placement.
+    e_interposer_net_cost_type net_cost_type;
+
+    /// Formula used before the two-stage interposer cost model switches.
+    e_interposer_net_cost_type two_stage_net_cost_first_stage_type;
+    /// Formula used after the two-stage interposer cost model switches.
+    e_interposer_net_cost_type two_stage_net_cost_second_stage_type;
+    /// Maximum recent cost deviation threshold used to switch the two-stage interposer cost model.
+    /// A value of 0.01 means that when the last 10 interposer costs have less than 1% deviation from
+    /// mean, we change the cost term from the first stage to the second stage.
+    float net_cost_change_threshold;
+
+    /// Interposer-cut congestion threshold; penalize only demand above this value (0 disables).
+    /// For example, if set to 0.9, we only add the interposer congestion cost term when we approximate
+    /// that more than 90% of interposer wires in a channel will be used.
+    float cong_cost_threshold;
+    /// Unitless scaling factor for interposer congestion after normalization. Valid range and reasonable
+    /// values are the same as 'net_cost_factor'.
+    float cong_cost_factor;
+};
+
 /**
  * @brief Enumeration of the different initial temperature estimators available
  *        for the placer.
@@ -1010,14 +1045,8 @@ struct t_placer_opts {
     /// are predicted to face some congestion in the routing stage.
     float congestion_chan_util_threshold;
 
-    /// Unitless scaling for interposer crossing cost after normalization. Tune like \c timing_tradeoff, which sets timing
-    /// versus wirelength emphasis: after normalization, similar numeric ranges apply so this term can be weighed against
-    /// those objectives. Zero disables. Additive in the total cost.
-    float interposer_cost_factor;
-    /// Interposer-cut congestion threshold; penalize only demand above this value (0 disables).
-    float interposer_cong_threshold;
-    /// Unitless scaling for interposer congestion after normalization. Comparable in tuning to \c congestion_factor.
-    float interposer_cong_factor;
+    /// Interposer-related placement cost parameters
+    t_interposer_cost_params interposer_cost_params;
 
     /// The channel width assumed if only one placement is performed.
     int place_chan_width;
@@ -1066,6 +1095,12 @@ struct t_placer_opts {
 
     int placement_saves_per_temperature;
 
+    /// Number of workers used to speculatively evaluate placement swaps in parallel
+    /// (1 = sequential annealer). The annealing thread is worker 0, so W workers
+    /// spawn W-1 threads. Always >= 1 here; 0 is resolved to the host concurrency
+    /// during setup.
+    int swap_eval_num_workers;
+
     e_place_effort_scaling effort_scaling;
 
     e_timing_update_type timing_update_type;
@@ -1094,8 +1129,6 @@ struct t_placer_opts {
     bool place_checkpointing;
 
     int place_high_fanout_net;
-
-    e_place_bounding_box_mode place_bounding_box_mode;
 
     e_agent_algorithm place_agent_algorithm;
 
@@ -1138,6 +1171,12 @@ struct t_placer_opts {
     float place_auto_init_t_scale;
 
     e_anneal_init_t_estimator anneal_init_t_estimator;
+
+    /// @brief Returns true if the anneal or quench algorithm reads setup slacks.
+    bool uses_setup_slacks() const {
+        return place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE
+               || place_quench_algorithm == e_place_algorithm::SLACK_TIMING_PLACE;
+    }
 };
 
 /******************************************************************
@@ -1151,8 +1190,15 @@ struct t_ap_opts {
     /// True if analytical placement is supposed to be done in the CAD flow. False if otherwise.
     e_stage_action doAP;
 
+    /// True if the AP flow should stop after Global Placement (i.e. skip full
+    /// legalization and detailed placement). This is set by --global_place.
+    bool stop_after_global_placement;
+
     /// The type of analytical solver the Global Placer in the AP flow will use.
     e_ap_analytical_solver analytical_solver_type;
+
+    /// How the analytical solver uses its threads across the per dimension linear systems.
+    e_ap_solver_threading solver_threading;
 
     /// The type of partial legalizer the Global Placer in the AP flow will use.
     e_ap_partial_legalizer partial_legalizer_type;
@@ -1181,6 +1227,9 @@ struct t_ap_opts {
     /// Multiplier applied to APPack candidate gains when the candidate is on a
     /// different die than the cluster in an interposer-based architecture.
     float appack_inter_die_gain_multiplier;
+
+    /// The candidate gain attenuation function used by APPack.
+    e_appack_gain_attenuation_fn_type appack_gain_attenuation_fn;
 
     /// The number of threads the AP flow can use.
     unsigned num_threads;
@@ -1214,7 +1263,8 @@ enum e_routing_budgets_algorithm {
     MINIMAX, // Use MINIMAX-PERT algorithm to allocate budgets
     YOYO,    // Use MINIMAX as above, and enable RCV algorithm to resolve negative hold slack
     SCALE_DELAY,
-    DISABLE // Do not allocate budgets and run default router
+    LOW_SKEW_CLOCK, // Sets budgets on clock connections to the max clock delay to reduce clock skew, and enables RCV. Non-clock connections are left unconstrained (shortest path).
+    DISABLE         // Do not allocate budgets and run default router
 };
 
 enum class e_timing_report_detail {
@@ -1327,6 +1377,7 @@ struct t_router_opts {
     /// the configuration to be used by the routing failure predictor,
     /// how aggressive the threshold used to judge and abort routings deemed unroutable
     e_routing_failure_predictor routing_failure_predictor;
+    int routing_predictor_min_history;
     e_routing_budgets_algorithm routing_budgets_algorithm;
     bool save_routing_per_iteration;
     float congested_routing_iteration_threshold_frac;
@@ -1375,7 +1426,7 @@ struct t_router_opts {
     bool verify_route_file_switch_id;
 
     /// Options related to rr_node reordering, for testing and possible cache optimization
-    e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
+    e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = e_rr_node_reorder_algorithm::DONT_REORDER;
     int reorder_rr_graph_nodes_threshold = 0;
     int reorder_rr_graph_nodes_seed = 1;
 
@@ -1401,6 +1452,9 @@ struct t_analysis_opts {
     int timing_report_npaths;
     e_timing_report_detail timing_report_detail;
     bool timing_report_skew;
+    /// @brief The categories of timing paths (e.g. reg2reg) included in the timing and skew reports.
+    ///        This only filters the reported paths; it does not affect the slack or criticality calculations.
+    tatum::TimingPathCategoryFilter timing_report_path_categories;
     std::string echo_dot_timing_graph_node;
     std::string write_timing_summary;
     bool generate_net_timing_report;
@@ -1424,7 +1478,6 @@ struct t_crr_opts {
     std::string sb_templates;
     bool annotated_rr_graph;
     bool remove_dangling_nodes;
-    std::string sb_count_dir;
     e_gsb_version gsb_version;
 };
 
@@ -1599,8 +1652,6 @@ struct t_power_opts {
     bool do_power; ///<Perform power estimation?
 };
 
-struct t_lb_type_rr_node; /* Defined in pack_types.h */
-
 /// @brief Stores settings for VPR server mode
 struct t_server_opts {
     bool is_server_mode_enabled = false;
@@ -1609,24 +1660,23 @@ struct t_server_opts {
 
 ///@brief Store settings for VPR
 struct t_vpr_setup {
-    bool TimingEnabled;             ///<Is VPR timing enabled
-    t_file_name_opts FileNameOpts;  ///<File names
-    t_netlist_opts NetlistOpts;     ///<Options for packer
-    t_packer_opts PackerOpts;       ///<Options for packer
-    t_placer_opts PlacerOpts;       ///<Options for placer
-    t_ap_opts APOpts;               ///<Options for analytical placer
-    t_router_opts RouterOpts;       ///<router options
-    t_analysis_opts AnalysisOpts;   ///<Analysis options
-    t_crr_opts CRROpts;             ///<CRR options
-    t_noc_opts NocOpts;             ///<Options for the NoC
-    t_server_opts ServerOpts;       ///<Server options
-    t_det_routing_arch RoutingArch; ///<routing architecture
-    std::vector<t_lb_type_rr_node>* PackerRRGraph;
+    bool TimingEnabled;                  ///<Is VPR timing enabled
+    t_file_name_opts FileNameOpts;       ///<File names
+    t_netlist_opts NetlistOpts;          ///<Options for packer
+    t_packer_opts PackerOpts;            ///<Options for packer
+    t_placer_opts PlacerOpts;            ///<Options for placer
+    t_ap_opts APOpts;                    ///<Options for analytical placer
+    t_router_opts RouterOpts;            ///<router options
+    t_analysis_opts AnalysisOpts;        ///<Analysis options
+    t_crr_opts CRROpts;                  ///<CRR options
+    t_noc_opts NocOpts;                  ///<Options for the NoC
+    t_server_opts ServerOpts;            ///<Server options
+    t_det_routing_arch RoutingArch;      ///<routing architecture
     std::vector<t_segment_inf> Segments; ///<wires in routing architecture
     t_timing_inf Timing;                 ///<timing information
     float constant_net_delay;            ///<timing information when place and route not run
     bool ShowGraphics;                   ///<option to show graphics
-    int GraphPause;                      ///<user interactiveness graphics option
+    e_graphics_pause GraphPause;         ///<user interactiveness graphics option
     bool SaveGraphics;                   ///<option to save graphical contents to pdf, png, or svg
     std::string GraphicsCommands;        ///<commands to control graphics settings
     std::string RendererType;            ///<rendering backend: "immediate" (SW QPainter, no batching; most

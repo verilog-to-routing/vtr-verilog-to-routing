@@ -168,7 +168,7 @@ class PlacerTimingCosts {
      *        in the face of modified connection costs.
      */
     double total_cost() {
-        float cost = total_cost_recurr(0); //Root
+        double cost = total_cost_recurr(0); // Root
 
         VTR_ASSERT_DEBUG_MSG(cost == total_cost_from_scratch(0),
                              "Expected incremental and from-scratch costs to be consistent");

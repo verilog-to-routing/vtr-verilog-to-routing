@@ -10,6 +10,7 @@
 #include "physical_types.h"
 #include "place_macro.h"
 #include "user_place_constraints.h"
+#include "user_relative_macros.h"
 #include "user_route_constraints.h"
 #include "vpr_types.h"
 #include "vtr_cache.h"
@@ -19,8 +20,9 @@
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "rr_graph_view.h"
+#include "rr_rc_data.h"
 #include "rr_graph_builder.h"
-#include "rr_node.h"
+#include "rr_graph_cost.h"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingConstraints.hpp"
 #include "power.h"
@@ -29,6 +31,7 @@
 #include "clock_network_builders.h"
 #include "clock_connection_builders.h"
 #include "route_tree.h"
+#include "bus_mux_route_types.h"
 #include "router_lookahead.h"
 #include "compressed_grid.h"
 #include "noc_storage.h"
@@ -214,6 +217,14 @@ struct DeviceContext : public Context {
     ///@brief chan_width is for x|y-directed channels; i.e. between rows
     t_chan_width chan_width;
 
+    /**
+     * @brief The channel width that was requested the last time the RR graph was (re)built.
+     *
+     * May be different than chan_width above since some architectures add to the requested
+     * channel width (for example, dedicated clock networks).
+     */
+    t_chan_width requested_chan_width;
+
     /*
      * Structures to define the routing architecture of the FPGA.
      */
@@ -221,13 +232,20 @@ struct DeviceContext : public Context {
     vtr::vector<RRIndexedDataId, t_rr_indexed_data> rr_indexed_data; // [0 .. num_rr_indexed_data-1]
 
     ///@brief Fly-weighted Resistance/Capacitance data for RR Nodes
-    std::vector<t_rr_rc_data> rr_rc_data;
+    RRRCData rr_rc_data;
 
     ///@brief Sets of non-configurably connected nodes
     std::vector<std::vector<RRNodeId>> rr_non_config_node_sets;
 
     ///@brief Reverse look-up from RR node to non-configurably connected node set (index into rr_non_config_node_sets)
     std::unordered_map<RRNodeId, int> rr_node_to_non_config_node_set;
+
+    /// @brief Bus-based mux instances of the intra-cluster rr graph. Empty unless flat
+    ///        routing is enabled and the architecture has <mux bus="true">.
+    vtr::vector<BusMuxId, t_rr_bus_mux> rr_bus_muxes;
+
+    ///@brief Look-up from the output bit of a bus-based mux to the mux and the edges driving the bit
+    std::unordered_map<RRNodeId, t_rr_bus_mux_out_node> rr_bus_mux_out_nodes;
 
     /* A writeable view of routing resource graph to be the ONLY database
      * for routing resource graph builder functions.
@@ -299,10 +317,30 @@ struct DeviceContext : public Context {
      */
     vtr::NdMatrix<std::pair<int, int>, 2> vert_interposer_cut_bounds_;
 
+    /**
+     * @brief Minimum length of all routing wires that cross each horizontal interposer cut.
+     *
+     * Indexed as `[layer][cut_idx]`, where `cut_idx` refers to the entry in
+     * `DeviceGrid::get_horizontal_interposer_cuts()[layer]`.
+     */
+    vtr::NdMatrix<uint16_t, 2> horz_interposer_cut_min_seg_length;
+
+    /**
+     * @brief Minimum length of all routing wires that cross each vertical interposer cut.
+     *
+     * Indexed as `[layer][cut_idx]`, where `cut_idx` refers to the entry in
+     * `DeviceGrid::get_vertical_interposer_cuts()[layer]`.
+     * This is similar to horz_interposer_cut_min_seg_length, but for vertical interposer cuts and wires.
+     */
+    vtr::NdMatrix<uint16_t, 2> vert_interposer_cut_min_seg_length;
+
     /// Stores the maximum channel segment width in each horizontal/vertical channel
     ChannelMetric<std::vector<int>> rr_chan_width;
 
     bool rr_graph_is_flat = false;
+
+    /// Whether each layer has 3D switchblocks i.e. a CHANX/CHANY wire that fans out to a CHANZ wire [0..number_of_layers-1]
+    std::vector<bool> has_3d_switchblocks;
 
     /// @brief Version of the Generic Switch Block used to build the tileable RR graph.
     e_gsb_version gsb_version;
@@ -437,13 +475,10 @@ struct PlacementContext : public Context {
      *        must be called before performing placement, but must be called
      *        after the clusters are loaded.
      *
-     *  @param placer_opts
-     *      The options passed into the placer.
      *  @param directs
      *      A list of the direct connections in the architecture.
      */
-    void init_placement_context(const t_placer_opts& placer_opts,
-                                const std::vector<t_direct_inf>& directs);
+    void init_placement_context(const std::vector<t_direct_inf>& directs);
 
     /**
      * @brief Clean variables from the placement context which are not used
@@ -543,12 +578,6 @@ struct PlacementContext : public Context {
      * placer_debug_net or placer_debug_block parameters in the command line.
      */
     bool f_placer_debug = false;
-
-    /**
-     * Set this variable to true if the type of the bounding box used in placement is of the type cube. If it is false,
-     * it would mean that per-layer bounding box is used. For the 2D architecture, the cube bounding box would be used.
-     */
-    bool cube_bb = false;
 };
 
 /**
@@ -571,9 +600,7 @@ struct RoutingContext : public Context {
 
     vtr::vector<RRNodeId, t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 
-    vtr::vector<ParentNetId, std::vector<std::vector<int>>> net_terminal_groups;
-
-    vtr::vector<ParentNetId, std::vector<int>> net_terminal_group_num;
+    vtr::vector<BusMuxId, t_bus_mux_route_inf> bus_mux_route_inf; ///< Current routing state of each DeviceContext::rr_bus_muxes entry.
 
     /**
      * @brief Information about whether a node is part of a non-configurable set
@@ -672,6 +699,13 @@ struct FloorplanningContext : public Context {
      * The constraints are input into vpr and do not change.
      */
     UserPlaceConstraints constraints;
+
+    /**
+     * @brief Stores user-defined relative placement macros.
+     *
+     * The relative macros are input into vpr and do not change.
+     */
+    UserRelativeMacros relative_macros;
 
     /**
      * @brief Constraints for each cluster

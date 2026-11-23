@@ -2,6 +2,7 @@
 #pragma once
 
 #include "clustered_netlist_fwd.h"
+#include "vtr_vector.h"
 #include "vtr_vector_map.h"
 #include "vpr_types.h"
 #include "grid_block.h"
@@ -44,6 +45,15 @@ class BlkLocRegistry {
 
     ///@brief Clustered pin placement mapping with physical pin
     vtr::vector_map<ClusterPinId, int> physical_pins_;
+
+    /// @brief Location of each clustered pin on the device.
+    /// Updated whenever a block is placed, moved, or unplaced.
+    vtr::vector<ClusterPinId, t_physical_tile_loc> pin_locs_;
+
+    /// @brief Recomputes pin_locs_ for every pin of the given block from its current location.
+    /// @param blk_id The block whose pins are updated.
+    /// @param tile The physical tile type at the block's location.
+    void update_pin_locs_(ClusterBlockId blk_id, t_physical_tile_type_ptr tile);
 
     /// @brief Stores ClusterBlockId of all movable clustered blocks
     /// (blocks that are not locked down to a single location)
@@ -98,7 +108,7 @@ class BlkLocRegistry {
     /**
      * @brief Set chosen grid locations to EMPTY block id before each placement iteration
      *
-     * @param unplaced_blk_types_index Block types that their grid locations must be cleared.
+     * @param unplaced_blk_types_index Logical block types that their grid locations must be cleared.
      */
     void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_blk_types_index);
 
@@ -155,7 +165,7 @@ class BlkLocRegistry {
      * @param pin The unique Id of the cluster pin whose coordinates is desired.
      * @return The coordinates of the given pin.
      */
-    t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin) const;
+    t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin) const { return pin_locs_[pin]; }
 
     enum class e_expected_transaction {
         APPLY,

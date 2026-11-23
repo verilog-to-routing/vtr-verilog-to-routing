@@ -317,7 +317,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // Allocate external data structures
     //  a. cost_index
     //  b. RC tree
-    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, base_cost_type, device_model_warnings);
+    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, base_cost_type, route_verbosity, device_model_warnings);
 
     // Sanitizer for the rr_graph, check connectivities of rr_nodes
     // Essential check for rr_graph, build look-up and
@@ -359,8 +359,7 @@ static void remove_dangling_chan_nodes(const DeviceGrid& grid,
         node_lookup.resize_nodes(grid.get_num_layers(),
                                  grid.width(),
                                  grid.height(),
-                                 rr_type,
-                                 NUM_2D_SIDES);
+                                 rr_type);
     }
 
     // Update other data structures related to lookup after removing dangling chan nodes

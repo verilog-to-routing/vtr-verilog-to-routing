@@ -8,7 +8,7 @@
 #include "move_utils.h"
 #include "net_cost_handler.h"
 
-#include <algorithm>
+#include <tuple>
 
 MedianMoveGenerator::MedianMoveGenerator(PlacerState& placer_state,
                                          const PlaceMacros& place_macros,
@@ -22,11 +22,10 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                                                 float rlim,
                                                 const t_placer_opts& placer_opts,
                                                 const PlacerCriticalities* /*criticalities*/) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& device_ctx = g_vpr_ctx.device();
-    auto& placer_state = placer_state_.get();
-    const auto& block_locs = placer_state.block_locs();
-    const auto& blk_loc_registry = placer_state.blk_loc_registry();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    PlacerState& placer_state = placer_state_.get();
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = placer_state.block_locs();
+    const BlkLocRegistry& blk_loc_registry = placer_state.blk_loc_registry();
 
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
@@ -45,13 +44,14 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         return e_create_move::ABORT;
     }
 
-    const int num_layers = device_ctx.grid.get_num_layers();
-
     t_pl_loc from = block_locs[b_from].loc;
     int from_layer = from.layer;
-    auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from_layer});
+    t_logical_block_type_ptr cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
+    t_physical_tile_type_ptr grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from_layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
+
+    // Layer coordinates only need to be collected when the device has more than one layer
+    const bool is_multi_layer = g_vpr_ctx.device().grid.get_num_layers() > 1;
 
     /* Calculate the median region */
     t_pl_loc to;
@@ -64,7 +64,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     X_coord.clear();
     Y_coord.clear();
     layer_coord.clear();
-    std::vector<int> layer_blk_cnt(num_layers, 0);
 
     //true if the net is a feedback from the block to itself
     bool skip_net;
@@ -87,13 +86,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                 continue;
             }
         } else {
-            t_bb union_bb;
-            const bool cube_bb = g_vpr_ctx.placement().cube_bb;
-            if (!cube_bb) {
-                union_bb = net_cost_handler_.union_2d_bb(net_id);
-            }
-
-            const auto& net_bb_coords = cube_bb ? net_cost_handler_.bb_coords(net_id) : union_bb;
+            const t_bb& net_bb_coords = net_cost_handler_.bb_coords(net_id);
             t_physical_tile_loc old_pin_loc = blk_loc_registry.get_coordinate_of_pin(pin_id);
 
             t_physical_tile_loc new_pin_loc;
@@ -126,33 +119,32 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                     continue;
             }
         }
-        //push the calculated coordinates into X,Y coord vectors
+        // Push the calculated coordinates into X,Y coord vectors
         X_coord.push_back(coords.xmin);
         X_coord.push_back(coords.xmax);
         Y_coord.push_back(coords.ymin);
         Y_coord.push_back(coords.ymax);
-        layer_coord.push_back(coords.layer_min);
-        layer_coord.push_back(coords.layer_max);
+        if (is_multi_layer) {
+            layer_coord.push_back(coords.layer_min);
+            layer_coord.push_back(coords.layer_max);
+        }
     }
 
-    if ((X_coord.empty()) || (Y_coord.empty()) || (layer_coord.empty())) {
-        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord or y_coord or layer_coord are empty\n");
+    // X and Y coordinates are pushed together, so checking X_coord is enough
+    if (X_coord.empty()) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord and Y_coord are empty\n");
         return e_create_move::ABORT;
     }
 
-    //calculate the median region
-    std::stable_sort(X_coord.begin(), X_coord.end());
-    std::stable_sort(Y_coord.begin(), Y_coord.end());
-    std::stable_sort(layer_coord.begin(), layer_coord.end());
-
-    limit_coords.xmin = X_coord[((X_coord.size() - 1) / 2)];
-    limit_coords.xmax = X_coord[((X_coord.size() - 1) / 2) + 1];
-
-    limit_coords.ymin = Y_coord[((Y_coord.size() - 1) / 2)];
-    limit_coords.ymax = Y_coord[((Y_coord.size() - 1) / 2) + 1];
-
-    limit_coords.layer_min = layer_coord[((layer_coord.size() - 1) / 2)];
-    limit_coords.layer_max = layer_coord[((layer_coord.size() - 1) / 2) + 1];
+    // Calculate the median region
+    std::tie(limit_coords.xmin, limit_coords.xmax) = find_middle_pair(X_coord);
+    std::tie(limit_coords.ymin, limit_coords.ymax) = find_middle_pair(Y_coord);
+    if (is_multi_layer) {
+        std::tie(limit_coords.layer_min, limit_coords.layer_max) = find_middle_pair(layer_coord);
+    } else {
+        limit_coords.layer_min = from_layer;
+        limit_coords.layer_max = from_layer;
+    }
 
     //arrange the different range limiters
     t_range_limiters range_limiters{rlim,
@@ -184,8 +176,8 @@ void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_i
                                                               ClusterBlockId moving_block_id,
                                                               bool& skip_net) {
     //TODO: account for multiple physical pin instances per logical pin
-    const auto& blk_loc_registry = placer_state_.get().blk_loc_registry();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const BlkLocRegistry& blk_loc_registry = placer_state_.get().blk_loc_registry();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     /* If the net is only connected to the moving block, it should be skipped.
      * Let's initially assume that the net is only connected to the moving block.
@@ -273,24 +265,8 @@ bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
                                                t_physical_tile_loc old_pin_loc,
                                                t_physical_tile_loc new_pin_loc) {
     //TODO: account for multiple physical pin instances per logical pin
-    t_bb union_bb_edge;
-    t_bb union_bb;
-    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
-    /* Calculating per-layer bounding box is more time-consuming compared to cube bounding box. To speed up
-     * this move, the bounding box used for this move is of the type cube bounding box even if the per-layer
-     * bounding box is used by placement SA engine. 
-     * If per-layer bounding box is used, we take a union of bounding boxes on each layer to make a cube bounding box.
-     * For example, the xmax of this cube bounding box is determined by the maximum x coordinate across all blocks on all layers.
-     */
-    if (!cube_bb) {
-        std::tie(union_bb_edge, union_bb) = net_cost_handler_.union_2d_bb_incr(net_id);
-    }
-
-    /* In this move, we use a 3D bounding box. Thus, if per-layer BB is used by placer, we need to take a union of BBs and use that for the rest of
-     * operations in this move
-     */
-    const t_bb& curr_bb_edge = cube_bb ? net_cost_handler_.bb_num_on_edges(net_id) : union_bb_edge;
-    const t_bb& curr_bb_coord = cube_bb ? net_cost_handler_.bb_coords(net_id) : union_bb;
+    const t_bb& curr_bb_edge = net_cost_handler_.bb_num_on_edges(net_id);
+    const t_bb& curr_bb_coord = net_cost_handler_.bb_coords(net_id);
 
     /* Check if I can update the bounding box incrementally. */
 

@@ -66,5 +66,14 @@ t_wireconn_inf parse_wireconn(pugi::xml_node node,
 /* checks for correctness of switch block read-in from the XML architecture file */
 void check_switchblock(const t_switchblock_inf& sb, const t_arch* arch);
 
-/* returns integer result according to the specified formula and data */
-int get_sb_formula_raw_result(vtr::FormulaParser& formula_parser, const char* formula, const vtr::t_formula_data& mydata);
+/**
+ * @brief Evaluates a switch block permutation formula and returns its integer result.
+ *
+ * @param formula_parser  Parser used to evaluate the formula.
+ * @param formula         Permutation formula string from the architecture file.
+ * @param mydata          Values for the variables referenced by the formula (e.g. W, t).
+ * @return                The evaluated integer result.
+ */
+int get_sb_formula_raw_result(vtr::FormulaParser& formula_parser,
+                              const std::string& formula,
+                              const vtr::t_formula_data& mydata);

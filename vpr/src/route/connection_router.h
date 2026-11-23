@@ -17,8 +17,9 @@
  * When the ConnectionRouter is used, it mutates the provided rr_node_route_inf.
  * The routed path can be found by tracing from the sink node (which is returned)
  * through the rr_node_route_inf. See update_traceback as an example of this tracing.
- *
  */
+
+#include <span>
 
 #include "connection_router_interface.h"
 #include "globals.h"
@@ -42,7 +43,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const RouterLookahead& router_lookahead,
         const t_rr_graph_storage& rr_nodes,
         const RRGraphView* rr_graph,
-        const std::vector<t_rr_rc_data>& rr_rc_data,
+        const RRRCData& rr_rc_data,
         const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
         vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
         bool is_flat,
@@ -51,12 +52,11 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , router_lookahead_(router_lookahead)
         , rr_nodes_(rr_nodes.view())
         , rr_graph_(rr_graph)
-        , rr_rc_data_(rr_rc_data.data(), rr_rc_data.size())
+        , rr_rc_data_(rr_rc_data)
         , rr_switch_inf_(rr_switch_inf.data(), rr_switch_inf.size())
-        , net_terminal_groups(g_vpr_ctx.routing().net_terminal_groups)
-        , net_terminal_group_num(g_vpr_ctx.routing().net_terminal_group_num)
         , rr_node_route_inf_(rr_node_route_inf)
         , is_flat_(is_flat)
+        , has_bus_muxes_(is_flat && !g_vpr_ctx.device().rr_bus_muxes.empty())
         , route_verbosity_(route_verbosity)
         , router_stats_(nullptr)
         , router_debug_(false)
@@ -109,6 +109,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
      * @param cost_params Cost function parameters
      * @param net_bounding_box Keep search confined to this bounding box
      * @param spatial_rt_lookup Route tree spatial lookup
+     * @param has_3d_switchblocks Per-layer flag indicating whether the layer has 3D switch blocks
      * @param router_stats Update router statistics
      * @param conn_params Parameters to guide the routing of the given connection
      * @return A tuple of:
@@ -122,6 +123,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_conn_cost_params& cost_params,
         const t_bb& net_bounding_box,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
+        const std::vector<bool>& has_3d_switchblocks,
         RouterStats& router_stats,
         const ConnectionParameters& conn_params) final;
 
@@ -248,6 +250,11 @@ class ConnectionRouter : public ConnectionRouterInterface {
 
     /**
      * @brief Calculates the cost of reaching to_node
+     * @note Equivalent to evaluate_timing_driven_backward_costs() followed by
+     * evaluate_timing_driven_total_cost(). Callers that prune on the backward
+     * cost alone (e.g. the serial router's pre-push prune when RCV is disabled)
+     * can call the two helpers separately and skip the (expensive) lookahead
+     * evaluation for pruned edges.
      * @param to Neighbor node to calculate costs before being expanded
      * @param cost_params Cost function parameters
      * @param from_node Current node ID being explored
@@ -258,6 +265,35 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_conn_cost_params& cost_params,
         RRNodeId from_node,
         RRNodeId target_node);
+
+    /**
+     * @brief Calculates the backward path cost, R_upstream and delay of
+     * reaching to_node (everything except the lookahead-based total cost)
+     * @param to Neighbor node to calculate costs before being expanded
+     * @param cost_params Cost function parameters
+     * @param from_node Current node ID being explored
+     * @return Tdel of to_node, needed by evaluate_timing_driven_total_cost()
+     */
+    float evaluate_timing_driven_backward_costs(RTExploredNode* to,
+                                                const t_conn_cost_params& cost_params,
+                                                RRNodeId from_node);
+
+    /**
+     * @brief Calculates the total cost of to_node (backward cost + expected
+     * cost to the target, or the RCV cost when RCV is enabled)
+     * @note Must be called after evaluate_timing_driven_backward_costs() has
+     * filled in to's backward_path_cost and R_upstream.
+     * @param to Neighbor node to calculate costs before being expanded
+     * @param cost_params Cost function parameters
+     * @param from_node Current node ID being explored
+     * @param target_node Target node ID to route to
+     * @param Tdel Delay of to_node, returned by evaluate_timing_driven_backward_costs()
+     */
+    void evaluate_timing_driven_total_cost(RTExploredNode* to,
+                                           const t_conn_cost_params& cost_params,
+                                           RRNodeId from_node,
+                                           RRNodeId target_node,
+                                           float Tdel);
 
     /**
      * @brief Evaluate node costs using the RCV algorithm
@@ -296,13 +332,15 @@ class ConnectionRouter : public ConnectionRouterInterface {
      * @param cost_params Cost function parameters
      * @param spatial_route_tree_lookup Route tree spatial lookup
      * @param net_bounding_box Do not push to heap if not in bounding box
+     * @param has_3d_switchblocks Per-layer flag indicating whether the layer has 3D switch blocks
      */
     t_bb add_high_fanout_route_tree_to_heap(
         const RouteTreeNode& rt_root,
         RRNodeId target_node,
         const t_conn_cost_params& cost_params,
         const SpatialRouteTreeLookup& spatial_route_tree_lookup,
-        const t_bb& net_bounding_box);
+        const t_bb& net_bounding_box,
+        const std::vector<bool>& has_3d_switchblocks);
 
     /** Device grid */
     const DeviceGrid& grid_;
@@ -317,22 +355,19 @@ class ConnectionRouter : public ConnectionRouterInterface {
     const RRGraphView* rr_graph_;
 
     /** RR node resistance/capacitance data */
-    vtr::array_view<const t_rr_rc_data> rr_rc_data_;
+    const RRRCData& rr_rc_data_;
 
     /** RR switch data */
-    vtr::array_view<const t_rr_switch_inf> rr_switch_inf_;
-
-    //@{
-    /** Net terminal groups */
-    const vtr::vector<ParentNetId, std::vector<std::vector<int>>>& net_terminal_groups;
-    const vtr::vector<ParentNetId, std::vector<int>>& net_terminal_group_num;
-    //@}
+    std::span<const t_rr_switch_inf> rr_switch_inf_;
 
     /** RR node extra information needed during routing */
     vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_;
 
     /** Is flat router enabled or not? */
     bool is_flat_;
+
+    /** Does the routed architecture have bus-based muxes to negotiate (flat routing only)? */
+    bool has_bus_muxes_;
 
     /** The verbosity of log messages in the router. */
     int route_verbosity_;

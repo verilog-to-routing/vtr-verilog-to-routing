@@ -57,16 +57,14 @@ constexpr vtr::array<e_sw_template_dir, const char*, (size_t)e_sw_template_dir::
  */
 class Connection {
   public:
-    Connection(RRNodeId sink_node, RRNodeId src_node, int delay_ps, std::string sw_template_id) noexcept
+    Connection(RRNodeId sink_node, RRNodeId src_node, int delay_ps) noexcept
         : sink_node_(sink_node)
         , src_node_(src_node)
-        , delay_ps_(delay_ps)
-        , sw_template_id_(std::move(sw_template_id)) {}
+        , delay_ps_(delay_ps) {}
 
     RRNodeId sink_node() const { return sink_node_; }
     RRNodeId src_node() const { return src_node_; }
     int delay_ps() const { return delay_ps_; }
-    const std::string& sw_template_id() const { return sw_template_id_; }
 
     bool operator<(const Connection& other) const noexcept {
         return std::tie(sink_node_, src_node_, delay_ps_) < std::tie(other.sink_node_, other.src_node_, other.delay_ps_);
@@ -80,7 +78,6 @@ class Connection {
     RRNodeId sink_node_;
     RRNodeId src_node_;
     int delay_ps_;
-    std::string sw_template_id_;
 };
 
 // Node hash type for lookups

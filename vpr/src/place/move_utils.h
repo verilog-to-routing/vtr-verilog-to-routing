@@ -4,6 +4,8 @@
 #include "move_transactions.h"
 #include "compressed_grid.h"
 
+#include <cmath>
+
 class PlacerState;
 class BlkLocRegistry;
 class PlaceMacros;
@@ -25,6 +27,27 @@ enum class e_move_result {
     ACCEPTED,
     ABORTED
 };
+
+/// @brief Decides whether a swap is accepted.
+/// @param delta_c Cost change of the swap.
+/// @param t Annealing temperature.
+/// @param draw_rand Returns a uniform random number in [0, 1). Called only for uphill moves.
+template<typename RandFn>
+e_move_result assess_swap(double delta_c, double t, RandFn&& draw_rand) {
+    if (delta_c <= 0) {
+        return e_move_result::ACCEPTED;
+    }
+
+    if (t == 0.) {
+        return e_move_result::REJECTED;
+    }
+
+    float prob_fac = std::exp(-delta_c / t);
+    if (prob_fac > draw_rand()) {
+        return e_move_result::ACCEPTED;
+    }
+    return e_move_result::REJECTED;
+}
 
 //This is to list all the available moves
 enum class e_move_type {
@@ -95,6 +118,17 @@ struct t_range_limiters {
     float dm_rlim;
 };
 
+/**
+ * @brief Tracks the state of a macro swap inversion for cycle detection.
+ */
+struct t_inverted_macro {
+    int imacro;              ///< Index of the macro being moved after the inversion.
+    t_pl_offset offset;      ///< Offset applied to the macro after the inversion.
+    size_t num_moved_blocks; ///< Number of block moves recorded before the inversion.
+
+    bool operator==(const t_inverted_macro&) const = default;
+};
+
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
                           t_pl_loc to,
@@ -121,13 +155,27 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
                                              const BlkLocRegistry& blk_loc_registry,
                                              const PlaceMacros& place_macros);
 
+/**
+ * @brief Records the block moves needed to shift macro imacro_from by swap_offset,
+ *        starting at member imember_from and handling any displaced blocks or macros.
+ *
+ * @param inverted_macros Stack of active macro swap inversions used to detect cycles.
+ *                        Pass an empty vector for the initial call.
+ */
 e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                        const int imacro_from,
                                        int& imember_from,
                                        t_pl_offset swap_offset,
                                        const BlkLocRegistry& blk_loc_registry,
-                                       const PlaceMacros& place_macros);
+                                       const PlaceMacros& place_macros,
+                                       std::vector<t_inverted_macro>& inverted_macros);
 
+/**
+ * @brief Records a swap between macro imacro_from, starting at member imember_from,
+ *        and macro imacro_to, whose member blk_to occupies the destination.
+ *
+ * @param inverted_macros Stack of active macro swap inversions
+ */
 e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                              const int imacro_from,
                                              int& imember_from,
@@ -135,7 +183,8 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
                                              ClusterBlockId blk_to,
                                              t_pl_offset swap_offset,
                                              const BlkLocRegistry& blk_loc_registry,
-                                             const PlaceMacros& pl_macros);
+                                             const PlaceMacros& pl_macros,
+                                             std::vector<t_inverted_macro>& inverted_macros);
 
 e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       std::vector<ClusterBlockId>& displaced_blocks,
@@ -144,6 +193,14 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       const BlkLocRegistry& blk_loc_registry,
                                       const PlaceMacros& place_macros);
 
+/**
+ * @brief Returns the set of macros affected by moving imacro by the specified offset.
+ *
+ * A macro is appended to macros only if it is not already present, so the result
+ * contains no duplicates.
+ *
+ * @return ABORT if a macro member would move to an illegal location, VALID otherwise.
+ */
 e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros,
                                                              const int imacro,
                                                              t_pl_offset swap_offset,
@@ -278,7 +335,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
  */
 bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           const t_pl_loc& from_loc,
-                          const t_pl_loc& centeroid,
+                          const t_pl_loc& centroid,
                           const t_range_limiters& range_limiters,
                           t_pl_loc& to_loc,
                           ClusterBlockId b_from,
@@ -345,8 +402,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
 
 /**
  * @brief Get the the compressed loc from the uncompressed loc (grid_loc)
- * @note This assumes the grid_loc corresponds to a location of the block type that compressed_block_grid stores its
- * compressed location. Otherwise, it would raise an assertion error.
+ * @note grid_loc might not be a compatible type on all layers. For example, while location (2, 5, 0) might be a DSP block, (2, 5, 1) might be a CLB.
+ * In that case, the return vector would contain an invalid t_physical_tile_loc. Callers should check for this.
  * @param compressed_block_grid The class that stores the compressed block grid of the block
  * @param grid_loc The actual location of the block
  * @param num_layers The number of layers (dice) of the FPGA
@@ -425,16 +482,12 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
 
 std::string e_move_result_to_string(e_move_result move_outcome);
 
-/**
- * @brif Iterate over all layers that have a physical tile at the x-y location specified by "loc" that can accommodate "logical_block".
- * If the location in the layer specified by "layer_num" is empty, return that layer. Otherwise,
- * return a layer that is not occupied at that location. If there isn't any, again, return the layer of loc.
- */
-int find_free_layer(t_logical_block_type_ptr logical_block,
-                    const t_pl_loc& loc,
-                    const BlkLocRegistry& blk_loc_registry);
-
 int get_random_layer(t_logical_block_type_ptr logical_block, vtr::RngContainer& rng);
+
+/// @brief Returns the values at indices (n-1)/2 and (n-1)/2 + 1 of coords as if it were sorted.
+/// If coords has one element, both values are that element.
+/// @note The order of coords is changed.
+std::pair<int, int> find_middle_pair(std::vector<int>& coords);
 
 /**
  * @brief If the block ID passed to the placer_debug_net parameter of the command line is equal to blk_id, or if any of the nets

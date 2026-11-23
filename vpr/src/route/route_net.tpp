@@ -2,10 +2,15 @@
 
 /** @file Header implementations for templated net routing fns. */
 
+#include "device_grid.h"
+#include "physical_types.h"
 #include "route_net.h"
 
+#include <algorithm>
+#include <limits>
 #include <tuple>
 
+#include "choke_points.h"
 #include "connection_based_routing.h"
 #include "connection_router_interface.h"
 #include "describe_rr_node.h"
@@ -17,7 +22,8 @@
 #include "rr_graph_fwd.h"
 #include "vtr_dynamic_bitset.h"
 
-/** Attempt to route a single net.
+/**
+ * @brief Attempt to route a single net.
  *
  * @param router The ConnectionRouterType instance
  * @param net_list Input netlist
@@ -36,7 +42,7 @@
  * @param budgeting_inf
  * @param worst_neg_slack
  * @param routing_predictor
- * @param choking_spots
+ * @param choking_spots Choke points for this net's sinks.
  * @param is_flat
  * @param net_bb Bounding box for the net (Routing resources outside net_bb will not be used)
  * @param should_setup Should we reset/prune the existing route tree first?
@@ -58,7 +64,7 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
                                 route_budgets& budgeting_inf,
                                 float worst_negative_slack,
                                 const RoutingPredictor& routing_predictor,
-                                const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
+                                const t_net_choke_points& choking_spots,
                                 bool is_flat,
                                 const t_bb& net_bb,
                                 bool should_setup = true,
@@ -91,7 +97,8 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
             net_list,
             connections_inf,
             router_opts,
-            worst_negative_slack);
+            worst_negative_slack,
+            budgeting_inf);
     }
 
     VTR_ASSERT(route_ctx.route_trees[net_id]);
@@ -130,15 +137,93 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
                                                         is_flat);
     }
 
-    // compare the criticality of different sink nodes
-    std::stable_sort(begin(remaining_targets), end(remaining_targets), [&](int a, int b) {
-        return pin_criticality[a] > pin_criticality[b];
+    // Determines the order remaining_targets is routed in. Starts as a copy of
+    // pin_criticality, but may be further adjusted (e.g. for interposer die crossings
+    // below) to influence routing order without disturbing pin_criticality itself,
+    // which is also used downstream (e.g. cost_params.criticality) to drive the
+    // router's cost function.
+    std::vector<float> pin_sort_priority = pin_criticality;
+
+    const DeviceGrid& device_grid = device_ctx.grid;
+    bool has_interposer_cuts = device_grid.has_interposer_cuts();
+    bool has_multiple_layers = device_grid.get_num_layers() > 1;
+
+    if (has_interposer_cuts || has_multiple_layers) {
+        // Sort-priority terms for sinks that cross a die boundary (an interposer cut in
+        // the x/y plane, or a layer boundary in the z direction for 3D stacked devices).
+        // die_crossing_multiplier rewards any die crossing; die_alignment_multiplier additionally
+        // rewards being inline with the driver across the crossed boundary (scaled down to
+        // 0 as the offset perpendicular to that boundary grows, see dx/dy below).
+        static constexpr float die_crossing_multiplier = 0.0f;
+        static constexpr float die_alignment_multiplier = 0.5f;
+
+        RRNodeId driver_rr = route_ctx.net_rr_terminals[net_id][0];
+        t_physical_tile_loc driver_loc(rr_graph.node_xlow(driver_rr),
+                                       rr_graph.node_ylow(driver_rr),
+                                       rr_graph.node_layer_low(driver_rr));
+
+        // net_bb is used to normalize the die-alignment term below. Note it is slightly
+        // larger than the net's true pin bounding box, since it is expanded by bb_factor
+        // for routing search purposes.
+        int bb_width = net_bb.xmax - net_bb.xmin;
+        int bb_height = net_bb.ymax - net_bb.ymin;
+        int bb_planar = bb_width + bb_height;
+
+        for (int ipin : remaining_targets) {
+            RRNodeId sink_rr = route_ctx.net_rr_terminals[net_id][ipin];
+            t_physical_tile_loc sink_loc(rr_graph.node_xlow(sink_rr),
+                                         rr_graph.node_ylow(sink_rr),
+                                         rr_graph.node_layer_low(sink_rr));
+
+            bool crosses_vertical = has_interposer_cuts && device_grid.do_locs_cross_vertical_cut(driver_loc, sink_loc);
+            bool crosses_horizontal = has_interposer_cuts && device_grid.do_locs_cross_horizontal_cut(driver_loc, sink_loc);
+            bool crosses_planar = has_multiple_layers && (driver_loc.layer_num != sink_loc.layer_num);
+
+            if (crosses_vertical || crosses_horizontal || crosses_planar) {
+                pin_sort_priority[ipin] += die_crossing_multiplier;
+
+                int dx = std::abs(driver_loc.x - sink_loc.x);
+                int dy = std::abs(driver_loc.y - sink_loc.y);
+
+                // NOTE: this assumes interposer cuts and layer boundaries never both apply to the
+                // same driver/sink pair (i.e. interposer architectures are not also 3D), so the
+                // vertical/horizontal terms below only normalize against their own boundary's
+                // offset (dy or dx), unlike the planar term which already folds in both.
+                // There are specialized routers where the bounding box may not include
+                // the source. We clamp the alignment term to 0 to prevent the terms from
+                // going negative.
+                // TODO: once a 3D interposer architecture exists to validate against, the vertical
+                // and horizontal terms should also fold in a dz/bb_depth component, matching how
+                // the planar term already folds in dx and dy.
+                if (crosses_vertical) {
+                    float align_v = std::max(1.0f - float(dy) / bb_height, 0.0f);
+                    pin_sort_priority[ipin] += (bb_height > 0) ? die_alignment_multiplier * align_v : die_alignment_multiplier;
+                }
+                if (crosses_horizontal) {
+                    float align_h = std::max(1.0f - float(dx) / bb_width, 0.0f);
+                    pin_sort_priority[ipin] += (bb_width > 0) ? die_alignment_multiplier * align_h : die_alignment_multiplier;
+                }
+                if (crosses_planar) {
+                    float align_p = std::max(1.0f - float(dx + dy) / bb_planar, 0.0f);
+                    pin_sort_priority[ipin] += (bb_planar > 0) ? die_alignment_multiplier * align_p : die_alignment_multiplier;
+                }
+            }
+        }
+    }
+
+    // compare the sort priority of different sink nodes
+    std::ranges::stable_sort(remaining_targets, [&](int a, int b) noexcept {
+        return pin_sort_priority[a] > pin_sort_priority[b];
     });
 
     /* Update base costs according to fanout and criticality rules */
     update_rr_base_costs(num_sinks);
 
-    t_conn_delay_budget conn_delay_budget;
+    t_conn_delay_budget conn_delay_budget{.short_path_criticality = 0.f,
+                                          .min_delay = 0.f,
+                                          .target_delay = 0.f,
+                                          .max_delay = std::numeric_limits<float>::infinity(),
+                                          .routing_budgets_algorithm = router_opts.routing_budgets_algorithm};
     t_conn_cost_params cost_params;
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.astar_offset = router_opts.astar_offset;
@@ -146,7 +231,7 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
     cost_params.post_target_prune_offset = router_opts.post_target_prune_offset;
     cost_params.bend_cost = router_opts.bend_cost;
     cost_params.pres_fac = pres_fac;
-    cost_params.delay_budget = ((budgeting_inf.if_set()) ? &conn_delay_budget : nullptr);
+    cost_params.delay_budget = nullptr;
 
     // Pre-route to clock source for clock nets (marked as global nets)
     if (net_list.net_is_global(net_id) && router_opts.two_stage_clock_routing) {
@@ -180,28 +265,39 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
             // delay by selecting a direct route from the clock source to the virtual sink
             cost_params.criticality = router_opts.max_criticality;
 
+            // Do not use RCV to route to the drive point of the clock network.
+            router.set_rcv_enabled(false);
+
             if (sink_node == RRNodeId::INVALID()) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Cannot route net \"%s\" through given clock network. Unknown clock network name \"%s\"", net_name.c_str(), clock_network_name.c_str());
             }
 
-            flags = pre_route_to_clock_root(router,
-                                            net_id,
-                                            net_list,
-                                            sink_node,
-                                            cost_params,
-                                            router_opts.high_fanout_threshold,
-                                            tree,
-                                            spatial_route_tree_lookup,
-                                            router_stats,
-                                            is_flat);
+            /* Stage 1 (SOURCE -> clock-network drive point) only needs to run when no clock
+             * sink is routed yet. If setup_net()'s prune kept any sink, its retained path
+             * already carries the SOURCE -> drive-point spine and stage 2 (the loop below)
+             * extends from it. */
+            bool any_clock_sink_routed = !tree.get_reached_isinks().empty();
+            if (!any_clock_sink_routed) {
+                flags = pre_route_to_clock_root(router,
+                                                net_id,
+                                                net_list,
+                                                sink_node,
+                                                cost_params,
+                                                router_opts.high_fanout_threshold,
+                                                tree,
+                                                spatial_route_tree_lookup,
+                                                router_stats,
+                                                is_flat);
 
-            if (flags.success == false)
-                return flags;
+                if (flags.success == false)
+                    return flags;
+            }
         }
     }
 
     if (budgeting_inf.if_set()) {
         budgeting_inf.set_should_reroute(net_id, false);
+        budgeting_inf.set_should_reroute_for_skew(net_id, false);
     }
 
     // explore in order of decreasing criticality (no longer need sink_order array)
@@ -214,13 +310,18 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
 
         cost_params.criticality = pin_criticality[target_pin];
 
-        if (budgeting_inf.if_set()) {
+        bool use_rcv = budgeting_inf.should_use_rcv(net_id, target_pin);
+        if (use_rcv) {
             conn_delay_budget.max_delay = budgeting_inf.get_max_delay_budget(net_id, target_pin);
             conn_delay_budget.target_delay = budgeting_inf.get_delay_target(net_id, target_pin);
             conn_delay_budget.min_delay = budgeting_inf.get_min_delay_budget(net_id, target_pin);
             conn_delay_budget.short_path_criticality = budgeting_inf.get_crit_short_path(net_id, target_pin);
             conn_delay_budget.routing_budgets_algorithm = router_opts.routing_budgets_algorithm;
+            cost_params.delay_budget = &conn_delay_budget;
+        } else {
+            cost_params.delay_budget = nullptr;
         }
+        router.set_rcv_enabled(use_rcv);
 
         profiling::conn_start();
 
@@ -382,9 +483,8 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
     return out;
 }
 
-/** Attempt to route a single sink (target_pin) in a net.
- * In the process, update global pathfinder costs, rr_node_route_inf and extend the global RouteTree
- * for this net.
+/**
+ * @brief Route target_pin, extend the route tree, and update PathFinder costs.
  *
  * @param router The ConnectionRouterType instance
  * @param net_list Input netlist
@@ -399,7 +499,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
  * @param router_stats
  * @param budgeting_inf
  * @param routing_predictor
- * @param choking_spots
+ * @param choking_spots Choke points for this net's sinks.
  * @param is_flat
  * @param net_bb Bounding box for the net (Routing resources outside net_bb will not be used)
  * @return NetResultFlags for this sink to be bubbled up through route_net */
@@ -416,7 +516,7 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
                                  RouterStats& router_stats,
                                  route_budgets& budgeting_inf,
                                  const RoutingPredictor& routing_predictor,
-                                 const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
+                                 const t_net_choke_points& choking_spots,
                                  bool is_flat,
                                  const t_bb& net_bb) {
     const auto& device_ctx = g_vpr_ctx.device();
@@ -440,8 +540,9 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
     bool net_is_clock = route_ctx.is_clock_net[net_id] != 0;
 
-    bool router_opt_choke_points = ((int)choking_spots[target_pin].size() != 0) && router_opts.has_choke_point;
-    ConnectionParameters conn_params(net_id, target_pin, router_opt_choke_points, choking_spots[target_pin]);
+    const std::unordered_map<RRNodeId, int>& sink_choking_spots = choking_spots.sink_choke_points(target_pin);
+    bool router_opt_choke_points = !sink_choking_spots.empty() && router_opts.has_choke_point;
+    ConnectionParameters conn_params(net_id, target_pin, router_opt_choke_points, sink_choking_spots);
 
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
@@ -452,6 +553,7 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
                                                                                                                                      cost_params,
                                                                                                                                      net_bb,
                                                                                                                                      spatial_rt_lookup,
+                                                                                                                                     device_ctx.has_3d_switchblocks,
                                                                                                                                      router_stats,
                                                                                                                                      conn_params);
     } else {

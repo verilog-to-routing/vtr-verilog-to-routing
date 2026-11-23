@@ -43,9 +43,7 @@
 #include <string>
 #include <string_view>
 
-#ifndef VPR_MAIN_UI_PATH
-#define VPR_MAIN_UI_PATH ":/ezgl/main.ui"
-#endif
+#include "test_main_ui.hpp"
 
 #include <QApplication>
 #include <QCheckBox>
@@ -119,19 +117,26 @@ constexpr WidgetSpec kSpecs[] = {
 
     // --- ui_setup.cpp critical_path_button_setup ---
     {"ToggleCritPath", WidgetKind::SwitchButton, "ui_setup.cpp:324"},
+    {"NumCritPaths", WidgetKind::SpinBox, "ui_setup.cpp:329"},
+    {"ToggleCritPathFlylines", WidgetKind::CheckBox, "ui_setup.cpp:338"},
+    {"ToggleCritPathRouting", WidgetKind::CheckBox, "ui_setup.cpp:339"},
+    {"ToggleCritPathDelays", WidgetKind::CheckBox, "ui_setup.cpp:340"},
+
+    // --- ui_setup.cpp proceed_by_step_button_setup ---
+    {"ProceedByStep", WidgetKind::SwitchButton, "ui_setup.cpp:374"},
+    {"StepsToProceed", WidgetKind::SpinBox, "ui_setup.cpp:380"},
 
     // --- ui_setup.cpp autocomplete_setup ---
-    {"TextInput", WidgetKind::LineEdit, "ui_setup.cpp:370"},
+    {"TextInput", WidgetKind::LineEdit, "ui_setup.cpp:395"},
 
     // --- draw.cpp default_setup (callback wiring) ---
-    {"ProceedButton", WidgetKind::PushButton, "draw.cpp:1159"},
-    {"ZoomFitButton", WidgetKind::PushButton, "draw.cpp:1165"},
-    {"PauseButton", WidgetKind::PushButton, "draw.cpp:1171"},
-    {"blockOutline", WidgetKind::CheckBox, "draw.cpp:1177"},
-    {"blockText", WidgetKind::CheckBox, "draw.cpp:1183"},
-    {"clipRoutingUtil", WidgetKind::CheckBox, "draw.cpp:1189"},
-    {"debugButton", WidgetKind::PushButton, "draw.cpp:1195"},
-    {"drawPartitions", WidgetKind::CheckBox, "draw.cpp:1201"},
+    {"ProceedButton", WidgetKind::PushButton, "draw.cpp:1287"},
+    {"ZoomFitButton", WidgetKind::PushButton, "draw.cpp:1293"},
+    {"blockOutline", WidgetKind::CheckBox, "draw.cpp:1299"},
+    {"blockText", WidgetKind::CheckBox, "draw.cpp:1305"},
+    {"clipRoutingUtil", WidgetKind::CheckBox, "draw.cpp:1311"},
+    {"debugButton", WidgetKind::PushButton, "draw.cpp:1317"},
+    {"drawPartitions", WidgetKind::CheckBox, "draw.cpp:1323"},
 
     // --- search_bar.cpp ---
     // (find_combo_box("SearchType") and find_line_edit("TextInput") already
@@ -233,7 +238,7 @@ constexpr ComboContentSpec kComboContent[] = {
 
 TEST_CASE("UiContract: every find_*() target exists in main.ui with correct Qt type",
           "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
     win->show();
@@ -264,7 +269,7 @@ TEST_CASE("UiContract: every find_*() target exists in main.ui with correct Qt t
 
 TEST_CASE("UiContract: menu combos have the contracted item counts",
           "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
     win->show();
@@ -289,7 +294,7 @@ TEST_CASE("UiContract: menu combos have the contracted item counts",
 
 TEST_CASE("UiContract: SearchType combo entries appear in the contracted order",
           "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
     win->show();
@@ -317,7 +322,7 @@ TEST_CASE("UiContract: SearchType combo entries appear in the contracted order",
 
 TEST_CASE("UiContract: top-level canvas and status surfaces are present",
           "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
-    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
     win->show();

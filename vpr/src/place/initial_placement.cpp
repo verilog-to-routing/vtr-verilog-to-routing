@@ -4,6 +4,7 @@
 #include "flat_placement_utils.h"
 #include "physical_types_util.h"
 #include "place_macro.h"
+#include "vpr_context.h"
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_ndmatrix.h"
@@ -114,13 +115,11 @@ static int get_blk_type_first_loc(t_pl_loc& loc, const t_pl_macro& pl_macro, std
  * @brief Updates the first available location (lowest y) and number of remaining blocks in the column that dense placement used to place the macro.
  *
  *   @param blk_type_column_index Index to a column in blk_types_empty_locs_in_grid that placed pl_macro in itself.
- *   @param block_type Logical block type of the macro blocks.
  *   @param pl_macro The macro to be placed.
  *   @param blk_types_empty_locs_in_grid first location (lowest y) and number of remaining blocks in each column for the blk_id type
  *
  */
 static void update_blk_type_first_loc(int blk_type_column_index,
-                                      t_logical_block_type_ptr block_type,
                                       const t_pl_macro& pl_macro,
                                       std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid);
 
@@ -246,7 +245,6 @@ static bool try_centroid_placement(ClusterBlockId block_id,
  *   @param pl_macro The macro to be placed.
  *   @param pr The PartitionRegion of the macro - represents its floorplanning constraints, is the size of the whole chip if the macro is not
  *   constrained.
- *   @param block_type Logical block type of the macro blocks.
  *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
  *   @param blk_types_empty_locs_in_grid first location (lowest y) and number of remaining blocks in each column for the blk_id type
  *   @param blk_loc_registry Placement block location information. To be filled with the location
@@ -256,7 +254,6 @@ static bool try_centroid_placement(ClusterBlockId block_id,
  */
 static bool try_dense_placement(const t_pl_macro& pl_macro,
                                 const PartitionRegion& pr,
-                                t_logical_block_type_ptr block_type,
                                 e_pad_loc_type pad_loc_type,
                                 std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                                 BlkLocRegistry& blk_loc_registry);
@@ -980,7 +977,6 @@ static int get_y_loc_based_on_macro_direction(t_grid_empty_locs_block_type first
 }
 
 static void update_blk_type_first_loc(int blk_type_column_index,
-                                      t_logical_block_type_ptr block_type,
                                       const t_pl_macro& pl_macro,
                                       std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid) {
     //check if dense placement could place macro successfully
@@ -990,8 +986,15 @@ static void update_blk_type_first_loc(int blk_type_column_index,
 
     const auto& device_ctx = g_vpr_ctx.device();
 
+    // The macro members are stacked on the tiles of this column, so the first available location moves up
+    // by the height of the physical tile it is on.
+    const t_pl_loc& first_avail_loc = blk_types_empty_locs_in_grid->at(blk_type_column_index).first_avail_loc;
+    const t_physical_tile_loc first_avail_tile_loc(first_avail_loc.x, first_avail_loc.y, first_avail_loc.layer);
+    VTR_ASSERT(is_loc_on_chip(first_avail_tile_loc));
+    const t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type(first_avail_tile_loc);
+
     //update the first available macro location in a specific column for the next macro
-    blk_types_empty_locs_in_grid->at(blk_type_column_index).first_avail_loc.y += device_ctx.physical_tile_types.at(block_type->index).height * pl_macro.members.size();
+    blk_types_empty_locs_in_grid->at(blk_type_column_index).first_avail_loc.y += tile_type->height * pl_macro.members.size();
     blk_types_empty_locs_in_grid->at(blk_type_column_index).num_of_empty_locs_in_y_axis -= pl_macro.members.size();
 }
 
@@ -1244,7 +1247,6 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
 
 static bool try_dense_placement(const t_pl_macro& pl_macro,
                                 const PartitionRegion& pr,
-                                t_logical_block_type_ptr block_type,
                                 e_pad_loc_type pad_loc_type,
                                 std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                                 BlkLocRegistry& blk_loc_registry) {
@@ -1272,7 +1274,7 @@ static bool try_dense_placement(const t_pl_macro& pl_macro,
 
     //Dense placement found a legal position for pl_macro;
     //We need to update first available location (lowest y) and number of remaining blocks for the next macro.
-    update_blk_type_first_loc(column_index, block_type, pl_macro, blk_types_empty_locs_in_grid);
+    update_blk_type_first_loc(column_index, pl_macro, blk_types_empty_locs_in_grid);
     return legal;
 }
 
@@ -1344,7 +1346,7 @@ static bool place_macro(int macros_max_num_tries,
     //We need to place densely in second iteration to be able to find a legal initial placement solution
     if (blk_types_empty_locs_in_grid != nullptr && !blk_types_empty_locs_in_grid->empty()) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry dense placement\n");
-        macro_placed = try_dense_placement(pl_macro, pr, block_type, pad_loc_type, blk_types_empty_locs_in_grid, blk_loc_registry);
+        macro_placed = try_dense_placement(pl_macro, pr, pad_loc_type, blk_types_empty_locs_in_grid, blk_loc_registry);
     }
 
     if (!macro_placed) {
@@ -1373,9 +1375,8 @@ static bool place_macro(int macros_max_num_tries,
 }
 
 static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores(const PlaceMacros& place_macros) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& floorplan_ctx = g_vpr_ctx.floorplanning();
-    ;
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const FloorplanningContext& floorplan_ctx = g_vpr_ctx.floorplanning();
 
     t_block_score score;
 
@@ -1383,7 +1384,7 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores(const Plac
 
     block_scores.resize(cluster_ctx.clb_nlist.blocks().size());
 
-    //GridTileLookup class provides info needed for calculating number of tiles covered by a region
+    // GridTileLookup class provides info needed for calculating number of tiles covered by a region
     GridTileLookup grid_tiles;
 
     /*
@@ -2066,18 +2067,21 @@ void initial_placement(const t_placer_opts& placer_opts,
 
         // First try to place all of the blocks using AP
         if (flat_placement_info.valid) {
+            // Save the blocks placed so far: fixed blocks, blocks from the constraints file and
+            // NoC routers, whose traffic flows were routed for these locations
+            BlkLocRegistry pre_ap_blk_loc_registry;
+            pre_ap_blk_loc_registry = blk_loc_registry;
+
             all_blocks_placed = place_all_blocks_ap(placer_opts.pad_loc_type,
                                                     blk_loc_registry,
                                                     place_macros,
                                                     flat_placement_info);
 
-            // If AP failed to place all of the blocks, reset the placement solution
-            // so we can fall back on the original initial placement algorithm.
+            // If AP failed to place all of the blocks, reset the placement solution to the
+            // blocks placed before AP so we can fall back on the original initial placement
+            // algorithm.
             if (!all_blocks_placed) {
-                blk_loc_registry.clear_all_grid_locs();
-                if (strlen(constraints_file) != 0) {
-                    read_constraints(constraints_file, blk_loc_registry);
-                }
+                blk_loc_registry = pre_ap_blk_loc_registry;
             }
         }
 

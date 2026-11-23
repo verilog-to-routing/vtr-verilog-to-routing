@@ -3,7 +3,6 @@
 #include <vector>
 #include "physical_types.h"
 
-
 /// @brief Channel width data
 /// @details This data structure should only be used for RR graph generation.
 ///          After RR graph is generated, the number of tracks in each channel
@@ -42,10 +41,10 @@ enum class e_route_type {
  * @brief Represents the type of routing resource graph
  */
 enum class e_graph_type {
-    GLOBAL,           ///< One node per channel with wire capacity > 1 and full connectivity
-    BIDIR,            ///< Detailed bidirectional routing graph
-    UNIDIR,           ///< Detailed unidirectional routing graph (non-tileable)
-    UNIDIR_TILEABLE   ///< Tileable unidirectional graph with wire groups in multiples of 2 * L (experimental)
+    GLOBAL,         ///< One node per channel with wire capacity > 1 and full connectivity
+    BIDIR,          ///< Detailed bidirectional routing graph
+    UNIDIR,         ///< Detailed unidirectional routing graph (non-tileable)
+    UNIDIR_TILEABLE ///< Tileable unidirectional graph with wire groups in multiples of 2 * L (experimental)
 };
 
 /**

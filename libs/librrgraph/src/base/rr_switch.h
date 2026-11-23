@@ -5,13 +5,11 @@
 
 #include "physical_types.h"
 
-/**
- * @brief Lists all the important information about an RR switch type.
- *
- * The t_rr_switch_inf describes a switch derived from a switch described
- * by t_arch_switch_inf. This indirection allows us to vary properties of a
- * given switch, such as varying delay with switch fan-in.
-  */
+/// @brief Lists all the important information about an RR switch type.
+///
+/// The t_rr_switch_inf describes a switch derived from a switch described
+/// by t_arch_switch_inf. This indirection allows us to vary properties of a
+/// given switch, such as varying delay with switch fan-in.
 struct t_rr_switch_inf {
     /// Equivalent resistance of the buffer/switch.
     float R = 0.;
@@ -21,8 +19,12 @@ struct t_rr_switch_inf {
     float Cout = 0.;
     /// Internal capacitance.
     float Cinternal = 0.;
-    /// Intrinsic delay.  The delay through an unloaded switch is Tdel + R * Cout.
-    float Tdel = 0.;
+    /// Minimum intrinsic delay, used for hold analysis.
+    /// The minimum delay through an unloaded switch is Tdel_min + R * Cout.
+    float Tdel_min = 0.;
+    /// Maximum intrinsic delay, used for setup analysis and by the router, placer and router lookahead.
+    /// The maximum delay through an unloaded switch is Tdel_max + R * Cout.
+    float Tdel_max = 0.;
     /// The area of each transistor in the segment's driving mux measured in minimum width transistor units
     float mux_trans_size = 0.;
     /// The area of the buffer. If set to zero, area should be calculated from R
@@ -31,12 +33,6 @@ struct t_rr_switch_inf {
     e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_UNDEFINED;
     float power_buffer_size = 0.;
 
-    // The template ID of the switch. This is metadata stored for each switch to
-    // simplify certain analyses. For example, when generating the CRR graph, the
-    // template ID is used to determine which switch in the template is used most
-    // or least frequently.
-    std::string template_id = "";
-
     /// Indicate whether this rr_switch is a switch type used inside clusters.
     /// These switch types are not specified in the architecture description file
     /// and are added when flat router is enabled.
@@ -44,16 +40,16 @@ struct t_rr_switch_inf {
 
   public: // Getters
     /// Returns the type of switch
-    e_switch_type type() const;
+    e_switch_type type() const { return type_; }
 
     /// Returns true if this switch type isolates its input and output into
     /// separate DC-connected subcircuits
-    bool buffered() const;
+    bool buffered() const { return switch_type_is_buffered(type()); }
 
     /// Returns true if this switch type is configurable (i.e. can the switch can be turned on or off)
     /// This allows modelling of non-optional switches (e.g. fixed buffers, or shorted connections)
     /// which must be used (e.g. expanded by the router) if a connected segment is used.
-    bool configurable() const;
+    bool configurable() const { return switch_type_is_configurable(type()); }
 
     bool operator==(const t_rr_switch_inf& other) const;
 

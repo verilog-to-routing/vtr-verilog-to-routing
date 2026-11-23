@@ -24,6 +24,7 @@
 
 #include "blifparse.hpp"
 #include "atom_netlist.h"
+#include "atom_netlist_utils.h"
 
 #include "logic_types.h"
 #include "vtr_assert.h"
@@ -40,11 +41,12 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue);
 
 struct BlifAllocCallback : public blifparse::Callback {
   public:
-    BlifAllocCallback(e_circuit_format blif_format, AtomNetlist& main_netlist, const std::string netlist_id, const LogicalModels& models)
+    BlifAllocCallback(e_circuit_format blif_format, AtomNetlist& main_netlist, const std::string netlist_id, const LogicalModels& models, int verbosity)
         : main_netlist_(main_netlist)
         , netlist_id_(netlist_id)
         , models_(models)
-        , blif_format_(blif_format) {
+        , blif_format_(blif_format)
+        , verbosity_(verbosity) {
         VTR_ASSERT(blif_format_ == e_circuit_format::BLIF
                    || blif_format_ == e_circuit_format::EBLIF);
     }
@@ -55,6 +57,17 @@ struct BlifAllocCallback : public blifparse::Callback {
     void start_parse() override {}
 
     void finish_parse() override {
+        // Report a summary of the constant generators found while parsing. The
+        // individual generator names are only printed at higher verbosity (see
+        // names()), so provide a hint on how to see them.
+        size_t num_const_gens = num_const_zero_gens_ + num_const_one_gens_;
+        if (num_const_gens > 0) {
+            VTR_LOGV(verbosity_ > 0,
+                     "Found %zu constant generator(s) in the netlist (%zu constant-zero, %zu constant-one)%s\n",
+                     num_const_gens, num_const_zero_gens_, num_const_one_gens_,
+                     verbosity_ > 1 ? "" : " (run with --netlist_verbosity 2 to list names)");
+        }
+
         //When parsing is finished we *move* the main netlist
         //into the user object. This ensures we never have two copies
         //(consuming twice the memory).
@@ -148,33 +161,15 @@ struct BlifAllocCallback : public blifparse::Callback {
 
         //Figure out if the output is a constant generator
         bool output_is_const = false;
-        if (truth_table.empty()
-            || (truth_table.size() == 1 && truth_table[0].size() == 1 && truth_table[0][0] == vtr::LogicValue::FALSE)) {
-            //An empty truth table in BLIF corresponds to a constant-zero
-            //  e.g.
-            //
-            //  #gnd is a constant 0 generator
-            //  .names gnd
-            //
-            //An single entry truth table with value '0' also corresponds to a constant-zero
-            //  e.g.
-            //
-            //  #gnd2 is a constant 0 generator
-            //  .names gnd2
-            //  0
-            //
+        vtr::LogicValue const_value = truth_table_constant_value(truth_table);
+        if (const_value == vtr::LogicValue::FALSE) {
             output_is_const = true;
-            VTR_LOG("Found constant-zero generator '%s'\n", nets[nets.size() - 1].c_str());
-        } else if (truth_table.size() == 1 && truth_table[0].size() == 1 && truth_table[0][0] == vtr::LogicValue::TRUE) {
-            //A single-entry truth table with value '1' in BLIF corresponds to a constant-one
-            //  e.g.
-            //
-            //  #vcc is a constant 1 generator
-            //  .names vcc
-            //  1
-            //
+            ++num_const_zero_gens_;
+            VTR_LOGV(verbosity_ > 1, "Found constant-zero generator '%s'\n", nets[nets.size() - 1].c_str());
+        } else if (const_value == vtr::LogicValue::TRUE) {
             output_is_const = true;
-            VTR_LOG("Found constant-one generator '%s'\n", nets[nets.size() - 1].c_str());
+            ++num_const_one_gens_;
+            VTR_LOGV(verbosity_ > 1, "Found constant-one generator '%s'\n", nets[nets.size() - 1].c_str());
         }
 
         //Create output
@@ -629,6 +624,12 @@ struct BlifAllocCallback : public blifparse::Callback {
     std::vector<std::pair<AtomNetId, AtomNetId>> curr_nets_to_merge_;
 
     e_circuit_format blif_format_ = e_circuit_format::BLIF;
+
+    int verbosity_ = 1; ///<Controls how much detail is printed while parsing the netlist
+
+    ///<Number of constant generators found while parsing (used for a summary message)
+    size_t num_const_zero_gens_ = 0;
+    size_t num_const_one_gens_ = 0;
 };
 
 vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
@@ -715,11 +716,12 @@ bool is_real_param(const std::string& param) {
 
 AtomNetlist read_blif(e_circuit_format circuit_format,
                       const char* blif_file,
-                      const LogicalModels& models) {
+                      const LogicalModels& models,
+                      int verbosity) {
     AtomNetlist netlist;
     std::string netlist_id = vtr::secure_digest_file(blif_file);
 
-    BlifAllocCallback alloc_callback(circuit_format, netlist, netlist_id, models);
+    BlifAllocCallback alloc_callback(circuit_format, netlist, netlist_id, models, verbosity);
     blifparse::blif_parse_filename(blif_file, alloc_callback);
 
     return netlist;

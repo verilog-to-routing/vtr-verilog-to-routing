@@ -1,0 +1,10 @@
+# A latch whose D input is an undriven net ('u' has a sink but no driver).
+#
+# With --sweep_dangling_nets on (default) the undriven net is swept and the
+# latch input is left unconnected. With --sweep_dangling_nets off VPR must
+# report the undriven net as an error, rather than crashing.
+.model undriven_net
+.inputs clk
+.outputs o
+.latch u o re clk 0
+.end

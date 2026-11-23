@@ -105,6 +105,7 @@ struct OveruseInfo {
     size_t overused_nodes = 0u;
     size_t total_overuse = 0u;
     size_t worst_overuse = 0u;
+    size_t control_congested_bus_muxes = 0u; ///< Bus muxes using multiple input sets; zero for legal routing.
 
     float overused_node_ratio() const {
         if (total_nodes > 0) {

@@ -1,0 +1,1 @@
+These architectures are intended for regression testing of 3D place and route code. They are not necessarily correct and/or realistic and should not be used for research.

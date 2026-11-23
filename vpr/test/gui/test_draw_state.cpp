@@ -39,6 +39,7 @@ TEST_CASE("DrawState: default-constructed values match documented defaults",
     CHECK(ds.draw_intra_cluster_nets == false);
     CHECK(ds.highlight_fan_in_fan_out == false);
     CHECK(ds.show_crit_path == false);
+    CHECK(ds.num_crit_paths == 1);
     CHECK(ds.show_crit_path_flylines == false);
     CHECK(ds.show_crit_path_delays == false);
     CHECK(ds.show_crit_path_routing == false);
@@ -52,12 +53,14 @@ TEST_CASE("DrawState: default-constructed values match documented defaults",
     CHECK(ds.draw_block_text == true);
     CHECK(ds.draw_partitions == false);
     CHECK(ds.show_graphics == false);
-    CHECK(ds.gr_automode == 0);
+    CHECK(ds.graphics_pause == e_graphics_pause::EVERY_UPDATE);
     CHECK(ds.auto_proceed == false);
     CHECK(ds.draw_route_type == e_route_type::GLOBAL);
     CHECK(ds.save_graphics == false);
     CHECK(ds.renderer_type == "rhi");
-    CHECK(ds.forced_pause == false);
+    CHECK(ds.proceed_by_step.enabled == false);
+    CHECK(ds.proceed_by_step.steps_to_proceed == 1);
+    CHECK(ds.proceed_by_step.step_counter == 0);
     CHECK(ds.sequence_number == 0);
     CHECK(ds.net_alpha == 255);
     CHECK(ds.is_flat == false);
@@ -79,6 +82,8 @@ TEST_CASE("DrawState: every plain field round-trips through assignment",
     CHECK(ds.show_rr);
     ds.show_crit_path = true;
     CHECK(ds.show_crit_path);
+    ds.num_crit_paths = 10;
+    CHECK(ds.num_crit_paths == 10);
     ds.show_congestion = DRAW_CONGESTED;
     CHECK(ds.show_congestion == DRAW_CONGESTED);
     ds.show_routing_util = DRAW_ROUTING_UTIL;
@@ -95,8 +100,8 @@ TEST_CASE("DrawState: every plain field round-trips through assignment",
     CHECK(ds.show_routing_bb == 7);
     ds.draw_net_max_fanout = 100;
     CHECK(ds.draw_net_max_fanout == 100);
-    ds.gr_automode = 2;
-    CHECK(ds.gr_automode == 2);
+    ds.graphics_pause = e_graphics_pause::FINAL_STAGE;
+    CHECK(ds.graphics_pause == e_graphics_pause::FINAL_STAGE);
     ds.net_alpha = 128;
     CHECK(ds.net_alpha == 128);
     ds.pres_fac = 2.5f;
@@ -115,8 +120,12 @@ TEST_CASE("DrawState: every plain field round-trips through assignment",
     CHECK(ds.save_graphics_file_base == "out");
     ds.graphics_commands = "set_nets 1; exit 0";
     CHECK(ds.graphics_commands == "set_nets 1; exit 0");
-    ds.forced_pause = true;
-    CHECK(ds.forced_pause);
+    ds.proceed_by_step.enabled = true;
+    CHECK(ds.proceed_by_step.enabled);
+    ds.proceed_by_step.steps_to_proceed = 100;
+    CHECK(ds.proceed_by_step.steps_to_proceed == 100);
+    ds.proceed_by_step.step_counter = 80;
+    CHECK(ds.proceed_by_step.step_counter == 80);
     ds.sequence_number = 42;
     CHECK(ds.sequence_number == 42);
     ds.draw_route_type = e_route_type::DETAILED;
@@ -149,15 +158,15 @@ TEST_CASE("DrawState: assignment overwrites all plain state",
           "[layer3][vpr_gui][drawstate]") {
     t_draw_state src;
     src.show_nets = true;
-    src.gr_automode = 1;
+    src.graphics_pause = e_graphics_pause::MAJOR_UPDATES;
 
     t_draw_state dst;
     REQUIRE_FALSE(dst.show_nets);
-    REQUIRE(dst.gr_automode == 0);
+    REQUIRE(dst.graphics_pause == e_graphics_pause::EVERY_UPDATE);
 
     dst = src;
     CHECK(dst.show_nets);
-    CHECK(dst.gr_automode == 1);
+    CHECK(dst.graphics_pause == e_graphics_pause::MAJOR_UPDATES);
 }
 
 TEST_CASE("DrawCoords: default tile geometry",

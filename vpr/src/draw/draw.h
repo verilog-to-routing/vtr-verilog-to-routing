@@ -84,16 +84,15 @@ void set_initial_world_ap();
  */
 void set_initial_world();
 
-/* Sets the static show_graphics and gr_automode variables to the    *
- * desired values.  They control if graphics are enabled and, if so, *
- * how often the user is prompted for input.                         */
-void init_graphics_state(bool show_graphics_val,
-                         int gr_automode_val,
-                         enum e_route_type route_type,
-                         bool save_graphics,
-                         std::string graphics_commands,
-                         std::string renderer_type,
-                         bool is_flat);
+/**
+ * @brief Initializes graphics for the current device: sets the draw state from
+ * the command-line options, creates the application, allocates the draw
+ * structures and draw coordinates and, under --disp on, builds the GUI without
+ * showing it so its widgets exist before the first update_screen() pause.
+ *
+ * Call once the device grid is valid.
+ */
+void init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch);
 
 /* Allocates the structures needed to draw the placement and routing.*/
 void alloc_draw_structs(const t_arch* arch);
@@ -109,10 +108,15 @@ const ezgl::color DRIVEN_BY_IT_COLOR = ezgl::LIGHT_MEDIUM_BLUE;
 
 const float WIRE_DRAWING_WIDTH = 0.5;
 
+// Helps determine when routing resources should be decluttered. Channel nodes in the same region are placed parallel to each other by one world unit.
+// However, they are always drawn as one pixel wide regardless of the zoom level. Therefore, we want to keep the world to pixel ratio below 1
+// so that the channel nodes do not blend into a cluster, and 0.8 is a good threshold for this reason.
+constexpr double DRAW_RR_MAX_WORLD_UNITS_PER_PIXEL = 0.8;
+
 /**
  * @brief Calculate the ratio between pixels and world units spanning the screen width.
  * 
- * @return Returns the ratio described above, which will be used to determine when decluttering should occur.
+ * @return Returns the ratio described above, which is usually used to determine when decluttering should occur.
  */
 double get_pixels_per_world_unit(ezgl::renderer* g);
 
@@ -125,9 +129,6 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
 //Returns the drawing coordinates of the specified pin
 ezgl::point2d atom_pin_draw_coord(AtomPinId pin);
 
-//Returns the drawing coordinates of the specified tnode
-ezgl::point2d tnode_draw_coord(tatum::NodeId node);
-
 /* Converts a vtr Color to a ezgl Color. */
 ezgl::color to_ezgl_color(vtr::Color<float> color);
 
@@ -136,7 +137,7 @@ ezgl::color to_ezgl_color(vtr::Color<float> color);
  * fan-in/fan-out of a highlighted node. */
 bool draw_if_net_highlighted(ParentNetId inet);
 std::vector<RRNodeId> trace_routed_connection_rr_nodes(
-    ClusterNetId net_id,
+    ParentNetId net_id,
     int driver_pin,
     int sink_pin);
 

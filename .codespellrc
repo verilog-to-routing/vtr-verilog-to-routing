@@ -40,6 +40,8 @@ quiet-level = 3
 # correctly.
 ignore-words-list = subtile,
                     subtiles,
+                    # yosys ff cell type name (dff with enable + reset).
+                    dffer,
                     fle,
                     EArch,
                     FPT,

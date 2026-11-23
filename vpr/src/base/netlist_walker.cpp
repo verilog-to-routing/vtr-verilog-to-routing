@@ -32,7 +32,7 @@ void NetlistWalker::walk_blocks(const t_pb_routes& top_pb_route, const t_pb* pb)
     visitor_.visit_all(top_pb_route, pb);
     if (pb->child_pbs == nullptr) {
         //Primitive pb
-        if (pb->name != NULL) {
+        if (!pb->name.empty()) {
             visitor_.visit_atom(pb);
         } else {
             visitor_.visit_route_through(pb);

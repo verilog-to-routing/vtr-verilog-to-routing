@@ -1,7 +1,12 @@
 
 #include "check_route.h"
 
+#include <algorithm>
+
+#include "bus_mux_route_types.h"
+#include "bus_mux_routing.h"
 #include "describe_rr_node.h"
+#include "overuse_report.h"
 #include "physical_types_util.h"
 #include "route_common.h"
 #include "vpr_utils.h"
@@ -115,6 +120,19 @@ void check_route(const Netlist<>& net_list,
      * is a successful routing, but I want to double check it here.          */
 
     recompute_occupancy_from_scratch(net_list, is_flat);
+
+    // A bus-based mux has one select for its whole bus, so all routed bits must use the same
+    // input set. The bit counts were just recounted from the route trees above.
+    const size_t num_split_bus_muxes = count_control_congested_bus_muxes(route_ctx.bus_mux_route_inf);
+    if (num_split_bus_muxes > 0) {
+        log_control_congested_bus_muxes_status(device_ctx.rr_bus_muxes,
+                                               route_ctx.bus_mux_route_inf,
+                                               g_vpr_ctx.clustering().clb_nlist);
+        VPR_ERROR(VPR_ERROR_ROUTE,
+                  "Error in check_route -- %zu bus-based mux(es) are driven from more than one input set.\n",
+                  num_split_bus_muxes);
+    }
+
     const bool valid = feasible_routing();
     if (!valid) {
         VPR_ERROR(VPR_ERROR_ROUTE,
@@ -489,6 +507,13 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
     for (RRNodeId inode : device_ctx.rr_graph.nodes())
         route_ctx.rr_node_route_inf[inode].set_occ(0);
 
+    // Bus-based mux bit counts are recounted with the node occupancy.
+    VTR_ASSERT(route_ctx.bus_mux_route_inf.size() == device_ctx.rr_bus_muxes.size());
+    for (t_bus_mux_route_inf& mux_inf : route_ctx.bus_mux_route_inf) {
+        std::ranges::fill(mux_inf.set_occ, 0);
+    }
+    const bool has_bus_muxes = !device_ctx.rr_bus_muxes.empty();
+
     /* Now go through each net and count the tracks and pins used everywhere */
 
     for (auto net_id : net_list.nets()) {
@@ -501,6 +526,9 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
         for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
             route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
+            if (has_bus_muxes) {
+                pathfinder_update_bus_mux_occupancy(route_ctx.bus_mux_route_inf, rt_node, 1);
+            }
         }
     }
 

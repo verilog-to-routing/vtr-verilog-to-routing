@@ -1,24 +1,13 @@
 
 #include "rr_switch.h"
 
-e_switch_type t_rr_switch_inf::type() const {
-    return type_;
-}
-
-bool t_rr_switch_inf::buffered() const {
-    return switch_type_is_buffered(type());
-}
-
-bool t_rr_switch_inf::configurable() const {
-    return switch_type_is_configurable(type());
-}
-
 bool t_rr_switch_inf::operator==(const t_rr_switch_inf& other) const {
     return R == other.R
            && Cin == other.Cin
            && Cout == other.Cout
            && Cinternal == other.Cinternal
-           && Tdel == other.Tdel
+           && Tdel_min == other.Tdel_min
+           && Tdel_max == other.Tdel_max
            && mux_trans_size == other.mux_trans_size
            && buf_size == other.buf_size
            && power_buffer_type == other.power_buffer_type
@@ -38,7 +27,8 @@ std::size_t t_rr_switch_inf::Hasher::operator()(const t_rr_switch_inf& s) const 
     hash_combine(s.Cin);
     hash_combine(s.Cout);
     hash_combine(s.Cinternal);
-    hash_combine(s.Tdel);
+    hash_combine(s.Tdel_min);
+    hash_combine(s.Tdel_max);
     hash_combine(s.mux_trans_size);
     hash_combine(s.buf_size);
     hash_combine(static_cast<int>(s.power_buffer_type));

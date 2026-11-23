@@ -69,13 +69,11 @@ class RouterLookahead {
      * @brief Retrieve the minimum delay to a point on the "to_layer," which is dx and dy away,
      *        across all the OPINs on the physical tile identified by "physical_tile_idx".
      * @param physical_tile_idx The index of the physical tile from which the cost is calculated
-     * @param from_layer The layer that the tile is located on
-     * @param to_layer The layer on which the destination is located
-     * @param dx Horizontal distance to the destination
-     * @param dy Vertical distance to the destination
-     * @return Minimum delay to a point which is dx and dy away from a point on the die number "from_layer" to a point on the die number "to_layer".
+     * @param from_loc Location (x, y, layer) of the source tile
+     * @param to_loc Location (x, y, layer) of the destination
+     * @return Minimum delay from "from_loc" to "to_loc".
      */
-    virtual float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const = 0;
+    virtual float get_opin_distance_min_delay(int physical_tile_idx, const t_physical_tile_loc& from_loc, const t_physical_tile_loc& to_loc) const = 0;
 
     virtual ~RouterLookahead() {}
 };
@@ -115,7 +113,17 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
                                                    bool device_model_warnings,
                                                    float interposer_base_cut_multiplier);
 
-class ClassicLookahead : public RouterLookahead {
+/**
+ * @brief RouterLookahead implementation. This lookahead predicts the cost of a routing by calculation and does not use a table.
+ *
+ * To predict routing cost, it will take into account what type of wire the route is starting from, for example an L4 wire.
+ * Then, it will calculate how many L4 wires it must use to reach the destination. Predicted cost is the average delay/congestion
+ * cost of an L4 wire * the predicted number of L4 wires needed to reach the destination.
+ *
+ * In modern FPGA architectures with many different wire types, this lookahead will result in subpar quality of results.
+ * Prefer using the map lookahead instead.
+ */
+class ClassicLookahead final : public RouterLookahead {
   public:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
@@ -143,15 +151,20 @@ class ClassicLookahead : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::write_intra_cluster unimplemented");
     }
 
-    float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
-        return -1.;
+    float get_opin_distance_min_delay(int /*physical_tile_idx*/, const t_physical_tile_loc& /*from_loc*/, const t_physical_tile_loc& /*to_loc*/) const override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::get_opin_distance_min_delay unimplemented");
     }
 
   private:
     float classic_wire_lookahead_cost(RRNodeId node, RRNodeId target_node, float criticality, float R_upstream) const;
 };
 
-class NoOpLookahead : public RouterLookahead {
+/**
+ * @brief NoOp lookahead that returns zero for any queries.
+ *
+ * This lookahead is used in the router lookahead profiler to do a full dijkstra flood fill without using any heuristics.
+ */
+class NoOpLookahead final : public RouterLookahead {
   protected:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
@@ -179,7 +192,10 @@ class NoOpLookahead : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "write_intra_cluster not supported for NoOpLookahead");
     }
 
-    float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
-        return -1.;
+  public:
+    // Public so SimpleDelayModel can call it through the
+    // concrete type statically, without using dynamic dispatch.
+    float get_opin_distance_min_delay(int /*physical_tile_idx*/, const t_physical_tile_loc& /*from_loc*/, const t_physical_tile_loc& /*to_loc*/) const override {
+        VPR_THROW(VPR_ERROR_ROUTE, "get_opin_distance_min_delay not supported for NoOpLookahead");
     }
 };

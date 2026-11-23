@@ -2,17 +2,17 @@
 #include "stats.h"
 
 #include <fstream>
-#include <sstream>
 #include <vector>
 #include <algorithm>
-#include <filesystem>
 #include <string>
 #include <iomanip>
-#include <tuple>
+#include <limits>
+#include <unordered_set>
 
 #include "physical_types.h"
 #include "physical_types_util.h"
 #include "route_tree.h"
+#include "rr_graph_view.h"
 #include "vpr_context.h"
 #include "vpr_utils.h"
 #include "vtr_assert.h"
@@ -27,102 +27,19 @@
 #include "rr_graph_area.h"
 #include "segment_stats.h"
 #include "channel_stats.h"
+#include "echo_files.h"
 #include "interposer_routing_stats.h"
-
-#include "crr_common.h"
-
-namespace fs = std::filesystem;
 
 /********************** Subroutines local to this module *********************/
 
-// Helper struct to parse the sb_id keys
-// Using anonymous namespace to avoid polluting the global namespace
-namespace {
-struct SBKeyParts {
-    std::string filename;
-    int row;
-    int col;
-};
-} // namespace
-
-// Parse the key to extract filename, row, and column
-static SBKeyParts parse_sb_key(const std::string& key) {
-    SBKeyParts parts;
-
-    // Find the last two underscores
-    size_t last_underscore = key.rfind('_');
-    size_t second_last_underscore = key.rfind('_', last_underscore - 1);
-
-    parts.filename = key.substr(0, second_last_underscore);
-    parts.row = std::stoi(key.substr(second_last_underscore + 1, last_underscore - second_last_underscore - 1));
-    parts.col = std::stoi(key.substr(last_underscore + 1));
-
-    return parts;
-}
-
-// Read CSV file and keep first NUM_EMPTY_ROWS rows completely and first NUM_EMPTY_COLS columns of all other rows
-static std::vector<std::vector<std::string>> read_and_trim_csv(const std::string& filepath) {
-    std::vector<std::vector<std::string>> data;
-    std::ifstream file(filepath);
-
-    if (!file.is_open()) {
-        VTR_LOG_ERROR("Failed to open file: %s\n", filepath.c_str());
-        return data;
-    }
-
-    std::string line;
-    int row_count = 0;
-    while (std::getline(file, line)) {
-        std::vector<std::string> row;
-        std::stringstream ss(line);
-        std::string cell;
-        int col_count = 0;
-
-        if (row_count < crrgenerator::NUM_EMPTY_ROWS) {
-            // Keep entire row for first NUM_EMPTY_ROWS rows
-            while (std::getline(ss, cell, ',')) {
-                row.push_back(cell);
-            }
-        } else {
-            // Keep only first NUM_EMPTY_COLS columns for other rows
-            while (std::getline(ss, cell, ',') && col_count < crrgenerator::NUM_EMPTY_COLS) {
-                row.push_back(cell);
-                col_count++;
-            }
-        }
-
-        data.push_back(row);
-        row_count++;
-    }
-
-    file.close();
-    return data;
-}
-
-// Write 2D vector to CSV file
-static void write_csv(const std::string& filepath, const std::vector<std::vector<std::string>>& data) {
-    std::ofstream file(filepath);
-
-    for (size_t i = 0; i < data.size(); ++i) {
-        for (size_t j = 0; j < data[i].size(); ++j) {
-            file << data[i][j];
-            if (j < data[i].size() - 1) {
-                file << ",";
-            }
-        }
-        file << "\n";
-    }
-
-    file.close();
-}
-
 /**
- * @brief Loads the two arrays passed in with the total occupancy at each of the
+ * @brief Loads the occupancy arrays with the total occupancy at each of the
  *        channel segments in the FPGA.
  */
 static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::NdMatrix<int, 3>& chanx_occ,
-                                     vtr::NdMatrix<int, 3>& chany_occ);
+                                     vtr::NdMatrix<int, 3>& chany_occ,
+                                     vtr::NdMatrix<int, 3>& chanz_occ);
 
 /**
  * @brief Writes channel occupancy data to a file.
@@ -147,6 +64,22 @@ static void write_channel_occupancy_table(std::string_view filename,
  */
 static void length_and_bends_stats(const Netlist<>& net_list, bool is_flat);
 
+/**
+ * @brief Writes the routed wire usage of each net to a file.
+ *
+ * Each row contains the routed wirelength, number of segments and bends of
+ * the net (as computed by get_num_bends_and_length, so the lengths sum to the
+ * total wirelength reported in the log), along with the bounding box of the
+ * placed tiles which the net connects. The net name is the last column.
+ *
+ *  @param filename     Output file path.
+ *  @param net_list     The netlist which was routed.
+ *  @param is_flat      Whether the routing is flat (net_list is the atom netlist).
+ */
+static void write_routed_net_wire_usage(const std::string& filename,
+                                        const Netlist<>& net_list,
+                                        bool is_flat);
+
 ///@brief Determines how many tracks are used in each channel and prints out statistics
 static void get_channel_occupancy_stats(const Netlist<>& net_list);
 
@@ -169,6 +102,8 @@ void routing_stats(const Netlist<>& net_list,
     int num_rr_switch = rr_graph.num_rr_switches();
 
     length_and_bends_stats(net_list, is_flat);
+    if (isEchoFileEnabled(E_ECHO_ROUTED_NET_WIRE_USAGE))
+        write_routed_net_wire_usage(getEchoFileName(E_ECHO_ROUTED_NET_WIRE_USAGE), net_list, is_flat);
     print_channel_stats(is_flat);
     get_channel_occupancy_stats(net_list);
     print_interposer_routing_stats(net_list);
@@ -222,117 +157,80 @@ void routing_stats(const Netlist<>& net_list,
     }
 }
 
-void write_sb_count_stats(const Netlist<>& net_list,
-                          const std::string& sb_map_dir,
-                          const std::string& sb_count_dir) {
-    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
-    const RoutingContext& route_ctx = g_vpr_ctx.routing();
-    std::unordered_map<std::string, int> sb_count;
-
-    // Check if the sb_count_dir exists and is a director
-    // If not, create it
-    if (!fs::exists(sb_count_dir)) {
-        fs::create_directories(sb_count_dir);
-    }
-    if (!fs::is_directory(sb_count_dir)) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "sb_count_dir is not a directory: %s\n", sb_count_dir.c_str());
+static void write_routed_net_wire_usage(const std::string& filename,
+                                        const Netlist<>& net_list,
+                                        bool is_flat) {
+    std::ofstream os(filename);
+    if (!os) {
+        VTR_LOG_WARN("Unable to open routed net wire usage echo file '%s' for writing.\n", filename.c_str());
+        return;
     }
 
+    os << "# Routed wire usage of each net.\n";
+    os << "#   num_pins:  Number of pins on the net.\n";
+    os << "#   status:    global (ignored by the router) | no_sinks | absorbed (no wires used) | routed.\n";
+    os << "#   num_tiles: Number of distinct placed tiles connected by the net (by tile root location).\n";
+    os << "#   bb_dx/dy:  Placed tile bounding box span, including the adjacent channel (+1).\n";
+    os << "#   bb_dz:     Number of layers crossed by the placed tile bounding box.\n";
+    os << "#   length:    Routed wirelength, in units of 1 tile wire segments.\n";
+    os << "#   segments:  Number of CHANX / CHANY wires used.\n";
+    os << "#   bends:     Number of bends in the routing.\n";
+    os << "num_pins status num_tiles bb_dx bb_dy bb_dz length segments bends net_name\n";
     for (ParentNetId net_id : net_list.nets()) {
-        if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) {
-            const vtr::optional<RouteTree>& tree = route_ctx.route_trees[net_id];
-            if (!tree) {
-                continue;
-            }
-
-            for (const RouteTreeNode& rt_node : tree.value().all_nodes()) {
-                auto parent = rt_node.parent();
-                // Skip the root node
-                if (!parent) {
-                    continue;
-                }
-
-                const RouteTreeNode& parent_rt_node = parent.value();
-
-                RRNodeId src_node = parent_rt_node.inode;
-                RRNodeId sink_node = rt_node.inode;
-                std::vector<RREdgeId> edges = rr_graph.find_edges(src_node, sink_node);
-                VTR_ASSERT(edges.size() == 1);
-                RRSwitchId switch_id = RRSwitchId(rr_graph.edge_switch(edges[0]));
-                const std::string& sw_template_id = rr_graph.rr_switch_inf(switch_id).template_id;
-                if (sw_template_id.empty()) {
-                    continue;
-                }
-                if (sb_count.find(sw_template_id) == sb_count.end()) {
-                    sb_count[sw_template_id] = 0;
-                }
-                sb_count[sw_template_id]++;
-            }
+        // Compute the bounding box over the root locations of the tiles which
+        // the pins of this net are placed in.
+        int min_x = std::numeric_limits<int>::max();
+        int max_x = std::numeric_limits<int>::lowest();
+        int min_y = std::numeric_limits<int>::max();
+        int max_y = std::numeric_limits<int>::lowest();
+        int min_z = std::numeric_limits<int>::max();
+        int max_z = std::numeric_limits<int>::lowest();
+        std::unordered_set<t_physical_tile_loc> net_tile_locs;
+        for (ParentPinId pin_id : net_list.net_pins(net_id)) {
+            t_pl_loc blk_loc = get_block_loc(net_list.pin_block(pin_id), is_flat).loc;
+            min_x = std::min(min_x, blk_loc.x);
+            max_x = std::max(max_x, blk_loc.x);
+            min_y = std::min(min_y, blk_loc.y);
+            max_y = std::max(max_y, blk_loc.y);
+            min_z = std::min(min_z, blk_loc.layer);
+            max_z = std::max(max_z, blk_loc.layer);
+            net_tile_locs.insert(t_physical_tile_loc(blk_loc.x, blk_loc.y, blk_loc.layer));
         }
-    }
+        VTR_ASSERT(!net_tile_locs.empty());
 
-    // Write the sb_count to a file
-    // First, read all CSV files from directory and trim them
-    std::unordered_map<std::string, std::vector<std::vector<std::string>>> csv_data;
+        // Same convention as the placer: the x and y spans include the adjacent
+        // channel, and the z span only counts layer crossings.
+        int bb_dx = max_x - min_x + 1;
+        int bb_dy = max_y - min_y + 1;
+        int bb_dz = max_z - min_z;
 
-    for (const auto& entry : fs::directory_iterator(sb_map_dir)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".csv") {
-            std::string filename = entry.path().filename().string();
-            csv_data[filename] = read_and_trim_csv(entry.path().string());
-        }
-    }
-
-    // Group sb_count entries by filename
-    std::unordered_map<std::string, std::vector<std::tuple<int, int, int>>> file_groups;
-
-    for (const auto& [sb_id, count] : sb_count) {
-        SBKeyParts parts = parse_sb_key(sb_id);
-        file_groups[parts.filename].push_back({parts.row, parts.col, count});
-    }
-
-    // Process each file
-    for (auto& [filename, data] : csv_data) {
-        // Check if this file has updates from sb_count
-        if (file_groups.find(filename) == file_groups.end()) {
-            // No updates for this file, just write trimmed version
-            std::string output_path = sb_count_dir + "/" + filename;
-            write_csv(output_path, data);
-            VTR_LOG("Written trimmed CSV: %s\n", filename.c_str());
-            continue;
+        // Collect the routed wire usage, using the same criteria as the
+        // wirelength statistics printed in the log.
+        const char* status = "routed";
+        int bends = 0;
+        int length = 0;
+        int segments = 0;
+        if (net_list.net_is_ignored(net_id)) {
+            status = "global";
+        } else if (net_list.net_sinks(net_id).size() == 0) {
+            status = "no_sinks";
+        } else {
+            bool is_absorbed;
+            get_num_bends_and_length(net_id, &bends, &length, &segments, &is_absorbed);
+            if (is_absorbed)
+                status = "absorbed";
         }
 
-        const auto& entries = file_groups[filename];
-
-        // Find maximum row and column needed
-        int max_row = 0, max_col = 0;
-        for (const auto& entry : entries) {
-            max_row = std::max(max_row, std::get<0>(entry));
-            max_col = std::max(max_col, std::get<1>(entry));
-        }
-
-        // Expand data structure if needed
-        while (data.size() <= static_cast<size_t>(max_row)) {
-            data.push_back(std::vector<std::string>());
-        }
-
-        for (auto& row : data) {
-            while (row.size() <= static_cast<size_t>(max_col)) {
-                row.push_back("");
-            }
-        }
-
-        // Update values from sb_count
-        for (const auto& entry : entries) {
-            int row = std::get<0>(entry);
-            int col = std::get<1>(entry);
-            int count = std::get<2>(entry);
-            data[row][col] = std::to_string(count);
-        }
-
-        // Write updated file
-        std::string output_path = sb_count_dir + "/" + filename;
-        write_csv(output_path, data);
-        VTR_LOG("Written switchbox counts to: %s\n", filename.c_str());
+        os << net_list.net_pins(net_id).size() << " "
+           << status << " "
+           << net_tile_locs.size() << " "
+           << bb_dx << " "
+           << bb_dy << " "
+           << bb_dz << " "
+           << length << " "
+           << segments << " "
+           << bends << " "
+           << net_list.net_name(net_id) << "\n";
     }
 }
 
@@ -417,15 +315,25 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
                                            }},
                                            0);
 
-    load_channel_occupancies(net_list, chanx_occ, chany_occ);
+    vtr::NdMatrix<int, 3> chanz_occ;
+    if (num_layers > 1) {
+        chanz_occ = vtr::NdMatrix<int, 3>({{num_layers, width, height}}, 0);
+    }
+
+    load_channel_occupancies(net_list, chanx_occ, chany_occ, chanz_occ);
 
     write_channel_occupancy_table("chanx_occupancy.txt", chanx_occ, device_ctx.rr_chan_segment_width.x);
     write_channel_occupancy_table("chany_occupancy.txt", chany_occ, device_ctx.rr_chan_segment_width.y);
+    if (num_layers > 1) {
+        write_channel_occupancy_table("chanz_occupancy.txt", chanz_occ, device_ctx.rr_chan_segment_width.z);
+    }
 
     int total_cap_x = 0;
     int total_used_x = 0;
     int total_cap_y = 0;
     int total_used_y = 0;
+    int total_cap_z = 0;
+    int total_used_z = 0;
 
     VTR_LOG("\n");
     VTR_LOG("X - Directed channels: layer   y   max occ   ave occ   ave cap\n");
@@ -478,16 +386,35 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
         }
     }
 
+    if (num_layers > 1) {
+        for (size_t layer = 0; layer < num_layers; ++layer) {
+            for (size_t x = 0; x < width; ++x) {
+                for (size_t y = 0; y < height; ++y) {
+                    total_cap_z += device_ctx.rr_chan_segment_width.z[layer][x][y];
+                    total_used_z += chanz_occ[layer][x][y];
+                }
+            }
+        }
+    }
+
     VTR_LOG("\n");
 
-    VTR_LOG("Total existing wires segments: CHANX %9d, CHANY %9d, ALL %9d\n",
-            total_cap_x, total_cap_y, total_cap_x + total_cap_y);
-    VTR_LOG("Total used wires segments:     CHANX %9d, CHANY %9d, ALL %9d\n",
-            total_used_x, total_used_y, total_used_x + total_used_y);
-    VTR_LOG("Usage percentage:              CHANX %8.1f%%, CHANY %8.1f%%, ALL %8.1f%%\n",
-            100.0 * static_cast<double>(total_used_x) / total_cap_x,
-            100.0 * static_cast<double>(total_used_y) / total_cap_y,
-            100.0 * static_cast<double>(total_used_x + total_used_y) / (total_cap_x + total_cap_y));
+    const int total_cap_all = total_cap_x + total_cap_y + total_cap_z;
+    const int total_used_all = total_used_x + total_used_y + total_used_z;
+
+    auto usage_percent = [](int used, int cap) -> float {
+        return cap > 0 ? 100.0 * used / cap : 0.0;
+    };
+
+    VTR_LOG("Total existing wires segments: CHANX %9d, CHANY %9d, CHANZ %9d, ALL %9d\n",
+            total_cap_x, total_cap_y, total_cap_z, total_cap_all);
+    VTR_LOG("Total used wires segments:     CHANX %9d, CHANY %9d, CHANZ %9d, ALL %9d\n",
+            total_used_x, total_used_y, total_used_z, total_used_all);
+    VTR_LOG("Usage percentage:              CHANX %8.1f%%, CHANY %8.1f%%, CHANZ %8.1f%%, ALL %8.1f%%\n",
+            usage_percent(total_used_x, total_cap_x),
+            usage_percent(total_used_y, total_cap_y),
+            usage_percent(total_used_z, total_cap_z),
+            usage_percent(total_used_all, total_cap_all));
 
     VTR_LOG("\n");
 }
@@ -536,14 +463,18 @@ static void write_channel_occupancy_table(std::string_view filename,
 
 static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::NdMatrix<int, 3>& chanx_occ,
-                                     vtr::NdMatrix<int, 3>& chany_occ) {
+                                     vtr::NdMatrix<int, 3>& chany_occ,
+                                     vtr::NdMatrix<int, 3>& chanz_occ) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
     // First set the occupancy of everything to zero.
     chanx_occ.fill(0);
     chany_occ.fill(0);
+    if (!chanz_occ.empty()) {
+        chanz_occ.fill(0);
+    }
 
     // Now go through each net and count the tracks and pins used everywhere
     for (ParentNetId net_id : net_list.nets()) {
@@ -571,6 +502,12 @@ static void load_channel_occupancies(const Netlist<>& net_list,
                 int layer = rr_graph.node_layer_low(inode);
                 for (int j = rr_graph.node_ylow(inode); j <= rr_graph.node_yhigh(inode); j++)
                     chany_occ[layer][i][j]++;
+            } else if (rr_type == e_rr_type::CHANZ) {
+                VTR_ASSERT_SAFE(!chanz_occ.empty());
+                int x = rr_graph.node_xlow(inode);
+                int y = rr_graph.node_ylow(inode);
+                for (int layer = rr_graph.node_layer_low(inode); layer <= rr_graph.node_layer_high(inode); layer++)
+                    chanz_occ[layer][x][y]++;
             }
         }
     }

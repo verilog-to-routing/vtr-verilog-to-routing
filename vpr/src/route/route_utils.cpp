@@ -18,6 +18,7 @@
 #include "tatum/TimingReporter.hpp"
 #include "stats.h"
 #include "timing_util.h"
+#include "vpr_types.h"
 
 #ifdef VPR_USE_TBB
 #include <tbb/combinable.h>
@@ -217,14 +218,31 @@ bool is_better_quality_routing(const vtr::vector<ParentNetId, vtr::optional<Rout
 }
 
 bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router_opts, int itry, std::shared_ptr<const SetupHoldTimingInfo> timing_info, bool rcv_finished) {
-    if (routing_is_feasible) {
-        if (router_opts.routing_budgets_algorithm != YOYO) {
+    // If the routing is not feasible, the iteration is not complete.
+    if (!routing_is_feasible)
+        return false;
+
+    // For the yoyo algorithm, we want to continue until the slack is resolved
+    // or RCV is declared finished. We also want at least one iteration so the
+    // timing budgets get set properly.
+    if (router_opts.routing_budgets_algorithm == YOYO) {
+        if ((timing_info->hold_worst_negative_slack() == 0 || rcv_finished) && itry != 1)
             return true;
-        } else if (router_opts.routing_budgets_algorithm == YOYO && (timing_info->hold_worst_negative_slack() == 0 || rcv_finished) && itry != 1) {
-            return true;
-        }
+        else
+            return false;
     }
-    return false;
+
+    // For low-skew clock, we always want to do at least two iterations. The first iteration
+    // selects the low-skew budgets, so we need another iteration to resolve it.
+    if (router_opts.routing_budgets_algorithm == LOW_SKEW_CLOCK) {
+        if (itry != 1)
+            return true;
+        else
+            return false;
+    }
+
+    // The routing iteration is complete when routing is feasible.
+    return true;
 }
 
 void generate_route_timing_reports(const t_router_opts& router_opts,
@@ -269,6 +287,9 @@ void print_overused_nodes_status(const t_router_opts& router_opts, const Overuse
     }
 
     log_overused_nodes_status(max_logged_overused_rr_nodes);
+    log_control_congested_bus_muxes_status(g_vpr_ctx.device().rr_bus_muxes,
+                                           g_vpr_ctx.routing().bus_mux_route_inf,
+                                           g_vpr_ctx.clustering().clb_nlist);
     VTR_LOG("\n");
 }
 
@@ -408,86 +429,6 @@ void prune_unused_non_configurable_nets(CBRR& connections_inf,
         // Prune the branches of the tree that don't legally lead to sinks
         tree.prune(connections_inf, &usage);
     }
-}
-
-vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_nets_choking_spots(const Netlist<>& net_list,
-                                                                                                const vtr::vector<ParentNetId,
-                                                                                                                  std::vector<std::vector<int>>>& net_terminal_groups,
-                                                                                                const vtr::vector<ParentNetId,
-                                                                                                                  std::vector<int>>& net_terminal_group_num,
-                                                                                                bool router_opt_choke_points,
-                                                                                                bool is_flat) {
-    vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> choking_spots(net_list.nets().size());
-    for (const auto& net_id : net_list.nets()) {
-        choking_spots[net_id].resize(net_list.net_pins(net_id).size());
-    }
-
-    // Return if the architecture doesn't have any potential choke points or flat router is not enabled
-    if (!router_opt_choke_points || !is_flat) {
-        return choking_spots;
-    }
-
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-    const auto& route_ctx = g_vpr_ctx.routing();
-    const auto& net_rr_terminal = route_ctx.net_rr_terminals;
-
-    for (const auto& net_id : net_list.nets()) {
-        int pin_count = 0;
-        // Global nets are not routed, thus we don't consider them.
-        if (net_list.net_is_global(net_id)) {
-            continue;
-        }
-        for (auto pin_id : net_list.net_pins(net_id)) {
-            // pin_count == 0 corresponds to the net's source pin
-            if (pin_count == 0) {
-                pin_count++;
-                continue;
-            }
-            auto block_id = net_list.pin_block(pin_id);
-            auto blk_loc = get_block_loc(block_id, is_flat);
-            int group_num = net_terminal_group_num[net_id][pin_count];
-            // This is a group of sinks, including the current pin_id, which share a specific number of parent blocks.
-            // To determine the choke points of the current sink, pin_id, we only consider the sinks in this group for the
-            // run-time purpose
-            std::vector<int> sink_grp = net_terminal_groups[net_id][group_num];
-            VTR_ASSERT((int)sink_grp.size() >= 1);
-            if (sink_grp.size() == 1) {
-                pin_count++;
-                continue;
-            } else {
-                // get the ptc_number of the sinks in the group
-                std::ranges::for_each(sink_grp, [&rr_graph](int& sink_rr_num) {
-                    sink_rr_num = rr_graph.node_ptc_num(RRNodeId(sink_rr_num));
-                });
-
-                t_physical_tile_loc grid_loc;
-                grid_loc.x = blk_loc.loc.x;
-                grid_loc.y = blk_loc.loc.y;
-                grid_loc.layer_num = blk_loc.loc.layer;
-                t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type(grid_loc);
-                // Get the choke points of the sink corresponds to pin_count given the sink group
-                auto sink_choking_spots = get_sink_choking_points(physical_type,
-                                                                  rr_graph.node_ptc_num(RRNodeId(net_rr_terminal[net_id][pin_count])),
-                                                                  sink_grp);
-                // Store choke points rr_node_id and the number reachable sinks
-                for (const auto& choking_spot : sink_choking_spots) {
-                    int pin_physical_num = choking_spot.first;
-                    int num_reachable_sinks = choking_spot.second;
-                    auto pin_rr_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),
-                                                             physical_type,
-                                                             grid_loc,
-                                                             pin_physical_num);
-                    if (pin_rr_node_id != RRNodeId::INVALID()) {
-                        choking_spots[net_id][pin_count].insert(std::make_pair(pin_rr_node_id, num_reachable_sinks));
-                    }
-                }
-            }
-            pin_count++;
-        }
-    }
-
-    return choking_spots;
 }
 
 /** Wrapper for create_rr_graph() with extra checks */

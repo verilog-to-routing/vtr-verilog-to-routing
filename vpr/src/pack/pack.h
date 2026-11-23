@@ -8,13 +8,13 @@
 #include "logical_ram_infer.h"
 
 class AtomNetId;
+class LbTypeRRGraph;
 class FlatPlacementInfo;
 class PreClusterTimingManager;
 class Prepacker;
 struct t_analysis_opts;
 struct t_ap_opts;
 struct t_arch;
-struct t_lb_type_rr_node;
 struct t_packer_opts;
 struct t_logical_block_type;
 struct t_vpr_setup;
@@ -26,12 +26,8 @@ using t_logical_block_type_ptr = const t_logical_block_type*;
  *
  *  @param packer_opts
  *              Options passed by the user to configure the packing algorithm.
- *  @param analysis_opts
- *              Options passed by the user to configure how analysis is
- *              performed in the packer.
  *  @param arch
  *              The architecture to create clusters for.
- *  @param lb_type_rr_graphs
  *  @param prepacker
  *              The prepacker used to form atoms into molecules prior to packing.
  *  @param pre_cluster_timing_manager
@@ -45,17 +41,23 @@ using t_logical_block_type_ptr = const t_logical_block_type*;
  *              Pre-computed logical RAM groups with assigned physical types.
  *              Used to guide packing for memory clusters. Defaults to an empty
  *              mapper if not provided.
+ *  @param estimated_type_instance_counts
+ *              Estimated number of instances required for each logical block
+ *              type, computed before packing (see DeviceSizeEstimator). Used
+ *              by APPack to decide, per block type, whether unrelated
+ *              clustering should be enabled from the start. Defaults to an
+ *              empty map if not provided, in which case unrelated clustering
+ *              is left off on the first packing attempt.
  */
 bool try_pack(const t_packer_opts& packer_opts,
-              const t_analysis_opts& analysis_opts,
               const t_ap_opts& ap_opts,
               const t_arch& arch,
-              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
               const Prepacker& prepacker,
               const PreClusterTimingManager& pre_cluster_timing_manager,
               const FlatPlacementInfo& flat_placement_info,
               const t_vpr_setup& vpr_setup,
-              const RamMapper& ram_mapper = RamMapper{});
+              const RamMapper& ram_mapper = RamMapper{},
+              const std::map<t_logical_block_type_ptr, size_t>& estimated_type_instance_counts = {});
 
 /**
  * @brief Try to fit the block type instances on the given architecture. Will

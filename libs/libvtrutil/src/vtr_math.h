@@ -143,37 +143,6 @@ double arithmean(const Container& c) {
     return arithmean(std::begin(c), std::end(c));
 }
 
-/**
- * @brief Returns the greatest common divisor of x and y
- *
- * Note that T should be an integral type
- */
-template<typename T>
-static T gcd(T x, T y) {
-    static_assert(std::is_integral<T>::value, "T must be integral");
-    // Euclidean algorithm
-    if (y == 0) {
-        return x;
-    }
-    return gcd(y, x % y);
-}
-
-/**
- * @brief Return the least common multiple of x and y
- *
- * Note that T should be an integral type
- */
-template<typename T>
-T lcm(T x, T y) {
-    static_assert(std::is_integral<T>::value, "T must be integral");
-
-    if (x == 0 && y == 0) {
-        return 0;
-    } else {
-        return (x / gcd(x, y)) * y;
-    }
-}
-
 constexpr double DEFAULT_REL_TOL = 1e-9;
 constexpr double DEFAULT_ABS_TOL = 0;
 

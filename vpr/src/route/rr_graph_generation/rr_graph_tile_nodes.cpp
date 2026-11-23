@@ -34,7 +34,7 @@ void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_coordinates(class_inode, (short)root_loc.x, (short)root_loc.y, (short)(root_loc.x + physical_type->width - 1), (short)(root_loc.y + physical_type->height - 1));
         VTR_ASSERT(root_loc.layer_num <= std::numeric_limits<short>::max());
         rr_graph_builder.set_node_layer(class_inode, root_loc.layer_num, root_loc.layer_num);
-        const NodeRCIndex rc_index = find_create_rr_rc_data(0, 0, mutable_device_ctx.rr_rc_data);
+        const NodeRCIndex rc_index = mutable_device_ctx.rr_rc_data.find_create(0, 0);
         rr_graph_builder.set_node_rc_index(class_inode, rc_index);
         rr_graph_builder.set_node_class_num(class_inode, class_num);
     }
@@ -46,13 +46,14 @@ void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                        t_physical_tile_type_ptr physical_type) {
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
     const RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
+    // Reuse coordinate vector capacity across pins.
+    std::vector<int> x_offset_vec;
+    std::vector<int> y_offset_vec;
+    std::vector<e_side> pin_sides_vec;
     for (int pin_num : pin_num_vec) {
         e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_type, pin_num);
         VTR_ASSERT(pin_type == e_pin_type::DRIVER || pin_type == e_pin_type::RECEIVER);
-        std::vector<int> x_offset_vec;
-        std::vector<int> y_offset_vec;
-        std::vector<e_side> pin_sides_vec;
-        std::tie(x_offset_vec, y_offset_vec, pin_sides_vec) = get_pin_coordinates(physical_type, pin_num, std::vector<e_side>(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end()));
+        get_pin_coordinates(physical_type, pin_num, TOTAL_2D_SIDES, x_offset_vec, y_offset_vec, pin_sides_vec);
         VTR_ASSERT(!pin_sides_vec.empty());
         for (int pin_coord = 0; pin_coord < (int)pin_sides_vec.size(); pin_coord++) {
             int x_offset = x_offset_vec[pin_coord];
@@ -77,7 +78,7 @@ void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                 rr_graph_builder.set_node_capacity(node_id, 1);
                 float R = 0.;
                 float C = 0.;
-                rr_graph_builder.set_node_rc_index(node_id, find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data));
+                rr_graph_builder.set_node_rc_index(node_id, mutable_device_ctx.rr_rc_data.find_create(R, C));
                 rr_graph_builder.set_node_pin_num(node_id, pin_num);
                 // Note that we store the grid tile location and side where the pin is located,
                 // which greatly simplifies the drawing code

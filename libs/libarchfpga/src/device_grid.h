@@ -303,14 +303,14 @@ class DeviceGrid {
 
     /// Returns the list of horizontal interposer cut locations for each layer,
     /// i.e. y value of the tile row just below each cut
-    /// Accessed as [layer][cut_idx]
+    /// Accessed as [layer][cut_idx]. Cuts in each layer are sorted in ascending order.
     inline const std::vector<std::vector<int>>& get_horizontal_interposer_cuts() const {
         return horizontal_interposer_cuts_;
     }
 
     /// Returns the list of vertical interposer cut locations for each layer,
     /// i.e. x value of the tile column just to the left each cut
-    /// Accessed as [layer][cut_idx]
+    /// Accessed as [layer][cut_idx]. Cuts in each layer are sorted in ascending order.
     inline const std::vector<std::vector<int>>& get_vertical_interposer_cuts() const {
         return vertical_interposer_cuts_;
     }
@@ -324,6 +324,16 @@ class DeviceGrid {
      * @brief Returns if two locations loc_a and loc_b are on the same die, usable on 2D, 2.5D and 3D architectures.
      */
     bool are_locs_on_same_die(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const;
+
+    /**
+     * @brief Returns true if the straight line between loc_a and loc_b crosses a vertical interposer cut.
+     */
+    bool do_locs_cross_vertical_cut(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const;
+
+    /**
+     * @brief Returns true if the straight line between loc_a and loc_b crosses a horizontal interposer cut.
+     */
+    bool do_locs_cross_horizontal_cut(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const;
 
     /**
      * @brief Get the die identifier of a location. In 2.5D and 3D architectures each die has its own unique identifier.
