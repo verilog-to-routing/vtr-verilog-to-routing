@@ -271,6 +271,9 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
     overuse_info.worst_overuse = worst_overuse;
 #endif
 
+    // Update bus-mux edge history costs for this routing iteration.
+    pathfinder_update_bus_mux_acc_cost(route_ctx.bus_mux_route_inf, acc_fac);
+
     // A legal routing has no bus muxes using multiple input sets.
     overuse_info.control_congested_bus_muxes = count_control_congested_bus_muxes(route_ctx.bus_mux_route_inf);
 }

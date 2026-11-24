@@ -11,8 +11,9 @@
  * other routed bits is treated as "control congested". Its present cost grows
  * with the number of bits it would move onto another input set.
  *
- * No history term is needed because the cost is tracked per input set, which
- * already makes the minority choice more expensive.
+ * Each bus-mux edge (one input set driving one output bit) also has a history
+ * cost. This cost increases on occupied edges while the mux uses multiple input
+ * sets and decays toward 1 when at most one input set is in use.
  */
 #include <algorithm>
 #include <string>
@@ -92,13 +93,19 @@ struct t_bus_mux_route_inf {
     /// @brief Route-tree uses of each bus-mux edge, indexed by edge_index(bit, set).
     std::vector<int> edge_occ;
 
-    /// @brief Initialize per-set and per-edge occupancy to zero.
+    /// @brief History cost of each bus-mux edge, indexed by edge_index(bit, set).
+    ///
+    /// Initialized to 1 and updated by pathfinder_update_bus_mux_acc_cost().
+    std::vector<float> edge_acc_cost;
+
+    /// @brief Initialize per-set and per-edge occupancy to zero and edge history costs to 1.
     void init(int num_sets, int num_bits) {
         set_occ.assign(num_sets, 0);
         edge_occ.assign((size_t)num_sets * num_bits, 0);
+        edge_acc_cost.assign((size_t)num_sets * num_bits, 1.f);
     }
 
-    /// @brief Clear per-set and per-edge occupancy.
+    /// @brief Clear per-set and per-edge occupancy while preserving edge history costs.
     void clear_occ() {
         std::fill(set_occ.begin(), set_occ.end(), 0);
         std::fill(edge_occ.begin(), edge_occ.end(), 0);

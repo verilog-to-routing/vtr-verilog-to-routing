@@ -32,7 +32,9 @@ float get_bus_mux_cong_cost(RRNodeId from_node, RRNodeId to_node, float pres_fac
     if (displaced_bits == 0) {
         return 0.f;
     }
-    return get_single_rr_cong_base_cost(to_node) * get_single_rr_cong_acc_cost(to_node) * pres_fac * displaced_bits;
+    // Scale the control congestion cost by this edge's history cost.
+    float edge_acc_cost = mux_inf.edge_acc_cost[mux_inf.edge_index(bus_mux_edge->bit, bus_mux_edge->set)];
+    return get_single_rr_cong_base_cost(to_node) * get_single_rr_cong_acc_cost(to_node) * pres_fac * displaced_bits * edge_acc_cost;
 }
 
 void pathfinder_update_bus_mux_occupancy(vtr::vector<BusMuxId, t_bus_mux_route_inf>& bus_mux_route_inf,
@@ -55,6 +57,26 @@ void pathfinder_update_bus_mux_occupancy(vtr::vector<BusMuxId, t_bus_mux_route_i
     int& edge_occ = mux_inf.edge_occ[mux_inf.edge_index(bus_mux_edge->bit, bus_mux_edge->set)];
     edge_occ += add_or_sub;
     VTR_ASSERT(edge_occ >= 0);
+}
+
+void pathfinder_update_bus_mux_acc_cost(vtr::vector<BusMuxId, t_bus_mux_route_inf>& bus_mux_route_inf,
+                                        float acc_fac) {
+    // Fraction of history cost above 1 retained when at most one input set is in use.
+    constexpr float AGREED_MUX_ACC_COST_DECAY = 0.5f;
+
+    for (t_bus_mux_route_inf& mux_inf : bus_mux_route_inf) {
+        if (mux_inf.is_control_congested()) {
+            for (size_t iedge = 0; iedge < mux_inf.edge_occ.size(); iedge++) {
+                if (mux_inf.edge_occ[iedge] > 0) {
+                    mux_inf.edge_acc_cost[iedge] += acc_fac;
+                }
+            }
+        } else {
+            for (float& edge_acc_cost : mux_inf.edge_acc_cost) {
+                edge_acc_cost = 1.f + (edge_acc_cost - 1.f) * AGREED_MUX_ACC_COST_DECAY;
+            }
+        }
+    }
 }
 
 bool is_bus_mux_edge_control_congested(const RouteTreeNode& rt_node) {
