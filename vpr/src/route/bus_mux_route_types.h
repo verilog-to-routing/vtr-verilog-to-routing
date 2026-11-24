@@ -14,12 +14,14 @@
  * No history term is needed because the cost is tracked per input set, which
  * already makes the minority choice more expensive.
  */
+#include <algorithm>
 #include <string>
 #include <vector>
 
 #include "clustered_netlist_fwd.h"
 #include "physical_types.h"
 #include "rr_graph_fwd.h"
+#include "vtr_assert.h"
 #include "vtr_strong_id.h"
 #include "vtr_util.h"
 
@@ -86,6 +88,29 @@ struct t_rr_bus_mux_out_node {
 struct t_bus_mux_route_inf {
     /// @brief Routed bit counts indexed by input set [0..num_sets-1].
     std::vector<int> set_occ;
+
+    /// @brief Route-tree uses of each bus-mux edge, indexed by edge_index(bit, set).
+    std::vector<int> edge_occ;
+
+    /// @brief Initialize per-set and per-edge occupancy to zero.
+    void init(int num_sets, int num_bits) {
+        set_occ.assign(num_sets, 0);
+        edge_occ.assign((size_t)num_sets * num_bits, 0);
+    }
+
+    /// @brief Clear per-set and per-edge occupancy.
+    void clear_occ() {
+        std::fill(set_occ.begin(), set_occ.end(), 0);
+        std::fill(edge_occ.begin(), edge_occ.end(), 0);
+    }
+
+    /// @brief Return the index of input set `set` and output bit `bit` in the per-edge vectors.
+    size_t edge_index(int bit, int set) const {
+        VTR_ASSERT_SAFE(bit >= 0 && set >= 0 && (size_t)set < set_occ.size());
+        size_t index = (size_t)bit * set_occ.size() + set;
+        VTR_ASSERT_SAFE(index < edge_occ.size());
+        return index;
+    }
 
     /// @brief Count input sets driving at least one bit.
     int num_sets_in_use() const {

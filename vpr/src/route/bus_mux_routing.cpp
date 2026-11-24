@@ -12,7 +12,7 @@ void reset_bus_mux_route_inf(const vtr::vector<BusMuxId, t_rr_bus_mux>& rr_bus_m
                              vtr::vector<BusMuxId, t_bus_mux_route_inf>& bus_mux_route_inf) {
     bus_mux_route_inf.assign(rr_bus_muxes.size(), t_bus_mux_route_inf());
     for (BusMuxId mux_id : rr_bus_muxes.keys()) {
-        bus_mux_route_inf[mux_id].set_occ.assign(rr_bus_muxes[mux_id].num_sets, 0);
+        bus_mux_route_inf[mux_id].init(rr_bus_muxes[mux_id].num_sets, rr_bus_muxes[mux_id].num_bits);
     }
 }
 
@@ -47,9 +47,14 @@ void pathfinder_update_bus_mux_occupancy(vtr::vector<BusMuxId, t_bus_mux_route_i
         return;
     }
 
-    int& occ = bus_mux_route_inf[bus_mux_edge->mux_id].set_occ[bus_mux_edge->set];
+    t_bus_mux_route_inf& mux_inf = bus_mux_route_inf[bus_mux_edge->mux_id];
+    int& occ = mux_inf.set_occ[bus_mux_edge->set];
     occ += add_or_sub;
     VTR_ASSERT(occ >= 0);
+
+    int& edge_occ = mux_inf.edge_occ[mux_inf.edge_index(bus_mux_edge->bit, bus_mux_edge->set)];
+    edge_occ += add_or_sub;
+    VTR_ASSERT(edge_occ >= 0);
 }
 
 bool is_bus_mux_edge_control_congested(const RouteTreeNode& rt_node) {

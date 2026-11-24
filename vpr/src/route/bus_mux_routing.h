@@ -15,7 +15,7 @@
 #include "rr_graph_fwd.h"
 #include "vtr_vector.h"
 
-/// @brief Give every bus mux in rr_bus_muxes a zeroed per-set bit count in bus_mux_route_inf.
+/// @brief Reset each bus mux's per-set and per-edge occupancy to zero.
 void reset_bus_mux_route_inf(const vtr::vector<BusMuxId, t_rr_bus_mux>& rr_bus_muxes,
                              vtr::vector<BusMuxId, t_bus_mux_route_inf>& bus_mux_route_inf);
 
@@ -28,7 +28,7 @@ void reset_bus_mux_route_inf(const vtr::vector<BusMuxId, t_rr_bus_mux>& rr_bus_m
 float get_bus_mux_cong_cost(RRNodeId from_node, RRNodeId to_node, float pres_fac);
 
 /**
- * @brief Add add_or_sub (+1 or -1) to the bit count of the input set used by the edge into rt_node.
+ * @brief Add add_or_sub (+1 or -1) to the use counts of the bus-mux edge into rt_node and of its input set.
  *
  * No effect if rt_node has no parent or the edge is not part of a bus mux.
  */
