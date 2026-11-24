@@ -512,6 +512,10 @@ bool route(const Netlist<>& net_list,
                 bb_fac = std::min<int>(max_grid_dim, bb_fac * BB_SCALE_FACTOR);
 
                 route_ctx.route_bb = load_route_bb(net_list, bb_fac);
+
+                // Every bounding box was reloaded, so all nets are reported as updated
+                std::vector<ParentNetId> all_nets(net_list.nets().begin(), net_list.nets().end());
+                netlist_router->handle_bb_updated_nets(all_nets);
             }
 
             ++itry_conflicted_mode;
