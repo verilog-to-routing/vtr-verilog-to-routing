@@ -1158,6 +1158,10 @@ static void load_cluster_rr_bus_muxes(ClusterBlockId cluster_blk_id,
             mux.num_sets = std::max(mux.num_sets, edge->driver_set + 1);
 
             t_rr_bus_mux_out_node& out = device_ctx.rr_bus_mux_out_nodes[out_node];
+            if (out.in_edges.empty() || out.mux_id != mux_id) {
+                // Assign this output bit an index within its mux.
+                out.bit = mux.num_bits++;
+            }
             out.mux_id = mux_id;
             out.in_edges.push_back({in_node, edge->driver_set});
         }
@@ -1236,7 +1240,7 @@ std::optional<t_bus_mux_edge> find_bus_mux_edge(RRNodeId from_node, RRNodeId to_
 
     for (const t_rr_bus_mux_in_edge& in_edge : it->second.in_edges) {
         if (in_edge.from_node == from_node) {
-            return t_bus_mux_edge{it->second.mux_id, in_edge.set};
+            return t_bus_mux_edge{it->second.mux_id, in_edge.set, it->second.bit};
         }
     }
     return std::nullopt;

@@ -46,6 +46,8 @@ struct t_rr_bus_mux {
     const t_pb_graph_node* owner = nullptr;
     /// @brief Number of input sets (data lines).
     int num_sets = 0;
+    /// @brief Number of output bits present in the routing resource graph.
+    int num_bits = 0;
 
     /// @brief Describe the mux and its owner, e.g. "'a2a' in one_mult_27x27[0]".
     std::string describe() const {
@@ -56,10 +58,12 @@ struct t_rr_bus_mux {
     }
 };
 
-/// @brief The mux and input set an rr edge belongs to, see find_bus_mux_edge().
+/// @brief The mux, input set and output bit an rr edge belongs to, see find_bus_mux_edge().
 struct t_bus_mux_edge {
     BusMuxId mux_id;
     int set;
+    /// @brief Index of the output bit the edge drives [0..t_rr_bus_mux::num_bits-1].
+    int bit;
 };
 
 /// @brief An rr edge implementing one bit of a bus-based mux, seen from the mux output node.
@@ -72,6 +76,8 @@ struct t_rr_bus_mux_in_edge {
 struct t_rr_bus_mux_out_node {
     /// @brief The mux this output bit belongs to.
     BusMuxId mux_id;
+    /// @brief Index of this output bit in its mux [0..t_rr_bus_mux::num_bits-1].
+    int bit = -1;
     /// @brief The edges driving this output bit, one per input set present in the rr graph.
     std::vector<t_rr_bus_mux_in_edge> in_edges;
 };
