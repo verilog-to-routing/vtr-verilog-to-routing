@@ -31,21 +31,6 @@ static constexpr int window_size = 2;
 static t_pl_loc make_pl_loc(int x, int y, int sub_tile, int layer);
 
 /**
- * @brief Returns true if the physical tile at the given grid location is not empty.
- */
-static bool is_non_empty_physical_tile(const DeviceGrid& grid,
-                                       const t_physical_tile_loc& loc) {
-    t_physical_tile_type_ptr physical_type = grid.get_physical_type(loc);
-    if (!physical_type) {
-        return false;
-    }
-    if (physical_type->is_empty()) {
-        return false;
-    }
-    return true;
-}
-
-/**
  * @brief Returns true if the physical tile location is the root of a tile.
  */
 static bool is_root_physical_tile(const DeviceGrid& grid,
