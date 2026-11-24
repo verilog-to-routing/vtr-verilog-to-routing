@@ -45,8 +45,12 @@ WirelengthInfo calculate_wirelength_info(const Netlist<>& net_list, size_t avail
  * routing match those computed from scratch by the net_delay.cpp module. */
 bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay);
 
-/** Update bounding box for net if existing routing is close to boundary */
-void dynamic_update_bounding_boxes(const std::vector<ParentNetId>& rerouted_nets, std::vector<ParentNetId> out_bb_updated_nets);
+/**
+ * @brief Grow the bounding box of each rerouted net whose routing touches its boundary.
+ * @param rerouted_nets Nets rerouted in this iteration.
+ * @param out_bb_updated_nets Nets whose bounding box grew are appended to this list.
+ */
+void dynamic_update_bounding_boxes(const std::vector<ParentNetId>& rerouted_nets, std::vector<ParentNetId>& out_bb_updated_nets);
 
 /** Early exit code for cases where it is obvious that a successful route will not be found
  * Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit */
