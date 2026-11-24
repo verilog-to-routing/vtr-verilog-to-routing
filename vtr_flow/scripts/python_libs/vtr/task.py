@@ -357,6 +357,7 @@ def parse_circuit_constraint_list(circuit_constraint_list, circuits_list, arch_l
             "route_chan_width",
             "read_flat_place",
             "net_file",
+            "place_file",
             "sdc_file",
             "testbench",
         ]
@@ -849,6 +850,10 @@ def apply_cmd_line_circuit_constraints(cmd, circuit, config):
     net_file = config.circuit_constraints[circuit]["net_file"]
     if net_file is not None:
         cmd += ["--net_file", net_file]
+    # Check if the circuit has a .place file to read.
+    place_file = config.circuit_constraints[circuit]["place_file"]
+    if place_file is not None:
+        cmd += ["--place_file", place_file]
     # Check if the circuit has a specific SDC file.
     sdc_file = config.circuit_constraints[circuit]["sdc_file"]
     if sdc_file is not None:
