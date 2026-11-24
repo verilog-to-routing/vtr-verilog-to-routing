@@ -1,0 +1,89 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/TODAES_KOIOS
+# Path to directory of architectures to use
+archs_dir=arch/multi_die/hecate/3d/hecate_3D
+
+# Add architectures to list to sweep
+# All architectures without ESD, all switch-block and fanin/fanout options.
+
+# 5um die-to-die pitch
+arch_list_add=hecate_3d_sb_5um_bidir_fanin_4_fanout_4_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_5um_bidir_fanin_8_fanout_8_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_5um_bidir_fanin_16_fanout_16_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_5um_bidir_fanin_32_fanout_32_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_5um_bidir_fanin_64_fanout_64_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_5um_dir_fanin_4_fanout_4_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_5um_dir_fanin_8_fanout_8_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_5um_dir_fanin_16_fanout_16_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_5um_dir_fanin_32_fanout_32_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_5um_dir_fanin_64_fanout_64_without_esd_7nm.xml
+
+# 10um die-to-die pitch
+arch_list_add=hecate_3d_sb_10um_bidir_fanin_4_fanout_4_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_bidir_fanin_8_fanout_8_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_bidir_fanin_16_fanout_16_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_bidir_fanin_32_fanout_32_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_bidir_fanin_64_fanout_64_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_dir_fanin_4_fanout_4_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_dir_fanin_8_fanout_8_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_dir_fanin_16_fanout_16_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_dir_fanin_32_fanout_32_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_dir_fanin_64_fanout_64_without_esd_7nm.xml
+
+# 10um die-to-die pitch, reduced
+arch_list_add=hecate_3d_sb_10um_reduced_bidir_fanin_4_fanout_4_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_reduced_bidir_fanin_8_fanout_8_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_reduced_bidir_fanin_16_fanout_16_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_reduced_bidir_fanin_32_fanout_32_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_reduced_bidir_fanin_64_fanout_64_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_reduced_dir_fanin_4_fanout_4_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_reduced_dir_fanin_8_fanout_8_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_reduced_dir_fanin_16_fanout_16_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_reduced_dir_fanin_32_fanout_32_without_esd_7nm.xml
+arch_list_add=hecate_3d_sb_10um_reduced_dir_fanin_64_fanout_64_without_esd_7nm.xml
+
+
+# Add circuits to list to sweep
+circuit_list_add=attention_layer.v
+circuit_list_add=bnn.v
+circuit_list_add=bwave_like.fixed.large.v
+circuit_list_add=clstm_like.large.v
+circuit_list_add=clstm_like.medium.v
+circuit_list_add=clstm_like.small.v
+circuit_list_add=conv_layer_hls.v
+circuit_list_add=dla_like.large.v
+circuit_list_add=dla_like.medium.v
+circuit_list_add=dla_like.small.v
+circuit_list_add=dnnweaver.v
+circuit_list_add=gemm_layer.v
+circuit_list_add=lstm.v
+circuit_list_add=proxy.5.v
+circuit_list_add=proxy.7.v
+circuit_list_add=tdarknet_like.large.v
+circuit_list_add=tdarknet_like.small.v
+circuit_list_add=tpu_like.large.os.v
+circuit_list_add=tpu_like.large.ws.v
+
+circuit_constraint_list_add=(tpu_like.large.os.v, device_width=191)
+circuit_constraint_list_add=(tpu_like.large.ws.v, device_width=186)
+circuit_constraint_list_add=(bwave_like.fixed.large.v, device_width=115)
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+#Script parameters
+script_params_common=--pack --place --route --analysis --route_chan_width 320 -max_router_iterations 100 --verify_file_digests off --place_checkpointing off -timeout 64800 
+script_params_list_add=--place --seed 1
+script_params_list_add=--place --seed 2
+script_params_list_add=--place --seed 3

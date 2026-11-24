@@ -1,6 +1,6 @@
 # TODAES Experiments
 
-To reproduce the experiments, run this script:
+To reproduce the experiments, run this script after building VTR:
 
 ```shell
 ./run_todaes_experiments.sh [num_parallel_jobs]
