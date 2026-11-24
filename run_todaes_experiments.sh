@@ -18,7 +18,7 @@ fi
 echo "=== Generating Hecate 3D architectures ==="
 (cd vtr_flow/arch/multi_die/hecate/3d && python3 generate_hecate_3d_sb_archs.py)
 
-for task in 10um_bidir_interposer 10um_unidir_interposer 10um_varlen_interposer 3d_no_esd 3d_with_esd; do
+for task in 10um_bidir_interposer 10um_unidir_interposer 10um_varlen_interposer 10um_four_dice_interposer 3d_no_esd 3d_with_esd; do
     echo "=== Running TODAES_TASKS/${task} ==="
     ./vtr_flow/scripts/run_vtr_task.py "TODAES_TASKS/${task}" -j "${JOBS}"
 done
