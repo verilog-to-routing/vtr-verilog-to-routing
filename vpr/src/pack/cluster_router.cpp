@@ -45,6 +45,27 @@
 #endif
 
 // =============================================================================
+// Constants
+// =============================================================================
+
+/// @brief Cost factor of a node with more than one fanout, before the
+///        FANOUT_FACTOR_STEP / net_fanout adjustment applied in expand_edges_.
+static constexpr float HIGH_FANOUT_NODE_FACTOR = 0.85f;
+
+/// @brief Cost factor of a node with at most one fanout, before the
+///        FANOUT_FACTOR_STEP / net_fanout adjustment applied in expand_edges_.
+static constexpr float LOW_FANOUT_NODE_FACTOR = 1.15f;
+
+/// @brief Amount the node factors move with 1 / net_fanout. Nets with more
+///        sinks are pushed towards high fanout nodes.
+static constexpr float FANOUT_FACTOR_STEP = 0.25f;
+
+/// @brief Lower bound on the fanout factors applied in expand_edges_. Assumes
+///        net_fanout is at least 1.
+static constexpr float MIN_FANOUT_FACTOR = std::min(HIGH_FANOUT_NODE_FACTOR,
+                                                    LOW_FANOUT_NODE_FACTOR - FANOUT_FACTOR_STEP);
+
+// =============================================================================
 // Internal functions declarations
 // =============================================================================
 
@@ -115,7 +136,9 @@ static bool is_route_mode_compatible(const t_lb_trace& rt,
 ClusterRouter::ClusterRouter(const LbTypeRRGraph& lb_type_graph,
                              t_logical_block_type_ptr type,
                              const std::unordered_set<int>& valid_feedback_pins,
-                             bool enable_hot_start) {
+                             ClusterRouterLookahead& lookahead,
+                             bool enable_hot_start)
+    : lookahead_(&lookahead) {
     lb_type_graph_ = &lb_type_graph;
     lb_type_ = type;
     valid_feedback_pins_ = &valid_feedback_pins;
@@ -548,10 +571,15 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
             // Route each sink of net
             for (size_t itarget = 1; itarget < intra_lb_nets_[idx].terminals.size() && !is_impossible; itarget++) {
                 pq_.clear();
-                // Get lowest cost next node, repeat until a path is found or if it is impossible to route
+
+                // Tell the lookahead which sink this search is for. Its estimate
+                // of the remaining cost to the sink is added to the path cost
+                // of each node to order the queue.
+                lookahead_->set_sink(intra_lb_nets_[idx].terminals[itarget]);
 
                 expand_rt_(idx);
 
+                // Get lowest cost next node, repeat until a path is found or if it is impossible to route
                 is_impossible = try_expand_nodes_(intra_lb_nets_[idx], &exp_node, itarget, mode_status->expand_all_modes, verbosity);
 
                 if (is_impossible && !mode_status->expand_all_modes) {
@@ -663,6 +691,10 @@ void free_pb_route(t_pb_route* pb_route) {
     if (pb_route != nullptr) {
         delete[] pb_route;
     }
+}
+
+float cluster_router_min_cost_per_edge(const LbTypeRRGraph& lb_type_graph) {
+    return MIN_FANOUT_FACTOR * lb_type_graph.min_edge_cost();
 }
 
 // =============================================================================
@@ -1157,15 +1189,22 @@ void ClusterRouter::expand_rt_rec_(const t_lb_trace& rt, LbRRNodeId prev_index, 
     t_expansion_node enode;
 
     // Perhaps should use a cost other than zero
-    enode.cost = 0;
+    enode.path_cost = 0;
     enode.node_index = rt.current_node;
     enode.prev_index = prev_index;
-    pq_.push(enode);
     explored_node_tb_[enode.node_index].inet = irt_net;
     explored_node_tb_[enode.node_index].explored_id = UNDEFINED;
     explored_node_tb_[enode.node_index].enqueue_id = explore_id_index_;
     explored_node_tb_[enode.node_index].enqueue_cost = 0;
     explored_node_tb_[enode.node_index].prev_index = prev_index;
+
+    // Queue the node with its cost set to the lower bound on the cost to the sink.
+    // A node with no path to the sink is left out of the queue.
+    float remaining_cost = lookahead_->remaining_cost(enode.node_index);
+    if (remaining_cost != ClusterRouterLookahead::UNREACHABLE) {
+        enode.cost = remaining_cost;
+        pq_.push(enode);
+    }
 
     for (unsigned int i = 0; i < rt.next_nodes.size(); i++) {
         expand_rt_rec_(rt.next_nodes[i], rt.current_node, irt_net);
@@ -1200,7 +1239,12 @@ void ClusterRouter::expand_edges_(int mode,
         // Init new expansion node
         enode.prev_index = cur_inode;
         enode.node_index = edge.node_index;
-        enode.cost = cur_cost;
+
+        // Skip nodes with no path to the sink.
+        float remaining_cost = lookahead_->remaining_cost(enode.node_index);
+        if (remaining_cost == ClusterRouterLookahead::UNREACHABLE) {
+            continue;
+        }
 
         // Determine incremental cost of using expansion node
         int usage = lb_rr_node_stats_[enode.node_index].occ + 1 - lb_type_graph.capacity(enode.node_index);
@@ -1218,22 +1262,23 @@ void ClusterRouter::expand_edges_(int mode,
             next_mode = 0;
         }
         if (lb_type_graph.num_fanout(enode.node_index, next_mode) > 1) {
-            fanout_factor = 0.85 + (0.25 / net_fanout);
+            fanout_factor = HIGH_FANOUT_NODE_FACTOR + (FANOUT_FACTOR_STEP / net_fanout);
         } else {
-            fanout_factor = 1.15 - (0.25 / net_fanout);
+            fanout_factor = LOW_FANOUT_NODE_FACTOR - (FANOUT_FACTOR_STEP / net_fanout);
         }
 
         incr_cost *= fanout_factor;
-        enode.cost = cur_cost + incr_cost;
+        enode.path_cost = cur_cost + incr_cost;
+        enode.cost = enode.path_cost + remaining_cost;
 
-        // Add to queue if cost is lower than lowest cost path to this enode
+        // Add to queue if path cost is lower than lowest cost path to this enode
         if (explored_node_tb_[enode.node_index].enqueue_id == explore_id_index_) {
-            if (enode.cost < explored_node_tb_[enode.node_index].enqueue_cost) {
+            if (enode.path_cost < explored_node_tb_[enode.node_index].enqueue_cost) {
                 pq_.push(enode);
             }
         } else {
             explored_node_tb_[enode.node_index].enqueue_id = explore_id_index_;
-            explored_node_tb_[enode.node_index].enqueue_cost = enode.cost;
+            explored_node_tb_[enode.node_index].enqueue_cost = enode.path_cost;
             pq_.push(enode);
         }
     }
@@ -1243,7 +1288,7 @@ void ClusterRouter::expand_node_(const t_expansion_node& exp_node,
                                  int net_fanout,
                                  bool target_is_internal_sink) {
     LbRRNodeId cur_node = exp_node.node_index;
-    float cur_cost = exp_node.cost;
+    float cur_cost = exp_node.path_cost;
     int mode = lb_rr_node_stats_[cur_node].mode;
     if (mode == -1) {
         mode = 0;
@@ -1258,7 +1303,7 @@ void ClusterRouter::expand_node_all_modes_(const t_expansion_node& exp_node,
     const LbTypeRRGraph& lb_type_graph = *lb_type_graph_;
 
     LbRRNodeId cur_inode = exp_node.node_index;
-    float cur_cost = exp_node.cost;
+    float cur_cost = exp_node.path_cost;
     int cur_mode = lb_rr_node_stats_[cur_inode].mode;
     const t_pb_graph_pin* pin = lb_type_graph.pb_graph_pin(cur_inode);
 

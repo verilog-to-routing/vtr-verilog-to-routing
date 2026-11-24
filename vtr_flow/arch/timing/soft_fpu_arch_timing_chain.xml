@@ -1,3 +1,13 @@
+<!--
+  Also used by the regression test of the dense (second) pass of initial placement
+  (vtr_reg_strong/strong_dense_initial_placement), which relies on:
+    - The clb tile being listed before the io tile, so that the physical tile types
+      (EMPTY, clb, io) are not in the same order as the logical block types (EMPTY, io, clb).
+    - The clb tile being two grid rows high (the carry chain direct has a y_offset of -2).
+    - The dense_initial_placement fixed layout. The test circuit (microbenchmarks/adder_chains.blif)
+      fills it with 20 carry chains of 3 clb each, which the first pass of initial placement
+      cannot place without fragmenting the columns.
+-->
 <!-- Use Virtex II-like architecture  N04K04L04.FC15FO25.AREA1DELAY1.CMOS130NM.BPTM     Width = 72 
   Assume adder delay == LUT delay
   Assume Carry delay = Stratix IV carry delay * 3 (130nm/40nm is approximately 3, so linear scaling -> delay is 3x more)
@@ -18,24 +28,7 @@
     </model>
   </models>
   <tiles>
-    <tile name="io">
-      <sub_tile name="io" capacity="3">
-        <equivalent_sites>
-          <site pb_type="io" pin_mapping="direct"/>
-        </equivalent_sites>
-        <input name="outpad" num_pins="1"/>
-        <output name="inpad" num_pins="1"/>
-        <clock name="clock" num_pins="1"/>
-        <fc in_type="frac" in_val="1.00" out_type="frac" out_val="0.25"/>
-        <pinlocations pattern="custom">
-          <loc side="left">io.outpad io.inpad io.clock</loc>
-          <loc side="top">io.outpad io.inpad io.clock</loc>
-          <loc side="right">io.outpad io.inpad io.clock</loc>
-          <loc side="bottom">io.outpad io.inpad io.clock</loc>
-        </pinlocations>
-      </sub_tile>
-    </tile>
-    <tile name="clb">
+    <tile name="clb" height="2">
       <sub_tile name="clb">
         <equivalent_sites>
           <site pb_type="clb" pin_mapping="direct"/>
@@ -53,6 +46,23 @@
         <pinlocations pattern="spread"/>
       </sub_tile>
     </tile>
+    <tile name="io">
+      <sub_tile name="io" capacity="3">
+        <equivalent_sites>
+          <site pb_type="io" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="outpad" num_pins="1"/>
+        <output name="inpad" num_pins="1"/>
+        <clock name="clock" num_pins="1"/>
+        <fc in_type="frac" in_val="1.00" out_type="frac" out_val="0.25"/>
+        <pinlocations pattern="custom">
+          <loc side="left">io.outpad io.inpad io.clock</loc>
+          <loc side="top">io.outpad io.inpad io.clock</loc>
+          <loc side="right">io.outpad io.inpad io.clock</loc>
+          <loc side="bottom">io.outpad io.inpad io.clock</loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
   </tiles>
   <!-- ODIN II specific config ends -->
   <!-- Physical descriptions begin (area optimized for N8-K6-L4 -->
@@ -61,9 +71,15 @@
       <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
       <perimeter type="io" priority="100"/>
       <corners type="EMPTY" priority="101"/>
-      <!--Fill with 'clb'-->
-      <fill type="clb" priority="10"/>
+      <!--Fill with 'clb', starting just above the bottom row so that the two-row tiles line up with the perimeter-->
+      <col type="clb" startx="1" starty="1" repeatx="1" priority="10"/>
     </auto_layout>
+    <!--Four full columns of 15 clb, filled exactly by microbenchmarks/adder_chains.blif-->
+    <fixed_layout name="dense_initial_placement" width="6" height="32">
+      <perimeter type="io" priority="100"/>
+      <corners type="EMPTY" priority="101"/>
+      <col type="clb" startx="1" starty="1" repeatx="1" priority="10"/>
+    </fixed_layout>
   </layout>
   <device>
     <sizing R_minW_nmos="2800.310059" R_minW_pmos="7077.009766"/>
@@ -88,7 +104,7 @@
     </segment>
   </segmentlist>
   <directlist>
-    <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+    <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-2" z_offset="0"/>
   </directlist>
   <complexblocklist>
     <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->

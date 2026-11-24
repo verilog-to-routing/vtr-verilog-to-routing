@@ -168,6 +168,14 @@ enum class e_cluster_seed {
     BLEND2
 };
 
+/// @brief Estimate of the remaining cost to the sink that orders the cluster router search.
+enum class e_cluster_router_lookahead {
+    /// @brief Order by the cost of the path so far only.
+    NONE,
+    /// @brief Add a lower bound from the fewest edges to the sink.
+    HOPS
+};
+
 struct t_ext_pin_util {
     t_ext_pin_util() = default;
     t_ext_pin_util(float in, float out)
@@ -790,6 +798,7 @@ struct t_packer_opts {
     bool use_ram_mapper;
     bool memoize_cluster_packings;
     bool cluster_router_hot_start;
+    e_cluster_router_lookahead cluster_router_lookahead;
     bool enable_pin_feasibility_filter;
     e_balance_block_type_util balance_block_type_utilization;
     std::vector<std::string> target_external_pin_util;
@@ -1086,6 +1095,12 @@ struct t_placer_opts {
 
     int placement_saves_per_temperature;
 
+    /// Number of workers used to speculatively evaluate placement swaps in parallel
+    /// (1 = sequential annealer). The annealing thread is worker 0, so W workers
+    /// spawn W-1 threads. Always >= 1 here; 0 is resolved to the host concurrency
+    /// during setup.
+    int swap_eval_num_workers;
+
     e_place_effort_scaling effort_scaling;
 
     e_timing_update_type timing_update_type;
@@ -1156,6 +1171,12 @@ struct t_placer_opts {
     float place_auto_init_t_scale;
 
     e_anneal_init_t_estimator anneal_init_t_estimator;
+
+    /// @brief Returns true if the anneal or quench algorithm reads setup slacks.
+    bool uses_setup_slacks() const {
+        return place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE
+               || place_quench_algorithm == e_place_algorithm::SLACK_TIMING_PLACE;
+    }
 };
 
 /******************************************************************

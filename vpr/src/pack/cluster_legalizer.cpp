@@ -105,12 +105,13 @@ LegalizationCluster::LegalizationCluster(t_logical_block_type_ptr cluster_type,
                                          int cluster_mode,
                                          const std::vector<LbTypeRRGraph>& lb_type_rr_graphs,
                                          const std::unordered_set<int>& valid_feedback_pins,
+                                         ClusterRouterLookahead& lookahead,
                                          bool enable_router_hot_start)
     : pb(new t_pb)
     , type(cluster_type)
     , pr(PartitionRegion())
     , noc_grp_id(NocGroupId::INVALID())
-    , cluster_router(lb_type_rr_graphs[cluster_type->index], cluster_type, valid_feedback_pins, enable_router_hot_start)
+    , cluster_router(lb_type_rr_graphs[cluster_type->index], cluster_type, valid_feedback_pins, lookahead, enable_router_hot_start)
     , placement_stats(alloc_and_load_cluster_placement_stats(cluster_type, cluster_mode)) {
 
     pb->pb_graph_node = cluster_type->pb_graph_head;
@@ -933,10 +934,14 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         }
     }
 
-    // Check relative macro rules and choose the molecule's pin utilization limit.
+    // Evaluate relative placement constraints without changing the cluster's
+    // group or chain ownership until packing succeeds.
     t_relative_macro_verdict rel_verdict;
-    // Allow full pin utilization for group members to help keep the group together.
+    // Group members may use the full pin capacity so the utilization target
+    // does not prevent them from packing together. Physical pin limits still apply.
     t_ext_pin_util effective_external_pin_util = max_external_pin_util;
+    // A null site leaves the molecule free to use any compatible primitive.
+    const t_pb_graph_node* force_site_node = nullptr;
     if (relative_macro_packer_) {
         rel_verdict = relative_macro_packer_->evaluate_molecule(molecule_id, cluster.rel_macro_state, cluster.placement_stats->has_long_chain, log_verbosity_);
         if (!rel_verdict.allowed) {
@@ -944,8 +949,20 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             return e_block_pack_status::BLK_FAILED_RELATIVE_GROUP;
         }
 
-        if (rel_verdict.molecule_in_cluster_group)
+        if (rel_verdict.molecule_in_cluster_group) {
             effective_external_pin_util = t_ext_pin_util(1.f, 1.f);
+
+            force_site_node = relative_macro_packer_->molecule_locked_site(molecule_id);
+            if (force_site_node != nullptr && force_site_node->find_root() != cluster.type->pb_graph_head) {
+                // Site nodes belong to one block type's pb graph. Reject a
+                // different type before looking up its placement primitives.
+                if (log_verbosity_ > 2) {
+                    VTR_LOG("\t\tFAILED pack molecule reason: locked primitive site '%s' is not in cluster type '%s'\n",
+                            force_site_node->hierarchical_type_name().c_str(), cluster.type->name.c_str());
+                }
+                return e_block_pack_status::BLK_FAILED_FEASIBLE;
+            }
+        }
     }
 
     // Reuse the member scratch vector to avoid a heap allocation per candidate molecule.
@@ -954,11 +971,18 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> primitives_alive = build_primitive_candidate_queue(cluster.placement_stats,
                                                                                                                                  molecule_id,
                                                                                                                                  primitives_list_,
-                                                                                                                                 prepacker_);
+                                                                                                                                 prepacker_,
+                                                                                                                                 force_site_node);
 
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
         if (primitives_alive.empty()) {
-            VTR_LOGV(log_verbosity_ > 3, "\t\tFAILED No candidate primitives available\n");
+            if (force_site_node != nullptr) {
+                // The required site failed; no other primitive is allowed.
+                if (log_verbosity_ > 2)
+                    relative_macro_packer_->log_locked_site_failure(molecule_id, cluster, atom_pb_lookup_, force_site_node);
+            } else {
+                VTR_LOGV(log_verbosity_ > 3, "\t\tFAILED No candidate primitives available\n");
+            }
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
             break; /* no more candidate primitives available, this molecule will not pack, return fail */
         }
@@ -1306,6 +1330,7 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
                    ("Logical block type not found in feedback pin map: " + std::string(cluster_type->name)).c_str());
     LegalizationCluster new_cluster(cluster_type, cluster_mode, lb_type_rr_graphs_,
                                     valid_feedback_pins_by_type_[cluster_type->index],
+                                    *lookaheads_by_type_[cluster_type->index],
                                     enable_cluster_router_hot_start_);
 
     // Try to pack the molecule into the new_cluster.
@@ -1508,6 +1533,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    bool enable_pin_feasibility_filter,
                                    bool memoize_cluster_packings,
                                    bool enable_cluster_router_hot_start,
+                                   e_cluster_router_lookahead cluster_router_lookahead,
                                    const LogicalModels& models,
                                    const std::vector<t_logical_block_type>& logical_block_types,
                                    int log_verbosity)
@@ -1515,7 +1541,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     , prepacker_(prepacker) {
     // Only check the relative macro rules when the design has relative macros.
     if (relative_macros.get_num_macros() != 0)
-        relative_macro_packer_.emplace(relative_macros, prepacker, atom_netlist);
+        relative_macro_packer_.emplace(relative_macros, prepacker, atom_netlist, log_verbosity);
 
     // Get the target external pin utilization
     // NOTE: Be careful with this constructor, it may throw a VPR_FATAL_ERROR.
@@ -1550,6 +1576,12 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     }
 
     init_feedback_pin_sets(logical_block_types);
+
+    // Build the cluster router lookahead of each block type.
+    lookaheads_by_type_.resize(logical_block_types.size());
+    for (const t_logical_block_type& lb_type : logical_block_types) {
+        lookaheads_by_type_[lb_type.index] = make_cluster_router_lookahead(cluster_router_lookahead, lb_type_rr_graphs_[lb_type.index]);
+    }
 }
 
 void ClusterLegalizer::init_feedback_pin_sets(const std::vector<t_logical_block_type>& logical_block_types) {
@@ -1593,6 +1625,11 @@ void ClusterLegalizer::reset() {
     }
     mutable_atom_pb_lookup().reset_bimap();
     compress();
+
+    // Free the data the cluster router lookaheads.
+    for (std::unique_ptr<ClusterRouterLookahead>& lookahead : lookaheads_by_type_) {
+        lookahead->reset();
+    }
 }
 
 void ClusterLegalizer::verify() {

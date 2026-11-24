@@ -40,6 +40,7 @@ class VprContext;
  *  - The floorplanning constraints on the clusters are consistent with the
  *    floorplanning constraints on the atoms within each cluster.
  *  - Each relative placement group occupies one cluster; groups use distinct clusters.
+ *  - Each atom with a site constraint maps to the specified primitive.
  *
  * Assumptions (are not checked by this function):
  *  - The atom netlist is valid (matches the input design).

@@ -43,11 +43,11 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
     if (relative_macros.get_num_macros() > 0) {
         size_t num_atoms = 0;
         size_t num_locked_atoms = 0;
-        for (UserRelativeGroupId group_id : relative_macros.groups()) {
+        for (UserRelativeGroupId group_id : relative_macros.group_ids()) {
             const t_user_relative_group& group = relative_macros.get_group(group_id);
             num_atoms += group.atoms.size();
-            for (const std::string& site_path : group.atom_site_paths) {
-                if (!site_path.empty())
+            for (const t_pb_graph_node* site : group.atom_sites) {
+                if (site != nullptr)
                     num_locked_atoms++;
             }
         }

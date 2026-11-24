@@ -1003,7 +1003,21 @@ For people not working on CAD, you can probably leave all the options to their d
     This can reduce router runtime when many candidate molecules are tried and rejected: after a failed molecule is removed, the cluster returns to a known-good state without re-routing nets that did not change.
     Enabling this option should not significantly affect circuit quality metrics like routed wirelength or critical path delay, though minor variations are possible.
 
-    **Default:** ``on``
+    **Default:** ``off``
+
+.. option:: --cluster_router_lookahead {none | hops}
+
+    Controls the estimate of the remaining cost to the sink that orders the intra-cluster router search during packing.
+
+    * ``none``: The search is ordered by the cost of the path so far only.
+    * ``hops``: A lower bound computed from the fewest edges between each node and the sink is added to the path cost, and nodes with no path to the sink are skipped.
+
+    The estimate never exceeds the real cost, so the router still finds a lowest cost path.
+    Which of several equal cost paths it finds first can change, so circuit quality metrics may vary slightly.
+
+    ``hops`` reduces packing runtime but uses more memory.
+
+    **Default:** ``hops``
 
 .. option:: --pack_verbosity <int>
 
@@ -1248,6 +1262,29 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     annealing phase.
 
     **Default:** ``off``
+
+.. option:: --place_swap_eval_num_workers <int>
+
+    Controls the number of workers used to speculatively evaluate placement swaps in parallel during simulated annealing.
+    Each batch proposes one swap per worker against the current placement, evaluates them concurrently, and commits at most one accepted swap.
+    Since most swaps are rejected, this reduces placement run-time, most noticeably when annealing starts from a good initial placement (e.g. an analytical placement).
+
+    The annealing thread itself acts as one of the workers.
+
+    * ``1`` uses the sequential annealer.
+    * ``>1`` sets the number of workers.
+    * ``0`` uses the maximum concurrency supported by the host machine.
+
+    Results are deterministic for a fixed seed and number of workers, but differ between different numbers of workers.
+
+    .. note:: The placer warns and falls back to the sequential annealer if any of the following apply:
+
+        * :option:`--place_algorithm` is not ``criticality_timing`` or ``bounding_box``,
+        * congestion modeling, interposer cost terms, or NoC optimization is enabled,
+        * per-temperature placement saving or per-move statistics logging is enabled, or
+        * graphics are enabled.
+
+    **Default:** ``1``
 
 
 .. option:: --placer_debug_block <int>
