@@ -1,0 +1,7 @@
+%include "pass_requirements.txt"
+
+# Each report must only contain the requested categories of timing paths
+setup_timing_report_categories;Equal()
+hold_timing_report_categories;Equal()
+setup_skew_report_categories;Equal()
+hold_skew_report_categories;Equal()

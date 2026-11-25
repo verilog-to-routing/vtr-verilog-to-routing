@@ -21,6 +21,7 @@ struct t_options {
     argparse::ArgValue<std::string> PowerFile;
     argparse::ArgValue<std::string> CmosTechFile;
     argparse::ArgValue<std::string> SDCFile;
+    argparse::ArgValue<std::string> options_file; ///< YAML file of additional command-line options (--options_file).
 
     argparse::ArgValue<e_arch_format> arch_format;
     argparse::ArgValue<e_circuit_format> circuit_format;
@@ -120,6 +121,7 @@ struct t_options {
     argparse::ArgValue<int> ap_verbosity;
     argparse::ArgValue<float> ap_timing_tradeoff;
     argparse::ArgValue<int> ap_high_fanout_threshold;
+    argparse::ArgValue<bool> ap_ram_group_density;
     argparse::ArgValue<bool> ap_generate_mass_report;
 
     // Clustering options
@@ -140,6 +142,7 @@ struct t_options {
     argparse::ArgValue<bool> use_ram_mapper;
     argparse::ArgValue<bool> memoize_cluster_packings;
     argparse::ArgValue<bool> cluster_router_hot_start;
+    argparse::ArgValue<e_cluster_router_lookahead> cluster_router_lookahead;
 
     // Placement options
     argparse::ArgValue<int> seed;
@@ -159,6 +162,7 @@ struct t_options {
     argparse::ArgValue<float> place_rlim_escape_fraction;
     argparse::ArgValue<std::string> place_move_stats_file;
     argparse::ArgValue<int> placement_saves_per_temperature;
+    argparse::ArgValue<int> place_swap_eval_num_workers;
     argparse::ArgValue<e_place_effort_scaling> place_effort_scaling;
     argparse::ArgValue<e_place_delta_delay_algorithm> place_delta_delay_matrix_calculation_method;
     argparse::ArgValue<std::vector<float>> place_static_move_prob;
@@ -306,6 +310,7 @@ struct t_options {
     argparse::ArgValue<int> timing_report_npaths;
     argparse::ArgValue<e_timing_report_detail> timing_report_detail;
     argparse::ArgValue<bool> timing_report_skew;
+    argparse::ArgValue<std::vector<std::string>> timing_report_path_categories;
     argparse::ArgValue<std::string> echo_dot_timing_graph_node;
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_input_handling;
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_output_handling;
@@ -320,6 +325,9 @@ struct t_options {
     argparse::ArgValue<bool> annotated_rr_graph;
     argparse::ArgValue<bool> remove_dangling_nodes;
     argparse::ArgValue<e_gsb_version> gsb_version;
+
+    // Not set directly by an option
+    std::vector<std::string> expanded_args; ///< Command-line arguments (without argv[0]), with --options_file replaced by the file's arguments.
 };
 
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);

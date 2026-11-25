@@ -75,6 +75,7 @@ class ConnectionRouterInterface {
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
+        const std::vector<bool>& has_3d_switchblocks,
         RouterStats& router_stats,
         const ConnectionParameters& conn_params) = 0;
 

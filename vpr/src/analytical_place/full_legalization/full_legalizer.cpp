@@ -1007,14 +1007,16 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
     ClusterLegalizer cluster_legalizer(
         atom_netlist_,
         prepacker_,
-        vpr_setup_.PackerRRGraph,
+        g_vpr_ctx.floorplanning().relative_macros,
         target_ext_pin_util,
         high_fanout_thresholds,
         ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
         vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
         false, // --memoize_cluster_packings is not yet supported for flat-recon
         vpr_setup_.PackerOpts.cluster_router_hot_start,
+        vpr_setup_.PackerOpts.cluster_router_lookahead,
         arch_.models,
+        g_vpr_ctx.device().logical_block_types,
         vpr_setup_.PackerOpts.pack_verbosity);
 
     // Perform clustering using partial placement.
@@ -1046,14 +1048,16 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
     t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
     ClusterLegalizer cluster_legalizer(atom_netlist_,
                                        prepacker_,
-                                       vpr_setup_.PackerRRGraph,
+                                       g_vpr_ctx.floorplanning().relative_macros,
                                        vpr_setup_.PackerOpts.target_external_pin_util,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::FULL,
                                        vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
                                        vpr_setup_.PackerOpts.memoize_cluster_packings,
                                        vpr_setup_.PackerOpts.cluster_router_hot_start,
+                                       vpr_setup_.PackerOpts.cluster_router_lookahead,
                                        arch_.models,
+                                       g_vpr_ctx.device().logical_block_types,
                                        vpr_setup_.PackerOpts.pack_verbosity);
     // Create clusters for each tile.
     //  Start by giving each root tile a unique ID.
@@ -1285,7 +1289,6 @@ void APPack::legalize(const PartialPlacement& p_placement) {
         try_pack(vpr_setup_.PackerOpts,
                  vpr_setup_.APOpts,
                  arch_,
-                 vpr_setup_.PackerRRGraph,
                  prepacker_,
                  pre_cluster_timing_manager_,
                  flat_placement_info,

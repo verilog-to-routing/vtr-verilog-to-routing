@@ -11,6 +11,7 @@
  * externally to the Packer in VPR.
  */
 
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -18,9 +19,11 @@
 #include "cluster_legalizer_fwd.h"
 #include "cluster_pin_counter.h"
 #include "cluster_router.h"
+#include "lb_type_rr_graph.h"
 #include "noc_data_types.h"
 #include "partition_region.h"
 #include "prepack.h"
+#include "relative_macro_packing.h"
 #include "vpr_types.h"
 #include "vtr_range.h"
 #include "vtr_strong_id.h"
@@ -73,12 +76,13 @@ enum class ClusterLegalizationStrategy {
 
 /// @brief The status of the cluster legalization.
 enum class e_block_pack_status {
-    BLK_PASSED,               // Passed legalization.
-    BLK_FAILED_FEASIBLE,      // Failed due to block not feasibly being able to go in the cluster.
-    BLK_FAILED_ROUTE,         // Failed due to intra-lb routing failure.
-    BLK_FAILED_FLOORPLANNING, // Failed due to not being compatible with the cluster's current PartitionRegion.
-    BLK_FAILED_NOC_GROUP,     // Failed due to not being compatible with the cluster's NoC group.
-    BLK_STATUS_UNDEFINED      // Undefined status. Something went wrong.
+    BLK_PASSED,                // Passed legalization.
+    BLK_FAILED_FEASIBLE,       // Block cannot fit in the cluster.
+    BLK_FAILED_ROUTE,          // Routing within the cluster failed.
+    BLK_FAILED_FLOORPLANNING,  // Conflicts with the cluster's PartitionRegion.
+    BLK_FAILED_NOC_GROUP,      // Conflicts with the cluster's NoC group.
+    BLK_FAILED_RELATIVE_GROUP, // Conflicts with relative placement group or chain ownership rules.
+    BLK_STATUS_UNDEFINED       // No result has been set.
 };
 
 /*
@@ -109,13 +113,16 @@ struct LegalizationCluster {
      *  @param lb_type_rr_graphs         The RR-graphs for each cluster type.
      *  @param valid_feedback_pins       Pre-computed feedback-pin set for this type;
      *                                   owned by ClusterLegalizer, must outlive this cluster.
+     *  @param lookahead                 Estimate of the remaining cost to the sinks of this type;
+     *                                   owned by ClusterLegalizer, must outlive this cluster.
      *  @param enable_router_hot_start   Forwarded to ClusterRouter; enables hot-start
      *                                   routing on each try_intra_lb_route call.
      */
     LegalizationCluster(t_logical_block_type_ptr cluster_type,
                         int cluster_mode,
-                        const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
+                        const std::vector<LbTypeRRGraph>& lb_type_rr_graphs,
                         const std::unordered_set<int>& valid_feedback_pins,
+                        ClusterRouterLookahead& lookahead,
                         bool enable_router_hot_start = false);
 
     /// @brief A list of the molecules in the cluster. By design, a cluster will
@@ -146,6 +153,9 @@ struct LegalizationCluster {
     ///        that have already been added to the primitive. This can be helpful
     ///        for optimization.
     NocGroupId noc_grp_id;
+
+    /// @brief Relative placement group and long chain ownership of this cluster.
+    t_cluster_relative_state rel_macro_state;
 
     /// @brief The intra lb router used for this cluster.
     ///        Contains information about the atoms in the cluster and how they
@@ -277,7 +287,7 @@ class ClusterLegalizer {
     // initialize state correctly.
     ClusterLegalizer() = delete;
 
-    /*
+    /**
      * @brief Initialize the ClusterLegalizer class.
      *
      * Allocates internal state.
@@ -289,10 +299,9 @@ class ClusterLegalizer {
      *          The prepacker object used to prepack the atoms into molecules.
      *          A reference to this object is stored internally to be used to
      *          lookup the molecules of atoms.
-     *  @param lb_type_rr_graphs
-     *          The routing resource graph internal to the different cluster
-     *          types. A reference is stored in the class to be used to allocate
-     *          and load the router data.
+     *  @param relative_macros
+     *          The user-defined relative placement macros. A reference to this
+     *          object is stored internally to check the relative macro rules.
      *  @param target_external_pin_util_str
      *          A string used to initialize the target external pin utilization
      *          of each cluster type.
@@ -310,20 +319,27 @@ class ClusterLegalizer {
      *  @param enable_cluster_router_hot_start
      *          When true, each call to try_intra_lb_route seeds unchanged nets
      *          from the last successful route before running pathfinder.
+     *  @param cluster_router_lookahead
+     *          The estimate of the remaining cost to the sink that orders
+     *          the cluster router search.
      *  @param models
+     *  @param logical_block_types
+     *          The logical block types of the architecture.
      *  @param log_verbosity
      *          Controls how verbose the log messages will be within this class.
      */
     ClusterLegalizer(const AtomNetlist& atom_netlist,
                      const Prepacker& prepacker,
-                     const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
+                     const UserRelativeMacros& relative_macros,
                      const std::vector<std::string>& target_external_pin_util_str,
                      const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                      ClusterLegalizationStrategy cluster_legalization_strategy,
                      bool enable_pin_feasibility_filter,
                      bool memoize_cluster_packings,
                      bool enable_cluster_router_hot_start,
+                     e_cluster_router_lookahead cluster_router_lookahead,
                      const LogicalModels& models,
+                     const std::vector<t_logical_block_type>& logical_block_types,
                      int log_verbosity);
 
     // This class allocates and deallocates memory within. This class should not
@@ -471,7 +487,8 @@ class ClusterLegalizer {
     /*
      * @brief Resets the legalizer to its initial state.
      *
-     * Destroys all clusters and resets the cluster placement stats.
+     * Destroys all clusters and resets the cluster placement stats. Also frees
+     * the data built by the cluster router lookaheads.
      */
     void reset();
 
@@ -578,6 +595,15 @@ class ClusterLegalizer {
         cluster_legalization_strategy_ = strategy;
     }
 
+    /**
+     * @brief Access relative placement packing support, if the design has macros.
+     *
+     * The clusterer and seed selector use it to choose and order group molecules.
+     */
+    inline const std::optional<RelativeMacroPacker>& relative_macro_packer() const {
+        return relative_macro_packer_;
+    }
+
     /*
      * @brief Set how verbose the log messages should be for the cluster legalizer.
      *
@@ -597,15 +623,18 @@ class ClusterLegalizer {
     inline const AtomPBBimap& atom_pb_lookup() const { return atom_pb_lookup_; }
     inline AtomPBBimap& mutable_atom_pb_lookup() { return atom_pb_lookup_; }
 
-    inline const IntraLbPbPinLookup& intra_lb_pb_pin_lookup() const { return intra_lb_pb_pin_lookup_; }
-
     /// @brief Destructor of the class. Frees allocated data.
     ~ClusterLegalizer();
 
   private:
     /// @brief Build the per-type feedback-pin sets used by the intra-cluster router.
     ///        Called once by the constructor.
-    void init_feedback_pin_sets();
+    void init_feedback_pin_sets(const std::vector<t_logical_block_type>& logical_block_types);
+
+    /// @brief The routing resource graph of each logical block type, indexed by
+    ///        type index. Declared before the clusters since their routers
+    ///        reference these graphs.
+    const std::vector<LbTypeRRGraph> lb_type_rr_graphs_;
 
     /// @brief A vector of the legalization cluster IDs. If any of them are
     ///        invalid, then that means that the cluster has been destroyed.
@@ -645,16 +674,21 @@ class ClusterLegalizer {
     ///        for every candidate molecule.
     std::vector<t_pb_graph_node*> primitives_list_;
 
-    /// @brief A vector of routing resource nodes within each logical block type
-    ///        [0 .. num_logical_block_types-1]
-    const std::vector<std::vector<t_lb_type_rr_node>>* lb_type_rr_graphs_ = nullptr;
-
     /// @brief Per-type set of top-level output pin indices with Fc_out > 0.
     ///        Indexed by t_logical_block_type::index.
     std::vector<std::unordered_set<int>> valid_feedback_pins_by_type_;
 
+    /// @brief Per-type estimate of the remaining cost to the sinks of the RR
+    ///        graph, used by the cluster router. The kind is set by the cluster
+    ///        router lookahead option. Indexed by t_logical_block_type::index.
+    std::vector<std::unique_ptr<ClusterRouterLookahead>> lookaheads_by_type_;
+
     /// @brief The current legalization strategy of the cluster legalizer.
     ClusterLegalizationStrategy cluster_legalization_strategy_;
+
+    /// @brief Enforces the relative placement macro rules. Only created when
+    ///        the design has relative macros.
+    std::optional<RelativeMacroPacker> relative_macro_packer_;
 
     /// @brief Controls whether the pin counting feasibility filter is used
     ///        during clustering. When enabled the clustering engine counts the
@@ -686,9 +720,6 @@ class ClusterLegalizer {
     /// @brief A two way map between AtomBlockIds and pb types. This is a copy
     /// of the AtomPBBimap in the global context's AtomLookup
     AtomPBBimap atom_pb_lookup_;
-
-    /// @brief A lookup table for the pin mapping of the intra-lb pb pins.
-    IntraLbPbPinLookup intra_lb_pb_pin_lookup_;
 
     /// @brief A structure for tracking and identifying cluster packing
     ///        patterns that have been previously tested for routing

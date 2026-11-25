@@ -2,11 +2,11 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-# Cmdline: uxsdcxx/uxsdcap.py /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# Input file: /home/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: 4b2ef78f43cba03933974d33ee053c65
+# Cmdline: uxsdcxx/uxsdcap.py /home/alex/vtr-switch-min-max-delay/libs/librrgraph/src/io/rr_graph.xsd
+# Input file: /home/alex/vtr-switch-min-max-delay/libs/librrgraph/src/io/rr_graph.xsd
+# md5sum of input file: fc64388fa00da75640603bc9d9aa7416
 
-@0xaba05266d604ec5d;
+@0x8345769c23aca9ef;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -106,6 +106,8 @@ struct Timing {
 	cout @2 :Float32;
 	r @3 :Float32;
 	tdel @4 :Float32;
+	tdelMax @5 :Float32;
+	tdelMin @6 :Float32;
 }
 
 struct Sizing {

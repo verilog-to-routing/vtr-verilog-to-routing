@@ -553,6 +553,7 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
                                                                                                                                      cost_params,
                                                                                                                                      net_bb,
                                                                                                                                      spatial_rt_lookup,
+                                                                                                                                     device_ctx.has_3d_switchblocks,
                                                                                                                                      router_stats,
                                                                                                                                      conn_params);
     } else {

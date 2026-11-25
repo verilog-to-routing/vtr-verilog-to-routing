@@ -111,6 +111,8 @@ static std::vector<float> get_physical_type_target_densities(const std::vector<s
 
 FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_netlist,
                                                          const Prepacker& prepacker,
+                                                         const RamMapper& ram_mapper,
+                                                         bool use_ram_group_density,
                                                          const AtomNetlist& atom_netlist,
                                                          const DeviceGrid& device_grid,
                                                          const std::vector<t_logical_block_type>& logical_block_types,
@@ -120,7 +122,7 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_net
                                                          int log_verbosity)
     : ap_netlist_(ap_netlist)
     , bins_(ap_netlist)
-    , mass_calculator_(ap_netlist, prepacker, atom_netlist, logical_block_types, physical_tile_types, models, log_verbosity)
+    , mass_calculator_(ap_netlist, prepacker, ram_mapper, use_ram_group_density, atom_netlist, logical_block_types, physical_tile_types, models, log_verbosity)
     , log_verbosity_(log_verbosity) {
     // Initialize the bin spatial lookup object.
     size_t num_layers, width, height;
@@ -183,12 +185,12 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_net
     }
 
     // Get the used primitive dims. This is used to ignore the unused dims during
-    // partial legalization.
-    const PrimitiveDimManager& dim_manager = mass_calculator_.get_dim_manager();
-    for (AtomBlockId blk_id : atom_netlist.blocks()) {
-        LogicalModelId model_id = atom_netlist.block_model(blk_id);
-        PrimitiveVectorDim dim = dim_manager.get_model_dim(model_id);
-        used_dims_mask_.set_dim_val(dim, 1);
+    // partial legalization. A dim is used if any block has mass in it including
+    // dims that are not tied to an atom model (e.g. the RAM instance dims of
+    // physical RAM groups when we treat RAM groups as one block).
+    for (APBlockId blk_id : ap_netlist.blocks()) {
+        for (PrimitiveVectorDim dim : mass_calculator_.get_block_mass(blk_id).get_non_zero_dims())
+            used_dims_mask_.set_dim_val(dim, 1);
     }
 
     // Initialize the bin capacities to the mass capacity of the physical tile

@@ -169,7 +169,7 @@ PQ_Entry_Delay::PQ_Entry_Delay(
     if (parent != nullptr) {
         auto& device_ctx = g_vpr_ctx.device();
         const auto& rr_graph = device_ctx.rr_graph;
-        float Tsw = rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).Tdel;
+        float Tsw = rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).Tdel_max;
         float Rsw = rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).R;
         float Cnode = rr_graph.node_C(set_rr_node);
         float Rnode = rr_graph.node_R(set_rr_node);
@@ -1024,6 +1024,8 @@ static void dijkstra_flood_to_wires(int itile,
         }
     };
 
+    // TODO: Try a vtr::priority_queue that is reused across calls and emptied
+    // with clear(), instead of a new queue for every SOURCE and OPIN.
     std::priority_queue<t_pq_entry> pq;
 
     t_pq_entry root;
@@ -1100,7 +1102,7 @@ static void dijkstra_flood_to_wires(int itile,
 
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
                 int iswitch = rr_graph.rr_nodes().edge_switch(edge);
-                float incr_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
+                float incr_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel_max;
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
@@ -1137,6 +1139,8 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
         }
     };
 
+    // TODO: Try a vtr::priority_queue that is reused across calls and emptied
+    // with clear(), instead of a new queue for every sampled wire.
     std::priority_queue<t_pq_entry> pq;
 
     t_pq_entry root;
@@ -1202,7 +1206,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
 
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
                 int iswitch = rr_graph.rr_nodes().edge_switch(edge);
-                float new_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
+                float new_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel_max;
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
 
@@ -1311,6 +1315,9 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
         }
     };
 
+    // TODO: Try a vtr::priority_queue passed in by the caller and emptied with
+    // clear(), like node_expanded and node_seen_cost, instead of a new queue
+    // for every starting pin.
     std::priority_queue<t_pq_entry, std::vector<t_pq_entry>, std::greater<t_pq_entry>> pq;
 
     t_pq_entry root;
@@ -1340,7 +1347,7 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
                 auto cost_index = rr_graph.node_cost_index(next_node);
                 int iswitch = rr_graph.rr_nodes().edge_switch(edge);
 
-                float incr_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
+                float incr_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel_max;
                 float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost;
 
                 t_pq_entry next;

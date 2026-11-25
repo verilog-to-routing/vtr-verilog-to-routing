@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/alex/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/alex/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 4b2ef78f43cba03933974d33ee053c65
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/alex/vtr-switch-min-max-delay/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/alex/vtr-switch-min-max-delay/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: fc64388fa00da75640603bc9d9aa7416
  */
 
 #include <functional>
@@ -236,8 +236,8 @@ constexpr const char *atok_lookup_t_y_list[] = {"index", "info"};
 enum class gtok_t_channels {CHANNEL, X_LIST, Y_LIST};
 constexpr const char *gtok_lookup_t_channels[] = {"channel", "x_list", "y_list"};
 
-enum class atok_t_timing {CIN, CINTERNAL, COUT, R, TDEL};
-constexpr const char *atok_lookup_t_timing[] = {"Cin", "Cinternal", "Cout", "R", "Tdel"};
+enum class atok_t_timing {CIN, CINTERNAL, COUT, R, TDEL, TDEL_MAX, TDEL_MIN};
+constexpr const char *atok_lookup_t_timing[] = {"Cin", "Cinternal", "Cout", "R", "Tdel", "Tdel_max", "Tdel_min"};
 
 
 enum class atok_t_sizing {BUF_SIZE, MUX_TRANS_SIZE};
@@ -546,6 +546,17 @@ inline atok_t_timing lex_attr_t_timing(const char *in, const std::function<void(
 		break;
 		case onechar('T', 0, 32) | onechar('d', 8, 32) | onechar('e', 16, 32) | onechar('l', 24, 32):
 			return atok_t_timing::TDEL;
+		break;
+		default: break;
+		}
+		break;
+	case 8:
+		switch(*((triehash_uu64*)&in[0])){
+		case onechar('T', 0, 64) | onechar('d', 8, 64) | onechar('e', 16, 64) | onechar('l', 24, 64) | onechar('_', 32, 64) | onechar('m', 40, 64) | onechar('a', 48, 64) | onechar('x', 56, 64):
+			return atok_t_timing::TDEL_MAX;
+		break;
+		case onechar('T', 0, 64) | onechar('d', 8, 64) | onechar('e', 16, 64) | onechar('l', 24, 64) | onechar('_', 32, 64) | onechar('m', 40, 64) | onechar('i', 48, 64) | onechar('n', 56, 64):
+			return atok_t_timing::TDEL_MIN;
 		break;
 		default: break;
 		}
@@ -2851,6 +2862,12 @@ inline void load_timing(const pugi::xml_node &root, T &out, Context &context, co
 		case atok_t_timing::TDEL:
 			out.set_timing_Tdel(load_float(attr.value(), report_error), context);
 			break;
+		case atok_t_timing::TDEL_MAX:
+			out.set_timing_Tdel_max(load_float(attr.value(), report_error), context);
+			break;
+		case atok_t_timing::TDEL_MIN:
+			out.set_timing_Tdel_min(load_float(attr.value(), report_error), context);
+			break;
 		default: break; /* Not possible. */
 		}
 	}
@@ -4055,6 +4072,10 @@ inline void write_switch(T &in, std::ostream &os, Context &context){
 				os << " R=\"" << in.get_timing_R(child_context) << "\"";
 			if((bool)in.get_timing_Tdel(child_context))
 				os << " Tdel=\"" << in.get_timing_Tdel(child_context) << "\"";
+			if((bool)in.get_timing_Tdel_max(child_context))
+				os << " Tdel_max=\"" << in.get_timing_Tdel_max(child_context) << "\"";
+			if((bool)in.get_timing_Tdel_min(child_context))
+				os << " Tdel_min=\"" << in.get_timing_Tdel_min(child_context) << "\"";
 			os << "/>\n";
 		}
 	}

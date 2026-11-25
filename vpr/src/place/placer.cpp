@@ -28,12 +28,6 @@
 #include "draw_global.h"
 #endif // NO_GRAPHICS
 
-/// @brief Returns true if the anneal or quench algorithm reads setup slacks.
-static bool placer_uses_setup_slacks(const t_placer_opts& placer_opts) {
-    return placer_opts.place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE
-           || placer_opts.place_quench_algorithm == e_place_algorithm::SLACK_TIMING_PLACE;
-}
-
 Placer::Placer(const Netlist<>& net_list,
                std::optional<std::reference_wrapper<const BlkLocRegistry>> init_place,
                const t_placer_opts& placer_opts,
@@ -50,7 +44,7 @@ Placer::Placer(const Netlist<>& net_list,
     , noc_opts_(noc_opts)
     , netlist_pin_lookup_(netlist_pin_lookup)
     , costs_(placer_opts.place_algorithm, noc_opts.noc)
-    , placer_state_(placer_opts.place_algorithm.is_timing_driven(), placer_uses_setup_slacks(placer_opts))
+    , placer_state_(placer_opts.place_algorithm.is_timing_driven(), placer_opts.uses_setup_slacks())
     , rng_(placer_opts.seed)
     , net_cost_handler_(placer_state_,
                         placer_opts.place_algorithm,
@@ -196,9 +190,11 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
     // Update the point-to-point delays from the initial placement
     comp_td_connection_delays(place_delay_model_.get(), placer_state_);
 
-    // Initialize timing analysis
+    // Initialize timing analysis. The placement delay model only estimates one delay per
+    // connection, so it is used as both the min and max delay.
     placement_delay_calc_ = std::make_shared<PlacementDelayCalculator>(atom_ctx.netlist(),
                                                                        atom_ctx.lookup(),
+                                                                       p_timing_ctx.connection_delay,
                                                                        p_timing_ctx.connection_delay,
                                                                        is_flat_);
     placement_delay_calc_->set_tsu_margin_relative(placer_opts_.tsu_rel_margin);
@@ -207,7 +203,7 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
     timing_info_ = make_setup_timing_info(placement_delay_calc_, placer_opts_.timing_update_type);
 
     // Setup slacks are only read by the slack-driven placement algorithm.
-    if (placer_uses_setup_slacks(placer_opts_)) {
+    if (placer_opts_.uses_setup_slacks()) {
         placer_setup_slacks_.emplace(cluster_ctx.clb_nlist,
                                      netlist_pin_lookup_,
                                      timing_info_);

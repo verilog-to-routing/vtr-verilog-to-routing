@@ -207,6 +207,7 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
                                           const AtomNetlist& atom_nlist,
                                           const APNetlist& ap_netlist,
                                           const Prepacker& prepacker,
+                                          const RamMapper& ram_mapper,
                                           PreClusterTimingManager& pre_cluster_timing_manager,
                                           std::shared_ptr<PlaceDelayModel> place_delay_model,
                                           const DeviceContext& device_ctx) {
@@ -247,6 +248,8 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
                                                                          ap_opts.partial_legalizer_type,
                                                                          ap_netlist,
                                                                          prepacker,
+                                                                         ram_mapper,
+                                                                         ap_opts.ap_ram_group_density,
                                                                          atom_nlist,
                                                                          device_ctx.grid,
                                                                          device_ctx.logical_block_types,
@@ -273,8 +276,18 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     const UserPlaceConstraints& constraints = g_vpr_ctx.floorplanning().constraints;
     const t_ap_opts& ap_opts = vpr_setup.APOpts;
 
+    // Reject relative placement macros because AP cannot enforce them.
+    if (g_vpr_ctx.floorplanning().relative_macros.get_num_macros() > 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_AP,
+                        "User-defined relative placement macros are not supported in the "
+                        "analytical placement flow. Use the traditional flow (--pack --place) instead.");
+    }
+
     // Run the prepacker
-    const Prepacker prepacker(atom_nlist, device_ctx.arch->models, device_ctx.logical_block_types);
+    const Prepacker prepacker(atom_nlist,
+                              device_ctx.arch->models,
+                              device_ctx.logical_block_types,
+                              g_vpr_ctx.floorplanning().relative_macros);
 
     // Pre-compute the pre-clustering timing delays. This object will be passed
     // into the global placer and the full legalizer to make them timing driven.
@@ -354,6 +367,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                      atom_nlist,
                                                      ap_netlist,
                                                      prepacker,
+                                                     ram_mapper,
                                                      pre_cluster_timing_manager,
                                                      place_delay_model,
                                                      device_ctx);

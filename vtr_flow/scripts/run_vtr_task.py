@@ -298,12 +298,14 @@ def run_tasks(args, configs) -> int:
 
     jobs = create_jobs(args, configs)
 
-    # Determine the run dir for each config
+    # Determine the run dir for each config. The run dirs are keyed by the
+    # config dir since, unlike the task name (the name of the task's
+    # directory), it is unique to each task.
     run_dirs = {}
     for config in configs:
         task_dir = find_task_dir(config, args.alt_tasks_dir)
         task_run_dir = get_next_run_dir(task_dir)
-        run_dirs[config.task_name] = task_run_dir
+        run_dirs[config.config_dir] = task_run_dir
 
     # We could potentially support other 'run' systems (e.g. a cluster),
     # rather than just the local machine
@@ -379,7 +381,7 @@ def create_run_scripts(jobs, run_dirs):
     """Create the bash script files for each job run"""
     run_script_files = []
     for job in jobs:
-        run_script_files += [create_run_script(job, job.work_dir(run_dirs[job.task_name()]))]
+        run_script_files += [create_run_script(job, job.work_dir(run_dirs[job.config_dir()]))]
     return run_script_files
 
 
@@ -477,7 +479,7 @@ def run_vtr_flow_process(queue, run_dirs, job, script) -> None:
     This is the function called by multiprocessing.Pool.
     It runs the VTR flow and alerts the caller through the queue if the flow failed.
     """
-    work_dir = job.work_dir(run_dirs[job.task_name()])
+    work_dir = job.work_dir(run_dirs[job.config_dir()])
     Path(work_dir).mkdir(parents=True, exist_ok=True)
     out = None
     vtr_flow_out = str(PurePath(work_dir) / "vtr_flow.out")

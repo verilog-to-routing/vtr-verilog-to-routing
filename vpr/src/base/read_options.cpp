@@ -1,4 +1,5 @@
 #include "read_options.h"
+#include "read_options_file.h"
 #include "constant_nets.h"
 #include "clock_modeling.h"
 #include "vpr_error.h"
@@ -22,6 +23,7 @@ t_options read_options(int argc, const char** argv) {
     auto parser = create_arg_parser(argv[0], args);
 
     parser.parse_args(argc, argv);
+    args.expanded_args = parser.expanded_args();
 
     set_conditional_defaults(args);
 
@@ -995,6 +997,37 @@ struct ParseClusterSeed {
 
     std::vector<std::string> default_choices() {
         return {"timing", "max_inputs", "blend", "max_pins", "max_input_pins", "blend2"};
+    }
+};
+
+struct ParseClusterRouterLookahead {
+    ConvertedValue<e_cluster_router_lookahead> from_str(const std::string& str) {
+        ConvertedValue<e_cluster_router_lookahead> conv_value;
+        if (str == "none") {
+            conv_value.set_value(e_cluster_router_lookahead::NONE);
+        } else if (str == "hops") {
+            conv_value.set_value(e_cluster_router_lookahead::HOPS);
+        } else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_cluster_router_lookahead (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_cluster_router_lookahead val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_cluster_router_lookahead::NONE) {
+            conv_value.set_value("none");
+        } else {
+            VTR_ASSERT(val == e_cluster_router_lookahead::HOPS);
+            conv_value.set_value("hops");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"none", "hops"};
     }
 };
 
@@ -2060,6 +2093,14 @@ static void add_general_options(argparse::ArgumentParser& parser, t_options& arg
 static void add_file_options(argparse::ArgumentParser& parser, t_options& args) {
     auto& file_grp = parser.add_argument_group("file options");
 
+    file_grp.add_argument(args.options_file, "--options_file")
+        .help(
+            "YAML file of additional command-line options, as a map from option name to value"
+            " (e.g. 'route_chan_width: 100'). The options are used as if written on the"
+            " command-line in place of --options_file. The positional arguments (architecture,"
+            " circuit) may also be given in the file.")
+        .action(argparse::Action::EXPAND_FILE);
+
     file_grp.add_argument<e_arch_format, ParseArchFormat>(args.arch_format, "--arch_format")
         .help(
             "File format for the input atom-level circuit/netlist.\n"
@@ -2338,6 +2379,16 @@ static void add_analytical_placement_options(argparse::ArgumentParser& parser, t
             "Defines the threshold for high fanout nets within AP flow.\n"
             "Ignores the nets that have higher fanouts than the threshold for the analytical solver.")
         .default_value("256")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument<bool, ParseOnOff>(args.ap_ram_group_density, "--ap_ram_group_density")
+        .help(
+            "Controls how global placement in the AP flow measures the density of RAMs.\n"
+            "When on, each physical RAM group created by the RAM pre-mapper takes one\n"
+            "instance of its pre-assigned RAM type, and only tiles of that type can hold it.\n"
+            "When off, RAMs are measured by the number of memory bits they use.\n"
+            "Has no effect unless --use_ram_premapper is on.")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     ap_grp.add_argument(args.ap_partial_legalizer_target_density, "--ap_partial_legalizer_target_density")
@@ -2631,6 +2682,18 @@ static void add_packing_options(argparse::ArgumentParser& parser, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    pack_grp.add_argument<e_cluster_router_lookahead, ParseClusterRouterLookahead>(args.cluster_router_lookahead, "--cluster_router_lookahead")
+        .help("Controls the estimate of the remaining cost to the sink that "
+              "orders the intra-cluster router search during packing.\n"
+              " * none: Order the search by the cost of the path so far only.\n"
+              " * hops: Add a lower bound computed from the fewest edges between "
+              "each node and the sink, and skip nodes with no path to it.\n"
+              "The estimate never exceeds the real cost, so the router still finds "
+              "a lowest cost path. Which of several equal cost paths it finds first "
+              "can change, so circuit quality metrics may vary slightly.\n")
+        .default_value("hops")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")
         .help("Controls how verbose clustering's output is. Higher values produce more output (useful for debugging architecture packing problems)")
         .default_value("2")
@@ -2809,6 +2872,18 @@ static void add_placement_options(argparse::ArgumentParser& parser, t_options& a
             "Controls how often VPR saves the current placement to a file per temperature (may be helpful for debugging)."
             " The value specifies how many times the placement should be saved (values less than 1 disable this feature).")
         .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_swap_eval_num_workers, "--place_swap_eval_num_workers")
+        .help(
+            "Number of workers used to speculatively evaluate placement swaps in "
+            "parallel during simulated annealing. The annealing thread itself acts as one "
+            "of the workers:\n"
+            " *  1 (the default) uses the sequential annealer,\n"
+            " * >1 sets the number of workers, and\n"
+            " *  0 uses the maximum concurrency supported by the host machine.\n"
+            "Results are deterministic for a fixed value of this option.")
+        .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_static_move_prob, "--place_static_move_prob")
@@ -3714,6 +3789,26 @@ static void add_analysis_options(argparse::ArgumentParser& parser, t_options& ar
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    analysis_grp.add_argument(args.timing_report_path_categories, "--timing_report_path_categories")
+        .help(
+            "Controls which categories of timing paths are included in the timing and skew reports:\n"
+            " * all: All timing paths are reported\n"
+            " * <category> ...: Only the listed categories of timing paths are reported"
+            " (e.g. --timing_report_path_categories in2reg reg2reg), where the categories are:\n"
+            "    * in2reg: Primary input to register\n"
+            "    * reg2reg: Register to register\n"
+            "    * reg2out: Register to primary output\n"
+            "    * in2out: Primary input to primary output\n"
+            "Only the worst path into each endpoint (for each clock domain pair) is considered,"
+            " so a register whose worst path comes from a primary input is not included in a"
+            " reg2reg report. Constraining the primary I/Os on their own (virtual) clock in the"
+            " SDC file avoids this. This only filters the reported paths; it does not affect"
+            " the slack or criticality calculations.")
+        .nargs('+')
+        .metavar("CATEGORY")
+        .default_value({"all"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     analysis_grp.add_argument(args.echo_dot_timing_graph_node, "--echo_dot_timing_graph_node")
         .help(
             "Controls how the timing graph echo file in DOT/GraphViz format is created when\n"
@@ -3997,6 +4092,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         "Attempts to find the minimum routable channel width, unless a fixed"
         " channel width is specified with --route_chan_width.";
     auto parser = argparse::ArgumentParser(prog_name, description);
+    parser.file_expander(expand_yaml_options_file);
 
     std::string epilog = vtr::replace_all(
         "Usage Examples\n"

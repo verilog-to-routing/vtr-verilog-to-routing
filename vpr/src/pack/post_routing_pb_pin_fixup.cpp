@@ -375,10 +375,10 @@ static const t_pb_graph_pin* find_unused_pb_graph_pin_in_the_same_port(const t_p
 }
 
 /********************************************************************
- * Identify if this pb_graph pin only drives 1 edge and the edge size is 1
+ * Identify if this pb_graph pin only drives 1 edge
  *******************************************************************/
 static bool is_single_fanout_pb_pin(const t_pb_graph_pin* pb_pin) {
-    return (1 == pb_pin->num_output_edges) && (1 == pb_pin->output_edges[0]->num_output_pins);
+    return 1 == pb_pin->num_output_edges;
 }
 
 /********************************************************************
@@ -394,10 +394,8 @@ static t_pb_graph_pin* find_used_sink_pb_pin(t_pb_graph_pin* driver_pb_pin,
         if (mode != driver_pb_pin->output_edges[iedge]->interconnect->parent_mode_index) {
             continue;
         }
-        for (int ipin = 0; ipin < driver_pb_pin->output_edges[iedge]->num_output_pins; ++ipin) {
-            sink_pb_pin = driver_pb_pin->output_edges[iedge]->output_pins[ipin];
-            num_cand_pins++;
-        }
+        sink_pb_pin = driver_pb_pin->output_edges[iedge]->output_pin();
+        num_cand_pins++;
     }
 
     /* If we see multiple pins, we should return null pointer, as we only expect 1 pin to be found! */
@@ -428,7 +426,6 @@ static t_pb_graph_pin* find_used_sink_pb_pin(t_pb_graph_pin* driver_pb_pin,
  *
  *******************************************************************/
 static AtomPinId find_mapped_atom_pin(const AtomContext& atom_ctx,
-                                      const IntraLbPbPinLookup& intra_lb_pb_pin_lookup,
                                       t_logical_block_type_ptr logical_type,
                                       t_pb* pb,
                                       const int& pb_route_id) {
@@ -449,7 +446,7 @@ static AtomPinId find_mapped_atom_pin(const AtomContext& atom_ctx,
         }
     }
 
-    const t_pb_graph_pin* sink_pb_pin = intra_lb_pb_pin_lookup.pb_gpin(logical_type->index, sink_pb_route_id);
+    const t_pb_graph_pin* sink_pb_pin = logical_type->pb_graph_pin(sink_pb_route_id);
     const t_pb* leaf_pb = pb->find_pb(sink_pb_pin->parent_node);
     const AtomPortId& atom_port = atom_ctx.netlist().find_atom_port(atom_ctx.lookup().atom_pb_bimap().pb_atom(leaf_pb), sink_pb_pin->port->model_port);
     BitIndex atom_pin_bit_index = leaf_pb->atom_pin_bit_index(sink_pb_pin);
@@ -479,7 +476,6 @@ static AtomPinId find_mapped_atom_pin(const AtomContext& atom_ctx,
  *     Anything violates the assumption will be NOT be cached!!!
  *******************************************************************/
 static std::map<int, std::pair<AtomPinId, const t_pb_graph_pin*>> cache_atom_pin_to_pb_pin_mapping(const AtomContext& atom_ctx,
-                                                                                                   const IntraLbPbPinLookup& intra_lb_pb_pin_lookup,
                                                                                                    const ClusteringContext& clustering_ctx,
                                                                                                    const ClusterBlockId& blk_id,
                                                                                                    t_pb* pb,
@@ -518,7 +514,7 @@ static std::map<int, std::pair<AtomPinId, const t_pb_graph_pin*>> cache_atom_pin
             continue;
         }
 
-        const AtomPinId& orig_mapped_atom_pin = find_mapped_atom_pin(atom_ctx, intra_lb_pb_pin_lookup, logical_block, pb, pb_route_id);
+        const AtomPinId& orig_mapped_atom_pin = find_mapped_atom_pin(atom_ctx, logical_block, pb, pb_route_id);
 
         /* Sometimes the routing traces is not what we target, skip caching */
         if (orig_mapped_atom_pin) {
@@ -544,7 +540,7 @@ static const t_pb_graph_pin* find_mapped_equivalent_pb_pin_by_net(t_pb* pb,
     const t_pb_graph_pin* found_pb_pin = nullptr;
 
     for (int ipin = 0; ipin < eq_port->num_pins; ++ipin) {
-        const t_pb_graph_pin* cand_pb_pin = &(pb_graph_node->input_pins[eq_port->port_index_by_type][ipin]);
+        const t_pb_graph_pin* cand_pb_pin = &(pb_graph_node->pins_by_input_port[eq_port->port_index_by_type][ipin]);
         VTR_ASSERT(eq_port == cand_pb_pin->port);
         auto pb_route_result = pb->pb_route.find(cand_pb_pin->pin_count_in_cluster);
         if (pb->pb_route.end() == pb_route_result) {
@@ -714,13 +710,11 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
         t_pb_graph_pin* sink_pb_pin_to_add = nullptr;
 
         for (int iedge = 0; iedge < pb_graph_pin->num_output_edges; ++iedge) {
-            for (int ipin = 0; ipin < pb_graph_pin->output_edges[iedge]->num_output_pins; ++ipin) {
-                sink_pb_pin_accessibility[pb_graph_pin->output_edges[iedge]->output_pins[ipin]->pin_count_in_cluster] = true;
-            }
+            sink_pb_pin_accessibility[pb_graph_pin->output_edges[iedge]->output_pin()->pin_count_in_cluster] = true;
         }
 
         if (is_single_fanout_pb_pin(const_cast<const t_pb_graph_pin*>(pb_graph_pin))) {
-            sink_pb_pin_to_add = pb_graph_pin->output_edges[0]->output_pins[0];
+            sink_pb_pin_to_add = pb_graph_pin->output_edges[0]->output_pin();
         }
 
         for (const int& sink_pb_route : pb->pb_route.at(pb_route_id).sink_pb_pin_ids) {
@@ -980,7 +974,6 @@ static void update_cluster_global_routing_traces_with_post_routing_results(const
  *       update_cluster_pin_with_post_routing_results()
  *******************************************************************/
 static void update_cluster_routing_traces_with_post_routing_results(AtomContext& atom_ctx,
-                                                                    const IntraLbPbPinLookup& intra_lb_pb_pin_lookup,
                                                                     ClusteringContext& clustering_ctx,
                                                                     const ClusterBlockId& blk_id,
                                                                     size_t& num_fixup,
@@ -997,7 +990,7 @@ static void update_cluster_routing_traces_with_post_routing_results(AtomContext&
     t_pb_routes new_pb_routes = pb->pb_route;
 
     /* Cache the current mapping between atom pin to pb_graph pin in this block */
-    std::map<int, std::pair<AtomPinId, const t_pb_graph_pin*>> previous_atom_pin_to_pb_pin_mapping = cache_atom_pin_to_pb_pin_mapping(const_cast<const AtomContext&>(atom_ctx), intra_lb_pb_pin_lookup, const_cast<const ClusteringContext&>(clustering_ctx), blk_id, pb, logical_block);
+    std::map<int, std::pair<AtomPinId, const t_pb_graph_pin*>> previous_atom_pin_to_pb_pin_mapping = cache_atom_pin_to_pb_pin_mapping(const_cast<const AtomContext&>(atom_ctx), const_cast<const ClusteringContext&>(clustering_ctx), blk_id, pb, logical_block);
 
     update_cluster_regular_routing_traces_with_post_routing_results(atom_ctx,
                                                                     previous_atom_pin_to_pb_pin_mapping,
@@ -1040,8 +1033,6 @@ void sync_netlists_to_routing(const Netlist<>& net_list,
                                                                              atom_ctx,
                                                                              verbose);
 
-    IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
-
     /* Count the number of mismatches and fix-up */
     size_t num_mismatches = 0;
     size_t num_fixup = 0;
@@ -1065,7 +1056,6 @@ void sync_netlists_to_routing(const Netlist<>& net_list,
                                                          verbose);
 
             update_cluster_routing_traces_with_post_routing_results(atom_ctx,
-                                                                    intra_lb_pb_pin_lookup,
                                                                     clustering_ctx,
                                                                     clb_blk_id,
                                                                     num_fixup,

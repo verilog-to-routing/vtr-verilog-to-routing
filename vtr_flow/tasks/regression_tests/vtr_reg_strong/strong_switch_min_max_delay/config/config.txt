@@ -1,0 +1,39 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Checks that the minimum intrinsic delays of routing switches (<Tdel min="..." max="..."/>)
+# are used by the final hold timing analysis, and by nothing else.
+#
+# reg_test_archs/k6_frac_N10_mem32K_40nm_switch_min_max_delay.xml is timing/k6_frac_N10_mem32K_40nm.xml with the
+# switch minimum delays set to half of the maximum delays. Compared to k6_frac_N10_mem32K_40nm.xml,
+# its golden results should only differ in the hold timing (hold_WNS, hold_TNS): the packing,
+# placement, routing and setup timing must be identical. With flat routing, the minimum switch
+# delays are not used yet, so all results should be identical to k6_frac_N10_mem32K_40nm.xml.
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog
+
+# Path to directory of architectures to use
+archs_dir=arch
+
+# Add circuits to list to sweep
+circuit_list_add=ch_intrinsics.v
+
+# Add architectures to list to sweep
+arch_list_add=timing/k6_frac_N10_mem32K_40nm.xml
+arch_list_add=reg_test_archs/k6_frac_N10_mem32K_40nm_switch_min_max_delay.xml
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_switch_min_max_delay.txt
+
+# Script parameters
+script_params_common = -track_memory_usage --route_chan_width 100 --timing_report_detail detailed
+script_params_list_add =
+script_params_list_add = --flat_routing on

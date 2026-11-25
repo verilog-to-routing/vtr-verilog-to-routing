@@ -471,6 +471,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *   <xs:attribute name="Cinternal" type="xs:float" />
      *   <xs:attribute name="Cout" type="xs:float" />
      *   <xs:attribute name="Tdel" type="xs:float" />
+     *   <xs:attribute name="Tdel_min" type="xs:float" />
+     *   <xs:attribute name="Tdel_max" type="xs:float" />
      * </xs:complexType>
      */
     inline void set_timing_Cin(float Cin, t_rr_switch_inf*& sw) final {
@@ -501,11 +503,32 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return sw->R;
     }
 
-    inline void set_timing_Tdel(float Tdel, t_rr_switch_inf*& sw) final {
-        sw->Tdel = Tdel;
+    // The Tdel attribute gives a single delay used as both the min and max
+    // delay. It is stored in switch_Tdel_ and resolved in finish_switch_timing(),
+    // once all the timing attributes of the switch have been read.
+    inline void set_timing_Tdel(float Tdel, t_rr_switch_inf*& /*sw*/) final {
+        switch_Tdel_ = Tdel;
     }
+    // Writers only emit an attribute when its value is non-zero. Return Tdel
+    // when the min and max delays are equal (and 0 for Tdel_min / Tdel_max),
+    // so that rr graphs without separate min and max delays are written
+    // exactly as before Tdel_min / Tdel_max were added.
     inline float get_timing_Tdel(const t_rr_switch_inf*& sw) final {
-        return sw->Tdel;
+        return sw->Tdel_min == sw->Tdel_max ? sw->Tdel_max : 0.f;
+    }
+
+    inline void set_timing_Tdel_min(float Tdel_min, t_rr_switch_inf*& sw) final {
+        sw->Tdel_min = Tdel_min;
+    }
+    inline float get_timing_Tdel_min(const t_rr_switch_inf*& sw) final {
+        return sw->Tdel_min == sw->Tdel_max ? 0.f : sw->Tdel_min;
+    }
+
+    inline void set_timing_Tdel_max(float Tdel_max, t_rr_switch_inf*& sw) final {
+        sw->Tdel_max = Tdel_max;
+    }
+    inline float get_timing_Tdel_max(const t_rr_switch_inf*& sw) final {
+        return sw->Tdel_min == sw->Tdel_max ? 0.f : sw->Tdel_max;
     }
 
     /** Generated for complex type "switch":
@@ -557,9 +580,27 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     inline t_rr_switch_inf* init_switch_timing(t_rr_switch_inf*& sw) final {
+        switch_Tdel_ = 0;
         return sw;
     }
-    inline void finish_switch_timing(t_rr_switch_inf*& /*sw*/) final {}
+    inline void finish_switch_timing(t_rr_switch_inf*& sw) final {
+        // A missing attribute reads as 0 (and capnp always sets every
+        // attribute), so a non-zero value means the attribute was given.
+        const t_rr_switch_inf* const_sw = sw;
+        if (switch_Tdel_ != 0) {
+            if (sw->Tdel_min != 0 || sw->Tdel_max != 0) {
+                report_error(
+                    "Switch %d specifies Tdel together with Tdel_min or Tdel_max",
+                    get_switch_id(const_sw));
+            }
+            sw->Tdel_min = switch_Tdel_;
+            sw->Tdel_max = switch_Tdel_;
+        } else if (sw->Tdel_min > sw->Tdel_max) {
+            report_error(
+                "Switch %d has Tdel_min (%g) larger than Tdel_max (%g)",
+                get_switch_id(const_sw), sw->Tdel_min, sw->Tdel_max);
+        }
+    }
 
     inline const t_rr_switch_inf* get_switch_timing(const t_rr_switch_inf*& sw) final {
         return sw;
@@ -607,7 +648,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         (*rr_switch_inf_)[RRSwitchId(id)].Cin = 0;
         (*rr_switch_inf_)[RRSwitchId(id)].Cout = 0;
         (*rr_switch_inf_)[RRSwitchId(id)].Cinternal = 0;
-        (*rr_switch_inf_)[RRSwitchId(id)].Tdel = 0;
+        (*rr_switch_inf_)[RRSwitchId(id)].Tdel_min = 0;
+        (*rr_switch_inf_)[RRSwitchId(id)].Tdel_max = 0;
 
         return &(*rr_switch_inf_)[RRSwitchId(id)];
     }
@@ -2152,6 +2194,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     // Temporary storage
     vtr::vector<RRIndexedDataId, short> seg_index_;
     std::string temp_string_;
+    float switch_Tdel_ = 0;                          // Tdel attribute of the switch being read, see set_timing_Tdel()
     std::unordered_set<int> clock_net_virtual_sinks; // Temporary set storing the ID of nodes that have clk_res_type=virtual_sink
 
     // Constant mapping which is frequently used

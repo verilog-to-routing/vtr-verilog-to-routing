@@ -26,6 +26,7 @@
 #include "vtr_geometry.h"
 #include "vtr_time.h"
 #include "vtr_vector.h"
+#include <span>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -97,11 +98,9 @@ static bool is_pin_only_reachable_from_global_pins(const t_pb_graph_pin* pin,
             return false;
 
         for (const t_pb_graph_edge* edge : cur_pin->input_edges) {
-            for (int ipin = 0; ipin < edge->num_input_pins; ipin++) {
-                const t_pb_graph_pin* prev_pin = edge->input_pins[ipin];
-                if (visited.insert(prev_pin).second)
-                    stack.push_back(prev_pin);
-            }
+            const t_pb_graph_pin* prev_pin = edge->input_pin();
+            if (visited.insert(prev_pin).second)
+                stack.push_back(prev_pin);
         }
     }
 
@@ -139,9 +138,9 @@ static std::unordered_set<const t_model_ports*> find_tile_global_model_ports(con
             stack.pop_back();
 
             if (node->is_primitive()) {
-                for (int iport = 0; iport < node->num_input_ports; iport++) {
-                    for (int ipin = 0; ipin < node->num_input_pins[iport]; ipin++) {
-                        const t_pb_graph_pin* pin = &node->input_pins[iport][ipin];
+                for (std::span<t_pb_graph_pin> port_pins : node->pins_by_input_port) {
+                    for (const t_pb_graph_pin& port_pin : port_pins) {
+                        const t_pb_graph_pin* pin = &port_pin;
                         const t_model_ports* model_port = pin->port->model_port;
                         if (model_port == nullptr)
                             continue;

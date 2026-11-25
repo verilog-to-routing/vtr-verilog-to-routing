@@ -48,6 +48,69 @@ To use the traditional sequential flow (pack, place, route, analysis), pass all 
 
 By default VPR will perform a binary search routing to find the minimum channel width required to route the circuit.
 
+.. _vpr_options_file:
+
+Options File
+------------
+
+Instead of passing every option on the command-line, options can be read from a YAML file.
+
+.. option:: --options_file <file>
+
+    Reads additional command-line options from the YAML file ``<file>``.
+
+    The file is a map from option name to value.
+    For example, the file ``my_options.yaml``:
+
+    .. code-block:: yaml
+
+        # Comments may be on their own line...
+        architecture: my_arch.xml   # ...or at the end of a line.
+        circuit: my_circuit.blif    # Positional arguments: give both or neither.
+        route_chan_width: 100
+        --seed: 7                   # The leading "--" is optional.
+
+        # Flags: true sets the flag, false leaves it out.
+        pack: true
+        place: true
+        analytical_place: false
+
+        timing_analysis: on         # Passed as "on", not as the YAML boolean true.
+        timing_report_detail: "detailed"  # Quotes are optional.
+
+        # Options which take multiple values are given as a list,
+        # either as [in2reg, reg2reg] or as one "- item" per line:
+        timing_report_path_categories:
+          - in2reg
+          - reg2reg
+
+    can be used as::
+
+        vpr --options_file my_options.yaml
+
+    which is equivalent to::
+
+        vpr my_arch.xml my_circuit.blif --route_chan_width 100 --seed 7 --pack --place --timing_analysis on --timing_report_detail detailed --timing_report_path_categories in2reg reg2reg
+
+    The options in the file are used exactly as if they were written on the command-line in place of ``--options_file <file>``, and follow the usual rules:
+
+    * An option which takes a single value may only be given once, so it can not be given both in the file and on the command-line.
+    * Flags (options which take no value, such as ``--pack``) are given as ``true`` (set the flag) or ``false`` (do not set it).
+      YAML's other boolean words (``yes``/``no``, ``on``/``off``) are also accepted.
+    * Options which take multiple values are given as a YAML list, either on one line (``[a, b]``) or with one ``- item`` per line.
+      Values given both in the file and on the command-line are combined, in the order they appear.
+    * Values are passed to VPR as the text written in the file (without any quotes), so they take the same values as on the command-line.
+      For example, ``--timing_analysis`` takes ``on`` or ``off``, not ``true`` or ``false``.
+    * Relative file paths are relative to the directory VPR is run from, not to the location of the options file.
+    * The positional arguments (``architecture`` and ``circuit``) may be given in the file.
+      If either is given in the file, both must be, and neither may then be given on the command-line.
+    * Only one options file may be given, and it may not contain ``options_file``.
+    * Comments (``# ...``) may be used, on their own line or at the end of a line.
+    * The leading ``--`` of an option name is optional (``seed`` and ``--seed`` are equivalent).
+      Positional arguments have no leading ``--`` (``architecture``, not ``--architecture``).
+
+    The VPR log shows both the command-line VPR was run with and an equivalent command-line with the options file replaced by its options, which can be re-run without the file.
+
 Detailed Command-line Options
 -----------------------------
 VPR has a lot of options. Running :option:`vpr --help` will display all the available options and their usage information.
@@ -500,6 +563,7 @@ Use the options below to override this default naming behaviour.
 .. option:: --read_rr_edge_override <file>
 
     Reads a file that overrides the intrinsic delay of specific edges in RR graph.
+    See the :ref:`file format <rr_edge_override_file_format>`.
 
     This option should be used with both :option:`--read_rr_graph` and :option:`--write_rr_graph`. When used this way,
     VPR reads the RR graph, updates the delays of selected edges using :option:`--read_rr_edge_override`,
@@ -939,7 +1003,21 @@ For people not working on CAD, you can probably leave all the options to their d
     This can reduce router runtime when many candidate molecules are tried and rejected: after a failed molecule is removed, the cluster returns to a known-good state without re-routing nets that did not change.
     Enabling this option should not significantly affect circuit quality metrics like routed wirelength or critical path delay, though minor variations are possible.
 
-    **Default:** ``on``
+    **Default:** ``off``
+
+.. option:: --cluster_router_lookahead {none | hops}
+
+    Controls the estimate of the remaining cost to the sink that orders the intra-cluster router search during packing.
+
+    * ``none``: The search is ordered by the cost of the path so far only.
+    * ``hops``: A lower bound computed from the fewest edges between each node and the sink is added to the path cost, and nodes with no path to the sink are skipped.
+
+    The estimate never exceeds the real cost, so the router still finds a lowest cost path.
+    Which of several equal cost paths it finds first can change, so circuit quality metrics may vary slightly.
+
+    ``hops`` reduces packing runtime but uses more memory.
+
+    **Default:** ``hops``
 
 .. option:: --pack_verbosity <int>
 
@@ -1184,6 +1262,29 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     annealing phase.
 
     **Default:** ``off``
+
+.. option:: --place_swap_eval_num_workers <int>
+
+    Controls the number of workers used to speculatively evaluate placement swaps in parallel during simulated annealing.
+    Each batch proposes one swap per worker against the current placement, evaluates them concurrently, and commits at most one accepted swap.
+    Since most swaps are rejected, this reduces placement run-time, most noticeably when annealing starts from a good initial placement (e.g. an analytical placement).
+
+    The annealing thread itself acts as one of the workers.
+
+    * ``1`` uses the sequential annealer.
+    * ``>1`` sets the number of workers.
+    * ``0`` uses the maximum concurrency supported by the host machine.
+
+    Results are deterministic for a fixed seed and number of workers, but differ between different numbers of workers.
+
+    .. note:: The placer warns and falls back to the sequential annealer if any of the following apply:
+
+        * :option:`--place_algorithm` is not ``criticality_timing`` or ``bounding_box``,
+        * congestion modeling, interposer cost terms, or NoC optimization is enabled,
+        * per-temperature placement saving or per-move statistics logging is enabled, or
+        * graphics are enabled.
+
+    **Default:** ``1``
 
 
 .. option:: --placer_debug_block <int>
@@ -1723,6 +1824,19 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
     Ignores the nets that have higher fanouts than the threshold for the analytical solver.
 
     **Default:** ``256``
+
+.. option:: --ap_ram_group_density {on | off}
+
+    Controls how global placement in the AP flow measures the density of RAMs.
+
+    When on, each physical RAM group created by the RAM pre-mapper (see
+    :option:`--use_ram_premapper`) takes one instance of its pre-assigned RAM
+    type, and only tiles of that type can hold it. When off, RAMs are measured
+    by the number of memory bits they use.
+
+    Has no effect unless :option:`--use_ram_premapper` is on.
+
+    **Default:** ``off``
 
 .. option:: --ap_verbosity <int>
 
@@ -2644,6 +2758,37 @@ Analysis Options
     Controls whether clock skew timing reports are generated.
 
     **Default:** ``off``
+
+.. option:: --timing_report_path_categories {all | <category> [<category> ...]}
+
+    Controls which categories of timing paths are included in the timing reports (``report_timing.setup.rpt`` and ``report_timing.hold.rpt``) and the clock skew reports (see :option:`--timing_report_skew`).
+
+    A timing path is categorized by its startpoint and endpoint, where a register is any clocked primitive (e.g. a flip-flop or the clocked ports of a RAM):
+
+    * ``in2reg``: From a primary input to a register.
+    * ``reg2reg``: From a register to a register.
+    * ``reg2out``: From a register to a primary output.
+    * ``in2out``: From a primary input to a primary output (i.e. purely combinational).
+
+    The values can be:
+
+    * ``all``: All timing paths are reported.
+    * ``<category> [<category> ...]``: Only the timing paths in the listed categories are reported.
+
+    The paths are filtered before choosing the worst :option:`--timing_report_npaths` paths, and filtered reports state which categories they contain.
+    This option only filters the reported paths; it does not affect the slack or criticality calculations (and hence the optimization), or the timing summary printed to the log.
+
+    For example, the following reports only the register to register paths, which is useful when looking at the clock skew between registers:
+
+    .. code-block:: none
+
+        --timing_report_skew on --timing_report_path_categories reg2reg
+
+    .. note:: Only the worst path into each endpoint (for each pair of launch and capture clock domains) is considered, so each endpoint is categorized by its worst path.
+              For example, a register whose worst incoming path starts at a primary input is not included in a ``reg2reg`` report, even if it is also reached from other registers.
+              Constraining the primary inputs and outputs on their own (virtual) clock in the SDC file separates these paths, so that both are reported.
+
+    **Default:** ``all``
 
 
 .. _power_estimation_options:

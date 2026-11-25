@@ -27,6 +27,7 @@ class PartialLegalizer;
 class PlaceDelayModel;
 class PreClusterTimingManager;
 class Prepacker;
+class RamMapper;
 struct PartialPlacement;
 
 /**
@@ -80,6 +81,8 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  e_ap_partial_legalizer partial_legalizer_type,
                                                  const APNetlist& ap_netlist,
                                                  const Prepacker& prepacker,
+                                                 const RamMapper& ram_mapper,
+                                                 bool use_ram_group_density,
                                                  const AtomNetlist& atom_netlist,
                                                  const DeviceGrid& device_grid,
                                                  const std::vector<t_logical_block_type>& logical_block_types,
@@ -170,6 +173,8 @@ class SimPLGlobalPlacer : public GlobalPlacer {
                       e_ap_partial_legalizer partial_legalizer_type,
                       const APNetlist& ap_netlist,
                       const Prepacker& prepacker,
+                      const RamMapper& ram_mapper,
+                      bool use_ram_group_density,
                       const AtomNetlist& atom_netlist,
                       const DeviceGrid& device_grid,
                       const std::vector<t_logical_block_type>& logical_block_types,

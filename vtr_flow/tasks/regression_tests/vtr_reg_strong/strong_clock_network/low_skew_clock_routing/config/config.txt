@@ -22,7 +22,7 @@ parse_file=vpr_clock_modeling.txt
 qor_parse_file=qor_standard.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements_clock_modeling.txt
+pass_requirements_file=pass_requirements_clock_skew.txt
 
 # Script parameters
 script_params_common=-starting_stage vpr --routing_budgets_algorithm low_skew_clock --route_chan_width 50 -sdc_file sdc/samples/default_vpr_no_io_constraints.sdc

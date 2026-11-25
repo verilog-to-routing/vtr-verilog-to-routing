@@ -364,34 +364,37 @@ TEST_CASE("read_rr_edge_override", "[vpr]") {
             const auto& device_ctx = g_vpr_ctx.device();
             const auto& rr_graph = device_ctx.rr_graph;
 
-            switch_id = rr_graph.edge_switch((RREdgeId)12);
-            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 5.9e-11f);
+            // Returns the switch used by the given edge
+            auto edge_switch_inf = [&rr_graph](RREdgeId edge_id) -> const t_rr_switch_inf& {
+                return rr_graph.rr_switch_inf((RRSwitchId)rr_graph.edge_switch(edge_id));
+            };
+            auto check_edge_delays = [&edge_switch_inf](RREdgeId edge_id, float Tdel_min, float Tdel_max) {
+                const t_rr_switch_inf& sw = edge_switch_inf(edge_id);
+                REQUIRE(sw.Tdel_min == Tdel_min);
+                REQUIRE(sw.Tdel_max == Tdel_max);
+            };
 
-            switch_id = rr_graph.edge_switch((RREdgeId)1586);
-            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 4.2e-11f);
+            // A single delay is used as both the min and max delay
+            check_edge_delays((RREdgeId)12, 5.9e-11f, 5.9e-11f);
+            check_edge_delays((RREdgeId)1586, 4.2e-11f, 4.2e-11f);
+            check_edge_delays((RREdgeId)1111, 7.1e-11f, 7.1e-11f);
+            check_edge_delays((RREdgeId)1324, 9.4e-11f, 9.4e-11f);
+            check_edge_delays(rr_graph.rr_nodes().edge_id((RRNodeId)645, (RRNodeId)127), 7.3e-11f, 7.3e-11f);
+            check_edge_delays(rr_graph.rr_nodes().edge_id((RRNodeId)544, (RRNodeId)45), 8.3e-11f, 8.3e-11f);
+            check_edge_delays(rr_graph.rr_nodes().edge_id((RRNodeId)37, (RRNodeId)511), 9.5e-11f, 9.5e-11f);
 
-            switch_id = rr_graph.edge_switch((RREdgeId)1111);
-            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 7.1e-11f);
+            // Separate min and max delays
+            check_edge_delays((RREdgeId)100, 4.0e-11f, 6.0e-11f);
+            check_edge_delays((RREdgeId)200, 5.0e-11f, 6.0e-11f);
+            check_edge_delays((RREdgeId)300, 0.f, 6.5e-11f);
+            check_edge_delays((RREdgeId)400, 7.7e-11f, 7.7e-11f);
+            check_edge_delays(rr_graph.rr_nodes().edge_id((RRNodeId)591, (RRNodeId)347), 7.5e-11f, 7.9e-11f);
 
-            switch_id = rr_graph.edge_switch((RREdgeId)1324);
-            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 9.4e-11f);
+            // Switches that only differ in their min delay are not merged
+            REQUIRE(rr_graph.edge_switch((RREdgeId)100) != rr_graph.edge_switch((RREdgeId)200));
 
-            RREdgeId edge_id;
-            edge_id = rr_graph.rr_nodes().edge_id((RRNodeId)645, (RRNodeId)127);
-            switch_id = rr_graph.edge_switch(edge_id);
-            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 7.3e-11f);
-
-            edge_id = rr_graph.rr_nodes().edge_id((RRNodeId)591, (RRNodeId)347);
-            switch_id = rr_graph.edge_switch(edge_id);
-            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 7.9e-11f);
-
-            edge_id = rr_graph.rr_nodes().edge_id((RRNodeId)544, (RRNodeId)45);
-            switch_id = rr_graph.edge_switch(edge_id);
-            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 8.3e-11f);
-
-            edge_id = rr_graph.rr_nodes().edge_id((RRNodeId)37, (RRNodeId)511);
-            switch_id = rr_graph.edge_switch(edge_id);
-            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 9.5e-11f);
+            // A single delay replaces both the min and max delay of a switch with separate min and max delays
+            check_edge_delays((RREdgeId)500, 6.6e-11f, 6.6e-11f);
 
             vpr_free_all(arch, vpr_setup);
         }

@@ -84,6 +84,7 @@
 #include <mutex>
 #include <unordered_map>
 
+#include "DelayType.h"
 #include "connection_based_routing_fwd.h"
 #include "route_path_manager.h"
 #include "route_tree_fwd.h"
@@ -125,7 +126,9 @@ class RouteTreeNode {
 
   public:
     /** Time delay for the signal to get from the net source to this node.
-     * Includes the time to go through this node. */
+     * Includes the time to go through this node. This is the delay of the type
+     * the tree's timing was last loaded with (see RouteTree::reload_timing()).
+     * The router always uses the max delay. */
     float Tdel;
     /** Total upstream resistance from this node to the net
      * source, including any device_ctx.rr_nodes[].R of this node. */
@@ -396,9 +399,12 @@ class RouteTree {
 
     /** Reload timing values (R_upstream, C_downstream, Tdel).
      * Can take a RouteTreeNode& to do an incremental update.
-     * Note that update_from_heap already does this, but prune() doesn't.
+     * Note that update_from_heap already does this (for the max delay), but prune() doesn't.
+     * delay_type selects whether the min or max delays of the routing resources are used.
+     * The router always uses the max delay; to get the min delays of a routed net, reload
+     * the timing of a copy of its route tree with DelayType::MIN.
      * Locking operation: only one thread can reload_timing() for a RouteTree at a time. */
-    void reload_timing(vtr::optional<RouteTreeNode&> from_node = vtr::nullopt);
+    void reload_timing(vtr::optional<RouteTreeNode&> from_node = vtr::nullopt, DelayType delay_type = DelayType::MAX);
 
     /** Get the RouteTreeNode corresponding to the RRNodeId. Returns nullopt if not found.
      * SINK nodes may be added to the tree multiple times. In that case, this will return the last one added.
@@ -533,11 +539,11 @@ class RouteTree {
                                     std::unordered_set<RRNodeId>& visited,
                                     bool is_flat);
 
-    void reload_timing_unlocked(vtr::optional<RouteTreeNode&> from_node = vtr::nullopt);
+    void reload_timing_unlocked(vtr::optional<RouteTreeNode&> from_node = vtr::nullopt, DelayType delay_type = DelayType::MAX);
     void load_new_subtree_R_upstream(RouteTreeNode& from_node);
     float load_new_subtree_C_downstream(RouteTreeNode& from_node);
     RouteTreeNode& update_unbuffered_ancestors_C_downstream(RouteTreeNode& from_node);
-    void load_route_tree_Tdel(RouteTreeNode& from_node, float Tarrival);
+    void load_route_tree_Tdel(RouteTreeNode& from_node, float Tarrival, DelayType delay_type);
 
     bool is_valid_x(const RouteTreeNode& rt_node) const;
     bool is_uncongested_x(const RouteTreeNode& rt_node) const;

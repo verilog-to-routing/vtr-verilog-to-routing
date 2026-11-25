@@ -112,6 +112,60 @@ static t_bb get_sampling_strip(const DeviceGrid& grid, e_profile_axis axis, int 
 }
 
 /**
+ * @brief Shift a sampling strip so it is centred on the far endpoint of a sample wire that runs
+ *        perpendicular to the profiling axis.
+ *
+ * Without this, a wire longer than the strip is wide makes its switch block connections outside
+ * the strip, so a flood restricted to the strip reaches no IPIN. The far endpoint is the high end
+ * for INC and BIDIR wires and the low end for DEC wires.
+ *
+ * @param bb Sampling strip, as returned by get_sampling_strip().
+ * @param node Sample node the flood starts from.
+ * @return bb unchanged if the node is not a wire perpendicular to the profiling axis. Otherwise bb,
+ *         keeping its width, shifted on the perpendicular axis to centre on the node's far endpoint
+ *         and kept inside the grid.
+ */
+static t_bb adjust_sampling_bb_to_rr_node(const t_bb& bb, const DeviceGrid& grid, e_profile_axis axis, RRNodeId node) {
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+    const e_rr_type node_type = rr_graph.node_type(node);
+    const bool profile_x = (axis == e_profile_axis::X);
+
+    // Only wires running along the perpendicular axis leave the strip.
+    const e_rr_type perpendicular_chan_type = profile_x ? e_rr_type::CHANY : e_rr_type::CHANX;
+    if (node_type != perpendicular_chan_type) {
+        return bb;
+    }
+
+    const int wire_low = profile_x ? rr_graph.node_ylow(node) : rr_graph.node_xlow(node);
+    const int wire_high = profile_x ? rr_graph.node_yhigh(node) : rr_graph.node_xhigh(node);
+    const int endpoint = (rr_graph.node_direction(node) == Direction::DEC) ? wire_low : wire_high;
+
+    const int strip_low = profile_x ? bb.ymin : bb.xmin;
+    const int strip_high = profile_x ? bb.ymax : bb.xmax;
+    const int dim_size = profile_x ? (int)grid.height() : (int)grid.width();
+
+    // Centre the strip on the endpoint. The strip extends (old_centre - strip_low) tiles below its
+    // centre and (strip_high - old_centre) tiles above it, so the centre is clamped that far inside
+    // [0, dim_size - 1] to keep the whole strip, not just its centre, inside the grid.
+    const int old_centre = (strip_low + strip_high) / 2;
+    const int new_centre = std::clamp(endpoint,
+                                      old_centre - strip_low,
+                                      (dim_size - 1) - (strip_high - old_centre));
+    const int shift = new_centre - old_centre;
+
+    t_bb sample_bb = bb;
+    if (profile_x) {
+        sample_bb.ymin += shift;
+        sample_bb.ymax += shift;
+    } else {
+        sample_bb.xmin += shift;
+        sample_bb.xmax += shift;
+    }
+
+    return sample_bb;
+}
+
+/**
  * @brief Profile wire costs along one axis using Dijkstra floods in a strip up to five tiles wide.
  * The strip is placed far from the device edges and interposer cuts (see get_sampling_strip()).
  * Each flood spans the full profiling axis.
@@ -180,7 +234,7 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
                     const int direction_index = static_cast<int>(direction);
 
                     // Sample each position along the profiling axis.
-                    for (int coord = 1; coord < (int)axis_dim_size; coord++) {
+                    for (int coord = 0; coord < (int)axis_dim_size; coord++) {
                         const int sample_x = profile_x ? coord : fixed_coord;
                         const int sample_y = profile_x ? fixed_coord : coord;
                         RRNodeId sample_node;
@@ -225,8 +279,8 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
                                 cost_entry = util::Cost_Entry(current.delay, current.congestion_upstream);
                             }
                         };
-
-                        run_dijkstra<true>(sample_node, dijkstra_data, bb, record_cost);
+                        const t_bb sample_bb = adjust_sampling_bb_to_rr_node(bb, grid, axis, sample_node);
+                        run_dijkstra<true>(sample_node, dijkstra_data, sample_bb, record_cost);
                     }
                 }
             }

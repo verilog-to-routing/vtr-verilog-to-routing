@@ -33,7 +33,6 @@
 #include "constant_nets.h"
 #include "clock_modeling.h"
 #include "heap_type.h"
-#include "lb_type_rr_node_types.h"
 
 #include "vtr_assert.h"
 #include "vtr_vector.h"
@@ -42,6 +41,7 @@
 #include "rr_graph_fwd.h"
 #include "rr_graph_cost.h"
 #include "rr_graph_type.h"
+#include "tatum/report/TimingPathCategory.hpp"
 
 /*******************************************************************************
  * Global data types and constants
@@ -166,6 +166,14 @@ enum class e_cluster_seed {
     MAX_PINS,
     MAX_INPUT_PINS,
     BLEND2
+};
+
+/// @brief Estimate of the remaining cost to the sink that orders the cluster router search.
+enum class e_cluster_router_lookahead {
+    /// @brief Order by the cost of the path so far only.
+    NONE,
+    /// @brief Add a lower bound from the fewest edges to the sink.
+    HOPS
 };
 
 struct t_ext_pin_util {
@@ -790,6 +798,7 @@ struct t_packer_opts {
     bool use_ram_mapper;
     bool memoize_cluster_packings;
     bool cluster_router_hot_start;
+    e_cluster_router_lookahead cluster_router_lookahead;
     bool enable_pin_feasibility_filter;
     e_balance_block_type_util balance_block_type_utilization;
     std::vector<std::string> target_external_pin_util;
@@ -1086,6 +1095,12 @@ struct t_placer_opts {
 
     int placement_saves_per_temperature;
 
+    /// Number of workers used to speculatively evaluate placement swaps in parallel
+    /// (1 = sequential annealer). The annealing thread is worker 0, so W workers
+    /// spawn W-1 threads. Always >= 1 here; 0 is resolved to the host concurrency
+    /// during setup.
+    int swap_eval_num_workers;
+
     e_place_effort_scaling effort_scaling;
 
     e_timing_update_type timing_update_type;
@@ -1156,6 +1171,12 @@ struct t_placer_opts {
     float place_auto_init_t_scale;
 
     e_anneal_init_t_estimator anneal_init_t_estimator;
+
+    /// @brief Returns true if the anneal or quench algorithm reads setup slacks.
+    bool uses_setup_slacks() const {
+        return place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE
+               || place_quench_algorithm == e_place_algorithm::SLACK_TIMING_PLACE;
+    }
 };
 
 /******************************************************************
@@ -1193,6 +1214,11 @@ struct t_ap_opts {
 
     /// The threshold to ignore nets with higher fanout than that value while constructing the solver.
     int ap_high_fanout_threshold;
+
+    /// Whether global placement treats each physical RAM group from the RAM
+    /// pre-mapper as one instance of its pre-assigned RAM type, instead of
+    /// using the bit-based mass of its RAM slices.
+    bool ap_ram_group_density;
 
     /// Vector of strings passed by the user to configure the target density of different physical tiles on the device.
     std::vector<std::string> ap_partial_legalizer_target_density;
@@ -1431,6 +1457,9 @@ struct t_analysis_opts {
     int timing_report_npaths;
     e_timing_report_detail timing_report_detail;
     bool timing_report_skew;
+    /// @brief The categories of timing paths (e.g. reg2reg) included in the timing and skew reports.
+    ///        This only filters the reported paths; it does not affect the slack or criticality calculations.
+    tatum::TimingPathCategoryFilter timing_report_path_categories;
     std::string echo_dot_timing_graph_node;
     std::string write_timing_summary;
     bool generate_net_timing_report;
@@ -1636,19 +1665,18 @@ struct t_server_opts {
 
 ///@brief Store settings for VPR
 struct t_vpr_setup {
-    bool TimingEnabled;             ///<Is VPR timing enabled
-    t_file_name_opts FileNameOpts;  ///<File names
-    t_netlist_opts NetlistOpts;     ///<Options for packer
-    t_packer_opts PackerOpts;       ///<Options for packer
-    t_placer_opts PlacerOpts;       ///<Options for placer
-    t_ap_opts APOpts;               ///<Options for analytical placer
-    t_router_opts RouterOpts;       ///<router options
-    t_analysis_opts AnalysisOpts;   ///<Analysis options
-    t_crr_opts CRROpts;             ///<CRR options
-    t_noc_opts NocOpts;             ///<Options for the NoC
-    t_server_opts ServerOpts;       ///<Server options
-    t_det_routing_arch RoutingArch; ///<routing architecture
-    std::vector<std::vector<t_lb_type_rr_node>> PackerRRGraph;
+    bool TimingEnabled;                  ///<Is VPR timing enabled
+    t_file_name_opts FileNameOpts;       ///<File names
+    t_netlist_opts NetlistOpts;          ///<Options for packer
+    t_packer_opts PackerOpts;            ///<Options for packer
+    t_placer_opts PlacerOpts;            ///<Options for placer
+    t_ap_opts APOpts;                    ///<Options for analytical placer
+    t_router_opts RouterOpts;            ///<router options
+    t_analysis_opts AnalysisOpts;        ///<Analysis options
+    t_crr_opts CRROpts;                  ///<CRR options
+    t_noc_opts NocOpts;                  ///<Options for the NoC
+    t_server_opts ServerOpts;            ///<Server options
+    t_det_routing_arch RoutingArch;      ///<routing architecture
     std::vector<t_segment_inf> Segments; ///<wires in routing architecture
     t_timing_inf Timing;                 ///<timing information
     float constant_net_delay;            ///<timing information when place and route not run

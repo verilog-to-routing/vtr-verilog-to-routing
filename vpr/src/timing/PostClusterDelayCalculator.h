@@ -14,9 +14,16 @@ class VprTimingGraphResolver; //Forward declaration
 
 class PostClusterDelayCalculator : public tatum::DelayCalculator {
   public:
+    /**
+     * @param net_delay_min Min routing delay of each net connection, used for hold analysis.
+     * @param net_delay_max Max routing delay of each net connection, used for setup analysis.
+     *                      Callers without separate min delays (e.g. placement) pass the
+     *                      same matrix for both.
+     */
     PostClusterDelayCalculator(const AtomNetlist& netlist,
                                const AtomLookup& netlist_lookup,
-                               const NetPinsMatrix<float>& net_delay,
+                               const NetPinsMatrix<float>& net_delay_min,
+                               const NetPinsMatrix<float>& net_delay_max,
                                bool is_flat);
 
     tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
@@ -43,7 +50,10 @@ class PostClusterDelayCalculator : public tatum::DelayCalculator {
     tatum::Time atom_setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
     tatum::Time atom_hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
 
-    float inter_cluster_delay(ParentNetId net_id, const int driver_net_pin_index, const int sink_net_pin_index) const;
+    float inter_cluster_delay(ParentNetId net_id, const int driver_net_pin_index, const int sink_net_pin_index, DelayType delay_type) const;
+
+    //Returns the delay type of the net delay used for an edge of the given delay type
+    DelayType routing_delay_type(DelayType delay_type) const;
 
     tatum::Time get_cached_delay(tatum::EdgeId edge, DelayType delay_type) const;
     void set_cached_delay(tatum::EdgeId edge, DelayType delay_type, tatum::Time delay) const;
@@ -66,7 +76,8 @@ class PostClusterDelayCalculator : public tatum::DelayCalculator {
   private:
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
-    const NetPinsMatrix<float>& net_delay_;
+    const NetPinsMatrix<float>& net_delay_min_;
+    const NetPinsMatrix<float>& net_delay_max_;
 
     ClbDelayCalc clb_delay_calc_;
     AtomDelayCalc atom_delay_calc_;
