@@ -265,6 +265,14 @@ static PrimitiveVector calc_pb_type_capacity(const t_pb_type* pb_type,
 }
 
 /**
+ * @brief Get the name of the dim which counts whole instances of the given
+ *        logical block type.
+ */
+static std::string get_block_type_instance_dim_name(const t_logical_block_type& logical_block_type) {
+    return logical_block_type.name + "_ap_instance";
+}
+
+/**
  * @brief Calculate the capacity of the given logical block type.
  *
  * If this block type has an instance dim, the capacity also includes room for
@@ -289,7 +297,7 @@ static PrimitiveVector calc_logical_block_type_capacity(const t_logical_block_ty
     // --ap_ram_group_density is on). The capacity above is still kept for
     // blocks that use the normal per-primitive mass on this type (e.g. RAMs
     // that are not in a RAM group or not marked as memory class).
-    PrimitiveVectorDim block_type_dim = dim_manager.get_block_type_dim(&logical_block_type);
+    PrimitiveVectorDim block_type_dim = dim_manager.get_dim(get_block_type_instance_dim_name(logical_block_type));
     if (block_type_dim.is_valid())
         capacity.add_val_to_dim(1.0f, block_type_dim);
 
@@ -377,7 +385,7 @@ static PrimitiveVector calc_block_mass(APBlockId blk_id,
         // --ap_ram_group_density is on.
         LogicalRamGroupId logical_group_id = ram_mapper.physical_ram_group(phys_group_id).logical_ram_group_id;
         t_logical_block_type_ptr ram_type = ram_mapper.group(logical_group_id).pre_assigned_type;
-        PrimitiveVectorDim block_type_dim = dim_manager.get_block_type_dim(ram_type);
+        PrimitiveVectorDim block_type_dim = dim_manager.get_dim(get_block_type_instance_dim_name(*ram_type));
         if (block_type_dim.is_valid()) {
             mass.add_val_to_dim(1.0f, block_type_dim);
             return mass;
@@ -641,43 +649,9 @@ static void initialize_dim_manager(PrimitiveDimManager& dim_manager,
         }
     }
 
-    // A dim to create, either for a model or for the instances of a logical
-    // block type.
-    struct DimCandidate {
-        LogicalModelId model_id;
-        t_logical_block_type_ptr block_type;
-        unsigned num_occurence;
-    };
-    std::vector<DimCandidate> dim_candidates;
-    for (LogicalModelId model_id : models.all_models())
-        dim_candidates.push_back({model_id, nullptr, num_model_occurence[model_id]});
-    for (const t_logical_block_type& logical_block_type : logical_block_types) {
-        unsigned num_instances = num_block_type_instances[logical_block_type.index];
-        if (num_instances > 0)
-            dim_candidates.push_back({LogicalModelId::INVALID(), &logical_block_type, num_instances});
-    }
-
-    // Sort the dims by their frequency in the netlist.
-    // By sorting by frequency, we make the early dimensions more common,
-    // which can reduce the overall size of the sparse vector.
-    // NOTE: We use stable sort here to keep the order of models the same
-    //       as what the user provided in the arch file in the event of a tie.
-    std::stable_sort(dim_candidates.begin(), dim_candidates.end(), [](const DimCandidate& a, const DimCandidate& b) {
-        return a.num_occurence > b.num_occurence;
-    });
-
-    // Create a primitive vector dim for each candidate. Models which are part
-    // of a shared dimension get one dim for the whole shared group.
-    for (const DimCandidate& dim_candidate : dim_candidates) {
-        // If this is a logical block type, create a dim which counts its
-        // instances.
-        if (dim_candidate.block_type != nullptr) {
-            dim_manager.create_block_type_dim(dim_candidate.block_type, dim_candidate.block_type->name + "_ap_instance");
-            continue;
-        }
-
-        LogicalModelId model_id = dim_candidate.model_id;
-
+    // Create a primitive vector dim for each model that occurs in the netlist
+    // and is not part of a shared dimension.
+    for (LogicalModelId model_id : models.all_models()) {
         // If this model is not part of a shared dimension, create a single
         // dimension just for it.
         int one_hot_id = model_one_hot_id[model_id];
@@ -717,6 +691,28 @@ static void initialize_dim_manager(PrimitiveDimManager& dim_manager,
             dim_manager.add_model_to_dim(shared_model_id, new_dim);
         }
     }
+
+    // Create an instance dim for each logical block type with blocks that take
+    // up a whole instance of it.
+    for (const t_logical_block_type& logical_block_type : logical_block_types) {
+        if (num_block_type_instances[logical_block_type.index] > 0)
+            dim_manager.create_empty_dim(get_block_type_instance_dim_name(logical_block_type));
+    }
+
+    // Sort the dims by their frequency in the netlist.
+    // By sorting by frequency, we make the early dimensions more common,
+    // which can reduce the overall size of the sparse vector.
+    // NOTE: The sort is stable, so the order of models stays the same as what
+    //       the user provided in the arch file in the event of a tie.
+    vtr::vector<PrimitiveVectorDim, float> dim_frequency(dim_manager.dims().size(), 0.0f);
+    for (LogicalModelId model_id : models.all_models())
+        dim_frequency[dim_manager.get_model_dim(model_id)] += num_model_occurence[model_id];
+    for (const t_logical_block_type& logical_block_type : logical_block_types) {
+        PrimitiveVectorDim dim = dim_manager.get_dim(get_block_type_instance_dim_name(logical_block_type));
+        if (dim.is_valid())
+            dim_frequency[dim] = num_block_type_instances[logical_block_type.index];
+    }
+    dim_manager.sort_dims(dim_frequency);
 }
 
 FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_netlist,

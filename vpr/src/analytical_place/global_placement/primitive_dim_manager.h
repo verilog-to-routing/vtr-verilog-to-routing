@@ -15,15 +15,16 @@
  * dimensions in the primitive vector.
  */
 
+#include <algorithm>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include "logic_types.h"
 #include "primitive_vector_fwd.h"
 #include "vtr_assert.h"
 #include "vtr_range.h"
+#include "vtr_vector.h"
 #include "vtr_vector_map.h"
-
-struct t_logical_block_type;
 
 /**
  * @brief A manager class for keeping track of the mapping between logical models
@@ -51,11 +52,16 @@ class PrimitiveDimManager {
 
     /**
      * @brief Create an empty primitive vector dimension with the given name.
+     *
+     * The name must be unique. It can be used to get the dim with get_dim.
      */
     inline PrimitiveVectorDim create_empty_dim(const std::string& name) {
+        VTR_ASSERT_MSG(name_to_dim_.count(name) == 0,
+                       "Each dim should have a unique name");
         PrimitiveVectorDim new_dim = static_cast<PrimitiveVectorDim>(dims_.size());
         dims_.push_back(new_dim);
         dim_name_.push_back(name);
+        name_to_dim_[name] = new_dim;
         return new_dim;
     }
 
@@ -75,7 +81,7 @@ class PrimitiveDimManager {
     /**
      * @brief Create a mapping between the given logical model and a new dimension.
      *
-     * The name is used only for printing debug information on this dimension.
+     * The name must be unique. It can be used to get the dim with get_dim.
      */
     inline PrimitiveVectorDim create_dim(LogicalModelId model_id, const std::string& name) {
         PrimitiveVectorDim new_dim = create_empty_dim(name);
@@ -96,36 +102,56 @@ class PrimitiveDimManager {
     }
 
     /**
-     * @brief Create a dimension which counts whole instances of the given
-     *        logical block type.
+     * @brief Get the primitive vector dim with the given name.
      *
-     * This is used for blocks which should take up an entire instance of a
-     * logical block type, regardless of the primitives they use (e.g. physical
-     * RAM groups). The name is used only for printing debug information on
-     * this dimension.
+     * Returns an invalid dim if no dim has this name.
      */
-    inline PrimitiveVectorDim create_block_type_dim(const t_logical_block_type* block_type, const std::string& name) {
-        VTR_ASSERT_SAFE_MSG(block_type != nullptr,
-                            "Cannot create a dim for an invalid logical block type");
-        VTR_ASSERT_SAFE_MSG(block_type_dim_.count(block_type) == 0,
-                            "Each logical block type should have at most one instance dim");
-        PrimitiveVectorDim new_dim = create_empty_dim(name);
-        block_type_dim_[block_type] = new_dim;
-        return new_dim;
-    }
-
-    /**
-     * @brief Get the primitive vector dim which counts instances of the given
-     *        logical block type.
-     *
-     * Returns an invalid dim if no such dim was created for this block type.
-     */
-    inline PrimitiveVectorDim get_block_type_dim(const t_logical_block_type* block_type) const {
-        auto it = block_type_dim_.find(block_type);
-        if (it == block_type_dim_.end())
+    inline PrimitiveVectorDim get_dim(const std::string& name) const {
+        auto it = name_to_dim_.find(name);
+        if (it == name_to_dim_.end())
             return PrimitiveVectorDim();
 
         return it->second;
+    }
+
+    /**
+     * @brief Sort the dims from highest to lowest priority. Dims with the same
+     *        priority keep their current order.
+     *
+     * This allows the dims to be created in any order, and then sorted (e.g.
+     * so the most common dims come first, which can reduce the size of the
+     * sparse primitive vectors). The dims are renumbered, so this must be
+     * called before any primitive vectors are made with them.
+     *
+     *  @param priority
+     *      The priority of each dim.
+     */
+    inline void sort_dims(const vtr::vector<PrimitiveVectorDim, float>& priority) {
+        VTR_ASSERT_MSG(priority.size() == dims_.size(),
+                       "Each dim should have a priority");
+
+        // Find the new order of the dims.
+        std::vector<PrimitiveVectorDim> sorted_dims(dims_.begin(), dims_.end());
+        std::stable_sort(sorted_dims.begin(), sorted_dims.end(), [&](PrimitiveVectorDim a, PrimitiveVectorDim b) {
+            return priority[a] > priority[b];
+        });
+
+        // Map each old dim to its new dim, and reorder the dim names.
+        vtr::vector<PrimitiveVectorDim, PrimitiveVectorDim> new_dim_of(dims_.size());
+        vtr::vector_map<PrimitiveVectorDim, std::string> sorted_dim_name;
+        for (size_t i = 0; i < sorted_dims.size(); i++) {
+            new_dim_of[sorted_dims[i]] = static_cast<PrimitiveVectorDim>(i);
+            sorted_dim_name.push_back(dim_name_[sorted_dims[i]]);
+        }
+        dim_name_ = std::move(sorted_dim_name);
+
+        // Update the lookups to the new dims.
+        for (PrimitiveVectorDim& dim : model_dim_) {
+            if (dim.is_valid())
+                dim = new_dim_of[dim];
+        }
+        for (auto& [name, dim] : name_to_dim_)
+            dim = new_dim_of[dim];
     }
 
     /**
@@ -144,11 +170,9 @@ class PrimitiveDimManager {
     /// @brief A lookup between logical models and their primitive dim.
     vtr::vector_map<LogicalModelId, PrimitiveVectorDim> model_dim_;
 
-    /// @brief A lookup between logical block types and the primitive dim which
-    ///        counts their instances. A block type only has such a dim if some
-    ///        blocks take up a whole instance of it (e.g. physical RAM groups).
-    std::unordered_map<const t_logical_block_type*, PrimitiveVectorDim> block_type_dim_;
-
     /// @brief A lookup between primitive dims and their names.
     vtr::vector_map<PrimitiveVectorDim, std::string> dim_name_;
+
+    /// @brief A lookup between dim names and their primitive dims.
+    std::unordered_map<std::string, PrimitiveVectorDim> name_to_dim_;
 };
