@@ -59,6 +59,9 @@ class LbTypeRRGraphBuilder {
     /// @brief Builds the nodes and edges of every pin in the pb graph subtree rooted at pb_graph_node.
     void build_nodes_and_edges_in_subtree_(const t_pb_graph_node* pb_graph_node);
 
+    /// @brief Fills the fan-in nodes and the lowest edge cost of graph_ from its out edges.
+    void build_fanin_();
+
     /// @brief The graph being built.
     LbTypeRRGraph graph_;
 

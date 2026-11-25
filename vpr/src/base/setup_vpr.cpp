@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <vector>
 #include <list>
+#include <thread>
 
 #include "setup_vpr.h"
 #include "physical_types_util.h"
@@ -674,6 +675,7 @@ void setup_packer_opts(const t_options& Options,
     PackerOpts->use_ram_mapper = Options.use_ram_mapper;
     PackerOpts->memoize_cluster_packings = Options.memoize_cluster_packings;
     PackerOpts->cluster_router_hot_start = Options.cluster_router_hot_start;
+    PackerOpts->cluster_router_lookahead = Options.cluster_router_lookahead;
     PackerOpts->enable_pin_feasibility_filter = Options.enable_clustering_pin_feasibility_filter;
     PackerOpts->balance_block_type_utilization = Options.balance_block_type_utilization;
     PackerOpts->target_external_pin_util = Options.target_external_pin_util;
@@ -756,6 +758,13 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
     PlacerOpts->rlim_escape_fraction = Options.place_rlim_escape_fraction;
     PlacerOpts->move_stats_file = Options.place_move_stats_file;
     PlacerOpts->placement_saves_per_temperature = Options.placement_saves_per_temperature;
+    // 0 requests the host's maximum concurrency; resolve it here so the placer
+    // always sees a concrete worker count (>= 1, where 1 means sequential).
+    PlacerOpts->swap_eval_num_workers = Options.place_swap_eval_num_workers;
+    if (PlacerOpts->swap_eval_num_workers <= 0) {
+        const unsigned int hw_concurrency = std::thread::hardware_concurrency();
+        PlacerOpts->swap_eval_num_workers = (hw_concurrency > 0) ? (int)hw_concurrency : 1;
+    }
     PlacerOpts->place_delta_delay_matrix_calculation_method = Options.place_delta_delay_matrix_calculation_method;
 
     PlacerOpts->strict_checks = Options.strict_checks;

@@ -33,7 +33,7 @@ size_t UserRelativeMacros::get_num_macros() const {
     return macros_.size();
 }
 
-UserRelativeMacros::macro_range UserRelativeMacros::macros() const {
+UserRelativeMacros::macro_range UserRelativeMacros::macro_ids() const {
     return macros_.keys();
 }
 
@@ -46,7 +46,7 @@ size_t UserRelativeMacros::get_num_groups() const {
     return groups_.size();
 }
 
-UserRelativeMacros::group_range UserRelativeMacros::groups() const {
+UserRelativeMacros::group_range UserRelativeMacros::group_ids() const {
     return groups_.keys();
 }
 
@@ -88,7 +88,7 @@ const std::string& UserRelativeMacros::get_group_macro_name(UserRelativeGroupId 
 void print_relative_macros(FILE* fp, const UserRelativeMacros& relative_macros) {
     fprintf(fp, "\n Number of relative macros is %zu \n", relative_macros.get_num_macros());
 
-    for (UserRelativeMacroId macro_id : relative_macros.macros()) {
+    for (UserRelativeMacroId macro_id : relative_macros.macro_ids()) {
         const t_user_relative_macro& macro = relative_macros.get_macro(macro_id);
         fprintf(fp, "\nrelative_macro_id: %zu name: %s\n", size_t(macro_id), macro.name.c_str());
 
