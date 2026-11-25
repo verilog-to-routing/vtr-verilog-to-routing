@@ -4320,6 +4320,19 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
                                     "starty", "endy", "repeaty", "incry"},
                                    loc_data);
 
+            // Callers which do not select a device (e.g. Parmys, which only
+            // needs the models) leave device_layout unset. If the architecture
+            // has a single layout, that is the one the switchblock refers to.
+            if (layout_index == (int)arch->grid_layouts.size() && arch->grid_layouts.size() == 1) {
+                layout_index = 0;
+            }
+            if (layout_index == (int)arch->grid_layouts.size()) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(sub_elem),
+                               vtr::string_fmt("Unable to find the device layout '%s' to check the switchblock location against!\n",
+                                               arch->device_layout.c_str())
+                                   .c_str());
+            }
+
             int grid_width = arch->grid_layouts.at(layout_index).width;
             int grid_height = arch->grid_layouts.at(layout_index).height;
 
