@@ -2391,6 +2391,16 @@ static void add_analytical_placement_options(argparse::ArgumentParser& parser, t
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument<bool, ParseOnOff>(args.ap_estimate_legality, "--ap_estimate_legality")
+        .help(
+            "Controls whether the AP flow estimates the legality of the flat placement\n"
+            "produced by global placement (or read in from a flat placement file).\n"
+            "When on, the number of primitive pins which must move for the placement\n"
+            "to become legal is reported, broken down by legality rule and tile type.\n"
+            "This may add noticeable run time on large circuits.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument(args.ap_partial_legalizer_target_density, "--ap_partial_legalizer_target_density")
         .help(
             "Sets the target density of different physical tiles on the FPGA device "

@@ -122,6 +122,7 @@ struct t_options {
     argparse::ArgValue<float> ap_timing_tradeoff;
     argparse::ArgValue<int> ap_high_fanout_threshold;
     argparse::ArgValue<bool> ap_ram_group_density;
+    argparse::ArgValue<bool> ap_estimate_legality;
     argparse::ArgValue<bool> ap_generate_mass_report;
 
     // Clustering options
