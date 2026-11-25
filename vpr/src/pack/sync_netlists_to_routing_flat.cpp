@@ -73,10 +73,9 @@ inline ClusterBlockId get_cluster_block_from_rr_node(RRNodeId inode) {
 
     int source_pin = rr_graph.node_pin_num(inode);
 
-    // The returned capacity is relative to the sub tile; offset it by the sub
-    // tile's first capacity slot to get the placement sub tile location.
-    auto [sub_tile, sub_tile_rel_cap] = get_sub_tile_from_pin_physical_num(physical_tile, source_pin);
-    int subtile = sub_tile->capacity.low + sub_tile_rel_cap;
+    // The returned capacity is relative to the sub tile
+    auto [sub_tile, rel_cap] = get_sub_tile_from_pin_physical_num(physical_tile, source_pin);
+    int subtile = sub_tile->capacity.low + rel_cap;
 
     // The placer will only place Clusters at the root tile location. Need to
     // offset to the root tile location to get the cluster block at this
@@ -221,8 +220,7 @@ static void sync_pb_routes_to_routing(void) {
             int source_pin = rr_graph.node_pin_num(source_inode);
             int sink_pin = rr_graph.node_pin_num(sink_inode);
 
-            /* Look up pb graph pins. Tile pin numbers are not block pin numbers when the tile
-             * has more than one sub tile, so on-tile pins are mapped through the block's type. */
+            /* Look up pb graph pins (tile pin numbers are not block pin numbers on multi-sub-tile tiles) */
             t_logical_block_type_ptr logical_block = cluster_ctx.clb_nlist.block_type(clb);
             const t_pb_graph_pin* sink_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_tile, logical_block, sink_pin);
             const t_pb_graph_pin* source_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_tile, logical_block, source_pin);
@@ -341,11 +339,7 @@ static void sync_clustered_netlist_to_routing(void) {
             if (!is_pin_on_tile(physical_tile, pin_index))
                 continue;
 
-            // Tile pin numbers are not block pin numbers when the tile has
-            // more than one sub tile, so map the pin through the block's type.
-            const t_pb_graph_pin* pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_tile,
-                                                                                  clb_netlist.block_type(clb),
-                                                                                  pin_index);
+            const t_pb_graph_pin* pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_tile, clb_netlist.block_type(clb), pin_index);
 
             /* Get or create port */
             ClusterPortId port_id = clb_netlist.find_port(clb, pb_graph_pin->port->name);
