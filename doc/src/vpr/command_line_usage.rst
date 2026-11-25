@@ -1838,6 +1838,20 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
 
     **Default:** ``off``
 
+.. option:: --ap_estimate_legality {on | off}
+
+    Controls whether the AP flow estimates the legality of the flat placement
+    produced by global placement (or read in from a flat placement file).
+
+    When on, VPR reports the number of connected primitive pins which must move
+    for the placement to become legal, broken down by legality rule and by tile
+    type. This is an estimate which is independent of the partial and full
+    legalizers, and can be used to measure how legal a global placement is.
+
+    This may add noticeable run time on large circuits.
+
+    **Default:** ``off``
+
 .. option:: --ap_verbosity <int>
 
     Controls the verbosity of the AP flow output.

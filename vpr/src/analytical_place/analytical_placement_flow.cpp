@@ -242,15 +242,17 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
         }
 
         // Print the estimated legality of the flat placement.
-        t_ap_legality_estimate legality_estimate = estimate_legality(p_placement,
-                                                                     ap_netlist,
-                                                                     atom_nlist,
-                                                                     prepacker,
-                                                                     device_ctx.grid,
-                                                                     device_ctx.physical_tile_types,
-                                                                     device_ctx.arch->directs,
-                                                                     g_vpr_ctx.floorplanning().constraints);
-        print_legality_summary(legality_estimate, device_ctx.physical_tile_types);
+        if (ap_opts.ap_estimate_legality) {
+            t_ap_legality_estimate legality_estimate = estimate_legality(p_placement,
+                                                                         ap_netlist,
+                                                                         atom_nlist,
+                                                                         prepacker,
+                                                                         device_ctx.grid,
+                                                                         device_ctx.physical_tile_types,
+                                                                         device_ctx.arch->directs,
+                                                                         g_vpr_ctx.floorplanning().constraints);
+            print_legality_summary(legality_estimate, device_ctx.physical_tile_types);
+        }
 
         return p_placement;
     } else {
@@ -271,6 +273,7 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
                                                                          place_delay_model,
                                                                          ap_opts.ap_timing_tradeoff,
                                                                          ap_opts.generate_mass_report,
+                                                                         ap_opts.ap_estimate_legality,
                                                                          ap_opts.ap_partial_legalizer_target_density,
                                                                          ap_opts.num_threads,
                                                                          ap_opts.log_verbosity);

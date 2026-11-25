@@ -52,6 +52,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                  float ap_timing_tradeoff,
                                                  bool generate_mass_report,
+                                                 bool estimate_legality,
                                                  const std::vector<std::string>& target_density_arg_strs,
                                                  unsigned num_threads,
                                                  int log_verbosity) {
@@ -71,6 +72,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                place_delay_model,
                                                ap_timing_tradeoff,
                                                generate_mass_report,
+                                               estimate_legality,
                                                target_density_arg_strs,
                                                num_threads,
                                                log_verbosity);
@@ -92,6 +94,7 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                      std::shared_ptr<PlaceDelayModel> place_delay_model,
                                      float ap_timing_tradeoff,
                                      bool generate_mass_report,
+                                     bool estimate_legality,
                                      const std::vector<std::string>& target_density_arg_strs,
                                      unsigned num_threads,
                                      int log_verbosity)
@@ -99,7 +102,8 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
     , pre_cluster_timing_manager_(pre_cluster_timing_manager)
     , place_delay_model_(place_delay_model)
     , atom_netlist_(atom_netlist)
-    , prepacker_(prepacker) {
+    , prepacker_(prepacker)
+    , estimate_legality_(estimate_legality) {
     // This can be a long method. Good to time this to see how long it takes to
     // construct the global placer.
     vtr::ScopedStartFinishTimer global_placer_building_timer("Constructing Global Placer");
@@ -154,6 +158,9 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
 
 /**
  * @brief Helper method to print the statistics on the given partial placement.
+ *
+ * The legality estimate is only computed and printed if
+ * should_estimate_legality is true, since it may be expensive on large circuits.
  */
 static void print_placement_stats(const PartialPlacement& p_placement,
                                   const APNetlist& ap_netlist,
@@ -161,7 +168,8 @@ static void print_placement_stats(const PartialPlacement& p_placement,
                                   const Prepacker& prepacker,
                                   FlatPlacementDensityManager& density_manager,
                                   PreClusterTimingManager& pre_cluster_timing_manager,
-                                  const FlatPlacementArcDelayEstimator* arc_delay_estimator) {
+                                  const FlatPlacementArcDelayEstimator* arc_delay_estimator,
+                                  bool should_estimate_legality) {
     // Print the placement HPWL
     VTR_LOG("\tPlacement objective HPWL: %f\n", p_placement.get_hpwl(ap_netlist));
     VTR_LOG("\tPlacement estimated wirelength: %g\n", estimate_post_routing_wire_usage(p_placement, ap_netlist, g_vpr_ctx.device().grid));
@@ -180,16 +188,18 @@ static void print_placement_stats(const PartialPlacement& p_placement,
     }
 
     // Print the estimated legality of the placement.
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
-    t_ap_legality_estimate legality_estimate = estimate_legality(p_placement,
-                                                                 ap_netlist,
-                                                                 atom_netlist,
-                                                                 prepacker,
-                                                                 device_ctx.grid,
-                                                                 device_ctx.physical_tile_types,
-                                                                 device_ctx.arch->directs,
-                                                                 g_vpr_ctx.floorplanning().constraints);
-    print_legality_summary(legality_estimate, device_ctx.physical_tile_types);
+    if (should_estimate_legality) {
+        const DeviceContext& device_ctx = g_vpr_ctx.device();
+        t_ap_legality_estimate legality_estimate = estimate_legality(p_placement,
+                                                                     ap_netlist,
+                                                                     atom_netlist,
+                                                                     prepacker,
+                                                                     device_ctx.grid,
+                                                                     device_ctx.physical_tile_types,
+                                                                     device_ctx.arch->directs,
+                                                                     g_vpr_ctx.floorplanning().constraints);
+        print_legality_summary(legality_estimate, device_ctx.physical_tile_types);
+    }
 
     // Print density information. Need to reset the density manager to ensure
     // the data is valid.
@@ -435,7 +445,8 @@ PartialPlacement SimPLGlobalPlacer::place() {
                           prepacker_,
                           *density_manager_,
                           pre_cluster_timing_manager_,
-                          arc_delay_estimator_.get());
+                          arc_delay_estimator_.get(),
+                          estimate_legality_);
 
     // Return the placement from the final iteration.
     return best_p_placement;

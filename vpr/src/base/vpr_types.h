@@ -1220,6 +1220,10 @@ struct t_ap_opts {
     /// using the bit-based mass of its RAM slices.
     bool ap_ram_group_density;
 
+    /// Whether to estimate and print the legality of the flat placement
+    /// produced by global placement (or read from a flat placement file).
+    bool ap_estimate_legality;
+
     /// Vector of strings passed by the user to configure the target density of different physical tiles on the device.
     std::vector<std::string> ap_partial_legalizer_target_density;
 

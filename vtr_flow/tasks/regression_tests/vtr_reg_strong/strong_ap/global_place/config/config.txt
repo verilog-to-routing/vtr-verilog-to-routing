@@ -32,6 +32,6 @@ qor_parse_file=qor_ap_fixed_chan_width.txt
 pass_requirements_file=pass_requirements_ap_global_place.txt
 
 # Script parameters
-script_params_common=-starting_stage vpr -track_memory_usage --global_place
+script_params_common=-starting_stage vpr -track_memory_usage --global_place --ap_estimate_legality on
 script_params_list_add=
 script_params_list_add=--write_post_gp_flat_place apex4_post_gp.fplace

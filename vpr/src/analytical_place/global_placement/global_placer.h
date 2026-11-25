@@ -92,6 +92,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                  float ap_timing_tradeoff,
                                                  bool generate_mass_report,
+                                                 bool estimate_legality,
                                                  const std::vector<std::string>& target_density_arg_strs,
                                                  unsigned num_threads,
                                                  int log_verbosity);
@@ -162,6 +163,11 @@ class SimPLGlobalPlacer : public GlobalPlacer {
     /// @brief The prepacker used to create the same lookup for the draw manager.
     const Prepacker& prepacker_;
 
+    /// @brief If true, the legality of the final global placement is
+    ///        estimated and printed. This is off by default since it may be
+    ///        expensive on large circuits.
+    bool estimate_legality_;
+
   public:
     /**
      * @brief Constructor for the SimPL Global Placer
@@ -184,6 +190,7 @@ class SimPLGlobalPlacer : public GlobalPlacer {
                       std::shared_ptr<PlaceDelayModel> place_delay_model,
                       float ap_timing_tradeoff,
                       bool generate_mass_report,
+                      bool estimate_legality,
                       const std::vector<std::string>& target_density_arg_strs,
                       unsigned num_threads,
                       int log_verbosity);
