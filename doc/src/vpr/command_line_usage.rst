@@ -1825,6 +1825,19 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
 
     **Default:** ``256``
 
+.. option:: --ap_ram_group_density {on | off}
+
+    Controls how global placement in the AP flow measures the density of RAMs.
+
+    When on, each physical RAM group created by the RAM pre-mapper (see
+    :option:`--use_ram_premapper`) takes one instance of its pre-assigned RAM
+    type, and only tiles of that type can hold it. When off, RAMs are measured
+    by the number of memory bits they use.
+
+    Has no effect unless :option:`--use_ram_premapper` is on.
+
+    **Default:** ``off``
+
 .. option:: --ap_verbosity <int>
 
     Controls the verbosity of the AP flow output.

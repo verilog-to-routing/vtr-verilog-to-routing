@@ -641,6 +641,7 @@ static void setup_ap_opts(const t_options& options,
     apOpts.detailed_placer_type = options.ap_detailed_placer.value();
     apOpts.ap_timing_tradeoff = options.ap_timing_tradeoff.value();
     apOpts.ap_high_fanout_threshold = options.ap_high_fanout_threshold.value();
+    apOpts.ap_ram_group_density = options.ap_ram_group_density.value();
     apOpts.ap_partial_legalizer_target_density = options.ap_partial_legalizer_target_density.value();
     apOpts.appack_max_dist_th = options.appack_max_dist_th.value();
     apOpts.appack_unrelated_clustering_args = options.appack_unrelated_clustering_args.value();
