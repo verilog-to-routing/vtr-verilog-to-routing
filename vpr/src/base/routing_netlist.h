@@ -18,12 +18,12 @@
  *
  * Connectivity
  * ============
- * A RoutingNetlist holds its own copy of the connectivity of the netlist it was built
- * from: the pins of each net (the driver first, followed by the sinks) and the block of
- * each pin. The names and the flags of the nets and blocks are not copied, they are read
- * from the source netlist when they are queried. The source netlist must therefore
- * outlive the RoutingNetlist, and its nets, pins and blocks must not be added, removed or
- * re-connected while the RoutingNetlist is in use.
+ * A RoutingNetlist holds its own copy of the pins of each net (the driver first, followed
+ * by the sinks) of the netlist it was built from. Everything else (e.g. the block of a pin,
+ * the names and the flags of the nets and blocks) is read from the source netlist when it
+ * is queried. The source netlist must therefore outlive the RoutingNetlist, and its nets,
+ * pins and blocks must not be added, removed or re-connected while the RoutingNetlist is
+ * in use.
  */
 
 #include <span>
@@ -80,7 +80,7 @@ class RoutingNetlist {
     net_range nets() const { return net_range(RoutingNetId(0), RoutingNetId(net_first_pin_.size() - 1)); }
 
     /// @brief Returns all the pins of the netlist.
-    pin_id_range pins() const { return pin_id_range(RoutingPinId(0), RoutingPinId(pin_block_.size())); }
+    pin_id_range pins() const { return pin_id_range(RoutingPinId(0), RoutingPinId(num_pins_)); }
 
     /**
      * @brief Checks that the connectivity held by this netlist is still the connectivity
@@ -104,10 +104,20 @@ class RoutingNetlist {
 
   public: // Pins
     /// @brief Returns the block a pin belongs to.
-    RoutingBlockId pin_block(RoutingPinId pin_id) const { return pin_block_[pin_id]; }
+    RoutingBlockId pin_block(RoutingPinId pin_id) const {
+        if (is_flat()) {
+            return RoutingBlockId(size_t(atom_nlist_.pin_block(atom_pin(pin_id))));
+        }
+        return RoutingBlockId(size_t(clb_nlist_.pin_block(cluster_pin(pin_id))));
+    }
 
     /// @brief Returns the index of a pin within its net (0 for the driver, 1 and up for the sinks).
-    int pin_net_index(RoutingPinId pin_id) const { return pin_net_index_[pin_id]; }
+    int pin_net_index(RoutingPinId pin_id) const {
+        if (is_flat()) {
+            return atom_nlist_.pin_net_index(atom_pin(pin_id));
+        }
+        return clb_nlist_.pin_net_index(cluster_pin(pin_id));
+    }
 
   public: // Nets
     /// @brief Returns the name of a net.
@@ -261,6 +271,9 @@ class RoutingNetlist {
     // The number of blocks in the netlist.
     size_t num_blocks_ = 0;
 
+    // The number of pins in the netlist.
+    size_t num_pins_ = 0;
+
     // The pins of all the nets, stored net after net. Within a net the driver comes first.
     std::vector<RoutingPinId> net_pins_;
 
@@ -268,12 +281,6 @@ class RoutingNetlist {
     // the end (the size of net_pins_), so the pins of a net are found between its entry
     // and the next one.
     vtr::vector<RoutingNetId, size_t> net_first_pin_;
-
-    // The block of each pin.
-    vtr::vector<RoutingPinId, RoutingBlockId> pin_block_;
-
-    // The index of each pin within its net.
-    vtr::vector<RoutingPinId, int> pin_net_index_;
 };
 
 /**

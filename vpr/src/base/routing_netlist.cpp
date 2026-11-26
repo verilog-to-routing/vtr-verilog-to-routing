@@ -35,18 +35,12 @@ void RoutingNetlist::load_connectivity_(const SourceNetlist& src_nlist) {
     }
     num_blocks_ = num_blocks;
 
-    size_t num_pins = src_nlist.pins().size();
-    pin_block_.reserve(num_pins);
-    pin_net_index_.reserve(num_pins);
+    size_t num_pins = 0;
     for (auto src_pin_id : src_nlist.pins()) {
-        VTR_ASSERT_MSG(size_t(src_pin_id) == pin_block_.size(), "Pin IDs of the netlist to route must be contiguous");
-
-        auto src_blk_id = src_nlist.pin_block(src_pin_id);
-        VTR_ASSERT_MSG(src_blk_id.is_valid(), "Every pin must belong to a block");
-
-        pin_block_.push_back(RoutingBlockId(size_t(src_blk_id)));
-        pin_net_index_.push_back(src_nlist.pin_net_index(src_pin_id));
+        VTR_ASSERT_MSG(size_t(src_pin_id) == num_pins, "Pin IDs of the netlist to route must be contiguous");
+        num_pins++;
     }
+    num_pins_ = num_pins;
 
     size_t num_nets = src_nlist.nets().size();
     net_first_pin_.reserve(num_nets + 1);
@@ -70,18 +64,6 @@ bool RoutingNetlist::matches_connectivity_(const SourceNetlist& src_nlist) const
         || src_nlist.pins().size() != pins().size()
         || src_nlist.nets().size() != nets().size()) {
         return false;
-    }
-
-    for (auto src_pin_id : src_nlist.pins()) {
-        if (size_t(src_pin_id) >= pin_block_.size()) {
-            return false;
-        }
-
-        RoutingPinId pin_id = RoutingPinId(size_t(src_pin_id));
-        if (size_t(src_nlist.pin_block(src_pin_id)) != size_t(pin_block(pin_id))
-            || src_nlist.pin_net_index(src_pin_id) != pin_net_index(pin_id)) {
-            return false;
-        }
     }
 
     for (auto src_net_id : src_nlist.nets()) {
