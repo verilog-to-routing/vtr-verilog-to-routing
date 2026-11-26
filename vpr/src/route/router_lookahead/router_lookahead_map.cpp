@@ -56,17 +56,6 @@
 
 static constexpr int VALID_NEIGHBOR_NUMBER = 3;
 
-/* when a list of delay/congestion entries at a coordinate in Cost_Entry is boiled down to a single
- * representative entry, this enum is passed-in to specify how that representative entry should be
- * calculated */
-enum e_representative_entry_method {
-    FIRST = 0, //the first cost that was recorded
-    SMALLEST,  //the smallest-delay cost recorded
-    AVERAGE,
-    GEOMEAN,
-    MEDIAN
-};
-
 /******** File-Scope Variables ********/
 
 //Look-up table from CHANX/CHANY (to SINKs) for various distances
@@ -144,16 +133,16 @@ static void read_intra_cluster_router_lookahead(std::vector<util::t_ipin_primiti
 static void write_intra_cluster_router_lookahead(const std::string& file,
                                                  const std::vector<util::t_ipin_primitive_sink_delays>& intra_tile_pin_primitive_pin_delay);
 
-///@brief Sets the lookahead cost map entries based on representative cost entries from routing_cost_map.
+/// @brief Sets the lookahead cost map entries from the smallest-delay cost entries in routing_cost_map.
 static void set_lookahead_map_costs(unsigned from_layer_num,
                                     int segment_index,
                                     e_rr_type chan_type,
                                     util::t_routing_cost_map& routing_cost_map);
 
-/* fills in missing lookahead map entries by copying the cost of the closest valid entry */
+/// @brief Fills in missing lookahead map entries by copying the cost of the closest valid entry
 static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_type);
 
-/* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
+/// @brief Returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0))
 static util::Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, int to_layer_num, int segment_index, int chan_index);
 
 /**
@@ -621,8 +610,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                     continue;
                 }
 
-                // boil down the cost list in routing_cost_map at each coordinate to a representative cost entry
-                // and store it in the lookahead cost map
+                // store the smallest-delay cost entry at each coordinate in the lookahead cost map
                 set_lookahead_map_costs(from_layer_num, segment_inf.seg_index, chan_type, routing_cost_map);
 
                 // Fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
@@ -639,13 +627,11 @@ static void set_lookahead_map_costs(unsigned from_layer_num,
                                     util::t_routing_cost_map& routing_cost_map) {
     const int chan_index = util::chan_type_to_index(chan_type);
 
-    // set the lookahead cost map entries with a representative cost entry from routing_cost_map
+    // copy the smallest-delay cost entries from routing_cost_map into the lookahead cost map
     for (unsigned to_layer = 0; to_layer < routing_cost_map.dim_size(0); to_layer++) {
         for (unsigned ix = 0; ix < routing_cost_map.dim_size(1); ix++) {
             for (unsigned iy = 0; iy < routing_cost_map.dim_size(2); iy++) {
-                util::Expansion_Cost_Entry& expansion_cost_entry = routing_cost_map[to_layer][ix][iy];
-
-                f_wire_cost_map[from_layer_num][to_layer][chan_index][segment_index][ix][iy] = expansion_cost_entry.get_representative_cost_entry(util::e_representative_entry_method::SMALLEST);
+                f_wire_cost_map[from_layer_num][to_layer][chan_index][segment_index][ix][iy] = routing_cost_map[to_layer][ix][iy];
             }
         }
     }
