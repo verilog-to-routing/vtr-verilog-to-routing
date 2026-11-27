@@ -315,20 +315,14 @@ class RoutingNetlist {
 
   private: // Helpers
     /**
-     * @brief Checks that the blocks, pins and nets of the source netlist (either the atom
-     *        or the clustered netlist) can be numbered like the source, and that every
-     *        net has an entry for its driver.
-     */
-    template<typename SourceNetlist>
-    static void check_source_(const SourceNetlist& src_nlist);
-
-    /**
      * @brief Returns the given pins of a net of the source netlist as a range of RoutingPinIds.
      *
-     * The range is never empty: every net has an entry for its driver (see check_source_()).
+     * The range is never empty: a netlist keeps an entry for the driver of every net, even
+     * if the net has no driver.
      */
     template<typename SourcePinRange>
     static pin_range make_pin_range_(const SourcePinRange& src_pins) {
+        VTR_ASSERT_SAFE_MSG(!src_pins.empty(), "Every net must have an entry for its driver");
         const auto* first_pin = &*src_pins.begin();
         return pin_range(RoutingPinIterator(first_pin), RoutingPinIterator(first_pin + src_pins.size()));
     }
