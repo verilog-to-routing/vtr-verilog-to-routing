@@ -101,9 +101,7 @@ def _set_sg_wireconn_conns(
     for tag_name, n_val in (("gather", gather_n_val), ("scatter", scatter_n_val)):
         wireconn = sg.xpath(f"./{tag_name}/wireconn")
         if not wireconn:
-            raise ValueError(
-                f"Missing <{tag_name}><wireconn> tag in sg_pattern '{pattern_name}'."
-            )
+            raise ValueError(f"Missing <{tag_name}><wireconn> tag in sg_pattern '{pattern_name}'.")
         wireconn[0].set("num_conns", n_val)
 
 
@@ -262,9 +260,7 @@ def configure_scatter_gather_patterns(
 
     matched = False
     for pattern_name, (_, offset_attr, sign) in SG_PATTERN_DIRECTIONS.items():
-        sg_list = xml_root.xpath(
-            f".//scatter_gather_list/sg_pattern[@name='{pattern_name}']"
-        )
+        sg_list = xml_root.xpath(f".//scatter_gather_list/sg_pattern[@name='{pattern_name}']")
         if not sg_list:
             continue
         matched = True
@@ -711,9 +707,7 @@ def configure_varlen_switches(
             etree.SubElement(switch, "Tdel", {"num_inputs": num_inputs, "delay": f"{delay}e-12"})
 
 
-def configure_varlen_segments(
-    xml_root: Any, lengths: Sequence[int], wire_um: str
-) -> None:
+def configure_varlen_segments(xml_root: Any, lengths: Sequence[int], wire_um: str) -> None:
     """Replace ``int_wire`` with one ``int_wire_L{length}`` segment per length.
 
     Args:
@@ -829,9 +823,7 @@ def _generate_varlen_group(
 
             for fan_in in config.fan_in_values:
                 xml_tree = copy.deepcopy(group_tree)
-                configure_varlen_scatter_gather(
-                    xml_tree.getroot(), lengths, fan_in, directionality
-                )
+                configure_varlen_scatter_gather(xml_tree.getroot(), lengths, fan_in, directionality)
                 etree.indent(xml_tree, space="  ")
 
                 output_filename = (
