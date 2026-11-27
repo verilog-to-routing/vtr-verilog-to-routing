@@ -2067,18 +2067,21 @@ void initial_placement(const t_placer_opts& placer_opts,
 
         // First try to place all of the blocks using AP
         if (flat_placement_info.valid) {
+            // Save the blocks placed so far: fixed blocks, blocks from the constraints file and
+            // NoC routers, whose traffic flows were routed for these locations
+            BlkLocRegistry pre_ap_blk_loc_registry;
+            pre_ap_blk_loc_registry = blk_loc_registry;
+
             all_blocks_placed = place_all_blocks_ap(placer_opts.pad_loc_type,
                                                     blk_loc_registry,
                                                     place_macros,
                                                     flat_placement_info);
 
-            // If AP failed to place all of the blocks, reset the placement solution
-            // so we can fall back on the original initial placement algorithm.
+            // If AP failed to place all of the blocks, reset the placement solution to the
+            // blocks placed before AP so we can fall back on the original initial placement
+            // algorithm.
             if (!all_blocks_placed) {
-                blk_loc_registry.clear_all_grid_locs();
-                if (strlen(constraints_file) != 0) {
-                    read_constraints(constraints_file, blk_loc_registry);
-                }
+                blk_loc_registry = pre_ap_blk_loc_registry;
             }
         }
 

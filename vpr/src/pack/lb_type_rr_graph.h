@@ -65,7 +65,8 @@ inline constexpr std::array<const char*, (size_t)e_lb_rr_type::NUM_TYPES + 1> lb
  *
  * Every node has at least one mode. The out edges of a node are stored
  * contiguously, grouped by mode in ascending order, and within one mode in the
- * order of the pb graph pin's output edges.
+ * order of the pb graph pin's output edges. The fan-in nodes of every node,
+ * taken over all modes, are stored as well.
  *
  * The graph is built by LbTypeRRGraphBuilder and read only after that.
  */
@@ -120,6 +121,16 @@ class LbTypeRRGraph {
 
     size_t num_fanout(LbRRNodeId node, int mode) const { return edges(node, mode).size(); }
 
+    /// @brief The nodes with an edge into node, in any mode.
+    std::span<const LbRRNodeId> fanin_nodes(LbRRNodeId node) const {
+        uint32_t first = fanin_start_[size_t(node)];
+        uint32_t last = fanin_start_[size_t(node) + 1];
+        return std::span<const LbRRNodeId>(fanin_nodes_.data() + first, last - first);
+    }
+
+    /// @brief Lowest cost of any edge in the graph, or 0 if there are no edges.
+    float min_edge_cost() const { return min_edge_cost_; }
+
     e_lb_rr_type type(LbRRNodeId node) const { return types_[node]; }
 
     /// @brief The pb graph pin of node, or nullptr for the external nodes and sinks.
@@ -158,6 +169,16 @@ class LbTypeRRGraph {
 
     /// @brief The pb graph pin of each node, or nullptr if it has none.
     vtr::vector<LbRRNodeId, const t_pb_graph_pin*> pb_graph_pins_;
+
+    /// @brief For each node, the index in fanin_nodes_ of its first fan-in node.
+    ///        One extra entry at the end holds the total number of edges.
+    std::vector<uint32_t> fanin_start_;
+
+    /// @brief The source node of every edge, grouped by the node the edge drives.
+    std::vector<LbRRNodeId> fanin_nodes_;
+
+    /// @brief Lowest cost of any edge in the graph, or 0 if there are no edges.
+    float min_edge_cost_ = 0;
 
     /// @brief Node that drives every top level input and clock pin.
     LbRRNodeId ext_source_node_;

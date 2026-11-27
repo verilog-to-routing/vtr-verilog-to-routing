@@ -121,6 +121,7 @@ struct t_options {
     argparse::ArgValue<int> ap_verbosity;
     argparse::ArgValue<float> ap_timing_tradeoff;
     argparse::ArgValue<int> ap_high_fanout_threshold;
+    argparse::ArgValue<bool> ap_ram_group_density;
     argparse::ArgValue<bool> ap_generate_mass_report;
 
     // Clustering options
@@ -141,6 +142,7 @@ struct t_options {
     argparse::ArgValue<bool> use_ram_mapper;
     argparse::ArgValue<bool> memoize_cluster_packings;
     argparse::ArgValue<bool> cluster_router_hot_start;
+    argparse::ArgValue<e_cluster_router_lookahead> cluster_router_lookahead;
 
     // Placement options
     argparse::ArgValue<int> seed;
