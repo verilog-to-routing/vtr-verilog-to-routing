@@ -24,13 +24,6 @@ target_link_libraries(libarchfpga
                         libpugiutil
 )
 
-if(${VTR_ENABLE_CAPNPROTO})
-    target_link_libraries(libarchfpga libvtrcapnproto)
-    find_package(ZLIB REQUIRED)
-    target_link_libraries(libarchfpga ZLIB::ZLIB)
-    target_compile_definitions(libarchfpga PRIVATE VTR_ENABLE_CAPNPROTO)
-endif()
-
 # Using filesystem library requires additional compiler/linker options for GNU implementation prior to 9.1
 # and LLVM implementation prior to LLVM 9.0;
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
@@ -50,8 +43,6 @@ elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang")
         target_link_libraries(libarchfpga c++fs)
     endif()
 endif()
-
-target_compile_definitions(libarchfpga PUBLIC ${INTERCHANGE_SCHEMA_HEADERS})
 
 #Create the test executable
 add_executable(read_arch ${READ_ARCH_EXEC_SRC})

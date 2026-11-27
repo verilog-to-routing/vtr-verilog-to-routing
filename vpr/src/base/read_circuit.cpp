@@ -6,7 +6,6 @@
 
 #include "logic_types.h"
 #include "read_blif.h"
-#include "read_interchange_netlist.h"
 #include "atom_netlist.h"
 #include "atom_netlist_utils.h"
 #include "echo_files.h"
@@ -76,12 +75,9 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setu
             case e_circuit_format::EBLIF:
                 netlist = read_blif(circuit_format, circuit_file, arch.models, verbosity);
                 break;
-            case e_circuit_format::FPGA_INTERCHANGE:
-                netlist = read_interchange_netlist(circuit_file, arch, verbosity);
-                break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_ATOM_NETLIST,
-                                "Unable to identify circuit file format for '%s'. Expect [blif|eblif|fpga-interchange]!\n",
+                                "Unable to identify circuit file format for '%s'. Expect [blif|eblif]!\n",
                                 circuit_file);
                 break;
         }

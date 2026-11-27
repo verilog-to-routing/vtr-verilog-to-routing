@@ -1,6 +1,10 @@
 #ifndef TATUM_COMMON_ANALYSIS_VISITOR_HPP
 #define TATUM_COMMON_ANALYSIS_VISITOR_HPP
+#include <array>
+#include <vector>
+
 #include "tatum/error.hpp"
+#include "tatum/util/tatum_range.hpp"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingConstraints.hpp"
 #include "tatum/tags/TimingTags.hpp"
@@ -512,11 +516,35 @@ bool CommonAnalysisVisitor<AnalysisOps>::mark_sink_required_times(const TimingGr
     TATUM_ASSERT(tg.node_type(node_id) == NodeType::SINK);
     bool timing_modified = false;
 
-    //Note: since we add tags at the current node (and the tags are all stored together),
-    //we must *copy* the data arrival tags before adding any new tags (since adding new 
-    //tags may invalidate the old tag references)
-    auto data_arr_range = ops_.get_tags(node_id, TagType::DATA_ARRIVAL);
-    std::vector<TimingTag> node_data_arr_tags(data_arr_range.begin(), data_arr_range.end());
+    // Note: since we add tags at the current node (and the tags are all stored together),
+    // we must *copy* the data arrival tags before adding any new tags (since adding new 
+    // tags may invalidate the old tag references)
+    TimingTags::tag_range data_arr_range = ops_.get_tags(node_id, TagType::DATA_ARRIVAL);
+
+    // Copy the tags into a fixed-size local array, so the copy does not allocate memory
+    // for every sink. A sink usually has one or two data arrival tags, one per launch
+    // domain. If the sink has more tags than the array holds, the copy goes into a
+    // vector instead.
+    constexpr size_t FIXED_TAG_ARRAY_SIZE = 8;
+    std::array<TimingTag, FIXED_TAG_ARRAY_SIZE> fixed_data_arr_tags;
+    std::vector<TimingTag> overflow_data_arr_tags;
+    size_t num_data_arr_tags = 0;
+    for (const TimingTag& data_arr_tag : data_arr_range) {
+        if (num_data_arr_tags < FIXED_TAG_ARRAY_SIZE) {
+            fixed_data_arr_tags[num_data_arr_tags] = data_arr_tag;
+        } else {
+            // The array is full. Move its tags to the vector the first time this happens.
+            if (overflow_data_arr_tags.empty()) {
+                overflow_data_arr_tags.assign(fixed_data_arr_tags.begin(), fixed_data_arr_tags.end());
+            }
+            overflow_data_arr_tags.push_back(data_arr_tag);
+        }
+        ++num_data_arr_tags;
+    }
+
+    // Iterate over whichever of the array or the vector holds the copy
+    const TimingTag* data_arr_tags_begin = overflow_data_arr_tags.empty() ? fixed_data_arr_tags.data() : overflow_data_arr_tags.data();
+    tatum::util::Range<const TimingTag*> node_data_arr_tags = tatum::util::make_range(data_arr_tags_begin, data_arr_tags_begin + num_data_arr_tags);
 
     EdgeId clock_capture_edge = tg.node_clock_capture_edge(node_id);
 

@@ -31,8 +31,6 @@ if(${VTR_ENABLE_CAPNPROTO})
     target_link_libraries(librrgraph libvtrcapnproto)
 endif()
 
-target_compile_definitions(librrgraph PUBLIC ${INTERCHANGE_SCHEMA_HEADERS})
-
 # Unit tests
 #file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
 #add_executable(test_rr_graph ${TEST_SOURCES})

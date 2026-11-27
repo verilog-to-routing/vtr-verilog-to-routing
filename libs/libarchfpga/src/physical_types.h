@@ -2128,33 +2128,6 @@ struct t_clock_arch_spec {
     std::vector<t_clock_connection_arch> clock_connections_arch;
 };
 
-struct t_lut_cell {
-    std::string name;
-    std::string init_param;
-    std::vector<std::string> inputs;
-};
-
-struct t_lut_bel {
-    std::string name;
-
-    std::vector<std::string> input_pins;
-    std::string output_pin;
-
-    bool operator==(const t_lut_bel& other) const {
-        return name == other.name && input_pins == other.input_pins && output_pin == other.output_pin;
-    }
-};
-
-struct t_lut_element {
-    std::string site_type;
-    int width;
-    std::vector<t_lut_bel> lut_bels;
-
-    bool operator==(const t_lut_element& other) const {
-        return site_type == other.site_type && width == other.width && lut_bels == other.lut_bels;
-    }
-};
-
 /**
  * Represents a Network-on-chip(NoC) Router data type. It is used
  * to store individual router information when parsing the arch file.
@@ -2275,32 +2248,8 @@ struct t_arch {
     /// determine which layers in multi-die FPGAs require to build global routing resources
     std::vector<bool> layer_global_routing;
 
-    // Constants
-    // VCC and GND cells are special virtual cells that are
-    // used to handle the constant network of the device.
-    //
-    // Similarly, the constant nets are defined to identify
-    // the generic name for the constant network.
-    //
-    // Given that usually, the constants have a dedicated network in
-    // real FPGAs, this information becomes relevant to identify which
-    // nets from the circuit netlist are belonging to the constant network,
-    // and assigned to it accordingly.
-    //
-    // NOTE: At the moment, the constant cells and nets are primarily used
-    // for the interchange netlist format, to determine which are the constants
-    // net names and which virtual cell is responsible to generate them.
-    // The information is present in the device database.
-    std::pair<std::string, std::string> gnd_cell;
-    std::pair<std::string, std::string> vcc_cell;
-
-    std::string gnd_net = "$__gnd_net";
-    std::string vcc_net = "$__vcc_net";
+    /// Name of the default clock network, used for the virtual clock network root in the RR graph.
     std::string default_clock_network_name = "clock_network";
-
-    // Luts
-    std::vector<t_lut_cell> lut_cells;
-    std::unordered_map<std::string, std::vector<t_lut_element>> lut_elements;
 
     /// The name of the switch used for the input connection block (i.e. to connect routing tracks to block pins).
     std::string ipin_cblock_switch_name;
