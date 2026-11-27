@@ -81,7 +81,9 @@ vtr_flow/benchmarks/symbiflow/sdc/*.sdc
 vtr_flow/arch/multi_die/hecate/interposer/hecate_25D
 vtr_flow/arch/multi_die/hecate/interposer/hecate_25D_1x4
 vtr_flow/arch/multi_die/hecate/interposer/hecate_25D_2x2
-vtr_flow/arch/multi_die/hecate/interposer/hecate_25D
+vtr_flow/arch/multi_die/hecate/interposer/hecate_varlen_25D
+vtr_flow/arch/multi_die/hecate/interposer/hecate_varlen_25D_1x4
+vtr_flow/arch/multi_die/hecate/interposer/hecate_varlen_25D_2x2
 vtr_flow/arch/multi_die/hecate/3d/hecate_3D
 
 #
