@@ -257,7 +257,7 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = placer_state_.block_locs();
 
-    const NetPinsMatrix<float>& connection_delay = placer_state_.timing().connection_delay;
+    const ClbNetPinsMatrix<float>& connection_delay = placer_state_.timing().connection_delay;
     PlacerTimingCosts& connection_timing_cost = placer_state_.mutable_timing().connection_timing_cost;
     std::vector<t_connection_commit_entry>& proposed_connection_timing = placer_state_.mutable_timing().proposed_connection_timing;
 

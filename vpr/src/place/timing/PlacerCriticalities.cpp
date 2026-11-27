@@ -40,7 +40,7 @@ void PlacerCriticalities::update_criticalities(const PlaceCritParams& crit_param
         ClusterNetId clb_net = clb_nlist_.pin_net(clb_pin);
         int pin_index_in_net = clb_nlist_.pin_net_index(clb_pin);
 
-        float clb_pin_crit = calculate_clb_net_pin_criticality(*timing_info_, pin_lookup_, ParentPinId(size_t(clb_pin)), /*is_flat=*/false);
+        float clb_pin_crit = calculate_clb_net_pin_criticality(*timing_info_, pin_lookup_, clb_pin);
         float new_crit = pow(clb_pin_crit, crit_params.crit_exponent);
 
         /* Update the highly critical pins container

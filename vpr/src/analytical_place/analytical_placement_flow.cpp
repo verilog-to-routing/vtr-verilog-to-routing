@@ -29,7 +29,6 @@
 #include "global_placer.h"
 #include "globals.h"
 #include "load_flat_place.h"
-#include "netlist_fwd.h"
 #include "partial_legalizer.h"
 #include "partial_placement.h"
 #include "physical_types.h"
@@ -342,7 +341,6 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
         place_delay_model = PlacementDelayModelCreator::create_delay_model(vpr_setup.PlacerOpts,
                                                                            vpr_setup.RouterOpts,
                                                                            vpr_setup.CRROpts,
-                                                                           (const Netlist<>&)atom_nlist,
                                                                            vpr_setup.RoutingArch,
                                                                            vpr_setup.Segments,
                                                                            device_ctx.arch->Chans,

@@ -6,11 +6,9 @@
 #include "route_tree.h"
 #include "rr_graph.h"
 
-RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
-                                         const RouterLookahead* lookahead,
+RouterDelayProfiler::RouterDelayProfiler(const RouterLookahead* lookahead,
                                          bool is_flat)
-    : net_list_(net_list)
-    , router_(
+    : router_(
           g_vpr_ctx.device().grid,
           *lookahead,
           g_vpr_ctx.device().rr_graph.rr_nodes(),
@@ -56,8 +54,6 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     cost_params.post_target_prune_fac = router_opts.post_target_prune_fac;
     cost_params.post_target_prune_offset = router_opts.post_target_prune_offset;
     cost_params.bend_cost = router_opts.bend_cost;
-
-    route_budgets budgeting_inf(net_list_, is_flat_);
 
     router_.clear_modified_rr_node_info();
     RouterStats router_stats;

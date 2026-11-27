@@ -53,8 +53,7 @@ constexpr int SUCCESS_EXIT_CODE = 0; //Everything OK
 constexpr int ERROR_EXIT_CODE = 1; //Something went wrong internally
 constexpr int INTERRUPTED_EXIT_CODE = 3; //VPR was interrupted by the user (e.g. SIGINT/ctr-C)
 
-static void do_one_route(const Netlist<>& net_list,
-                         const t_det_routing_arch& det_routing_arch,
+static void do_one_route(const t_det_routing_arch& det_routing_arch,
                          RRNodeId source_node,
                          RRNodeId sink_node,
                          const t_router_opts& router_opts,
@@ -86,8 +85,6 @@ static void do_one_route(const Netlist<>& net_list,
     cost_params.criticality = router_opts.max_criticality;
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
-
-    route_budgets budgeting_inf(net_list, is_flat);
 
 
     RouterStats router_stats;
@@ -147,8 +144,7 @@ static void do_one_route(const Netlist<>& net_list,
     router.reset_path_costs();
 }
 
-static void profile_source(const Netlist<>& net_list,
-                           const t_det_routing_arch& det_routing_arch,
+static void profile_source(const t_det_routing_arch& det_routing_arch,
                            RRNodeId source_rr_node,
                            const t_router_opts& router_opts,
                            const std::vector<t_segment_inf>& segment_inf,
@@ -169,7 +165,7 @@ static void profile_source(const Netlist<>& net_list,
                                                   router_opts.route_verbosity,
                                                   router_opts.device_model_warnings,
                                                   router_opts.router_lookahead_interposer_base_cut_multiplier);
-    RouterDelayProfiler profiler(net_list, router_lookahead.get(), is_flat);
+    RouterDelayProfiler profiler(router_lookahead.get(), is_flat);
 
     int start_x = 0;
     int end_x = grid.width() - 1;
@@ -292,9 +288,6 @@ int main(int argc, const char **argv) {
 
         bool is_flat = vpr_setup.RouterOpts.flat_routing;
 
-        const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() :
-                                            (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
-
         t_chan_width chan_width = setup_chan_width(vpr_setup.RouterOpts,
                                                    Arch.Chans);
 
@@ -307,15 +300,13 @@ int main(int argc, const char **argv) {
                               is_flat);
 
         if(route_options.profile_source) {
-            profile_source(net_list,
-                           vpr_setup.RoutingArch,
+            profile_source(vpr_setup.RoutingArch,
                            RRNodeId(route_options.source_rr_node),
                            vpr_setup.RouterOpts,
                            vpr_setup.Segments,
                            is_flat);
         } else {
-            do_one_route(net_list,
-                         vpr_setup.RoutingArch,
+            do_one_route(vpr_setup.RoutingArch,
                          RRNodeId(route_options.source_rr_node),
                          RRNodeId(route_options.sink_rr_node),
                          vpr_setup.RouterOpts,

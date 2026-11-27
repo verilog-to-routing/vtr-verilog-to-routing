@@ -65,12 +65,12 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
 /* Placement */
 
 ///@brief Perform, load or skip the placement stage
-bool vpr_place_flow(const Netlist<>& net_list,
+bool vpr_place_flow(const ClusteredNetlist& net_list,
                     t_vpr_setup& vpr_setup,
                     const t_arch& arch);
 
 ///@brief Perform placement
-void vpr_place(const Netlist<>& net_list,
+void vpr_place(const ClusteredNetlist& net_list,
                t_vpr_setup& vpr_setup,
                const t_arch& arch);
 

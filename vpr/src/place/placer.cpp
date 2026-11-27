@@ -28,7 +28,7 @@
 #include "draw_global.h"
 #endif // NO_GRAPHICS
 
-Placer::Placer(const Netlist<>& net_list,
+Placer::Placer(const ClusteredNetlist& net_list,
                std::optional<std::reference_wrapper<const BlkLocRegistry>> init_place,
                const t_placer_opts& placer_opts,
                const t_analysis_opts& analysis_opts,
@@ -37,7 +37,6 @@ Placer::Placer(const Netlist<>& net_list,
                const FlatPlacementInfo& flat_placement_info,
                std::shared_ptr<PlaceDelayModel> place_delay_model,
                float anneal_auto_init_t_scale,
-               bool is_flat,
                bool quiet)
     : placer_opts_(placer_opts)
     , analysis_opts_(analysis_opts)
@@ -51,8 +50,7 @@ Placer::Placer(const Netlist<>& net_list,
                         placer_opts.congestion_chan_util_threshold)
     , place_delay_model_(std::move(place_delay_model))
     , log_printer_(*this, quiet)
-    , quench_only_(placer_opts.place_quench_only)
-    , is_flat_(is_flat) {
+    , quench_only_(placer_opts.place_quench_only) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
 
@@ -180,7 +178,7 @@ Placer::Placer(const Netlist<>& net_list,
                                                     move_lim);
 }
 
-void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
+void Placer::alloc_and_init_timing_objects_(const ClusteredNetlist& net_list,
                                             const t_analysis_opts& analysis_opts) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
@@ -195,8 +193,7 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
     placement_delay_calc_ = std::make_shared<PlacementDelayCalculator>(atom_ctx.netlist(),
                                                                        atom_ctx.lookup(),
                                                                        p_timing_ctx.connection_delay,
-                                                                       p_timing_ctx.connection_delay,
-                                                                       is_flat_);
+                                                                       p_timing_ctx.connection_delay);
     placement_delay_calc_->set_tsu_margin_relative(placer_opts_.tsu_rel_margin);
     placement_delay_calc_->set_tsu_margin_absolute(placer_opts_.tsu_abs_margin);
 
@@ -218,8 +215,7 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
                                                               netlist_pin_lookup_,
                                                               atom_ctx.netlist(),
                                                               atom_ctx.lookup(),
-                                                              timing_info_,
-                                                              is_flat_);
+                                                              timing_info_);
 
     // First time compute timing and costs, compute from scratch
     PlaceCritParams crit_params;

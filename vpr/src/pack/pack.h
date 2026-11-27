@@ -6,8 +6,8 @@
 #include <vector>
 
 #include "logical_ram_infer.h"
+#include "atom_netlist_fwd.h"
 
-class AtomNetId;
 class LbTypeRRGraph;
 class FlatPlacementInfo;
 class PreClusterTimingManager;

@@ -1,13 +1,13 @@
 #pragma once
 
 #include "vtr_vector_map.h"
+#include "clustered_netlist_fwd.h"
 
 #include <string>
 
 class PlacerState;
 class BlkLocRegistry;
 class DeviceGrid;
-class ClusterBlockId;
 struct t_block_loc;
 
 /**

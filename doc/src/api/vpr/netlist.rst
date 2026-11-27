@@ -35,3 +35,14 @@ Atom Netlist
 .. doxygenclass:: AtomNetlist
     :project: vpr
     :members:
+
+Routing Netlist
+---------------
+
+.. doxygenfile:: routing_netlist.h
+   :project: vpr
+   :sections: detaileddescription
+
+.. doxygenclass:: RoutingNetlist
+   :project: vpr
+   :members:

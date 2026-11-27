@@ -337,8 +337,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
         if (is_flat) {
             sync_netlists_to_routing_flat();
         } else {
-            sync_netlists_to_routing((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist,
-                                     g_vpr_ctx.device(),
+            sync_netlists_to_routing(g_vpr_ctx.device(),
                                      g_vpr_ctx.mutable_atom(),
                                      g_vpr_ctx.mutable_clustering(),
                                      g_vpr_ctx.placement(),

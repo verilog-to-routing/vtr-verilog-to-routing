@@ -12,13 +12,28 @@
 
 inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist& netlist,
                                                               const AtomLookup& netlist_lookup,
+                                                              const ClbNetPinsMatrix<float>& net_delay_min,
+                                                              const ClbNetPinsMatrix<float>& net_delay_max)
+    : PostClusterDelayCalculator(netlist, netlist_lookup, /*is_flat=*/false) {
+    clb_net_delay_min_ = &net_delay_min;
+    clb_net_delay_max_ = &net_delay_max;
+}
+
+inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist& netlist,
+                                                              const AtomLookup& netlist_lookup,
                                                               const NetPinsMatrix<float>& net_delay_min,
                                                               const NetPinsMatrix<float>& net_delay_max,
                                                               bool is_flat)
+    : PostClusterDelayCalculator(netlist, netlist_lookup, is_flat) {
+    net_delay_min_ = &net_delay_min;
+    net_delay_max_ = &net_delay_max;
+}
+
+inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist& netlist,
+                                                              const AtomLookup& netlist_lookup,
+                                                              bool is_flat)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
-    , net_delay_min_(net_delay_min)
-    , net_delay_max_(net_delay_max)
     , atom_delay_calc_(netlist, netlist_lookup)
     , edge_min_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
     , edge_max_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
@@ -387,12 +402,17 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
 inline float PostClusterDelayCalculator::inter_cluster_delay(const ParentNetId net_id, const int src_net_pin_index, const int sink_net_pin_index, DelayType delay_type) const {
     VTR_ASSERT(src_net_pin_index == 0);
 
-    if (routing_delay_type(delay_type) == DelayType::MAX) {
-        return net_delay_max_[net_id][sink_net_pin_index];
-    } else {
-        VTR_ASSERT(routing_delay_type(delay_type) == DelayType::MIN);
-        return net_delay_min_[net_id][sink_net_pin_index];
+    bool use_max_delay = (routing_delay_type(delay_type) == DelayType::MAX);
+    VTR_ASSERT(use_max_delay || routing_delay_type(delay_type) == DelayType::MIN);
+
+    if (clb_net_delay_max_ != nullptr) {
+        // The delays are those of the connections of the clustered netlist, so the net is a clustered net
+        const ClbNetPinsMatrix<float>& net_delay = use_max_delay ? *clb_net_delay_max_ : *clb_net_delay_min_;
+        return net_delay[convert_to_cluster_net_id(net_id)][sink_net_pin_index];
     }
+
+    const NetPinsMatrix<float>& net_delay = use_max_delay ? *net_delay_max_ : *net_delay_min_;
+    return net_delay[net_id][sink_net_pin_index];
 }
 
 inline DelayType PostClusterDelayCalculator::routing_delay_type(DelayType delay_type) const {

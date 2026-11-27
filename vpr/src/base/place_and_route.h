@@ -4,7 +4,7 @@
 #include "timing_info.h"
 #include "RoutingDelayCalculator.h"
 
-int binary_search_place_and_route(const Netlist<>& placement_net_list,
+int binary_search_place_and_route(const ClusteredNetlist& placement_net_list,
                                   const Netlist<>& router_net_list,
                                   const t_placer_opts& placer_opts_ref,
                                   const t_router_opts& router_opts,

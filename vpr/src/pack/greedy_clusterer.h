@@ -15,10 +15,10 @@
 #include "physical_types.h"
 #include "prepack.h"
 #include "vtr_vector.h"
+#include "atom_netlist_fwd.h"
 
 // Forward declarations
 struct APPackContext;
-class AtomNetId;
 class AtomNetlist;
 class AttractionInfo;
 struct ClusterGainStats;

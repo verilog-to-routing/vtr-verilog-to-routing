@@ -1,7 +1,6 @@
 #pragma once
 
 #include "d_ary_heap.h"
-#include "netlist.h"
 #include "router_lookahead.h"
 #include "router_stats.h"
 #include "serial_connection_router.h"
@@ -10,8 +9,7 @@
 
 class RouterDelayProfiler {
   public:
-    RouterDelayProfiler(const Netlist<>& net_list,
-                        const RouterLookahead* lookahead,
+    RouterDelayProfiler(const RouterLookahead* lookahead,
                         bool is_flat);
 
     /**
@@ -27,7 +25,6 @@ class RouterDelayProfiler {
                          float* net_delay);
 
   private:
-    const Netlist<>& net_list_;
     RouterStats router_stats_;
     SerialConnectionRouter<FourAryHeap> router_;
     bool is_flat_;

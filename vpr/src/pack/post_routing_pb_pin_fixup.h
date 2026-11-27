@@ -25,8 +25,7 @@
  *   - This function only handles the two-stage routing results.
  *     See \see sync_netlists_to_routing_flat() for the flat routing case.
  *******************************************************************/
-void sync_netlists_to_routing(const Netlist<>& net_list,
-                              const DeviceContext& device_ctx,
+void sync_netlists_to_routing(const DeviceContext& device_ctx,
                               AtomContext& atom_ctx,
                               ClusteringContext& clustering_ctx,
                               const PlacementContext& placement_ctx,

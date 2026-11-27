@@ -1,5 +1,8 @@
 #pragma once
 
+#include <array>
+
+#include "clustered_netlist.h"
 #include "clustered_netlist_utils.h"
 #include "netlist.h"
 #include "tatum/TimingGraph.hpp"
@@ -43,13 +46,31 @@ class NetPinTimingInvalidator {
 };
 
 //Helper class for iterating through the timing edges associated with a particular
-//clustered netlist pin, and invalidating them.
+//pin of the netlist used by routing, and invalidating them.
 //
-//For efficiency, it pre-calculates and stores the mapping from ClusterPinId -> tatum::EdgeIds,
-//and tracks whether a particular ClusterPinId has been already invalidated (to avoid the expense
+//For efficiency, it pre-calculates and stores the mapping from the pins -> tatum::EdgeIds,
+//and tracks whether a particular pin has been already invalidated (to avoid the expense
 //of invalidating it multiple times)
 class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
   public:
+    /// @brief Builds the invalidator of the pins of the clustered netlist.
+    IncrNetPinTimingInvalidator(const ClusteredNetlist& clb_nlist,
+                                const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup,
+                                const AtomNetlist& atom_nlist,
+                                const AtomLookup& atom_lookup,
+                                std::shared_ptr<TimingInfo> timing_info)
+        : timing_info_(std::move(timing_info)) {
+        size_t num_pins = clb_nlist.pins().size();
+        reserve_pins_(num_pins);
+        for (ClusterPinId clb_pin : clb_nlist.pins()) {
+            VTR_ASSERT_SAFE(size_t(clb_pin) == pin_first_edge_.size());
+            add_pin_(clb_atom_pin_lookup.connected_atom_pins(clb_pin), atom_nlist, atom_lookup);
+        }
+        finish_pins_(num_pins);
+    }
+
+    /// @brief Builds the invalidator of the pins of the netlist used by routing (the atom
+    ///        netlist if is_flat is true, otherwise the clustered netlist).
     IncrNetPinTimingInvalidator(const Netlist<>& net_list,
                                 const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup,
                                 const AtomNetlist& atom_nlist,
@@ -57,50 +78,27 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
                                 std::shared_ptr<TimingInfo> timing_info,
                                 bool is_flat)
         : timing_info_(std::move(timing_info)) {
-
         size_t num_pins = net_list.pins().size();
-        pin_first_edge_.reserve(num_pins + 1); //Exact
-        timing_edges_.reserve(num_pins + 1);   //Lower bound
+        reserve_pins_(num_pins);
         for (ParentPinId pin_id : net_list.pins()) {
-            pin_first_edge_.push_back(timing_edges_.size());
             if (is_flat) {
-                tatum::EdgeId tedge = atom_pin_to_timing_edge(*timing_info_->timing_graph(), atom_nlist, atom_lookup, convert_to_atom_pin_id(pin_id));
-
-                if (!tedge) {
-                    continue;
-                }
-
-                timing_edges_.push_back(tedge);
+                std::array<AtomPinId, 1> atom_pins = {convert_to_atom_pin_id(pin_id)};
+                add_pin_(atom_pins, atom_nlist, atom_lookup);
             } else {
-                auto cluster_pin_id = convert_to_cluster_pin_id(pin_id);
-                auto atom_pins = clb_atom_pin_lookup.connected_atom_pins(cluster_pin_id);
-                for (const AtomPinId atom_pin : atom_pins) {
-                    tatum::EdgeId tedge = atom_pin_to_timing_edge(*timing_info_->timing_graph(), atom_nlist, atom_lookup, atom_pin);
-
-                    if (!tedge) {
-                        continue;
-                    }
-
-                    timing_edges_.push_back(tedge);
-                }
+                add_pin_(clb_atom_pin_lookup.connected_atom_pins(convert_to_cluster_pin_id(pin_id)), atom_nlist, atom_lookup);
             }
         }
-
-        //Sentinels
-        timing_edges_.push_back(tatum::EdgeId::INVALID());
-        pin_first_edge_.push_back(timing_edges_.size());
-
-        VTR_ASSERT(pin_first_edge_.size() == net_list.pins().size() + 1);
+        finish_pins_(num_pins);
     }
 
-    //Returns the set of timing edges associated with the specified cluster pin
+    //Returns the set of timing edges associated with the specified pin of the netlist used by routing
     tedge_range pin_timing_edges(ParentPinId pin) const {
         int ipin = size_t(pin);
         return vtr::make_range(&timing_edges_[pin_first_edge_[ipin]],
                                &timing_edges_[pin_first_edge_[ipin + 1]]);
     }
 
-    /** Invalidates all timing edges associated with the clustered netlist connection
+    /** Invalidates all timing edges associated with the connection of the netlist used by routing
      * driving the specified pin.
      * Is concurrently safe. */
     void invalidate_connection(ParentPinId pin) {
@@ -120,6 +118,38 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
     }
 
   private:
+    /// @brief Allocates the space to record the timing edges of the given number of pins
+    void reserve_pins_(size_t num_pins) {
+        pin_first_edge_.reserve(num_pins + 1); //Exact
+        timing_edges_.reserve(num_pins + 1);   //Lower bound
+    }
+
+    /// @brief Records the timing edges of the next pin, which is connected to the given atom pins
+    template<typename AtomPinRange>
+    void add_pin_(const AtomPinRange& atom_pins,
+                  const AtomNetlist& atom_nlist,
+                  const AtomLookup& atom_lookup) {
+        pin_first_edge_.push_back(timing_edges_.size());
+        for (const AtomPinId atom_pin : atom_pins) {
+            tatum::EdgeId tedge = atom_pin_to_timing_edge(*timing_info_->timing_graph(), atom_nlist, atom_lookup, atom_pin);
+
+            if (!tedge) {
+                continue;
+            }
+
+            timing_edges_.push_back(tedge);
+        }
+    }
+
+    /// @brief Closes the list of timing edges once all the pins have been added
+    void finish_pins_(size_t num_pins) {
+        //Sentinels
+        timing_edges_.push_back(tatum::EdgeId::INVALID());
+        pin_first_edge_.push_back(timing_edges_.size());
+
+        VTR_ASSERT(pin_first_edge_.size() == num_pins + 1);
+    }
+
     tatum::EdgeId atom_pin_to_timing_edge(const tatum::TimingGraph& timing_graph,
                                           const AtomNetlist& atom_nlist,
                                           const AtomLookup& atom_lookup,
@@ -177,7 +207,26 @@ class NoopNetPinTimingInvalidator : public NetPinTimingInvalidator {
     }
 };
 
-/** Make a NetPinTimingInvalidator depending on update_type. Will return a NoopInvalidator if it's not INCREMENTAL. */
+/** Make a NetPinTimingInvalidator of the pins of the clustered netlist depending on update_type.
+ * Will return a NoopInvalidator if it's not INCREMENTAL. */
+inline std::unique_ptr<NetPinTimingInvalidator> make_net_pin_timing_invalidator(
+    e_timing_update_type update_type,
+    const ClusteredNetlist& clb_nlist,
+    const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup,
+    const AtomNetlist& atom_nlist,
+    const AtomLookup& atom_lookup,
+    const std::shared_ptr<TimingInfo>& timing_info) {
+    if (update_type == e_timing_update_type::FULL || update_type == e_timing_update_type::AUTO) {
+        return std::make_unique<NoopNetPinTimingInvalidator>();
+    } else {
+        VTR_ASSERT(update_type == e_timing_update_type::INCREMENTAL);
+        return std::make_unique<IncrNetPinTimingInvalidator>(clb_nlist, clb_atom_pin_lookup, atom_nlist,
+                                                             atom_lookup, timing_info);
+    }
+}
+
+/** Make a NetPinTimingInvalidator of the pins of the netlist used by routing depending on update_type.
+ * Will return a NoopInvalidator if it's not INCREMENTAL. */
 inline std::unique_ptr<NetPinTimingInvalidator> make_net_pin_timing_invalidator(
     e_timing_update_type update_type,
     const Netlist<>& net_list,
