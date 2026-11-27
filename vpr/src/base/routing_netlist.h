@@ -18,32 +18,111 @@
  *
  * Connectivity
  * ============
- * A RoutingNetlist holds its own copy of the pins of each net (the driver first, followed
- * by the sinks) of the netlist it was built from. Everything else (e.g. the block of a pin,
- * the names and the flags of the nets and blocks) is read from the source netlist when it
- * is queried. The source netlist must therefore outlive the RoutingNetlist, and its nets,
- * pins and blocks must not be added, removed or re-connected while the RoutingNetlist is
- * in use.
+ * A RoutingNetlist holds no copy of the netlist it was built from: every query is answered
+ * from the source netlist. The pins of a net are returned through a RoutingPinIterator,
+ * which converts the pin IDs of the source netlist as they are read. The source netlist
+ * must therefore outlive the RoutingNetlist, and its nets, pins and blocks must not be
+ * added, removed or re-connected while the RoutingNetlist is in use.
  */
 
-#include <span>
+#include <compare>
+#include <cstddef>
+#include <iterator>
 #include <string>
-#include <vector>
 
 #include "atom_lookup.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "routing_netlist_fwd.h"
 #include "vtr_assert.h"
+#include "vtr_range.h"
 #include "vtr_strong_id_range.h"
-#include "vtr_vector.h"
+
+/**
+ * @brief Random-access iterator over the pins of a net of the atom or the clustered netlist,
+ *        which yields them as RoutingPinIds.
+ *
+ * It points into the pin storage of the source netlist and converts each pin ID when it is
+ * read, so the pins of a net are not copied. Exactly one of its two pointers is set, which
+ * one depends on the netlist which is routed; the branch on it goes the same way for the
+ * whole run.
+ */
+class RoutingPinIterator {
+  public:
+    using iterator_category = std::random_access_iterator_tag;
+    using value_type = RoutingPinId;
+    using difference_type = std::ptrdiff_t;
+    using pointer = void;
+    using reference = RoutingPinId; // Pins are yielded by value
+
+    RoutingPinIterator() = default;
+
+    /// @brief Iterates over pins of the atom netlist, starting at the given one.
+    explicit RoutingPinIterator(const AtomPinId* atom_pin)
+        : atom_pin_(atom_pin) {}
+
+    /// @brief Iterates over pins of the clustered netlist, starting at the given one.
+    explicit RoutingPinIterator(const ClusterPinId* clb_pin)
+        : clb_pin_(clb_pin) {}
+
+    RoutingPinId operator*() const {
+        return atom_pin_ ? RoutingPinId(size_t(*atom_pin_)) : RoutingPinId(size_t(*clb_pin_));
+    }
+
+    RoutingPinId operator[](difference_type n) const { return *(*this + n); }
+
+    RoutingPinIterator& operator+=(difference_type n) {
+        if (atom_pin_) {
+            atom_pin_ += n;
+        } else {
+            clb_pin_ += n;
+        }
+        return *this;
+    }
+
+    RoutingPinIterator& operator-=(difference_type n) { return *this += -n; }
+    RoutingPinIterator& operator++() { return *this += 1; }
+    RoutingPinIterator& operator--() { return *this -= 1; }
+
+    RoutingPinIterator operator++(int) {
+        RoutingPinIterator prev = *this;
+        ++*this;
+        return prev;
+    }
+
+    RoutingPinIterator operator--(int) {
+        RoutingPinIterator prev = *this;
+        --*this;
+        return prev;
+    }
+
+    friend RoutingPinIterator operator+(RoutingPinIterator it, difference_type n) { return it += n; }
+    friend RoutingPinIterator operator+(difference_type n, RoutingPinIterator it) { return it += n; }
+    friend RoutingPinIterator operator-(RoutingPinIterator it, difference_type n) { return it -= n; }
+
+    friend difference_type operator-(const RoutingPinIterator& a, const RoutingPinIterator& b) {
+        return a.atom_pin_ ? a.atom_pin_ - b.atom_pin_ : a.clb_pin_ - b.clb_pin_;
+    }
+
+    friend bool operator==(const RoutingPinIterator& a, const RoutingPinIterator& b) {
+        return a.atom_pin_ == b.atom_pin_ && a.clb_pin_ == b.clb_pin_;
+    }
+
+    friend std::strong_ordering operator<=>(const RoutingPinIterator& a, const RoutingPinIterator& b) {
+        return (a - b) <=> 0;
+    }
+
+  private:
+    const AtomPinId* atom_pin_ = nullptr;   ///< The current pin, if the atom netlist is routed
+    const ClusterPinId* clb_pin_ = nullptr; ///< The current pin, if the clustered netlist is routed
+};
 
 class RoutingNetlist {
   public: // Types
     typedef vtr::StrongIdRange<RoutingBlockId> block_range;
     typedef vtr::StrongIdRange<RoutingNetId> net_range;
     typedef vtr::StrongIdRange<RoutingPinId> pin_id_range;
-    typedef std::span<const RoutingPinId> pin_range;
+    typedef vtr::Range<RoutingPinIterator> pin_range;
 
   public: // Constructors
     /**
@@ -61,37 +140,27 @@ class RoutingNetlist {
                    const AtomLookup& atom_lookup,
                    bool is_flat);
 
-    // A routing netlist holds a copy of the connectivity and is referred to by the
-    // objects built from it, so it can be move-constructed but not (accidentally) copied.
-    // It is bound to the netlists it was built from for its whole life, so it cannot be assigned.
-    RoutingNetlist(const RoutingNetlist&) = delete;
-    RoutingNetlist& operator=(const RoutingNetlist&) = delete;
-    RoutingNetlist(RoutingNetlist&&) = default;
-    RoutingNetlist& operator=(RoutingNetlist&&) = delete;
-
   public: // Netlist
     /// @brief Returns true if this is the netlist of a flat routing (the atom netlist is routed).
     bool is_flat() const { return is_flat_; }
 
     /// @brief Returns all the blocks of the netlist.
-    block_range blocks() const { return block_range(RoutingBlockId(0), RoutingBlockId(num_blocks_)); }
+    block_range blocks() const {
+        size_t num_blocks = is_flat() ? atom_nlist_.blocks().size() : clb_nlist_.blocks().size();
+        return block_range(RoutingBlockId(0), RoutingBlockId(num_blocks));
+    }
 
     /// @brief Returns all the nets of the netlist.
-    net_range nets() const { return net_range(RoutingNetId(0), RoutingNetId(net_first_pin_.size() - 1)); }
+    net_range nets() const {
+        size_t num_nets = is_flat() ? atom_nlist_.nets().size() : clb_nlist_.nets().size();
+        return net_range(RoutingNetId(0), RoutingNetId(num_nets));
+    }
 
     /// @brief Returns all the pins of the netlist.
-    pin_id_range pins() const { return pin_id_range(RoutingPinId(0), RoutingPinId(num_pins_)); }
-
-    /**
-     * @brief Checks that the connectivity held by this netlist is still the connectivity
-     *        of the netlist it was built from.
-     *
-     * This is a consistency check for the points of the flow where the source netlist
-     * may have been modified since the routing netlist was built.
-     *
-     *  @return True if the two match.
-     */
-    bool matches_source() const;
+    pin_id_range pins() const {
+        size_t num_pins = is_flat() ? atom_nlist_.pins().size() : clb_nlist_.pins().size();
+        return pin_id_range(RoutingPinId(0), RoutingPinId(num_pins));
+    }
 
   public: // Blocks
     /// @brief Returns the name of a block.
@@ -130,19 +199,23 @@ class RoutingNetlist {
 
     /// @brief Returns the pins of a net: the driver (which is invalid if the net has no driver) followed by the sinks.
     pin_range net_pins(RoutingNetId net_id) const {
-        size_t first_pin = net_first_pin_[net_id];
-        size_t num_pins = net_first_pin_[RoutingNetId(size_t(net_id) + 1)] - first_pin;
-        return pin_range(net_pins_).subspan(first_pin, num_pins);
+        if (is_flat()) {
+            return make_pin_range_(atom_nlist_.net_pins(atom_net(net_id)));
+        }
+        return make_pin_range_(clb_nlist_.net_pins(cluster_net(net_id)));
     }
 
     /// @brief Returns the sink pins of a net.
-    pin_range net_sinks(RoutingNetId net_id) const { return net_pins(net_id).subspan(1); }
+    pin_range net_sinks(RoutingNetId net_id) const {
+        pin_range pins_of_net = net_pins(net_id);
+        return pin_range(pins_of_net.begin() + 1, pins_of_net.end());
+    }
 
     /// @brief Returns the pin at the given index of a net (0 is the driver).
     RoutingPinId net_pin(RoutingNetId net_id, int net_pin_index) const {
         pin_range pins_of_net = net_pins(net_id);
         VTR_ASSERT_SAFE_MSG(net_pin_index >= 0 && size_t(net_pin_index) < pins_of_net.size(), "Pin index must be in range");
-        return pins_of_net[net_pin_index];
+        return pins_of_net.begin()[net_pin_index];
     }
 
     /// @brief Returns the block which drives a net (invalid if the net has no driver).
@@ -240,20 +313,25 @@ class RoutingNetlist {
         return RoutingNetId(size_t(atom_net_id));
     }
 
-  private: // Construction helpers
+  private: // Helpers
     /**
-     * @brief Copies the connectivity of the source netlist (either the atom or the
-     *        clustered netlist) into this netlist.
+     * @brief Checks that the blocks, pins and nets of the source netlist (either the atom
+     *        or the clustered netlist) can be numbered like the source, and that every
+     *        net has an entry for its driver.
      */
     template<typename SourceNetlist>
-    void load_connectivity_(const SourceNetlist& src_nlist);
+    static void check_source_(const SourceNetlist& src_nlist);
 
     /**
-     * @brief Returns true if the connectivity held by this netlist is the connectivity
-     *        of the given netlist (either the atom or the clustered netlist).
+     * @brief Returns the given pins of a net of the source netlist as a range of RoutingPinIds.
+     *
+     * The range is never empty: every net has an entry for its driver (see check_source_()).
      */
-    template<typename SourceNetlist>
-    bool matches_connectivity_(const SourceNetlist& src_nlist) const;
+    template<typename SourcePinRange>
+    static pin_range make_pin_range_(const SourcePinRange& src_pins) {
+        const auto* first_pin = &*src_pins.begin();
+        return pin_range(RoutingPinIterator(first_pin), RoutingPinIterator(first_pin + src_pins.size()));
+    }
 
   private: // Data
     // The atom netlist of the design: the source of this netlist with flat routing.
@@ -267,20 +345,6 @@ class RoutingNetlist {
 
     // True if this netlist was built from the atom netlist, false if from the clustered netlist.
     bool is_flat_;
-
-    // The number of blocks in the netlist.
-    size_t num_blocks_ = 0;
-
-    // The number of pins in the netlist.
-    size_t num_pins_ = 0;
-
-    // The pins of all the nets, stored net after net. Within a net the driver comes first.
-    std::vector<RoutingPinId> net_pins_;
-
-    // The position in net_pins_ of the first pin of each net. Holds one extra entry at
-    // the end (the size of net_pins_), so the pins of a net are found between its entry
-    // and the next one.
-    vtr::vector<RoutingNetId, size_t> net_first_pin_;
 };
 
 /**
