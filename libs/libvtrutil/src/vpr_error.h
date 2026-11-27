@@ -19,10 +19,9 @@ enum e_vpr_error {
     VPR_ERROR_SDC,
 
     // File parsing errors
-    VPR_ERROR_NET_F,        // Error while parsing the packed netlist file
-    VPR_ERROR_PLACE_F,      // Error while parsing the placement file
-    VPR_ERROR_BLIF_F,       // Error while parsing the blif file
-    VPR_ERROR_IC_NETLIST_F, // Error while parsing the interchange netlist file
+    VPR_ERROR_NET_F,   // Error while parsing the packed netlist file
+    VPR_ERROR_PLACE_F, // Error while parsing the placement file
+    VPR_ERROR_BLIF_F,  // Error while parsing the blif file
 
     VPR_ERROR_IMPL_NETLIST_WRITER,
     VPR_ERROR_NETLIST,

@@ -23,7 +23,6 @@ struct t_options {
     argparse::ArgValue<std::string> SDCFile;
     argparse::ArgValue<std::string> options_file; ///< YAML file of additional command-line options (--options_file).
 
-    argparse::ArgValue<e_arch_format> arch_format;
     argparse::ArgValue<e_circuit_format> circuit_format;
 
     argparse::ArgValue<std::string> out_file_prefix;

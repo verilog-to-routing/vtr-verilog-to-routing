@@ -41,7 +41,6 @@ option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VP
 #Allow the user to decide whether to compile the server module
 option(VPR_USE_SERVER "Specify whether vpr enables the server mode" ON)
 
-option(VPR_ENABLE_INTERCHANGE "Enable FPGA interchange." ON)
 option(VPR_ENABLE_NOC_SAT_ROUTING "Enable NoC SAT routing." OFF)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
