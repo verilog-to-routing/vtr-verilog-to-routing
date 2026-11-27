@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-"""Generate Hecate interposer architecture variants from a CSV description
+"""Generate Hecate interposer architecture variants from CSV/JSON descriptions
 and the base Hecate architectures:
   - 'hecate_25d_L18_int_10um_bump_unidir_fanin_32.xml' (2 dies, 1 cut)
   - 'hecate_25d_L18_int_10um_bump_unidir_1x4_fanin_32.xml' (1x4 dies, 3 cuts)
@@ -9,6 +9,7 @@ and the base Hecate architectures:
 
 import copy
 import csv
+import json
 import os
 import re
 from typing import Any, List, Mapping, NamedTuple, Optional, Sequence, Tuple
@@ -18,6 +19,8 @@ from lxml import etree
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 VALID_DIRECTIONALITIES = ("unidir", "bidir")
+BUMP_PITCH_TO_NUM = {"10um": "3", "5um": "12"}
+DEFAULT_FAN_IN_SIZES = ("4", "8", "16", "32", "64")
 
 # Scatter-gather pattern name -> (sg_link offset attribute, offset sign).
 # Up/down patterns cross horizontal cuts; left/right patterns cross vertical cuts.
@@ -28,15 +31,77 @@ SG_PATTERN_DIRECTIONS = {
     "interposer_sg_rightward": ("x_offset", 1),
 }
 
+# Variable-length 2-die scatter-gather pattern name -> (sg_link prefix, y_offset sign).
+VARLEN_SG_DIRECTIONS = {
+    "interposer_sg_downward": ("DOWN", -1),
+    "interposer_sg_upward": ("UP", 1),
+}
+
 
 class ArchGenConfig(NamedTuple):
-    """Shared settings for generating architecture variants from one template."""
+    """Shared settings for generating fixed-length variants from one template."""
 
     base_tree: Any
     output_dir: str
     connection_sizes: Sequence[Tuple[str, str]]
     name_tag: str = ""
     segmented_cuts: bool = False
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
+
+
+def _validate_directionality(directionality: str) -> None:
+    if directionality not in VALID_DIRECTIONALITIES:
+        raise ValueError(
+            f"Invalid directionality '{directionality}'; "
+            f"expected one of {VALID_DIRECTIONALITIES}."
+        )
+
+
+def _parse_segment_length(wire_name: str) -> int:
+    """Extract and validate the interposer segment length from ``wire_name``."""
+    match = re.search(r"\d+", wire_name)
+    if not match:
+        raise ValueError(f"Could not extract segment length from wire_name '{wire_name}'.")
+    segment_length = int(match.group())
+    if segment_length < 2:
+        raise ValueError(
+            f"Interposer segment length must be >= 2 (got {segment_length} from '{wire_name}')."
+        )
+    return segment_length
+
+
+def _load_template_tree(template_path: str) -> Any:
+    """Parse an architecture XML template while preserving comments."""
+    parser = etree.XMLParser(remove_comments=False)
+    return etree.parse(template_path, parser)
+
+
+def _set_sg_wireconn_conns(
+    sg: Any, pattern_name: str, gather_n_val: str, scatter_n_val: str
+) -> None:
+    """Set gather and scatter ``wireconn/@num_conns`` on an ``sg_pattern`` tag."""
+    for tag_name, n_val in (("gather", gather_n_val), ("scatter", scatter_n_val)):
+        wireconn = sg.xpath(f"./{tag_name}/wireconn")
+        if not wireconn:
+            raise ValueError(
+                f"Missing <{tag_name}><wireconn> tag in sg_pattern '{pattern_name}'."
+            )
+        wireconn[0].set("num_conns", n_val)
+
+
+def _write_xml(xml_tree: Any, output_path: str) -> None:
+    """Serialize an architecture XML tree to ``output_path``."""
+    xml_tree.write(output_path, encoding="UTF-8", xml_declaration=True, pretty_print=True)
+    print(f"Generated: {output_path}")
+
+
+# ---------------------------------------------------------------------------
+# Fixed-length interposer architecture generation
+# ---------------------------------------------------------------------------
 
 
 def configure_interposer_segment(xml_root: Any, segment_length: int, mux_name: str) -> None:
@@ -110,11 +175,7 @@ def configure_scatter_gather_patterns(
             ``sg_pattern`` tags exist in the template, or if a matched pattern
             is missing required child tags.
     """
-    if directionality not in VALID_DIRECTIONALITIES:
-        raise ValueError(
-            f"Invalid directionality '{directionality}'; "
-            f"expected one of {VALID_DIRECTIONALITIES}."
-        )
+    _validate_directionality(directionality)
 
     matched = False
     for pattern_name, (offset_attr, sign) in SG_PATTERN_DIRECTIONS.items():
@@ -128,13 +189,7 @@ def configure_scatter_gather_patterns(
         sg.set("type", directionality)
 
         # Update num_conns for gather and scatter (4, 8, 16, 32, or 64)
-        for tag_name, n_val in (("gather", gather_n_val), ("scatter", scatter_n_val)):
-            wireconn = sg.xpath(f"./{tag_name}/wireconn")
-            if not wireconn:
-                raise ValueError(
-                    f"Missing <{tag_name}><wireconn> tag in sg_pattern '{pattern_name}'."
-                )
-            wireconn[0].set("num_conns", n_val)
+        _set_sg_wireconn_conns(sg, pattern_name, gather_n_val, scatter_n_val)
 
         # Update the sg_link X/Y offset depending on the interposer routing direction
         sg_link = sg.xpath("./sg_link_list/sg_link")
@@ -364,11 +419,7 @@ def configure_segmented_interdie_wires(
 def write_arch(
     xml_tree: Any, output_dir: str, arch_id: str, gather_n_val: str, name_tag: str = ""
 ) -> None:
-    """Write a generated architecture XML file to disk.
-
-    Builds the output filename from the architecture identifier and gather
-    fan-in value, then writes the XML tree with an XML declaration and pretty
-    formatting.
+    """Write a generated fixed-length architecture XML file to disk.
 
     Args:
         xml_tree: Parsed architecture XML tree to serialize.
@@ -383,33 +434,11 @@ def write_arch(
     """
     tag = f"_{name_tag}" if name_tag else ""
     output_filename = f"hecate_25d_{arch_id}{tag}_fanin_{gather_n_val}.xml"
-    output_path = os.path.join(output_dir, output_filename)
-
-    xml_tree.write(output_path, encoding="UTF-8", xml_declaration=True, pretty_print=True)
-    print(f"Generated: {output_path}")
-
-
-def _parse_segment_length(wire_name: str) -> int:
-    """Extract and validate the interposer segment length from ``wire_name``."""
-    match = re.search(r"\d+", wire_name)
-    if not match:
-        raise ValueError(f"Could not extract segment length from wire_name '{wire_name}'.")
-    segment_length = int(match.group())
-    if segment_length < 2:
-        raise ValueError(
-            f"Interposer segment length must be >= 2 (got {segment_length} from '{wire_name}')."
-        )
-    return segment_length
+    _write_xml(xml_tree, os.path.join(output_dir, output_filename))
 
 
 def generate_archs_for_row(row: Mapping[str, str], config: ArchGenConfig) -> None:
-    """Generate all architecture variants described by one CSV row.
-
-    Extracts the interposer segment length and connectivity settings from a
-    CSV row, then generates one architecture file for each gather/scatter
-    connection-size pair. Each output starts from a fresh copy of the parsed
-    template XML so variants do not inherit modifications from earlier
-    iterations.
+    """Generate all fixed-length architecture variants described by one CSV row.
 
     Args:
         row: CSV row containing ``arch_id``, ``mux_name``, ``wire_name``,
@@ -421,7 +450,6 @@ def generate_archs_for_row(row: Mapping[str, str], config: ArchGenConfig) -> Non
     segment_length = _parse_segment_length(row["wire_name"])
 
     for gather_n_val, scatter_n_val in config.connection_sizes:
-        # Start from a fresh copy of the parsed template for each configuration
         xml_tree = copy.deepcopy(config.base_tree)
         xml_root = xml_tree.getroot()
 
@@ -445,7 +473,7 @@ def generate_hecate_interposer_archs(
     name_tag: str = "",
     segmented_cuts: bool = False,
 ) -> None:
-    """Generate Hecate interposer architecture XML variants.
+    """Generate fixed-length Hecate interposer architecture XML variants.
 
     Reads a CSV description of interposer wire configurations and applies each
     row to a base Hecate architecture template. For each row, this function
@@ -471,15 +499,8 @@ def generate_hecate_interposer_archs(
         raise FileNotFoundError(f"CSV file '{csv_file}' not found.")
 
     os.makedirs(output_dir, exist_ok=True)
-
-    # Parse template once while retaining existing XML comments
-    parser = etree.XMLParser(remove_comments=False)
-    base_tree = etree.parse(template_path, parser)
-
-    # Define the range of fan-in and fan-out sizes for interposer routing exploration
-    gather_conn_sizes = ["4", "8", "16", "32", "64"]
-    scatter_conn_sizes = ["4", "8", "16", "32", "64"]
-    connection_sizes = list(zip(gather_conn_sizes, scatter_conn_sizes))
+    base_tree = _load_template_tree(template_path)
+    connection_sizes = list(zip(DEFAULT_FAN_IN_SIZES, DEFAULT_FAN_IN_SIZES))
 
     config = ArchGenConfig(
         base_tree=base_tree,
@@ -495,13 +516,299 @@ def generate_hecate_interposer_archs(
             generate_archs_for_row(row, config)
 
 
+# ---------------------------------------------------------------------------
+# Variable-length interposer architecture generation (2-die)
+# ---------------------------------------------------------------------------
+
+
+def configure_varlen_interdie_wires(
+    xml_root: Any, layout_xpath: str, lengths: Sequence[int], wire_um: str
+) -> None:
+    """Replace ``interdie_wire`` tags with one centered up/down pair per length.
+
+    Each wire of length ``L`` is placed at offset ``-L/2`` (upward) and
+    ``+L/2`` (downward) from the cut so that every wire straddles the cut
+    symmetrically.
+
+    Args:
+        xml_root: Root element of the parsed architecture XML tree.
+        layout_xpath: XPath selecting the layout element, e.g.
+            ``".//layout/auto_layout"``.
+        lengths: Interposer wire segment lengths (each must be even and >= 2).
+        wire_um: Bump pitch (``"10um"`` or ``"5um"``), determining ``num``.
+
+    Raises:
+        ValueError: If ``wire_um`` is invalid, any length is odd, or no
+            ``interposer_cut`` exists under ``layout_xpath``.
+    """
+    if wire_um not in BUMP_PITCH_TO_NUM:
+        raise ValueError(
+            f"Invalid wire_um '{wire_um}'; expected one of {tuple(BUMP_PITCH_TO_NUM)}."
+        )
+    layout_xpath = layout_xpath.rstrip("/")
+    cuts = xml_root.xpath(f"{layout_xpath}/interposer_cut")
+    if not cuts:
+        raise ValueError(f"No <interposer_cut> tags found under '{layout_xpath}'.")
+    cut = cuts[0]
+
+    for wire in cut.findall("interdie_wire"):
+        cut.remove(wire)
+
+    num = BUMP_PITCH_TO_NUM[wire_um]
+    for length in lengths:
+        if length % 2 != 0:
+            raise ValueError(f"Variable-length interposer wire length must be even (got {length}).")
+        offset = str(length // 2)
+        etree.SubElement(
+            cut,
+            "interdie_wire",
+            {
+                "sg_name": "interposer_sg_upward",
+                "sg_link": f"sg_UP_L{length}",
+                "offset_start": f"-{offset}",
+                "offset_end": f"-{offset}",
+                "offset_increment": "1",
+                "num": num,
+            },
+        )
+        etree.SubElement(
+            cut,
+            "interdie_wire",
+            {
+                "sg_name": "interposer_sg_downward",
+                "sg_link": f"sg_DOWN_L{length}",
+                "offset_start": offset,
+                "offset_end": offset,
+                "offset_increment": "1",
+                "num": num,
+            },
+        )
+
+
+def configure_varlen_switches(
+    xml_root: Any,
+    length_delays: Sequence[Tuple[int, Sequence[float]]],
+    wire_um: str,
+    directionality: str,
+    fan_in_values: Sequence[str],
+) -> None:
+    """Replace ``int_driver`` switches with per-length variable-length drivers.
+
+    Args:
+        xml_root: Root element of the parsed architecture XML tree.
+        length_delays: Sequence of ``(length, delays_ps)`` pairs where each
+            ``delays_ps`` sequence aligns with ``fan_in_values``.
+        wire_um: Bump pitch (``"10um"`` or ``"5um"``), used in the switch name.
+        directionality: ``"unidir"`` or ``"bidir"`` (``bidir`` doubles
+            ``num_inputs``).
+        fan_in_values: Fan-in labels matching the order of each delay list.
+
+    Raises:
+        ValueError: If ``directionality`` is invalid, ``switchlist`` is
+            missing, or a delay list length does not match ``fan_in_values``.
+    """
+    _validate_directionality(directionality)
+    switchlists = xml_root.xpath(".//switchlist")
+    if not switchlists:
+        raise ValueError("Missing <switchlist> tag in template XML.")
+    switchlist = switchlists[0]
+
+    for switch in switchlist.xpath("./switch[contains(@name, 'int_driver')]"):
+        switchlist.remove(switch)
+
+    for length, delays in length_delays:
+        if len(delays) != len(fan_in_values):
+            raise ValueError(
+                f"Expected {len(fan_in_values)} delays for L{length}, got {len(delays)}."
+            )
+        switch = etree.SubElement(
+            switchlist,
+            "switch",
+            {
+                "type": "mux",
+                "name": f"L{length}_int_driver_{wire_um}_bump",
+                "R": "0.0",
+                "Cout": "0.0",
+                "Cin": "0.0",
+                "mux_trans_size": "0",
+                "buf_size": "0",
+            },
+        )
+        for fan_in, delay in zip(fan_in_values, delays):
+            num_inputs = str(int(fan_in) * 2) if directionality == "bidir" else fan_in
+            etree.SubElement(switch, "Tdel", {"num_inputs": num_inputs, "delay": f"{delay}e-12"})
+
+
+def configure_varlen_segments(
+    xml_root: Any, lengths: Sequence[int], wire_um: str
+) -> None:
+    """Replace ``int_wire`` with one ``int_wire_L{length}`` segment per length.
+
+    Args:
+        xml_root: Root element of the parsed architecture XML tree.
+        lengths: Interposer wire segment lengths to create.
+        wire_um: Bump pitch (``"10um"`` or ``"5um"``), used in the mux name.
+
+    Raises:
+        ValueError: If ``segmentlist`` is missing from the template.
+    """
+    segmentlists = xml_root.xpath(".//segmentlist")
+    if not segmentlists:
+        raise ValueError("Missing <segmentlist> tag in template XML.")
+    segmentlist = segmentlists[0]
+
+    for segment in segmentlist.xpath("./segment[@name='int_wire']"):
+        segmentlist.remove(segment)
+
+    for length in lengths:
+        segment = etree.SubElement(
+            segmentlist,
+            "segment",
+            {
+                "name": f"int_wire_L{length}",
+                "freq": "0",
+                "length": str(length),
+                "type": "unidir",
+                "Rmetal": "0.0",
+                "Cmetal": "0.0",
+            },
+        )
+        etree.SubElement(segment, "mux", {"name": f"L{length}_int_driver_{wire_um}_bump"})
+        etree.SubElement(segment, "sb", {"type": "pattern"}).text = " ".join(["0"] * (length + 1))
+        etree.SubElement(segment, "cb", {"type": "pattern"}).text = " ".join(["0"] * length)
+
+
+def configure_varlen_scatter_gather(
+    xml_root: Any, lengths: Sequence[int], fan_in: str, directionality: str
+) -> None:
+    """Configure upward/downward scatter-gather patterns for variable-length wires.
+
+    Args:
+        xml_root: Root element of the parsed architecture XML tree.
+        lengths: Interposer wire segment lengths to emit as ``sg_link`` entries.
+        fan_in: Gather/scatter ``num_conns`` value (not doubled for ``bidir``).
+        directionality: ``"unidir"`` or ``"bidir"``.
+
+    Raises:
+        ValueError: If ``directionality`` is invalid or required scatter-gather
+            tags are missing from the template.
+    """
+    _validate_directionality(directionality)
+
+    for sg_name, (link_prefix, sign) in VARLEN_SG_DIRECTIONS.items():
+        patterns = xml_root.xpath(f".//scatter_gather_list/sg_pattern[@name='{sg_name}']")
+        if not patterns:
+            raise ValueError(f"Missing <sg_pattern name='{sg_name}'> in template XML.")
+        sg = patterns[0]
+        sg.set("type", directionality)
+        _set_sg_wireconn_conns(sg, sg_name, fan_in, fan_in)
+
+        sg_link_lists = sg.xpath("./sg_link_list")
+        if not sg_link_lists:
+            raise ValueError(f"Missing <sg_link_list> in sg_pattern '{sg_name}'.")
+        sg_link_list = sg_link_lists[0]
+
+        for sg_link in sg_link_list.findall("sg_link"):
+            sg_link_list.remove(sg_link)
+
+        for length in lengths:
+            etree.SubElement(
+                sg_link_list,
+                "sg_link",
+                {
+                    "name": f"sg_{link_prefix}_L{length}",
+                    "y_offset": str(sign * length),
+                    "seg_type": f"int_wire_L{length}",
+                },
+            )
+
+
+def _generate_varlen_group(
+    base_tree: Any,
+    output_dir: str,
+    max_length: str,
+    layers: Mapping[str, Any],
+    fan_in_values: Sequence[str],
+) -> None:
+    """Generate all variable-length variants for one ``Max_L*`` group."""
+    for directionality in VALID_DIRECTIONALITIES:
+        for wire_um in BUMP_PITCH_TO_NUM:
+            length_delays = [
+                (_parse_segment_length(l_key), wire_data[wire_um][directionality])
+                for l_key, wire_data in layers.items()
+            ]
+            lengths = [length for length, _ in length_delays]
+
+            # Switches, segments, and interdie_wires are shared across fan-in values.
+            group_tree = copy.deepcopy(base_tree)
+            group_root = group_tree.getroot()
+            configure_varlen_interdie_wires(group_root, ".//layout/auto_layout", lengths, wire_um)
+            configure_varlen_switches(
+                group_root, length_delays, wire_um, directionality, fan_in_values
+            )
+            configure_varlen_segments(group_root, lengths, wire_um)
+
+            for fan_in in fan_in_values:
+                xml_tree = copy.deepcopy(group_tree)
+                configure_varlen_scatter_gather(
+                    xml_tree.getroot(), lengths, fan_in, directionality
+                )
+                etree.indent(xml_tree, space="  ")
+
+                output_filename = (
+                    f"hecate_25d_{max_length}_{directionality}_{wire_um}_fanin_{fan_in}.xml"
+                )
+                _write_xml(xml_tree, os.path.join(output_dir, output_filename))
+
+
+def generate_varlen_hecate_interposer_archs(
+    json_file: str,
+    template_path: str,
+    output_dir: str = "hecate_varlen_25D",
+) -> None:
+    """Generate variable-length 2-die Hecate interposer architecture XML variants.
+
+    Reads a JSON description of per-``Max_L*`` segment delay tables and applies
+    each combination of ``(max_length, directionality, bump_pitch, fan_in)`` to
+    the base 2-die Hecate architecture template.
+
+    Args:
+        json_file: Path to the JSON file containing ``fan_in_values`` and
+            ``arches`` delay tables.
+        template_path: Path to the base 2-die Hecate architecture XML template.
+        output_dir: Directory where generated architecture XML files should be
+            written. Created if it does not already exist.
+
+    Raises:
+        FileNotFoundError: If ``template_path`` or ``json_file`` does not exist.
+    """
+    if not os.path.exists(template_path):
+        raise FileNotFoundError(f"Template '{template_path}' not found.")
+    if not os.path.exists(json_file):
+        raise FileNotFoundError(f"JSON file '{json_file}' not found.")
+
+    with open(json_file, mode="r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    os.makedirs(output_dir, exist_ok=True)
+    base_tree = _load_template_tree(template_path)
+    fan_in_values = data["fan_in_values"]
+
+    for max_length, layers in data["arches"].items():
+        _generate_varlen_group(base_tree, output_dir, max_length, layers, fan_in_values)
+
+
 if __name__ == "__main__":
     csv_path = os.path.join(SCRIPT_DIR, "int_connectivity.csv")
+    varlen_json_path = os.path.join(SCRIPT_DIR, "int_varlen_connectivity.json")
+    two_die_template = os.path.join(
+        SCRIPT_DIR, "hecate_25d_L18_int_10um_bump_unidir_fanin_32.xml"
+    )
 
     # 2-die system (single interposer cut)
     generate_hecate_interposer_archs(
         csv_path,
-        os.path.join(SCRIPT_DIR, "hecate_25d_L18_int_10um_bump_unidir_fanin_32.xml"),
+        two_die_template,
         output_dir=os.path.join(SCRIPT_DIR, "hecate_25D"),
     )
     # 1x4 die system (three interposer cuts), kept in its own folder
@@ -518,4 +825,10 @@ if __name__ == "__main__":
         output_dir=os.path.join(SCRIPT_DIR, "hecate_25D_2x2"),
         name_tag="2x2",
         segmented_cuts=True,
+    )
+    # Variable-length 2-die system (single interposer cut with multiple wire lengths)
+    generate_varlen_hecate_interposer_archs(
+        varlen_json_path,
+        two_die_template,
+        output_dir=os.path.join(SCRIPT_DIR, "hecate_varlen_25D"),
     )
