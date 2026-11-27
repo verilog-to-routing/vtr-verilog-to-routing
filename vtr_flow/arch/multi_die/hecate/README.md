@@ -24,22 +24,15 @@ cd 3d
 python generate_hecate_3d_sb_archs.py
 ```
 
-### Interposer CSV and Generation Script
+### Interposer Connectivity Data and Generation Script
 
-The interposer architecture variants are generated from `interposer/int_connectivity.csv` and the template architecture
-`interposer/hecate_25d_L17_int_10um_bump_fanin_12.xml`. Each CSV row describes one interposer wire family and bump-pitch
-configuration:
-* `arch_id`: output architecture identifier, used in the generated filename
-  `hecate_25d_[arch_id]_fanin_[FANIN].xml`.
-* `wire_name`: interposer wire length label. The script extracts the number from this value, for example `L17` becomes a
-  segment length of 17 tiles.
-* `mux_name`: mux model name to assign to the `int_wire` segment in the generated XML.
-* `num`: number of inter-die wires to instantiate at each interposer cut for that bump pitch.
+`interposer/generate_hecate_interposer_archs.py` generates both fixed-length and variable-length 2.5D interposer variants across three die configurations from the base templates:
+* `interposer/hecate_25d_L18_int_10um_bump_unidir_fanin_32.xml` (2 dies, 1 cut -> `hecate_25D/`, `hecate_varlen_25D/`)
+* `interposer/hecate_25d_L18_int_10um_bump_unidir_1x4_fanin_32.xml` (1x4 dies, 3 cuts -> `hecate_25D_1x4/`, `hecate_varlen_25D_1x4/`)
+* `interposer/hecate_25d_L18_int_10um_bump_unidir_2x2_fanin_32.xml` (2x2 dies, 2 cuts -> `hecate_25D_2x2/`, `hecate_varlen_25D_2x2/`)
 
-`interposer/generate_hecate_interposer_archs.py` reads each CSV row, reloads the template XML, and updates the interposer
-segment length, mux name, scatter-gather offsets, and legal inter-die wire ranges. For every CSV row it also sweeps a fixed
-set of gather/scatter connection counts, producing one architecture per fan-in setting. This is how the compact CSV table
-expands into the full set of generated `hecate_25d_*_fanin_*.xml` architecture files.
+* **Fixed-length variants** sweep interposer wire lengths (`L2` through `L34`, step 2), bump pitches (`10um` -> `num=3`, `5um` -> `num=12`), directionalities (`unidir`, `bidir`), and gather/scatter fan-in/fan-out sizes (`4`, `8`, `16`, `32`, `64`).
+* **Variable-length variants** read per-`Max_L*` delay tables from `interposer/int_varlen_connectivity.json`, combining multiple centered wire lengths (`L2` through `Max_L*`) across each cut with per-length drivers, segments, and scatter-gather links.
 
 ## 1. FPGA Fabric
 
@@ -58,10 +51,12 @@ The 2.5D architectures explore various interposer configurations:
   * **Interposer Wire Driver:** Variations in fan-in and fan-out.
   * **Bump Pitch:** Lower pitch results in more interposer wires per CLB.
 * **Architecture Naming Scheme:**
-  - hecate_25d_L[WIRE_LENGTH]_int_[BUMP_PITCH]um_bump_fanin_[FANIN].xml
-  - [WIRE_LENGTH]: length of interposer segments in tiles
-  - [BUMP_PITCH]: pitch of microbumps in um
-  - [FANIN]: fan-in of interposer wire drivers
+  - `hecate_25d_L[WIRE_LENGTH]_int_[BUMP_PITCH]um_bump_[unidir|bidir][_1x4|_2x2]_fanin_[FANIN].xml`
+  - `[WIRE_LENGTH]`: length of interposer segments in tiles
+  - `[BUMP_PITCH]`: pitch of microbumps in um
+  - `[unidir|bidir]`: directionality of interposer links
+  - `[_1x4|_2x2]`: optional die configuration tag (omitted for 2-die)
+  - `[FANIN]`: fan-in of interposer wire drivers
 * **Delay Models:** Delay values have been extracted using SPICE simulations (ASAP-7 7nm node for the active die and 45nm for the interposer based on the ITRS 2005 interconnect report).
 
 ## 3. 3D Architectures
