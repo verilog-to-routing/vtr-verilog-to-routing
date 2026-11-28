@@ -201,6 +201,11 @@ class PlaceMacros {
     const std::vector<t_pl_macro>& macros() const;
 
     /**
+     * @brief Whether any macro was built from a relative placement macro.
+     */
+    bool has_relative_placement_macros() const { return has_relative_placement_macros_; }
+
+    /**
      * @brief Returns the placement macro associated with a macro index.
      * @param idx An index specifying a macro. get_imacro_from_iblk() can
      * be called to find out a the macro index of the placement macro a
@@ -235,6 +240,9 @@ class PlaceMacros {
 
     ///@brief Stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros_;
+
+    ///@brief True if any macro in pl_macros_ was built from a relative placement macro.
+    bool has_relative_placement_macros_ = false;
 
   private:
     int find_all_the_macro_(const ClusteredNetlist& clb_nlist,

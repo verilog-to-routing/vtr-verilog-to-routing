@@ -31,6 +31,8 @@
 #include <limits>
 #include <optional>
 #include <queue>
+#include <set>
+#include <string>
 #include <vector>
 
 #ifdef VERBOSE
@@ -281,14 +283,14 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
  * throws an error indicating that initial placement can not be done with the current device size or
  * floorplanning constraints.
  */
-static void check_initial_placement_legality(const BlkLocRegistry& blk_loc_registry);
-
-static void check_initial_placement_legality(const BlkLocRegistry& blk_loc_registry) {
+static void check_initial_placement_legality(const BlkLocRegistry& blk_loc_registry,
+                                             const PlaceMacros& place_macros) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& block_locs = blk_loc_registry.block_locs();
 
     int unplaced_blocks = 0;
+    std::set<UserRelativeMacroId> unplaced_relative_placement_macros;
 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         if (block_locs[blk_id].loc.x == INVALID_X) {
@@ -298,14 +300,29 @@ static void check_initial_placement_legality(const BlkLocRegistry& blk_loc_regis
                     cluster_ctx.clb_nlist.block_type(blk_id)->name.c_str(),
                     MAX_INIT_PLACE_ATTEMPTS - 1);
             unplaced_blocks++;
+
+            int imacro = place_macros.get_imacro_from_iblk(blk_id);
+            if (imacro != -1 && place_macros[imacro].is_relative_placement_macro()) {
+                unplaced_relative_placement_macros.insert(place_macros[imacro].relative_placement_macro_id);
+            }
         }
     }
 
     if (unplaced_blocks > 0) {
+        // Name the relative placement macros that could not be placed; empty without them
+        const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
+        std::string unplaced_macros_msg;
+        for (UserRelativeMacroId macro_id : unplaced_relative_placement_macros) {
+            unplaced_macros_msg += "Relative placement macro '" + relative_macros.get_macro(macro_id).name
+                                   + "' could not be placed: no free position on the device fits all of its clusters. "
+                                     "Check its offsets against the device grid, the region constraints on its atoms, "
+                                     "and that its clusters are either all fixed or all free.\n";
+        }
+
         VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                         "%d blocks could not be placed during initial placement; no spaces were available for them on the grid.\n"
-                        "If VPR was run with floorplan constraints, the constraints may be too tight.\n",
-                        unplaced_blocks);
+                        "If VPR was run with floorplan constraints, the constraints may be too tight.\n%s",
+                        unplaced_blocks, unplaced_macros_msg.c_str());
     }
 
     for (auto movable_blk_id : blk_loc_registry.movable_blocks()) {
@@ -1331,7 +1348,6 @@ static bool place_macro(int macros_max_num_tries,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
-    // Assume that all the blocks in the macro are of the same type
     auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
 
     const PartitionRegion& pr = (is_cluster_constrained(blk_id)) ? floorplanning_ctx.cluster_constraints[blk_id]
@@ -1342,9 +1358,11 @@ static bool place_macro(int macros_max_num_tries,
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug && is_cluster_constrained(blk_id),
                    "\t\t\tMacro's head is constrained\n");
 
-    //If blk_types_empty_locs_in_grid is not NULL, means that initial placement has been failed in first iteration for this block type
-    //We need to place densely in second iteration to be able to find a legal initial placement solution
-    if (blk_types_empty_locs_in_grid != nullptr && !blk_types_empty_locs_in_grid->empty()) {
+    // If blk_types_empty_locs_in_grid is not NULL, means that initial placement has been failed in first iteration for this block type
+    // We need to place densely in second iteration to be able to find a legal initial placement solution
+    // Dense placement assumes a macro of one block type stacked in one column (a carry chain), so a
+    // relative placement macro, which can mix block types and span both dimensions, skips it
+    if (blk_types_empty_locs_in_grid != nullptr && !blk_types_empty_locs_in_grid->empty() && !pl_macro.is_relative_placement_macro()) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry dense placement\n");
         macro_placed = try_dense_placement(pl_macro, pr, pad_loc_type, blk_types_empty_locs_in_grid, blk_loc_registry);
     }
@@ -1444,9 +1462,22 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
     //[0..device_ctx.logical_block_types.size()-1][0..num_of_grid_columns_containing_this_block_type-1]
     std::vector<std::vector<t_grid_empty_locs_block_type>> blk_types_empty_locs_in_grid;
 
+    // The placement before this function (e.g. NoC routers and fixed blocks), which a retry
+    // with relative placement macros restores
+    BlkLocRegistry preplaced_blk_loc_registry;
+    if (place_macros.has_relative_placement_macros()) {
+        preplaced_blk_loc_registry = blk_loc_registry;
+    }
+
     for (auto iter_no = 0; iter_no < MAX_INIT_PLACE_ATTEMPTS; iter_no++) {
-        //clear grid for a new placement iteration
-        blk_loc_registry.clear_block_type_grid_locs(unplaced_blk_type_in_curr_itr);
+        // clear grid for a new placement iteration
+        // A relative placement macro can mix block types, so clearing only the failed types
+        // could leave it partly placed. Restore the placement from before this function instead.
+        if (place_macros.has_relative_placement_macros() && !unplaced_blk_type_in_curr_itr.empty()) {
+            blk_loc_registry = preplaced_blk_loc_registry;
+        } else {
+            blk_loc_registry.clear_block_type_grid_locs(unplaced_blk_type_in_curr_itr);
+        }
         unplaced_blk_type_in_curr_itr.clear();
 
         // read the constraint file if the user has provided one and this is not the first attempt
@@ -1827,8 +1858,10 @@ static inline bool place_blocks_min_displacement(std::vector<ClusterBlockId>& cl
             t_flat_pl_loc centroid_flat_loc = find_centroid_loc_from_flat_placement(pl_macro, flat_placement_info);
 
             // Find a legal, open site closest to the flat cenetroid location
-            // (within the displacement threshold).
-            auto block_type = cluster_netlist.block_type(blk_to_place);
+            // (within the displacement threshold). The site is for the macro's
+            // head, whose block type can differ from blk_to_place's in a
+            // relative placement macro.
+            t_logical_block_type_ptr block_type = cluster_netlist.block_type(pl_macro.members[0].blk_index);
             t_pl_loc centroid_loc = find_nearest_compatible_loc(centroid_flat_loc,
                                                                 max_displacement_threshold,
                                                                 block_type,
@@ -2101,5 +2134,5 @@ void initial_placement(const t_placer_opts& placer_opts,
     blk_loc_registry.alloc_and_load_movable_blocks();
 
     // ensure all blocks are placed and that NoC routing has no cycles
-    check_initial_placement_legality(blk_loc_registry);
+    check_initial_placement_legality(blk_loc_registry, place_macros);
 }
