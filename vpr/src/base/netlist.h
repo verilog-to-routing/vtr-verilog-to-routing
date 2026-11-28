@@ -438,7 +438,7 @@ class NetlistIdRemapper {
     vtr::vector_map<NetId, NetId> net_id_map_;
 };
 
-template<typename BlockId = ParentBlockId, typename PortId = ParentPortId, typename PinId = ParentPinId, typename NetId = ParentNetId>
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
 class Netlist {
   public: //Public Types
     typedef typename vtr::vector_map<BlockId, BlockId>::const_iterator block_iterator;
