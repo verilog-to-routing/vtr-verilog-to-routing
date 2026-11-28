@@ -100,11 +100,11 @@ ezgl::canvas* ensure_main_canvas(ezgl::application* app) {
     ezgl::canvas* cnv = app->get_canvas(id);
     if (!cnv) {
         // Non-null draw callback: immediate_backend::render_to_image
-        // dereferences m_draw_callback during print_*. A no-op is
+        // dereferences m_draw_persistent_callback during print_*. A no-op is
         // sufficient — we only need a writable QImage surface.
         cnv = app->add_canvas(
             id,
-            /*draw_callback=*/[](ezgl::renderer*) {},
+            /*draw_persistent_callback=*/[](ezgl::renderer*) noexcept {},
             ezgl::rectangle({0, 0}, 256, 256),
             ezgl::WHITE);
     }

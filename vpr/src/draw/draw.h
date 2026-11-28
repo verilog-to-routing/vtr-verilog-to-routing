@@ -6,8 +6,8 @@
  *
  * This is VPR's main graphics application program. The program interacts with ezgl/graphics.hpp,
  * which provides an API for displaying graphics on both X11 and Win32. The most important
- * subroutine in this file is draw_main_canvas(), which is a callback function that will be called
- * whenever the screen needs to be updated. Then, draw_main_canvas() will decide what
+ * subroutine in this file is draw_main_canvas_persistent(), which is a callback function that will be called
+ * whenever the screen needs to be updated. Then, draw_main_canvas_persistent() will decide what
  * drawing subroutines to call depending on whether PLACEMENT or ROUTING is shown on screen.
  * The initial_setup_X() functions link the menu button signals to the corresponding drawing functions.
  * As a note, looks into draw_global.c for understanding the data structures associated with drawing->
