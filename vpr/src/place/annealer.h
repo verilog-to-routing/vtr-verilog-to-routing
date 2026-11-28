@@ -290,7 +290,8 @@ class PlacementAnnealer {
 
     /// @brief Parallel counterpart of placement_inner_loop().
     ///
-    /// Runs the inner loop as a sequence of batches, each evaluating one swap per worker.
+    /// Runs the inner loop as a sequence of rounds, each retiring attempts up to
+    /// its first accepted swap or its attempt limit.
     void placement_inner_loop_parallel_();
 
   private:

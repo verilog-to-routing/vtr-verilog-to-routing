@@ -11,7 +11,6 @@
 #include "vtr_hash.h"
 
 #include <limits>
-#include <optional>
 
 ParallelAnnealEngine::EvalReplica::EvalReplica(const t_placer_opts& placer_opts,
                                                const PlaceMacros& place_macros,
@@ -36,7 +35,7 @@ ParallelAnnealEngine::EvalReplica::EvalReplica(const t_placer_opts& placer_opts,
 
     // The replica generators propose against the replica's state with the
     // replica's RNG. Their RL agent state is copied from the master generator
-    // before every batch, so only their configuration has to match the master's.
+    // before every round, so only their configuration has to match the master's.
     std::tie(move_generator_1, move_generator_2) = create_move_generators(placer_state, place_macros,
                                                                           *net_cost_handler, placer_opts,
                                                                           move_lim, noc_centroid_weight, rng);
@@ -121,12 +120,19 @@ void ParallelAnnealEngine::execute_worker_job_(int worker_id) {
 
     switch (job_) {
         case e_worker_job::EVALUATE: {
-            MoveGenerator& generator = batch_use_gen2_ ? *replica.move_generator_2 : *replica.move_generator_1;
+            MoveGenerator& generator = round_use_gen2_ ? *replica.move_generator_2 : *replica.move_generator_1;
             // Only the master generator's RL agent receives swap outcomes,
             // so copy its state before proposing. Workers only read it.
-            generator.copy_state_from(*batch_master_generator_);
-            for (int k = worker_id; k < batch_size_; k += num_workers_) {
-                propose_and_evaluate_attempt_(replica, generator, k);
+            generator.copy_state_from(*round_master_generator_);
+            // Claim the next id after every rejection or abort. Stop once an
+            // attempt is accepted, since any id claimed after that is above it
+            // and would be discarded. A stale read here only claims one such id.
+            while (first_accepted_id_.load(std::memory_order_relaxed) == NO_ACCEPTED_ID) {
+                const int slot_index = next_attempt_id_.fetch_add(1, std::memory_order_relaxed);
+                if (slot_index >= round_max_attempts_) {
+                    break;
+                }
+                propose_and_evaluate_attempt_(replica, generator, slot_index);
             }
             break;
         }
@@ -145,8 +151,8 @@ void ParallelAnnealEngine::execute_worker_job_(int worker_id) {
 }
 
 void ParallelAnnealEngine::begin_worker_job_(e_worker_job job) {
-    // The previous job may still be in flight: run_batch() leaves the replica
-    // COMMIT_WINNER running so it overlaps the annealer's batch bookkeeping.
+    // The previous job may still be in flight, because run_round() leaves the
+    // replica COMMIT_WINNER running so it overlaps the annealer's round bookkeeping.
     dispatch_barrier_.wait_all_done();
     job_ = job;
     dispatch_barrier_.publish();
@@ -201,25 +207,27 @@ int ParallelAnnealEngine::attempt_seed_(uint64_t attempt_id) const {
 void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
                                                          MoveGenerator& move_generator,
                                                          int slot_index) {
+    // Once a lower-id attempt is accepted, this one can neither win nor retire,
+    // so its remaining work is skipped.
+    const t_swap_cancel_token cancel_token{&first_accepted_id_, slot_index};
+
+    // Checked before the slot is touched. A cancelled slot is never read, so
+    // it may keep stale data.
+    if (cancel_token.cancelled()) {
+        return;
+    }
+
     t_speculative_swap& attempt = attempts_[slot_index];
 
     // Reset here rather than by the coordinator to avoid cache line bouncing.
     attempt.reset();
 
-    // Once a lower-id attempt is accepted, this one can neither win nor retire,
-    // so its remaining work is skipped.
-    const t_swap_cancel_token cancel_token{&first_accepted_id_, slot_index};
-
-    if (cancel_token.cancelled()) {
-        return;
-    }
-
     // Reseed so the proposal depends only on the attempt id, not on which worker runs it.
     replica.rng.srandom(attempt_seed_(attempt_counter_ + slot_index));
 
-    // Mirrors PlacementAnnealer::try_swap_(): allow some fraction of moves
-    // to not be restricted by rlim, in the hopes of better escaping local minima.
-    float attempt_rlim = batch_rlim_;
+    // As in PlacementAnnealer::try_swap_(), allow some fraction of moves to not
+    // be restricted by rlim, in the hopes of better escaping local minima.
+    float attempt_rlim = round_rlim_;
     if (placer_opts_.rlim_escape_fraction > 0. && replica.rng.frand() < placer_opts_.rlim_escape_fraction) {
         attempt_rlim = std::numeric_limits<float>::infinity();
     }
@@ -247,28 +255,34 @@ void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
         return;
     }
 
-    attempt.move_result = assess_swap(attempt.deltas.delta_c, batch_temperature_, [accept_rand]() { return accept_rand; });
+    attempt.move_result = assess_swap(attempt.deltas.delta_c, round_temperature_, [accept_rand]() { return accept_rand; });
 
-    // Capture the move and its commit record so a win can be committed
-    // everywhere without re-evaluating, then publish this id for early
-    // cancellation. Skipped once a lower id is accepted.
-    if (attempt.move_result == e_move_result::ACCEPTED && !cancel_token.cancelled()) {
-        VTR_ASSERT_SAFE(!attempt.deltas.update_interposer_costs);
-        attempt.moved_blocks = replica.blocks_affected.moved_blocks;
-        replica.evaluator->extract_commit_record(replica.blocks_affected,
-                                                 attempt.commit_record);
-
+    if (attempt.move_result == e_move_result::ACCEPTED) {
         // Lower first_accepted_id_ to this id unless another worker has
-        // already installed a lower one. On failure, compare_exchange_weak
-        // reloads the current value into current and the loop retries.
+        // already installed a lower one. This is done before the capture
+        // below so higher ids cancel without waiting for it. On failure,
+        // compare_exchange_weak reloads the current value into current and
+        // the loop retries.
+        bool published = false;
         int current = first_accepted_id_.load(std::memory_order_relaxed);
-        while (slot_index < current
-               && !first_accepted_id_.compare_exchange_weak(current, slot_index, std::memory_order_relaxed)) {
+        while (slot_index < current && !published) {
+            published = first_accepted_id_.compare_exchange_weak(current, slot_index, std::memory_order_relaxed);
+        }
+
+        // Capture the move and its commit record so a win can be committed
+        // everywhere without re-evaluating. Skipped once a lower id is
+        // accepted. The coordinator reads the capture only after every worker
+        // has finished the round.
+        if (published) {
+            VTR_ASSERT_SAFE(!attempt.deltas.update_interposer_costs);
+            attempt.moved_blocks = replica.blocks_affected.moved_blocks;
+            replica.evaluator->extract_commit_record(replica.blocks_affected,
+                                                     attempt.commit_record);
         }
     }
 
-    // Evaluation is always speculative: leave the replica untouched. The winner
-    // is committed through its recorded values after the batch resolves.
+    // Evaluation is always speculative, so leave the replica untouched. The
+    // winner is committed through its recorded values after the round resolves.
     replica.evaluator->revert(replica.blocks_affected, timing_driven_);
     replica.blocks_affected.clear_move_blocks();
 }
@@ -300,56 +314,60 @@ void ParallelAnnealEngine::commit_winner_on_master_(const t_speculative_swap& wi
     master_evaluator_.apply_commit_record(master_blocks_affected_, winner.commit_record);
 }
 
-t_batch_outcome ParallelAnnealEngine::run_batch(int batch_size,
+t_round_outcome ParallelAnnealEngine::run_round(int max_attempts,
                                                 MoveGenerator& master_move_generator,
                                                 bool use_second_generator,
                                                 float temperature,
                                                 float rlim) {
-    VTR_ASSERT_SAFE(batch_size >= 1);
+    VTR_ASSERT_SAFE(max_attempts >= 1);
 
-    // The previous batch's replica commits may still be reading their winner
+    // The previous round's replica commits may still be reading their winner
     // from attempts_. Wait for them before the resize below can reallocate it.
     dispatch_barrier_.wait_all_done();
 
-    if (attempts_.size() < static_cast<size_t>(batch_size)) {
-        attempts_.resize(batch_size);
+    if (attempts_.size() < static_cast<size_t>(max_attempts)) {
+        attempts_.resize(max_attempts);
     }
 
     // --- Parallel propose + evaluate phase ---
     //
-    // Each worker proposes and evaluates its share of the batch on its private
-    // replica. The coordinator evaluates replica 0's share itself.
-    first_accepted_id_.store(std::numeric_limits<int>::max(), std::memory_order_relaxed);
-    batch_size_ = batch_size;
-    batch_temperature_ = temperature;
-    batch_rlim_ = rlim;
-    batch_use_gen2_ = use_second_generator;
-    batch_master_generator_ = &master_move_generator;
+    // Each worker claims attempt ids and evaluates them on its private replica
+    // until an attempt is accepted or max_attempts ids have been claimed. The
+    // coordinator does the same on replica 0.
+    first_accepted_id_.store(NO_ACCEPTED_ID, std::memory_order_relaxed);
+    next_attempt_id_.store(0, std::memory_order_relaxed);
+    round_max_attempts_ = max_attempts;
+    round_temperature_ = temperature;
+    round_rlim_ = rlim;
+    round_use_gen2_ = use_second_generator;
+    round_master_generator_ = &master_move_generator;
     run_worker_job_(e_worker_job::EVALUATE);
 
     // --- Resolve in attempt-id order ---
-    t_batch_outcome outcome;
-    outcome.num_retired_attempts = batch_size;
+    //
+    // Ids are claimed in increasing order and only ids above an accepted one
+    // are cancelled, so every id below the lowest accepted one was evaluated
+    // to completion. Without an acceptance, all max_attempts ids were
+    // evaluated to completion.
+    t_round_outcome outcome;
+    const int winner = first_accepted_id_.load(std::memory_order_relaxed);
 
-    std::optional<int> winner;
-    for (int k = 0; k < batch_size; ++k) {
-        if (attempts_[k].create_outcome == e_create_move::VALID
-            && attempts_[k].move_result == e_move_result::ACCEPTED) {
-            winner = k;
-            outcome.num_retired_attempts = k + 1;
-            outcome.committed = true;
-            break;
-        }
-    }
+    if (winner == NO_ACCEPTED_ID) {
+        outcome.num_retired_attempts = max_attempts;
+    } else {
+        VTR_ASSERT_SAFE(winner >= 0 && winner < max_attempts);
+        VTR_ASSERT_SAFE(attempts_[winner].create_outcome == e_create_move::VALID
+                        && attempts_[winner].move_result == e_move_result::ACCEPTED);
+        outcome.num_retired_attempts = winner + 1;
+        outcome.committed = true;
 
-    // --- Commit the winner (replicas in parallel with the master) ---
-    if (winner.has_value()) {
-        winner_attempt_ = &attempts_[*winner];
+        // --- Commit the winner (replicas in parallel with the master) ---
+        winner_attempt_ = &attempts_[winner];
         begin_worker_job_(e_worker_job::COMMIT_WINNER);
-        commit_winner_on_master_(attempts_[*winner]);
+        commit_winner_on_master_(attempts_[winner]);
         execute_worker_job_(/*worker_id=*/0);
         // The worker threads' commits are not waited on here. They overlap the
-        // annealer's bookkeeping for this batch, and the next job waits for them.
+        // annealer's bookkeeping for this round, and the next job waits for them.
     }
 
     attempt_counter_ += outcome.num_retired_attempts;
