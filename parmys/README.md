@@ -1,83 +1,79 @@
-# Parmys (Partial Mapper for Yosys) Plugin
+# Parmys plugin (Partial Mapper for Yosys)
 
-This repository contains intellignet partial mapper plugin from [Odin-II](https://github.com/verilog-to-routing/vtr-verilog-to-routing/tree/master/odin_ii) for [Yosys](https://github.com/YosysHQ/yosys.git).
+The Parmys plugin performs VTR's partial technology mapping inside Yosys: it takes the
+elaborated RTLIL from Yosys, maps arithmetic (`$add`, `$sub`, `$mul`) and memories
+(`$mem`, `$mem_v2`) onto the hard blocks described in a VTR architecture file, or into soft
+logic when no suitable hard block exists, and hands the result back to Yosys for LUT mapping.
+It descends from the partial mapper of [Odin-II](../odin_ii).
 
-The project build skeleton is based on [Yosys F4PGA Plugins](https://github.com/chipsalliance/yosys-f4pga-plugins.git) project.
+The Parmys plugin lives in the VTR tree and is built by VTR's CMake only; there is no standalone build.
 
-It is highly recommended to utilize this plugin through the [Verilog to Routing (VTR)](https://github.com/verilog-to-routing/vtr-verilog-to-routing.git) project.
+## Layout
 
-## Build as a plugin
+| Path | Contents |
+|---|---|
+| `parmys-plugin/` | plugin sources (`parmys.cc` is the Yosys pass, `core/` the hard-block mappers, `netlist/` the Odin netlist data structures, `mapping/` partial mapping) |
+| `parmys-plugin/techlibs/` | Yosys techmap libraries and `vtr_primitives.v`, read by `vtr_flow/misc/yosys/synthesis.tcl` |
+| `regression_test/` | the Parmys regression suite: benchmark tasks with stored `synthesis_result.json` expectations, run through `verify_parmys.sh` |
 
-- Clone, make, and install [Yosys](https://github.com/YosysHQ/yosys.git)
-- Clone, make, and install [VTR](https://github.com/verilog-to-routing/vtr-verilog-to-routing.git)
-- Build and install Parmys
+## Building
 
-```makefile
-make VTR_INSTALL_DIR=`path to VTR build/install directory` plugins -j`nproc`
-sudo make install
+```shell
+make                 # full VTR build, includes the plugin
+make -j8 parmys      # the plugin only
 ```
 
-## Parameters
-Available parameters are:
-```
-    -a ARCHITECTURE_FILE
-        VTR FPGA architecture description file (XML)
+The build installs `build/share/yosys/plugins/parmys.so` and the files of `parmys-plugin/techlibs/`
+(the techmap libraries and `vtr_primitives.v`, the primitive models the synthesis script reads with
+`read_verilog +/parmys/vtr_primitives.v`) into `build/share/yosys/`. Disable with `-DWITH_PARMYS=OFF`.
 
-    -c XML_CONFIGURATION_FILE
-        Configuration file
+`vtr_primitives.v` is a copy of `vtr_flow/primitives.v` with the `DFF` clock port still named `clk`.
+Switching it to the `vtr_flow` version changes the order of top-level ports in the generated BLIF
+(ABC and VPR results are order sensitive), so that reconciliation is left for a change that
+regenerates golden results.
 
-    -top top_module
-        set the specified module as design top module
+## Running
 
-    -nopass
-        No additional passes will be executed.
+Within the VTR flow (the default):
 
-    -exact_mults int_value
-        To enable mixing hard block and soft logic implementation of adders
-
-    -mults_ratio float_value
-        To enable mixing hard block and soft logic implementation of adders
-
-    -vtr_prim
-        loads vtr primitives as modules, if the design uses vtr prmitives then this flag is mandatory for first run
+```shell
+vtr_flow/scripts/run_vtr_flow.py my_design.v vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml
 ```
 
-## Usage (without VTR)
+Directly in Yosys:
 
-Example for simple partial mapping with parmys:
-
-```sh
-# run yosys
-yosys
-
-# load the plugin
+```
 plugin -i parmys
-
-# read verilog files
-read_verilog my_verilog.v
-
-# use parmys to read the architecture file and partial mapping
-parmys -a simple_vtr_fpga_architecture.xml
-
+read_verilog my_design.v
+parmys -a vtr_architecture.xml
+help parmys
 ```
 
-## Usage (within VTR flow)
+Options of the `parmys` pass:
 
-- Clone [VTR](https://github.com/verilog-to-routing/vtr-verilog-to-routing.git)
-- [Set up the Environment](https://docs.verilogtorouting.org/en/latest/BUILDING/#setting-up-your-environment)
-- Build with the following command to enable both Yosys as the frontend and Parmys as the partial mapper:
-```makefile
-make CMAKE_PARAMS="-DWITH_YOSYS=on -DYOSYS_PARMYS_PLUGIN=on"
 ```
-- Run vtr flow
-
-```makefile
-cd vtr_flow/scripts/
-
-# this command runs the vtr flow [yosys+parmys, abc, vpr]
-./run_vtr_flow.py my_verilog.v fpga_architecture.xml -start yosys -end vpr
+    -a ARCHITECTURE_FILE    VTR FPGA architecture description file (XML)
+    -c XML_CONFIGURATION_FILE
+                            Configuration file (see vtr_flow/misc/basic_odin_config_split.xml)
+    -top top_module         set the specified module as design top module
+    -nopass                 run only the mapper, none of the Yosys passes it normally schedules
+    -exact_mults N / -mults_ratio R
+                            mix hard-block and soft-logic multipliers
+    -vtr_prim               load the VTR primitives as modules first
+    -viz                    write the netlist as graphviz at the elaborated, optimized and mapped stages
 ```
 
-For detailed information please refer to the [VTR documentation](https://docs.verilogtorouting.org/en/latest/).
+## Testing
 
-Detailed help on the supported command(s) can be obtained by running `help parmys` in Yosys.
+```shell
+./run_reg_test.py parmys_reg_basic -j8            # light suite, as run by CI
+./run_reg_test.py parmys_reg_strong -j8           # heavy suite
+parmys/verify_parmys.sh --help                    # run a single task, regenerate expectations, ...
+```
+
+The suites compare Yosys/Parmys synthesis statistics (cell counts, warnings) of the designs under
+`regression_test/benchmark/task/*` against stored `synthesis_result.json` expectations. To add a
+design, put it in `regression_test/benchmark/verilog/<task>/`, list it in the task's
+`task_list.conf`, and record its expectation with `verify_parmys.sh --test <task> --generate_expectation`
+(run from `parmys/`, with `--nb_of_process 1`). The VTR flow regressions (`vtr_reg_*`) exercise the
+plugin end to end and are described in `doc/agents/testing.md`.
