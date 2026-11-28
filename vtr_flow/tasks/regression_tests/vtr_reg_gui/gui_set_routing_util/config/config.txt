@@ -7,10 +7,10 @@
 # (post-route congestion / utilisation overlay setter). VPR runs
 # the full pack+place+route flow then applies the state setter
 # and exits cleanly. As with gui_set_nets, this guards parser
-# acceptance and clean shutdown — visible-effect verification is
-# blocked by DEF-009.
+# acceptance and clean shutdown; it does not verify the visible
+# effect.
 #
-# R7 mitigation: -start vpr (see gui_disp_off_smoke/config).
+# macOS parmys workaround: -start vpr (see gui_disp_off_smoke/config).
 # Offscreen Qt: caller exports QT_QPA_PLATFORM=offscreen.
 ##############################################
 

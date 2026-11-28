@@ -1,6 +1,6 @@
 /**
  * @file test_buttons_and_camera.cpp
- * @brief GUI-T-020 — buttons.cpp helpers + ezgl::control free-function camera
+ * @brief buttons.cpp helpers + ezgl::control free-function camera
  *        operations (Layer 4).
  *
  * Locks two small but production-relevant code paths that previous tests
@@ -26,7 +26,7 @@
  *      silent in production telemetry and must be locked here.
  *
  * Why this is real, behaviour-relevant coverage rather than structural
- * noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * noise:
  *
  *   We exercise the *actual* exported symbols against the *actual*
  *   ``ezgl::canvas`` registered on the singleton ``ezgl::application``.
@@ -37,7 +37,7 @@
  *   ``translate_up`` shifts the world rectangle in +y by
  *   ``height/factor``, etc.
  *
- * Tag: [layer4][buttons][camera][vpr_gui][GUI-T-020]
+ * Tag: [layer4][buttons][camera][vpr_gui]
  */
 
 #include <catch2/catch_test_macros.hpp>
@@ -123,8 +123,8 @@ struct InnerGridScaffold {
         // parent-child chain, then drain any pending DeferredDelete
         // posted by ``delete_button``. Failing to drain leaves orphan
         // QWidgets in ``QApplication::allWidgets()`` that can be
-        // observed by *subsequent* TEST_CASEs (e.g. GUI-T-019's child
-        // fork in test_search_null_guard) and silently flips their
+        // observed by *subsequent* TEST_CASEs (e.g. the child fork in
+        // test_search_null_guard) and silently flips their
         // expected-fail behaviour.
         grid.reset();
         QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
@@ -161,7 +161,7 @@ ezgl::canvas* ensure_main_canvas(ezgl::application* app,
 // =============================================================================
 
 TEST_CASE("Buttons: find_button returns the named child of InnerGrid",
-          "[layer4][buttons][vpr_gui][GUI-T-020]") {
+          "[layer4][buttons][vpr_gui]") {
     EzglAppFixture fx;
     DrawApplicationScope app_scope(test_app());
     InnerGridScaffold scaffold;
@@ -176,7 +176,7 @@ TEST_CASE("Buttons: find_button returns the named child of InnerGrid",
 }
 
 TEST_CASE("Buttons: find_button returns nullptr for an unknown name",
-          "[layer4][buttons][vpr_gui][GUI-T-020]") {
+          "[layer4][buttons][vpr_gui]") {
     EzglAppFixture fx;
     DrawApplicationScope app_scope(test_app());
     InnerGridScaffold scaffold;
@@ -187,7 +187,7 @@ TEST_CASE("Buttons: find_button returns nullptr for an unknown name",
 }
 
 TEST_CASE("Buttons: delete_button schedules the named child for deletion",
-          "[layer4][buttons][vpr_gui][GUI-T-020]") {
+          "[layer4][buttons][vpr_gui]") {
     EzglAppFixture fx;
     DrawApplicationScope app_scope(test_app());
     InnerGridScaffold scaffold;
@@ -210,7 +210,7 @@ TEST_CASE("Buttons: delete_button schedules the named child for deletion",
 }
 
 TEST_CASE("Buttons: delete_button is a safe no-op on an unknown name",
-          "[layer4][buttons][vpr_gui][GUI-T-020]") {
+          "[layer4][buttons][vpr_gui]") {
     EzglAppFixture fx;
     DrawApplicationScope app_scope(test_app());
     InnerGridScaffold scaffold;
@@ -229,7 +229,7 @@ TEST_CASE("Buttons: delete_button is a safe no-op on an unknown name",
 // =============================================================================
 
 TEST_CASE("Control: zoom_in around centre shrinks world by zoom_factor",
-          "[layer4][camera][vpr_gui][GUI-T-020]") {
+          "[layer4][camera][vpr_gui]") {
     EzglAppFixture fx;
     const ezgl::rectangle initial({0.0, 0.0}, {100.0, 100.0});
     ezgl::canvas* cnv = ensure_main_canvas(fx.app(), initial);
@@ -243,7 +243,7 @@ TEST_CASE("Control: zoom_in around centre shrinks world by zoom_factor",
 }
 
 TEST_CASE("Control: zoom_out around centre grows world by zoom_factor",
-          "[layer4][camera][vpr_gui][GUI-T-020]") {
+          "[layer4][camera][vpr_gui]") {
     EzglAppFixture fx;
     const ezgl::rectangle initial({0.0, 0.0}, {100.0, 100.0});
     ezgl::canvas* cnv = ensure_main_canvas(fx.app(), initial);
@@ -255,7 +255,7 @@ TEST_CASE("Control: zoom_out around centre grows world by zoom_factor",
 }
 
 TEST_CASE("Control: zoom_fit replaces world with the requested region",
-          "[layer4][camera][vpr_gui][GUI-T-020]") {
+          "[layer4][camera][vpr_gui]") {
     EzglAppFixture fx;
     const ezgl::rectangle initial({0.0, 0.0}, {100.0, 100.0});
     ezgl::canvas* cnv = ensure_main_canvas(fx.app(), initial);
@@ -267,7 +267,7 @@ TEST_CASE("Control: zoom_fit replaces world with the requested region",
 }
 
 TEST_CASE("Control: translate shifts world by (dx, dy)",
-          "[layer4][camera][vpr_gui][GUI-T-020]") {
+          "[layer4][camera][vpr_gui]") {
     EzglAppFixture fx;
     const ezgl::rectangle initial({0.0, 0.0}, {100.0, 100.0});
     ezgl::canvas* cnv = ensure_main_canvas(fx.app(), initial);
@@ -279,7 +279,7 @@ TEST_CASE("Control: translate shifts world by (dx, dy)",
 }
 
 TEST_CASE("Control: translate_up / down / left / right move along axes",
-          "[layer4][camera][vpr_gui][GUI-T-020]") {
+          "[layer4][camera][vpr_gui]") {
     EzglAppFixture fx;
     const ezgl::rectangle initial({0.0, 0.0}, {100.0, 100.0});
     ezgl::canvas* cnv = ensure_main_canvas(fx.app(), initial);
@@ -315,7 +315,7 @@ TEST_CASE("Control: translate_up / down / left / right move along axes",
 }
 
 TEST_CASE("Control: zoom_in around an explicit point keeps that point fixed",
-          "[layer4][camera][vpr_gui][GUI-T-020]") {
+          "[layer4][camera][vpr_gui]") {
     EzglAppFixture fx;
     const ezgl::rectangle initial({0.0, 0.0}, {100.0, 100.0});
     ezgl::canvas* cnv = ensure_main_canvas(fx.app(), initial);

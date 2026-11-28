@@ -1,6 +1,6 @@
 /**
  * @file test_visual_render_smoke.cpp
- * @brief GUI-T-006 — Visual render smoke tests for draw_rr / draw_noc (Layer 5).
+ * @brief Visual render smoke tests for draw_rr / draw_noc (Layer 5).
  *
  * Locks the GATE contract of the two rendering entry points the
  * GUI canvas's draw callback dispatches to in
@@ -24,7 +24,7 @@
  *     unconditionally **after** the gate).
  *
  * Why this is real, behaviour-relevant coverage rather than
- * structural noise (per section 4 of the vpr_gui_test_plan):
+ * structural noise:
  *
  *   ``draw_main_canvas`` is invoked on every ezgl repaint, panning
  *   gesture, and zoom step. If the gate at the top of either
@@ -39,7 +39,7 @@
  *
  *   This is a "Layer-5 smoke" — it does not lock pixel goldens.
  *   The PNG / SVG render path through ``save_graphics`` is exercised
- *   by GUI-T-003 with a no-op draw callback. Driving the real
+ *   by test_save_graphics.cpp with a no-op draw callback. Driving the real
  *   draw_rr renderer through ``print_png`` under the offscreen Qt
  *   platform plugin's RHI fallback path produced ``munmap_chunk()``
  *   heap corruption during teardown when this file was first
@@ -61,7 +61,7 @@
  *     so that the test which sets a single rr-node colour and
  *     then re-reads it can observe the round-trip.
  *
- * Tag: [layer5][visual][render-smoke][vpr_gui][GUI-T-006]
+ * Tag: [layer5][visual][render-smoke][vpr_gui]
  */
 
 #include <catch2/catch_test_macros.hpp>
@@ -116,7 +116,7 @@ class DrawStructsScope {
 // draw_rr is null-renderer-safe when show_rr=false (gate is the first stmt)
 // =============================================================================
 TEST_CASE("Visual: draw_rr is null-renderer-safe when show_rr=false (PostRoute)",
-          "[layer5][visual][render-smoke][vpr_gui][GUI-T-006]") {
+          "[layer5][visual][render-smoke][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture vpr_fixture;
     vpr_fixture.run_to(Stage::PostRoute);
@@ -136,7 +136,7 @@ TEST_CASE("Visual: draw_rr is null-renderer-safe when show_rr=false (PostRoute)"
 // draw_noc is null-renderer-safe when DRAW_NO_NOC (default)
 // =============================================================================
 TEST_CASE("Visual: draw_noc is null-renderer-safe when DRAW_NO_NOC (PostRoute)",
-          "[layer5][visual][render-smoke][vpr_gui][GUI-T-006]") {
+          "[layer5][visual][render-smoke][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture vpr_fixture;
     vpr_fixture.run_to(Stage::PostRoute);
@@ -157,7 +157,7 @@ TEST_CASE("Visual: draw_noc is null-renderer-safe when DRAW_NO_NOC (PostRoute)",
 // t_draw_state defaults — every overlay starts gated OFF
 // =============================================================================
 TEST_CASE("Visual: t_draw_state defaults — every overlay gate is OFF",
-          "[layer5][visual][render-smoke][vpr_gui][GUI-T-006]") {
+          "[layer5][visual][render-smoke][vpr_gui]") {
     // A freshly default-constructed t_draw_state must come up with
     // every overlay GATED OFF. If a future commit changes any of
     // these defaults to "on", the GUI opens with the user's first
@@ -176,7 +176,7 @@ TEST_CASE("Visual: t_draw_state defaults — every overlay gate is OFF",
 // show_rr toggle is observable through get_draw_state_vars()
 // =============================================================================
 TEST_CASE("Visual: show_rr toggle is observable via get_draw_state_vars()",
-          "[layer5][visual][render-smoke][vpr_gui][GUI-T-006]") {
+          "[layer5][visual][render-smoke][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture vpr_fixture;
     vpr_fixture.run_to(Stage::PostRoute);
@@ -195,7 +195,7 @@ TEST_CASE("Visual: show_rr toggle is observable via get_draw_state_vars()",
     REQUIRE(get_draw_state_vars()->show_rr);
     // We do NOT call draw_rr(nullptr) when show_rr=true (that would
     // deref). The renderer-driven path is exercised by the
-    // production save_graphics flow (see GUI-T-003 for the writer
+    // production save_graphics flow (see test_save_graphics.cpp for the writer
     // contract) and by interactive GUI sessions.
 
     ds->show_rr = saved;
@@ -205,7 +205,7 @@ TEST_CASE("Visual: show_rr toggle is observable via get_draw_state_vars()",
 // draw_rr_node table — sized to the rr_graph and round-trips colour writes
 // =============================================================================
 TEST_CASE("Visual: draw_rr_node is rr_graph-sized and colour writes round-trip",
-          "[layer5][visual][render-smoke][vpr_gui][GUI-T-006]") {
+          "[layer5][visual][render-smoke][vpr_gui]") {
     EzglAppFixture fx_app;
     VprRunStageFixture vpr_fixture;
     vpr_fixture.run_to(Stage::PostRoute);

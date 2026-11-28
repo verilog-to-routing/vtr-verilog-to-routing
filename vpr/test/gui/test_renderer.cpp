@@ -1,7 +1,6 @@
 /**
  * @file test_renderer.cpp
- * @brief Layer 3 unit tests for ezgl primitive value types (S8 of the
- *        GUI test plan, §7.8).
+ * @brief Layer 3 unit tests for ezgl primitive value types.
  *
  * Scope discipline: the ezgl renderer hierarchy (immediate_renderer,
  * deferred_renderer, rhi_renderer) is composed of pure-virtual classes
@@ -15,8 +14,8 @@
  * for Catch2 unit cases. Coverage of the renderer subclass implementations
  * stays the responsibility of Layer 1/5, where it already exists.
  *
- * Per §1.A: nothing here mocks a rendering surface to inflate Layer 3
- * numbers. If a value-type assertion fails, file DEF-NNN; do not soften.
+ * Nothing here mocks a rendering surface to inflate Layer 3
+ * numbers. If a value-type assertion fails, file an issue; do not soften.
  *
  * Tag: [layer3][vpr_gui][renderer]
  */

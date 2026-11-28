@@ -1,11 +1,10 @@
 /**
  * @file test_draw_state.cpp
- * @brief Layer 3 unit tests for t_draw_state and t_draw_coords (S8 of the
- *        GUI test plan, §7.8).
+ * @brief Layer 3 unit tests for t_draw_state and t_draw_coords.
  *
  * Scope discipline: t_draw_state's color/block setters require a populated
  * g_vpr_ctx.clustering(), which is a flow-stage fixture that does not yet
- * exist in the Catch2 unit-test surface (same fixture gap noted in S6 for
+ * exist in the Catch2 unit-test surface (the same fixture gap limits
  * the Layer 4 stage matrix). These cases therefore exercise the
  * **context-free** surface only:
  *
@@ -16,9 +15,9 @@
  *   - The free getters get_draw_state_vars() / get_draw_coords_vars()
  *     returning stable, non-null pointers to the globals.
  *
- * Per §1.A: the cases below are NOT instantiating t_draw_state with
+ * The cases below are NOT instantiating t_draw_state with
  * fake/mocked vpr contexts to inflate coverage on color paths. If any
- * future case fails, file DEF-NNN; do not soften the assertion.
+ * future case fails, file an issue; do not soften the assertion.
  *
  * Tag: [layer3][vpr_gui][drawstate]
  */
@@ -184,7 +183,7 @@ TEST_CASE("DrawCoords: pin_size and tile vectors are public-mutable",
     // pin_size, tile_x, tile_y are public; tile_width is private and only
     // settable via init_draw_coords (friend) — exercising it here would
     // require a populated BlkLocRegistry, deferred to the flow-stage
-    // fixture (same gap as S6's Layer 4 stage matrix).
+    // fixture (same gap as the Layer 4 stage matrix).
     t_draw_coords dc;
     dc.pin_size = 3.0f;
     dc.tile_x = {0.0f, 1.0f, 2.0f};

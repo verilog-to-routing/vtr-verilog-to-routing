@@ -29,7 +29,7 @@ def _resolve_memory_tracking_cmd():
     Return the argv prefix that tracks peak memory of a child process,
     or ``None`` if no working implementation is available on this host.
 
-    Tracks DEF-006: ``time -v`` is a GNU coreutils extension. macOS BSD
+    ``time -v`` is a GNU coreutils extension. macOS BSD
     ``/usr/bin/time`` does not accept ``-v`` and aborts immediately.
     On macOS, GNU time is typically installed via Homebrew
     ``coreutils`` and exposed as ``gtime``. We probe in order:
@@ -180,7 +180,7 @@ class CommandRunner:
         cmd = memory_limit + cmd if self._max_memory_mb and check_cmd(memory_limit[0]) else cmd
 
         # Enable memory tracking?
-        # DEF-006: probe for a working GNU 'time -v' instead of hard-coding
+        # Probe for a working GNU 'time -v' instead of hard-coding
         # the GNU-only path; falls back to no tracking on hosts where it is
         # unavailable (e.g. macOS without Homebrew coreutils).
         memory_tracking = _resolve_memory_tracking_cmd() if self._track_memory else None

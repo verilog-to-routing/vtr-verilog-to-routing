@@ -1,10 +1,9 @@
 /**
  * @file test_ui_contract.cpp
- * @brief GUI-T-018 — main.ui ↔ ui_setup.cpp widget-contract test (Layer 3).
+ * @brief main.ui ↔ ui_setup.cpp widget-contract test (Layer 3).
  *
- * Closes the gap recorded in
- * doc/src/dev/vpr_gui_complete_test_plan.rst §12.2 ("the current suite touches
- * the *loading* surface, not the *behaviour* surface"): for every widget that
+ * Covers the *behaviour* surface, not just the *loading* surface: for every
+ * widget that
  * `vpr/src/draw/ui_setup.cpp`, `vpr/src/draw/draw.cpp`, `search_bar.cpp`, and
  * `draw_toggle_functions.cpp` look up at runtime via
  *   ezgl::application::find_push_button / find_check_box / find_combo_box
@@ -21,18 +20,17 @@
  *   by ezgl::MainWindow, and the C++ side casts via the qobject
  *   meta-system in find_* — both sides see "string -> QWidget" only.
  *
- * Per §4 of the test plan, this test follows the bug-discovery discipline:
+ * This test follows the bug-discovery discipline:
  *   * No placeholders. Every spec entry asserts a real lookup that
  *     production code performs.
  *   * On failure the test does NOT swallow the discrepancy — a missing or
- *     mistyped widget is a real defect that gets a DEF-NNN entry and a
- *     paired GitHub issue before any code change.
+ *     mistyped widget is a real defect that gets a GitHub issue before any
+ *     code change.
  *
- * Spec table maintenance: one row per find_* call site in production code.
- * The companion audit grep (doc/src/dev/vpr_gui_complete_test_plan.rst §12.4)
- * is the source of truth; keep this table aligned with it.
+ * Spec table maintenance: one row per find_* call site in production code;
+ * keep it aligned with a grep for find_* calls under vpr/src/draw/.
  *
- * Tag: [layer3][ui-contract][vpr_gui][GUI-T-018]
+ * Tag: [layer3][ui-contract][vpr_gui]
  */
 
 #include <catch2/catch_test_macros.hpp>
@@ -237,7 +235,7 @@ constexpr ComboContentSpec kComboContent[] = {
 // ---------------------------------------------------------------------------
 
 TEST_CASE("UiContract: every find_*() target exists in main.ui with correct Qt type",
-          "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
+          "[layer3][ui-contract][vpr_gui]") {
     auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
@@ -268,7 +266,7 @@ TEST_CASE("UiContract: every find_*() target exists in main.ui with correct Qt t
 // ---------------------------------------------------------------------------
 
 TEST_CASE("UiContract: menu combos have the contracted item counts",
-          "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
+          "[layer3][ui-contract][vpr_gui]") {
     auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
@@ -293,7 +291,7 @@ TEST_CASE("UiContract: menu combos have the contracted item counts",
 // ---------------------------------------------------------------------------
 
 TEST_CASE("UiContract: SearchType combo entries appear in the contracted order",
-          "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
+          "[layer3][ui-contract][vpr_gui]") {
     auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
@@ -321,7 +319,7 @@ TEST_CASE("UiContract: SearchType combo entries appear in the contracted order",
 // ---------------------------------------------------------------------------
 
 TEST_CASE("UiContract: top-level canvas and status surfaces are present",
-          "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
+          "[layer3][ui-contract][vpr_gui]") {
     auto mw = vpr_gui_test::load_main_ui();
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);

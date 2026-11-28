@@ -1,17 +1,13 @@
 /**
  * @file test_runstage_fixture.hpp
- * @brief GUI-T-017 — VPR run-stage Catch2 fixture.
+ * @brief VPR run-stage Catch2 fixture.
  *
- * Closes the structural blocker recorded in
- * doc/src/dev/vpr_gui_complete_test_plan.rst §12.3:
- *
- *   "Wave 2 cannot ship behavioural assertions without a Catch2 fixture
- *    that runs VPR through pack/place/route and exposes ``g_vpr_ctx`` to
- *    the test process."
+ * Behavioural GUI assertions need a Catch2 fixture that runs VPR through
+ * pack/place/route and exposes ``g_vpr_ctx`` to the test process.
  *
  * Architecture:
  *
- *   * Approach C from the planning analysis: a single in-process VPR
+ *   * A single in-process VPR
  *     flow per test case, stopped at the requested ``Stage``. State is
  *     read directly from ``g_vpr_ctx`` while the fixture is alive; the
  *     destructor calls ``vpr_free_all`` to leave the singleton clean
@@ -30,13 +26,12 @@
  *     ``and_latch.blif`` so ``vpr_route_flow`` always succeeds without
  *     entering min-W binary search (which adds 10x runtime).
  *
- * Per §4 of the test plan this header is *infrastructure* — sentinel
- * cases below assert that the fixture itself works (``run_to`` produces
- * a non-empty cluster netlist, etc.). Behavioural Wave-2 tickets
- * (T-001, T-008, T-013, T-014) ride this fixture in follow-up
- * commits and assert their own contracts.
+ * This header is *infrastructure* — sentinel cases assert that the
+ * fixture itself works (``run_to`` produces a non-empty cluster netlist,
+ * etc.). Behavioural tests that use it (e.g. test_search_dispatch.cpp,
+ * test_block_hit_test.cpp) assert their own contracts.
  *
- * Tag: [layer3][fixture][vpr_gui][GUI-T-017]
+ * Tag: [layer3][fixture][vpr_gui]
  */
 
 #pragma once
@@ -86,7 +81,7 @@ class VprRunStageFixture {
     VprRunStageFixture& operator=(VprRunStageFixture&&) = delete;
 
     /// Run the flow up to and including ``stage``. Throws on flow
-    /// failure (a flow failure is a real defect — Wave 2 tickets are
+    /// failure (a flow failure is a real defect — fixture users are
     /// not expected to drive failing flows).
     void run_to(Stage stage);
 

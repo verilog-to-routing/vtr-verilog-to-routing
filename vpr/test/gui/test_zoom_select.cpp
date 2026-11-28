@@ -1,6 +1,6 @@
 /**
  * @file test_zoom_select.cpp
- * @brief GUI-T-013 — Canvas zoom-select drag (rubber-band).
+ * @brief Canvas zoom-select drag (rubber-band).
  *
  * Locks the contract of the two-click zoom-select state machine in
  * ``vpr/src/draw/draw.cpp``:
@@ -22,7 +22,7 @@
  *     region``.
  *
  * Why this is real, behaviour-relevant coverage rather than structural
- * noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * noise:
  *
  *   The zoom-select state machine is process-global state spread across
  *   four file-scope variables in draw.cpp. Production has no
@@ -47,7 +47,7 @@
  *     four file-scope state globals around each TEST_CASE so case
  *     ordering cannot leak state.
  *
- * Tag: [layer4][zoom-select][vpr_gui][GUI-T-013]
+ * Tag: [layer4][zoom-select][vpr_gui]
  */
 
 #include <catch2/catch_test_macros.hpp>
@@ -170,7 +170,7 @@ QMouseEvent make_press(Qt::MouseButton button) {
 // =============================================================================
 
 TEST_CASE("ZoomSelect: toggle_window_mode arms zoom-select",
-          "[layer4][zoom-select][vpr_gui][GUI-T-013]") {
+          "[layer4][zoom-select][vpr_gui]") {
     EzglAppFixture fx;
     ZoomSelectStateGuard guard;
 
@@ -181,7 +181,7 @@ TEST_CASE("ZoomSelect: toggle_window_mode arms zoom-select",
 }
 
 TEST_CASE("ZoomSelect: first left-press collects anchor and seeds preview",
-          "[layer4][zoom-select][vpr_gui][GUI-T-013]") {
+          "[layer4][zoom-select][vpr_gui]") {
     EzglAppFixture fx;
     ZoomSelectStateGuard guard;
     ensure_main_canvas(fx.app(), ezgl::rectangle({0, 0}, 100, 100));
@@ -204,7 +204,7 @@ TEST_CASE("ZoomSelect: first left-press collects anchor and seeds preview",
 }
 
 TEST_CASE("ZoomSelect: mouse-move during preview updates only the cursor",
-          "[layer4][zoom-select][vpr_gui][GUI-T-013]") {
+          "[layer4][zoom-select][vpr_gui]") {
     EzglAppFixture fx;
     ZoomSelectStateGuard guard;
     ensure_main_canvas(fx.app(), ezgl::rectangle({0, 0}, 100, 100));
@@ -223,7 +223,7 @@ TEST_CASE("ZoomSelect: mouse-move during preview updates only the cursor",
 }
 
 TEST_CASE("ZoomSelect: non-left-button press does not advance state",
-          "[layer4][zoom-select][vpr_gui][GUI-T-013]") {
+          "[layer4][zoom-select][vpr_gui]") {
     EzglAppFixture fx;
     ZoomSelectStateGuard guard;
     ensure_main_canvas(fx.app(), ezgl::rectangle({0, 0}, 100, 100));
@@ -246,7 +246,7 @@ TEST_CASE("ZoomSelect: non-left-button press does not advance state",
 // =============================================================================
 
 TEST_CASE("ZoomSelect: second click commits new camera world (square aspect)",
-          "[layer4][zoom-select][vpr_gui][GUI-T-013]") {
+          "[layer4][zoom-select][vpr_gui]") {
     EzglAppFixture fx;
     ZoomSelectStateGuard guard;
 
@@ -280,7 +280,7 @@ TEST_CASE("ZoomSelect: second click commits new camera world (square aspect)",
 }
 
 TEST_CASE("ZoomSelect: second click preserves canvas aspect ratio (tall window)",
-          "[layer4][zoom-select][vpr_gui][GUI-T-013]") {
+          "[layer4][zoom-select][vpr_gui]") {
     EzglAppFixture fx;
     ZoomSelectStateGuard guard;
 
@@ -311,7 +311,7 @@ TEST_CASE("ZoomSelect: second click preserves canvas aspect ratio (tall window)"
 // =============================================================================
 
 TEST_CASE("ZoomSelect: zoom_fit restores a known world rectangle",
-          "[layer4][zoom-select][vpr_gui][GUI-T-013]") {
+          "[layer4][zoom-select][vpr_gui]") {
     EzglAppFixture fx;
     ZoomSelectStateGuard guard;
 

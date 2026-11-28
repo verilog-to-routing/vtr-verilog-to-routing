@@ -1,6 +1,6 @@
 /**
  * @file test_breakpoint_debug.cpp
- * @brief GUI-T-002 — Debugger / breakpoint subsystem (Layer 4).
+ * @brief Debugger / breakpoint subsystem (Layer 4).
  *
  * Locks the contract of the breakpoint type and the debug-window
  * helper functions in ``vpr/src/draw/breakpoint.{h,cpp}`` and
@@ -31,7 +31,7 @@
  *     ``route_utils.cpp``: ``router_iter++``) survive across calls.
  *
  * Why this is real, behaviour-relevant coverage rather than
- * structural noise (per §4 of :ref:`vpr_gui_test_plan`):
+ * structural noise:
  *
  *   The breakpoint subsystem is the GUI-side observability path the
  *   placer/router driver uses to pause execution. Silently dropping
@@ -59,7 +59,7 @@
  * pair, which is what production code wires to ``QObject::
  * destroyed``.
  *
- * Tag: [layer4][interactive][debugger][vpr_gui][GUI-T-002]
+ * Tag: [layer4][interactive][debugger][vpr_gui]
  */
 
 #include <catch2/catch_test_macros.hpp>
@@ -95,7 +95,7 @@ class BreakpointListGuard {
 } // namespace
 
 TEST_CASE("Breakpoint default ctor sets BT_UNIDENTIFIED with sentinel values",
-          "[layer4][interactive][debugger][vpr_gui][GUI-T-002]") {
+          "[layer4][interactive][debugger][vpr_gui]") {
     Breakpoint bp;
     REQUIRE(bp.type == BT_UNIDENTIFIED);
     REQUIRE(bp.bt_moves == -1);
@@ -108,7 +108,7 @@ TEST_CASE("Breakpoint default ctor sets BT_UNIDENTIFIED with sentinel values",
 }
 
 TEST_CASE("Breakpoint typed-int ctor populates only the matching field",
-          "[layer4][interactive][debugger][vpr_gui][GUI-T-002]") {
+          "[layer4][interactive][debugger][vpr_gui]") {
     SECTION("BT_MOVE_NUM") {
         Breakpoint bp(BT_MOVE_NUM, 42);
         REQUIRE(bp.type == BT_MOVE_NUM);
@@ -144,7 +144,7 @@ TEST_CASE("Breakpoint typed-int ctor populates only the matching field",
 }
 
 TEST_CASE("Breakpoint expression ctor stores expression verbatim",
-          "[layer4][interactive][debugger][vpr_gui][GUI-T-002]") {
+          "[layer4][interactive][debugger][vpr_gui]") {
     Breakpoint bp(BT_EXPRESSION, std::string("move_num == 4 || from_block == 11"));
     REQUIRE(bp.type == BT_EXPRESSION);
     REQUIRE(bp.bt_expression == "move_num == 4 || from_block == 11");
@@ -152,7 +152,7 @@ TEST_CASE("Breakpoint expression ctor stores expression verbatim",
 }
 
 TEST_CASE("Breakpoint operator== matches on (type, type-specific value)",
-          "[layer4][interactive][debugger][vpr_gui][GUI-T-002]") {
+          "[layer4][interactive][debugger][vpr_gui]") {
     Breakpoint a(BT_MOVE_NUM, 4);
     Breakpoint b(BT_MOVE_NUM, 4);
     Breakpoint c(BT_MOVE_NUM, 5);
@@ -181,7 +181,7 @@ TEST_CASE("Breakpoint operator== matches on (type, type-specific value)",
 }
 
 TEST_CASE("delete_breakpoint_by_index removes the indexed entry",
-          "[layer4][interactive][debugger][vpr_gui][GUI-T-002]") {
+          "[layer4][interactive][debugger][vpr_gui]") {
     BreakpointListGuard guard;
     auto& list = get_draw_state_vars()->list_of_breakpoints;
     list.push_back(Breakpoint(BT_MOVE_NUM, 1));
@@ -196,7 +196,7 @@ TEST_CASE("delete_breakpoint_by_index removes the indexed entry",
 }
 
 TEST_CASE("activate_breakpoint_by_index toggles the active flag in place",
-          "[layer4][interactive][debugger][vpr_gui][GUI-T-002]") {
+          "[layer4][interactive][debugger][vpr_gui]") {
     BreakpointListGuard guard;
     auto& list = get_draw_state_vars()->list_of_breakpoints;
     list.push_back(Breakpoint(BT_MOVE_NUM, 1));
@@ -214,7 +214,7 @@ TEST_CASE("activate_breakpoint_by_index toggles the active flag in place",
 }
 
 TEST_CASE("check_for_breakpoints returns false on an empty list",
-          "[layer4][interactive][debugger][vpr_gui][GUI-T-002]") {
+          "[layer4][interactive][debugger][vpr_gui]") {
     BreakpointListGuard guard;
     REQUIRE(get_draw_state_vars()->list_of_breakpoints.empty());
     REQUIRE_FALSE(check_for_breakpoints(true));  // in_placer
@@ -222,7 +222,7 @@ TEST_CASE("check_for_breakpoints returns false on an empty list",
 }
 
 TEST_CASE("check_for_breakpoints respects the in_placer / active gates",
-          "[layer4][interactive][debugger][vpr_gui][GUI-T-002]") {
+          "[layer4][interactive][debugger][vpr_gui]") {
     BreakpointListGuard guard;
     auto& list = get_draw_state_vars()->list_of_breakpoints;
 
@@ -245,7 +245,7 @@ TEST_CASE("check_for_breakpoints respects the in_placer / active gates",
 
 TEST_CASE("valid_expression — extern bool valid_expression(std::string);"
           " accepts COMP-BOOL alternation, rejects everything else",
-          "[layer4][interactive][debugger][vpr_gui][GUI-T-002]") {
+          "[layer4][interactive][debugger][vpr_gui]") {
     // valid_expression is non-static in draw_debug.cpp but does not
     // appear in draw_debug.h. Redeclare it locally; this is the
     // function the production "Set" advanced-expression button calls.
@@ -279,7 +279,7 @@ TEST_CASE("valid_expression — extern bool valid_expression(std::string);"
 }
 
 TEST_CASE("close_debug_window / close_advanced_window are idempotent state resets",
-          "[layer4][interactive][debugger][vpr_gui][GUI-T-002]") {
+          "[layer4][interactive][debugger][vpr_gui]") {
     // Both functions just clear the reopen-guard flags; calling them
     // twice in a row must be safe (production code wires them to
     // QObject::destroyed which fires once).
@@ -291,7 +291,7 @@ TEST_CASE("close_debug_window / close_advanced_window are idempotent state reset
 
 TEST_CASE("get_bp_state_globals returns a stable singleton pointer; "
           "mutations persist across calls",
-          "[layer4][interactive][debugger][vpr_gui][GUI-T-002]") {
+          "[layer4][interactive][debugger][vpr_gui]") {
     BreakpointStateGlobals* g1 = get_bp_state_globals();
     BreakpointStateGlobals* g2 = get_bp_state_globals();
     REQUIRE(g1 != nullptr);
@@ -318,7 +318,7 @@ TEST_CASE("get_bp_state_globals returns a stable singleton pointer; "
 }
 
 TEST_CASE("check_for_breakpoints triggers when a matching active expression is reached",
-          "[layer4][interactive][debugger][vpr_gui][GUI-T-002]") {
+          "[layer4][interactive][debugger][vpr_gui]") {
     BreakpointListGuard guard;
     auto& list = get_draw_state_vars()->list_of_breakpoints;
 

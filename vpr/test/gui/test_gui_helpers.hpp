@@ -25,7 +25,7 @@ T* findWidgetByName(const char* name) {
 }
 
 // ---------------------------------------------------------------------------
-// Layer 4 — interactive event simulation helpers (S6 of the GUI test plan)
+// Layer 4 — interactive event simulation helpers
 //
 // Thin wrappers over QTest:: that give the Layer 4 tests a stable surface
 // even if QTest's API shifts between Qt 6 minor versions. They post events
