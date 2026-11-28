@@ -4,12 +4,10 @@
 #include "timing_util.h"
 
 // incremental rerouting resources class definitions
-Connection_based_routing_resources::Connection_based_routing_resources(const Netlist<>& net_list,
-                                                                       const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_terminals,
-                                                                       bool is_flat)
+Connection_based_routing_resources::Connection_based_routing_resources(const RoutingNetlist& net_list,
+                                                                       const vtr::vector<RoutingNetId, std::vector<RRNodeId>>& net_terminals)
     : net_list_(net_list)
     , net_terminals_(net_terminals)
-    , is_flat_(is_flat)
     , last_stable_critical_path_delay{0.0f}
     , critical_path_growth_tolerance{1.001f}
     , connection_criticality_tolerance{0.9f}
@@ -57,7 +55,7 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(NetPi
     }
 }
 
-void Connection_based_routing_resources::update_lower_bound_connection_delay(ParentNetId net, int ipin, float delay) {
+void Connection_based_routing_resources::update_lower_bound_connection_delay(RoutingNetId net, int ipin, float delay) {
     if (lower_bound_connection_delay[net][ipin] > delay) {
         //VTR_LOG("Found better connection delay for Net %zu Pin %d (was: %g, now: %g)\n", size_t(net), ipin, lower_bound_connection_delay[net][ipin], delay);
         lower_bound_connection_delay[net][ipin] = delay;
@@ -96,7 +94,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 
             // skip if connection criticality is too low (not a problem connection)
             //#TODO: Check pin_id
-            float pin_criticality = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, pin_id, is_flat_);
+            float pin_criticality = calculate_net_pin_criticality(*timing_info, netlist_pin_lookup, net_list_, pin_id);
             if (pin_criticality < (max_criticality * connection_criticality_tolerance))
                 continue;
 
@@ -117,12 +115,12 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
     return !any_connection_rerouted;
 }
 
-void Connection_based_routing_resources::clear_force_reroute_for_connection(ParentNetId net_id, RRNodeId rr_sink_node) {
+void Connection_based_routing_resources::clear_force_reroute_for_connection(RoutingNetId net_id, RRNodeId rr_sink_node) {
     forcible_reroute_connection_flag[net_id][rr_sink_node] = false;
     profiling::perform_forced_reroute();
 }
 
-void Connection_based_routing_resources::clear_force_reroute_for_net(ParentNetId net_id) {
+void Connection_based_routing_resources::clear_force_reroute_for_net(RoutingNetId net_id) {
     auto& net_flags = forcible_reroute_connection_flag[net_id];
     for (auto& force_reroute_flag : net_flags) {
         if (force_reroute_flag.second) {

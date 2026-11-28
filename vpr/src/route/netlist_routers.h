@@ -15,13 +15,13 @@
  * of this interface. */
 
 #include <vector>
+#include "routing_netlist.h"
 #include "NetPinTimingInvalidator.h"
 #include "choke_points.h"
 #include "clustered_netlist_utils.h"
 #include "connection_based_routing_fwd.h"
 #include "d_ary_heap.h"
 #include "heap_type.h"
-#include "netlist_fwd.h"
 #include "routing_predictor.h"
 #include "route_budgets.h"
 #include "router_stats.h"
@@ -34,10 +34,10 @@ struct RouteIterResults {
     /** Are there any connections impossible to route due to a disconnected rr_graph? */
     bool is_routable = true;
     /** Net IDs with changed routing */
-    std::vector<ParentNetId> rerouted_nets;
+    std::vector<RoutingNetId> rerouted_nets;
     /** Net IDs with changed bounding box for this iteration.
      * Used by the parallel router to update the \ref PartitionTree */
-    std::vector<ParentNetId> bb_updated_nets;
+    std::vector<RoutingNetId> bb_updated_nets;
     /** RouterStats for this iteration */
     RouterStats stats;
 };
@@ -56,7 +56,7 @@ class NetlistRouter {
 
     /** Handle net bounding box updates by passing them to the PartitionTree.
      * No-op for the serial router */
-    virtual void handle_bb_updated_nets(const std::vector<ParentNetId>& nets) = 0;
+    virtual void handle_bb_updated_nets(const std::vector<RoutingNetId>& nets) = 0;
 
     /** Set this NetlistRouter's timing_info ptr. We sometimes change timing_info
      * throughout iterations, but not frequently enough to make it a public member. */
@@ -77,7 +77,7 @@ class NetlistRouter {
  */
 template<typename HeapType>
 inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
-    const Netlist<>& net_list,
+    const RoutingNetlist& net_list,
     const RouterLookahead* router_lookahead,
     const t_router_opts& router_opts,
     CBRR& connections_inf,
@@ -87,8 +87,7 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
     NetPinTimingInvalidator* pin_timing_invalidator,
     route_budgets& budgeting_inf,
     const RoutingPredictor& routing_predictor,
-    const vtr::vector<ParentNetId, t_net_choke_points>& choking_spots,
-    bool is_flat,
+    const vtr::vector<RoutingNetId, t_net_choke_points>& choking_spots,
     int route_verbosity) {
     if (router_opts.router_algorithm == e_router_algorithm::TIMING_DRIVEN) {
         return std::make_unique<SerialNetlistRouter<HeapType>>(
@@ -103,7 +102,6 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
             budgeting_inf,
             routing_predictor,
             choking_spots,
-            is_flat,
             route_verbosity);
     } else if (router_opts.router_algorithm == e_router_algorithm::NESTED) {
         return std::make_unique<NestedNetlistRouter<HeapType>>(
@@ -118,7 +116,6 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
             budgeting_inf,
             routing_predictor,
             choking_spots,
-            is_flat,
             route_verbosity);
     } else if (router_opts.router_algorithm == e_router_algorithm::PARALLEL) {
 #ifdef VPR_USE_TBB
@@ -134,7 +131,6 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
             budgeting_inf,
             routing_predictor,
             choking_spots,
-            is_flat,
             route_verbosity);
 #else
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "VPR isn't compiled with TBB support required for parallel routing");
@@ -153,7 +149,6 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
             budgeting_inf,
             routing_predictor,
             choking_spots,
-            is_flat,
             route_verbosity);
 #else
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "VPR isn't compiled with TBB support required for parallel routing");
@@ -168,7 +163,7 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
  * @param choking_spots Choke points indexed by net ID.
  */
 inline std::unique_ptr<NetlistRouter> make_netlist_router(
-    const Netlist<>& net_list,
+    const RoutingNetlist& net_list,
     const RouterLookahead* router_lookahead,
     const t_router_opts& router_opts,
     CBRR& connections_inf,
@@ -178,8 +173,7 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router(
     NetPinTimingInvalidator* pin_timing_invalidator,
     route_budgets& budgeting_inf,
     const RoutingPredictor& routing_predictor,
-    const vtr::vector<ParentNetId, t_net_choke_points>& choking_spots,
-    bool is_flat,
+    const vtr::vector<RoutingNetId, t_net_choke_points>& choking_spots,
     int route_verbosity) {
     if (router_opts.router_heap == e_heap_type::BINARY_HEAP) {
         return make_netlist_router_with_heap<BinaryHeap>(
@@ -194,7 +188,6 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router(
             budgeting_inf,
             routing_predictor,
             choking_spots,
-            is_flat,
             route_verbosity);
     } else if (router_opts.router_heap == e_heap_type::FOUR_ARY_HEAP) {
         return make_netlist_router_with_heap<FourAryHeap>(
@@ -209,7 +202,6 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router(
             budgeting_inf,
             routing_predictor,
             choking_spots,
-            is_flat,
             route_verbosity);
     } else {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown heap type %d", router_opts.router_heap);

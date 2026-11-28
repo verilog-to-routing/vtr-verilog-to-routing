@@ -5,15 +5,15 @@
 #include "vpr_types.h"
 #include "vtr_ndmatrix.h"
 
-#include "netlist.h"
+#include "routing_netlist_fwd.h"
 #include "route_tree_fwd.h"
 #include "vtr_vector.h"
 
 typedef vtr::Matrix<std::vector<std::reference_wrapper<const RouteTreeNode>>> SpatialRouteTreeLookup;
 
-SpatialRouteTreeLookup build_route_tree_spatial_lookup(const Netlist<>& net_list,
-                                                       const vtr::vector<ParentNetId, t_bb>& net_bound_box,
-                                                       ParentNetId net,
+SpatialRouteTreeLookup build_route_tree_spatial_lookup(const RoutingNetlist& net_list,
+                                                       const vtr::vector<RoutingNetId, t_bb>& net_bound_box,
+                                                       RoutingNetId net,
                                                        const RouteTreeNode& rt_root);
 
 void update_route_tree_spatial_lookup_recur(const RouteTreeNode& rt_node, SpatialRouteTreeLookup& spatial_lookup);

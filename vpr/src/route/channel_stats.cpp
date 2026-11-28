@@ -3,7 +3,7 @@
 #include "histogram.h"
 #include "globals.h"
 
-void print_channel_stats(bool is_flat) {
+void print_channel_stats() {
     const auto& device_ctx = g_vpr_ctx.device();
 
     std::vector<HistogramBucket> histogram;
@@ -20,8 +20,8 @@ void print_channel_stats(bool is_flat) {
     histogram.emplace_back(0.9, 1.0);
     histogram.emplace_back(1.0, std::numeric_limits<float>::infinity());
 
-    auto chanx_usage = calculate_routing_usage(e_rr_type::CHANX, is_flat, true);
-    auto chany_usage = calculate_routing_usage(e_rr_type::CHANY, is_flat, true);
+    auto chanx_usage = calculate_routing_usage(e_rr_type::CHANX, true);
+    auto chany_usage = calculate_routing_usage(e_rr_type::CHANY, true);
 
     auto chanx_avail = calculate_routing_avail(e_rr_type::CHANX);
     auto chany_avail = calculate_routing_avail(e_rr_type::CHANY);

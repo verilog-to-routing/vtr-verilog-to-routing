@@ -11,6 +11,7 @@
 #include <cmath>
 #include <limits>
 #include <vector>
+#include "routing_netlist_fwd.h"
 #include "globals.h"
 #include "partition_tree.h"
 #include "route_common.h"
@@ -131,7 +132,7 @@ inline Side which_side(RRNodeId inode, Axis cutline_axis, int cutline_pos) {
 
 /** Sample sinks on the convex hull of the set {source + sinks}.
  * Works with regular and virtual nets. Pass vnet.clipped_bb for \p net_bb in case of a virtual net. */
-inline void convex_hull_downsample(ParentNetId net_id, const t_bb& net_bb, vtr::dynamic_bitset<>& out) {
+inline void convex_hull_downsample(RoutingNetId net_id, const t_bb& net_bb, vtr::dynamic_bitset<>& out) {
     const auto& route_ctx = g_vpr_ctx.routing();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;

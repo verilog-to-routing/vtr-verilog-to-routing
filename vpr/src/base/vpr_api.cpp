@@ -585,17 +585,17 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
-    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    const RoutingNetlist router_net_list = make_routing_netlist(is_flat);
     if (is_flat) {
         VTR_LOG_WARN("Disabling port equivalence in the architecture since flat routing is enabled.\n");
         unset_port_equivalences(g_vpr_ctx.mutable_device());
     }
     RouteStatus route_status;
     { //Route
-        route_status = vpr_route_flow(router_net_list, vpr_setup, arch, is_flat);
+        route_status = vpr_route_flow(router_net_list, vpr_setup, arch);
     }
     { //Analysis
-        vpr_analysis_flow(router_net_list, vpr_setup, arch, route_status, is_flat);
+        vpr_analysis_flow(router_net_list, vpr_setup, arch, route_status);
     }
 
     //close the graphics
@@ -1069,10 +1069,9 @@ void vpr_load_placement(t_vpr_setup& vpr_setup,
                   e_pic_type::PLACEMENT, nullptr);
 }
 
-RouteStatus vpr_route_flow(const Netlist<>& net_list,
+RouteStatus vpr_route_flow(const RoutingNetlist& net_list,
                            t_vpr_setup& vpr_setup,
-                           const t_arch& arch,
-                           bool is_flat) {
+                           const t_arch& arch) {
     VTR_LOG("\n");
 
     RouteStatus route_status;
@@ -1105,7 +1104,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             // routing, in the analysis stage), so they are also used as the min delays here.
             // TODO: For hold-aware routing (RCV), the router's timing analysis should use the
             //       min net delays. This requires the router to also compute the min delays.
-            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay, net_delay, is_flat);
+            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_list, net_delay, net_delay);
             timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
 #ifndef NO_SERVER
             if (g_vpr_ctx.server().gate_io.is_running()) {
@@ -1122,33 +1121,32 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             //Do the actual routing
             if (NO_FIXED_CHANNEL_WIDTH == chan_width) {
                 //Find minimum channel width
-                route_status = vpr_route_min_W(net_list, vpr_setup, arch, timing_info, routing_delay_calc, net_delay, is_flat);
+                route_status = vpr_route_min_W(net_list, vpr_setup, arch, timing_info, routing_delay_calc, net_delay);
             } else {
                 //Route at specified channel width
-                route_status = vpr_route_fixed_W(net_list, vpr_setup, arch, chan_width, timing_info, routing_delay_calc, net_delay, is_flat);
+                route_status = vpr_route_fixed_W(net_list, vpr_setup, arch, chan_width, timing_info, routing_delay_calc, net_delay);
             }
 
             //Save the routing in the .route file
             print_route(net_list,
                         filename_opts.PlaceFile.c_str(),
-                        filename_opts.RouteFile.c_str(),
-                        is_flat);
+                        filename_opts.RouteFile.c_str());
         } else {
             VTR_ASSERT(router_opts.doRouting == e_stage_action::LOAD);
             //Load a previous routing
             //if the previous load file is generated using flat routing,
             //we need to create rr_graph with is_flat flag to add additional
             //internal nodes/edges.
-            if (is_flat) {
-                vpr_create_rr_graph(vpr_setup, arch, chan_width, is_flat);
+            if (net_list.is_flat()) {
+                vpr_create_rr_graph(vpr_setup, arch, chan_width, net_list.is_flat());
             }
 
-            route_status = vpr_load_routing(vpr_setup,
+            route_status = vpr_load_routing(net_list,
+                                            vpr_setup,
                                             arch,
                                             chan_width,
                                             timing_info,
-                                            net_delay,
-                                            is_flat);
+                                            net_delay);
         }
 
         //Post-implementation
@@ -1158,8 +1156,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             //Sanity check the routing
             check_route(net_list,
                         router_opts.route_type,
-                        router_opts.check_route,
-                        is_flat);
+                        router_opts.check_route);
             get_serial_num(net_list);
 
             //Update status
@@ -1175,8 +1172,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             if (router_opts.generate_rr_node_overuse_report) {
                 VTR_LOG("See report_overused_nodes.rpt for a detailed report on the RR node overuse information.\n");
                 report_overused_nodes(net_list,
-                                      rr_graph,
-                                      is_flat);
+                                      rr_graph);
 
             } else {
                 VTR_LOG("For a detailed report on the RR node overuse information (report_overused_nodes.rpt), specify --generate_rr_node_overuse_report on.\n");
@@ -1211,21 +1207,20 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
     return route_status;
 }
 
-RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
+RouteStatus vpr_route_fixed_W(const RoutingNetlist& net_list,
                               t_vpr_setup& vpr_setup,
                               const t_arch& arch,
                               int fixed_channel_width,
                               std::shared_ptr<SetupHoldTimingInfo> timing_info,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                              NetPinsMatrix<float>& net_delay,
-                              bool is_flat) {
+                              NetPinsMatrix<float>& net_delay) {
     get_cached_router_lookahead(
         vpr_setup.RoutingArch,
         vpr_setup.RouterOpts.lookahead_type,
         vpr_setup.RouterOpts.write_router_lookahead,
         vpr_setup.RouterOpts.read_router_lookahead,
         vpr_setup.Segments,
-        is_flat,
+        net_list.is_flat(),
         vpr_setup.RouterOpts.route_verbosity,
         vpr_setup.RouterOpts.device_model_warnings,
         vpr_setup.RouterOpts.router_lookahead_interposer_base_cut_multiplier);
@@ -1248,19 +1243,17 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
                    delay_calc,
                    arch.Chans,
                    arch.directs,
-                   ScreenUpdatePriority::MAJOR,
-                   is_flat);
+                   ScreenUpdatePriority::MAJOR);
 
     return RouteStatus(status, fixed_channel_width);
 }
 
-RouteStatus vpr_route_min_W(const Netlist<>& net_list,
+RouteStatus vpr_route_min_W(const RoutingNetlist& net_list,
                             t_vpr_setup& vpr_setup,
                             const t_arch& arch,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                            NetPinsMatrix<float>& net_delay,
-                            bool is_flat) {
+                            NetPinsMatrix<float>& net_delay) {
     // Note that lookahead cache is not primed here because
     // binary_search_place_and_route will change the channel width, and result
     // in the lookahead cache being recomputed.
@@ -1283,19 +1276,18 @@ RouteStatus vpr_route_min_W(const Netlist<>& net_list,
                                               vpr_setup.Segments,
                                               net_delay,
                                               timing_info,
-                                              delay_calc,
-                                              is_flat);
+                                              delay_calc);
 
     bool status = (min_W > 0);
     return RouteStatus(status, min_W);
 }
 
-RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
+RouteStatus vpr_load_routing(const RoutingNetlist& net_list,
+                             t_vpr_setup& vpr_setup,
                              const t_arch& /*arch*/,
                              int fixed_channel_width,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             NetPinsMatrix<float>& net_delay,
-                             bool is_flat) {
+                             NetPinsMatrix<float>& net_delay) {
     vtr::ScopedStartFinishTimer timer("Load Routing");
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)", fixed_channel_width);
@@ -1304,14 +1296,13 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
     auto& filename_opts = vpr_setup.FileNameOpts;
 
     //Load the routing from a file
-    bool is_legal = read_route(filename_opts.RouteFile.c_str(),
+    bool is_legal = read_route(net_list,
+                               filename_opts.RouteFile.c_str(),
                                vpr_setup.RouterOpts,
-                               filename_opts.verify_file_digests,
-                               is_flat);
-    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+                               filename_opts.verify_file_digests);
     if (vpr_setup.Timing.timing_analysis_enabled) {
         //Update timing info
-        load_net_delay_from_routing(router_net_list,
+        load_net_delay_from_routing(net_list,
                                     net_delay);
         timing_info->update();
     }
@@ -1541,11 +1532,10 @@ void vpr_show_setup(const t_vpr_setup& vpr_setup) {
     show_setup(vpr_setup);
 }
 
-bool vpr_analysis_flow(const Netlist<>& net_list,
+bool vpr_analysis_flow(const RoutingNetlist& net_list,
                        t_vpr_setup& vpr_setup,
                        const t_arch& Arch,
-                       const RouteStatus& route_status,
-                       bool is_flat) {
+                       const RouteStatus& route_status) {
     auto& analysis_opts = vpr_setup.AnalysisOpts;
 
     if (analysis_opts.doAnalysis == e_stage_action::SKIP) return true; //Skipped
@@ -1573,7 +1563,7 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
      */
     if (route_status.success()) {
         if (!analysis_opts.skip_sync_clustering_and_routing_results) {
-            if (is_flat) {
+            if (net_list.is_flat()) {
                 sync_netlists_to_routing_flat();
             } else {
                 sync_netlists_to_routing(g_vpr_ctx.device(),
@@ -1597,17 +1587,15 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
     vpr_analysis(net_list,
                  vpr_setup,
                  Arch,
-                 route_status,
-                 is_flat);
+                 route_status);
 
     return true;
 }
 
-void vpr_analysis(const Netlist<>& net_list,
+void vpr_analysis(const RoutingNetlist& net_list,
                   t_vpr_setup& vpr_setup,
                   const t_arch& Arch,
-                  const RouteStatus& route_status,
-                  bool is_flat) {
+                  const RouteStatus& route_status) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& atom_ctx = g_vpr_ctx.atom();
     const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
@@ -1623,8 +1611,7 @@ void vpr_analysis(const Netlist<>& net_list,
                   vpr_setup.RoutingArch.R_minW_nmos,
                   vpr_setup.RoutingArch.R_minW_pmos,
                   Arch.grid_logic_tile_area,
-                  vpr_setup.RoutingArch.directionality,
-                  is_flat);
+                  vpr_setup.RoutingArch.directionality);
 
     if (vpr_setup.TimingEnabled) {
         //Load the net delays
@@ -1634,7 +1621,7 @@ void vpr_analysis(const Netlist<>& net_list,
         load_net_delay_from_routing(net_list, net_delay_min, net_delay_max);
 
         //Do final timing analysis
-        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay_min, net_delay_max, vpr_setup.RouterOpts.flat_routing);
+        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_list, net_delay_min, net_delay_max);
         auto timing_info = make_setup_hold_timing_info(analysis_delay_calc, vpr_setup.AnalysisOpts.timing_update_type);
         timing_info->update();
 
@@ -1647,9 +1634,9 @@ void vpr_analysis(const Netlist<>& net_list,
         //Timing stats
         VTR_LOG("\n");
         generate_hold_timing_stats(/*prefix=*/"", *timing_info, *analysis_delay_calc,
-                                   vpr_setup.AnalysisOpts, vpr_setup.RouterOpts.flat_routing, blk_loc_registry);
+                                   vpr_setup.AnalysisOpts, net_list.is_flat(), blk_loc_registry);
         generate_setup_timing_stats(/*prefix=*/"", *timing_info, *analysis_delay_calc,
-                                    vpr_setup.AnalysisOpts, vpr_setup.RouterOpts.flat_routing, blk_loc_registry);
+                                    vpr_setup.AnalysisOpts, net_list.is_flat(), blk_loc_registry);
 
         //Write the post-synthesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {

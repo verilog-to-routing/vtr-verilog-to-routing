@@ -9,6 +9,7 @@
 #include "physical_types_util.h"
 #include "vpr_utils.h"
 #include "vtr_log.h"
+#include "routing_netlist.h"
 
 /**
  * @brief Definitions of global and helper routines related to printing RR node overuse info.
@@ -17,24 +18,23 @@
  * The helper routines that are called by the global routine should stay local to this file.
  * They provide subroutine hierarchy to allow easier customization of the logfile/report format.
  */
-static void generate_node_to_net_lookup(const Netlist<>& net_list,
-                                        std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map);
+static void generate_node_to_net_lookup(const RoutingNetlist& net_list,
+                                        std::map<RRNodeId, std::set<RoutingNetId>>& rr_node_to_net_map);
 
 ///@brief Print out information specific to IPIN/OPIN type rr nodes
 static void report_overused_ipin_opin(std::ostream& os,
                                       RRNodeId node_id,
-                                      const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map);
+                                      const std::map<RRNodeId, std::set<RoutingNetId>>& rr_node_to_net_map);
 
 ///@brief Print out information specific to CHANX/CHANY type rr nodes
 static void report_overused_chanx_chany(std::ostream& os, RRNodeId node_id);
 
 ///@brief Print out information specific to SOURCE/SINK type rr nodes
 static void report_overused_source_sink(std::ostream& os, RRNodeId node_id);
-static void report_congested_nets(const Netlist<>& net_list,
+static void report_congested_nets(const RoutingNetlist& net_list,
                                   const AtomLookup& atom_lookup,
                                   std::ostream& os,
-                                  const std::set<ParentNetId>& congested_nets,
-                                  bool is_flat,
+                                  const std::set<RoutingNetId>& congested_nets,
                                   int layer_num,
                                   int x,
                                   int y,
@@ -59,7 +59,7 @@ static void print_block_pins_nets(std::ostream& os,
                                   t_physical_tile_type_ptr physical_type,
                                   const t_physical_tile_loc& root_loc,
                                   int pin_physical_num,
-                                  const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map);
+                                  const std::map<RRNodeId, std::set<RoutingNetId>>& rr_node_to_net_map);
 /**
  * @brief Print out RR node overuse info in the VPR logfile.
  *
@@ -99,14 +99,13 @@ void log_overused_nodes_status(int max_logged_overused_rr_nodes) {
  * This report will be generated only if the last routing attempt fails, which
  * causes the whole VPR flow to fail.
  */
-void report_overused_nodes(const Netlist<>& net_list,
-                           const RRGraphView& rr_graph,
-                           bool is_flat) {
+void report_overused_nodes(const RoutingNetlist& net_list,
+                           const RRGraphView& rr_graph) {
     const auto& route_ctx = g_vpr_ctx.routing();
 
     /* Generate overuse info lookup table */
-    std::map<RRNodeId, std::set<ParentNetId>> over_used_nodes_to_nets_lookup;
-    std::map<RRNodeId, std::set<ParentNetId>> rr_node_to_net_map;
+    std::map<RRNodeId, std::set<RoutingNetId>> over_used_nodes_to_nets_lookup;
+    std::map<RRNodeId, std::set<RoutingNetId>> rr_node_to_net_map;
     generate_overused_nodes_to_congested_net_lookup(net_list,
                                                     over_used_nodes_to_nets_lookup);
     generate_node_to_net_lookup(net_list, rr_node_to_net_map);
@@ -120,7 +119,7 @@ void report_overused_nodes(const Netlist<>& net_list,
     size_t inode = 0;
     for (const auto& lookup_pair : over_used_nodes_to_nets_lookup) {
         const RRNodeId node_id = lookup_pair.first;
-        const std::set<ParentNetId>& congested_nets = lookup_pair.second;
+        const std::set<RoutingNetId>& congested_nets = lookup_pair.second;
 
         os << "************************************************\n\n"; //Separation line
 
@@ -172,7 +171,6 @@ void report_overused_nodes(const Netlist<>& net_list,
                               g_vpr_ctx.atom().lookup(),
                               os,
                               congested_nets,
-                              is_flat,
                               layer_num,
                               x,
                               y,
@@ -193,15 +191,15 @@ void report_overused_nodes(const Netlist<>& net_list,
  *
  * This routine goes through the trace back linked list of each net.
  */
-void generate_overused_nodes_to_congested_net_lookup(const Netlist<>& net_list,
-                                                     std::map<RRNodeId, std::set<ParentNetId>>& nodes_to_nets_lookup) {
+void generate_overused_nodes_to_congested_net_lookup(const RoutingNetlist& net_list,
+                                                     std::map<RRNodeId, std::set<RoutingNetId>>& nodes_to_nets_lookup) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& route_ctx = g_vpr_ctx.routing();
 
     //Create overused nodes to congested nets look up by
     //traversing through the net trace backs linked lists
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         if (!route_ctx.route_trees[net_id])
             continue;
 
@@ -215,13 +213,13 @@ void generate_overused_nodes_to_congested_net_lookup(const Netlist<>& net_list,
     }
 }
 
-static void generate_node_to_net_lookup(const Netlist<>& net_list,
-                                        std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map) {
+static void generate_node_to_net_lookup(const RoutingNetlist& net_list,
+                                        std::map<RRNodeId, std::set<RoutingNetId>>& rr_node_to_net_map) {
     const auto& route_ctx = g_vpr_ctx.routing();
 
     //Create overused nodes to congested nets look up by
     //traversing through the net trace backs linked lists
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         if (!route_ctx.route_trees[net_id])
             continue;
 
@@ -233,7 +231,7 @@ static void generate_node_to_net_lookup(const Netlist<>& net_list,
 
 static void report_overused_ipin_opin(std::ostream& os,
                                       RRNodeId node_id,
-                                      const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map) {
+                                      const std::map<RRNodeId, std::set<RoutingNetId>>& rr_node_to_net_map) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& place_ctx = g_vpr_ctx.placement();
@@ -321,11 +319,10 @@ static void report_overused_source_sink(std::ostream& os, RRNodeId node_id) {
  * These nets are congested because the number of nets currently passing through  *
  * this rr node exceed the node's routing net capacity.
  */
-static void report_congested_nets(const Netlist<>& net_list,
+static void report_congested_nets(const RoutingNetlist& net_list,
                                   const AtomLookup& atom_lookup,
                                   std::ostream& os,
-                                  const std::set<ParentNetId>& congested_nets,
-                                  bool is_flat,
+                                  const std::set<RoutingNetId>& congested_nets,
                                   int layer_num,
                                   int x,
                                   int y,
@@ -333,30 +330,24 @@ static void report_congested_nets(const Netlist<>& net_list,
     os << "Number of nets passing through this RR node = " << congested_nets.size() << '\n';
 
     size_t inet = 0;
-    for (ParentNetId net_id : congested_nets) {
-        ParentBlockId block_id = net_list.net_driver_block(net_id);
+    for (RoutingNetId net_id : congested_nets) {
+        RoutingBlockId block_id = net_list.net_driver_block(net_id);
         os << "Net #" << inet << ": ";
         os << "Net ID = " << size_t(net_id) << ", ";
         os << "Net name = " << net_list.net_name(net_id) << ", ";
-        if (is_flat) {
-            AtomBlockId atom_blk_id = convert_to_atom_block_id(block_id);
+        if (net_list.is_flat()) {
+            AtomBlockId atom_blk_id = net_list.atom_block(block_id);
             os << "Driving block name = " << atom_lookup.atom_pb_bimap().atom_pb(atom_blk_id)->name << ", ";
             os << "Driving block type = " << g_vpr_ctx.clustering().clb_nlist.block_type(atom_lookup.atom_clb(atom_blk_id))->name << '\n';
         } else {
-            ClusterBlockId clb_blk_id = convert_to_cluster_block_id(block_id);
+            ClusterBlockId clb_blk_id = net_list.cluster_block(block_id);
             os << "Driving block name = " << g_vpr_ctx.clustering().clb_nlist.block_pb(clb_blk_id)->name << ", ";
             os << "Driving block type = " << g_vpr_ctx.clustering().clb_nlist.block_type(clb_blk_id)->name << '\n';
         }
 
         if (report_sinks) {
             for (auto sink_id : net_list.net_sinks(net_id)) {
-                ClusterBlockId cluster_block_id;
-                if (is_flat) {
-                    AtomBlockId atom_blk_id = convert_to_atom_block_id(net_list.pin_block(sink_id));
-                    cluster_block_id = atom_lookup.atom_clb(convert_to_atom_block_id(atom_blk_id));
-                } else {
-                    cluster_block_id = convert_to_cluster_block_id(net_list.pin_block(sink_id));
-                }
+                ClusterBlockId cluster_block_id = net_list.cluster_block(net_list.pin_block(sink_id));
                 auto cluster_loc = g_vpr_ctx.placement().block_locs()[cluster_block_id];
                 auto physical_type = g_vpr_ctx.device().grid.get_physical_type({x, y, layer_num});
                 int cluster_layer_num = cluster_loc.loc.layer;
@@ -366,15 +357,15 @@ static void report_congested_nets(const Netlist<>& net_list,
                     VTR_ASSERT(physical_type == g_vpr_ctx.device().grid.get_physical_type({cluster_x, cluster_y, cluster_layer_num}));
                     os << "Sink in the same location = "
                        << "\n";
-                    if (is_flat) {
-                        auto pb_pin = atom_lookup.atom_pin_pb_graph_pin(convert_to_atom_pin_id(sink_id));
-                        auto pb_net_list = atom_lookup.atom_pb_bimap().atom_pb(convert_to_atom_block_id(net_list.pin_block(sink_id)));
+                    if (net_list.is_flat()) {
+                        auto pb_pin = atom_lookup.atom_pin_pb_graph_pin(net_list.atom_pin(sink_id));
+                        auto pb_net_list = atom_lookup.atom_pb_bimap().atom_pb(net_list.atom_block(net_list.pin_block(sink_id)));
                         os << "  "
                            << "Pin Logical Num: " << pb_pin->pin_count_in_cluster << "  PB Type: " << pb_pin->parent_node->pb_type->name << " Netlist PB: " << pb_net_list->name << " Parent PB Type: " << pb_net_list->parent_pb->pb_graph_node->pb_type->name << "Parent Netlist PB : " << pb_net_list->parent_pb->name << "\n";
                         os << "  "
                            << "Hierarchical Type Name : " << pb_pin->parent_node->hierarchical_type_name() << "\n";
                     } else {
-                        os << "  " << g_vpr_ctx.placement().physical_pins()[convert_to_cluster_pin_id(sink_id)] << "\n";
+                        os << "  " << g_vpr_ctx.placement().physical_pins()[net_list.cluster_pin(sink_id)] << "\n";
                     }
                 }
             }
@@ -462,7 +453,7 @@ static void print_block_pins_nets(std::ostream& os,
                                   t_physical_tile_type_ptr physical_type,
                                   const t_physical_tile_loc& root_loc,
                                   int pin_physical_num,
-                                  const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map) {
+                                  const std::map<RRNodeId, std::set<RoutingNetId>>& rr_node_to_net_map) {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     t_pin_range pin_num_range;

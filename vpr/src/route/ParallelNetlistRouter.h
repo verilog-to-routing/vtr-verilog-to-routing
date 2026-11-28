@@ -9,6 +9,7 @@
  *
  * [0]: "Parallel FPGA Routing with On-the-Fly Net Decomposition", FPT'24 */
 
+#include "routing_netlist.h"
 #include "netlist_routers.h"
 #include "vtr_optional.h"
 
@@ -24,7 +25,7 @@ template<typename HeapType>
 class ParallelNetlistRouter : public NetlistRouter {
   public:
     ParallelNetlistRouter(
-        const Netlist<>& net_list,
+        const RoutingNetlist& net_list,
         const RouterLookahead* router_lookahead,
         const t_router_opts& router_opts,
         CBRR& connections_inf,
@@ -34,10 +35,9 @@ class ParallelNetlistRouter : public NetlistRouter {
         NetPinTimingInvalidator* pin_timing_invalidator,
         route_budgets& budgeting_inf,
         const RoutingPredictor& routing_predictor,
-        const vtr::vector<ParentNetId, t_net_choke_points>& choking_spots,
-        bool is_flat,
+        const vtr::vector<RoutingNetId, t_net_choke_points>& choking_spots,
         int route_verbosity)
-        : _routers_th(_make_router(router_lookahead, is_flat))
+        : _routers_th(_make_router(router_lookahead, net_list.is_flat()))
         , _net_list(net_list)
         , _router_opts(router_opts)
         , _connections_inf(connections_inf)
@@ -48,7 +48,6 @@ class ParallelNetlistRouter : public NetlistRouter {
         , _budgeting_inf(budgeting_inf)
         , _routing_predictor(routing_predictor)
         , _choking_spots(choking_spots)
-        , _is_flat(is_flat)
         , _route_verbosity(route_verbosity) {}
     ~ParallelNetlistRouter() {}
 
@@ -57,7 +56,7 @@ class ParallelNetlistRouter : public NetlistRouter {
      * \return RouteIterResults for this iteration. */
     RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
     /** Inform the PartitionTree of the nets with updated bounding boxes */
-    void handle_bb_updated_nets(const std::vector<ParentNetId>& nets);
+    void handle_bb_updated_nets(const std::vector<RoutingNetId>& nets);
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
   private:
@@ -83,7 +82,7 @@ class ParallelNetlistRouter : public NetlistRouter {
     /* Context fields. Most of them will be forwarded to route_net (see route_net.tpp) */
     /** Per-thread storage for ConnectionRouters. */
     tbb::enumerable_thread_specific<SerialConnectionRouter<HeapType>> _routers_th;
-    const Netlist<>& _net_list;
+    const RoutingNetlist& _net_list;
     const t_router_opts& _router_opts;
     CBRR& _connections_inf;
     /** Per-thread storage for RouteIterResults. */
@@ -94,8 +93,7 @@ class ParallelNetlistRouter : public NetlistRouter {
     NetPinTimingInvalidator* _pin_timing_invalidator;
     route_budgets& _budgeting_inf;
     const RoutingPredictor& _routing_predictor;
-    const vtr::vector<ParentNetId, t_net_choke_points>& _choking_spots; ///< Choke points indexed by net ID.
-    bool _is_flat;
+    const vtr::vector<RoutingNetId, t_net_choke_points>& _choking_spots; ///< Choke points indexed by net ID.
     int _route_verbosity;
 
     /** Cached routing parameters for current iteration (inputs to \see route_netlist()) */

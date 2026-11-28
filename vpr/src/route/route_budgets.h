@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <queue>
+#include "routing_netlist_fwd.h"
 #include "RoutingDelayCalculator.h"
 #include "clustered_netlist_utils.h"
 #include "timing_info.h"
@@ -23,24 +24,24 @@ enum slack_allocated_type {
 #define UNINITIALIZED_PATH_DELAY (-2)
 class route_budgets {
   public:
-    route_budgets(const Netlist<>& net_list, bool is_flat);
+    route_budgets(const RoutingNetlist& net_list);
 
     route_budgets(std::vector<std::vector<float>> net_delay);
 
     virtual ~route_budgets();
 
     /*getter functions*/
-    float get_delay_target(ParentNetId net_id, int ipin);
-    float get_min_delay_budget(ParentNetId net_id, int ipin);
-    float get_max_delay_budget(ParentNetId net_id, int ipin);
-    float get_crit_short_path(ParentNetId net_id, int ipin);
+    float get_delay_target(RoutingNetId net_id, int ipin);
+    float get_min_delay_budget(RoutingNetId net_id, int ipin);
+    float get_max_delay_budget(RoutingNetId net_id, int ipin);
+    float get_crit_short_path(RoutingNetId net_id, int ipin);
     bool if_set() const;
 
     /**
      * @brief Returns true if RCV is enabled for the given connection,
      *        specified by its net_id and ipin.
      */
-    bool should_use_rcv(ParentNetId net_id, int ipin) const;
+    bool should_use_rcv(RoutingNetId net_id, int ipin) const;
 
     /*main loader function*/
     void load_route_budgets(NetPinsMatrix<float>& net_delay,
@@ -52,21 +53,21 @@ class route_budgets {
     void print_route_budget(std::string filename, NetPinsMatrix<float>& net_delay);
 
     /*lower budgets during congestion*/
-    void update_congestion_times(ParentNetId net_id);
+    void update_congestion_times(RoutingNetId net_id);
     bool increase_min_budgets_if_struggling(float delay_decrement, std::shared_ptr<SetupHoldTimingInfo> timing_info, float worst_neg_slack, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
-    void increase_short_crit(ParentNetId net_id, float delay_decs);
-    void not_congested_this_iteration(ParentNetId net_id);
+    void increase_short_crit(RoutingNetId net_id, float delay_decs);
+    void not_congested_this_iteration(RoutingNetId net_id);
 
-    bool get_should_reroute(ParentNetId net_id);
-    void set_should_reroute(ParentNetId net_id, bool value);
-    int get_hold_fac(ParentNetId net_id);
-    void set_hold_fac(ParentNetId net_id, int value);
+    bool get_should_reroute(RoutingNetId net_id);
+    void set_should_reroute(RoutingNetId net_id, bool value);
+    int get_hold_fac(RoutingNetId net_id);
+    void set_hold_fac(RoutingNetId net_id, int value);
 
     /*One-shot reroute request, independent of get/set_should_reroute's hold-slack gating.
      * Used to force clock connections through the router once their skew budgets are (re)computed,
      * since otherwise an already-legally-routed, non-critical net is never revisited. */
-    bool get_should_reroute_for_skew(ParentNetId net_id) const;
-    void set_should_reroute_for_skew(ParentNetId net_id, bool value);
+    bool get_should_reroute_for_skew(RoutingNetId net_id) const;
+    void set_should_reroute_for_skew(RoutingNetId net_id, bool value);
 
   private:
     /*For allocating and freeing memory*/
@@ -102,14 +103,14 @@ class route_budgets {
 
     /*checks*/
     void keep_budget_in_bounds(NetPinsMatrix<float>& temp_budgets);
-    void keep_budget_in_bounds(NetPinsMatrix<float>& temp_budgets, ParentNetId net_id, ParentPinId ipin);
+    void keep_budget_in_bounds(NetPinsMatrix<float>& temp_budgets, RoutingNetId net_id, RoutingPinId ipin);
     void keep_min_below_max_budget();
     void check_if_budgets_in_bounds();
-    void check_if_budgets_in_bounds(ParentNetId net_id, ParentPinId pin_id);
+    void check_if_budgets_in_bounds(RoutingNetId net_id, RoutingPinId pin_id);
     void keep_budget_above_value(NetPinsMatrix<float>& temp_budgets, float bottom_range);
 
     /*helper functions*/
-    float calculate_clb_pin_slack(ParentNetId net_id,
+    float calculate_clb_pin_slack(RoutingNetId net_id,
                                   int ipin,
                                   std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                   const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
@@ -118,14 +119,14 @@ class route_budgets {
 
     float get_total_path_delay(std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> timing_analyzer,
                                analysis_type analysis_type,
-                               ParentNetId net_id,
+                               RoutingNetId net_id,
                                int ipin,
                                AtomPinId& atom_pin);
     void set_min_max_budgets_equal();
     std::shared_ptr<RoutingDelayCalculator> get_routing_calc(NetPinsMatrix<float>& net_delay);
     void calculate_delay_targets();
-    void calculate_delay_targets(ParentNetId net_id, ParentPinId pin_id);
-    tatum::EdgeId get_edge_from_nets(ParentNetId net_id, int ipin);
+    void calculate_delay_targets(RoutingNetId net_id, RoutingPinId pin_id);
+    tatum::EdgeId get_edge_from_nets(RoutingNetId net_id, int ipin);
 
     /*debugging tools*/
     void print_temporary_budgets_to_file(NetPinsMatrix<float>& temp_budgets) const;
@@ -148,19 +149,18 @@ class route_budgets {
     NetPinsMatrix<float> total_path_delays_setup;
 
     /*used to keep count the number of continuous time this node was congested*/
-    vtr::vector<ParentNetId, int> num_times_congested; //[0..num_nets]
+    vtr::vector<RoutingNetId, int> num_times_congested; //[0..num_nets]
     std::queue<float> negative_hold_slacks;
 
-    const Netlist<>& net_list_;
-    bool is_flat_;
+    const RoutingNetlist& net_list_;
 
     /*budgets only valid when loaded*/
     bool set;
 
     /*flag to reroute each net for hold violation*/
-    std::map<ParentNetId, bool> should_reroute_for_hold;
-    std::map<ParentNetId, int> hold_fac;
+    std::map<RoutingNetId, bool> should_reroute_for_hold;
+    std::map<RoutingNetId, int> hold_fac;
 
     /*flag to force a one-shot reroute of a net after its skew budgets are (re)computed*/
-    std::map<ParentNetId, bool> should_reroute_for_skew;
+    std::map<RoutingNetId, bool> should_reroute_for_skew;
 };

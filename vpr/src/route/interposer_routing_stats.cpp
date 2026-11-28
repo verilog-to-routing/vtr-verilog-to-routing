@@ -14,6 +14,7 @@
 #include "vpr_context.h"
 #include "vtr_log.h"
 #include "vtr_ndmatrix.h"
+#include "routing_netlist.h"
 
 // =============================================================================
 // Static function declarations
@@ -31,7 +32,7 @@ static Direction get_crossing_direction_relative_to_source(e_interposer_cut_type
                                                            int source_y);
 
 /// @brief Counts nets and wires crossing interposer cuts of the given orientation; updates cut_stats[layer][cut_idx].
-static void count_net_crossings_for_cut_type(const Netlist<>& net_list,
+static void count_net_crossings_for_cut_type(const RoutingNetlist& net_list,
                                              const RRGraphView& rr_graph,
                                              const DeviceGrid& grid,
                                              e_interposer_cut_type cut_type,
@@ -46,7 +47,7 @@ static void print_cut_stats(std::string_view cut_orientation,
                             const t_interposer_cut_routing_stats& stats);
 
 /// @brief Accumulates per-coordinate wire usage along horizontal and vertical interposer cuts.
-static void accumulate_interposer_cut_usage(const Netlist<>& net_list,
+static void accumulate_interposer_cut_usage(const RoutingNetlist& net_list,
                                             const RRGraphView& rr_graph,
                                             const DeviceGrid& grid,
                                             vtr::NdMatrix<int, 3>& horz_usage,
@@ -88,7 +89,7 @@ static Direction get_crossing_direction_relative_to_source(e_interposer_cut_type
     return (source_y <= cut_loc) ? Direction::INC : Direction::DEC;
 }
 
-static void count_net_crossings_for_cut_type(const Netlist<>& net_list,
+static void count_net_crossings_for_cut_type(const RoutingNetlist& net_list,
                                              const RRGraphView& rr_graph,
                                              const DeviceGrid& grid,
                                              e_interposer_cut_type cut_type,
@@ -106,7 +107,7 @@ static void count_net_crossings_for_cut_type(const Netlist<>& net_list,
     // Direction::INC/DEC record the crossing direction relative to the net source.
     vtr::NdMatrix<Direction, 2> net_crossing_direction({num_layers, max_cuts}, Direction::NONE);
 
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         if (net_list.net_is_ignored(net_id) || net_list.net_sinks(net_id).empty()) {
             continue;
         }
@@ -191,7 +192,7 @@ static void count_net_crossings_for_cut_type(const Netlist<>& net_list,
     }
 }
 
-static void accumulate_interposer_cut_usage(const Netlist<>& net_list,
+static void accumulate_interposer_cut_usage(const RoutingNetlist& net_list,
                                             const RRGraphView& rr_graph,
                                             const DeviceGrid& grid,
                                             vtr::NdMatrix<int, 3>& horz_usage,
@@ -203,7 +204,7 @@ static void accumulate_interposer_cut_usage(const Netlist<>& net_list,
     horz_usage.fill(0);
     vert_usage.fill(0);
 
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         if (net_list.net_is_ignored(net_id) || net_list.net_sinks(net_id).empty()) {
             continue;
         }
@@ -267,7 +268,7 @@ static void print_cut_stats(std::string_view cut_orientation,
 // Public function definition
 // =============================================================================
 
-void print_interposer_routing_stats(const Netlist<>& net_list) {
+void print_interposer_routing_stats(const RoutingNetlist& net_list) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
 
@@ -314,7 +315,7 @@ void print_interposer_routing_stats(const Netlist<>& net_list) {
     }
 }
 
-void write_interposer_cut_channel_utilization(const Netlist<>& net_list, std::string_view filename) {
+void write_interposer_cut_channel_utilization(const RoutingNetlist& net_list, std::string_view filename) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
 

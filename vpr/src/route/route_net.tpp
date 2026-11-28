@@ -43,15 +43,14 @@
  * @param worst_neg_slack
  * @param routing_predictor
  * @param choking_spots Choke points for this net's sinks.
- * @param is_flat
  * @param net_bb Bounding box for the net (Routing resources outside net_bb will not be used)
  * @param should_setup Should we reset/prune the existing route tree first?
  * @param sink_mask Which sinks to route? Assumed all sinks if nullopt, otherwise a mask of [1..num_sinks+1] where set bits request the sink to be routed
  * @return NetResultFlags for this net */
 template<typename ConnectionRouterType>
 inline NetResultFlags route_net(ConnectionRouterType& router,
-                                const Netlist<>& net_list,
-                                const ParentNetId& net_id,
+                                const RoutingNetlist& net_list,
+                                const RoutingNetId& net_id,
                                 int itry,
                                 float pres_fac,
                                 const t_router_opts& router_opts,
@@ -65,7 +64,6 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
                                 float worst_negative_slack,
                                 const RoutingPredictor& routing_predictor,
                                 const t_net_choke_points& choking_spots,
-                                bool is_flat,
                                 const t_bb& net_bb,
                                 bool should_setup = true,
                                 vtr::optional<const vtr::dynamic_bitset<>&> sink_mask = vtr::nullopt) {
@@ -132,9 +130,9 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
                                                         netlist_pin_lookup,
                                                         router_opts.max_criticality,
                                                         router_opts.criticality_exp,
+                                                        net_list,
                                                         net_id,
-                                                        pin,
-                                                        is_flat);
+                                                        pin);
     }
 
     // Determines the order remaining_targets is routed in. Starts as a copy of
@@ -286,8 +284,7 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
                                                 router_opts.high_fanout_threshold,
                                                 tree,
                                                 spatial_route_tree_lookup,
-                                                router_stats,
-                                                is_flat);
+                                                router_stats);
 
                 if (flags.success == false)
                     return flags;
@@ -339,7 +336,6 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
                                      budgeting_inf,
                                      routing_predictor,
                                      choking_spots,
-                                     is_flat,
                                      net_bb);
 
         flags.retry_with_full_bb |= sink_flags.retry_with_full_bb;
@@ -392,15 +388,14 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
  * of the global clock network. */
 template<typename ConnectionRouterType>
 inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
-                                              ParentNetId net_id,
-                                              const Netlist<>& net_list,
+                                              RoutingNetId net_id,
+                                              const RoutingNetlist& net_list,
                                               RRNodeId sink_node,
                                               const t_conn_cost_params cost_params,
                                               int high_fanout_threshold,
                                               RouteTree& tree,
                                               SpatialRouteTreeLookup& spatial_rt_lookup,
-                                              RouterStats& router_stats,
-                                              bool is_flat) {
+                                              RouterStats& router_stats) {
     const auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& m_route_ctx = g_vpr_ctx.mutable_routing();
@@ -410,7 +405,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
 
     bool high_fanout = is_high_fanout(net_list.net_sinks(net_id).size(), high_fanout_threshold);
 
-    VTR_LOGV_DEBUG(f_router_debug, "Net %zu pre-route to (%s)\n", size_t(net_id), describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, is_flat).c_str());
+    VTR_LOGV_DEBUG(f_router_debug, "Net %zu pre-route to (%s)\n", size_t(net_id), describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, net_list.is_flat()).c_str());
     profiling::sink_criticality_start();
 
     t_bb bounding_box = route_ctx.route_bb[net_id];
@@ -434,10 +429,10 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
 
     // TODO: Parts of the rest of this function are repetitive to code in route_sink. Should refactor.
     if (!found_path) {
-        ParentBlockId src_block = net_list.net_driver_block(net_id);
+        RoutingBlockId src_block = net_list.net_driver_block(net_id);
         VTR_LOG("Failed to route connection from '%s' to '%s' for net '%s' (#%zu)\n",
                 net_list.block_name(src_block).c_str(),
-                describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, is_flat).c_str(),
+                describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, net_list.is_flat()).c_str(),
                 net_list.net_name(net_id).c_str(),
                 size_t(net_id));
         if (f_router_debug) {
@@ -456,7 +451,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
      * points. Therefore, we can set the net pin index of the sink node to      *
      * UNDEFINED (meaning illegal) as it is not meaningful for this sink.            */
     vtr::optional<const RouteTreeNode&> new_branch, new_sink;
-    std::tie(new_branch, new_sink) = tree.update_from_heap(&cheapest, UNDEFINED, ((high_fanout) ? &spatial_rt_lookup : nullptr), is_flat);
+    std::tie(new_branch, new_sink) = tree.update_from_heap(&cheapest, UNDEFINED, ((high_fanout) ? &spatial_rt_lookup : nullptr), net_list.is_flat());
 
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(tree.root(), spatial_rt_lookup));
 
@@ -500,13 +495,12 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
  * @param budgeting_inf
  * @param routing_predictor
  * @param choking_spots Choke points for this net's sinks.
- * @param is_flat
  * @param net_bb Bounding box for the net (Routing resources outside net_bb will not be used)
  * @return NetResultFlags for this sink to be bubbled up through route_net */
 template<typename ConnectionRouterType>
 inline NetResultFlags route_sink(ConnectionRouterType& router,
-                                 const Netlist<>& net_list,
-                                 ParentNetId net_id,
+                                 const RoutingNetlist& net_list,
+                                 RoutingNetId net_id,
                                  unsigned itarget,
                                  int target_pin,
                                  const t_conn_cost_params cost_params,
@@ -517,7 +511,6 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
                                  route_budgets& budgeting_inf,
                                  const RoutingPredictor& routing_predictor,
                                  const t_net_choke_points& choking_spots,
-                                 bool is_flat,
                                  const t_bb& net_bb) {
     const auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -527,7 +520,7 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
     profiling::sink_criticality_start();
 
     RRNodeId sink_node = route_ctx.net_rr_terminals[net_id][target_pin];
-    VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d (%s)\n", size_t(net_id), itarget, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, is_flat).c_str());
+    VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d (%s)\n", size_t(net_id), itarget, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, net_list.is_flat()).c_str());
 
     router.clear_modified_rr_node_info();
 
@@ -566,8 +559,8 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
     }
 
     if (!found_path) {
-        ParentBlockId src_block = net_list.net_driver_block(net_id);
-        ParentBlockId sink_block = net_list.pin_block(*(net_list.net_pins(net_id).begin() + target_pin));
+        RoutingBlockId src_block = net_list.net_driver_block(net_id);
+        RoutingBlockId sink_block = net_list.pin_block(*(net_list.net_pins(net_id).begin() + target_pin));
         VTR_LOG("Failed to route connection from '%s' to '%s' for net '%s' (#%zu)\n",
                 net_list.block_name(src_block).c_str(),
                 net_list.block_name(sink_block).c_str(),
@@ -584,7 +577,7 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
     profiling::sink_criticality_end(cost_params.criticality);
 
     vtr::optional<const RouteTreeNode&> new_branch, new_sink;
-    std::tie(new_branch, new_sink) = tree.update_from_heap(&cheapest, target_pin, ((high_fanout) ? &spatial_rt_lookup : nullptr), is_flat);
+    std::tie(new_branch, new_sink) = tree.update_from_heap(&cheapest, target_pin, ((high_fanout) ? &spatial_rt_lookup : nullptr), net_list.is_flat());
 
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(tree.root(), spatial_rt_lookup));
 

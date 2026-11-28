@@ -4,7 +4,7 @@ std::atomic_bool f_router_debug = false;
 
 void enable_router_debug(
     const t_router_opts& router_opts,
-    ParentNetId net,
+    RoutingNetId net,
     RRNodeId sink_rr,
     int router_iteration,
     ConnectionRouterInterface* router) {
@@ -12,7 +12,7 @@ void enable_router_debug(
     bool active_sink_debug = (router_opts.router_debug_sink_rr >= 0);
     bool active_iteration_debug = (router_opts.router_debug_iteration >= 0);
 
-    bool match_net = (ParentNetId(router_opts.router_debug_net) == net || router_opts.router_debug_net == -1);
+    bool match_net = (RoutingNetId(router_opts.router_debug_net) == net || router_opts.router_debug_net == -1);
     bool match_sink = (router_opts.router_debug_sink_rr == int(sink_rr) || router_opts.router_debug_sink_rr < 0);
     bool match_iteration = (router_opts.router_debug_iteration == router_iteration || router_opts.router_debug_iteration < 0);
 

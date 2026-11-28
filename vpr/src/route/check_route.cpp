@@ -22,19 +22,19 @@
 #include "rr_graph.h"
 #include "check_rr_graph.h"
 #include "route_tree.h"
+#include "routing_netlist.h"
 
 /******************** Subroutines local to this module **********************/
 static void check_node_and_range(RRNodeId inode,
                                  enum e_route_type route_type,
                                  bool is_flat);
-static void check_source(const Netlist<>& net_list,
+static void check_source(const RoutingNetlist& net_list,
                          RRNodeId inode,
-                         ParentNetId net_id,
-                         bool is_flat);
-static void check_sink(const Netlist<>& net_list,
+                         RoutingNetId net_id);
+static void check_sink(const RoutingNetlist& net_list,
                        RRNodeId inode,
                        int net_pin_index,
-                       ParentNetId net_id,
+                       RoutingNetId net_id,
                        bool* pin_done);
 
 static void check_switch(const RouteTreeNode& rt_node, size_t num_switch);
@@ -62,9 +62,8 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 /**
  * Checks that all non-configurable edges are in a legal configuration.
  * @param net_list The netlist whose routing is to be checked.
- * @param is_flat True if flat routing is enabled; otherwise false.
  */
-static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_flat);
+static void check_all_non_configurable_edges(const RoutingNetlist& net_list);
 
 /**
  * @brief Checks that the specified routing is legal with respect to non-configurable edges.
@@ -76,25 +75,21 @@ static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_
  * @param non_configurable_rr_sets Node and edge sets that constitute non-configurable RR sets.
  * @param rrnode_set_id Specifies which RR sets each RR node is part of. These indices can be used to
  * access elements of node_sets and edge_sets in non_configurable_rr_sets.
- * @param is_flat Indicates whether flat routing is enabled.
  * @return True if check is done successfully; otherwise false.
  */
-static bool check_non_configurable_edges(const Netlist<>& net_list,
-                                         ParentNetId net,
+static bool check_non_configurable_edges(const RoutingNetlist& net_list,
+                                         RoutingNetId net,
                                          const t_non_configurable_rr_sets& non_configurable_rr_sets,
-                                         const vtr::vector<RRNodeId, int>& rrnode_set_id,
-                                         bool is_flat);
+                                         const vtr::vector<RRNodeId, int>& rrnode_set_id);
 
-static void check_net_for_stubs(const Netlist<>& net_list,
-                                ParentNetId net,
-                                bool is_flat);
+static void check_net_for_stubs(const RoutingNetlist& net_list,
+                                RoutingNetId net);
 
 /************************ Subroutine definitions ****************************/
 
-void check_route(const Netlist<>& net_list,
+void check_route(const RoutingNetlist& net_list,
                  enum e_route_type route_type,
-                 e_check_route_option check_route_option,
-                 bool is_flat) {
+                 e_check_route_option check_route_option) {
     /* This routine checks that a routing:  (1) Describes a properly         *
      * connected path for each net, (2) this path connects all the           *
      * pins spanned by that net, and (3) that no routing resources are       *
@@ -119,7 +114,7 @@ void check_route(const Netlist<>& net_list,
      * resources.  This was already checked in order to determine that this  *
      * is a successful routing, but I want to double check it here.          */
 
-    recompute_occupancy_from_scratch(net_list, is_flat);
+    recompute_occupancy_from_scratch(net_list);
 
     // A bus-based mux has one select for its whole bus, so all routed bits must use the same
     // input set. The bit counts were just recounted from the route trees above.
@@ -139,10 +134,10 @@ void check_route(const Netlist<>& net_list,
                   "Error in check_route -- routing resources are overused.\n");
     }
 
-    if (!is_flat) {
+    if (!net_list.is_flat()) {
         check_locally_used_clb_opins(route_ctx.clb_opins_used_locally,
                                      route_type,
-                                     is_flat);
+                                     net_list.is_flat());
     }
 
     int max_pins = 0;
@@ -165,8 +160,8 @@ void check_route(const Netlist<>& net_list,
 
         /* Check the SOURCE of the net. */
         RRNodeId source_inode = route_ctx.route_trees[net_id].value().root().inode;
-        check_node_and_range(source_inode, route_type, is_flat);
-        check_source(net_list, source_inode, net_id, is_flat);
+        check_node_and_range(source_inode, route_type, net_list.is_flat());
+        check_source(net_list, source_inode, net_id);
 
         pin_done[0] = true;
 
@@ -175,19 +170,19 @@ void check_route(const Netlist<>& net_list,
         for (const RouteTreeNode& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
             int net_pin_index = rt_node.net_pin_index;
-            check_node_and_range(inode, route_type, is_flat);
+            check_node_and_range(inode, route_type, net_list.is_flat());
             check_switch(rt_node, num_switches);
 
             if (rt_node.parent()) {
-                bool connects = check_adjacent(rt_node.parent()->inode, rt_node.inode, is_flat);
+                bool connects = check_adjacent(rt_node.parent()->inode, rt_node.inode, net_list.is_flat());
                 if (!connects) {
                     VPR_ERROR(VPR_ERROR_ROUTE,
                               "in check_route: found non-adjacent segments in traceback while checking net %d:\n"
                               "  %s\n"
                               "  %s\n",
                               size_t(net_id),
-                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, rt_node.parent()->inode, is_flat).c_str(),
-                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str());
+                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, rt_node.parent()->inode, net_list.is_flat()).c_str(),
+                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, net_list.is_flat()).c_str());
                 }
             }
 
@@ -211,11 +206,11 @@ void check_route(const Netlist<>& net_list,
             }
         }
 
-        check_net_for_stubs(net_list, net_id, is_flat);
+        check_net_for_stubs(net_list, net_id);
     } /* End for each net */
 
     if (check_route_option == e_check_route_option::FULL) {
-        check_all_non_configurable_edges(net_list, is_flat);
+        check_all_non_configurable_edges(net_list);
     } else {
         VTR_ASSERT(check_route_option == e_check_route_option::QUICK);
     }
@@ -226,10 +221,10 @@ void check_route(const Netlist<>& net_list,
 
 /* Checks that this SINK node is one of the terminals of inet, and marks   *
  * the appropriate pin as being reached.                                   */
-static void check_sink(const Netlist<>& net_list,
+static void check_sink(const RoutingNetlist& net_list,
                        RRNodeId inode,
                        int net_pin_index,
-                       ParentNetId net_id,
+                       RoutingNetId net_id,
                        bool* pin_done) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -249,10 +244,9 @@ static void check_sink(const Netlist<>& net_list,
 }
 
 /* Checks that the node passed in is a valid source for this net. */
-static void check_source(const Netlist<>& net_list,
+static void check_source(const RoutingNetlist& net_list,
                          RRNodeId inode,
-                         ParentNetId net_id,
-                         bool is_flat) {
+                         RoutingNetId net_id) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -267,16 +261,16 @@ static void check_source(const Netlist<>& net_list,
     /* for sinks and sources, ptc_num is class */
     int ptc_num = rr_graph.node_class_num(inode);
     /* First node_block for net is the source */
-    ParentBlockId blk_id = net_list.net_driver_block(net_id);
+    RoutingBlockId blk_id = net_list.net_driver_block(net_id);
 
-    t_block_loc blk_loc = get_block_loc(blk_id, is_flat);
+    t_block_loc blk_loc = get_block_loc(net_list, blk_id);
     if (blk_loc.loc.x != i || blk_loc.loc.y != j) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_source: net SOURCE is in wrong location (%d,%d).\n", i, j);
     }
 
     //Get the driver pin's index in the block
-    int iclass = get_block_pin_class_num(blk_id, net_list.net_pin(net_id, 0), is_flat);
+    int iclass = get_block_pin_class_num(net_list, blk_id, net_list.net_pin(net_id, 0));
 
     if (ptc_num != iclass) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -493,7 +487,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
     return false; // Should not reach here once thrown
 }
 
-void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
+void recompute_occupancy_from_scratch(const RoutingNetlist& net_list) {
     /*
      * This routine updates the occ field in the route_ctx.rr_node_route_inf structure
      * according to the resource usage of the current routing.  It does a
@@ -533,12 +527,12 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
     }
 
     /* We only need to reserve output pins if flat routing is not enabled */
-    if (!is_flat) {
+    if (!net_list.is_flat()) {
         /* Now update the occupancy of each of the "locally used" OPINs on each CLB *
          * (CLB outputs used up by being directly wired to subblocks used only      *
          * locally).                                                                */
         for (auto blk_id : net_list.blocks()) {
-            ClusterBlockId cluster_blk_id = convert_to_cluster_block_id(blk_id);
+            ClusterBlockId cluster_blk_id = net_list.cluster_block(blk_id);
             t_pl_loc block_loc = block_locs[cluster_blk_id].loc;
             for (int iclass = 0; iclass < (int)physical_tile_type(block_loc)->class_inf.size(); iclass++) {
                 int num_local_opins = route_ctx.clb_opins_used_locally[cluster_blk_id][iclass].size();
@@ -618,7 +612,7 @@ static void check_node_and_range(RRNodeId inode,
                   is_flat);
 }
 
-static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_flat) {
+static void check_all_non_configurable_edges(const RoutingNetlist& net_list) {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     vtr::ScopedStartFinishTimer timer("Checking to ensure non-configurable edges are legal");
@@ -642,16 +636,14 @@ static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_
         check_non_configurable_edges(net_list,
                                      net_id,
                                      non_configurable_rr_sets,
-                                     rrnode_set_ids,
-                                     is_flat);
+                                     rrnode_set_ids);
     }
 }
 
-static bool check_non_configurable_edges(const Netlist<>& net_list,
-                                         ParentNetId net,
+static bool check_non_configurable_edges(const RoutingNetlist& net_list,
+                                         RoutingNetId net,
                                          const t_non_configurable_rr_sets& non_configurable_rr_sets,
-                                         const vtr::vector<RRNodeId, int>& rrnode_set_id,
-                                         bool is_flat) {
+                                         const vtr::vector<RRNodeId, int>& rrnode_set_id) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& route_ctx = g_vpr_ctx.routing();
 
@@ -726,7 +718,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
                     net_list.net_name(net).c_str(), size_t(net));
 
                 for (auto inode : difference) {
-                    msg += vtr::string_fmt("  Missing %s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str());
+                    msg += vtr::string_fmt("  Missing %s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, net_list.is_flat()).c_str());
                 }
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
@@ -798,13 +790,13 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
                                                                         device_ctx.grid,
                                                                         device_ctx.rr_indexed_data,
                                                                         RRNodeId(missing_edge.from_node),
-                                                                        is_flat)
+                                                                        net_list.is_flat())
                                                            .c_str());
                     msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph,
                                                                         device_ctx.grid,
                                                                         device_ctx.rr_indexed_data,
                                                                         RRNodeId(missing_edge.to_node),
-                                                                        is_flat)
+                                                                        net_list.is_flat())
                                                            .c_str());
                 }
 
@@ -826,7 +818,7 @@ class StubFinder {
 
     // Checks specified net for stubs, return true if at least one stub is
     // found.
-    bool CheckNet(ParentNetId net);
+    bool CheckNet(RoutingNetId net);
 
     // Returns set of stub nodes.
     const std::set<int>& stub_nodes() {
@@ -848,9 +840,8 @@ class StubFinder {
 //The only exception are stubs required by non-configurable switches (e.g. shorts).
 //
 //We treat any configurable stubs as an error.
-void check_net_for_stubs(const Netlist<>& net_list,
-                         ParentNetId net,
-                         bool is_flat) {
+void check_net_for_stubs(const RoutingNetlist& net_list,
+                         RoutingNetId net) {
     StubFinder stub_finder;
 
     bool any_stubs = stub_finder.CheckNet(net);
@@ -863,7 +854,7 @@ void check_net_for_stubs(const Netlist<>& net_list,
                                                                 device_ctx.grid,
                                                                 device_ctx.rr_indexed_data,
                                                                 RRNodeId(inode),
-                                                                is_flat)
+                                                                net_list.is_flat())
                                                    .c_str());
         }
 
@@ -871,7 +862,7 @@ void check_net_for_stubs(const Netlist<>& net_list,
     }
 }
 
-bool StubFinder::CheckNet(ParentNetId net) {
+bool StubFinder::CheckNet(RoutingNetId net) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     stub_nodes_.clear();
 

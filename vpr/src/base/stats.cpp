@@ -29,6 +29,7 @@
 #include "channel_stats.h"
 #include "echo_files.h"
 #include "interposer_routing_stats.h"
+#include "routing_netlist.h"
 
 /********************** Subroutines local to this module *********************/
 
@@ -36,7 +37,7 @@
  * @brief Loads the occupancy arrays with the total occupancy at each of the
  *        channel segments in the FPGA.
  */
-static void load_channel_occupancies(const Netlist<>& net_list,
+static void load_channel_occupancies(const RoutingNetlist& net_list,
                                      vtr::NdMatrix<int, 3>& chanx_occ,
                                      vtr::NdMatrix<int, 3>& chany_occ,
                                      vtr::NdMatrix<int, 3>& chanz_occ);
@@ -62,7 +63,7 @@ static void write_channel_occupancy_table(std::string_view filename,
  * @brief Figures out maximum, minimum and average number of bends
  *        and net length in the routing.
  */
-static void length_and_bends_stats(const Netlist<>& net_list, bool is_flat);
+static void length_and_bends_stats(const RoutingNetlist& net_list);
 
 /**
  * @brief Writes the routed wire usage of each net to a file.
@@ -74,26 +75,23 @@ static void length_and_bends_stats(const Netlist<>& net_list, bool is_flat);
  *
  *  @param filename     Output file path.
  *  @param net_list     The netlist which was routed.
- *  @param is_flat      Whether the routing is flat (net_list is the atom netlist).
  */
 static void write_routed_net_wire_usage(const std::string& filename,
-                                        const Netlist<>& net_list,
-                                        bool is_flat);
+                                        const RoutingNetlist& net_list);
 
 ///@brief Determines how many tracks are used in each channel and prints out statistics
-static void get_channel_occupancy_stats(const Netlist<>& net_list);
+static void get_channel_occupancy_stats(const RoutingNetlist& net_list);
 
 /************************* Subroutine definitions ****************************/
 
-void routing_stats(const Netlist<>& net_list,
+void routing_stats(const RoutingNetlist& net_list,
                    bool full_stats,
                    e_route_type route_type,
                    std::vector<t_segment_inf>& segment_inf,
                    float R_minW_nmos,
                    float R_minW_pmos,
                    float grid_logic_tile_area,
-                   e_directionality directionality,
-                   bool is_flat) {
+                   e_directionality directionality) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
@@ -101,10 +99,10 @@ void routing_stats(const Netlist<>& net_list,
 
     int num_rr_switch = rr_graph.num_rr_switches();
 
-    length_and_bends_stats(net_list, is_flat);
+    length_and_bends_stats(net_list);
     if (isEchoFileEnabled(E_ECHO_ROUTED_NET_WIRE_USAGE))
-        write_routed_net_wire_usage(getEchoFileName(E_ECHO_ROUTED_NET_WIRE_USAGE), net_list, is_flat);
-    print_channel_stats(is_flat);
+        write_routed_net_wire_usage(getEchoFileName(E_ECHO_ROUTED_NET_WIRE_USAGE), net_list);
+    print_channel_stats();
     get_channel_occupancy_stats(net_list);
     print_interposer_routing_stats(net_list);
     write_interposer_cut_channel_utilization(net_list, "interposer_cut_channel_utilization.txt");
@@ -148,18 +146,17 @@ void routing_stats(const Netlist<>& net_list,
                                   segment_inf,
                                   R_minW_nmos,
                                   R_minW_pmos,
-                                  is_flat);
+                                  net_list.is_flat());
         get_segment_usage_stats(segment_inf);
     }
 
     if (full_stats) {
-        print_wirelen_prob_dist(is_flat);
+        print_wirelen_prob_dist(net_list);
     }
 }
 
 static void write_routed_net_wire_usage(const std::string& filename,
-                                        const Netlist<>& net_list,
-                                        bool is_flat) {
+                                        const RoutingNetlist& net_list) {
     std::ofstream os(filename);
     if (!os) {
         VTR_LOG_WARN("Unable to open routed net wire usage echo file '%s' for writing.\n", filename.c_str());
@@ -176,7 +173,7 @@ static void write_routed_net_wire_usage(const std::string& filename,
     os << "#   segments:  Number of CHANX / CHANY wires used.\n";
     os << "#   bends:     Number of bends in the routing.\n";
     os << "num_pins status num_tiles bb_dx bb_dy bb_dz length segments bends net_name\n";
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         // Compute the bounding box over the root locations of the tiles which
         // the pins of this net are placed in.
         int min_x = std::numeric_limits<int>::max();
@@ -186,8 +183,8 @@ static void write_routed_net_wire_usage(const std::string& filename,
         int min_z = std::numeric_limits<int>::max();
         int max_z = std::numeric_limits<int>::lowest();
         std::unordered_set<t_physical_tile_loc> net_tile_locs;
-        for (ParentPinId pin_id : net_list.net_pins(net_id)) {
-            t_pl_loc blk_loc = get_block_loc(net_list.pin_block(pin_id), is_flat).loc;
+        for (RoutingPinId pin_id : net_list.net_pins(net_id)) {
+            t_pl_loc blk_loc = get_block_loc(net_list, net_list.pin_block(pin_id)).loc;
             min_x = std::min(min_x, blk_loc.x);
             max_x = std::max(max_x, blk_loc.x);
             min_y = std::min(min_y, blk_loc.y);
@@ -234,7 +231,7 @@ static void write_routed_net_wire_usage(const std::string& filename,
     }
 }
 
-void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
+void length_and_bends_stats(const RoutingNetlist& net_list) {
     int max_bends = 0;
     int total_bends = 0;
     int max_length = 0;
@@ -245,7 +242,7 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     int num_clb_opins_reserved = 0;
     int num_absorbed_nets = 0;
 
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) { /* Globals don't count. */
             int bends, length, segments;
             bool is_absorbed;
@@ -265,7 +262,7 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
             }
         } else if (net_list.net_is_ignored(net_id)) {
             num_global_nets++;
-        } else if (!is_flat) {
+        } else if (!net_list.is_flat()) {
             /* If flat_routing is enabled, we don't need to count the number of reserved opins*/
             num_clb_opins_reserved++;
         }
@@ -293,7 +290,7 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     VTR_LOG("Total number of nets absorbed: %d\n", num_absorbed_nets);
 }
 
-static void get_channel_occupancy_stats(const Netlist<>& net_list) {
+static void get_channel_occupancy_stats(const RoutingNetlist& net_list) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
 
@@ -461,7 +458,7 @@ static void write_channel_occupancy_table(std::string_view filename,
     file.close();
 }
 
-static void load_channel_occupancies(const Netlist<>& net_list,
+static void load_channel_occupancies(const RoutingNetlist& net_list,
                                      vtr::NdMatrix<int, 3>& chanx_occ,
                                      vtr::NdMatrix<int, 3>& chany_occ,
                                      vtr::NdMatrix<int, 3>& chanz_occ) {
@@ -477,7 +474,7 @@ static void load_channel_occupancies(const Netlist<>& net_list,
     }
 
     // Now go through each net and count the tracks and pins used everywhere
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         // Skip global and empty nets.
         if (net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) {
             continue;
@@ -517,7 +514,7 @@ static void load_channel_occupancies(const Netlist<>& net_list,
  * @brief Counts and returns the number of bends, wirelength, and number of routing
  *        resource segments in net inet's routing.
  */
-void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, int* segments_ptr, bool* is_absorbed_ptr) {
+void get_num_bends_and_length(RoutingNetId inet, int* bends_ptr, int* len_ptr, int* segments_ptr, bool* is_absorbed_ptr) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -565,7 +562,7 @@ void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, in
  *        input pins on a net -- i.e. simulates 2-point net length probability
  *        distribution.
  */
-void print_wirelen_prob_dist(bool is_flat) {
+void print_wirelen_prob_dist(const RoutingNetlist& net_list) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -580,9 +577,9 @@ void print_wirelen_prob_dist(bool is_flat) {
     norm_fac = 0.;
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        auto par_net_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup(), net_id, is_flat);
+        RoutingNetId routing_net_id = net_list.routing_net(net_id);
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) {
-            get_num_bends_and_length(par_net_id, &bends, &length, &segments, &is_absorbed);
+            get_num_bends_and_length(routing_net_id, &bends, &length, &segments, &is_absorbed);
 
             /*  Assign probability to two integer lengths proportionately -- i.e.  *
              *  if two_point_length = 1.9, add 0.9 of the pins to prob_dist[2] and *

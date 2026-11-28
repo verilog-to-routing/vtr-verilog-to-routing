@@ -1,6 +1,7 @@
 #pragma once
 
 /** @file Nested parallel case for NetlistRouter */
+#include "routing_netlist.h"
 #include "netlist_routers.h"
 #include "partition_tree.h"
 #include "vtr_optional.h"
@@ -28,7 +29,7 @@ template<typename HeapType>
 class NestedNetlistRouter : public NetlistRouter {
   public:
     NestedNetlistRouter(
-        const Netlist<>& net_list,
+        const RoutingNetlist& net_list,
         const RouterLookahead* router_lookahead,
         const t_router_opts& router_opts,
         CBRR& connections_inf,
@@ -38,8 +39,7 @@ class NestedNetlistRouter : public NetlistRouter {
         NetPinTimingInvalidator* pin_timing_invalidator,
         route_budgets& budgeting_inf,
         const RoutingPredictor& routing_predictor,
-        const vtr::vector<ParentNetId, t_net_choke_points>& choking_spots,
-        bool is_flat,
+        const vtr::vector<RoutingNetId, t_net_choke_points>& choking_spots,
         int route_verbosity)
         : _net_list(net_list)
         , _router_lookahead(router_lookahead)
@@ -52,7 +52,6 @@ class NestedNetlistRouter : public NetlistRouter {
         , _budgeting_inf(budgeting_inf)
         , _routing_predictor(routing_predictor)
         , _choking_spots(choking_spots)
-        , _is_flat(is_flat)
         , _route_verbosity(route_verbosity)
         , _thread_pool(MAX_THREADS) {}
     ~NestedNetlistRouter() {}
@@ -62,7 +61,7 @@ class NestedNetlistRouter : public NetlistRouter {
      * \return RouteIterResults for this iteration. */
     RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
     /** Inform the PartitionTree of the nets with updated bounding boxes */
-    void handle_bb_updated_nets(const std::vector<ParentNetId>& nets);
+    void handle_bb_updated_nets(const std::vector<RoutingNetId>& nets);
 
     /** Set timing_info for each ConnectionRouter this is managing */
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
@@ -108,7 +107,7 @@ class NestedNetlistRouter : public NetlistRouter {
     }
 
     /* Context fields. Most of them will be forwarded to route_net (see route_net.tpp) */
-    const Netlist<>& _net_list;
+    const RoutingNetlist& _net_list;
     const RouterLookahead* _router_lookahead;
     const t_router_opts& _router_opts;
     CBRR& _connections_inf;
@@ -118,8 +117,7 @@ class NestedNetlistRouter : public NetlistRouter {
     NetPinTimingInvalidator* _pin_timing_invalidator;
     route_budgets& _budgeting_inf;
     const RoutingPredictor& _routing_predictor;
-    const vtr::vector<ParentNetId, t_net_choke_points>& _choking_spots; ///< Choke points indexed by net ID.
-    bool _is_flat;
+    const vtr::vector<RoutingNetId, t_net_choke_points>& _choking_spots; ///< Choke points indexed by net ID.
     int _route_verbosity;
 
     /** Cached routing parameters for current iteration (inputs to \see route_netlist()) */
@@ -145,7 +143,7 @@ class NestedNetlistRouter : public NetlistRouter {
         auto id = std::this_thread::get_id();
         std::lock_guard<std::mutex> lock(_storage_mutex);
         if (!_routers_th.count(id)) {
-            _routers_th.emplace(id, _make_router(_router_lookahead, _router_opts, _is_flat));
+            _routers_th.emplace(id, _make_router(_router_lookahead, _router_opts, _net_list.is_flat()));
         }
         return *_routers_th.at(id);
     }

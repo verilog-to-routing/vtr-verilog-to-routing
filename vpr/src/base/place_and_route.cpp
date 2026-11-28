@@ -39,7 +39,7 @@ static float comp_width(t_chan* chan, float x, float separation);
  *        that minimum width_fac.
  */
 int binary_search_place_and_route(const ClusteredNetlist& placement_net_list,
-                                  const Netlist<>& router_net_list,
+                                  const RoutingNetlist& router_net_list,
                                   const t_placer_opts& placer_opts_ref,
                                   const t_router_opts& router_opts,
                                   const t_crr_opts& crr_opts,
@@ -53,9 +53,8 @@ int binary_search_place_and_route(const ClusteredNetlist& placement_net_list,
                                   std::vector<t_segment_inf>& segment_inf,
                                   NetPinsMatrix<float>& net_delay,
                                   const std::shared_ptr<SetupHoldTimingInfo>& timing_info,
-                                  const std::shared_ptr<RoutingDelayCalculator>& delay_calc,
-                                  bool is_flat) {
-    vtr::vector<ParentNetId, vtr::optional<RouteTree>> best_routing; /* Saves the best routing found so far. */
+                                  const std::shared_ptr<RoutingDelayCalculator>& delay_calc) {
+    vtr::vector<RoutingNetId, vtr::optional<RouteTree>> best_routing; /* Saves the best routing found so far. */
     int current, low, high, final;
     bool success, prev_success, prev2_success, Fc_clipped = false;
     bool using_minw_hint = false;
@@ -194,8 +193,7 @@ int binary_search_place_and_route(const ClusteredNetlist& placement_net_list,
                         delay_calc,
                         arch->Chans,
                         arch->directs,
-                        (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
-                        is_flat);
+                        (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR);
 
         attempt_count++;
         fflush(stdout);
@@ -336,8 +334,7 @@ int binary_search_place_and_route(const ClusteredNetlist& placement_net_list,
                             delay_calc,
                             arch->Chans,
                             arch->directs,
-                            ScreenUpdatePriority::MINOR,
-                            is_flat);
+                            ScreenUpdatePriority::MINOR);
 
             if (success && !Fc_clipped) {
                 final = current;
@@ -381,7 +378,7 @@ int binary_search_place_and_route(const ClusteredNetlist& placement_net_list,
                     crr_opts,
                     arch->directs,
                     &warnings,
-                    is_flat);
+                    router_net_list.is_flat());
 
     init_draw_coords(final, g_vpr_ctx.placement().blk_loc_registry());
 
@@ -389,8 +386,7 @@ int binary_search_place_and_route(const ClusteredNetlist& placement_net_list,
     alloc_and_load_rr_node_route_structs(router_opts);
 
     init_route_structs(router_net_list,
-                       router_opts.bb_factor,
-                       is_flat);
+                       router_opts.bb_factor);
 
     restore_routing(best_routing,
                     route_ctx.clb_opins_used_locally,
@@ -403,8 +399,7 @@ int binary_search_place_and_route(const ClusteredNetlist& placement_net_list,
 
     print_route(router_net_list,
                 filename_opts.PlaceFile.c_str(),
-                filename_opts.RouteFile.c_str(),
-                is_flat);
+                filename_opts.RouteFile.c_str());
 
     fflush(stdout);
 

@@ -9,7 +9,7 @@
 
 #include <string_view>
 
-#include "netlist.h"
+#include "routing_netlist_fwd.h"
 
 /// @brief Per-interposer-cut routing statistics collected from the current routing.
 struct t_interposer_cut_routing_stats {
@@ -29,7 +29,7 @@ struct t_interposer_cut_routing_stats {
 /// Does nothing if the device has no interposer cuts.
 ///
 /// Both routing and an rr_graph must exist when this routine is called.
-void print_interposer_routing_stats(const Netlist<>& net_list);
+void print_interposer_routing_stats(const RoutingNetlist& net_list);
 
 /// @brief Writes per-coordinate channel utilization along each interposer cut to a file.
 ///
@@ -38,4 +38,4 @@ void print_interposer_routing_stats(const Netlist<>& net_list);
 /// the device has no interposer cuts.
 ///
 /// Both routing and an rr_graph must exist when this routine is called.
-void write_interposer_cut_channel_utilization(const Netlist<>& net_list, std::string_view filename);
+void write_interposer_cut_channel_utilization(const RoutingNetlist& net_list, std::string_view filename);

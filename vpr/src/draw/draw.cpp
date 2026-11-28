@@ -1008,7 +1008,7 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
  * could be caused by the user clicking on a routing resource, toggled, or
  * fan-in/fan-out of a highlighted node.
  */
-bool draw_if_net_highlighted(ParentNetId inet) {
+bool draw_if_net_highlighted(RoutingNetId inet) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     if (draw_state->net_color[inet] != DEFAULT_RR_NODE_COLOR) {
@@ -1199,7 +1199,7 @@ ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
 
 //Returns the set of rr nodes which connect driver to sink
 std::vector<RRNodeId> trace_routed_connection_rr_nodes(
-    ParentNetId net_id,
+    RoutingNetId net_id,
     int driver_pin,
     int sink_pin) {
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
@@ -1209,7 +1209,7 @@ std::vector<RRNodeId> trace_routed_connection_rr_nodes(
 
     VTR_ASSERT(tree.root().inode == route_ctx.net_rr_terminals[net_id][driver_pin]);
 
-    RRNodeId sink_rr_node = route_ctx.net_rr_terminals[ParentNetId(size_t(net_id))][sink_pin];
+    RRNodeId sink_rr_node = route_ctx.net_rr_terminals[net_id][sink_pin];
 
     std::vector<RRNodeId> rr_nodes_on_path;
 

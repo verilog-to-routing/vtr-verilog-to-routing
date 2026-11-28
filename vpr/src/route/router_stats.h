@@ -1,6 +1,6 @@
 #pragma once
 
-#include "netlist_fwd.h"
+#include "routing_netlist_fwd.h"
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
 #include "vtr_assert.h"
@@ -8,7 +8,7 @@
 
 // This struct instructs the router on how to route the given connection
 struct ConnectionParameters {
-    ConnectionParameters(ParentNetId net_id,
+    ConnectionParameters(RoutingNetId net_id,
                          int target_pin_num,
                          bool router_opt_choke_points,
                          const std::unordered_map<RRNodeId, int>& connection_choking_spots)
@@ -18,7 +18,7 @@ struct ConnectionParameters {
         , connection_choking_spots_(connection_choking_spots) {}
 
     // Net id of the connection
-    ParentNetId net_id_;
+    RoutingNetId net_id_;
     // Net's pin number of the connection's SINK
     int target_pin_num_;
 

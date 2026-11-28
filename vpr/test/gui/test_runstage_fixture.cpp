@@ -176,11 +176,9 @@ void VprRunStageFixture::run_to(Stage stage) {
 
     // ---- Stage::PostRoute --------------------------------------------------
     bool is_flat = vpr_setup_.RouterOpts.flat_routing;
-    const Netlist<>& router_net_list = is_flat
-                                           ? (const Netlist<>&)g_vpr_ctx.atom().netlist()
-                                           : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    const RoutingNetlist router_net_list = make_routing_netlist(is_flat);
     RouteStatus route_status = vpr_route_flow(router_net_list, vpr_setup_,
-                                              arch_, is_flat);
+                                              arch_);
     if (!route_status.success()) {
         throw std::runtime_error("VprRunStageFixture: vpr_route_flow did not "
                                  "succeed (channel width too low or routing "

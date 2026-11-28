@@ -19,45 +19,17 @@ class AtomLookup;
  * vtr_strong_id.h for details.
  */
 
-//Type tags for Ids
-//struct atom_block_id_tag : general_blk_id_tag {};
-//struct atom_net_id_tag : general_net_id_tag {};
-//struct atom_port_id_tag : general_port_id_tag {};
-//struct atom_pin_id_tag : general_pin_id_tag {};
-
 //A unique identifier for a block/primitive in the atom netlist
-//typedef vtr::StrongId<atom_block_id_tag> AtomBlockId;
-class AtomBlockId : public ParentBlockId {
-  public:
-    static constexpr AtomBlockId INVALID() { return {}; }
-    using ParentBlockId::ParentBlockId;
-
-    friend std::hash<AtomBlockId>;
-};
+typedef vtr::StrongId<struct atom_block_id_tag> AtomBlockId;
 
 //A unique identifier for a net in the atom netlist
-//typedef vtr::StrongId<atom_net_id_tag> AtomNetId;
-class AtomNetId : public ParentNetId {
-  public:
-    static constexpr AtomNetId INVALID() { return AtomNetId(); }
-    using ParentNetId::ParentNetId;
-};
+typedef vtr::StrongId<struct atom_net_id_tag> AtomNetId;
 
 //A unique identifier for a port in the atom netlist
-//typedef vtr::StrongId<atom_port_id_tag> AtomPortId;
-class AtomPortId : public ParentPortId {
-  public:
-    static constexpr AtomPortId INVALID() { return AtomPortId(); }
-    using ParentPortId::ParentPortId;
-};
+typedef vtr::StrongId<struct atom_port_id_tag> AtomPortId;
 
 //A unique identifier for a pin in the atom netlist
-//typedef vtr::StrongId<atom_pin_id_tag> AtomPinId;
-class AtomPinId : public ParentPinId {
-  public:
-    static constexpr AtomPinId INVALID() { return AtomPinId(); }
-    using ParentPinId::ParentPinId;
-};
+typedef vtr::StrongId<struct atom_pin_id_tag> AtomPinId;
 
 //A signal index in a port
 typedef unsigned BitIndex;
@@ -68,35 +40,3 @@ enum class AtomBlockType : char {
     OUTPAD, //A primary output
     BLOCK   //A basic atom block (LUT, FF, blackbox etc.)
 };
-
-///@brief Specialize std::hash for StrongId's (needed for std::unordered_map-like containers)
-namespace std {
-template<>
-struct hash<AtomBlockId> {
-    std::hash<ParentBlockId> parent_hash;
-    std::size_t operator()(const AtomBlockId k) const noexcept {
-        return parent_hash(k); //Hash with the underlying type
-    }
-};
-template<>
-struct hash<AtomNetId> {
-    std::hash<ParentNetId> parent_hash;
-    std::size_t operator()(const AtomNetId k) const noexcept {
-        return parent_hash(k); //Hash with the underlying type
-    }
-};
-template<>
-struct hash<AtomPortId> {
-    std::hash<ParentPortId> parent_hash;
-    std::size_t operator()(const AtomPortId k) const noexcept {
-        return parent_hash(k); //Hash with the underlying type
-    }
-};
-template<>
-struct hash<AtomPinId> {
-    std::hash<ParentPinId> parent_hash;
-    std::size_t operator()(const AtomPinId k) const noexcept {
-        return parent_hash(k); //Hash with the underlying type
-    }
-};
-} // namespace std

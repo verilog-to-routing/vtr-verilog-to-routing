@@ -54,10 +54,10 @@ void NestedNetlistRouter<HeapType>::route_partition_tree_node(PartitionTreeNode&
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     /* node.nets is an unordered set, copy into vector to sort */
-    std::vector<ParentNetId> nets(node.nets.begin(), node.nets.end());
+    std::vector<RoutingNetId> nets(node.nets.begin(), node.nets.end());
 
     /* Sort so net with most sinks is routed first. */
-    std::stable_sort(nets.begin(), nets.end(), [&](ParentNetId id1, ParentNetId id2) -> bool {
+    std::stable_sort(nets.begin(), nets.end(), [&](RoutingNetId id1, RoutingNetId id2) -> bool {
         return _net_list.net_sinks(id1).size() > _net_list.net_sinks(id2).size();
     });
 
@@ -84,7 +84,6 @@ void NestedNetlistRouter<HeapType>::route_partition_tree_node(PartitionTreeNode&
             _worst_neg_slack,
             _routing_predictor,
             _choking_spots[net_id],
-            _is_flat,
             route_ctx.route_bb[net_id]);
 
         if (!flags.success && !flags.retry_with_full_bb) {
@@ -122,7 +121,7 @@ void NestedNetlistRouter<HeapType>::route_partition_tree_node(PartitionTreeNode&
 }
 
 template<typename HeapType>
-void NestedNetlistRouter<HeapType>::handle_bb_updated_nets(const std::vector<ParentNetId>& nets) {
+void NestedNetlistRouter<HeapType>::handle_bb_updated_nets(const std::vector<RoutingNetId>& nets) {
     VTR_ASSERT(_tree);
     _tree->update_nets(nets);
 }

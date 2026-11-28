@@ -14,6 +14,7 @@
 
 #include "tatum/report/graphviz_dot_writer.hpp"
 #include "tatum/report/TimingPathCollector.hpp"
+#include "routing_netlist.h"
 
 /**
  * @brief Returns the first (i.e. worst) skew path of each clock domain pair.
@@ -214,10 +215,9 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
     return histogram;
 }
 
-std::vector<HistogramBucket> create_criticality_histogram(const Netlist<>& net_list,
+std::vector<HistogramBucket> create_criticality_histogram(const RoutingNetlist& net_list,
                                                           const SetupTimingInfo& setup_timing,
                                                           const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                                          bool is_flat,
                                                           size_t num_bins) {
     std::vector<HistogramBucket> histogram;
     float step = 1. / num_bins;
@@ -244,7 +244,7 @@ std::vector<HistogramBucket> create_criticality_histogram(const Netlist<>& net_l
         auto sinks = net_list.net_sinks(net_id);
 
         for (auto pin : sinks) {
-            float crit = calculate_clb_net_pin_criticality(setup_timing, netlist_pin_lookup, pin, is_flat);
+            float crit = calculate_net_pin_criticality(setup_timing, netlist_pin_lookup, net_list, pin);
 
             auto iter = std::lower_bound(histogram.begin(), histogram.end(), crit, cmp);
             VTR_ASSERT(iter != histogram.end());
@@ -892,19 +892,18 @@ float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info,
 }
 
 /**
- * @brief Returns the criticality of a net's pin in the netlist used by routing (the atom
- *        netlist if is_flat is true, otherwise the CLB netlist).
+ * @brief Returns the criticality of a net's pin in a routing netlist.
  *        Assumes that the timing graph is correct and up to date.
  */
-float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info,
-                                        const ClusteredPinAtomPinsLookup& pin_lookup,
-                                        const ParentPinId pin_id,
-                                        bool is_flat) {
-    if (is_flat) {
-        return timing_info.setup_pin_criticality(convert_to_atom_pin_id(pin_id));
+float calculate_net_pin_criticality(const SetupTimingInfo& timing_info,
+                                    const ClusteredPinAtomPinsLookup& pin_lookup,
+                                    const RoutingNetlist& net_list,
+                                    const RoutingPinId pin_id) {
+    if (net_list.is_flat()) {
+        return timing_info.setup_pin_criticality(net_list.atom_pin(pin_id));
     }
 
-    return calculate_clb_net_pin_criticality(timing_info, pin_lookup, convert_to_cluster_pin_id(pin_id));
+    return calculate_clb_net_pin_criticality(timing_info, pin_lookup, net_list.cluster_pin(pin_id));
 }
 
 /**

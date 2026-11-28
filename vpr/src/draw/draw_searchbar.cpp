@@ -4,10 +4,9 @@
 
 #include <cstdio>
 
-#include "netlist_fwd.h"
-
 #include "physical_types_util.h"
 #include "vpr_utils.h"
+#include "route_utils.h"
 
 #include "globals.h"
 #include "draw.h"
@@ -74,10 +73,9 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
             continue;
         }
 
-        // Convert to atom net id if flat routing is enabled
-        ParentNetId net_id = cluster_net_id;
+        RoutingNetId net_id = RoutingNetId(size_t(cluster_net_id));
         if (draw_state->is_flat) {
-            net_id = atom_lookup.atom_net(cluster_net_id);
+            net_id = RoutingNetId(size_t(atom_lookup.atom_net(cluster_net_id)));
         }
 
         t_pl_loc block_loc = block_locs[blk_id].loc;
@@ -140,46 +138,46 @@ void highlight_nets(std::string& message, RRNodeId hit_node) {
 
     if (route_ctx.is_flat) {
         for (AtomNetId net_id : atom_ctx.netlist().nets()) {
-            check_node_highlight_net(message, net_id, hit_node);
+            check_node_highlight_net(message, get_routing_net_id(net_id), hit_node);
         }
 
     } else {
         for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-            check_node_highlight_net(message, net_id, hit_node);
+            check_node_highlight_net(message, get_routing_net_id(net_id), hit_node);
         }
     }
 
     application->update_message(message);
 }
 
-std::string draw_get_net_name(ParentNetId parent_id) {
+std::string draw_get_net_name(RoutingNetId net_id) {
     if (!g_vpr_ctx.routing().is_flat) {
-        return g_vpr_ctx.clustering().clb_nlist.net_name(convert_to_cluster_net_id(parent_id));
+        return g_vpr_ctx.clustering().clb_nlist.net_name(ClusterNetId(size_t(net_id)));
     } else {
-        return g_vpr_ctx.atom().netlist().net_name(convert_to_atom_net_id(parent_id));
+        return g_vpr_ctx.atom().netlist().net_name(AtomNetId(size_t(net_id)));
     }
 }
 
-void check_node_highlight_net(std::string& message, ParentNetId parent_net_id, RRNodeId hit_node) {
+void check_node_highlight_net(std::string& message, RoutingNetId net_id, RRNodeId hit_node) {
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (!route_ctx.route_trees[parent_net_id])
+    if (!route_ctx.route_trees[net_id])
         return;
 
-    for (const RouteTreeNode& rt_node : route_ctx.route_trees[parent_net_id].value().all_nodes()) {
+    for (const RouteTreeNode& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
         RRNodeId inode = rt_node.inode;
         if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
-            draw_state->net_color[parent_net_id] = draw_state->draw_rr_node[inode].color;
+            draw_state->net_color[net_id] = draw_state->draw_rr_node[inode].color;
             if (inode == hit_node) {
                 std::string orig_msg = message;
                 message = vtr::string_fmt("%s  ||  Net: %zu (%s)", orig_msg.c_str(),
-                                          size_t(parent_net_id),
-                                          draw_get_net_name(parent_net_id).c_str());
+                                          size_t(net_id),
+                                          draw_get_net_name(net_id).c_str());
             }
         } else if (draw_state->draw_rr_node[inode].color == ezgl::WHITE) {
             // If node is de-selected.
-            draw_state->net_color[parent_net_id] = ezgl::BLACK;
+            draw_state->net_color[net_id] = ezgl::BLACK;
             break;
         }
     }
@@ -259,11 +257,11 @@ void deselect_all() {
     }
 
     if (draw_state->is_flat) {
-        for (auto net_id : atom_ctx.netlist().nets())
-            draw_state->net_color[net_id] = ezgl::BLACK;
+        for (AtomNetId net_id : atom_ctx.netlist().nets())
+            draw_state->net_color[RoutingNetId(size_t(net_id))] = ezgl::BLACK;
     } else {
-        for (auto net_id : cluster_ctx.clb_nlist.nets())
-            draw_state->net_color[net_id] = ezgl::BLACK;
+        for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets())
+            draw_state->net_color[RoutingNetId(size_t(net_id))] = ezgl::BLACK;
     }
 
     for (RRNodeId inode : device_ctx.rr_graph.nodes()) {

@@ -8,6 +8,7 @@
 #include "tatum/TimingReporter.hpp"
 #include "RoutingDelayCalculator.h"
 #include "timing_info.h"
+#include "vtr_log.h"
 
 #include <sstream>
 
@@ -41,6 +42,14 @@ CritPathsResultPtr calc_critical_path(const std::string& report_type, int crit_p
     auto& atom_ctx = g_vpr_ctx.atom();
     const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
     const LogicalModels& models = g_vpr_ctx.device().arch->models;
+
+    // The delay calculator is that of the routing which exists, so a request which disagrees with it on
+    // whether the routing is flat cannot be answered.
+    if (is_flat_routing != routing_delay_calc->is_flat()) {
+        VTR_LOG_ERROR("Critical path request has is_flat_routing=%d, but flat routing is %s.\n",
+                      is_flat_routing, routing_delay_calc->is_flat() ? "enabled" : "disabled");
+        return std::make_shared<CritPathsResult>();
+    }
 
     t_analysis_opts analysis_opts;
     analysis_opts.timing_report_detail = details_level;

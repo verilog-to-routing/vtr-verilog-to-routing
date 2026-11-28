@@ -2,8 +2,8 @@
 
 /** @file Utility functions used in the top-level router (route.cpp). */
 
+#include "routing_netlist_fwd.h"
 #include "clustered_netlist_utils.h"
-#include "netlist_fwd.h"
 #include "router_stats.h"
 #include "timing_info.h"
 #include "vpr_net_pins_matrix.h"
@@ -39,14 +39,14 @@ t_bb calc_current_bb(const RouteTree& tree);
 size_t calculate_wirelength_available();
 
 /** Calculate wirelength for the current routing and populate a WirelengthInfo */
-WirelengthInfo calculate_wirelength_info(const Netlist<>& net_list, size_t available_wirelength);
+WirelengthInfo calculate_wirelength_info(const RoutingNetlist& net_list, size_t available_wirelength);
 
 /** Checks that the net delays computed incrementally during timing driven
  * routing match those computed from scratch by the net_delay.cpp module. */
-bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay);
+bool check_net_delays(const RoutingNetlist& net_list, NetPinsMatrix<float>& net_delay);
 
 /** Update bounding box for net if existing routing is close to boundary */
-void dynamic_update_bounding_boxes(const std::vector<ParentNetId>& rerouted_nets, std::vector<ParentNetId> out_bb_updated_nets);
+void dynamic_update_bounding_boxes(const std::vector<RoutingNetId>& rerouted_nets, std::vector<RoutingNetId> out_bb_updated_nets);
 
 /** Early exit code for cases where it is obvious that a successful route will not be found
  * Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit */
@@ -67,30 +67,50 @@ void generate_route_timing_reports(const t_router_opts& router_opts,
                                    bool is_flat);
 
 /** Get the maximum number of pins used in the netlist (used to allocate things) */
-int get_max_pins_per_net(const Netlist<>& net_list);
+int get_max_pins_per_net(const RoutingNetlist& net_list);
+
+/** Get the net of the current routing which routes a clustered net. Only valid without flat routing, where
+ * the clustered nets are routed. This is for code which has no RoutingNetlist at hand (otherwise use
+ * RoutingNetlist::routing_net()); it relies on the routing context to know if the routing is flat. */
+inline RoutingNetId get_routing_net_id(ClusterNetId net_id) {
+    VTR_ASSERT_SAFE(!g_vpr_ctx.routing().is_flat);
+    return RoutingNetId(size_t(net_id));
+}
+
+/** Get the net of the current routing which routes an atom net. Only valid with flat routing, where the
+ * atom nets are routed. Like the overload for clustered nets, this is for code without a RoutingNetlist. */
+inline RoutingNetId get_routing_net_id(AtomNetId net_id) {
+    VTR_ASSERT_SAFE(g_vpr_ctx.routing().is_flat);
+    return RoutingNetId(size_t(net_id));
+}
 
 /** Get the RouteTree associated with the ClusterNetId.
  * Flat routing maps AtomNetIds to RouteTrees instead, so we need to first look up the associated AtomNetId. */
 inline const vtr::optional<RouteTree>& get_route_tree_from_cluster_net_id(ClusterNetId net_id) {
-    auto& route_ctx = g_vpr_ctx.routing();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
     if (!route_ctx.is_flat) {
-        return route_ctx.route_trees[ParentNetId(net_id)];
+        return route_ctx.route_trees[get_routing_net_id(net_id)];
     } else {
-        auto& atom_lookup = g_vpr_ctx.atom().lookup();
-        AtomNetId atom_id = atom_lookup.atom_net(net_id);
-        return route_ctx.route_trees[ParentNetId(atom_id)];
+        AtomNetId atom_net_id = g_vpr_ctx.atom().lookup().atom_net(net_id);
+        VTR_ASSERT(atom_net_id != AtomNetId::INVALID());
+        return route_ctx.route_trees[get_routing_net_id(atom_net_id)];
     }
+}
+
+/** Get the RouteTree associated with the AtomNetId. Only valid with flat routing, where the atom nets are routed. */
+inline const vtr::optional<RouteTree>& get_route_tree_from_atom_net_id(AtomNetId net_id) {
+    VTR_ASSERT_SAFE(g_vpr_ctx.routing().is_flat);
+    return g_vpr_ctx.routing().route_trees[get_routing_net_id(net_id)];
 }
 
 /** Initialize net_delay based on best-case delay estimates from the router lookahead. */
 void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
-                                   const Netlist<>& net_list,
-                                   const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
+                                   const RoutingNetlist& net_list,
+                                   const vtr::vector<RoutingNetId, std::vector<RRNodeId>>& net_rr_terminals,
                                    NetPinsMatrix<float>& net_delay,
-                                   const RRGraphView& rr_graph,
-                                   bool is_flat);
+                                   const RRGraphView& rr_graph);
 
-bool is_better_quality_routing(const vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
+bool is_better_quality_routing(const vtr::vector<RoutingNetId, vtr::optional<RouteTree>>& best_routing,
                                const RoutingMetrics& best_routing_metrics,
                                const WirelengthInfo& wirelength_info,
                                std::shared_ptr<const SetupHoldTimingInfo> timing_info);
@@ -115,10 +135,9 @@ void print_route_status(int itry,
 
 void print_route_status_header();
 
-void print_router_criticality_histogram(const Netlist<>& net_list,
+void print_router_criticality_histogram(const RoutingNetlist& net_list,
                                         const SetupTimingInfo& timing_info,
-                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                        bool is_flat);
+                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
 
 /** Prune stubs of non-config nodes from route_ctx.route_trees.
  * If a route is ripped up during routing, non-configurable sets are left
@@ -126,7 +145,7 @@ void print_router_criticality_histogram(const Netlist<>& net_list,
  * non-configurable sets. This function tracks non-configurable set usage,
  * and if the sets are unused, prunes them. */
 void prune_unused_non_configurable_nets(CBRR& connections_inf,
-                                        const Netlist<>& net_list);
+                                        const RoutingNetlist& net_list);
 
 /** Wrapper for create_rr_graph() with extra checks */
 void try_graph(int width_fac,
@@ -156,7 +175,7 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id);
  * @param net_id The identifier of the net to check.
  * @return true if the net is routed; false otherwise.
  */
-bool is_net_routed(ParentNetId net_id);
+bool is_net_routed(RoutingNetId net_id);
 
 /**
  * @brief Checks whether a given net is fully absorbed within sink nodes.
@@ -171,4 +190,4 @@ bool is_net_routed(ParentNetId net_id);
  * @param net_id The identifier of the net to be checked.
  * @return true if the net is fully absorbed (uses no routing channels); false otherwise.
  */
-bool is_net_fully_absorbed(ParentNetId net_id);
+bool is_net_fully_absorbed(RoutingNetId net_id);

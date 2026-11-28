@@ -4,7 +4,7 @@
 #include "timing_info.h"
 #include "vpr_net_pins_matrix.h"
 #include "vpr_types.h"
-#include "netlist.h"
+#include "routing_netlist_fwd.h"
 
 /** Attempts a routing via the AIR algorithm [0].
  *
@@ -17,7 +17,7 @@
  * [0]: K. E. Murray, S. Zhong, and V. Betz, "AIR: A fast but lazy timing-driven FPGA router", in ASPDAC 2020
  *
  * \return Success status. */
-bool route(const Netlist<>& net_list,
+bool route(const RoutingNetlist& net_list,
            int width_fac,
            const t_router_opts& router_opts,
            const t_crr_opts& crr_opts,
@@ -29,5 +29,4 @@ bool route(const Netlist<>& net_list,
            std::shared_ptr<RoutingDelayCalculator> delay_calc,
            t_chan_width_dist chan_width_dist,
            const std::vector<t_direct_inf>& directs,
-           ScreenUpdatePriority first_iteration_priority,
-           bool is_flat);
+           ScreenUpdatePriority first_iteration_priority);

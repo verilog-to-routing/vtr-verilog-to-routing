@@ -33,7 +33,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     RouteTree tree((RRNodeId(source_node)));
-    enable_router_debug(router_opts, ParentNetId(), sink_node, 0, &router_);
+    enable_router_debug(router_opts, RoutingNetId(), sink_node, 0, &router_);
 
     /* Update base costs according to fanout and criticality rules */
     update_rr_base_costs(1);
@@ -60,7 +60,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
 
     bool found_path;
     RTExploredNode cheapest;
-    ConnectionParameters conn_params(ParentNetId::INVALID(),
+    ConnectionParameters conn_params(RoutingNetId::INVALID(),
                                      -1,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
@@ -147,7 +147,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
         is_flat,
         /*route_verbosity=*/1);
     RouterStats router_stats;
-    ConnectionParameters conn_params(ParentNetId::INVALID(), UNDEFINED, false, std::unordered_map<RRNodeId, int>());
+    ConnectionParameters conn_params(RoutingNetId::INVALID(), UNDEFINED, false, std::unordered_map<RRNodeId, int>());
     vtr::vector<RRNodeId, RTExploredNode> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(tree.root(),
                                                                                                                         cost_params,
                                                                                                                         bounding_box,

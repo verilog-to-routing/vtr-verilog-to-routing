@@ -15,8 +15,8 @@ bool check_hold(const t_router_opts& router_opts, float worst_neg_slack) {
 }
 
 void setup_net(int itry,
-               ParentNetId net_id,
-               const Netlist<>& net_list,
+               RoutingNetId net_id,
+               const RoutingNetlist& net_list,
                CBRR& connections_inf,
                const t_router_opts& router_opts,
                float worst_neg_slack,
@@ -128,8 +128,8 @@ void update_rr_route_inf_from_tree(const RouteTreeNode& rt_node) {
     }
 }
 
-bool should_route_net(const Netlist<>& net_list,
-                      ParentNetId net_id,
+bool should_route_net(const RoutingNetlist& net_list,
+                      RoutingNetId net_id,
                       CBRR& connections_inf,
                       route_budgets& budgeting_inf,
                       float worst_negative_slack,
@@ -188,19 +188,19 @@ float get_net_pin_criticality(const SetupHoldTimingInfo* timing_info,
                               const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                               float max_criticality,
                               float criticality_exp,
-                              ParentNetId net_id,
-                              ParentPinId pin_id,
-                              bool is_flat) {
+                              const RoutingNetlist& net_list,
+                              RoutingNetId net_id,
+                              RoutingPinId pin_id) {
     float pin_criticality = 0.0;
     const auto& route_ctx = g_vpr_ctx.routing();
 
     if (route_ctx.is_clock_net[net_id]) {
         pin_criticality = max_criticality;
     } else {
-        pin_criticality = calculate_clb_net_pin_criticality(*timing_info,
-                                                            netlist_pin_lookup,
-                                                            pin_id,
-                                                            is_flat);
+        pin_criticality = calculate_net_pin_criticality(*timing_info,
+                                                        netlist_pin_lookup,
+                                                        net_list,
+                                                        pin_id);
     }
 
     /* Pin criticality is between 0 and 1.
@@ -222,8 +222,8 @@ float get_net_pin_criticality(const SetupHoldTimingInfo* timing_info,
 }
 
 void update_net_delays_from_route_tree(float* net_delay,
-                                       const Netlist<>& net_list,
-                                       ParentNetId inet,
+                                       const RoutingNetlist& net_list,
+                                       RoutingNetId inet,
                                        TimingInfo* timing_info,
                                        NetPinTimingInvalidator* pin_timing_invalidator) {
     auto& route_ctx = g_vpr_ctx.routing();

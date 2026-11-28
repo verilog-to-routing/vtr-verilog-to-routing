@@ -5,7 +5,7 @@
 #include <vector>
 #include <string_view>
 
-#include "netlist.h"
+#include "routing_netlist_fwd.h"
 #include "rr_graph_type.h"
 
 class DeviceGrid;
@@ -15,21 +15,20 @@ class DeviceGrid;
  *
  * Both a routing and an rr_graph must exist when you call this routine.
  */
-void routing_stats(const Netlist<>& net_list,
+void routing_stats(const RoutingNetlist& net_list,
                    bool full_stats,
                    e_route_type route_type,
                    std::vector<t_segment_inf>& segment_inf,
                    float R_minW_nmos,
                    float R_minW_pmos,
                    float grid_logic_tile_area,
-                   e_directionality directionality,
-                   bool is_flat);
+                   e_directionality directionality);
 
-void print_wirelen_prob_dist(bool is_flat);
+void print_wirelen_prob_dist(const RoutingNetlist& net_list);
 
 void print_lambda();
 
-void get_num_bends_and_length(ParentNetId inet, int* bends, int* length, int* segments, bool* is_absorbed_ptr);
+void get_num_bends_and_length(RoutingNetId inet, int* bends, int* length, int* segments, bool* is_absorbed_ptr);
 
 int count_netlist_clocks();
 

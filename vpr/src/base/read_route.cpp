@@ -38,6 +38,7 @@
 #include "d_ary_heap.h"
 
 #include "old_traceback.h"
+#include "routing_netlist.h"
 
 /*************Functions local to this module*************/
 
@@ -49,14 +50,12 @@
  * @param filename The name of the file to read from.
  * @param lineno The line number currently being processed.
  * @param verify_route_file_switch_id Whether to verify the RR switch IDs in the routing file.
- * @param is_flat Whether flat-router is enabled.
  */
-static void process_route(const Netlist<>& net_list,
+static void process_route(const RoutingNetlist& net_list,
                           std::ifstream& fp,
                           const char* filename,
                           int& lineno,
-                          bool verify_route_file_switch_id,
-                          bool is_flat);
+                          bool verify_route_file_switch_id);
 
 /**
  * @brief Create the routing tree for the net at the given line number in the routing file.
@@ -67,9 +66,9 @@ static void process_route(const Netlist<>& net_list,
  * @param filename The name of the file to read from.
  * @param verify_route_file_switch_id Whether to verify the RR switch IDs in the routing file.
  */
-static void process_nodes(const Netlist<>& net_list,
+static void process_nodes(const RoutingNetlist& net_list,
                           std::ifstream& fp,
-                          ClusterNetId inet,
+                          RoutingNetId inet,
                           const char* filename,
                           bool verify_route_file_switch_id,
                           int& lineno);
@@ -85,34 +84,31 @@ static void process_nodes(const Netlist<>& net_list,
  * @param filename The name of the file to read from.
  * @param lineno The line number currently being processed.
  * @param verify_route_file_switch_id Whether to verify the RR switch IDs in the routing file.
- * @param is_flat Whether flat-router is enabled.
  */
-static void process_nets(const Netlist<>& net_list,
+static void process_nets(const RoutingNetlist& net_list,
                          std::ifstream& fp,
-                         ClusterNetId inet,
+                         RoutingNetId inet,
                          std::string name,
                          std::vector<std::string> input_tokens,
                          const char* filename,
                          int& lineno,
-                         bool verify_route_file_switch_id,
-                         bool is_flat);
+                         bool verify_route_file_switch_id);
 
 /**
  * @brief This function goes through all the blocks in a global net and verify
  *        it with the clustered netlist and the placement
  */
-static void process_global_blocks(const Netlist<>& net_list,
+static void process_global_blocks(const RoutingNetlist& net_list,
                                   std::ifstream& fp,
-                                  ClusterNetId inet,
+                                  RoutingNetId inet,
                                   const char* filename,
-                                  int& lineno,
-                                  bool is_flat);
+                                  int& lineno);
 
 static void format_coordinates(int& layer_num,
                                int& x,
                                int& y,
                                std::string coord,
-                               ClusterNetId net,
+                               RoutingNetId net,
                                const char* filename,
                                const int lineno);
 
@@ -127,9 +123,8 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node,
                                         bool prev_ends_branch,
                                         RRNodeId node);
 
-void print_route(const Netlist<>& net_list,
-                 FILE* fp,
-                 bool is_flat);
+void print_route(const RoutingNetlist& net_list,
+                 FILE* fp);
 
 /*************Global Functions****************************/
 
@@ -139,13 +134,12 @@ void print_route(const Netlist<>& net_list,
  * Perform a series of verification tests to ensure the netlist,
  * placement, and routing files match
  */
-bool read_route(const char* route_file,
+bool read_route(const RoutingNetlist& net_list,
+                const char* route_file,
                 const t_router_opts& router_opts,
-                bool verify_file_digests,
-                bool is_flat) {
+                bool verify_file_digests) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& place_ctx = g_vpr_ctx.placement();
-    bool flat_router = router_opts.flat_routing;
     /* Begin parsing the file */
     VTR_LOG("Begin loading FPGA routing file.\n");
 
@@ -179,10 +173,8 @@ bool read_route(const char* route_file,
 
     /*Allocate necessary routing structures*/
     alloc_and_load_rr_node_route_structs(router_opts);
-    const Netlist<>& router_net_list = (flat_router) ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
-    init_route_structs(router_net_list,
-                       router_opts.bb_factor,
-                       flat_router);
+    init_route_structs(net_list,
+                       router_opts.bb_factor);
 
     /*Check dimensions*/
     std::getline(fp, header_str);
@@ -196,31 +188,29 @@ bool read_route(const char* route_file,
     }
 
     /* Read in every net */
-    process_route(router_net_list, fp, route_file, lineno, router_opts.verify_route_file_switch_id, is_flat);
+    process_route(net_list, fp, route_file, lineno, router_opts.verify_route_file_switch_id);
 
     fp.close();
 
     /*Correctly set up the clb opins*/
     FourAryHeap small_heap;
     small_heap.init_heap(device_ctx.grid);
-    if (!flat_router) {
-        reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
-                                   router_opts.acc_fac, false, flat_router);
+    if (!net_list.is_flat()) {
+        reserve_locally_used_opins(net_list, &small_heap, router_opts.initial_pres_fac,
+                                   router_opts.acc_fac, false);
     }
-    recompute_occupancy_from_scratch(router_net_list,
-                                     flat_router);
+    recompute_occupancy_from_scratch(net_list);
 
     /* Note: This pres_fac is not necessarily correct since it isn't the first routing iteration*/
     OveruseInfo overuse_info(device_ctx.rr_graph.num_nodes());
     pathfinder_update_acc_cost_and_overuse_info(router_opts.acc_fac, overuse_info);
-    if (!flat_router) {
-        reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
-                                   router_opts.acc_fac, true, flat_router);
+    if (!net_list.is_flat()) {
+        reserve_locally_used_opins(net_list, &small_heap, router_opts.initial_pres_fac,
+                                   router_opts.acc_fac, true);
     }
 
     /* Finished loading in the routing, now check it*/
-    recompute_occupancy_from_scratch(router_net_list,
-                                     flat_router);
+    recompute_occupancy_from_scratch(net_list);
     bool is_feasible = feasible_routing();
 
     VTR_LOG("Finished loading route file\n");
@@ -228,12 +218,11 @@ bool read_route(const char* route_file,
     return is_feasible;
 }
 
-static void process_route(const Netlist<>& net_list,
+static void process_route(const RoutingNetlist& net_list,
                           std::ifstream& fp,
                           const char* filename,
                           int& lineno,
-                          bool verify_route_file_switch_id,
-                          bool is_flat) {
+                          bool verify_route_file_switch_id) {
     std::string input;
     std::vector<std::string> tokens;
     while (std::getline(fp, input)) {
@@ -245,7 +234,7 @@ static void process_route(const Netlist<>& net_list,
         } else if (tokens[0][0] == '#') {
             continue; //Skip commented lines
         } else if (tokens[0] == "Net") {
-            ClusterNetId inet(std::stoi(tokens[1]));
+            RoutingNetId inet(std::stoi(tokens[1]));
             process_nets(net_list,
                          fp,
                          inet,
@@ -253,23 +242,21 @@ static void process_route(const Netlist<>& net_list,
                          tokens,
                          filename,
                          lineno,
-                         verify_route_file_switch_id,
-                         is_flat);
+                         verify_route_file_switch_id);
         }
     }
 
     tokens.clear();
 }
 
-static void process_nets(const Netlist<>& net_list,
+static void process_nets(const RoutingNetlist& net_list,
                          std::ifstream& fp,
-                         ClusterNetId inet,
+                         RoutingNetId inet,
                          std::string name,
                          std::vector<std::string> input_tokens,
                          const char* filename,
                          int& lineno,
-                         bool verify_route_file_switch_id,
-                         bool is_flat) {
+                         bool verify_route_file_switch_id) {
     if (input_tokens.size() > 3 && input_tokens[3] == "global"
         && input_tokens[4] == "net" && input_tokens[5] == "connecting:") {
         /* Global net.  Never routed. */
@@ -287,7 +274,7 @@ static void process_nets(const Netlist<>& net_list,
                       name.c_str(), size_t(inet), net_list.net_name(inet).c_str());
         }
 
-        process_global_blocks(net_list, fp, inet, filename, lineno, is_flat);
+        process_global_blocks(net_list, fp, inet, filename, lineno);
     } else {
         /* Not a global net */
         if (net_list.net_is_ignored(inet)) {
@@ -312,9 +299,9 @@ static void process_nets(const Netlist<>& net_list,
     input_tokens.clear();
 }
 
-static void process_nodes(const Netlist<>& net_list,
+static void process_nodes(const RoutingNetlist& net_list,
                           std::ifstream& fp,
-                          ClusterNetId inet,
+                          RoutingNetId inet,
                           const char* filename,
                           bool verify_route_file_switch_id,
                           int& lineno) {
@@ -521,7 +508,7 @@ static void process_nodes(const Netlist<>& net_list,
     free_traceback(head_ptr);
 }
 
-static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno, bool is_flat) {
+static void process_global_blocks(const RoutingNetlist& net_list, std::ifstream& fp, RoutingNetId inet, const char* filename, int& lineno) {
     std::string block, bnum_str;
     int layer_num, x, y;
     std::vector<std::string> tokens;
@@ -548,7 +535,7 @@ static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, 
             bnum_str = format_name(tokens[2]);
             /*remove #*/
             bnum_str.erase(bnum_str.begin());
-            ParentBlockId bnum(std::stoi(bnum_str));
+            RoutingBlockId bnum(std::stoi(bnum_str));
 
             /*Check for name, coordinate, and pins*/
             if (0 != net_list.block_name(bnum).compare(tokens[1])) {
@@ -557,7 +544,7 @@ static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, 
                           tokens[1].c_str(), size_t(bnum), net_list.block_name(bnum).c_str());
             }
 
-            auto block_loc = get_block_loc(bnum, is_flat);
+            auto block_loc = get_block_loc(net_list, bnum);
 
             if (block_loc.loc.x != x || block_loc.loc.y != y) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
@@ -566,7 +553,7 @@ static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, 
                           block_loc.loc.x, block_loc.loc.y, block_loc.loc.layer);
             }
 
-            auto pin_class = get_class_range_for_block(bnum, is_flat);
+            auto pin_class = get_class_range_for_block(net_list, bnum);
             if (pin_class.low > std::stoi(tokens[7]) || pin_class.high < std::stoi(tokens[7])) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                           "The pin class %d of %lu net does not match given ",
@@ -578,7 +565,7 @@ static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, 
 }
 
 ///@brief Parse coordinates in the form of (x,y) into correct x and y values
-static void format_coordinates(int& layer_num, int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno) {
+static void format_coordinates(int& layer_num, int& x, int& y, std::string coord, RoutingNetId net, const char* filename, const int lineno) {
     coord = format_name(coord);
 
     std::stringstream coord_stream(coord);
@@ -673,9 +660,8 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, bool prev_ends_branc
     return false;
 }
 
-void print_route(const Netlist<>& net_list,
-                 FILE* fp,
-                 bool is_flat) {
+void print_route(const RoutingNetlist& net_list,
+                 FILE* fp) {
     const auto& grid_blocks = g_vpr_ctx.placement().grid_blocks();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -684,7 +670,7 @@ void print_route(const Netlist<>& net_list,
     if (route_ctx.route_trees.empty())
         return; // Only if routing exists
 
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         if (!net_list.net_is_ignored(net_id)) {
             fprintf(fp, "\n\nNet %zu (%s)\n\n", size_t(net_id), net_list.net_name(net_id).c_str());
             if (net_list.net_sinks(net_id).size() == false) {
@@ -790,10 +776,10 @@ void print_route(const Netlist<>& net_list,
                     net_list.net_name(net_id).c_str());
 
             for (auto pin_id : net_list.net_pins(net_id)) {
-                ParentBlockId block_id = net_list.pin_block(pin_id);
-                int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
+                RoutingBlockId block_id = net_list.pin_block(pin_id);
+                int iclass = get_block_pin_class_num(net_list, block_id, pin_id);
                 t_block_loc blk_loc;
-                blk_loc = get_block_loc(block_id, is_flat);
+                blk_loc = get_block_loc(net_list, block_id);
                 fprintf(fp, "Block %s (#%zu) at (%d,%d,%d), Pin class %d.\n",
                         net_list.block_name(block_id).c_str(),
                         size_t(block_id),
@@ -807,10 +793,9 @@ void print_route(const Netlist<>& net_list,
 }
 
 /* Prints out the routing to file route_file.  */
-void print_route(const Netlist<>& net_list,
+void print_route(const RoutingNetlist& net_list,
                  const char* placement_file,
-                 const char* route_file,
-                 bool is_flat) {
+                 const char* route_file) {
     FILE* fp;
 
     fp = fopen(route_file, "w");
@@ -824,7 +809,7 @@ void print_route(const Netlist<>& net_list,
     fprintf(fp, "Array size: %zu x %zu logic blocks.\n", device_ctx.grid.width(), device_ctx.grid.height());
     fprintf(fp, "\nRouting:");
 
-    print_route(net_list, fp, is_flat);
+    print_route(net_list, fp);
 
     fclose(fp);
 

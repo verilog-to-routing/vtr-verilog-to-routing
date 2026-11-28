@@ -286,9 +286,10 @@ void draw_flylines_placement(ezgl::renderer* g) {
 
             // Take the highest of the 2 transparency values that the user can select from the UI
             // Compare the current cross layer transparency to the overall Net transparency set by the user.
-            int transparency = std::min(element_visibility.alpha, draw_state->net_color[net_id].alpha * draw_state->net_alpha / 255);
+            const ezgl::color& net_color = draw_state->net_color[RoutingNetId(size_t(net_id))];
+            int transparency = std::min(element_visibility.alpha, net_color.alpha * draw_state->net_alpha / 255);
 
-            g->set_color(draw_state->net_color[net_id], transparency);
+            g->set_color(net_color, transparency);
 
             ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2, cluster_ctx.clb_nlist.block_type(b2)).center();
             g->draw_line(driver_center, sink_center);
@@ -356,7 +357,7 @@ void draw_congestion(ezgl::renderer* g) {
         for (RRNodeId inode : congested_rr_nodes) {
             for (ClusterNetId net : rr_node_nets[inode]) {
                 ezgl::color color = kelly_max_contrast_colors[size_t(net) % kelly_max_contrast_colors.size()];
-                draw_state->net_color[net] = color;
+                draw_state->net_color[RoutingNetId(size_t(net))] = color;
             }
         }
         g->set_line_width(0);
@@ -365,7 +366,7 @@ void draw_congestion(ezgl::renderer* g) {
         //Reset colors
         for (RRNodeId inode : congested_rr_nodes) {
             for (ClusterNetId net : rr_node_nets[inode]) {
-                draw_state->net_color[net] = DEFAULT_RR_NODE_COLOR;
+                draw_state->net_color[RoutingNetId(size_t(net))] = DEFAULT_RR_NODE_COLOR;
             }
         }
     } else {
@@ -520,7 +521,7 @@ void draw_routing_bb(ezgl::renderer* g) {
 
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    auto net_id = ParentNetId(draw_state->show_routing_bb);
+    auto net_id = RoutingNetId(draw_state->show_routing_bb);
     const t_bb* bb = &route_ctx.route_bb[net_id];
 
     //The router considers an RR node to be 'within' the the bounding box if it
@@ -559,7 +560,7 @@ void draw_routing_bb(ezgl::renderer* g) {
     msg += " (" + std::to_string(bb->xmin) + ", " + std::to_string(bb->ymin)
            + ", " + std::to_string(bb->xmax) + ", " + std::to_string(bb->ymax)
            + ")";
-    msg += " and routing for net '" + cluster_ctx.clb_nlist.net_name(convert_to_cluster_net_id(net_id))
+    msg += " and routing for net '" + cluster_ctx.clb_nlist.net_name(ClusterNetId(size_t(net_id)))
            + "'";
     msg += " (#" + std::to_string(size_t(net_id)) + ")";
     application->update_message(msg.c_str());
@@ -622,24 +623,26 @@ void draw_route(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
     /* Now draw each net, one by one.      */
     if (draw_state->is_flat) {
         for (AtomNetId net_id : atom_ctx.netlist().nets()) {
+            RoutingNetId routing_net_id = RoutingNetId(size_t(net_id));
             if (draw_net_type == HIGHLIGHTED
-                && draw_state->net_color[net_id] == ezgl::BLACK)
+                && draw_state->net_color[routing_net_id] == ezgl::BLACK)
                 continue;
 
-            draw_routed_net((ParentNetId&)net_id, g);
+            draw_routed_net(routing_net_id, g);
         } /* End for (each net) */
     } else {
         for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
+            RoutingNetId routing_net_id = RoutingNetId(size_t(net_id));
             if (draw_net_type == HIGHLIGHTED
-                && draw_state->net_color[net_id] == ezgl::BLACK)
+                && draw_state->net_color[routing_net_id] == ezgl::BLACK)
                 continue;
 
-            draw_routed_net((ParentNetId&)net_id, g);
+            draw_routed_net(routing_net_id, g);
         } /* End for (each net) */
     }
 }
 
-void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
+void draw_routed_net(RoutingNetId net_id, ezgl::renderer* g) {
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
     t_draw_state* draw_state = get_draw_state_vars();
@@ -831,8 +834,8 @@ void draw_routing_util(ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
-    auto chanx_usage = calculate_routing_usage(e_rr_type::CHANX, draw_state->is_flat, false);
-    auto chany_usage = calculate_routing_usage(e_rr_type::CHANY, draw_state->is_flat, false);
+    auto chanx_usage = calculate_routing_usage(e_rr_type::CHANX, false);
+    auto chany_usage = calculate_routing_usage(e_rr_type::CHANY, false);
 
     auto chanx_avail = calculate_routing_avail(e_rr_type::CHANX);
     auto chany_avail = calculate_routing_avail(e_rr_type::CHANY);

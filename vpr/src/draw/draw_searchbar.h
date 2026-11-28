@@ -13,6 +13,7 @@
 #include <cstring>
 #include <cmath>
 
+#include "routing_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
 #include "ezgl/rectangle.hpp"
 #include "physical_types.h"
@@ -35,17 +36,17 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
 void highlight_nets(std::string& message, RRNodeId hit_node);
 
 /**
- * @brief Returns the name of the net associated with a ParentNetId.
+ * @brief Returns the name of the net associated with a RoutingNetId.
  */
-std::string draw_get_net_name(ParentNetId parent_id);
+std::string draw_get_net_name(RoutingNetId net_id);
 
 /**
  * @brief Determines if a given RRNode is part of the specified net and highlights the net if so. Additionally, appends relevant net information to the provided message char pointer.
  * @param message Pointer to a character array where additional net information will be appended.
- * @param parent_net_id The ParentNetId representing the net to check. This may refer to either atom or cluster nets.
+ * @param net_id The RoutingNetId representing the net to check. This may refer to either atom or cluster nets.
  * @param hit_node The RRNodeId of the node that was selected.
  */
-void check_node_highlight_net(std::string& message, ParentNetId parent_net_id, RRNodeId hit_node);
+void check_node_highlight_net(std::string& message, RoutingNetId net_id, RRNodeId hit_node);
 
 /* If an rr_node has been clicked on, it will be either highlighted in MAGENTA,
  * or de-highlighted in WHITE. If highlighted, and toggle_rr is selected, highlight

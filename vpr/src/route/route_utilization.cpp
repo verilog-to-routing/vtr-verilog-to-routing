@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "vpr_utils.h"
 #include "route_common.h"
+#include "route_utils.h"
 
 RoutingChanUtilEstimator::RoutingChanUtilEstimator(const BlkLocRegistry& blk_loc_registry) {
     placer_state_ = std::make_unique<PlacerState>(/*placement_is_timing_driven=*/false, /*placement_uses_setup_slacks=*/false);
@@ -46,7 +47,7 @@ ChannelMetric<vtr::NdMatrix<double, 3>> RoutingChanUtilEstimator::estimate_routi
     }
 }
 
-vtr::Matrix<float> calculate_routing_usage(e_rr_type rr_type, bool is_flat, bool is_print) {
+vtr::Matrix<float> calculate_routing_usage(e_rr_type rr_type, bool is_print) {
     VTR_ASSERT(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
 
     const DeviceContext& device_ctx = g_vpr_ctx.device();
@@ -59,11 +60,11 @@ vtr::Matrix<float> calculate_routing_usage(e_rr_type rr_type, bool is_flat, bool
     // Collect all the in-use RR nodes
     std::set<RRNodeId> rr_nodes;
     for (ClusterNetId net : cluster_ctx.clb_nlist.nets()) {
-        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup(), net, is_flat);
+        const vtr::optional<RouteTree>& tree = get_route_tree_from_cluster_net_id(net);
 
-        if (!route_ctx.route_trees[parent_id])
+        if (!tree)
             continue;
-        for (const RouteTreeNode& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
+        for (const RouteTreeNode& rt_node : tree.value().all_nodes()) {
             if (rr_graph.node_type(rt_node.inode) == rr_type) {
                 rr_nodes.insert(rt_node.inode);
             }

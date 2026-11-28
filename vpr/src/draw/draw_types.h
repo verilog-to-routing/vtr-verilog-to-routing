@@ -21,6 +21,7 @@
 #include <vector>
 #include <memory>
 #include <optional>
+#include "routing_netlist_fwd.h"
 #include "timing_info_fwd.h"
 #include "vtr_util.h"
 #include "vpr_types.h"
@@ -334,7 +335,7 @@ struct t_draw_state {
     char default_message[vtr::bufsize];
 
     ///@brief color in which each net should be drawn. [0..cluster_ctx.clb_nlist.nets().size()-1]
-    vtr::vector<ParentNetId, ezgl::color> net_color;
+    vtr::vector<RoutingNetId, ezgl::color> net_color;
 
     ///@brief RR Nodes which the user has clicked on.
     std::set<RRNodeId> hit_nodes;

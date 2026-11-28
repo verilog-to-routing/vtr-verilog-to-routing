@@ -18,6 +18,7 @@
  * Last updated: August 2022
  */
 
+#include "routing_netlist_fwd.h"
 #include "blk_loc_registry.h"
 #include "physical_types.h"
 #include "rr_graph_type.h"
@@ -135,9 +136,9 @@ ezgl::color to_ezgl_color(vtr::Color<float> color);
 /* This helper function determines whether a net has been highlighted. The highlighting
  * could be caused by the user clicking on a routing resource, toggled, or
  * fan-in/fan-out of a highlighted node. */
-bool draw_if_net_highlighted(ParentNetId inet);
+bool draw_if_net_highlighted(RoutingNetId inet);
 std::vector<RRNodeId> trace_routed_connection_rr_nodes(
-    ParentNetId net_id,
+    RoutingNetId net_id,
     int driver_pin,
     int sink_pin);
 

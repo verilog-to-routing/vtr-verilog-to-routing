@@ -18,7 +18,7 @@
  * Usage
  * =====
  *
- * A RouteTree either requires a RRNodeId or a ParentNetId (as the source node) to construct:
+ * A RouteTree either requires a RRNodeId or a RoutingNetId (as the source node) to construct:
  *
  *      RouteTree tree(inet);
  *      // ...
@@ -84,6 +84,7 @@
 #include <mutex>
 #include <unordered_map>
 
+#include "routing_netlist_fwd.h"
 #include "DelayType.h"
 #include "connection_based_routing_fwd.h"
 #include "route_path_manager.h"
@@ -380,7 +381,7 @@ class RouteTree {
     RouteTree(RRNodeId inode);
     /** Return a RouteTree initialized to the source of nets[inet].
      * Use this constructor where possible (needed for prune() to work) */
-    RouteTree(ParentNetId inet);
+    RouteTree(RoutingNetId inet);
 
     ~RouteTree() {
         std::unique_lock<std::mutex> write_lock(_write_mutex);
@@ -412,7 +413,7 @@ class RouteTree {
     vtr::optional<const RouteTreeNode&> find_by_rr_id(RRNodeId rr_node) const;
 
     /** Get the sink RouteTreeNode associated with the isink. 
-     * Will probably segfault if the tree is not constructed with a ParentNetId. */
+     * Will probably segfault if the tree is not constructed with a RoutingNetId. */
     inline vtr::optional<const RouteTreeNode&> find_by_isink(int isink) const {
         RouteTreeNode* x = _isink_to_rt_node[isink - 1];
         return x ? vtr::optional<const RouteTreeNode&>(*x) : vtr::nullopt;
@@ -651,10 +652,10 @@ class RouteTree {
 
     /** Net ID.
      * A RouteTree does not have to be connected to a net, but if it isn't
-     * constructed using a ParentNetId prune() won't work. This is due to
+     * constructed using a RoutingNetId prune() won't work. This is due to
      * a data dependency through "Connection_based_routing_resources". Should
      * be refactored when possible. */
-    ParentNetId _net_id;
+    RoutingNetId _net_id;
 
     /** Lookup from RRNodeIds to RouteTreeNodes in the tree.
      * In some cases the same SINK node is put into the tree multiple times in a
