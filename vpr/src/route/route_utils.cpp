@@ -87,7 +87,7 @@ bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay
 // Typically, only a small minority of nets (typically > 10%) have their BBs updated
 // each routing iteration.
 void dynamic_update_bounding_boxes(const std::vector<ParentNetId>& rerouted_nets,
-                                   std::vector<ParentNetId> out_bb_updated_nets) {
+                                   std::vector<ParentNetId>& out_bb_updated_nets) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
