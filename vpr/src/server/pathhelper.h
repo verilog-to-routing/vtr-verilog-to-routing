@@ -42,7 +42,8 @@ using CritPathsResultPtr = std::shared_ptr<CritPathsResult>;
  * @param type The type of the critical path. Must be either "setup" or "hold".
  * @param crit_path_num The max number of critical paths to record.
  * @param details_level The level of detail for the timing report. See @ref e_timing_report_detail.
- * @param is_flat_routing Indicates whether flat routing should be used.
+ * @param is_flat_routing Indicates whether flat routing is used. It must match the routing of the design,
+ *                        otherwise the returned result is not valid.
  * @return A `CritPathsResultPtr` which is a pointer to the result of the critical path calculation (see @ref CritPathsResult).
  */
 CritPathsResultPtr calc_critical_path(const std::string& type, int crit_path_num, e_timing_report_detail details_level, bool is_flat_routing);

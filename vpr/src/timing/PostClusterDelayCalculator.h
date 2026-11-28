@@ -55,6 +55,9 @@ class PostClusterDelayCalculator : public tatum::DelayCalculator {
     void set_tsu_margin_relative(float val);
     void set_tsu_margin_absolute(float val);
 
+    /// @brief Returns true if the routing delays are those of a flat routing (the connections of the atom nets are routed)
+    bool is_flat() const { return is_flat_; }
+
   private:
     friend VprTimingGraphResolver;
 
