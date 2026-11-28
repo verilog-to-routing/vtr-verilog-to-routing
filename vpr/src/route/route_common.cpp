@@ -11,6 +11,7 @@
 #include "physical_types.h"
 #include "physical_types_util.h"
 #include "route_export.h"
+#include "route_utils.h"
 #include "rr_graph_fwd.h"
 #include "rr_switch.h"
 #include "vpr_utils.h"
@@ -192,14 +193,14 @@ std::vector<RRNodeId> collect_congested_rr_nodes() {
  * of nets using each RR node */
 vtr::vector<RRNodeId, std::set<ClusterNetId>> collect_rr_node_nets() {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     vtr::vector<RRNodeId, std::set<ClusterNetId>> rr_node_nets(device_ctx.rr_graph.num_nodes());
     for (ClusterNetId inet : cluster_ctx.clb_nlist.nets()) {
-        if (!route_ctx.route_trees[inet])
+        const vtr::optional<RouteTree>& tree = get_route_tree_from_cluster_net_id(inet);
+        if (!tree)
             continue;
-        for (auto& rt_node : route_ctx.route_trees[inet].value().all_nodes()) {
+        for (auto& rt_node : tree.value().all_nodes()) {
             rr_node_nets[rt_node.inode].insert(inet);
         }
     }

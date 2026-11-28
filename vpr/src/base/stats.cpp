@@ -104,7 +104,7 @@ void routing_stats(const Netlist<>& net_list,
     length_and_bends_stats(net_list, is_flat);
     if (isEchoFileEnabled(E_ECHO_ROUTED_NET_WIRE_USAGE))
         write_routed_net_wire_usage(getEchoFileName(E_ECHO_ROUTED_NET_WIRE_USAGE), net_list, is_flat);
-    print_channel_stats(is_flat);
+    print_channel_stats();
     get_channel_occupancy_stats(net_list);
     print_interposer_routing_stats(net_list);
     write_interposer_cut_channel_utilization(net_list, "interposer_cut_channel_utilization.txt");

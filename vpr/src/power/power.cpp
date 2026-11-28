@@ -44,6 +44,7 @@
 #include "physical_types.h"
 #include "globals.h"
 #include "vpr_utils.h"
+#include "route_utils.h"
 
 /************************* DEFINES **********************************/
 #define CONVERT_NM_PER_M 1000000000
@@ -65,8 +66,7 @@ static t_rr_node_power* rr_node_power;
 /************************* Function Declarations ********************/
 /* Routing */
 static void power_usage_routing(t_power_usage* power_usage,
-                                const t_det_routing_arch& routing_arch,
-                                bool is_flat);
+                                const t_det_routing_arch& routing_arch);
 
 /* Tiles */
 static void power_usage_blocks(t_power_usage* power_usage);
@@ -774,13 +774,11 @@ static void dealloc_mux_graph_rec(t_mux_node* node) {
  * Calculates the power of the entire routing fabric (not local routing
  */
 static void power_usage_routing(t_power_usage* power_usage,
-                                const t_det_routing_arch& routing_arch,
-                                bool is_flat) {
+                                const t_det_routing_arch& routing_arch) {
     auto& power_ctx = g_vpr_ctx.power();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& route_ctx = g_vpr_ctx.routing();
 
     power_zero_usage(power_usage);
 
@@ -799,10 +797,10 @@ static void power_usage_routing(t_power_usage* power_usage,
 
     /* Populate net indices into rr graph */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup(), net_id, is_flat);
-        if (!route_ctx.route_trees[parent_id])
+        const vtr::optional<RouteTree>& tree = get_route_tree_from_cluster_net_id(net_id);
+        if (!tree)
             continue;
-        for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
+        for (auto& rt_node : tree.value().all_nodes()) {
             rr_node_power[size_t(rt_node.inode)].visited = false;
             rr_node_power[size_t(rt_node.inode)].net_num = net_id;
         }
@@ -810,10 +808,10 @@ static void power_usage_routing(t_power_usage* power_usage,
 
     /* Populate net indices into rr graph */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup(), net_id, is_flat);
-        if (!route_ctx.route_trees[parent_id])
+        const vtr::optional<RouteTree>& tree = get_route_tree_from_cluster_net_id(net_id);
+        if (!tree)
             continue;
-        for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
+        for (auto& rt_node : tree.value().all_nodes()) {
             t_rr_node_power* node_power = &rr_node_power[size_t(rt_node.inode)];
 
             if (node_power->visited) {
@@ -1702,7 +1700,7 @@ e_power_ret_code power_total(float* run_time_s, const t_vpr_setup& vpr_setup, co
 
     /* Calculate Power */
     /* Routing */
-    power_usage_routing(&sub_power_usage, routing_arch, vpr_setup.RouterOpts.flat_routing);
+    power_usage_routing(&sub_power_usage, routing_arch);
     power_add_usage(&total_power, &sub_power_usage);
     power_component_add_usage(&sub_power_usage, POWER_COMPONENT_ROUTING);
 
