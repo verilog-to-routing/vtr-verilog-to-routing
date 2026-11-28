@@ -159,12 +159,23 @@ class ConnectionRouter : public ConnectionRouterInterface {
     }
 
     /**
-     * @brief Empties the route tree set used for RCV node detection
-     * @note Will immediately return if RCV is disabled. Called after
-     * each net is finished routing to flush the set.
+     * @brief Empties the net-level route tree set used for RCV loop detection
+     * @note Called at the start of each net. The set is rebuilt by the first
+     * connection of the net that uses RCV.
      */
     void empty_rcv_route_tree_set() final {
-        rcv_path_manager.empty_route_tree_nodes();
+        rcv_path_manager.clear_route_tree_set();
+    }
+
+    /**
+     * @brief Adds a branch that was just added to the route tree to the
+     * net-level route tree set used for RCV loop detection
+     * @note Must be called for every new branch, whether or not RCV was used
+     * to route it. No-op until the set has been built for this net.
+     * @param new_branch First new node of the branch (as returned by RouteTree::update_from_heap)
+     */
+    void add_branch_to_rcv_route_tree_set(const RouteTreeNode& new_branch) final {
+        rcv_path_manager.add_branch_to_route_tree_set(new_branch);
     }
 
     /**
@@ -324,6 +335,18 @@ class ConnectionRouter : public ConnectionRouterInterface {
                                 RRNodeId target_node,
                                 const t_conn_cost_params& cost_params,
                                 const t_bb& net_bb);
+
+    /**
+     * @brief Builds RCV's net-level route tree node set from the whole route tree,
+     * if it hasn't been built for this net yet.
+     * RCV's loop check needs every node of the net's route tree, including
+     * branches routed without RCV and subtrees the heap seeding skips. The route
+     * tree only grows within a net, so after the first build the set is extended
+     * incrementally by add_branch_to_rcv_route_tree_set().
+     * No-op when RCV is disabled.
+     * @param rt_root Root of the net's route tree
+     */
+    void register_route_tree_for_rcv(const RouteTreeNode& rt_root);
     /**
      * @brief For high fanout nets, adds only route tree nodes which are
      * spatially close to the sink

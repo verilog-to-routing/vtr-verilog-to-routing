@@ -104,6 +104,10 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
     VTR_ASSERT(route_ctx.route_trees[net_id]);
     RouteTree& tree = route_ctx.route_trees[net_id].value();
 
+    // Start a new net-level RCV route tree set. It is built from the (pruned) tree by the
+    // first connection that uses RCV, then extended by route_sink() as branches are added.
+    router.empty_rcv_route_tree_set();
+
     bool high_fanout = is_high_fanout(num_sinks, router_opts.high_fanout_threshold);
 
     SpatialRouteTreeLookup spatial_route_tree_lookup;
@@ -380,8 +384,6 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
     VTR_ASSERT_MSG(g_vpr_ctx.routing().rr_node_route_inf[tree.root().inode].occ() <= rr_graph.node_capacity(tree.root().inode), "SOURCE should never be congested");
     VTR_LOGV_DEBUG(f_router_debug, "Routed Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
-    router.empty_rcv_route_tree_set(); // ?
-
     profiling::net_fanout_end(net_list.net_sinks(net_id).size());
 
     route_ctx.net_status.set_is_routed(net_id, true);
@@ -600,8 +602,13 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
     }
 
     /* update global occupancy from the new branch */
-    if (new_branch)
+    if (new_branch) {
         pathfinder_update_cost_from_route_tree(new_branch.value(), 1);
+        // Keep the net-level RCV route tree set in sync, even if this connection didn't use RCV;
+        // Does not do anything if rcv has not been used for any connections on this net
+        // including this new one.
+        router.add_branch_to_rcv_route_tree_set(new_branch.value());
+    }
 
     // need to guarantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
     // do this by resetting all the path_costs that have been touched while routing to the current sink

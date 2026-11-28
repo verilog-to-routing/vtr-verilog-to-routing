@@ -127,6 +127,12 @@ void route_budgets::load_route_budgets(NetPinsMatrix<float>& net_delay,
 
         allocate_slack_using_weights(net_delay, netlist_pin_lookup, use_negative_hold_slacks);
         calculate_delay_targets();
+
+        // YOYO starts with RCV off everywhere; a later call to enable_rcv_on_hold_violation
+        // will turn it on for connections that need hold fixing
+        if (router_opts.routing_budgets_algorithm == YOYO) {
+            set_rcv_flag_for_all(false);
+        }
     } else if (router_opts.routing_budgets_algorithm == SCALE_DELAY) {
         allocate_slack_using_delays_and_criticalities(net_delay, timing_info, netlist_pin_lookup, router_opts);
     } else if (router_opts.routing_budgets_algorithm == LOW_SKEW_CLOCK) {
@@ -733,19 +739,21 @@ void route_budgets::not_congested_this_iteration(ParentNetId net_id) {
 /* If the router is failing to resolve worst hold slack, increase the min delay budgets on nets with negative hold slack */
 bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
                                                        std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                                                       float worst_neg_slack,
+                                                       float current_hold_slack,
                                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
-    // This is so we can tell the router to exit early if it's only global nets that are not meeting hold
-    bool all_global_nets = true;
-
-    // This would indicate only intracluster nets are struggling
-    bool changed_any_nets = false;
-
-    int num_nets_with_hold = 0;
+    constexpr float IMPROVEMENT_THRES_PER = 0.005;
+    constexpr float IMPROVEMENT_THRES_VAL = 5e-12;
+    // RCV made no progress if hold slack didn't improve on the best seen so far
+    // The gain must beat both a percentage of the best slack and a fixed value, in case the negative hold slack is really small.
+    // On the first call best_hold_slack is -inf, so the gain is +inf and counts as an improvement
+    float hold_slack_diff = current_hold_slack - best_hold_slack_;
+    bool hold_slack_improved = hold_slack_diff >= std::abs(best_hold_slack_) * IMPROVEMENT_THRES_PER
+                               && hold_slack_diff >= IMPROVEMENT_THRES_VAL;
+    best_hold_slack_ = std::max(current_hold_slack, best_hold_slack_);
 
     // Keep a history of previous neg slacks
     // Instead track number of hold violating nets being resolved in the future?
-    negative_hold_slacks.push(worst_neg_slack);
+    negative_hold_slacks.push(current_hold_slack);
 
     // How many iterations back to compare hold slack to
     // Determining factor to decide whether or not the router is still resolving hold slack effectively
@@ -773,15 +781,14 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
                     if (is_flat_) {
                         float hold_slack = timing_info->hold_pin_slack(convert_to_atom_pin_id(pin_id));
 
-                        if (hold_slack <= 0) {
+                        if (hold_slack < 0)
                             update_budget = true;
-                            break;
-                        }
+
                     } else {
                         for (auto& atom_pin : netlist_pin_lookup.connected_atom_pins(convert_to_cluster_pin_id(pin_id))) {
                             float hold_slack = timing_info->hold_pin_slack(atom_pin);
 
-                            if (hold_slack <= 0) {
+                            if (hold_slack < 0) {
                                 update_budget = true;
                                 // if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) VTR_LOG("SLACK ON NET %d PIN %d slack: %e min_budget: %e short_crit: %e REROUTE?: %s ignored: %s\n", net_id, ipin, hold_slack, delay_min_budget[net_id][ipin], short_path_crit[net_id][ipin], get_should_reroute(net_id) ? "true" : "false", cluster_ctx.clb_nlist.net_is_ignored(net_id) ? "true" : "false");
                                 break;
@@ -791,16 +798,12 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
 
                     // If the hold_slack on this pin is less than zero, decrement by a constant amount
                     if (update_budget) {
-                        num_nets_with_hold++;
-                        // Don't do anything to global/ignored nets
-                        if (!net_list_.net_is_ignored(net_id)) {
-                            all_global_nets = false;
-                        } else {
+                        // Don't do anything to ignored nets
+                        if (net_list_.net_is_ignored(net_id)) {
                             continue;
                         }
 
                         set_should_reroute(net_id, true);
-                        changed_any_nets = true;
 
                         // Increase the minimum and maximum budgets by a delay increment
                         if (delay_min_budget[net_id][ipin] < 0.1 * delay_upper_bound[net_id][ipin]) {
@@ -824,9 +827,9 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
         return false;
     }
 
-    // If it hasn't changed any nets, or all the nets it has touched are global nets, than return true and tell the router it's done
-    // VTR_LOG("Changed any nets %s all global nets %s\n", changed_any_nets ? "true" : "false", all_global_nets ? "true" : "false");
-    return (!changed_any_nets || all_global_nets) && num_nets_with_hold != 0;
+    // Return whether or not hold slack improved a meaningful amount in the latest iteration of RCV;
+    // The router can use this to decide when to give up on hold
+    return !hold_slack_improved;
 }
 
 void route_budgets::increase_short_crit(ParentNetId net_id, float delay_decs) {
@@ -986,6 +989,29 @@ bool route_budgets::should_use_rcv(ParentNetId net_id, int ipin) const {
     return use_rcv[net_id][ipin];
 }
 
+void route_budgets::enable_rcv_on_hold_violations(std::shared_ptr<SetupHoldTimingInfo> timing_info,
+                                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
+    // Return if the budget hasn't been loaded;
+    // use_rcv is only allocated when budget is loaded
+    if (!set) return;
+
+    for (auto net_id : net_list_.nets()) {
+        // Don't do anything to global/ignored nets
+        if (net_list_.net_is_ignored(net_id)) continue;
+
+        for (auto pin_id : net_list_.net_sinks(net_id)) {
+            int ipin = net_list_.pin_net_index(pin_id);
+            AtomPinId atom_pin;
+            float hold_slack = calculate_clb_pin_slack(net_id, ipin, timing_info, netlist_pin_lookup, HOLD, atom_pin);
+
+            if (hold_slack < 0) {
+                use_rcv[net_id][ipin] = true;
+                set_should_reroute(net_id, true);
+            }
+        }
+    }
+}
+
 bool route_budgets::get_should_reroute(ParentNetId net_id) {
     /*Returns if the budgets have been loaded yet*/
     return (set && should_reroute_for_hold[net_id]);
@@ -1017,5 +1043,14 @@ void route_budgets::set_should_reroute_for_skew(ParentNetId net_id, bool value) 
     VTR_ASSERT_SAFE(net_id.is_valid());
     if (set) {
         should_reroute_for_skew[net_id] = value;
+    }
+}
+
+void route_budgets::set_rcv_flag_for_all(bool flag) {
+    for (auto net_id : net_list_.nets()) {
+        use_rcv[net_id][0] = false;
+        for (auto pin_id : net_list_.net_sinks(net_id)) {
+            use_rcv[net_id][net_list_.pin_net_index(pin_id)] = flag;
+        }
     }
 }
