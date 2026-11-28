@@ -98,9 +98,12 @@ void checkpoint() {
     safe_write("Attempting to checkpoint current placement to file: placer_checkpoint.place\n");
     print_place(nullptr, nullptr, "placer_checkpoint.place", g_vpr_ctx.placement().block_locs());
 
-    bool is_flat = g_vpr_ctx.routing().is_flat;
-    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
+    if (!route_ctx.route_trees.empty()) {
+        bool is_flat = route_ctx.is_flat;
+        const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
 
-    safe_write("Attempting to checkpoint current routing to file: router_checkpoint.route\n");
-    print_route(router_net_list, nullptr, "router_checkpoint.route", is_flat);
+        safe_write("Attempting to checkpoint current routing to file: router_checkpoint.route\n");
+        print_route(router_net_list, nullptr, "router_checkpoint.route", is_flat);
+    }
 }
