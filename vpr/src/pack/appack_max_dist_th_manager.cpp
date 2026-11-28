@@ -178,7 +178,10 @@ void APPackMaxDistThManager::set_max_distance_thresholds_from_strings(
  * Neither the loc1 tile nor the loc2 tile is counted.
  *
  * There are two ways to walk an L-shaped path between loc1 and loc2: move in X
- * then Y, or move in Y then X. This tries both and returns the min.
+ * then Y, or move in Y then X. This tries both and returns the max. Taking the
+ * min would let a leg which runs along a column (or row) with no compatible
+ * tiles (e.g. a column of RAMs when measuring between logic blocks) count as 0,
+ * making two blocks far apart along that column appear close.
  *
  * The loc1 and loc2 coordinates are assumed to lie within the device grid.
  */
@@ -224,7 +227,7 @@ static unsigned get_num_compatible_tiles_between(const vtr::PrefixSum2D<unsigned
     if (path_turns)
         y_then_x += lookup.get_sum(x1, y2, x1, y2);
 
-    return std::min(x_then_y, y_then_x);
+    return std::max(x_then_y, y_then_x);
 }
 
 float APPackMaxDistThManager::get_compatible_distance_between_points(const t_flat_pl_loc& loc1,

@@ -125,9 +125,9 @@ class APPackMaxDistThManager {
     /**
      * @brief Gets the distance between the two given locations in "valid tile hops".
      *
-     * This is the min, over all axis-aligned manhattan paths between loc1 and loc2,
-     * of the number of tiles compatible with lb_type that lie strictly between the
-     * two locations, plus 1 for the cost of leaving loc1's tile, plus the number of
+     * This is the max, over the two L-shaped paths between loc1 and loc2, of the
+     * number of tiles compatible with lb_type that lie strictly between the two
+     * locations, plus 1 for the cost of leaving loc1's tile, plus the number of
      * layer hops between them. If loc1 and loc2 are in the same tile, the distance
      * is 0.
      *
