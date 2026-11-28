@@ -1,6 +1,5 @@
 #pragma once
 
-#include "netlist.h"
 #include "routing_netlist_fwd.h"
 #include "vpr_types.h"
 
@@ -29,7 +28,7 @@ inline Side operator!(const Side& rhs) {
  * (\see inside_bb()) */
 class VirtualNet {
   public:
-    /** The net in question (ID into a \ref Netlist). */
+    /** The net in question (ID into a \ref RoutingNetlist). */
     RoutingNetId net_id;
     /** The bounding box created by clipping the parent's bbox against a cutline. */
     t_bb clipped_bb;
@@ -79,7 +78,7 @@ class PartitionTree {
     PartitionTree& operator=(PartitionTree&&) = default;
 
     /** Can only be built from a netlist */
-    PartitionTree(const Netlist<>& netlist);
+    PartitionTree(const RoutingNetlist& netlist);
 
     /** Access root. Shouldn't cause a segfault, because PartitionTree constructor always makes a _root */
     inline PartitionTreeNode& root(void) { return *_root; }
@@ -97,7 +96,7 @@ class PartitionTree {
   private:
     std::unique_ptr<PartitionTreeNode> _root;
     std::unordered_map<RoutingNetId, PartitionTreeNode*> _net_to_ptree_node;
-    std::unique_ptr<PartitionTreeNode> build_helper(const Netlist<>& netlist, const std::unordered_set<RoutingNetId>& nets, int x1, int y1, int x2, int y2);
+    std::unique_ptr<PartitionTreeNode> build_helper(const RoutingNetlist& netlist, const std::unordered_set<RoutingNetId>& nets, int x1, int y1, int x2, int y2);
 };
 
 #ifdef VPR_DEBUG_PARTITION_TREE

@@ -1,8 +1,9 @@
 #include "spatial_route_tree_lookup.h"
 
 #include "globals.h"
+#include "routing_netlist.h"
 
-SpatialRouteTreeLookup build_route_tree_spatial_lookup(const Netlist<>& net_list,
+SpatialRouteTreeLookup build_route_tree_spatial_lookup(const RoutingNetlist& net_list,
                                                        const vtr::vector<RoutingNetId, t_bb>& net_bound_box,
                                                        RoutingNetId net,
                                                        const RouteTreeNode& rt_root) {

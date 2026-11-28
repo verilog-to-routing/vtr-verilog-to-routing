@@ -33,7 +33,7 @@ static std::unordered_map<int, float> ipin_to_Tdel_map;
 
 static const RouteTree& get_net_route_tree(RoutingNetId net_id);
 
-static void load_one_net_delay(const Netlist<>& net_list,
+static void load_one_net_delay(const RoutingNetlist& net_list,
                                const RouteTree& tree,
                                NetPinsMatrix<float>& net_delay,
                                RoutingNetId net_id);
@@ -41,20 +41,20 @@ static void load_one_net_delay(const Netlist<>& net_list,
 static RouteTree make_route_tree_with_timing(const RouteTree& tree, DelayType delay_type);
 
 #ifdef VTR_ASSERT_SAFE_ENABLED
-static void check_net_min_max_delays(const Netlist<>& net_list,
+static void check_net_min_max_delays(const RoutingNetlist& net_list,
                                      const NetPinsMatrix<float>& net_delay_min,
                                      const NetPinsMatrix<float>& net_delay_max);
 #endif
 
 static void load_one_net_delay_recurr(const RouteTreeNode& node, RoutingNetId net_id);
 
-static void load_one_constant_net_delay(const Netlist<>& net_list,
+static void load_one_constant_net_delay(const RoutingNetlist& net_list,
                                         NetPinsMatrix<float>& net_delay,
                                         RoutingNetId net_id,
                                         float delay_value);
 
 /*************************** Subroutine definitions **************************/
-void load_net_delay_from_routing(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay) {
+void load_net_delay_from_routing(const RoutingNetlist& net_list, NetPinsMatrix<float>& net_delay) {
     /* This routine loads net_delay[0..nets.size()-1][1..num_pins-1].  Each entry   *
      * is the Elmore delay from the net source to the appropriate sink. Both       *
      * the rr_graph and the routing traceback must be completely constructed        *
@@ -70,7 +70,7 @@ void load_net_delay_from_routing(const Netlist<>& net_list, NetPinsMatrix<float>
     }
 }
 
-void load_net_delay_from_routing(const Netlist<>& net_list,
+void load_net_delay_from_routing(const RoutingNetlist& net_list,
                                  NetPinsMatrix<float>& net_delay_min,
                                  NetPinsMatrix<float>& net_delay_max) {
     /* Same as above, but also loads the min delays into net_delay_min. */
@@ -105,7 +105,7 @@ static const RouteTree& get_net_route_tree(RoutingNetId net_id) {
     return route_ctx.route_trees[net_id].value();
 }
 
-static void load_one_net_delay(const Netlist<>& net_list,
+static void load_one_net_delay(const RoutingNetlist& net_list,
                                const RouteTree& tree,
                                NetPinsMatrix<float>& net_delay,
                                RoutingNetId net_id) {
@@ -137,7 +137,7 @@ static RouteTree make_route_tree_with_timing(const RouteTree& tree, DelayType de
 }
 
 #ifdef VTR_ASSERT_SAFE_ENABLED
-static void check_net_min_max_delays(const Netlist<>& net_list,
+static void check_net_min_max_delays(const RoutingNetlist& net_list,
                                      const NetPinsMatrix<float>& net_delay_min,
                                      const NetPinsMatrix<float>& net_delay_max) {
     /* Debug check of the min delays loaded from a copy of each route tree:     *
@@ -182,7 +182,7 @@ static void load_one_net_delay_recurr(const RouteTreeNode& rt_node, RoutingNetId
     }
 }
 
-static void load_one_constant_net_delay(const Netlist<>& net_list,
+static void load_one_constant_net_delay(const RoutingNetlist& net_list,
                                         NetPinsMatrix<float>& net_delay,
                                         RoutingNetId net_id,
                                         float delay_value) {

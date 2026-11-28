@@ -84,7 +84,6 @@ void NestedNetlistRouter<HeapType>::route_partition_tree_node(PartitionTreeNode&
             _worst_neg_slack,
             _routing_predictor,
             _choking_spots[net_id],
-            _is_flat,
             route_ctx.route_bb[net_id]);
 
         if (!flags.success && !flags.retry_with_full_bb) {

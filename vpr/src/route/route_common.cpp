@@ -57,21 +57,18 @@
 
 /******************** Subroutines local to route_common.cpp *******************/
 static vtr::vector<RoutingNetId, std::vector<RRNodeId>> load_net_rr_terminals(const RRGraphView& rr_graph,
-                                                                             const DeviceGrid& grid,
-                                                                             const Netlist<>& net_list,
-                                                                             bool is_flat);
+                                                                              const DeviceGrid& grid,
+                                                                              const RoutingNetlist& net_list);
 
 static vtr::vector<RoutingBlockId, std::vector<RRNodeId>> load_rr_clb_sources(const RRGraphView& rr_graph,
-                                                                             const Netlist<>& net_list,
-                                                                             bool is_flat);
+                                                                              const RoutingNetlist& net_list);
 
 static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
 
 static void adjust_one_rr_occ_and_acc_cost(RRNodeId inode, int add_or_sub, float acc_fac);
 
-static vtr::vector<RoutingNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
-                                                           const LogicalModels& models,
-                                                           bool is_flat);
+static vtr::vector<RoutingNetId, uint8_t> load_is_clock_net(const RoutingNetlist& net_list,
+                                                            const LogicalModels& models);
 
 /**
  * @brief If a bounding box crosses an interposer cut, expand it to
@@ -126,7 +123,7 @@ void restore_routing(const vtr::vector<RoutingNetId, vtr::optional<RouteTree>>& 
 /* This routine finds a "magic cookie" for the routing and prints it.    *
  * Use this number as a routing serial number to ensure that programming *
  * changes do not break the router.                                      */
-void get_serial_num(const Netlist<>& net_list) {
+void get_serial_num(const RoutingNetlist& net_list) {
     const auto& route_ctx = g_vpr_ctx.routing();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -297,9 +294,8 @@ void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_o
 
 /* Call this before you route any nets. It frees any old route trees and
  * sets the list of rr_nodes touched to empty. */
-void init_route_structs(const Netlist<>& net_list,
-                        int bb_factor,
-                        bool is_flat) {
+void init_route_structs(const RoutingNetlist& net_list,
+                        int bb_factor) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -310,18 +306,16 @@ void init_route_structs(const Netlist<>& net_list,
     //Various look-ups
     route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_graph,
                                                        device_ctx.grid,
-                                                       net_list,
-                                                       is_flat);
+                                                       net_list);
 
-    route_ctx.is_clock_net = load_is_clock_net(net_list, device_ctx.arch->models, is_flat);
+    route_ctx.is_clock_net = load_is_clock_net(net_list, device_ctx.arch->models);
     route_ctx.route_bb = load_route_bb(net_list, bb_factor);
     route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_graph,
-                                                  net_list,
-                                                  is_flat);
+                                                  net_list);
     route_ctx.clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
     route_ctx.net_status.resize(net_list.nets().size());
 
-    route_ctx.is_flat = is_flat;
+    route_ctx.is_flat = net_list.is_flat();
 }
 
 /* The routine sets the path_cost to HUGE_POSITIVE_FLOAT for  *
@@ -522,9 +516,8 @@ void reset_rr_node_route_structs(const t_router_opts& route_opts) {
  * index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    *
  * Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
 static vtr::vector<RoutingNetId, std::vector<RRNodeId>> load_net_rr_terminals(const RRGraphView& rr_graph,
-                                                                             const DeviceGrid& grid,
-                                                                             const Netlist<>& net_list,
-                                                                             bool is_flat) {
+                                                                              const DeviceGrid& grid,
+                                                                              const RoutingNetlist& net_list) {
     vtr::vector<RoutingNetId, std::vector<RRNodeId>> net_rr_terminals;
 
     net_rr_terminals.resize(net_list.nets().size());
@@ -536,8 +529,8 @@ static vtr::vector<RoutingNetId, std::vector<RRNodeId>> load_net_rr_terminals(co
         for (auto pin_id : net_list.net_pins(net_id)) {
             auto block_id = net_list.pin_block(pin_id);
 
-            t_block_loc blk_loc = get_block_loc(block_id, is_flat);
-            int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
+            t_block_loc blk_loc = get_block_loc(net_list, block_id);
+            int iclass = get_block_pin_class_num(net_list, block_id, pin_id);
             RRNodeId inode;
             if (pin_count == 0) { /* First pin is driver */
                 inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
@@ -576,8 +569,7 @@ static vtr::vector<RoutingNetId, std::vector<RRNodeId>> load_net_rr_terminals(co
  * [0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1].            *
  * The values for blocks that are pads are NOT valid.                        */
 static vtr::vector<RoutingBlockId, std::vector<RRNodeId>> load_rr_clb_sources(const RRGraphView& rr_graph,
-                                                                             const Netlist<>& net_list,
-                                                                             bool is_flat) {
+                                                                              const RoutingNetlist& net_list) {
     vtr::vector<RoutingBlockId, std::vector<RRNodeId>> rr_blk_source;
 
     e_rr_type rr_type;
@@ -585,13 +577,13 @@ static vtr::vector<RoutingBlockId, std::vector<RRNodeId>> load_rr_clb_sources(co
     rr_blk_source.resize(net_list.blocks().size());
 
     for (auto blk_id : net_list.blocks()) {
-        auto type = physical_tile_type(blk_id, is_flat);
-        auto class_range = get_class_range_for_block(blk_id, is_flat);
-        int num_tile_class = get_tile_class_max_ptc(type, is_flat);
+        auto type = physical_tile_type(net_list, blk_id);
+        auto class_range = get_class_range_for_block(net_list, blk_id);
+        int num_tile_class = get_tile_class_max_ptc(type, net_list.is_flat());
         rr_blk_source[blk_id].resize(num_tile_class);
         for (int iclass = 0; iclass < num_tile_class; iclass++) {
             if (iclass >= class_range.low && iclass <= class_range.high) {
-                t_block_loc blk_loc = get_block_loc(blk_id, is_flat);
+                t_block_loc blk_loc = get_block_loc(net_list, blk_id);
                 auto class_type = get_class_type_from_class_physical_num(type, iclass);
                 if (class_type == e_pin_type::DRIVER) {
                     rr_type = e_rr_type::SOURCE;
@@ -615,23 +607,15 @@ static vtr::vector<RoutingBlockId, std::vector<RRNodeId>> load_rr_clb_sources(co
     return rr_blk_source;
 }
 
-static vtr::vector<RoutingNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
-                                                           const LogicalModels& models,
-                                                           bool is_flat) {
+static vtr::vector<RoutingNetId, uint8_t> load_is_clock_net(const RoutingNetlist& net_list,
+                                                            const LogicalModels& models) {
     vtr::vector<RoutingNetId, uint8_t> is_clock_net(net_list.nets().size());
 
     auto& atom_ctx = g_vpr_ctx.atom();
     std::set<AtomNetId> clock_nets = find_netlist_physical_clock_nets(atom_ctx.netlist(), models);
 
-    for (auto net_id : net_list.nets()) {
-        std::size_t net_id_num = std::size_t(net_id);
-        if (is_flat) {
-            AtomNetId atom_net_id = AtomNetId(net_id_num);
-            is_clock_net[net_id] = clock_nets.contains(atom_net_id);
-        } else {
-            ClusterNetId cluster_net_id = ClusterNetId(net_id_num);
-            is_clock_net[net_id] = clock_nets.contains(atom_ctx.lookup().atom_net(cluster_net_id));
-        }
+    for (RoutingNetId net_id : net_list.nets()) {
+        is_clock_net[net_id] = clock_nets.contains(net_list.atom_net(net_id));
     }
 
     return is_clock_net;
@@ -678,8 +662,8 @@ static void expand_route_bb_to_interposer_cut_bounds(const DeviceContext& device
     }
 }
 
-vtr::vector<RoutingNetId, t_bb> load_route_bb(const Netlist<>& net_list,
-                                             int bb_factor) {
+vtr::vector<RoutingNetId, t_bb> load_route_bb(const RoutingNetlist& net_list,
+                                              int bb_factor) {
     vtr::vector<RoutingNetId, t_bb> route_bb;
 
     auto& route_ctx = g_vpr_ctx.routing();
@@ -726,7 +710,7 @@ vtr::vector<RoutingNetId, t_bb> load_route_bb(const Netlist<>& net_list,
     return route_bb;
 }
 
-t_bb load_net_route_bb(const Netlist<>& net_list,
+t_bb load_net_route_bb(const RoutingNetlist& net_list,
                        RoutingNetId net_id,
                        int bb_factor) {
     /*
@@ -829,8 +813,8 @@ void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf
 //
 // To model this we 'reserve' these locally used outputs, ensuring that the router will not use them (as if it did
 // this would equate to duplicating a BLE into an already in-use BLE instance, which is clearly incorrect).
-void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins, bool is_flat) {
-    VTR_ASSERT(is_flat == false);
+void reserve_locally_used_opins(const RoutingNetlist& net_list, HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins) {
+    VTR_ASSERT(!net_list.is_flat());
     int num_local_opin;
     int iclass, ipin;
     HeapNode heap_head_node;
@@ -882,7 +866,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             //congestion cost are popped-off/reserved first. (Intuitively, we want
             //the reserved OPINs to move out of the way of congestion, by preferring
             //to reserve OPINs with lower congestion costs).
-            RRNodeId from_node = route_ctx.rr_blk_source[(const RoutingBlockId&)blk_id][iclass];
+            RRNodeId from_node = route_ctx.rr_blk_source[net_list.routing_block(blk_id)][iclass];
             int num_edges = rr_graph.num_edges(RRNodeId(from_node));
             for (int iconn = 0; iconn < num_edges; iconn++) {
                 RRNodeId to_node = rr_graph.edge_sink_node(RRNodeId(from_node), iconn);
@@ -939,7 +923,7 @@ static void adjust_one_rr_occ_and_acc_cost(RRNodeId inode, int add_or_sub, float
 }
 
 //Print information about an invalid routing, caused by overused routing resources
-void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
+void print_invalid_routing_info(const RoutingNetlist& net_list) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -963,7 +947,7 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
         int occ = route_ctx.rr_node_route_inf[inode].occ();
         int cap = rr_graph.node_capacity(inode);
         if (occ > cap) {
-            VTR_LOG("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str(), occ, cap);
+            VTR_LOG("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, net_list.is_flat()).c_str(), occ, cap);
 
             auto range = rr_node_nets.equal_range(inode);
             for (auto itr = range.first; itr != range.second; ++itr) {
@@ -971,10 +955,10 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
                 VTR_LOG("    Used by net %s (%zu)\n", net_list.net_name(net_id).c_str(), size_t(net_id));
                 for (auto pin : net_list.net_pins(net_id)) {
                     auto blk = net_list.pin_block(pin);
-                    t_block_loc blk_loc = get_block_loc(blk, is_flat);
+                    t_block_loc blk_loc = get_block_loc(net_list, blk);
                     if (blk_loc.loc.x == node_x && blk_loc.loc.y == node_y) {
                         VTR_LOG("      Is in the same cluster: %s \n", describe_rr_node(rr_graph, device_ctx.grid,
-                                                                                        device_ctx.rr_indexed_data, itr->first, is_flat)
+                                                                                        device_ctx.rr_indexed_data, itr->first, net_list.is_flat())
                                                                            .c_str());
                     }
                 }

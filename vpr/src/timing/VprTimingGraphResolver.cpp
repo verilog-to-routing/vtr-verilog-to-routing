@@ -5,6 +5,7 @@
 #include "atom_netlist.h"
 #include "atom_lookup.h"
 #include "logic_types.h"
+#include "route_utils.h"
 #include "vpr_error.h"
 
 VprTimingGraphResolver::VprTimingGraphResolver(const AtomNetlist& netlist,
@@ -20,7 +21,9 @@ VprTimingGraphResolver::VprTimingGraphResolver(const AtomNetlist& netlist,
     , timing_graph_(timing_graph)
     , delay_calc_(delay_calc)
     , is_flat_(is_flat)
-    , blk_loc_registry_(blk_loc_registry) {}
+    , blk_loc_registry_(blk_loc_registry) {
+    VTR_ASSERT_MSG(is_flat_ == delay_calc_.is_flat_, "The timing graph resolver and its delay calculator must agree on whether the routing is flat");
+}
 
 std::string VprTimingGraphResolver::node_name(tatum::NodeId node) const {
     AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
@@ -141,13 +144,17 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
     //
     // However note that this does couple this code tightly with the delay calculator implementation.
 
-    //Force delay calculation to ensure results are cached (redundant if already up-to-date)
-    delay_calc_.atom_net_delay(timing_graph_, edge, delay_type);
+    // The pins of the clustered net which carries the edge between two clusters. They are not
+    // valid (and not used) if the edge is inside a cluster or if the routing is flat (the delay
+    // calculator caches nothing with flat routing).
+    ClusterPinId src_pin = ClusterPinId::INVALID();
+    ClusterPinId sink_pin = ClusterPinId::INVALID();
+    if (!is_flat_) {
+        //Force delay calculation to ensure results are cached (redundant if already up-to-date)
+        delay_calc_.atom_net_delay(timing_graph_, edge, delay_type);
 
-    RoutingPinId src_pin = RoutingPinId::INVALID();
-    RoutingPinId sink_pin = RoutingPinId::INVALID();
-
-    std::tie(src_pin, sink_pin) = delay_calc_.get_cached_pins(edge, delay_type);
+        std::tie(src_pin, sink_pin) = delay_calc_.get_cached_pins(edge, delay_type);
+    }
 
     if (!src_pin && !sink_pin && !is_flat_) {
         //Cluster internal
@@ -168,54 +175,65 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
 
     } else {
         //Cluster external
-        VTR_ASSERT(src_pin);
-        VTR_ASSERT(sink_pin);
-
-        RoutingBlockId src_blk = RoutingBlockId::INVALID();
-        RoutingBlockId sink_blk = RoutingBlockId::INVALID();
-
         int sink_net_pin_index;
 
-        RoutingNetId src_net = RoutingNetId::INVALID();
+        // The names of the types of the blocks at the two ends of the connection
+        std::string src_blk_type_name;
+        std::string sink_blk_type_name;
+
+        // The net of the routing which carries the connection (invalid if there is no routing
+        // yet, e.g. during placement)
+        RoutingNetId routing_net = RoutingNetId::INVALID();
+
+        tatum::Time net_delay;
         tatum::Time driver_clb_delay;
         tatum::Time sink_clb_delay;
 
         if (is_flat_) {
-            AtomNetId tmp_atom_net = atom_ctx.netlist().pin_net((AtomPinId&)src_pin);
-            VTR_ASSERT(tmp_atom_net == atom_ctx.netlist().pin_net((AtomPinId&)sink_pin));
+            // With flat routing the connections of the atom nets are routed
+            AtomPinId atom_src_pin = netlist_lookup_.tnode_atom_pin(timing_graph_.edge_src_node(edge));
+            AtomPinId atom_sink_pin = netlist_lookup_.tnode_atom_pin(timing_graph_.edge_sink_node(edge));
+            VTR_ASSERT(atom_src_pin);
+            VTR_ASSERT(atom_sink_pin);
 
-            AtomBlockId tmp_atom_src_block = atom_ctx.netlist().pin_block((AtomPinId&)src_pin);
-            AtomBlockId tmp_atom_sink_block = atom_ctx.netlist().pin_block((AtomPinId&)sink_pin);
+            AtomNetId atom_net = atom_ctx.netlist().pin_net(atom_src_pin);
+            VTR_ASSERT(atom_net == atom_ctx.netlist().pin_net(atom_sink_pin));
 
-            src_blk = (RoutingBlockId&)tmp_atom_src_block;
-            sink_blk = (RoutingBlockId&)tmp_atom_sink_block;
-
-            src_net = (RoutingNetId&)tmp_atom_net;
+            const t_pb* atom_src_pb = atom_ctx.lookup().atom_pb_bimap().atom_pb(atom_ctx.netlist().pin_block(atom_src_pin));
+            src_blk_type_name = atom_src_pb->name + "(" + atom_src_pb->hierarchical_type_name() + ")";
+            sink_blk_type_name = atom_ctx.lookup().atom_pb_bimap().atom_pb(atom_ctx.netlist().pin_block(atom_sink_pin))->name;
 
             driver_clb_delay = tatum::Time(0);
             sink_clb_delay = tatum::Time(0);
 
-            sink_net_pin_index = g_vpr_ctx.atom().netlist().pin_net_index((AtomPinId&)sink_pin);
+            sink_net_pin_index = atom_ctx.netlist().pin_net_index(atom_sink_pin);
 
+            net_delay = tatum::Time(delay_calc_.inter_cluster_delay(atom_net, 0, sink_net_pin_index, delay_type));
+
+            if (!route_ctx.route_trees.empty()) {
+                routing_net = get_routing_net_id(atom_net);
+            }
         } else {
-            ClusterNetId tmp_cluster_net = cluster_ctx.clb_nlist.pin_net((ClusterPinId&)src_pin);
-            VTR_ASSERT(tmp_cluster_net == cluster_ctx.clb_nlist.pin_net((ClusterPinId&)sink_pin));
+            VTR_ASSERT(src_pin);
+            VTR_ASSERT(sink_pin);
 
-            ClusterBlockId tmp_cluster_src_block = cluster_ctx.clb_nlist.pin_block((ClusterPinId&)src_pin);
-            ClusterBlockId tmp_cluster_sink_block = cluster_ctx.clb_nlist.pin_block((ClusterPinId&)sink_pin);
+            ClusterNetId cluster_net = cluster_ctx.clb_nlist.pin_net(src_pin);
+            VTR_ASSERT(cluster_net == cluster_ctx.clb_nlist.pin_net(sink_pin));
 
-            src_blk = (RoutingBlockId&)tmp_cluster_src_block;
-            sink_blk = (RoutingBlockId&)tmp_cluster_sink_block;
-
-            src_net = (RoutingNetId&)tmp_cluster_net;
+            src_blk_type_name = cluster_ctx.clb_nlist.block_type(cluster_ctx.clb_nlist.pin_block(src_pin))->name;
+            sink_blk_type_name = cluster_ctx.clb_nlist.block_type(cluster_ctx.clb_nlist.pin_block(sink_pin))->name;
 
             driver_clb_delay = delay_calc_.get_driver_clb_cached_delay(edge, delay_type);
             sink_clb_delay = delay_calc_.get_sink_clb_cached_delay(edge, delay_type);
 
-            sink_net_pin_index = cluster_ctx.clb_nlist.pin_net_index((ClusterPinId&)sink_pin);
-        }
+            sink_net_pin_index = cluster_ctx.clb_nlist.pin_net_index(sink_pin);
 
-        tatum::Time net_delay = tatum::Time(delay_calc_.inter_cluster_delay(src_net, 0, sink_net_pin_index, delay_type));
+            net_delay = tatum::Time(delay_calc_.inter_cluster_delay(cluster_net, 0, sink_net_pin_index, delay_type));
+
+            if (!route_ctx.route_trees.empty()) {
+                routing_net = get_routing_net_id(cluster_net);
+            }
+        }
 
         VTR_ASSERT(driver_clb_delay.valid());
         VTR_ASSERT(net_delay.valid());
@@ -224,12 +242,7 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
         tatum::DelayComponent driver_component;
         //driver_component.inst_name = cluster_ctx.clb_nlist.block_name(src_blk);
         driver_component.type_name = "intra '";
-        if (is_flat_) {
-            const t_pb* atom_pb = atom_ctx.lookup().atom_pb_bimap().atom_pb((AtomBlockId&)src_blk);
-            driver_component.type_name += (atom_pb->name + "(" + atom_pb->hierarchical_type_name() + ")");
-        } else {
-            driver_component.type_name += cluster_ctx.clb_nlist.block_type((ClusterBlockId&)src_blk)->name;
-        }
+        driver_component.type_name += src_blk_type_name;
         driver_component.type_name += "' routing";
         driver_component.delay = driver_clb_delay;
         components.push_back(driver_component);
@@ -247,14 +260,14 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
         interblock_component.delay = net_delay;
 
         if ((detail_level() == e_timing_report_detail::DETAILED_ROUTING || detail_level() == e_timing_report_detail::DEBUG)
-            && !route_ctx.route_trees.empty()) {
+            && routing_net.is_valid()) {
             // check if detailed timing report has been selected and that the routing
             // is not empty.
-            if (route_ctx.route_trees[src_net]) {
+            if (route_ctx.route_trees[routing_net]) {
                 // the route tree exists, so we find the path of the net from source to sink.
                 // Note that the previously declared interblock_component will not be added to the
                 // vector of net components.
-                get_detailed_interconnect_components(components, src_net, sink_pin, delay_type);
+                get_detailed_interconnect_components(components, routing_net, sink_net_pin_index, delay_type);
             } else {
                 // this is an unrouted net as part of global routing.
                 // We add the tag global net, and push the interblock into the vector of net components.
@@ -269,11 +282,7 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
         tatum::DelayComponent sink_component;
         //sink_component.inst_name = cluster_ctx.clb_nlist.block_name(sink_blk);
         sink_component.type_name = "intra '";
-        if (is_flat_) {
-            sink_component.type_name += atom_ctx.lookup().atom_pb_bimap().atom_pb((AtomBlockId&)sink_blk)->name;
-        } else {
-            sink_component.type_name += cluster_ctx.clb_nlist.block_type((ClusterBlockId&)sink_blk)->name;
-        }
+        sink_component.type_name += sink_blk_type_name;
         sink_component.type_name += "' routing";
         sink_component.delay = sink_clb_delay;
         components.push_back(sink_component);
@@ -289,22 +298,19 @@ void VprTimingGraphResolver::set_detail_level(e_timing_report_detail report_deta
     detail_level_ = report_detail;
 }
 
-void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<tatum::DelayComponent>& components, RoutingNetId net_id, RoutingPinId sink_pin, DelayType delay_type) const {
+void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<tatum::DelayComponent>& components, RoutingNetId net_id, int ipin, DelayType delay_type) const {
     /* This routine obtains the interconnect components such as: OPIN, CHANX, CHANY, IPIN which join
      * two intra-block clusters in two parts. In part one, we take the route tree of the net (for
      * the min delays, a copy of it with its timing reloaded with the min delays), and find the
-     * route tree sink which corresponds to the sink_pin. In part two, we call the helper function,
-     * which walks the route tree from the sink to the source. Along the way, we process each node
-     * and construct net_components that are added to the vector of components. */
+     * route tree sink which corresponds to the sink pin (the pin at index ipin of the net). In
+     * part two, we call the helper function, which walks the route tree from the sink to the
+     * source. Along the way, we process each node and construct net_components that are added to
+     * the vector of components. */
 
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
     if (!route_ctx.route_trees[net_id])
         return;
-
-    auto& netlist = is_flat_ ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
-
-    int ipin = netlist.pin_net_index(sink_pin);
 
     // The route tree holds the max delays computed by the router. For the min delays, use a copy
     // of the route tree with its timing reloaded with the min delays, so the components add up

@@ -2,7 +2,6 @@
 
 #include "connection_based_routing.h"
 #include "globals.h"
-#include "netlist_fwd.h"
 #include "route_debug.h"
 #include "route_common.h"
 #include "bus_mux_routing.h"

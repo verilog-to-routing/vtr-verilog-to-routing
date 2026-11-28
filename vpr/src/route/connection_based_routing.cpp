@@ -4,12 +4,10 @@
 #include "timing_util.h"
 
 // incremental rerouting resources class definitions
-Connection_based_routing_resources::Connection_based_routing_resources(const Netlist<>& net_list,
-                                                                       const vtr::vector<RoutingNetId, std::vector<RRNodeId>>& net_terminals,
-                                                                       bool is_flat)
+Connection_based_routing_resources::Connection_based_routing_resources(const RoutingNetlist& net_list,
+                                                                       const vtr::vector<RoutingNetId, std::vector<RRNodeId>>& net_terminals)
     : net_list_(net_list)
     , net_terminals_(net_terminals)
-    , is_flat_(is_flat)
     , last_stable_critical_path_delay{0.0f}
     , critical_path_growth_tolerance{1.001f}
     , connection_criticality_tolerance{0.9f}
@@ -96,7 +94,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 
             // skip if connection criticality is too low (not a problem connection)
             //#TODO: Check pin_id
-            float pin_criticality = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, pin_id, is_flat_);
+            float pin_criticality = calculate_net_pin_criticality(*timing_info, netlist_pin_lookup, net_list_, pin_id);
             if (pin_criticality < (max_criticality * connection_criticality_tolerance))
                 continue;
 

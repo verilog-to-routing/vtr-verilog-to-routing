@@ -42,7 +42,7 @@ t_physical_tile_type_ptr physical_tile_type(t_pl_loc loc);
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk);
 
-t_physical_tile_type_ptr physical_tile_type(RoutingBlockId blk_id, bool is_flat);
+t_physical_tile_type_ptr physical_tile_type(const RoutingNetlist& net_list, RoutingBlockId blk_id);
 
 //Returns the sub tile corresponding to the logical block location within a physical type
 int get_sub_tile_index(ClusterBlockId blk,
@@ -58,7 +58,7 @@ t_class_range get_class_range_for_block(const ClusterBlockId blk_id);
 
 t_class_range get_class_range_for_block(const AtomBlockId atom_blk);
 
-t_class_range get_class_range_for_block(const RoutingBlockId blk_id, bool is_flat);
+t_class_range get_class_range_for_block(const RoutingNetlist& net_list, const RoutingBlockId blk_id);
 
 //
 /**
@@ -70,65 +70,9 @@ t_class_range get_class_range_for_block(const RoutingBlockId blk_id, bool is_fla
  */
 std::pair<int, int> get_pin_range_for_block(const ClusterBlockId blk_id);
 
-t_block_loc get_block_loc(const RoutingBlockId& block_id, bool is_flat);
+t_block_loc get_block_loc(const RoutingNetlist& net_list, const RoutingBlockId block_id);
 
-int get_block_num_class(const RoutingBlockId& block_id, bool is_flat);
-
-int get_block_pin_class_num(const RoutingBlockId block_id, const RoutingPinId pin_id, bool is_flat);
-
-template<typename T>
-inline ClusterNetId convert_to_cluster_net_id(T id) {
-    std::size_t id_num = std::size_t(id);
-    ClusterNetId cluster_net_id = ClusterNetId(id_num);
-    return cluster_net_id;
-}
-
-template<typename T>
-inline AtomNetId convert_to_atom_net_id(T id) {
-    std::size_t id_num = std::size_t(id);
-    AtomNetId atom_net_id = AtomNetId(id_num);
-    return atom_net_id;
-}
-
-template<typename T>
-inline ClusterBlockId convert_to_cluster_block_id(T id) {
-    std::size_t id_num = std::size_t(id);
-    ClusterBlockId cluster_block_id = ClusterBlockId(id_num);
-    return cluster_block_id;
-}
-
-template<typename T>
-inline AtomBlockId convert_to_atom_block_id(T id) {
-    std::size_t id_num = std::size_t(id);
-    AtomBlockId atom_block_id = AtomBlockId(id_num);
-    return atom_block_id;
-}
-
-template<typename T>
-inline ClusterPinId convert_to_cluster_pin_id(T id) {
-    std::size_t id_num = std::size_t(id);
-    ClusterPinId cluster_pin_id = ClusterPinId(id_num);
-    return cluster_pin_id;
-}
-
-template<typename T>
-inline AtomPinId convert_to_atom_pin_id(T id) {
-    std::size_t id_num = std::size_t(id);
-    AtomPinId atom_pin_id = AtomPinId(id_num);
-    return atom_pin_id;
-}
-
-inline RoutingNetId get_cluster_net_parent_id(const AtomLookup& atom_look_up, ClusterNetId net_id, bool is_flat) {
-    RoutingNetId par_net_id;
-    if (is_flat) {
-        auto atom_net_id = atom_look_up.atom_net(net_id);
-        VTR_ASSERT(atom_net_id != AtomNetId::INVALID());
-        par_net_id = RoutingNetId(size_t(atom_net_id));
-    } else {
-        par_net_id = RoutingNetId(size_t(net_id));
-    }
-    return par_net_id;
-}
+int get_block_pin_class_num(const RoutingNetlist& net_list, const RoutingBlockId block_id, const RoutingPinId pin_id);
 
 //Returns a user-friendly architectural identifier for the specified RR node
 std::string rr_node_arch_name(RRNodeId inode, bool is_flat);

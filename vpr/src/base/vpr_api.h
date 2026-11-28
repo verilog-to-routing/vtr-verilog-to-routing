@@ -26,6 +26,7 @@
  */
 
 #include <vector>
+#include "routing_netlist_fwd.h"
 #include "physical_types.h"
 #include "vpr_types.h"
 #include "read_options.h"
@@ -81,53 +82,48 @@ void vpr_load_placement(t_vpr_setup& vpr_setup,
 /* Routing */
 
 ///@brief Perform, load or skip the routing stage
-RouteStatus vpr_route_flow(const Netlist<>& net_list,
+RouteStatus vpr_route_flow(const RoutingNetlist& net_list,
                            t_vpr_setup& vpr_setup,
-                           const t_arch& arch,
-                           bool is_flat);
+                           const t_arch& arch);
 
 ///@brief Perform routing at a fixed channel width)
-RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
+RouteStatus vpr_route_fixed_W(const RoutingNetlist& net_list,
                               t_vpr_setup& vpr_setup,
                               const t_arch& arch,
                               int fixed_channel_width,
                               std::shared_ptr<SetupHoldTimingInfo> timing_info,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                              NetPinsMatrix<float>& net_delay,
-                              bool is_flat);
+                              NetPinsMatrix<float>& net_delay);
 
 ///@brief Perform routing to find the minimum channel width
-RouteStatus vpr_route_min_W(const Netlist<>& net_list,
+RouteStatus vpr_route_min_W(const RoutingNetlist& net_list,
                             t_vpr_setup& vpr_setup,
                             const t_arch& arch,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                            NetPinsMatrix<float>& net_delay,
-                            bool is_flat);
+                            NetPinsMatrix<float>& net_delay);
 
 ///@brief Loads a previous routing
-RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
+RouteStatus vpr_load_routing(const RoutingNetlist& net_list,
+                             t_vpr_setup& vpr_setup,
                              const t_arch& arch,
                              int fixed_channel_width,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             NetPinsMatrix<float>& net_delay,
-                             bool is_flat);
+                             NetPinsMatrix<float>& net_delay);
 
 /* Analysis */
 
 ///@brief Perform or skips the analysis stage
-bool vpr_analysis_flow(const Netlist<>& net_list,
+bool vpr_analysis_flow(const RoutingNetlist& net_list,
                        t_vpr_setup& vpr_setup,
                        const t_arch& Arch,
-                       const RouteStatus& route_status,
-                       bool is_flat);
+                       const RouteStatus& route_status);
 
 ///@brief Perform post-implementation analysis
-void vpr_analysis(const Netlist<>& net_list,
+void vpr_analysis(const RoutingNetlist& net_list,
                   t_vpr_setup& vpr_setup,
                   const t_arch& Arch,
-                  const RouteStatus& route_status,
-                  bool is_flat);
+                  const RouteStatus& route_status);
 
 /* Device creating */
 

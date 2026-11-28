@@ -5,7 +5,7 @@
 #include "tatum/delay_calc/DelayCalculator.hpp"
 
 #include "atom_netlist.h"
-#include "routing_netlist_fwd.h"
+#include "routing_netlist.h"
 #include "vpr_net_pins_matrix.h"
 
 #include "atom_delay_calc.h"
@@ -31,19 +31,17 @@ class PostClusterDelayCalculator : public tatum::DelayCalculator {
 
     /**
      * @brief Builds a delay calculator which uses the routing delays of the connections
-     *        of the netlist used by routing (during and after routing).
+     *        of a routing netlist (used during and after routing).
      *
+     * @param net_list      The netlist used by routing. It must outlive the delay calculator.
      * @param net_delay_min Min routing delay of each net connection, used for hold analysis.
      * @param net_delay_max Max routing delay of each net connection, used for setup analysis.
-     *                      Callers without separate min delays pass the same matrix for both.
-     * @param is_flat       True if the atom netlist is routed (flat routing), false if the
-     *                      clustered netlist is.
      */
     PostClusterDelayCalculator(const AtomNetlist& netlist,
                                const AtomLookup& netlist_lookup,
+                               const RoutingNetlist& net_list,
                                const NetPinsMatrix<float>& net_delay_min,
-                               const NetPinsMatrix<float>& net_delay_max,
-                               bool is_flat);
+                               const NetPinsMatrix<float>& net_delay_max);
 
     tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
     tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
@@ -77,7 +75,11 @@ class PostClusterDelayCalculator : public tatum::DelayCalculator {
     tatum::Time atom_setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
     tatum::Time atom_hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
 
-    float inter_cluster_delay(RoutingNetId net_id, const int driver_net_pin_index, const int sink_net_pin_index, DelayType delay_type) const;
+    /// @brief Returns the routing delay of a connection of a clustered net (the routing is not flat)
+    float inter_cluster_delay(ClusterNetId clb_net_id, const int driver_net_pin_index, const int sink_net_pin_index, DelayType delay_type) const;
+
+    /// @brief Returns the routing delay of a connection of an atom net (the routing is flat)
+    float inter_cluster_delay(AtomNetId atom_net_id, const int driver_net_pin_index, const int sink_net_pin_index, DelayType delay_type) const;
 
     //Returns the delay type of the net delay used for an edge of the given delay type
     DelayType routing_delay_type(DelayType delay_type) const;
@@ -97,20 +99,25 @@ class PostClusterDelayCalculator : public tatum::DelayCalculator {
     tatum::Time get_cached_hold_time(tatum::EdgeId edge) const;
     void set_cached_hold_time(tatum::EdgeId edge, tatum::Time hold) const;
 
-    std::pair<RoutingPinId, RoutingPinId> get_cached_pins(tatum::EdgeId edge, DelayType delay_type) const;
-    void set_cached_pins(tatum::EdgeId edge, DelayType delay_type, RoutingPinId src_pin, RoutingPinId sink_pin) const;
+    // The cached driver and sink pins of the clustered net which carries an edge between two
+    // clusters (invalid if the edge is inside a cluster or has not been cached yet). The pins
+    // are not cached with flat routing, where the edges are the connections of the atom nets.
+    std::pair<ClusterPinId, ClusterPinId> get_cached_pins(tatum::EdgeId edge, DelayType delay_type) const;
+    void set_cached_pins(tatum::EdgeId edge, DelayType delay_type, ClusterPinId src_pin, ClusterPinId sink_pin) const;
 
   private:
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
 
-    // The routing delays of the connections of the clustered netlist (nullptr if the
-    // delays of the connections of the netlist used by routing are taken)
+    // The routing netlist whose connection delays are used (nullptr if the delays of the
+    // connections of the clustered netlist are used directly)
+    const RoutingNetlist* net_list_ = nullptr;
+
+    // The routing delays of the connections of the clustered netlist (used if net_list_ is nullptr)
     const ClbNetPinsMatrix<float>* clb_net_delay_min_ = nullptr;
     const ClbNetPinsMatrix<float>* clb_net_delay_max_ = nullptr;
 
-    // The routing delays of the connections of the netlist used by routing (nullptr if
-    // the delays of the connections of the clustered netlist are used)
+    // The routing delays of the connections of the routing netlist (used if net_list_ is not nullptr)
     const NetPinsMatrix<float>* net_delay_min_ = nullptr;
     const NetPinsMatrix<float>* net_delay_max_ = nullptr;
 
@@ -126,8 +133,8 @@ class PostClusterDelayCalculator : public tatum::DelayCalculator {
     mutable vtr::vector<tatum::EdgeId, tatum::Time> driver_clb_max_delay_cache_;
     mutable vtr::vector<tatum::EdgeId, tatum::Time> sink_clb_min_delay_cache_;
     mutable vtr::vector<tatum::EdgeId, tatum::Time> sink_clb_max_delay_cache_;
-    mutable vtr::vector<tatum::EdgeId, std::pair<RoutingPinId, RoutingPinId>> pin_cache_min_;
-    mutable vtr::vector<tatum::EdgeId, std::pair<RoutingPinId, RoutingPinId>> pin_cache_max_;
+    mutable vtr::vector<tatum::EdgeId, std::pair<ClusterPinId, ClusterPinId>> pin_cache_min_;
+    mutable vtr::vector<tatum::EdgeId, std::pair<ClusterPinId, ClusterPinId>> pin_cache_max_;
     bool is_flat_;
 };
 

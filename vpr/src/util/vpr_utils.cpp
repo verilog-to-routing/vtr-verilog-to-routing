@@ -17,6 +17,7 @@
 #include "physical_types.h"
 #include "globals.h"
 #include "vpr_utils.h"
+#include "routing_netlist.h"
 #include "cluster_placement.h"
 #include "device_grid.h"
 #include "user_route_constraints.h"
@@ -351,16 +352,13 @@ t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
     return physical_tile_type(block_locs[cluster_blk].loc);
 }
 
-t_physical_tile_type_ptr physical_tile_type(RoutingBlockId blk_id, bool is_flat) {
+t_physical_tile_type_ptr physical_tile_type(const RoutingNetlist& net_list, RoutingBlockId blk_id) {
     auto& block_locs = g_vpr_ctx.placement().block_locs();
 
-    if (is_flat) {
-        return physical_tile_type(convert_to_atom_block_id(blk_id));
-    } else {
-        ClusterBlockId cluster_blk_id = convert_to_cluster_block_id(blk_id);
-        t_pl_loc block_loc = block_locs[cluster_blk_id].loc;
-        return physical_tile_type(block_loc);
-    }
+    ClusterBlockId cluster_blk_id = net_list.cluster_block(blk_id);
+    VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID());
+
+    return physical_tile_type(block_locs[cluster_blk_id].loc);
 }
 
 int get_sub_tile_index(ClusterBlockId blk,
@@ -459,11 +457,11 @@ t_class_range get_class_range_for_block(const AtomBlockId atom_blk) {
                                                   pb_graph_node);
 }
 
-t_class_range get_class_range_for_block(const RoutingBlockId blk_id, bool is_flat) {
-    if (is_flat) {
-        return get_class_range_for_block(convert_to_atom_block_id(blk_id));
+t_class_range get_class_range_for_block(const RoutingNetlist& net_list, const RoutingBlockId blk_id) {
+    if (net_list.is_flat()) {
+        return get_class_range_for_block(net_list.atom_block(blk_id));
     } else {
-        return get_class_range_for_block(convert_to_cluster_block_id(blk_id));
+        return get_class_range_for_block(net_list.cluster_block(blk_id));
     }
 }
 
@@ -487,42 +485,27 @@ std::pair<int, int> get_pin_range_for_block(const ClusterBlockId blk_id) {
     return {pin_low, pin_high};
 }
 
-t_block_loc get_block_loc(const RoutingBlockId& block_id, bool is_flat) {
+t_block_loc get_block_loc(const RoutingNetlist& net_list, const RoutingBlockId block_id) {
     auto& place_ctx = g_vpr_ctx.placement();
-    ClusterBlockId cluster_block_id = ClusterBlockId::INVALID();
 
-    if (is_flat) {
-        AtomBlockId atom_block_id = convert_to_atom_block_id(block_id);
-        auto& atom_look_up = g_vpr_ctx.atom().lookup();
-        cluster_block_id = atom_look_up.atom_clb(atom_block_id);
-    } else {
-        cluster_block_id = convert_to_cluster_block_id(block_id);
-    }
-
+    ClusterBlockId cluster_block_id = net_list.cluster_block(block_id);
     VTR_ASSERT(cluster_block_id != ClusterBlockId::INVALID());
-    auto blk_loc = place_ctx.block_locs()[cluster_block_id];
 
-    return blk_loc;
+    return place_ctx.block_locs()[cluster_block_id];
 }
 
-int get_block_num_class(const RoutingBlockId& block_id, bool is_flat) {
-    auto type = physical_tile_type(block_id, is_flat);
-    return get_tile_class_max_ptc(type, is_flat);
-}
-
-int get_block_pin_class_num(const RoutingBlockId block_id, const RoutingPinId pin_id, bool is_flat) {
+int get_block_pin_class_num(const RoutingNetlist& net_list, const RoutingBlockId block_id, const RoutingPinId pin_id) {
     const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
     auto& block_locs = blk_loc_registry.block_locs();
 
     int class_num;
 
-    if (is_flat) {
-        AtomPinId atom_pin_id = convert_to_atom_pin_id(pin_id);
-        class_num = get_atom_pin_class_num(atom_pin_id);
+    if (net_list.is_flat()) {
+        class_num = get_atom_pin_class_num(net_list.atom_pin(pin_id));
     } else {
-        ClusterBlockId cluster_block_id = convert_to_cluster_block_id(block_id);
+        ClusterBlockId cluster_block_id = net_list.cluster_block(block_id);
         t_pl_loc block_loc = block_locs[cluster_block_id].loc;
-        ClusterPinId cluster_pin_id = convert_to_cluster_pin_id(pin_id);
+        ClusterPinId cluster_pin_id = net_list.cluster_pin(pin_id);
         auto type = physical_tile_type(block_loc);
         int phys_pin = blk_loc_registry.tile_pin_index(cluster_pin_id);
         class_num = get_class_num_from_pin_physical_num(type, phys_pin);

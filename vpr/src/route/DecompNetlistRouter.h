@@ -4,6 +4,7 @@
  * \see ParallelNetlistRouter, but tries to "decompose" nets and assign them to
  * the next level of the partition tree where possible.
  * See "Parallel FPGA Routing with On-the-Fly Net Decomposition", FPT'24 */
+#include "routing_netlist.h"
 #include "netlist_routers.h"
 
 #include <tbb/enumerable_thread_specific.h>
@@ -27,7 +28,7 @@ template<typename HeapType>
 class DecompNetlistRouter : public NetlistRouter {
   public:
     DecompNetlistRouter(
-        const Netlist<>& net_list,
+        const RoutingNetlist& net_list,
         const RouterLookahead* router_lookahead,
         const t_router_opts& router_opts,
         CBRR& connections_inf,
@@ -38,9 +39,8 @@ class DecompNetlistRouter : public NetlistRouter {
         route_budgets& budgeting_inf,
         const RoutingPredictor& routing_predictor,
         const vtr::vector<RoutingNetId, t_net_choke_points>& choking_spots,
-        bool is_flat,
         int route_verbosity)
-        : _routers_th(_make_router(router_lookahead, is_flat))
+        : _routers_th(_make_router(router_lookahead, net_list.is_flat()))
         , _net_list(net_list)
         , _router_opts(router_opts)
         , _connections_inf(connections_inf)
@@ -51,7 +51,6 @@ class DecompNetlistRouter : public NetlistRouter {
         , _budgeting_inf(budgeting_inf)
         , _routing_predictor(routing_predictor)
         , _choking_spots(choking_spots)
-        , _is_flat(is_flat)
         , _route_verbosity(route_verbosity)
         , _net_known_samples(net_list.nets().size())
         , _is_decomp_disabled(net_list.nets().size()) {}
@@ -104,7 +103,7 @@ class DecompNetlistRouter : public NetlistRouter {
     /* Context fields. Most of them will be forwarded to route_net (see route_net.tpp) */
     /** Per-thread storage for SerialConnectionRouter. */
     tbb::enumerable_thread_specific<SerialConnectionRouter<HeapType>> _routers_th;
-    const Netlist<>& _net_list;
+    const RoutingNetlist& _net_list;
     const t_router_opts& _router_opts;
     CBRR& _connections_inf;
     /** Per-thread storage for RouteIterResults. */
@@ -116,7 +115,6 @@ class DecompNetlistRouter : public NetlistRouter {
     route_budgets& _budgeting_inf;
     const RoutingPredictor& _routing_predictor;
     const vtr::vector<RoutingNetId, t_net_choke_points>& _choking_spots; ///< Choke points indexed by net ID.
-    bool _is_flat;
     int _route_verbosity;
 
     /** Cached routing parameters for current iteration (inputs to \see route_netlist()) */

@@ -3,7 +3,7 @@
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "clustered_netlist_fwd.h"
-#include "routing_netlist_fwd.h"
+#include "routing_netlist.h"
 #include "vtr_ragged_matrix.h"
 
 template<typename T, typename NetId>
@@ -37,7 +37,7 @@ AtomNetPinsMatrix<T> make_net_pins_matrix(const AtomNetlist& nlist, T default_va
 }
 
 template<typename T>
-NetPinsMatrix<T> make_net_pins_matrix(const Netlist<>& nlist, T default_value = T()) {
+NetPinsMatrix<T> make_net_pins_matrix(const RoutingNetlist& nlist, T default_value = T()) {
     auto pins_in_net = [&](RoutingNetId net) {
         return nlist.net_pins(net).size();
     };

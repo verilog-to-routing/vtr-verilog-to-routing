@@ -1209,7 +1209,7 @@ std::vector<RRNodeId> trace_routed_connection_rr_nodes(
 
     VTR_ASSERT(tree.root().inode == route_ctx.net_rr_terminals[net_id][driver_pin]);
 
-    RRNodeId sink_rr_node = route_ctx.net_rr_terminals[RoutingNetId(size_t(net_id))][sink_pin];
+    RRNodeId sink_rr_node = route_ctx.net_rr_terminals[net_id][sink_pin];
 
     std::vector<RRNodeId> rr_nodes_on_path;
 

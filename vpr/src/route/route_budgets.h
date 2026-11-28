@@ -24,7 +24,7 @@ enum slack_allocated_type {
 #define UNINITIALIZED_PATH_DELAY (-2)
 class route_budgets {
   public:
-    route_budgets(const Netlist<>& net_list, bool is_flat);
+    route_budgets(const RoutingNetlist& net_list);
 
     route_budgets(std::vector<std::vector<float>> net_delay);
 
@@ -152,8 +152,7 @@ class route_budgets {
     vtr::vector<RoutingNetId, int> num_times_congested; //[0..num_nets]
     std::queue<float> negative_hold_slacks;
 
-    const Netlist<>& net_list_;
-    bool is_flat_;
+    const RoutingNetlist& net_list_;
 
     /*budgets only valid when loaded*/
     bool set;

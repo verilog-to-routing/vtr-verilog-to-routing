@@ -4,7 +4,6 @@
 
 #include "connection_based_routing.h"
 #include "net_delay.h"
-#include "netlist_fwd.h"
 #include "overuse_report.h"
 #include "physical_types_util.h"
 #include "place_and_route.h"
@@ -33,7 +32,7 @@
 #include "vtr_expr_eval.h"
 #endif // NO_GRAPHICS
 
-bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay) {
+bool check_net_delays(const RoutingNetlist& net_list, NetPinsMatrix<float>& net_delay) {
     constexpr float ERROR_TOL = 0.0001;
 
     auto net_delay_check = make_net_pins_matrix<float>(net_list);
@@ -263,7 +262,7 @@ void generate_route_timing_reports(const t_router_opts& router_opts,
     timing_reporter.report_timing_setup(router_opts.first_iteration_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }
 
-int get_max_pins_per_net(const Netlist<>& net_list) {
+int get_max_pins_per_net(const RoutingNetlist& net_list) {
     int max_pins_per_net = 0;
     for (auto net_id : net_list.nets()) {
         if (!net_list.net_is_ignored(net_id))
@@ -404,15 +403,14 @@ void print_route_status_header() {
     VTR_LOG("---- ------ ------- ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
 }
 
-void print_router_criticality_histogram(const Netlist<>& net_list,
+void print_router_criticality_histogram(const RoutingNetlist& net_list,
                                         const SetupTimingInfo& timing_info,
-                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                        bool is_flat) {
-    print_histogram(create_criticality_histogram(net_list, timing_info, netlist_pin_lookup, is_flat, 10));
+                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
+    print_histogram(create_criticality_histogram(net_list, timing_info, netlist_pin_lookup, 10));
 }
 
 void prune_unused_non_configurable_nets(CBRR& connections_inf,
-                                        const Netlist<>& net_list) {
+                                        const RoutingNetlist& net_list) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -498,7 +496,7 @@ size_t calculate_wirelength_available() {
     return available_wirelength;
 }
 
-WirelengthInfo calculate_wirelength_info(const Netlist<>& net_list, size_t available_wirelength) {
+WirelengthInfo calculate_wirelength_info(const RoutingNetlist& net_list, size_t available_wirelength) {
     size_t used_wirelength = 0;
     VTR_ASSERT(available_wirelength > 0);
 
@@ -571,11 +569,10 @@ t_bb calc_current_bb(const RouteTree& tree) {
 
 // Initializes net_delay based on best-case delay estimates from the router lookahead
 void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
-                                   const Netlist<>& net_list,
+                                   const RoutingNetlist& net_list,
                                    const vtr::vector<RoutingNetId, std::vector<RRNodeId>>& net_rr_terminals,
                                    NetPinsMatrix<float>& net_delay,
-                                   const RRGraphView& rr_graph,
-                                   bool is_flat) {
+                                   const RRGraphView& rr_graph) {
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.; // Ensures lookahead returns delay value
 
@@ -593,7 +590,7 @@ void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                                       sink_rr,
                                                       0.0f /* R_upstream */,
                                                       cost_params,
-                                                      is_flat);
+                                                      net_list.is_flat());
             VTR_ASSERT(std::isfinite(est_delay) && est_delay < std::numeric_limits<float>::max());
 
             net_delay[net_id][ipin] = est_delay;

@@ -33,9 +33,8 @@
 
 #define SHORT_PATH_EXP 0.5
 
-route_budgets::route_budgets(const Netlist<>& net_list, bool is_flat)
+route_budgets::route_budgets(const RoutingNetlist& net_list)
     : net_list_(net_list)
-    , is_flat_(is_flat)
     , set(false) {
 }
 
@@ -479,8 +478,8 @@ float route_budgets::calculate_clb_pin_slack(RoutingNetId net_id,
     auto pin = net_list_.net_pin(net_id, ipin);
 
     float curr_min_slack = delay_upper_bound[net_id][ipin];
-    if (is_flat_) {
-        auto curr_atom_pin = convert_to_atom_pin_id(pin);
+    if (net_list_.is_flat()) {
+        AtomPinId curr_atom_pin = net_list_.atom_pin(pin);
         atom_pin = curr_atom_pin;
 
         /*Get the slack according to the requested analysis type (setup vs hold).
@@ -499,7 +498,7 @@ float route_budgets::calculate_clb_pin_slack(RoutingNetId net_id,
          * Take the minimum of the atom pin slack as the CLB pin slack
          * minimum slack is used since it is guarantee then to be freed from long path problems
          */
-        for (const AtomPinId curr_atom_pin : netlist_pin_lookup.connected_atom_pins(convert_to_cluster_pin_id(pin))) {
+        for (const AtomPinId curr_atom_pin : netlist_pin_lookup.connected_atom_pins(net_list_.cluster_pin(pin))) {
             if (timing_info->setup_pin_slack(curr_atom_pin) == std::numeric_limits<float>::infinity() && type == SETUP) {
                 if (curr_min_slack == delay_upper_bound[net_id][ipin]) {
                     atom_pin = curr_atom_pin;
@@ -643,7 +642,7 @@ void route_budgets::allocate_slack_using_delays_and_criticalities(NetPinsMatrix<
 
     for (auto net_id : net_list_.nets()) {
         for (auto pin_id : net_list_.net_sinks(net_id)) {
-            float pin_criticality = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, pin_id, is_flat_);
+            float pin_criticality = calculate_net_pin_criticality(*timing_info, netlist_pin_lookup, net_list_, pin_id);
 
             /* Pin criticality is between 0 and 1.
              * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default,
@@ -704,7 +703,7 @@ std::shared_ptr<SetupHoldTimingInfo> route_budgets::perform_sta(NetPinsMatrix<fl
     /*Perform static timing analysis to get the delay and path weights for slack allocation*/
     //TODO: the budgets only have one delay per connection, so it is used as both the min and max
     //      delay. The hold analysis here should use the min delays of the routing.
-    std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), temp_budgets, temp_budgets, is_flat_);
+    std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_list_, temp_budgets, temp_budgets);
 
     //TODO: now that we support incremental timing updates, we should avoid re-building the timing analyzer from scratch and try
     //      to calculate this incrementally
@@ -770,15 +769,15 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
                     // TODO look into smartly increasing budgets using calculated hold slack
 
                     bool update_budget = false;
-                    if (is_flat_) {
-                        float hold_slack = timing_info->hold_pin_slack(convert_to_atom_pin_id(pin_id));
+                    if (net_list_.is_flat()) {
+                        float hold_slack = timing_info->hold_pin_slack(net_list_.atom_pin(pin_id));
 
                         if (hold_slack <= 0) {
                             update_budget = true;
                             break;
                         }
                     } else {
-                        for (auto& atom_pin : netlist_pin_lookup.connected_atom_pins(convert_to_cluster_pin_id(pin_id))) {
+                        for (auto& atom_pin : netlist_pin_lookup.connected_atom_pins(net_list_.cluster_pin(pin_id))) {
                             float hold_slack = timing_info->hold_pin_slack(atom_pin);
 
                             if (hold_slack <= 0) {

@@ -11,7 +11,7 @@
  *   * ``Block ID``   → ``highlight_cluster_block(ClusterBlockId)``
  *   * ``Block Name`` → atom lookup → ``highlight_atom_block`` or
  *                      ``highlight_cluster_block``
- *   * ``Net ID``     → ``highlight_nets(ClusterNetId)`` (no-op until
+ *   * ``Net ID``     → ``highlight_nets(RoutingNetId)`` (no-op until
  *                      routing exists)
  *   * ``Net Name``   → ``highlight_nets`` after netlist lookup
  *   * ``RR Node ID`` → ``highlight_rr_nodes`` + ``auto_zoom_rr_node``
@@ -357,7 +357,7 @@ TEST_CASE("Search: Net ID before routing is a no-op "
     REQUIRE(g_vpr_ctx.routing().route_trees.empty()); // pre-condition: not routed
 
     // Snapshot net_color at the target before dispatch so we lock the
-    // exact "no mutation" contract: ``highlight_nets(ClusterNetId)``
+    // exact "no mutation" contract: ``highlight_nets(RoutingNetId)``
     // returns early on empty route_trees without writing net_color.
     const ezgl::color before = ds->net_color[RoutingNetId(size_t(target))];
 

@@ -2,7 +2,6 @@
 
 #include "bus_mux_route_types.h"
 #include "clustered_netlist_fwd.h"
-#include "netlist.h"
 #include "routing_netlist_fwd.h"
 #include "rr_graph_view.h"
 #include <map>
@@ -38,10 +37,9 @@ void log_control_congested_bus_muxes_status(const vtr::vector<BusMuxId, t_rr_bus
                                             const ClusteredNetlist& clb_nlist);
 
 ///@brief Print out RR node overuse info in a post-VPR report file.
-void report_overused_nodes(const Netlist<>& net_list,
-                           const RRGraphView& rr_graph,
-                           bool is_flat);
+void report_overused_nodes(const RoutingNetlist& net_list,
+                           const RRGraphView& rr_graph);
 
 ///@brief Generate a overused RR nodes to congested nets lookup table.
-void generate_overused_nodes_to_congested_net_lookup(const Netlist<>& net_list,
+void generate_overused_nodes_to_congested_net_lookup(const RoutingNetlist& net_list,
                                                      std::map<RRNodeId, std::set<RoutingNetId>>& nodes_to_nets_lookup);

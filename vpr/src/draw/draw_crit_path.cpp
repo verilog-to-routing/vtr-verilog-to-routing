@@ -13,6 +13,7 @@
 #include "draw_global.h"
 #include "draw_triangle.h"
 #include "globals.h"
+#include "route_utils.h"
 #include "vpr_utils.h"
 #include "vtr_assert.h"
 #include "ap_netlist_utils.h"
@@ -566,7 +567,7 @@ static void draw_connections_from_atom_netlist(AtomPinId atom_sink_pin, ezgl::co
     t_draw_state* draw_state = get_draw_state_vars();
 
     // A src net pin is always 0.
-    std::vector<RRNodeId> routed_rr_nodes = trace_routed_connection_rr_nodes(atom_net_id, 0, sink_net_pin_index);
+    std::vector<RRNodeId> routed_rr_nodes = trace_routed_connection_rr_nodes(get_routing_net_id(atom_net_id), 0, sink_net_pin_index);
 
     // Mark all the nodes highlighted.
     for (RRNodeId inode : routed_rr_nodes) {
@@ -617,7 +618,7 @@ static void draw_connections_from_cluster_netlist(AtomPinId atom_src_pin, AtomPi
 
         t_draw_state* draw_state = get_draw_state_vars();
 
-        std::vector<RRNodeId> routed_rr_nodes = trace_routed_connection_rr_nodes(cluster_net_id, 0, sink_net_pin_index);
+        std::vector<RRNodeId> routed_rr_nodes = trace_routed_connection_rr_nodes(get_routing_net_id(cluster_net_id), 0, sink_net_pin_index);
 
         // Mark all the nodes highlighted
 

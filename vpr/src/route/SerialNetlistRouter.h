@@ -2,6 +2,7 @@
 
 /** @file Serial case for \ref NetlistRouter: just loop through nets */
 
+#include "routing_netlist.h"
 #include "netlist_routers.h"
 #include "serial_connection_router.h"
 #include "parallel_connection_router.h"
@@ -10,7 +11,7 @@ template<typename HeapType>
 class SerialNetlistRouter : public NetlistRouter {
   public:
     SerialNetlistRouter(
-        const Netlist<>& net_list,
+        const RoutingNetlist& net_list,
         const RouterLookahead* router_lookahead,
         const t_router_opts& router_opts,
         CBRR& connections_inf,
@@ -21,9 +22,8 @@ class SerialNetlistRouter : public NetlistRouter {
         route_budgets& budgeting_inf,
         const RoutingPredictor& routing_predictor,
         const vtr::vector<RoutingNetId, t_net_choke_points>& choking_spots,
-        bool is_flat,
         int route_verbosity)
-        : _router(_make_router(router_lookahead, router_opts, is_flat, route_verbosity))
+        : _router(_make_router(router_lookahead, router_opts, net_list.is_flat(), route_verbosity))
         , _net_list(net_list)
         , _router_opts(router_opts)
         , _connections_inf(connections_inf)
@@ -34,7 +34,6 @@ class SerialNetlistRouter : public NetlistRouter {
         , _budgeting_inf(budgeting_inf)
         , _routing_predictor(routing_predictor)
         , _choking_spots(choking_spots)
-        , _is_flat(is_flat)
         , _route_verbosity(route_verbosity) {}
     ~SerialNetlistRouter() {}
 
@@ -81,7 +80,7 @@ class SerialNetlistRouter : public NetlistRouter {
     }
     /* Context fields */
     std::unique_ptr<ConnectionRouterInterface> _router;
-    const Netlist<>& _net_list;
+    const RoutingNetlist& _net_list;
     const t_router_opts& _router_opts;
     CBRR& _connections_inf;
     NetPinsMatrix<float>& _net_delay;
@@ -91,7 +90,6 @@ class SerialNetlistRouter : public NetlistRouter {
     route_budgets& _budgeting_inf;
     const RoutingPredictor& _routing_predictor;
     const vtr::vector<RoutingNetId, t_net_choke_points>& _choking_spots; ///< Choke points indexed by net ID.
-    bool _is_flat;
     int _route_verbosity;
 };
 

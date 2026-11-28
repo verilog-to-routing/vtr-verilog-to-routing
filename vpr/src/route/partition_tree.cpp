@@ -4,13 +4,14 @@
 #include <stack>
 #include <unordered_set>
 #include "globals.h"
+#include "routing_netlist.h"
 
 /** Minimum number of nets inside a partition to continue further partitioning.
  * Mostly an arbitrary limit. At a certain point, the quality lost due to disturbed net ordering 
  * and the task creation overhead outweighs the advantage of partitioning, so we should stop. */
 constexpr size_t MIN_NETS_TO_PARTITION = 256;
 
-PartitionTree::PartitionTree(const Netlist<>& netlist) {
+PartitionTree::PartitionTree(const RoutingNetlist& netlist) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     auto all_nets = std::unordered_set<RoutingNetId>(netlist.nets().begin(), netlist.nets().end());
@@ -20,7 +21,7 @@ PartitionTree::PartitionTree(const Netlist<>& netlist) {
 /** Build a branch of the PartitionTree given a set of \p nets and a bounding box.
  * Calls itself recursively with smaller and smaller bounding boxes until there are less
  * nets than \ref MIN_NETS_TO_PARTITION. */
-std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& netlist, const std::unordered_set<RoutingNetId>& nets, int x1, int y1, int x2, int y2) {
+std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const RoutingNetlist& netlist, const std::unordered_set<RoutingNetId>& nets, int x1, int y1, int x2, int y2) {
     if (nets.empty())
         return nullptr;
 

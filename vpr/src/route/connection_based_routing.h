@@ -17,9 +17,8 @@
 // reroute only the connections to the ones that did not have a legal connection the previous time
 class Connection_based_routing_resources {
   public:
-    Connection_based_routing_resources(const Netlist<>& net_list,
-                                       const vtr::vector<RoutingNetId, std::vector<RRNodeId>>& net_terminals,
-                                       bool is_flat);
+    Connection_based_routing_resources(const RoutingNetlist& net_list,
+                                       const vtr::vector<RoutingNetId, std::vector<RRNodeId>>& net_terminals);
 
     bool sanity_check_lookup() const;
 
@@ -28,9 +27,8 @@ class Connection_based_routing_resources {
 
     // Targeted reroute resources --------------
   private:
-    const Netlist<>& net_list_;
+    const RoutingNetlist& net_list_;
     const vtr::vector<RoutingNetId, std::vector<RRNodeId>>& net_terminals_;
-    bool is_flat_;
     // whether or not a connection should be forcibly rerouted the next iteration
     // takes [inet][sink_rr_node_index] and returns whether that connection should be rerouted or not
     /* reroute connection if all of the following are true:

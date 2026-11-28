@@ -141,17 +141,18 @@ void search_and_highlight(QWidget* /*widget*/, ezgl::application* app) {
                 app->refresh_drawing();
                 return;
             }
-            if (!is_net_routed(atom_net_id)) {
+            RoutingNetId routing_net_id = RoutingNetId(size_t(atom_net_id));
+            if (!is_net_routed(routing_net_id)) {
                 warning_dialog_box("Net is unrouted");
                 app->refresh_drawing();
                 return;
             }
-            if (is_net_fully_absorbed(atom_net_id)) {
+            if (is_net_fully_absorbed(routing_net_id)) {
                 warning_dialog_box("Net is fully absorbed");
                 app->refresh_drawing();
                 return;
             }
-            highlight_nets((ClusterNetId)net_id);
+            highlight_nets(routing_net_id);
         } else {
             // valid net id check
             if (!cluster_ctx.clb_nlist.valid_net_id(ClusterNetId(net_id))) {
@@ -159,7 +160,7 @@ void search_and_highlight(QWidget* /*widget*/, ezgl::application* app) {
                 app->refresh_drawing();
                 return;
             }
-            highlight_nets((ClusterNetId)net_id);
+            highlight_nets(RoutingNetId(net_id));
         }
     }
 
@@ -176,17 +177,18 @@ void search_and_highlight(QWidget* /*widget*/, ezgl::application* app) {
                 app->refresh_drawing();
                 return;
             }
-            if (!is_net_routed(atom_net_id)) {
+            RoutingNetId routing_net_id = RoutingNetId(size_t(atom_net_id));
+            if (!is_net_routed(routing_net_id)) {
                 warning_dialog_box("Net is unrouted");
                 app->refresh_drawing();
                 return;
             }
-            if (is_net_fully_absorbed(atom_net_id)) {
+            if (is_net_fully_absorbed(routing_net_id)) {
                 warning_dialog_box("Net is fully absorbed");
                 app->refresh_drawing();
                 return;
             }
-            highlight_nets(convert_to_cluster_net_id(atom_net_id));
+            highlight_nets(routing_net_id);
         } else {
             AtomNetId atom_net_id = atom_ctx.netlist().find_net(net_name);
 
@@ -198,7 +200,7 @@ void search_and_highlight(QWidget* /*widget*/, ezgl::application* app) {
             auto clb_net_ids_opt = atom_ctx.lookup().clb_nets(atom_net_id);
             if (clb_net_ids_opt.has_value()) {
                 for (auto clb_net_id : clb_net_ids_opt.value()) {
-                    highlight_nets(clb_net_id);
+                    highlight_nets(RoutingNetId(size_t(clb_net_id)));
                 }
             }
         }
@@ -388,7 +390,7 @@ bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::app
     return true;
 }
 
-void highlight_nets(ClusterNetId net_id) {
+void highlight_nets(RoutingNetId net_id) {
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
     t_draw_state* draw_state = get_draw_state_vars();

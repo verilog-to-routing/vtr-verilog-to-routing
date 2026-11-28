@@ -13,6 +13,7 @@
 #include "timing_util.h"
 
 #include "VprTimingGraphResolver.h"
+#include "route_utils.h"
 
 /**
  * @brief Get the bounding box of a routed net.
@@ -25,7 +26,6 @@
  * is returned with default values (OPEN).
  */
 static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
-    const auto& route_trees = g_vpr_ctx.routing().route_trees;
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     // Lambda to get the bounding box of a route tree
@@ -60,7 +60,7 @@ static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
     if (g_vpr_ctx.routing().is_flat) {
         // If flat router is used, route tree data structure can be used
         // directly to get the bounding box of the net
-        const auto& route_tree = route_trees[atom_net_id];
+        const auto& route_tree = get_route_tree_from_atom_net_id(atom_net_id);
         if (!route_tree)
             return t_bb();
         return route_tree_bb(*route_tree);
@@ -77,7 +77,7 @@ static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
         // of all cluster net bounding boxes
         if (cluster_net_id != vtr::nullopt) {
             for (const auto& clb_net_id : *cluster_net_id) {
-                const auto& route_tree = route_trees[clb_net_id];
+                const auto& route_tree = get_route_tree_from_cluster_net_id(clb_net_id);
                 if (!route_tree)
                     continue;
                 bbs.push_back(route_tree_bb(*route_tree));

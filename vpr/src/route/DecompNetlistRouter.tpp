@@ -195,7 +195,6 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
                 _worst_neg_slack,
                 _routing_predictor,
                 _choking_spots[net_id],
-                _is_flat,
                 route_ctx.route_bb[net_id],
                 false);
             if (!flags.success && !flags.retry_with_full_bb) {
@@ -244,7 +243,6 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
                 _worst_neg_slack,
                 _routing_predictor,
                 _choking_spots[vnet.net_id],
-                _is_flat,
                 vnet.clipped_bb,
                 false,
                 sink_mask);
@@ -320,7 +318,6 @@ bool DecompNetlistRouter<HeapType>::decompose_and_route_net(RoutingNetId net_id,
         _worst_neg_slack,
         _routing_predictor,
         _choking_spots[net_id],
-        _is_flat,
         net_bb,
         false,
         sink_mask);
@@ -421,7 +418,6 @@ bool DecompNetlistRouter<HeapType>::decompose_and_route_vnet(VirtualNet& vnet, c
         _worst_neg_slack,
         _routing_predictor,
         _choking_spots[vnet.net_id],
-        _is_flat,
         vnet.clipped_bb,
         false,
         sink_mask);

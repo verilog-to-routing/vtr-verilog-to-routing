@@ -10,6 +10,7 @@
 
 #ifndef NO_GRAPHICS
 
+#include "routing_netlist_fwd.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
 #include "rr_graph_fwd.h"
@@ -23,7 +24,7 @@ void search_and_highlight(QWidget* /*widget*/, ezgl::application* app);
 bool highlight_rr_nodes(RRNodeId hit_node);
 void auto_zoom_rr_node(RRNodeId rr_node_id);
 void highlight_cluster_block(ClusterBlockId clb_index);
-void highlight_nets(ClusterNetId net_id);
+void highlight_nets(RoutingNetId net_id);
 void highlight_nets(std::string net_name);
 
 void highlight_atom_block(AtomBlockId block_id);

@@ -5,7 +5,6 @@
 
 #include <vector>
 #include "clustered_netlist_fwd.h"
-#include "netlist.h"
 #include "routing_netlist_fwd.h"
 #include "route_tree.h"
 #include "rr_graph_fwd.h"
@@ -26,4 +25,4 @@ void restore_routing(const vtr::vector<RoutingNetId, vtr::optional<RouteTree>>& 
                      t_clb_opins_used& clb_opins_used_locally,
                      const t_clb_opins_used& saved_clb_opins_used_locally);
 
-void get_serial_num(const Netlist<>& net_list);
+void get_serial_num(const RoutingNetlist& net_list);

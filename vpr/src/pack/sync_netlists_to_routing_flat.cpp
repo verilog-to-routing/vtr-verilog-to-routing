@@ -14,6 +14,7 @@
 
 #include "globals.h"
 #include "vpr_utils.h"
+#include "route_utils.h"
 
 #include "sync_netlists_to_routing_flat.h"
 #include "bus_mux_route_types.h"
@@ -173,7 +174,6 @@ static void sync_pb_routes_to_routing(void) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     ClusteringContext& cluster_ctx = g_vpr_ctx.mutable_clustering();
-    const RoutingContext& route_ctx = g_vpr_ctx.routing();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     /* Clear out existing pb_routes: they were made by the intra cluster router and are invalid now */
@@ -184,10 +184,9 @@ static void sync_pb_routes_to_routing(void) {
         for (auto& [pin, pb_route] : pb_routes) {
             /* 
              * Given that this function is called when flat routing is enabled,
-             * we can safely assume that the net IDs to index into route_ctx.route_trees
-             * correspond to the atom net IDs.
+             * we can safely assume that the route trees are those of the atom nets.
              */
-            if (!route_ctx.route_trees[pb_route.atom_net_id]) {
+            if (!get_route_tree_from_atom_net_id(pb_route.atom_net_id)) {
                 /* No route tree: no routing in place, it is global or clock */
                 continue;
             }
@@ -200,10 +199,10 @@ static void sync_pb_routes_to_routing(void) {
     }
 
     /* Go through each route tree and rebuild the pb_routes */
-    for (RoutingNetId net_id : atom_ctx.netlist().nets()) {
-        const vtr::optional<RouteTree>& tree = route_ctx.route_trees[net_id];
+    for (AtomNetId net_id : atom_ctx.netlist().nets()) {
+        const vtr::optional<RouteTree>& tree = get_route_tree_from_atom_net_id(net_id);
         if (!tree)
-            continue; /* No routing at this RoutingNetId */
+            continue; /* No routing at this AtomNetId */
 
         /* Get all intrablock connections */
         std::vector<std::pair<RRNodeId, RRNodeId>> conns_to_restore; /* (source, sink) */
@@ -234,7 +233,7 @@ static void sync_pb_routes_to_routing(void) {
             t_pb* pb = cluster_ctx.clb_nlist.block_pb(clb);
 
             /* Route between the pins */
-            route_intra_cluster_conn(source_pb_graph_pin, sink_pb_graph_pin, convert_to_atom_net_id(net_id), pb);
+            route_intra_cluster_conn(source_pb_graph_pin, sink_pb_graph_pin, net_id, pb);
         }
     }
 }
@@ -246,8 +245,7 @@ inline void rebuild_atom_nets_lookup(ClusteredNetlist::IdRemapper& remapped) {
     AtomContext& atom_ctx = g_vpr_ctx.mutable_atom();
     AtomLookup& atom_lookup = atom_ctx.mutable_lookup();
 
-    for (AtomNetId parent_net_id : atom_ctx.netlist().nets()) {
-        AtomNetId atom_net_id = convert_to_atom_net_id(parent_net_id);
+    for (AtomNetId atom_net_id : atom_ctx.netlist().nets()) {
         vtr::optional<const std::vector<ClusterNetId>&> old_clb_nets_opt = atom_lookup.clb_nets(atom_net_id);
         if (!old_clb_nets_opt)
             continue;
@@ -264,7 +262,6 @@ inline void rebuild_atom_nets_lookup(ClusteredNetlist::IdRemapper& remapped) {
 static void sync_clustered_netlist_to_routing(void) {
     ClusteringContext& cluster_ctx = g_vpr_ctx.mutable_clustering();
     PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
-    const RoutingContext& route_ctx = g_vpr_ctx.routing();
     ClusteredNetlist& clb_netlist = cluster_ctx.clb_nlist;
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
@@ -280,7 +277,7 @@ static void sync_clustered_netlist_to_routing(void) {
 
     for (ClusterNetId net_id : clb_netlist.nets()) {
         AtomNetId atom_net_id = atom_lookup.atom_net(net_id);
-        if (!route_ctx.route_trees[atom_net_id])
+        if (!get_route_tree_from_atom_net_id(atom_net_id))
             continue;
 
         nets_to_remove.push_back(net_id);
@@ -293,7 +290,7 @@ static void sync_clustered_netlist_to_routing(void) {
         for (ClusterPinId pin_id : clb_netlist.port_pins(port_id)) {
             ClusterNetId clb_net_id = clb_netlist.pin_net(pin_id);
             AtomNetId atom_net_id = atom_lookup.atom_net(clb_net_id);
-            if (atom_net_id && !route_ctx.route_trees[atom_net_id]) {
+            if (atom_net_id && !get_route_tree_from_atom_net_id(atom_net_id)) {
                 skipped_pins++;
             } else {
                 pins_to_remove.push_back(pin_id);
@@ -323,9 +320,8 @@ static void sync_clustered_netlist_to_routing(void) {
 
     /* 3. Walk each routing in the atom netlist. If a node is on the tile, add a ClusterPinId for it.
      * Add the associated net and port too if they don't exist */
-    for (AtomNetId parent_net_id : atom_ctx.netlist().nets()) {
-        const vtr::optional<RouteTree>& tree = route_ctx.route_trees[parent_net_id];
-        AtomNetId atom_net_id = convert_to_atom_net_id(parent_net_id);
+    for (AtomNetId atom_net_id : atom_ctx.netlist().nets()) {
+        const vtr::optional<RouteTree>& tree = get_route_tree_from_atom_net_id(atom_net_id);
 
         ClusterNetId clb_net_id;
         int clb_nets_so_far = 0;
@@ -387,7 +383,7 @@ static void sync_clustered_netlist_to_routing(void) {
             // be under this OPIN, so this is valid (we don't need to get the branch explicitly)
             if (node_type == e_rr_type::OPIN) {
                 std::string net_name;
-                net_name = atom_ctx.netlist().net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
+                net_name = atom_ctx.netlist().net_name(atom_net_id) + "_" + std::to_string(clb_nets_so_far);
                 clb_net_id = clb_netlist.create_net(net_name);
                 atom_ctx.mutable_lookup().add_atom_clb_net(atom_net_id, clb_net_id);
                 clb_nets_so_far++;
@@ -453,11 +449,10 @@ static void fixup_atom_pb_graph_pin_mapping(void) {
 
 static std::string describe_bus_mux_pin(const t_pb_graph_pin* pin, AtomNetId net) {
     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
-    const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
     VTR_ASSERT(net);
     return vtr::string_fmt("%s (net '%s', %s)", pin->to_string(false).c_str(), atom_nlist.net_name(net).c_str(),
-                           route_ctx.route_trees[net] ? "flat-routed" : "not routed, packer path kept");
+                           get_route_tree_from_atom_net_id(net) ? "flat-routed" : "not routed, packer path kept");
 }
 
 static void check_cluster_bus_mux_selects(ClusterBlockId clb_blk_id, const t_pb_routes& pb_route) {

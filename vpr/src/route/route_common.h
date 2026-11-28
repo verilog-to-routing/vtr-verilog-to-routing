@@ -96,10 +96,10 @@ inline bool inside_bb(RRNodeId inode, const t_bb& bb) {
     return inside_bb(g_vpr_ctx.device().rr_graph, inode, bb);
 }
 
-vtr::vector<RoutingNetId, t_bb> load_route_bb(const Netlist<>& net_list,
-                                             int bb_factor);
+vtr::vector<RoutingNetId, t_bb> load_route_bb(const RoutingNetlist& net_list,
+                                              int bb_factor);
 
-t_bb load_net_route_bb(const Netlist<>& net_list,
+t_bb load_net_route_bb(const RoutingNetlist& net_list,
                        RoutingNetId net_id,
                        int bb_factor);
 
@@ -180,9 +180,8 @@ float get_rr_node_delay_cost(RRNodeId to_node, RREdgeId connecting_edge);
 
 void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf);
 
-void init_route_structs(const Netlist<>& net_list,
-                        int bb_factor,
-                        bool is_flat);
+void init_route_structs(const RoutingNetlist& net_list,
+                        int bb_factor);
 
 /**
  * @brief Allocate and initialize per-node routing state and non-configurable flags.
@@ -191,11 +190,11 @@ void alloc_and_load_rr_node_route_structs(const t_router_opts& router_opts);
 
 void reset_rr_node_route_structs(const t_router_opts& route_opts);
 
-void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins, bool is_flat);
+void reserve_locally_used_opins(const RoutingNetlist& net_list, HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins);
 
 void print_rr_node_route_inf();
 void print_rr_node_route_inf_dot();
-void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat);
+void print_invalid_routing_info(const RoutingNetlist& net_list);
 
 std::string describe_unrouteable_connection(RRNodeId source_node, RRNodeId sink_node, bool is_flat);
 
