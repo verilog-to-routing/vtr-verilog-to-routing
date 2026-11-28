@@ -2757,6 +2757,8 @@ Analysis Options
 
     Controls whether clock skew timing reports are generated.
 
+    The capture clock path uses minimum delays in the setup reports and maximum delays in the hold reports, and is followed by a ``common clock path pessimism`` line giving the credit for the part of the clock path shared with the launch clock.
+
     **Default:** ``off``
 
 .. option:: --timing_report_path_categories {all | <category> [<category> ...]}

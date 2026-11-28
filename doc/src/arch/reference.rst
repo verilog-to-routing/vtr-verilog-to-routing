@@ -894,6 +894,8 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
         The minimum delay only replaces the intrinsic delay: the switch resistance and capacitances (``R``, ``Cin``, ``Cout``, ``Cinternal``) are the same for the minimum and maximum delay.
         When the minimum and maximum delays are extrapolated to an unspecified fan-in, the minimum delay is limited to be at least 0 and at most the maximum delay.
 
+        The minimum and maximum delays describe on-chip variation within a single corner, not two different corners.
+
         **Example:** Fan-in dependent delay
 
         .. code-block:: xml
@@ -1931,6 +1933,9 @@ Timing
 .. seealso:: For examples of primitive timing modeling specifications see the :ref:`arch_model_timing_tutorial`
 
 Timing is specified through tags contained with in ``pb_type``, ``complete``, ``direct``, or ``mux`` tags as follows:
+
+.. note:: VPR analyzes a single corner.
+          Minimum and maximum delays (``min`` and ``max`` on ``<delay_constant>`` and ``<T_clock_to_Q>``, and ``type`` on ``<delay_matrix>``) describe on-chip variation within that corner, not two different corners.
 
 .. arch:tag:: <delay_constant max="float" min="float" in_port="string" out_port="string"/>
 

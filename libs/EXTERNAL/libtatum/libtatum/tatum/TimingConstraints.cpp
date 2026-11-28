@@ -198,6 +198,25 @@ Time TimingConstraints::output_constraint(const NodeId node_id, const DomainId d
     return std::numeric_limits<Time>::quiet_NaN();
 }
 
+Time TimingConstraints::clock_domain_common_clock_path_pessimism(const DomainId domain_id) const {
+    TATUM_ASSERT_MSG(domain_id && size_t(domain_id) < domain_ids_.size(), "Invalid clock domain");
+    return common_clock_path_pessimism_[domain_id];
+}
+
+Time TimingConstraints::common_clock_path_pessimism(const DomainId launch_domain, const DomainId capture_domain) const {
+    // Only paths launched and captured by the same physical clock share part of their clock paths
+    NodeId launch_source = clock_domain_source_node(launch_domain);
+    if (!launch_source || launch_source != clock_domain_source_node(capture_domain)) {
+        return Time(0.);
+    }
+
+    // Both domains share the source node, so their values should match. Take the smaller to stay
+    // conservative if they don't.
+    Time launch_variation = clock_domain_common_clock_path_pessimism(launch_domain);
+    Time capture_variation = clock_domain_common_clock_path_pessimism(capture_domain);
+    return (launch_variation.value() < capture_variation.value()) ? launch_variation : capture_variation;
+}
+
 Time TimingConstraints::source_latency(const DomainId domain, const ArrivalType arrival_type) const {
 
     if (arrival_type == ArrivalType::EARLY) {
@@ -295,6 +314,7 @@ DomainId TimingConstraints::create_clock_domain(const std::string name) {
         
         domain_names_.push_back(name);
         domain_sources_.emplace_back(NodeId::INVALID());
+        common_clock_path_pessimism_.emplace_back(Time(0.));
 
         TATUM_ASSERT(clock_domain_name(id) == name);
         TATUM_ASSERT(find_clock_domain(name) == id);
@@ -383,6 +403,12 @@ void TimingConstraints::set_source_latency(const DomainId domain, const ArrivalT
         TATUM_ASSERT(arrival_type == ArrivalType::LATE);
         source_latencies_late_[domain] = latency;
     }
+}
+
+void TimingConstraints::set_common_clock_path_pessimism(const DomainId domain_id, const Time variation) {
+    TATUM_ASSERT_MSG(domain_id && size_t(domain_id) < domain_ids_.size(), "Invalid clock domain");
+    TATUM_ASSERT_MSG(variation.value() >= 0., "Common clock path pessimism must be non-negative");
+    common_clock_path_pessimism_[domain_id] = variation;
 }
 
 void TimingConstraints::set_clock_domain_source(const NodeId node_id, const DomainId domain_id) {

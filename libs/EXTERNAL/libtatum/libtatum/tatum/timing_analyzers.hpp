@@ -124,8 +124,8 @@
  * at each node in the timing graph.
  */
 
- /* XXX TODO: these features haven't yet been implemented!
- * ======================================================
+/* TODO: only some of these features are implemented (see "What is implemented" below)
+ * ===================================================================================
  *
  * Derating & Pesimism Reduction Techniques
  * ------------------------------------------
@@ -188,6 +188,26 @@
  *
  * CCPR does not directly remove this effect, but instead calculates a 'credit' which is
  * added back to the final path to counter-act this extra pessimism.
+ */
+
+/*
+ * What is implemented
+ * ===================
+ *
+ * Min/max edge delays are treated as on-chip variation within a single corner:
+ *   - Setup analysis uses max (late) delays on the launch clock path and data path, and min (early)
+ *     delays on the capture clock path.
+ *   - Hold analysis uses min (early) delays on the launch clock path and data path, and max (late)
+ *     delays on the capture clock path.
+ * (see SetupAnalysisOps and HoldAnalysisOps)
+ *
+ * A basic form of common clock pessimism removal is applied when the required time of a clocked
+ * timing endpoint is calculated: the application provides, per clock domain, the late - early
+ * variation of the clock path shared by every clock sink of that domain
+ * (TimingConstraints::set_common_clock_path_pessimism()). That credit is added to setup required
+ * times and subtracted from hold required times, for paths whose launch and capture domains share a
+ * clock source. Variation after the point where the clock path first branches is not credited
+ * (pessimistic, but never optimistic).
  */
 
 /*

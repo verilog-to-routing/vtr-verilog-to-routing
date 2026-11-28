@@ -83,6 +83,7 @@
 #include "pack_report.h"
 #include "overuse_report.h"
 
+#include "common_clock_path_pessimism.h"
 #include "timing_graph_builder.h"
 #include "timing_reports.h"
 #include "tatum/echo_writer.hpp"
@@ -879,6 +880,18 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     // print the total number of used physical blocks for each
     // physical block type after finishing the packing stage
     print_pb_type_count(g_vpr_ctx.clustering().clb_nlist);
+
+    // The common clock path pessimism credit depends on the clustering, so it is set once the
+    // clustering is loaded
+    if (vpr_setup.TimingEnabled) {
+        TimingContext& timing_ctx = g_vpr_ctx.mutable_timing();
+        set_common_clock_path_pessimism(*timing_ctx.constraints,
+                                        *timing_ctx.graph,
+                                        atom_ctx.netlist(),
+                                        atom_ctx.lookup(),
+                                        g_vpr_ctx.clustering().clb_nlist,
+                                        vpr_setup.RouterOpts.flat_routing);
+    }
 }
 
 bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -1105,6 +1118,8 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             // routing, in the analysis stage), so they are also used as the min delays here.
             // TODO: For hold-aware routing (RCV), the router's timing analysis should use the
             //       min net delays. This requires the router to also compute the min delays.
+            //       The common clock path pessimism credit (see common_clock_path_pessimism.h) could
+            //       then also include the clock nets' routing, updated as the routing changes.
             routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay, net_delay, is_flat);
             timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
 #ifndef NO_SERVER
@@ -1632,6 +1647,15 @@ void vpr_analysis(const Netlist<>& net_list,
         NetPinsMatrix<float> net_delay_min = make_net_pins_matrix<float>(net_list);
         NetPinsMatrix<float> net_delay_max = make_net_pins_matrix<float>(net_list);
         load_net_delay_from_routing(net_list, net_delay_min, net_delay_max);
+
+        // Set the common clock path pessimism credit from the clustering being analyzed (the post-routing
+        // sync may have changed which cluster pins the nets use, e.g. a clock net's driving pin)
+        set_common_clock_path_pessimism(*g_vpr_ctx.mutable_timing().constraints,
+                                        *g_vpr_ctx.timing().graph,
+                                        atom_ctx.netlist(),
+                                        atom_ctx.lookup(),
+                                        g_vpr_ctx.clustering().clb_nlist,
+                                        vpr_setup.RouterOpts.flat_routing);
 
         //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay_min, net_delay_max, vpr_setup.RouterOpts.flat_routing);

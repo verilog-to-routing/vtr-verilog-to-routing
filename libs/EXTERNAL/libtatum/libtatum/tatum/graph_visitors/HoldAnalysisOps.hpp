@@ -32,6 +32,16 @@ class HoldAnalysisOps : public CommonAnalysisOps {
             return +tc.hold_clock_uncertainty(src_id, sink_id); 
         }
 
+        /**
+         * @brief Returns the common clock path pessimism credit to add to the required time.
+         *
+         * The capture clock was taken late on the clock path it shares with the launch clock, so the
+         * credit moves the required time earlier.
+         */
+        Time common_clock_path_pessimism(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) {
+            return -tc.common_clock_path_pessimism(src_id, sink_id);
+        }
+
         Time launch_source_latency(const TimingConstraints& tc, const DomainId domain) {
             //For pessimistic hold analysis launch occurs early
             return tc.source_latency(domain, ArrivalType::EARLY);
@@ -102,10 +112,13 @@ class HoldAnalysisOps : public CommonAnalysisOps {
                 //(instead of the data path).
                 return thld;
             } else {
-                Time tcq = dc.min_edge_delay(tg, edge_id);
-                TATUM_ASSERT_MSG(tcq.value() >= 0., "Clock-to-q delay (Tcq) expected to be positive");
+                // Min/max delays model on-chip variation within one corner, so the capture clock
+                // path is pessimistically late (max) for hold. The part of the clock path shared with
+                // the launch clock (which is early) is credited back by common_clock_path_pessimism().
+                Time delay = dc.max_edge_delay(tg, edge_id);
+                TATUM_ASSERT_MSG(delay.value() >= 0., "Capture clock edge delay expected to be positive");
 
-                return tcq; 
+                return delay;
             }
         }
 
