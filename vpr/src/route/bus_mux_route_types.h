@@ -11,15 +11,18 @@
  * other routed bits is treated as "control congested". Its present cost grows
  * with the number of bits it would move onto another input set.
  *
- * No history term is needed because the cost is tracked per input set, which
- * already makes the minority choice more expensive.
+ * Each bus-mux edge (one input set driving one output bit) also has a history
+ * cost. This cost increases on occupied edges while the mux uses multiple input
+ * sets and decays toward 1 when at most one input set is in use.
  */
+#include <algorithm>
 #include <string>
 #include <vector>
 
 #include "clustered_netlist_fwd.h"
 #include "physical_types.h"
 #include "rr_graph_fwd.h"
+#include "vtr_assert.h"
 #include "vtr_strong_id.h"
 #include "vtr_util.h"
 
@@ -46,6 +49,8 @@ struct t_rr_bus_mux {
     const t_pb_graph_node* owner = nullptr;
     /// @brief Number of input sets (data lines).
     int num_sets = 0;
+    /// @brief Number of output bits present in the routing resource graph.
+    int num_bits = 0;
 
     /// @brief Describe the mux and its owner, e.g. "'a2a' in one_mult_27x27[0]".
     std::string describe() const {
@@ -56,10 +61,12 @@ struct t_rr_bus_mux {
     }
 };
 
-/// @brief The mux and input set an rr edge belongs to, see find_bus_mux_edge().
+/// @brief The mux, input set and output bit an rr edge belongs to, see find_bus_mux_edge().
 struct t_bus_mux_edge {
     BusMuxId mux_id;
     int set;
+    /// @brief Index of the output bit the edge drives [0..t_rr_bus_mux::num_bits-1].
+    int bit;
 };
 
 /// @brief An rr edge implementing one bit of a bus-based mux, seen from the mux output node.
@@ -72,6 +79,8 @@ struct t_rr_bus_mux_in_edge {
 struct t_rr_bus_mux_out_node {
     /// @brief The mux this output bit belongs to.
     BusMuxId mux_id;
+    /// @brief Index of this output bit in its mux [0..t_rr_bus_mux::num_bits-1].
+    int bit = -1;
     /// @brief The edges driving this output bit, one per input set present in the rr graph.
     std::vector<t_rr_bus_mux_in_edge> in_edges;
 };
@@ -80,6 +89,35 @@ struct t_rr_bus_mux_out_node {
 struct t_bus_mux_route_inf {
     /// @brief Routed bit counts indexed by input set [0..num_sets-1].
     std::vector<int> set_occ;
+
+    /// @brief Route-tree uses of each bus-mux edge, indexed by edge_index(bit, set).
+    std::vector<int> edge_occ;
+
+    /// @brief History cost of each bus-mux edge, indexed by edge_index(bit, set).
+    ///
+    /// Initialized to 1 and updated by pathfinder_update_bus_mux_acc_cost().
+    std::vector<float> edge_acc_cost;
+
+    /// @brief Initialize per-set and per-edge occupancy to zero and edge history costs to 1.
+    void init(int num_sets, int num_bits) {
+        set_occ.assign(num_sets, 0);
+        edge_occ.assign((size_t)num_sets * num_bits, 0);
+        edge_acc_cost.assign((size_t)num_sets * num_bits, 1.f);
+    }
+
+    /// @brief Clear per-set and per-edge occupancy while preserving edge history costs.
+    void clear_occ() {
+        std::fill(set_occ.begin(), set_occ.end(), 0);
+        std::fill(edge_occ.begin(), edge_occ.end(), 0);
+    }
+
+    /// @brief Return the index of input set `set` and output bit `bit` in the per-edge vectors.
+    size_t edge_index(int bit, int set) const {
+        VTR_ASSERT_SAFE(bit >= 0 && set >= 0 && (size_t)set < set_occ.size());
+        size_t index = (size_t)bit * set_occ.size() + set;
+        VTR_ASSERT_SAFE(index < edge_occ.size());
+        return index;
+    }
 
     /// @brief Count input sets driving at least one bit.
     int num_sets_in_use() const {

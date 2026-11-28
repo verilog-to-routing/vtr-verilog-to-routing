@@ -510,7 +510,7 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
     // Bus-based mux bit counts are recounted with the node occupancy.
     VTR_ASSERT(route_ctx.bus_mux_route_inf.size() == device_ctx.rr_bus_muxes.size());
     for (t_bus_mux_route_inf& mux_inf : route_ctx.bus_mux_route_inf) {
-        std::ranges::fill(mux_inf.set_occ, 0);
+        mux_inf.clear_occ();
     }
     const bool has_bus_muxes = !device_ctx.rr_bus_muxes.empty();
 
