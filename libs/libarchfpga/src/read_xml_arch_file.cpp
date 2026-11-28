@@ -4320,15 +4320,17 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
                                     "starty", "endy", "repeaty", "incry"},
                                    loc_data);
 
-            int grid_width = arch->grid_layouts.at(layout_index).width;
-            int grid_height = arch->grid_layouts.at(layout_index).height;
+            // Callers which do not select a device layout (e.g. Parmys) have no grid to check against
+            bool has_grid = layout_index < (int)arch->grid_layouts.size();
+            int grid_width = has_grid ? arch->grid_layouts[layout_index].width : 0;
+            int grid_height = has_grid ? arch->grid_layouts[layout_index].height : 0;
 
             // Absolute location that this SB must be applied to, -1 if not specified
             sb.specified_loc.x = get_attribute(sub_elem, "x", loc_data, ReqOpt::OPTIONAL).as_int(ARCH_FPGA_UNDEFINED_VAL);
             sb.specified_loc.y = get_attribute(sub_elem, "y", loc_data, ReqOpt::OPTIONAL).as_int(ARCH_FPGA_UNDEFINED_VAL);
 
             // Check if the absolute value is within the device grid width and height
-            if (sb.specified_loc.x >= grid_width || sb.specified_loc.y >= grid_height) {
+            if (has_grid && (sb.specified_loc.x >= grid_width || sb.specified_loc.y >= grid_height)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(sub_elem),
                                vtr::string_fmt("Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n",
                                                sb.specified_loc.x, sb.specified_loc.y, grid_width, grid_height)
@@ -4338,7 +4340,7 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
             // if the switchblock exact location is not specified and a region is specified within the architecture file,
             // we have to parse the region specification and apply the SB pattern to all the locations fall into the specified
             // region based on device width and height.
-            if (sb.specified_loc.x == ARCH_FPGA_UNDEFINED_VAL && sb.specified_loc.y == ARCH_FPGA_UNDEFINED_VAL) {
+            if (has_grid && sb.specified_loc.x == ARCH_FPGA_UNDEFINED_VAL && sb.specified_loc.y == ARCH_FPGA_UNDEFINED_VAL) {
                 calculate_custom_sb_locations(loc_data, sub_elem, grid_width, grid_height, sb);
             }
         }

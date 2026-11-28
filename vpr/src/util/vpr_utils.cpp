@@ -1662,8 +1662,9 @@ std::pair<ClusterBlockId, t_pb_graph_pin*> get_rr_node_cluster_blk_id_pb_graph_p
 
     t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({x, y, layer});
 
-    auto [sub_tile, sub_tile_num] = get_sub_tile_from_pin_physical_num(physical_tile, pin_physical_num);
-    VTR_ASSERT(sub_tile && sub_tile_num >= 0 && sub_tile_num < physical_tile->capacity);
+    auto [sub_tile, rel_cap] = get_sub_tile_from_pin_physical_num(physical_tile, pin_physical_num);
+    VTR_ASSERT(sub_tile && rel_cap >= 0);
+    int sub_tile_num = sub_tile->capacity.low + rel_cap;
 
     ClusterBlockId blk_id = place_ctx.grid_blocks().block_at_location({x, y, sub_tile_num, layer});
     VTR_ASSERT(blk_id != ClusterBlockId::INVALID());
