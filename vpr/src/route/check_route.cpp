@@ -29,12 +29,12 @@ static void check_node_and_range(RRNodeId inode,
                                  bool is_flat);
 static void check_source(const Netlist<>& net_list,
                          RRNodeId inode,
-                         ParentNetId net_id,
+                         RoutingNetId net_id,
                          bool is_flat);
 static void check_sink(const Netlist<>& net_list,
                        RRNodeId inode,
                        int net_pin_index,
-                       ParentNetId net_id,
+                       RoutingNetId net_id,
                        bool* pin_done);
 
 static void check_switch(const RouteTreeNode& rt_node, size_t num_switch);
@@ -80,13 +80,13 @@ static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_
  * @return True if check is done successfully; otherwise false.
  */
 static bool check_non_configurable_edges(const Netlist<>& net_list,
-                                         ParentNetId net,
+                                         RoutingNetId net,
                                          const t_non_configurable_rr_sets& non_configurable_rr_sets,
                                          const vtr::vector<RRNodeId, int>& rrnode_set_id,
                                          bool is_flat);
 
 static void check_net_for_stubs(const Netlist<>& net_list,
-                                ParentNetId net,
+                                RoutingNetId net,
                                 bool is_flat);
 
 /************************ Subroutine definitions ****************************/
@@ -229,7 +229,7 @@ void check_route(const Netlist<>& net_list,
 static void check_sink(const Netlist<>& net_list,
                        RRNodeId inode,
                        int net_pin_index,
-                       ParentNetId net_id,
+                       RoutingNetId net_id,
                        bool* pin_done) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -251,7 +251,7 @@ static void check_sink(const Netlist<>& net_list,
 /* Checks that the node passed in is a valid source for this net. */
 static void check_source(const Netlist<>& net_list,
                          RRNodeId inode,
-                         ParentNetId net_id,
+                         RoutingNetId net_id,
                          bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -267,7 +267,7 @@ static void check_source(const Netlist<>& net_list,
     /* for sinks and sources, ptc_num is class */
     int ptc_num = rr_graph.node_class_num(inode);
     /* First node_block for net is the source */
-    ParentBlockId blk_id = net_list.net_driver_block(net_id);
+    RoutingBlockId blk_id = net_list.net_driver_block(net_id);
 
     t_block_loc blk_loc = get_block_loc(blk_id, is_flat);
     if (blk_loc.loc.x != i || blk_loc.loc.y != j) {
@@ -648,7 +648,7 @@ static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_
 }
 
 static bool check_non_configurable_edges(const Netlist<>& net_list,
-                                         ParentNetId net,
+                                         RoutingNetId net,
                                          const t_non_configurable_rr_sets& non_configurable_rr_sets,
                                          const vtr::vector<RRNodeId, int>& rrnode_set_id,
                                          bool is_flat) {
@@ -826,7 +826,7 @@ class StubFinder {
 
     // Checks specified net for stubs, return true if at least one stub is
     // found.
-    bool CheckNet(ParentNetId net);
+    bool CheckNet(RoutingNetId net);
 
     // Returns set of stub nodes.
     const std::set<int>& stub_nodes() {
@@ -849,7 +849,7 @@ class StubFinder {
 //
 //We treat any configurable stubs as an error.
 void check_net_for_stubs(const Netlist<>& net_list,
-                         ParentNetId net,
+                         RoutingNetId net,
                          bool is_flat) {
     StubFinder stub_finder;
 
@@ -871,7 +871,7 @@ void check_net_for_stubs(const Netlist<>& net_list,
     }
 }
 
-bool StubFinder::CheckNet(ParentNetId net) {
+bool StubFinder::CheckNet(RoutingNetId net) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     stub_nodes_.clear();
 

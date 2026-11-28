@@ -56,12 +56,12 @@
  *                                                                          */
 
 /******************** Subroutines local to route_common.cpp *******************/
-static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(const RRGraphView& rr_graph,
+static vtr::vector<RoutingNetId, std::vector<RRNodeId>> load_net_rr_terminals(const RRGraphView& rr_graph,
                                                                              const DeviceGrid& grid,
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat);
 
-static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(const RRGraphView& rr_graph,
+static vtr::vector<RoutingBlockId, std::vector<RRNodeId>> load_rr_clb_sources(const RRGraphView& rr_graph,
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat);
 
@@ -69,7 +69,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
 
 static void adjust_one_rr_occ_and_acc_cost(RRNodeId inode, int add_or_sub, float acc_fac);
 
-static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
+static vtr::vector<RoutingNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
                                                            const LogicalModels& models,
                                                            bool is_flat);
 
@@ -99,7 +99,7 @@ static float comp_initial_acc_cost(RRNodeId node_id,
 
 /************************** Subroutine definitions ***************************/
 
-void save_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
+void save_routing(vtr::vector<RoutingNetId, vtr::optional<RouteTree>>& best_routing,
                   const t_clb_opins_used& clb_opins_used_locally,
                   t_clb_opins_used& saved_clb_opins_used_locally) {
     auto& route_ctx = g_vpr_ctx.routing();
@@ -112,7 +112,7 @@ void save_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routi
 
 /* Empties route_ctx.route_trees and copies over best_routing onto it.
  * Also restores the locally used opin data. */
-void restore_routing(const vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
+void restore_routing(const vtr::vector<RoutingNetId, vtr::optional<RouteTree>>& best_routing,
                      t_clb_opins_used& clb_opins_used_locally,
                      const t_clb_opins_used& saved_clb_opins_used_locally) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -521,11 +521,11 @@ void reset_rr_node_route_structs(const t_router_opts& route_opts) {
 /* Allocates and loads the route_ctx.net_rr_terminals data structure. For each net it stores the rr_node   *
  * index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    *
  * Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
-static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(const RRGraphView& rr_graph,
+static vtr::vector<RoutingNetId, std::vector<RRNodeId>> load_net_rr_terminals(const RRGraphView& rr_graph,
                                                                              const DeviceGrid& grid,
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat) {
-    vtr::vector<ParentNetId, std::vector<RRNodeId>> net_rr_terminals;
+    vtr::vector<RoutingNetId, std::vector<RRNodeId>> net_rr_terminals;
 
     net_rr_terminals.resize(net_list.nets().size());
 
@@ -575,10 +575,10 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
  * they are used only to reserve pins for locally used OPINs in the router. *
  * [0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1].            *
  * The values for blocks that are pads are NOT valid.                        */
-static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(const RRGraphView& rr_graph,
+static vtr::vector<RoutingBlockId, std::vector<RRNodeId>> load_rr_clb_sources(const RRGraphView& rr_graph,
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat) {
-    vtr::vector<ParentBlockId, std::vector<RRNodeId>> rr_blk_source;
+    vtr::vector<RoutingBlockId, std::vector<RRNodeId>> rr_blk_source;
 
     e_rr_type rr_type;
 
@@ -615,10 +615,10 @@ static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(con
     return rr_blk_source;
 }
 
-static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
+static vtr::vector<RoutingNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
                                                            const LogicalModels& models,
                                                            bool is_flat) {
-    vtr::vector<ParentNetId, uint8_t> is_clock_net(net_list.nets().size());
+    vtr::vector<RoutingNetId, uint8_t> is_clock_net(net_list.nets().size());
 
     auto& atom_ctx = g_vpr_ctx.atom();
     std::set<AtomNetId> clock_nets = find_netlist_physical_clock_nets(atom_ctx.netlist(), models);
@@ -678,9 +678,9 @@ static void expand_route_bb_to_interposer_cut_bounds(const DeviceContext& device
     }
 }
 
-vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
+vtr::vector<RoutingNetId, t_bb> load_route_bb(const Netlist<>& net_list,
                                              int bb_factor) {
-    vtr::vector<ParentNetId, t_bb> route_bb;
+    vtr::vector<RoutingNetId, t_bb> route_bb;
 
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -727,7 +727,7 @@ vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
 }
 
 t_bb load_net_route_bb(const Netlist<>& net_list,
-                       ParentNetId net_id,
+                       RoutingNetId net_id,
                        int bb_factor) {
     /*
      * This routine loads the bounding box used to limit the space
@@ -882,7 +882,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             //congestion cost are popped-off/reserved first. (Intuitively, we want
             //the reserved OPINs to move out of the way of congestion, by preferring
             //to reserve OPINs with lower congestion costs).
-            RRNodeId from_node = route_ctx.rr_blk_source[(const ParentBlockId&)blk_id][iclass];
+            RRNodeId from_node = route_ctx.rr_blk_source[(const RoutingBlockId&)blk_id][iclass];
             int num_edges = rr_graph.num_edges(RRNodeId(from_node));
             for (int iconn = 0; iconn < num_edges; iconn++) {
                 RRNodeId to_node = rr_graph.edge_sink_node(RRNodeId(from_node), iconn);
@@ -945,7 +945,7 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
     auto& route_ctx = g_vpr_ctx.routing();
 
     //Build a look-up of nets using each RR node
-    std::multimap<RRNodeId, ParentNetId> rr_node_nets;
+    std::multimap<RRNodeId, RoutingNetId> rr_node_nets;
 
     for (auto net_id : net_list.nets()) {
         if (!route_ctx.route_trees[net_id])

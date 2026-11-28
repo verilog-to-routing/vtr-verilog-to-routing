@@ -13,14 +13,14 @@ constexpr size_t MIN_NETS_TO_PARTITION = 256;
 PartitionTree::PartitionTree(const Netlist<>& netlist) {
     const auto& device_ctx = g_vpr_ctx.device();
 
-    auto all_nets = std::unordered_set<ParentNetId>(netlist.nets().begin(), netlist.nets().end());
+    auto all_nets = std::unordered_set<RoutingNetId>(netlist.nets().begin(), netlist.nets().end());
     _root = build_helper(netlist, all_nets, 0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
 }
 
 /** Build a branch of the PartitionTree given a set of \p nets and a bounding box.
  * Calls itself recursively with smaller and smaller bounding boxes until there are less
  * nets than \ref MIN_NETS_TO_PARTITION. */
-std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& netlist, const std::unordered_set<ParentNetId>& nets, int x1, int y1, int x2, int y2) {
+std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& netlist, const std::unordered_set<RoutingNetId>& nets, int x1, int y1, int x2, int y2) {
     if (nets.empty())
         return nullptr;
 
@@ -138,7 +138,7 @@ std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& 
     }
 
     /* Populate net IDs on each side and call next level of build_x */
-    std::unordered_set<ParentNetId> left_nets, right_nets, my_nets;
+    std::unordered_set<RoutingNetId> left_nets, right_nets, my_nets;
 
     if (best_axis == Axis::X) {
         for (auto net_id : nets) {
@@ -188,13 +188,13 @@ std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& 
     return out;
 }
 
-inline bool net_in_ptree_node(ParentNetId net_id, const PartitionTreeNode* node) {
+inline bool net_in_ptree_node(RoutingNetId net_id, const PartitionTreeNode* node) {
     auto& route_ctx = g_vpr_ctx.routing();
     const t_bb& bb = route_ctx.route_bb[net_id];
     return bb.xmin >= node->bb.xmin && bb.xmax <= node->bb.xmax && bb.ymin >= node->bb.ymin && bb.ymax <= node->bb.ymax;
 }
 
-void PartitionTree::update_nets(const std::vector<ParentNetId>& nets) {
+void PartitionTree::update_nets(const std::vector<RoutingNetId>& nets) {
     for (auto net_id : nets) {
         PartitionTreeNode* old_ptree_node = _net_to_ptree_node[net_id];
         PartitionTreeNode* new_ptree_node = old_ptree_node;

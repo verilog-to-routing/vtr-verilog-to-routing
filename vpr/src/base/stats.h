@@ -6,6 +6,7 @@
 #include <string_view>
 
 #include "netlist.h"
+#include "routing_netlist_fwd.h"
 #include "rr_graph_type.h"
 
 class DeviceGrid;
@@ -29,7 +30,7 @@ void print_wirelen_prob_dist(bool is_flat);
 
 void print_lambda();
 
-void get_num_bends_and_length(ParentNetId inet, int* bends, int* length, int* segments, bool* is_absorbed_ptr);
+void get_num_bends_and_length(RoutingNetId inet, int* bends, int* length, int* segments, bool* is_absorbed_ptr);
 
 int count_netlist_clocks();
 

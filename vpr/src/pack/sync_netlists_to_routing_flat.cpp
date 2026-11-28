@@ -200,10 +200,10 @@ static void sync_pb_routes_to_routing(void) {
     }
 
     /* Go through each route tree and rebuild the pb_routes */
-    for (ParentNetId net_id : atom_ctx.netlist().nets()) {
+    for (RoutingNetId net_id : atom_ctx.netlist().nets()) {
         const vtr::optional<RouteTree>& tree = route_ctx.route_trees[net_id];
         if (!tree)
-            continue; /* No routing at this ParentNetId */
+            continue; /* No routing at this RoutingNetId */
 
         /* Get all intrablock connections */
         std::vector<std::pair<RRNodeId, RRNodeId>> conns_to_restore; /* (source, sink) */

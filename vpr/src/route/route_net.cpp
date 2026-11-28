@@ -15,7 +15,7 @@ bool check_hold(const t_router_opts& router_opts, float worst_neg_slack) {
 }
 
 void setup_net(int itry,
-               ParentNetId net_id,
+               RoutingNetId net_id,
                const Netlist<>& net_list,
                CBRR& connections_inf,
                const t_router_opts& router_opts,
@@ -129,7 +129,7 @@ void update_rr_route_inf_from_tree(const RouteTreeNode& rt_node) {
 }
 
 bool should_route_net(const Netlist<>& net_list,
-                      ParentNetId net_id,
+                      RoutingNetId net_id,
                       CBRR& connections_inf,
                       route_budgets& budgeting_inf,
                       float worst_negative_slack,
@@ -188,8 +188,8 @@ float get_net_pin_criticality(const SetupHoldTimingInfo* timing_info,
                               const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                               float max_criticality,
                               float criticality_exp,
-                              ParentNetId net_id,
-                              ParentPinId pin_id,
+                              RoutingNetId net_id,
+                              RoutingPinId pin_id,
                               bool is_flat) {
     float pin_criticality = 0.0;
     const auto& route_ctx = g_vpr_ctx.routing();
@@ -223,7 +223,7 @@ float get_net_pin_criticality(const SetupHoldTimingInfo* timing_info,
 
 void update_net_delays_from_route_tree(float* net_delay,
                                        const Netlist<>& net_list,
-                                       ParentNetId inet,
+                                       RoutingNetId inet,
                                        TimingInfo* timing_info,
                                        NetPinTimingInvalidator* pin_timing_invalidator) {
     auto& route_ctx = g_vpr_ctx.routing();

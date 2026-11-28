@@ -76,11 +76,11 @@ void RouteTreeNode::print_x(int depth) const {
 /* Construct a top-level route tree. */
 RouteTree::RouteTree(RRNodeId _inode) {
     _root = new RouteTreeNode(_inode, RRSwitchId::INVALID(), nullptr);
-    _net_id = ParentNetId::INVALID();
+    _net_id = RoutingNetId::INVALID();
     _rr_node_to_rt_node[_inode] = _root;
 }
 
-RouteTree::RouteTree(ParentNetId _inet) {
+RouteTree::RouteTree(RoutingNetId _inet) {
     auto& route_ctx = g_vpr_ctx.routing();
 
     RRNodeId inode = RRNodeId(route_ctx.net_rr_terminals[_inet][0]);
@@ -659,7 +659,7 @@ RouteTree::prune(CBRR& connections_inf, std::vector<int>* non_config_node_set_us
 
     VTR_ASSERT_MSG(rr_graph.node_type(root().inode) == e_rr_type::SOURCE, "Root of route tree must be SOURCE");
 
-    VTR_ASSERT_MSG(_net_id, "RouteTree must be constructed using a ParentNetId");
+    VTR_ASSERT_MSG(_net_id, "RouteTree must be constructed using a RoutingNetId");
 
     VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[root().inode].occ() <= rr_graph.node_capacity(root().inode),
                    "Route tree root/SOURCE should never be congested");

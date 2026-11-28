@@ -26,6 +26,7 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include "routing_netlist_fwd.h"
 #include "ap_flow_enums.h"
 #include "appack_gain_attenuation_fn_type.h"
 #include "atom_netlist_fwd.h"
@@ -1619,7 +1620,7 @@ class t_routing_status {
     vtr::vector<NetIdType, int> is_fixed_;  ///<Whether the net is fixed (i.e. not to be re-routed)
 };
 
-typedef t_routing_status<ParentNetId> t_net_routing_status;
+typedef t_routing_status<RoutingNetId> t_net_routing_status;
 typedef t_routing_status<AtomNetId> t_atom_net_routing_status;
 
 /** Edge between two RRNodes */

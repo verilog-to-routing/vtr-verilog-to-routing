@@ -1,6 +1,7 @@
 #pragma once
 
 #include "netlist.h"
+#include "routing_netlist_fwd.h"
 #include "vpr_types.h"
 
 #include <cmath>
@@ -29,7 +30,7 @@ inline Side operator!(const Side& rhs) {
 class VirtualNet {
   public:
     /** The net in question (ID into a \ref Netlist). */
-    ParentNetId net_id;
+    RoutingNetId net_id;
     /** The bounding box created by clipping the parent's bbox against a cutline. */
     t_bb clipped_bb;
     /** Times decomposed -- don't decompose vnets too deeply or it disturbs net ordering
@@ -51,7 +52,7 @@ class VirtualNet {
 class PartitionTreeNode {
   public:
     /** Nets claimed by this node (intersected by cutline if branch, nets in final region if leaf) */
-    std::unordered_set<ParentNetId> nets;
+    std::unordered_set<RoutingNetId> nets;
     /** Virtual nets assigned by the parent of this node (\see DecompNetlistRouter) */
     std::vector<VirtualNet> vnets;
     /** Left subtree. */
@@ -86,7 +87,7 @@ class PartitionTree {
     /** Handle nets which had a bounding box update.
      * Bounding boxes can only grow, so we should find a new partition tree node for
      * these nets by moving them up until they fit in a node's bounds */
-    void update_nets(const std::vector<ParentNetId>& nets);
+    void update_nets(const std::vector<RoutingNetId>& nets);
 
     /** Delete all virtual nets in the tree. Used for the net decomposing router.
      * Virtual nets are invalidated between iterations due to changing bounding
@@ -95,8 +96,8 @@ class PartitionTree {
 
   private:
     std::unique_ptr<PartitionTreeNode> _root;
-    std::unordered_map<ParentNetId, PartitionTreeNode*> _net_to_ptree_node;
-    std::unique_ptr<PartitionTreeNode> build_helper(const Netlist<>& netlist, const std::unordered_set<ParentNetId>& nets, int x1, int y1, int x2, int y2);
+    std::unordered_map<RoutingNetId, PartitionTreeNode*> _net_to_ptree_node;
+    std::unique_ptr<PartitionTreeNode> build_helper(const Netlist<>& netlist, const std::unordered_set<RoutingNetId>& nets, int x1, int y1, int x2, int y2);
 };
 
 #ifdef VPR_DEBUG_PARTITION_TREE

@@ -121,7 +121,7 @@ static bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
 /**
  * @brief Check classes_in_same_block() for the tile containing blk_id.
  */
-static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat) {
+static bool classes_in_same_block(RoutingBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat) {
     t_physical_tile_type_ptr physical_tile = physical_tile_type(blk_id, is_flat);
     return classes_in_same_block(physical_tile, first_class_ptc_num, second_class_ptc_num, is_flat);
 }
@@ -195,26 +195,26 @@ static std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physi
  * @param net_rr_terminals SOURCE/SINK nodes indexed by net ID and net pin index.
  * @return Sink groups indexed by net ID.
  */
-static vtr::vector<ParentNetId, t_net_sink_groups> load_net_sink_groups(const RRGraphView& rr_graph,
+static vtr::vector<RoutingNetId, t_net_sink_groups> load_net_sink_groups(const RRGraphView& rr_graph,
                                                                         const Netlist<>& net_list,
-                                                                        const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
+                                                                        const vtr::vector<RoutingNetId, std::vector<RRNodeId>>& net_rr_terminals,
                                                                         bool is_flat) {
-    vtr::vector<ParentNetId, t_net_sink_groups> net_sink_groups(net_list.nets().size());
+    vtr::vector<RoutingNetId, t_net_sink_groups> net_sink_groups(net_list.nets().size());
 
     // Search only groups at the sink's location, in creation order, to keep the first match.
     // Reuse the map's buckets across nets.
     std::unordered_map<t_pl_loc, std::vector<NetSinkGroupId>> groups_at_loc;
 
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         t_net_sink_groups& sink_groups = net_sink_groups[net_id];
         size_t num_pins = net_list.net_pins(net_id).size();
         sink_groups.groups.reserve(num_pins);
         sink_groups.pin_group.resize(num_pins, NetSinkGroupId::INVALID());
         groups_at_loc.clear();
-        for (ParentPinId pin_id : net_list.net_sinks(net_id)) {
+        for (RoutingPinId pin_id : net_list.net_sinks(net_id)) {
             int pin_index = net_list.pin_net_index(pin_id);
             RRNodeId rr_node_num = net_rr_terminals[net_id][pin_index];
-            ParentBlockId block_id = net_list.pin_block(pin_id);
+            RoutingBlockId block_id = net_list.pin_block(pin_id);
             int sink_ptc_num = rr_graph.node_ptc_num(rr_node_num);
 
             std::vector<NetSinkGroupId>& candidate_groups = groups_at_loc[get_block_loc(block_id, is_flat).loc];
@@ -251,10 +251,10 @@ const std::unordered_map<RRNodeId, int>& t_net_choke_points::sink_choke_points(i
     return by_pin.empty() ? no_choke_points : by_pin[pin_index];
 }
 
-vtr::vector<ParentNetId, t_net_choke_points> set_nets_choking_spots(const Netlist<>& net_list,
+vtr::vector<RoutingNetId, t_net_choke_points> set_nets_choking_spots(const Netlist<>& net_list,
                                                                     bool router_opt_choke_points,
                                                                     bool is_flat) {
-    vtr::vector<ParentNetId, t_net_choke_points> choking_spots(net_list.nets().size());
+    vtr::vector<RoutingNetId, t_net_choke_points> choking_spots(net_list.nets().size());
 
     // Choke point analysis requires flat routing and the choke point option.
     if (!router_opt_choke_points || !is_flat) {
@@ -264,19 +264,19 @@ vtr::vector<ParentNetId, t_net_choke_points> set_nets_choking_spots(const Netlis
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
-    const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminal = route_ctx.net_rr_terminals;
+    const vtr::vector<RoutingNetId, std::vector<RRNodeId>>& net_rr_terminal = route_ctx.net_rr_terminals;
 
     // Keep sink groups local to choke point analysis.
-    vtr::vector<ParentNetId, t_net_sink_groups> net_sink_groups = load_net_sink_groups(rr_graph, net_list, net_rr_terminal, is_flat);
+    vtr::vector<RoutingNetId, t_net_sink_groups> net_sink_groups = load_net_sink_groups(rr_graph, net_list, net_rr_terminal, is_flat);
 
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         // Global nets are not routed.
         if (net_list.net_is_global(net_id)) {
             continue;
         }
-        for (ParentPinId pin_id : net_list.net_sinks(net_id)) {
+        for (RoutingPinId pin_id : net_list.net_sinks(net_id)) {
             int pin_index = net_list.pin_net_index(pin_id);
-            ParentBlockId block_id = net_list.pin_block(pin_id);
+            RoutingBlockId block_id = net_list.pin_block(pin_id);
             t_block_loc blk_loc = get_block_loc(block_id, is_flat);
             NetSinkGroupId group_id = net_sink_groups[net_id].pin_group[pin_index];
             // Limit this sink's choke point analysis to its group.

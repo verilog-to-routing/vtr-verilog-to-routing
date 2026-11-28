@@ -55,7 +55,7 @@ inline RouteIterResults DecompNetlistRouter<HeapType>::route_netlist(int itry, f
 }
 
 template<typename HeapType>
-void DecompNetlistRouter<HeapType>::handle_bb_updated_nets(const std::vector<ParentNetId>& nets) {
+void DecompNetlistRouter<HeapType>::handle_bb_updated_nets(const std::vector<RoutingNetId>& nets) {
     VTR_ASSERT(_tree);
     _tree->update_nets(nets);
 }
@@ -83,7 +83,7 @@ inline vtr::dynamic_bitset<> get_vnet_sink_mask(const VirtualNet& vnet) {
 
 /** Should we decompose this net? */
 template<typename HeapType>
-bool DecompNetlistRouter<HeapType>::should_decompose_net(ParentNetId net_id, const PartitionTreeNode& node) {
+bool DecompNetlistRouter<HeapType>::should_decompose_net(RoutingNetId net_id, const PartitionTreeNode& node) {
     /* We're at a partition tree leaf: no more nodes to delegate newly created vnets to */
     if (!node.left || !node.right)
         return false;
@@ -137,7 +137,7 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
     vtr::Timer timer;
 
     /* node.nets is an unordered set, copy into vector to sort */
-    std::vector<ParentNetId> nets(node.nets.begin(), node.nets.end());
+    std::vector<RoutingNetId> nets(node.nets.begin(), node.nets.end());
 
     /* Sort so that nets with the most sinks are routed first.
      * We want to interleave virtual nets with regular ones, so sort an "index vector"
@@ -147,14 +147,14 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
     std::vector<size_t> order(node.nets.size() + node.vnets.size());
     std::iota(order.begin(), order.end(), 0);
     std::stable_sort(order.begin(), order.end(), [&](size_t i, size_t j) -> bool {
-        ParentNetId id1 = i < node.nets.size() ? nets[i] : node.vnets[i - nets.size()].net_id;
-        ParentNetId id2 = j < node.nets.size() ? nets[j] : node.vnets[j - nets.size()].net_id;
+        RoutingNetId id1 = i < node.nets.size() ? nets[i] : node.vnets[i - nets.size()].net_id;
+        RoutingNetId id2 = j < node.nets.size() ? nets[j] : node.vnets[j - nets.size()].net_id;
         return _net_list.net_sinks(id1).size() > _net_list.net_sinks(id2).size();
     });
 
     for (size_t i : order) {
         if (i < nets.size()) { /* Regular net (not decomposed) */
-            ParentNetId net_id = nets[i];
+            RoutingNetId net_id = nets[i];
             if (!should_route_net(_net_list, net_id, _connections_inf, _budgeting_inf, _worst_neg_slack, true))
                 continue;
             /* Setup the net (reset or prune) only once here in the flow. Then all calls to route_net turn off auto-setup */
@@ -287,7 +287,7 @@ inline t_bb clip_to_side(const t_bb& bb, Axis axis, int cutline_pos, Side side) 
 }
 
 /** Break a net/vnet into two. Output into references */
-inline void make_vnet_pair(ParentNetId net_id, const t_bb& bb, Axis cutline_axis, int cutline_pos, VirtualNet& left, VirtualNet& right) {
+inline void make_vnet_pair(RoutingNetId net_id, const t_bb& bb, Axis cutline_axis, int cutline_pos, VirtualNet& left, VirtualNet& right) {
     left.net_id = net_id;
     left.clipped_bb = clip_to_side(bb, cutline_axis, cutline_pos, Side::LEFT);
     right.net_id = net_id;
@@ -295,7 +295,7 @@ inline void make_vnet_pair(ParentNetId net_id, const t_bb& bb, Axis cutline_axis
 }
 
 template<typename HeapType>
-bool DecompNetlistRouter<HeapType>::decompose_and_route_net(ParentNetId net_id, const PartitionTreeNode& node, VirtualNet& left, VirtualNet& right) {
+bool DecompNetlistRouter<HeapType>::decompose_and_route_net(RoutingNetId net_id, const PartitionTreeNode& node, VirtualNet& left, VirtualNet& right) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& net_bb = route_ctx.route_bb[net_id];
 
@@ -479,7 +479,7 @@ inline bool is_close_to_bb(RRNodeId inode, const t_bb& bb, int thickness) {
  * * have a very narrow sink side or
  * * have less than MIN_SINKS sinks in the sink side?
  * If so, put all sinks in the sink side into \p out and return true */
-inline bool get_reduction_mask(ParentNetId net_id, Axis cutline_axis, int cutline_pos, vtr::dynamic_bitset<>& out) {
+inline bool get_reduction_mask(RoutingNetId net_id, Axis cutline_axis, int cutline_pos, vtr::dynamic_bitset<>& out) {
     const auto& route_ctx = g_vpr_ctx.routing();
 
     const RouteTree& tree = route_ctx.route_trees[net_id].value();
@@ -524,7 +524,7 @@ inline bool get_reduction_mask(ParentNetId net_id, Axis cutline_axis, int cutlin
 }
 
 template<typename HeapType>
-vtr::dynamic_bitset<> DecompNetlistRouter<HeapType>::get_decomposition_mask(ParentNetId net_id, const PartitionTreeNode& node) {
+vtr::dynamic_bitset<> DecompNetlistRouter<HeapType>::get_decomposition_mask(RoutingNetId net_id, const PartitionTreeNode& node) {
     const auto& route_ctx = g_vpr_ctx.routing();
 
     const RouteTree& tree = route_ctx.route_trees[net_id].value();

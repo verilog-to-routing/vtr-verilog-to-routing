@@ -75,7 +75,7 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
         }
 
         // Convert to atom net id if flat routing is enabled
-        ParentNetId net_id = cluster_net_id;
+        RoutingNetId net_id = cluster_net_id;
         if (draw_state->is_flat) {
             net_id = atom_lookup.atom_net(cluster_net_id);
         }
@@ -152,7 +152,7 @@ void highlight_nets(std::string& message, RRNodeId hit_node) {
     application->update_message(message);
 }
 
-std::string draw_get_net_name(ParentNetId parent_id) {
+std::string draw_get_net_name(RoutingNetId parent_id) {
     if (!g_vpr_ctx.routing().is_flat) {
         return g_vpr_ctx.clustering().clb_nlist.net_name(convert_to_cluster_net_id(parent_id));
     } else {
@@ -160,7 +160,7 @@ std::string draw_get_net_name(ParentNetId parent_id) {
     }
 }
 
-void check_node_highlight_net(std::string& message, ParentNetId parent_net_id, RRNodeId hit_node) {
+void check_node_highlight_net(std::string& message, RoutingNetId parent_net_id, RRNodeId hit_node) {
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
     t_draw_state* draw_state = get_draw_state_vars();
 

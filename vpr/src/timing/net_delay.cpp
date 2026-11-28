@@ -31,12 +31,12 @@ static std::unordered_map<int, float> ipin_to_Tdel_map;
 
 /*********************** Subroutines local to this module ********************/
 
-static const RouteTree& get_net_route_tree(ParentNetId net_id);
+static const RouteTree& get_net_route_tree(RoutingNetId net_id);
 
 static void load_one_net_delay(const Netlist<>& net_list,
                                const RouteTree& tree,
                                NetPinsMatrix<float>& net_delay,
-                               ParentNetId net_id);
+                               RoutingNetId net_id);
 
 static RouteTree make_route_tree_with_timing(const RouteTree& tree, DelayType delay_type);
 
@@ -46,11 +46,11 @@ static void check_net_min_max_delays(const Netlist<>& net_list,
                                      const NetPinsMatrix<float>& net_delay_max);
 #endif
 
-static void load_one_net_delay_recurr(const RouteTreeNode& node, ParentNetId net_id);
+static void load_one_net_delay_recurr(const RouteTreeNode& node, RoutingNetId net_id);
 
 static void load_one_constant_net_delay(const Netlist<>& net_list,
                                         NetPinsMatrix<float>& net_delay,
-                                        ParentNetId net_id,
+                                        RoutingNetId net_id,
                                         float delay_value);
 
 /*************************** Subroutine definitions **************************/
@@ -93,7 +93,7 @@ void load_net_delay_from_routing(const Netlist<>& net_list,
 #endif
 }
 
-static const RouteTree& get_net_route_tree(ParentNetId net_id) {
+static const RouteTree& get_net_route_tree(RoutingNetId net_id) {
     /* Returns the route tree of a net, which must exist. */
     const auto& route_ctx = g_vpr_ctx.routing();
 
@@ -108,7 +108,7 @@ static const RouteTree& get_net_route_tree(ParentNetId net_id) {
 static void load_one_net_delay(const Netlist<>& net_list,
                                const RouteTree& tree,
                                NetPinsMatrix<float>& net_delay,
-                               ParentNetId net_id) {
+                               RoutingNetId net_id) {
     /* This routine loads delay values for one net in                            *
      * net_delay[net_id][1..num_pins-1] from its route tree.                     *
      * It walks the route tree recursively, storing the time delays for          *
@@ -170,7 +170,7 @@ static void check_net_min_max_delays(const Netlist<>& net_list,
 }
 #endif
 
-static void load_one_net_delay_recurr(const RouteTreeNode& rt_node, ParentNetId net_id) {
+static void load_one_net_delay_recurr(const RouteTreeNode& rt_node, RoutingNetId net_id) {
     /* This routine recursively traverses the route tree, and copies the Tdel of the sink_type nodes *
      * into the map.                                                                                 */
     if (rt_node.net_pin_index != UNDEFINED) {                   // value of UNDEFINED indicates a non-SINK
@@ -184,7 +184,7 @@ static void load_one_net_delay_recurr(const RouteTreeNode& rt_node, ParentNetId 
 
 static void load_one_constant_net_delay(const Netlist<>& net_list,
                                         NetPinsMatrix<float>& net_delay,
-                                        ParentNetId net_id,
+                                        RoutingNetId net_id,
                                         float delay_value) {
     /* Sets each entry of the net_delay array for net inet to delay_value.     */
 

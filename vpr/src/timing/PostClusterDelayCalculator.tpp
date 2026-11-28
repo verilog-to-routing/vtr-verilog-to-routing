@@ -41,8 +41,8 @@ inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist&
     , driver_clb_max_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
     , sink_clb_min_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
     , sink_clb_max_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
-    , pin_cache_min_(g_vpr_ctx.timing().graph->edges().size(), std::pair<ParentPinId, ParentPinId>(ParentPinId::INVALID(), ParentPinId::INVALID()))
-    , pin_cache_max_(g_vpr_ctx.timing().graph->edges().size(), std::pair<ParentPinId, ParentPinId>(ParentPinId::INVALID(), ParentPinId::INVALID()))
+    , pin_cache_min_(g_vpr_ctx.timing().graph->edges().size(), std::pair<RoutingPinId, RoutingPinId>(RoutingPinId::INVALID(), RoutingPinId::INVALID()))
+    , pin_cache_max_(g_vpr_ctx.timing().graph->edges().size(), std::pair<RoutingPinId, RoutingPinId>(RoutingPinId::INVALID(), RoutingPinId::INVALID()))
     , is_flat_(is_flat) {}
 
 inline void PostClusterDelayCalculator::clear_cache() {
@@ -52,8 +52,8 @@ inline void PostClusterDelayCalculator::clear_cache() {
     std::fill(driver_clb_max_delay_cache_.begin(), driver_clb_max_delay_cache_.end(), tatum::Time(NAN));
     std::fill(sink_clb_min_delay_cache_.begin(), sink_clb_min_delay_cache_.end(), tatum::Time(NAN));
     std::fill(sink_clb_max_delay_cache_.begin(), sink_clb_max_delay_cache_.end(), tatum::Time(NAN));
-    std::fill(pin_cache_min_.begin(), pin_cache_min_.end(), std::pair<ParentPinId, ParentPinId>(ParentPinId::INVALID(), ParentPinId::INVALID()));
-    std::fill(pin_cache_max_.begin(), pin_cache_max_.end(), std::pair<ParentPinId, ParentPinId>(ParentPinId::INVALID(), ParentPinId::INVALID()));
+    std::fill(pin_cache_min_.begin(), pin_cache_min_.end(), std::pair<RoutingPinId, RoutingPinId>(RoutingPinId::INVALID(), RoutingPinId::INVALID()));
+    std::fill(pin_cache_max_.begin(), pin_cache_max_.end(), std::pair<RoutingPinId, RoutingPinId>(RoutingPinId::INVALID(), RoutingPinId::INVALID()));
 }
 
 inline void PostClusterDelayCalculator::set_tsu_margin_relative(float new_margin) {
@@ -231,12 +231,12 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
 
         //Note that the net pin pair will only be valid if we have already processed and cached
         //the clb delays on a previous call
-        ParentPinId src_pin = ParentPinId::INVALID();
-        ParentPinId sink_pin = ParentPinId::INVALID();
+        RoutingPinId src_pin = RoutingPinId::INVALID();
+        RoutingPinId sink_pin = RoutingPinId::INVALID();
 
         std::tie(src_pin, sink_pin) = get_cached_pins(edge_id, delay_type);
 
-        if (src_pin == ParentPinId::INVALID() && sink_pin == ParentPinId::INVALID()) {
+        if (src_pin == RoutingPinId::INVALID() && sink_pin == RoutingPinId::INVALID()) {
             //No cached intermediate results
 
             tatum::NodeId src_node = tg.edge_src_node(edge_id);
@@ -257,11 +257,11 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             if (is_flat_) {
                 sink_net_pin_index = netlist_.pin_net_index(atom_sink_pin);
 
-                tatum::Time net_delay = tatum::Time(inter_cluster_delay((ParentNetId&)atom_net, 0, sink_net_pin_index, delay_type));
+                tatum::Time net_delay = tatum::Time(inter_cluster_delay((RoutingNetId&)atom_net, 0, sink_net_pin_index, delay_type));
 
                 // For the atom nets, launch_cluster_delay and capture are equal to zero.
                 edge_delay = /* driver_clb_delay=0 + */ net_delay /* + sink_clb_delay=0 */;
-                set_cached_pins(edge_id, delay_type, (ParentPinId&)atom_src_pin, (ParentPinId&)atom_sink_pin);
+                set_cached_pins(edge_id, delay_type, (RoutingPinId&)atom_src_pin, (RoutingPinId&)atom_sink_pin);
 
             } else {
                 ClusterBlockId clb_src_block = netlist_lookup_.atom_clb(atom_src_block);
@@ -302,7 +302,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
                                                                                                                 src_pb_route_id,
                                                                                                                 delay_type));
 
-                    tatum::Time net_delay = tatum::Time(inter_cluster_delay((ParentNetId&)cluster_net_id, 0, sink_net_pin_index, delay_type));
+                    tatum::Time net_delay = tatum::Time(inter_cluster_delay((RoutingNetId&)cluster_net_id, 0, sink_net_pin_index, delay_type));
 
                     tatum::Time sink_clb_delay = tatum::Time(clb_delay_calc_.clb_input_to_internal_sink_delay(clb_sink_block,
                                                                                                               sink_block_pin_index,
@@ -320,7 +320,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
                     ClusterPinId cluster_sink_pin = *(cluster_ctx.clb_nlist.net_pins(cluster_net_id).begin() + sink_net_pin_index);
                     VTR_ASSERT(cluster_src_pin != ClusterPinId::INVALID());
                     VTR_ASSERT(cluster_sink_pin != ClusterPinId::INVALID());
-                    set_cached_pins(edge_id, delay_type, (ParentPinId&)cluster_src_pin, (ParentPinId&)cluster_sink_pin);
+                    set_cached_pins(edge_id, delay_type, (RoutingPinId&)cluster_src_pin, (RoutingPinId&)cluster_sink_pin);
 
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
                     VTR_LOG("  Edge %zu net delay: %g = %g + %g + %g (= clb_driver + net + clb_sink) [UNcached]\n",
@@ -350,13 +350,13 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             //
             //  Note: we do not need to handle the case of edges fully contained within CLBs,
             //        since such delays are cached using edge_delay_cache_ and are handled earlier
-            VTR_ASSERT(src_pin != ParentPinId::INVALID());
-            VTR_ASSERT(sink_pin != ParentPinId::INVALID());
+            VTR_ASSERT(src_pin != RoutingPinId::INVALID());
+            VTR_ASSERT(sink_pin != RoutingPinId::INVALID());
             if (is_flat_) {
                 AtomNetId atom_src_net = g_vpr_ctx.atom().netlist().pin_net((AtomPinId&)src_pin);
                 VTR_ASSERT(atom_src_net == g_vpr_ctx.atom().netlist().pin_net((AtomPinId&)sink_pin));
                 sink_net_pin_index = g_vpr_ctx.atom().netlist().pin_net_index((AtomPinId&)sink_pin);
-                tatum::Time net_delay = tatum::Time(inter_cluster_delay((ParentNetId&)atom_src_net,
+                tatum::Time net_delay = tatum::Time(inter_cluster_delay((RoutingNetId&)atom_src_net,
                                                                         0,
                                                                         sink_net_pin_index,
                                                                         delay_type));
@@ -372,7 +372,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
 
                 ClusterNetId src_net = cluster_ctx.clb_nlist.pin_net((ClusterPinId&)src_pin);
                 VTR_ASSERT(src_net == cluster_ctx.clb_nlist.pin_net((ClusterPinId&)sink_pin));
-                tatum::Time net_delay = tatum::Time(inter_cluster_delay((ParentNetId&)src_net,
+                tatum::Time net_delay = tatum::Time(inter_cluster_delay((RoutingNetId&)src_net,
                                                                         0,
                                                                         cluster_ctx.clb_nlist.pin_net_index((ClusterPinId&)sink_pin),
                                                                         delay_type));
@@ -399,7 +399,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
     return edge_delay;
 }
 
-inline float PostClusterDelayCalculator::inter_cluster_delay(const ParentNetId net_id, const int src_net_pin_index, const int sink_net_pin_index, DelayType delay_type) const {
+inline float PostClusterDelayCalculator::inter_cluster_delay(const RoutingNetId net_id, const int src_net_pin_index, const int sink_net_pin_index, DelayType delay_type) const {
     VTR_ASSERT(src_net_pin_index == 0);
 
     bool use_max_delay = (routing_delay_type(delay_type) == DelayType::MAX);
@@ -499,7 +499,7 @@ inline void PostClusterDelayCalculator::set_cached_hold_time(tatum::EdgeId edge,
     edge_min_delay_cache_[edge] = hold;
 }
 
-inline std::pair<ParentPinId, ParentPinId> PostClusterDelayCalculator::get_cached_pins(tatum::EdgeId edge, DelayType delay_type) const {
+inline std::pair<RoutingPinId, RoutingPinId> PostClusterDelayCalculator::get_cached_pins(tatum::EdgeId edge, DelayType delay_type) const {
     if (delay_type == DelayType::MAX) {
         return pin_cache_max_[edge];
     } else {
@@ -508,7 +508,7 @@ inline std::pair<ParentPinId, ParentPinId> PostClusterDelayCalculator::get_cache
     }
 }
 
-inline void PostClusterDelayCalculator::set_cached_pins(tatum::EdgeId edge, DelayType delay_type, ParentPinId src_pin, ParentPinId sink_pin) const {
+inline void PostClusterDelayCalculator::set_cached_pins(tatum::EdgeId edge, DelayType delay_type, RoutingPinId src_pin, RoutingPinId sink_pin) const {
     if (delay_type == DelayType::MAX) {
         pin_cache_max_[edge] = std::make_pair(src_pin, sink_pin);
     } else {

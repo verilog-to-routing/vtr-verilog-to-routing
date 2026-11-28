@@ -13,7 +13,7 @@
 #include <cstring>
 
 #include "draw_types.h"
-#include "netlist_fwd.h"
+#include "routing_netlist_fwd.h"
 #include "rr_graph_fwd.h"
 #include "tatum/TimingGraphFwd.hpp"
 
@@ -72,7 +72,7 @@ void draw_star_fixed_px(ezgl::point2d star_coords, double size_in_pixels, ezgl::
  * that are not coloured black (useful for drawing over the rr_graph).       */
 void draw_route(enum e_draw_net_type draw_net_type, ezgl::renderer* g);
 
-void draw_routed_net(ParentNetId net, ezgl::renderer* g);
+void draw_routed_net(RoutingNetId net, ezgl::renderer* g);
 
 //Draws the set of rr_nodes specified, using the colors set in draw_state
 void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw,

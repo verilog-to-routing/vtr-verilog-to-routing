@@ -51,7 +51,7 @@
 template<typename ConnectionRouterType>
 inline NetResultFlags route_net(ConnectionRouterType& router,
                                 const Netlist<>& net_list,
-                                const ParentNetId& net_id,
+                                const RoutingNetId& net_id,
                                 int itry,
                                 float pres_fac,
                                 const t_router_opts& router_opts,
@@ -392,7 +392,7 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
  * of the global clock network. */
 template<typename ConnectionRouterType>
 inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
-                                              ParentNetId net_id,
+                                              RoutingNetId net_id,
                                               const Netlist<>& net_list,
                                               RRNodeId sink_node,
                                               const t_conn_cost_params cost_params,
@@ -434,7 +434,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
 
     // TODO: Parts of the rest of this function are repetitive to code in route_sink. Should refactor.
     if (!found_path) {
-        ParentBlockId src_block = net_list.net_driver_block(net_id);
+        RoutingBlockId src_block = net_list.net_driver_block(net_id);
         VTR_LOG("Failed to route connection from '%s' to '%s' for net '%s' (#%zu)\n",
                 net_list.block_name(src_block).c_str(),
                 describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, is_flat).c_str(),
@@ -506,7 +506,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
 template<typename ConnectionRouterType>
 inline NetResultFlags route_sink(ConnectionRouterType& router,
                                  const Netlist<>& net_list,
-                                 ParentNetId net_id,
+                                 RoutingNetId net_id,
                                  unsigned itarget,
                                  int target_pin,
                                  const t_conn_cost_params cost_params,
@@ -566,8 +566,8 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
     }
 
     if (!found_path) {
-        ParentBlockId src_block = net_list.net_driver_block(net_id);
-        ParentBlockId sink_block = net_list.pin_block(*(net_list.net_pins(net_id).begin() + target_pin));
+        RoutingBlockId src_block = net_list.net_driver_block(net_id);
+        RoutingBlockId sink_block = net_list.pin_block(*(net_list.net_pins(net_id).begin() + target_pin));
         VTR_LOG("Failed to route connection from '%s' to '%s' for net '%s' (#%zu)\n",
                 net_list.block_name(src_block).c_str(),
                 net_list.block_name(sink_block).c_str(),

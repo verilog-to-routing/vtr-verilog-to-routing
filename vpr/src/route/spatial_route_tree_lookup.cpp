@@ -3,8 +3,8 @@
 #include "globals.h"
 
 SpatialRouteTreeLookup build_route_tree_spatial_lookup(const Netlist<>& net_list,
-                                                       const vtr::vector<ParentNetId, t_bb>& net_bound_box,
-                                                       ParentNetId net,
+                                                       const vtr::vector<RoutingNetId, t_bb>& net_bound_box,
+                                                       RoutingNetId net,
                                                        const RouteTreeNode& rt_root) {
     constexpr float BIN_AREA_PER_SINK_FACTOR = 4;
 

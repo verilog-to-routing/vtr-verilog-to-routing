@@ -359,16 +359,16 @@ TEST_CASE("Search: Net ID before routing is a no-op "
     // Snapshot net_color at the target before dispatch so we lock the
     // exact "no mutation" contract: ``highlight_nets(ClusterNetId)``
     // returns early on empty route_trees without writing net_color.
-    const ezgl::color before = ds->net_color[ParentNetId(size_t(target))];
+    const ezgl::color before = ds->net_color[RoutingNetId(size_t(target))];
 
     set_search(fx_app.app(), "Net ID", QString::number(size_t(target)));
     search_and_highlight(nullptr, fx_app.app());
 
-    REQUIRE(ds->net_color[ParentNetId(size_t(target))] == before);
+    REQUIRE(ds->net_color[RoutingNetId(size_t(target))] == before);
     // And it certainly must not have been painted MAGENTA (the
     // post-route highlight colour) — that would be a leak of the
     // routed-net path into the unrouted state.
-    REQUIRE_FALSE(ds->net_color[ParentNetId(size_t(target))] == ezgl::MAGENTA);
+    REQUIRE_FALSE(ds->net_color[RoutingNetId(size_t(target))] == ezgl::MAGENTA);
 }
 
 // =============================================================================
@@ -390,7 +390,7 @@ TEST_CASE("Search: Net ID after routing colours that net MAGENTA",
     // some nets may have been absorbed.
     ClusterNetId target = ClusterNetId::INVALID();
     for (ClusterNetId net : cluster_ctx.clb_nlist.nets()) {
-        if (g_vpr_ctx.routing().route_trees[ParentNetId(size_t(net))].has_value()) {
+        if (g_vpr_ctx.routing().route_trees[RoutingNetId(size_t(net))].has_value()) {
             target = net;
             break;
         }
@@ -400,6 +400,6 @@ TEST_CASE("Search: Net ID after routing colours that net MAGENTA",
     set_search(fx_app.app(), "Net ID", QString::number(size_t(target)));
     search_and_highlight(nullptr, fx_app.app());
 
-    REQUIRE(get_draw_state_vars()->net_color[ParentNetId(size_t(target))]
+    REQUIRE(get_draw_state_vars()->net_color[RoutingNetId(size_t(target))]
             == ezgl::MAGENTA);
 }

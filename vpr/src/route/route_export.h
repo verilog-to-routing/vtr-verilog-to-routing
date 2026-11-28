@@ -6,6 +6,7 @@
 #include <vector>
 #include "clustered_netlist_fwd.h"
 #include "netlist.h"
+#include "routing_netlist_fwd.h"
 #include "route_tree.h"
 #include "rr_graph_fwd.h"
 #include "vtr_optional.h"
@@ -17,11 +18,11 @@ vtr::vector<RRNodeId, std::set<ClusterNetId>> collect_rr_node_nets();
 
 void free_route_structs();
 
-void save_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
+void save_routing(vtr::vector<RoutingNetId, vtr::optional<RouteTree>>& best_routing,
                   const t_clb_opins_used& clb_opins_used_locally,
                   t_clb_opins_used& saved_clb_opins_used_locally);
 
-void restore_routing(const vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
+void restore_routing(const vtr::vector<RoutingNetId, vtr::optional<RouteTree>>& best_routing,
                      t_clb_opins_used& clb_opins_used_locally,
                      const t_clb_opins_used& saved_clb_opins_used_locally);
 

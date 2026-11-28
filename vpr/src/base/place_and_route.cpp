@@ -55,7 +55,7 @@ int binary_search_place_and_route(const ClusteredNetlist& placement_net_list,
                                   const std::shared_ptr<SetupHoldTimingInfo>& timing_info,
                                   const std::shared_ptr<RoutingDelayCalculator>& delay_calc,
                                   bool is_flat) {
-    vtr::vector<ParentNetId, vtr::optional<RouteTree>> best_routing; /* Saves the best routing found so far. */
+    vtr::vector<RoutingNetId, vtr::optional<RouteTree>> best_routing; /* Saves the best routing found so far. */
     int current, low, high, final;
     bool success, prev_success, prev2_success, Fc_clipped = false;
     bool using_minw_hint = false;

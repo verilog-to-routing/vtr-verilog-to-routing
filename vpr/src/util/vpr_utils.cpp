@@ -351,7 +351,7 @@ t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
     return physical_tile_type(block_locs[cluster_blk].loc);
 }
 
-t_physical_tile_type_ptr physical_tile_type(ParentBlockId blk_id, bool is_flat) {
+t_physical_tile_type_ptr physical_tile_type(RoutingBlockId blk_id, bool is_flat) {
     auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     if (is_flat) {
@@ -459,7 +459,7 @@ t_class_range get_class_range_for_block(const AtomBlockId atom_blk) {
                                                   pb_graph_node);
 }
 
-t_class_range get_class_range_for_block(const ParentBlockId blk_id, bool is_flat) {
+t_class_range get_class_range_for_block(const RoutingBlockId blk_id, bool is_flat) {
     if (is_flat) {
         return get_class_range_for_block(convert_to_atom_block_id(blk_id));
     } else {
@@ -487,7 +487,7 @@ std::pair<int, int> get_pin_range_for_block(const ClusterBlockId blk_id) {
     return {pin_low, pin_high};
 }
 
-t_block_loc get_block_loc(const ParentBlockId& block_id, bool is_flat) {
+t_block_loc get_block_loc(const RoutingBlockId& block_id, bool is_flat) {
     auto& place_ctx = g_vpr_ctx.placement();
     ClusterBlockId cluster_block_id = ClusterBlockId::INVALID();
 
@@ -505,12 +505,12 @@ t_block_loc get_block_loc(const ParentBlockId& block_id, bool is_flat) {
     return blk_loc;
 }
 
-int get_block_num_class(const ParentBlockId& block_id, bool is_flat) {
+int get_block_num_class(const RoutingBlockId& block_id, bool is_flat) {
     auto type = physical_tile_type(block_id, is_flat);
     return get_tile_class_max_ptc(type, is_flat);
 }
 
-int get_block_pin_class_num(const ParentBlockId block_id, const ParentPinId pin_id, bool is_flat) {
+int get_block_pin_class_num(const RoutingBlockId block_id, const RoutingPinId pin_id, bool is_flat) {
     const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
     auto& block_locs = blk_loc_registry.block_locs();
 

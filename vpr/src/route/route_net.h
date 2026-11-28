@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "netlist.h"
+#include "routing_netlist_fwd.h"
 #include "route_budgets.h"
 #include "timing_info_fwd.h"
 #include "vpr_types.h"
@@ -40,8 +41,8 @@ float get_net_pin_criticality(const SetupHoldTimingInfo* timing_info,
                               const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                               float max_criticality,
                               float criticality_exp,
-                              ParentNetId net_id,
-                              ParentPinId pin_id,
+                              RoutingNetId net_id,
+                              RoutingPinId pin_id,
                               bool is_flat);
 
 /** Returns true if the specified net fanout is classified as high fanout */
@@ -55,7 +56,7 @@ constexpr bool is_high_fanout(int fanout, int fanout_threshold) {
  * Depending on # of fanouts, this fn either resets or prunes the route tree
  * and updates other global data structures to match its state. */
 void setup_net(int itry,
-               ParentNetId net_id,
+               RoutingNetId net_id,
                const Netlist<>& net_list,
                CBRR& connections_inf,
                const t_router_opts& router_opts,
@@ -64,7 +65,7 @@ void setup_net(int itry,
 
 /** Detect if \p net_id should be routed or not */
 bool should_route_net(const Netlist<>& net_list,
-                      ParentNetId net_id,
+                      RoutingNetId net_id,
                       CBRR& connections_inf,
                       route_budgets& budgeting_inf,
                       float worst_negative_slack,
@@ -75,7 +76,7 @@ inline void update_net_delay_from_isink(float* net_delay,
                                         const RouteTree& tree,
                                         int isink,
                                         const Netlist<>& net_list,
-                                        ParentNetId inet,
+                                        RoutingNetId inet,
                                         TimingInfo* timing_info,
                                         NetPinTimingInvalidator* pin_timing_invalidator) {
     float new_delay = tree.find_by_isink(isink)->Tdel;
@@ -83,7 +84,7 @@ inline void update_net_delay_from_isink(float* net_delay,
     if (pin_timing_invalidator && new_delay != net_delay[isink]) {
         //Delay changed, invalidate for incremental timing update
         VTR_ASSERT_SAFE(timing_info);
-        ParentPinId pin = net_list.net_pin(inet, isink);
+        RoutingPinId pin = net_list.net_pin(inet, isink);
         pin_timing_invalidator->invalidate_connection(pin);
     }
 
@@ -94,7 +95,7 @@ inline void update_net_delay_from_isink(float* net_delay,
  * the route_tree to the net_delay array. */
 void update_net_delays_from_route_tree(float* net_delay,
                                        const Netlist<>& net_list,
-                                       ParentNetId inet,
+                                       RoutingNetId inet,
                                        TimingInfo* timing_info,
                                        NetPinTimingInvalidator* pin_timing_invalidator);
 

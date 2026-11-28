@@ -5,6 +5,7 @@
 #include "clustered_netlist.h"
 #include "clustered_netlist_utils.h"
 #include "netlist.h"
+#include "routing_netlist_fwd.h"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingGraphFwd.hpp"
 #include "timing_info.h"
@@ -24,8 +25,8 @@ class NetPinTimingInvalidator {
   public:
     typedef vtr::Range<const tatum::EdgeId*> tedge_range;
     virtual ~NetPinTimingInvalidator() = default;
-    virtual tedge_range pin_timing_edges(ParentPinId /* pin */) const = 0;
-    virtual void invalidate_connection(ParentPinId /* pin */) = 0;
+    virtual tedge_range pin_timing_edges(RoutingPinId /* pin */) const = 0;
+    virtual void invalidate_connection(RoutingPinId /* pin */) = 0;
     virtual void reset() = 0;
 
     /**
@@ -80,7 +81,7 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
         : timing_info_(std::move(timing_info)) {
         size_t num_pins = net_list.pins().size();
         reserve_pins_(num_pins);
-        for (ParentPinId pin_id : net_list.pins()) {
+        for (RoutingPinId pin_id : net_list.pins()) {
             if (is_flat) {
                 std::array<AtomPinId, 1> atom_pins = {convert_to_atom_pin_id(pin_id)};
                 add_pin_(atom_pins, atom_nlist, atom_lookup);
@@ -92,7 +93,7 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
     }
 
     //Returns the set of timing edges associated with the specified pin of the netlist used by routing
-    tedge_range pin_timing_edges(ParentPinId pin) const {
+    tedge_range pin_timing_edges(RoutingPinId pin) const {
         int ipin = size_t(pin);
         return vtr::make_range(&timing_edges_[pin_first_edge_[ipin]],
                                &timing_edges_[pin_first_edge_[ipin + 1]]);
@@ -101,7 +102,7 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
     /** Invalidates all timing edges associated with the connection of the netlist used by routing
      * driving the specified pin.
      * Is concurrently safe. */
-    void invalidate_connection(ParentPinId pin) {
+    void invalidate_connection(RoutingPinId pin) {
         if (invalidated_pins_.count(pin)) return; //Already invalidated
 
         for (tatum::EdgeId edge : pin_timing_edges(pin)) {
@@ -185,9 +186,9 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
     /** Cache for invalidated pins. Use concurrent set when TBB is turned on, since the
      * invalidator may be shared between threads */
 #ifdef VPR_USE_TBB
-    tbb::concurrent_unordered_set<ParentPinId> invalidated_pins_;
+    tbb::concurrent_unordered_set<RoutingPinId> invalidated_pins_;
 #else
-    vtr::vec_id_set<ParentPinId> invalidated_pins_;
+    vtr::vec_id_set<RoutingPinId> invalidated_pins_;
 #endif
 };
 
@@ -196,11 +197,11 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
  * STA is disabled. */
 class NoopNetPinTimingInvalidator : public NetPinTimingInvalidator {
   public:
-    tedge_range pin_timing_edges(ParentPinId /* pin */) const {
+    tedge_range pin_timing_edges(RoutingPinId /* pin */) const {
         return vtr::make_range((const tatum::EdgeId*)nullptr, (const tatum::EdgeId*)nullptr);
     }
 
-    void invalidate_connection(ParentPinId /* pin */) {
+    void invalidate_connection(RoutingPinId /* pin */) {
     }
 
     void reset() {

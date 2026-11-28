@@ -181,7 +181,7 @@ bool route(const Netlist<>& net_list,
     int itry_conflicted_mode = 0;
 
     /* Best result so far */
-    vtr::vector<ParentNetId, vtr::optional<RouteTree>> best_routing;
+    vtr::vector<RoutingNetId, vtr::optional<RouteTree>> best_routing;
     t_clb_opins_used best_clb_opins_used_locally;
     RoutingMetrics best_routing_metrics;
     int legal_convergence_count = 0;

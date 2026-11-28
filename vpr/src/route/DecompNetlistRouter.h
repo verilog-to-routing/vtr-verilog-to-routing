@@ -37,7 +37,7 @@ class DecompNetlistRouter : public NetlistRouter {
         NetPinTimingInvalidator* pin_timing_invalidator,
         route_budgets& budgeting_inf,
         const RoutingPredictor& routing_predictor,
-        const vtr::vector<ParentNetId, t_net_choke_points>& choking_spots,
+        const vtr::vector<RoutingNetId, t_net_choke_points>& choking_spots,
         bool is_flat,
         int route_verbosity)
         : _routers_th(_make_router(router_lookahead, is_flat))
@@ -62,23 +62,23 @@ class DecompNetlistRouter : public NetlistRouter {
      * \return RouteIterResults for this iteration. */
     RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
     /** Inform the PartitionTree of the nets with updated bounding boxes */
-    void handle_bb_updated_nets(const std::vector<ParentNetId>& nets);
+    void handle_bb_updated_nets(const std::vector<RoutingNetId>& nets);
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
   private:
     /** Should we decompose this net? */
-    bool should_decompose_net(ParentNetId net_id, const PartitionTreeNode& node);
+    bool should_decompose_net(RoutingNetId net_id, const PartitionTreeNode& node);
     /** Get a bitset of sinks to route before net decomposition. Output bitset is 
      * [1..num_sinks] where the corresponding index is set to 1 if the sink needs to
      * be routed */
-    vtr::dynamic_bitset<> get_decomposition_mask(ParentNetId net_id, const PartitionTreeNode& node);
+    vtr::dynamic_bitset<> get_decomposition_mask(RoutingNetId net_id, const PartitionTreeNode& node);
     /** Get a bitset of sinks to route before virtual net decomposition. Output bitset is 
      * [1..num_sinks] where the corresponding index is set to 1 if the sink needs to
      * be routed */
     vtr::dynamic_bitset<> get_decomposition_mask_vnet(const VirtualNet& vnet, const PartitionTreeNode& node);
     /** Decompose and route a regular net. Output the resulting vnets to \p left and \p right.
      * \return Success status: true if routing is successful and left and right now contain valid virtual nets: false otherwise. */
-    bool decompose_and_route_net(ParentNetId net_id, const PartitionTreeNode& node, VirtualNet& left, VirtualNet& right);
+    bool decompose_and_route_net(RoutingNetId net_id, const PartitionTreeNode& node, VirtualNet& left, VirtualNet& right);
     /** Decompose and route a virtual net. Output the resulting vnets to \p left and \p right.
      * \return Success status: true if routing is successful and left and right now contain valid virtual nets: false otherwise. */
     bool decompose_and_route_vnet(VirtualNet& vnet, const PartitionTreeNode& node, VirtualNet& left, VirtualNet& right);
@@ -115,7 +115,7 @@ class DecompNetlistRouter : public NetlistRouter {
     NetPinTimingInvalidator* _pin_timing_invalidator;
     route_budgets& _budgeting_inf;
     const RoutingPredictor& _routing_predictor;
-    const vtr::vector<ParentNetId, t_net_choke_points>& _choking_spots; ///< Choke points indexed by net ID.
+    const vtr::vector<RoutingNetId, t_net_choke_points>& _choking_spots; ///< Choke points indexed by net ID.
     bool _is_flat;
     int _route_verbosity;
 
@@ -129,10 +129,10 @@ class DecompNetlistRouter : public NetlistRouter {
 
     /** Sinks to be always sampled for decomposition for each net: [0.._net_list.size()-1]
      * (i.e. when routing fails after decomposition for a sink, sample it on next iteration) */
-    vtr::vector<ParentNetId, vtr::dynamic_bitset<>> _net_known_samples;
+    vtr::vector<RoutingNetId, vtr::dynamic_bitset<>> _net_known_samples;
 
     /** Is decomposition disabled for this net? [0.._net_list.size()-1] */
-    vtr::vector<ParentNetId, bool> _is_decomp_disabled;
+    vtr::vector<RoutingNetId, bool> _is_decomp_disabled;
 };
 
 #include "DecompNetlistRouter.tpp"

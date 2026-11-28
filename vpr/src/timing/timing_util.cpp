@@ -898,7 +898,7 @@ float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info,
  */
 float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info,
                                         const ClusteredPinAtomPinsLookup& pin_lookup,
-                                        const ParentPinId pin_id,
+                                        const RoutingPinId pin_id,
                                         bool is_flat) {
     if (is_flat) {
         return timing_info.setup_pin_criticality(convert_to_atom_pin_id(pin_id));

@@ -108,10 +108,10 @@ static void do_one_route(const t_det_routing_arch& det_routing_arch,
             g_vpr_ctx.mutable_routing().rr_node_route_inf,
             is_flat,
             router_opts.route_verbosity);
-    enable_router_debug(router_opts, ParentNetId(), sink_node, 1, &router);
+    enable_router_debug(router_opts, RoutingNetId(), sink_node, 1, &router);
     bool found_path;
     RTExploredNode cheapest;
-    ConnectionParameters conn_params(ParentNetId::INVALID(),
+    ConnectionParameters conn_params(RoutingNetId::INVALID(),
                                      -1,
                                      false,
                                      std::unordered_map<RRNodeId, int>());

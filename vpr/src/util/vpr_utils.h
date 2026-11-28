@@ -1,5 +1,6 @@
 #pragma once
 
+#include "routing_netlist_fwd.h"
 #include "arch_util.h"
 #include "atom_netlist.h"
 #include "device_grid.h"
@@ -41,7 +42,7 @@ t_physical_tile_type_ptr physical_tile_type(t_pl_loc loc);
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk);
 
-t_physical_tile_type_ptr physical_tile_type(ParentBlockId blk_id, bool is_flat);
+t_physical_tile_type_ptr physical_tile_type(RoutingBlockId blk_id, bool is_flat);
 
 //Returns the sub tile corresponding to the logical block location within a physical type
 int get_sub_tile_index(ClusterBlockId blk,
@@ -57,7 +58,7 @@ t_class_range get_class_range_for_block(const ClusterBlockId blk_id);
 
 t_class_range get_class_range_for_block(const AtomBlockId atom_blk);
 
-t_class_range get_class_range_for_block(const ParentBlockId blk_id, bool is_flat);
+t_class_range get_class_range_for_block(const RoutingBlockId blk_id, bool is_flat);
 
 //
 /**
@@ -69,11 +70,11 @@ t_class_range get_class_range_for_block(const ParentBlockId blk_id, bool is_flat
  */
 std::pair<int, int> get_pin_range_for_block(const ClusterBlockId blk_id);
 
-t_block_loc get_block_loc(const ParentBlockId& block_id, bool is_flat);
+t_block_loc get_block_loc(const RoutingBlockId& block_id, bool is_flat);
 
-int get_block_num_class(const ParentBlockId& block_id, bool is_flat);
+int get_block_num_class(const RoutingBlockId& block_id, bool is_flat);
 
-int get_block_pin_class_num(const ParentBlockId block_id, const ParentPinId pin_id, bool is_flat);
+int get_block_pin_class_num(const RoutingBlockId block_id, const RoutingPinId pin_id, bool is_flat);
 
 template<typename T>
 inline ClusterNetId convert_to_cluster_net_id(T id) {
@@ -117,14 +118,14 @@ inline AtomPinId convert_to_atom_pin_id(T id) {
     return atom_pin_id;
 }
 
-inline ParentNetId get_cluster_net_parent_id(const AtomLookup& atom_look_up, ClusterNetId net_id, bool is_flat) {
-    ParentNetId par_net_id;
+inline RoutingNetId get_cluster_net_parent_id(const AtomLookup& atom_look_up, ClusterNetId net_id, bool is_flat) {
+    RoutingNetId par_net_id;
     if (is_flat) {
         auto atom_net_id = atom_look_up.atom_net(net_id);
         VTR_ASSERT(atom_net_id != AtomNetId::INVALID());
-        par_net_id = ParentNetId(size_t(atom_net_id));
+        par_net_id = RoutingNetId(size_t(atom_net_id));
     } else {
-        par_net_id = ParentNetId(size_t(net_id));
+        par_net_id = RoutingNetId(size_t(net_id));
     }
     return par_net_id;
 }

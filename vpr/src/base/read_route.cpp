@@ -548,7 +548,7 @@ static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, 
             bnum_str = format_name(tokens[2]);
             /*remove #*/
             bnum_str.erase(bnum_str.begin());
-            ParentBlockId bnum(std::stoi(bnum_str));
+            RoutingBlockId bnum(std::stoi(bnum_str));
 
             /*Check for name, coordinate, and pins*/
             if (0 != net_list.block_name(bnum).compare(tokens[1])) {
@@ -684,7 +684,7 @@ void print_route(const Netlist<>& net_list,
     if (route_ctx.route_trees.empty())
         return; // Only if routing exists
 
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         if (!net_list.net_is_ignored(net_id)) {
             fprintf(fp, "\n\nNet %zu (%s)\n\n", size_t(net_id), net_list.net_name(net_id).c_str());
             if (net_list.net_sinks(net_id).size() == false) {
@@ -790,7 +790,7 @@ void print_route(const Netlist<>& net_list,
                     net_list.net_name(net_id).c_str());
 
             for (auto pin_id : net_list.net_pins(net_id)) {
-                ParentBlockId block_id = net_list.pin_block(pin_id);
+                RoutingBlockId block_id = net_list.pin_block(pin_id);
                 int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
                 t_block_loc blk_loc;
                 blk_loc = get_block_loc(block_id, is_flat);

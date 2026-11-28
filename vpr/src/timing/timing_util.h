@@ -3,7 +3,7 @@
 #include <vector>
 #include <string_view>
 
-#include "netlist_fwd.h"
+#include "routing_netlist_fwd.h"
 #include "tatum/TimingConstraints.hpp"
 
 #include "histogram.h"
@@ -116,7 +116,7 @@ float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info,
 //if is_flat is true, otherwise the CLB netlist)
 float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info,
                                         const ClusteredPinAtomPinsLookup& pin_lookup,
-                                        const ParentPinId pin_id,
+                                        const RoutingPinId pin_id,
                                         bool is_flat);
 
 //Return the setup slack of a net's pin in the CLB netlist

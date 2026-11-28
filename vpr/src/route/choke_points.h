@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <vector>
 #include "netlist.h"
+#include "routing_netlist_fwd.h"
 #include "rr_graph_fwd.h"
 #include "vtr_vector.h"
 
@@ -39,6 +40,6 @@ struct t_net_choke_points {
  * @param is_flat Whether flat routing is enabled.
  * @return Choke points indexed by net ID.
  */
-vtr::vector<ParentNetId, t_net_choke_points> set_nets_choking_spots(const Netlist<>& net_list,
+vtr::vector<RoutingNetId, t_net_choke_points> set_nets_choking_spots(const Netlist<>& net_list,
                                                                     bool router_opt_choke_points,
                                                                     bool is_flat);

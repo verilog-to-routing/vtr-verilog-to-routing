@@ -4,6 +4,7 @@
  * router files and some used globally. */
 
 #include <vector>
+#include "routing_netlist_fwd.h"
 #include "router_stats.h"
 #include "globals.h"
 #include "route_tree_fwd.h"
@@ -95,11 +96,11 @@ inline bool inside_bb(RRNodeId inode, const t_bb& bb) {
     return inside_bb(g_vpr_ctx.device().rr_graph, inode, bb);
 }
 
-vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
+vtr::vector<RoutingNetId, t_bb> load_route_bb(const Netlist<>& net_list,
                                              int bb_factor);
 
 t_bb load_net_route_bb(const Netlist<>& net_list,
-                       ParentNetId net_id,
+                       RoutingNetId net_id,
                        int bb_factor);
 
 void pathfinder_update_single_node_occupancy(RRNodeId inode, int add_or_sub);

@@ -3,7 +3,7 @@
 /** @file Utility functions used in the top-level router (route.cpp). */
 
 #include "clustered_netlist_utils.h"
-#include "netlist_fwd.h"
+#include "routing_netlist_fwd.h"
 #include "router_stats.h"
 #include "timing_info.h"
 #include "vpr_net_pins_matrix.h"
@@ -46,7 +46,7 @@ WirelengthInfo calculate_wirelength_info(const Netlist<>& net_list, size_t avail
 bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay);
 
 /** Update bounding box for net if existing routing is close to boundary */
-void dynamic_update_bounding_boxes(const std::vector<ParentNetId>& rerouted_nets, std::vector<ParentNetId> out_bb_updated_nets);
+void dynamic_update_bounding_boxes(const std::vector<RoutingNetId>& rerouted_nets, std::vector<RoutingNetId> out_bb_updated_nets);
 
 /** Early exit code for cases where it is obvious that a successful route will not be found
  * Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit */
@@ -74,23 +74,23 @@ int get_max_pins_per_net(const Netlist<>& net_list);
 inline const vtr::optional<RouteTree>& get_route_tree_from_cluster_net_id(ClusterNetId net_id) {
     auto& route_ctx = g_vpr_ctx.routing();
     if (!route_ctx.is_flat) {
-        return route_ctx.route_trees[ParentNetId(net_id)];
+        return route_ctx.route_trees[RoutingNetId(net_id)];
     } else {
         auto& atom_lookup = g_vpr_ctx.atom().lookup();
         AtomNetId atom_id = atom_lookup.atom_net(net_id);
-        return route_ctx.route_trees[ParentNetId(atom_id)];
+        return route_ctx.route_trees[RoutingNetId(atom_id)];
     }
 }
 
 /** Initialize net_delay based on best-case delay estimates from the router lookahead. */
 void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                    const Netlist<>& net_list,
-                                   const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
+                                   const vtr::vector<RoutingNetId, std::vector<RRNodeId>>& net_rr_terminals,
                                    NetPinsMatrix<float>& net_delay,
                                    const RRGraphView& rr_graph,
                                    bool is_flat);
 
-bool is_better_quality_routing(const vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
+bool is_better_quality_routing(const vtr::vector<RoutingNetId, vtr::optional<RouteTree>>& best_routing,
                                const RoutingMetrics& best_routing_metrics,
                                const WirelengthInfo& wirelength_info,
                                std::shared_ptr<const SetupHoldTimingInfo> timing_info);
@@ -156,7 +156,7 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id);
  * @param net_id The identifier of the net to check.
  * @return true if the net is routed; false otherwise.
  */
-bool is_net_routed(ParentNetId net_id);
+bool is_net_routed(RoutingNetId net_id);
 
 /**
  * @brief Checks whether a given net is fully absorbed within sink nodes.
@@ -171,4 +171,4 @@ bool is_net_routed(ParentNetId net_id);
  * @param net_id The identifier of the net to be checked.
  * @return true if the net is fully absorbed (uses no routing channels); false otherwise.
  */
-bool is_net_fully_absorbed(ParentNetId net_id);
+bool is_net_fully_absorbed(RoutingNetId net_id);

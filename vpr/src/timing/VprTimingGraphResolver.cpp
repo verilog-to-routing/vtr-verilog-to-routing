@@ -144,8 +144,8 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
     //Force delay calculation to ensure results are cached (redundant if already up-to-date)
     delay_calc_.atom_net_delay(timing_graph_, edge, delay_type);
 
-    ParentPinId src_pin = ParentPinId::INVALID();
-    ParentPinId sink_pin = ParentPinId::INVALID();
+    RoutingPinId src_pin = RoutingPinId::INVALID();
+    RoutingPinId sink_pin = RoutingPinId::INVALID();
 
     std::tie(src_pin, sink_pin) = delay_calc_.get_cached_pins(edge, delay_type);
 
@@ -171,12 +171,12 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
         VTR_ASSERT(src_pin);
         VTR_ASSERT(sink_pin);
 
-        ParentBlockId src_blk = ParentBlockId::INVALID();
-        ParentBlockId sink_blk = ParentBlockId::INVALID();
+        RoutingBlockId src_blk = RoutingBlockId::INVALID();
+        RoutingBlockId sink_blk = RoutingBlockId::INVALID();
 
         int sink_net_pin_index;
 
-        ParentNetId src_net = ParentNetId::INVALID();
+        RoutingNetId src_net = RoutingNetId::INVALID();
         tatum::Time driver_clb_delay;
         tatum::Time sink_clb_delay;
 
@@ -187,10 +187,10 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
             AtomBlockId tmp_atom_src_block = atom_ctx.netlist().pin_block((AtomPinId&)src_pin);
             AtomBlockId tmp_atom_sink_block = atom_ctx.netlist().pin_block((AtomPinId&)sink_pin);
 
-            src_blk = (ParentBlockId&)tmp_atom_src_block;
-            sink_blk = (ParentBlockId&)tmp_atom_sink_block;
+            src_blk = (RoutingBlockId&)tmp_atom_src_block;
+            sink_blk = (RoutingBlockId&)tmp_atom_sink_block;
 
-            src_net = (ParentNetId&)tmp_atom_net;
+            src_net = (RoutingNetId&)tmp_atom_net;
 
             driver_clb_delay = tatum::Time(0);
             sink_clb_delay = tatum::Time(0);
@@ -204,10 +204,10 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
             ClusterBlockId tmp_cluster_src_block = cluster_ctx.clb_nlist.pin_block((ClusterPinId&)src_pin);
             ClusterBlockId tmp_cluster_sink_block = cluster_ctx.clb_nlist.pin_block((ClusterPinId&)sink_pin);
 
-            src_blk = (ParentBlockId&)tmp_cluster_src_block;
-            sink_blk = (ParentBlockId&)tmp_cluster_sink_block;
+            src_blk = (RoutingBlockId&)tmp_cluster_src_block;
+            sink_blk = (RoutingBlockId&)tmp_cluster_sink_block;
 
-            src_net = (ParentNetId&)tmp_cluster_net;
+            src_net = (RoutingNetId&)tmp_cluster_net;
 
             driver_clb_delay = delay_calc_.get_driver_clb_cached_delay(edge, delay_type);
             sink_clb_delay = delay_calc_.get_sink_clb_cached_delay(edge, delay_type);
@@ -289,7 +289,7 @@ void VprTimingGraphResolver::set_detail_level(e_timing_report_detail report_deta
     detail_level_ = report_detail;
 }
 
-void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<tatum::DelayComponent>& components, ParentNetId net_id, ParentPinId sink_pin, DelayType delay_type) const {
+void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<tatum::DelayComponent>& components, RoutingNetId net_id, RoutingPinId sink_pin, DelayType delay_type) const {
     /* This routine obtains the interconnect components such as: OPIN, CHANX, CHANY, IPIN which join
      * two intra-block clusters in two parts. In part one, we take the route tree of the net (for
      * the min delays, a copy of it with its timing reloaded with the min delays), and find the

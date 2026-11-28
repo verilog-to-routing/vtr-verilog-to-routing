@@ -16,13 +16,13 @@ inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, f
     vtr::Timer timer;
 
     /* Sort so net with most sinks is routed first */
-    auto sorted_nets = std::vector<ParentNetId>(_net_list.nets().begin(), _net_list.nets().end());
-    std::stable_sort(sorted_nets.begin(), sorted_nets.end(), [&](ParentNetId id1, ParentNetId id2) -> bool {
+    auto sorted_nets = std::vector<RoutingNetId>(_net_list.nets().begin(), _net_list.nets().end());
+    std::stable_sort(sorted_nets.begin(), sorted_nets.end(), [&](RoutingNetId id1, RoutingNetId id2) -> bool {
         return _net_list.net_sinks(id1).size() > _net_list.net_sinks(id2).size();
     });
 
     for (size_t inet = 0; inet < sorted_nets.size(); inet++) {
-        ParentNetId net_id = sorted_nets[inet];
+        RoutingNetId net_id = sorted_nets[inet];
         NetResultFlags flags = route_net(
             *_router,
             _net_list,
@@ -71,7 +71,7 @@ inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, f
 }
 
 template<typename HeapType>
-void SerialNetlistRouter<HeapType>::handle_bb_updated_nets(const std::vector<ParentNetId>& /* nets */) {
+void SerialNetlistRouter<HeapType>::handle_bb_updated_nets(const std::vector<RoutingNetId>& /* nets */) {
 }
 
 template<typename HeapType>

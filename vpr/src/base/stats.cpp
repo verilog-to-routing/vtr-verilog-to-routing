@@ -176,7 +176,7 @@ static void write_routed_net_wire_usage(const std::string& filename,
     os << "#   segments:  Number of CHANX / CHANY wires used.\n";
     os << "#   bends:     Number of bends in the routing.\n";
     os << "num_pins status num_tiles bb_dx bb_dy bb_dz length segments bends net_name\n";
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         // Compute the bounding box over the root locations of the tiles which
         // the pins of this net are placed in.
         int min_x = std::numeric_limits<int>::max();
@@ -186,7 +186,7 @@ static void write_routed_net_wire_usage(const std::string& filename,
         int min_z = std::numeric_limits<int>::max();
         int max_z = std::numeric_limits<int>::lowest();
         std::unordered_set<t_physical_tile_loc> net_tile_locs;
-        for (ParentPinId pin_id : net_list.net_pins(net_id)) {
+        for (RoutingPinId pin_id : net_list.net_pins(net_id)) {
             t_pl_loc blk_loc = get_block_loc(net_list.pin_block(pin_id), is_flat).loc;
             min_x = std::min(min_x, blk_loc.x);
             max_x = std::max(max_x, blk_loc.x);
@@ -245,7 +245,7 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     int num_clb_opins_reserved = 0;
     int num_absorbed_nets = 0;
 
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) { /* Globals don't count. */
             int bends, length, segments;
             bool is_absorbed;
@@ -477,7 +477,7 @@ static void load_channel_occupancies(const Netlist<>& net_list,
     }
 
     // Now go through each net and count the tracks and pins used everywhere
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         // Skip global and empty nets.
         if (net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) {
             continue;
@@ -517,7 +517,7 @@ static void load_channel_occupancies(const Netlist<>& net_list,
  * @brief Counts and returns the number of bends, wirelength, and number of routing
  *        resource segments in net inet's routing.
  */
-void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, int* segments_ptr, bool* is_absorbed_ptr) {
+void get_num_bends_and_length(RoutingNetId inet, int* bends_ptr, int* len_ptr, int* segments_ptr, bool* is_absorbed_ptr) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;

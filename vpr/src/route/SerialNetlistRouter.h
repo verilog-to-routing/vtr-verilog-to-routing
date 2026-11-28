@@ -20,7 +20,7 @@ class SerialNetlistRouter : public NetlistRouter {
         NetPinTimingInvalidator* pin_timing_invalidator,
         route_budgets& budgeting_inf,
         const RoutingPredictor& routing_predictor,
-        const vtr::vector<ParentNetId, t_net_choke_points>& choking_spots,
+        const vtr::vector<RoutingNetId, t_net_choke_points>& choking_spots,
         bool is_flat,
         int route_verbosity)
         : _router(_make_router(router_lookahead, router_opts, is_flat, route_verbosity))
@@ -39,7 +39,7 @@ class SerialNetlistRouter : public NetlistRouter {
     ~SerialNetlistRouter() {}
 
     RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
-    void handle_bb_updated_nets(const std::vector<ParentNetId>& nets);
+    void handle_bb_updated_nets(const std::vector<RoutingNetId>& nets);
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
   private:
@@ -90,7 +90,7 @@ class SerialNetlistRouter : public NetlistRouter {
     NetPinTimingInvalidator* _pin_timing_invalidator;
     route_budgets& _budgeting_inf;
     const RoutingPredictor& _routing_predictor;
-    const vtr::vector<ParentNetId, t_net_choke_points>& _choking_spots; ///< Choke points indexed by net ID.
+    const vtr::vector<RoutingNetId, t_net_choke_points>& _choking_spots; ///< Choke points indexed by net ID.
     bool _is_flat;
     int _route_verbosity;
 };

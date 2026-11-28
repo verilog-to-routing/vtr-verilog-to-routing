@@ -106,7 +106,7 @@ static void count_net_crossings_for_cut_type(const Netlist<>& net_list,
     // Direction::INC/DEC record the crossing direction relative to the net source.
     vtr::NdMatrix<Direction, 2> net_crossing_direction({num_layers, max_cuts}, Direction::NONE);
 
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         if (net_list.net_is_ignored(net_id) || net_list.net_sinks(net_id).empty()) {
             continue;
         }
@@ -203,7 +203,7 @@ static void accumulate_interposer_cut_usage(const Netlist<>& net_list,
     horz_usage.fill(0);
     vert_usage.fill(0);
 
-    for (ParentNetId net_id : net_list.nets()) {
+    for (RoutingNetId net_id : net_list.nets()) {
         if (net_list.net_is_ignored(net_id) || net_list.net_sinks(net_id).empty()) {
             continue;
         }

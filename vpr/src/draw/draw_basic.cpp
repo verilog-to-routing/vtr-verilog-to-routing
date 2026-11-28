@@ -520,7 +520,7 @@ void draw_routing_bb(ezgl::renderer* g) {
 
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    auto net_id = ParentNetId(draw_state->show_routing_bb);
+    auto net_id = RoutingNetId(draw_state->show_routing_bb);
     const t_bb* bb = &route_ctx.route_bb[net_id];
 
     //The router considers an RR node to be 'within' the the bounding box if it
@@ -626,7 +626,7 @@ void draw_route(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
                 && draw_state->net_color[net_id] == ezgl::BLACK)
                 continue;
 
-            draw_routed_net((ParentNetId&)net_id, g);
+            draw_routed_net((RoutingNetId&)net_id, g);
         } /* End for (each net) */
     } else {
         for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
@@ -634,12 +634,12 @@ void draw_route(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
                 && draw_state->net_color[net_id] == ezgl::BLACK)
                 continue;
 
-            draw_routed_net((ParentNetId&)net_id, g);
+            draw_routed_net((RoutingNetId&)net_id, g);
         } /* End for (each net) */
     }
 }
 
-void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
+void draw_routed_net(RoutingNetId net_id, ezgl::renderer* g) {
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
     t_draw_state* draw_state = get_draw_state_vars();
